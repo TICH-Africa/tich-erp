@@ -1,0 +1,35 @@
+cat > .gitignore << 'EOF'
+# Laravel / PHP
+/web/vendor/
+/web/node_modules/
+/web/.env
+/web/storage/*.key
+/web/public/hot
+/web/public/storage
+/web/storage/app/public
+/web/storage/framework/cache/*
+/web/storage/framework/sessions/*
+/web/storage/framework/views/*
+/web/storage/logs/*.log
+/web/.phpunit.result.cache
+
+# Flutter / Dart
+/mobile/erp_mobile/.dart_tool/
+/mobile/erp_mobile/.flutter-plugins
+/mobile/erp_mobile/.flutter-plugins-dependencies
+/mobile/erp_mobile/build/
+/mobile/erp_mobile/.packages
+/mobile/erp_mobile/ios/Pods/
+/mobile/erp_mobile/android/.gradle/
+/mobile/erp_mobile/.idea/
+
+# Desktop (adjust once stack is chosen)
+/desktop/build/
+/desktop/node_modules/
+
+# General
+.DS_Store
+*.log
+.idea/
+.vscode/
+EOF
