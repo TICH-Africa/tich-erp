@@ -45,7 +45,7 @@ return new class extends Migration
             $table->dateTime('assigned_at')->useCurrent();
             $table->unsignedBigInteger('assigned_by')->nullable();
             $table->dateTime('expires_at')->nullable();
-            $table->unique(['user_id', 'role_id', 'campus_id', 'department_id']);
+            $table->unique(['user_id', 'role_id', 'campus_id', 'department_id'], 'user_roles_unique');
             $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('role_id')->references('id')->on('roles')->restrictOnDelete();
         });

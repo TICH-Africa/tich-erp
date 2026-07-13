@@ -217,7 +217,7 @@ return new class extends Migration
             $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['post_id', 'category_id']);
+            $table->unique(['post_id', 'category_id'], 'blog_post_categories_unique');
             $table->foreign('post_id')->references('id')->on('blog_posts')->restrictOnDelete();
             $table->foreign('category_id')->references('id')->on('blog_categories')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('staff')->nullOnDelete();

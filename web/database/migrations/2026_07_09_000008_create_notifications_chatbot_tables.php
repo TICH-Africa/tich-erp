@@ -55,7 +55,7 @@ return new class extends Migration
             $table->dateTime('last_used_at')->nullable();
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->nullable()->useCurrentOnUpdate();
-            $table->unique(['user_id', 'device_token', 'platform']);
+            $table->unique(['user_id', 'device_token', 'platform'], 'device_tokens_unique');
             $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
         });
 

@@ -62,7 +62,7 @@ return new class extends Migration
             $table->dateTime('approved_at')->nullable();
             $table->date('effective_from');
             $table->tinyInteger('is_active')->default(1);
-            $table->unique(['program_id', 'academic_year_id', 'semester_number']);
+            $table->unique(['program_id', 'academic_year_id', 'semester_number'], 'fee_structures_unique');
             $table->foreign('program_id')->references('id')->on('academic_programs')->restrictOnDelete();
             $table->foreign('academic_year_id')->references('id')->on('academic_years')->restrictOnDelete();
             $table->foreign('approved_by')->references('id')->on('staff')->nullOnDelete();
@@ -84,7 +84,7 @@ return new class extends Migration
             $table->date('last_payment_date')->nullable();
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->nullable()->useCurrentOnUpdate();
-            $table->unique(['student_id', 'academic_year_id']);
+            $table->unique(['student_id', 'academic_year_id'], 'student_accounts_unique');
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('academic_year_id')->references('id')->on('academic_years')->restrictOnDelete();
         });

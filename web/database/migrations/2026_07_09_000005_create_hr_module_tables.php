@@ -30,7 +30,7 @@ return new class extends Migration
             $table->tinyInteger('is_primary')->default(1);
             $table->tinyInteger('is_active')->default(1);
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['staff_id', 'bank_code', 'account_number']);
+            $table->unique(['staff_id', 'bank_code', 'account_number'], 'staff_bank_accounts_unique');
             $table->foreign('staff_id')->references('id')->on('staff')->restrictOnDelete();
         });
 
@@ -100,7 +100,7 @@ return new class extends Migration
             $table->decimal('balance_days', 5, 2)->default(0.00);
             $table->date('last_updated');
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['staff_id', 'leave_type_id', 'year']);
+            $table->unique(['staff_id', 'leave_type_id', 'year'], 'leave_balances_unique');
             $table->foreign('staff_id')->references('id')->on('staff')->restrictOnDelete();
             $table->foreign('leave_type_id')->references('id')->on('leave_types')->restrictOnDelete();
         });
@@ -154,7 +154,7 @@ return new class extends Migration
             $table->string('notes', 500)->nullable();
             $table->unsignedBigInteger('recorded_by')->nullable();
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['staff_id', 'attendance_date']);
+            $table->unique(['staff_id', 'attendance_date'], 'staff_attendance_unique');
             $table->foreign('staff_id')->references('id')->on('staff')->restrictOnDelete();
             $table->foreign('leave_request_id')->references('id')->on('leave_requests')->nullOnDelete();
             $table->foreign('recorded_by')->references('id')->on('staff')->nullOnDelete();
@@ -176,7 +176,7 @@ return new class extends Migration
             $table->decimal('attendance_percentage', 5, 2)->default(0.00);
             $table->dateTime('last_calculated_at');
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['staff_id', 'month', 'year']);
+            $table->unique(['staff_id', 'month', 'year'], 'staff_attendance_summary_unique');
             $table->foreign('staff_id')->references('id')->on('staff')->restrictOnDelete();
         });
 
@@ -373,7 +373,7 @@ return new class extends Migration
             $table->dateTime('acknowledged_at')->nullable();
             $table->string('acknowledgement_method', 50)->default('digital'); // digital, physical
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['staff_id', 'policy_name', 'policy_version']);
+            $table->unique(['staff_id', 'policy_name', 'policy_version'], 'policy_acknowledgements_unique');
             $table->foreign('staff_id')->references('id')->on('staff')->restrictOnDelete();
         });
 

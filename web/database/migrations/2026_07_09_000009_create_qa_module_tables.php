@@ -52,7 +52,7 @@ return new class extends Migration
             $table->dateTime('verified_at')->nullable();
             $table->text('verified_notes')->nullable();
             $table->dateTime('submitted_at')->useCurrent();
-            $table->unique(['checklist_item_id', 'department_id', 'qa_plan_id']);
+            $table->unique(['checklist_item_id', 'department_id', 'qa_plan_id'], 'qa_dept_submissions_unique');
             $table->foreign('qa_plan_id')->references('id')->on('qa_plans')->restrictOnDelete();
             $table->foreign('checklist_item_id')->references('id')->on('qa_audit_checklists')->restrictOnDelete();
             $table->foreign('department_id')->references('id')->on('departments')->restrictOnDelete();
@@ -96,7 +96,7 @@ return new class extends Migration
             $table->dateTime('threshold_met_at')->nullable();
             $table->dateTime('calculated_at');
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['qa_plan_id', 'department_id']);
+            $table->unique(['qa_plan_id', 'department_id'], 'qa_compliance_scores_unique');
             $table->foreign('qa_plan_id')->references('id')->on('qa_plans')->restrictOnDelete();
             $table->foreign('department_id')->references('id')->on('departments')->restrictOnDelete();
         });
