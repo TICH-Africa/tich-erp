@@ -1,0 +1,1488 @@
+=== TABLE 0 ===
+MySQL Type | Use Case
+BIGINT UNSIGNED | Auto-increment surrogate PKs
+VARCHAR(50–255) | Names, codes, emails, phone numbers
+VARCHAR(500) | Addresses, descriptions
+TEXT | Long-form notes, document paths
+DECIMAL(12,2) | All monetary amounts
+DECIMAL(5,2) | Percentages, grade points
+DATE | Birth dates, start/end dates
+DATETIME | Transaction timestamps, audit logs
+JSON | Flexible metadata fields per module
+=== TABLE 1 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+campus_code | VARCHAR(20) | UK, NOT NULL  e.g., THCM, KSM01
+campus_name | VARCHAR(200) | NOT NULL
+campus_type | ENUM | NOT NULL  — main, community_college, sub_county_hub
+parent_campus_id | BIGINT UNSIGNED | FK → campuses.id, NULL  (self-referential hierarchy)
+county | VARCHAR(100) | NULL  e.g., Kisumu, Nyando
+sub_county | VARCHAR(100) | NULL
+physical_address | VARCHAR(500) | NULL
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+updated_at | DATETIME | ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 2 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+dept_code | VARCHAR(20) | UK, NOT NULL  e.g., FIN, HR, CHD
+dept_name | VARCHAR(200) | NOT NULL
+dept_category | ENUM | NOT NULL  — academic, administrative, support
+hod_id | BIGINT UNSIGNED | FK → staff.id, NULL
+parent_dept_id | BIGINT UNSIGNED | FK → departments.id, NULL
+campus_id | BIGINT UNSIGNED | FK → campuses.id, NULL
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 3 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+program_code | VARCHAR(30) | UK, NOT NULL  e.g., CHD-DIP-2024
+program_name | VARCHAR(300) | NOT NULL
+program_type | ENUM | NOT NULL  — certificate, diploma, higher_diploma, artisan, short_course
+regulatory_body | ENUM | NULL  — NITA, CDACC, TVET, NURSING_COUNCIL, NONE
+department_id | BIGINT UNSIGNED | FK → departments.id, NOT NULL
+duration_months | INT | NULL
+semester_count | INT | DEFAULT 0
+block_count | INT | DEFAULT 0  For nursing clinical blocks
+is_nursing_track | TINYINT(1) | DEFAULT 0
+min_attendance_pct | DECIMAL(5,2) | DEFAULT 90.00  Exam gate threshold
+theory_pass_mark | DECIMAL(5,2) | DEFAULT 40.00
+clinical_pass_mark | DECIMAL(5,2) | DEFAULT 50.00  For nursing
+status | ENUM | DEFAULT pending_ceo  — pending_ceo, active, inactive, archived
+approved_by_ceo_at | DATETIME | NULL
+approved_by_ceo_id | BIGINT UNSIGNED | FK → staff.id, NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 4 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_code | VARCHAR(30) | UK, NOT NULL  e.g., CHD101
+unit_name | VARCHAR(300) | NOT NULL
+program_id | BIGINT UNSIGNED | FK → academic_programs.id, NOT NULL
+semester | INT | DEFAULT 1
+block | INT | DEFAULT NULL  For nursing block-based units
+credit_hours | DECIMAL(5,2) | DEFAULT 0
+contact_hours | INT | DEFAULT 0
+is_core | TINYINT(1) | DEFAULT 1  Core vs elective
+is_practical | TINYINT(1) | DEFAULT 0
+prerequisite_unit_id | BIGINT UNSIGNED | FK → units.id, NULL
+co_requisite_unit_id | BIGINT UNSIGNED | FK → units.id, NULL
+assessment_weight_attendance_pct | DECIMAL(5,2) | DEFAULT 5.00
+assessment_weight_cat_pct | DECIMAL(5,2) | DEFAULT 30.00
+assessment_weight_practical_pct | DECIMAL(5,2) | DEFAULT 0.00
+assessment_weight_exam_pct | DECIMAL(5,2) | DEFAULT 60.00
+status | ENUM | DEFAULT pending_registry
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 5 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+year_label | VARCHAR(20) | UK, NOT NULL  e.g., 2026
+start_date | DATE | NOT NULL
+end_date | DATE | NOT NULL
+is_current | TINYINT(1) | DEFAULT 0  Only one current at a time
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 6 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+academic_year_id | BIGINT UNSIGNED | FK → academic_years.id, NOT NULL
+semester_label | VARCHAR(20) | NOT NULL  e.g., Trimester 1
+semester_number | INT | NOT NULL  1, 2, or 3
+intake_month | VARCHAR(20) | NULL  January, May, September
+start_date | DATE | NOT NULL
+end_date | DATE | NOT NULL
+registration_open_date | DATE | NULL
+registration_close_date | DATE | NULL
+is_current | TINYINT(1) | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 7 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+block_label | VARCHAR(50) | NOT NULL  Introductory, Block 1–Block 5
+block_order | INT | NOT NULL  0=Introductory, 1–5
+duration_months | INT | DEFAULT 4
+program_id | BIGINT UNSIGNED | FK → academic_programs.id, NOT NULL
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 8 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+user_type | ENUM | NOT NULL  — student, staff, admin, external
+username | VARCHAR(100) | UK, NOT NULL
+email | VARCHAR(255) | UK, NOT NULL
+password_hash | VARCHAR(255) | NOT NULL  bcrypt
+staff_id | BIGINT UNSIGNED | FK → staff.id, NULL
+student_id | BIGINT UNSIGNED | FK → students.id, NULL
+mfa_enabled | TINYINT(1) | DEFAULT 0
+mfa_method | ENUM | NULL  — sms, email, auth_app, whatsapp
+is_active | TINYINT(1) | DEFAULT 1
+last_login_at | DATETIME | NULL
+failed_login_attempts | INT | DEFAULT 0
+locked_until | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+updated_at | DATETIME | ON UPDATE CURRENT_TIMESTAMP
+created_by | BIGINT UNSIGNED | FK → users.id, NULL
+=== TABLE 9 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+role_name | VARCHAR(100) | UK, NOT NULL  e.g., CEO, Academic Registrar, HOD
+role_category | ENUM | NOT NULL  — executive, academic, administrative, teaching, student
+description | TEXT | NULL
+is_system_role | TINYINT(1) | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 10 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+user_id | BIGINT UNSIGNED | FK → users.id, NOT NULL
+role_id | BIGINT UNSIGNED | FK → roles.id, NOT NULL
+campus_id | BIGINT UNSIGNED | FK → campuses.id, NULL  NULL=all campuses
+department_id | BIGINT UNSIGNED | FK → departments.id, NULL  NULL=all departments
+assigned_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+assigned_by | BIGINT UNSIGNED | FK → users.id, NULL
+expires_at | DATETIME | NULL
+UK: (user_id, role_id, campus_id, department_id) |  | 
+=== TABLE 11 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+user_id | BIGINT UNSIGNED | FK → users.id, NULL
+action | VARCHAR(100) | NOT NULL  e.g., grade_change, fee_waiver
+entity_type | VARCHAR(100) | NOT NULL  e.g., students, units, invoices
+entity_id | VARCHAR(50) | NOT NULL
+old_value | JSON | NULL
+new_value | JSON | NULL
+ip_address | VARCHAR(45) | NULL
+user_agent | VARCHAR(500) | NULL
+reason | VARCHAR(500) | NULL  Mandatory for sensitive actions
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (entity_type, entity_id), (user_id), (action), (created_at) |  | 
+=== TABLE 12 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+recipient_user_id | BIGINT UNSIGNED | FK → users.id, NULL
+recipient_email | VARCHAR(255) | NULL
+recipient_phone | VARCHAR(30) | NULL
+channel | ENUM | NOT NULL  — email, sms, whatsapp, push
+template_key | VARCHAR(100) | NULL  e.g., fee_reminder, admission_letter
+subject | VARCHAR(500) | NULL
+body_preview | VARCHAR(500) | NULL
+status | ENUM | DEFAULT queued  — queued, sent, delivered, failed
+sent_at | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 13 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+application_number | VARCHAR(50) | UK, NOT NULL  e.g., APP-2026-00001
+program_id | BIGINT UNSIGNED | FK → academic_programs.id, NOT NULL
+preferred_campus_id | BIGINT UNSIGNED | FK → campuses.id, NULL
+first_name / surname | VARCHAR(100) | NOT NULL
+date_of_birth | DATE | NOT NULL
+gender | ENUM | NOT NULL  — male, female, other
+national_id_number / passport_number | VARCHAR(50) | NULL
+email / phone_number | VARCHAR(255/30) | NOT NULL
+home_county | VARCHAR(100) | NULL
+entry_qualification | ENUM | NULL  — kcse, class8, certificate, diploma, rpl
+application_fee_paid | TINYINT(1) | DEFAULT 0
+application_fee_payment_ref | VARCHAR(100) | NULL  M-Pesa code
+application_fee_paid_at | DATETIME | NULL
+rpl_application_id | BIGINT UNSIGNED | FK → rpl_applications.id, NULL
+status | ENUM | DEFAULT submitted  — submitted, academic_review, fee_pending, paid, admitted, rejected
+academic_review_status | ENUM | DEFAULT pending  — pending, approved, rejected
+academic_reviewer_id | BIGINT UNSIGNED | FK → staff.id, NULL
+application_source | ENUM | DEFAULT online  — online, field_agent, paper
+is_offline_cached | TINYINT(1) | DEFAULT 0  For field-agent sync
+offline_sync_id | VARCHAR(100) | NULL
+created_at / updated_at / created_by | DATETIME / BIGINT UNSIGNED | Standard audit
+=== TABLE 14 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+registration_number | VARCHAR(50) | UK, NOT NULL  e.g., THCM/J13/2026
+application_id | BIGINT UNSIGNED | FK → applicants.id, NOT NULL
+program_id | BIGINT UNSIGNED | FK → academic_programs.id, NOT NULL
+cohort_intake | VARCHAR(20) | NOT NULL  e.g., January 2026
+enrollment_campus_id | BIGINT UNSIGNED | FK → campuses.id, NOT NULL
+current_semester_id | BIGINT UNSIGNED | FK → semesters.id, NULL
+current_nursing_block_id | BIGINT UNSIGNED | FK → nursing_blocks.id, NULL
+enrollment_status | ENUM | DEFAULT pending  — pending, active, deferred, suspended, withdrawn, graduated, alumni
+entry_pathway | ENUM | DEFAULT regular  — regular, rpl, credit_transfer
+admission_letter_id | BIGINT UNSIGNED | FK → admission_letters.id, NULL
+photo_path | VARCHAR(500) | NULL
+date_of_admission | DATE | NOT NULL
+is_nursing_student | TINYINT(1) | DEFAULT 0
+kcse_english_grade / kcse_biology_grade / kcse_science_grade | VARCHAR(5) | NULL  Nursing gate check
+fee_clearance_status | ENUM | DEFAULT pending  — pending, partial, cleared
+overall_balance | DECIMAL(12,2) | DEFAULT 0.00
+user_id | BIGINT UNSIGNED | FK → users.id, NULL  Portal access
+is_hostel_seeker | TINYINT(1) | DEFAULT 0
+hostel_allocation_id | BIGINT UNSIGNED | FK → hostel_allocations.id, NULL
+emergency_contact_name / phone / relationship | VARCHAR | NULL
+is_active | TINYINT(1) | DEFAULT 1
+created_at / updated_at / created_by | DATETIME / BIGINT UNSIGNED | Standard audit
+=== TABLE 15 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id | BIGINT UNSIGNED | FK → students.id, NOT NULL
+letter_number | VARCHAR(50) | UK, NOT NULL
+issue_date / reporting_date | DATE | NOT NULL
+enrollment_campus_id | BIGINT UNSIGNED | FK → campuses.id, NOT NULL
+generated_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+is_printed / is_dispatched | TINYINT(1) | DEFAULT 0
+dispatched_at | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 16 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+applicant_id | BIGINT UNSIGNED | FK → applicants.id, NOT NULL
+document_type | ENUM | NOT NULL  — passport_photo, kcse_slip, id_copy, birth_cert, fee_receipt, medical_form
+file_path / original_filename / mime_type | VARCHAR(500/255/100) | NOT NULL
+is_verified / verified_by / verified_at | TINYINT(1) / BIGINT UNSIGNED / DATETIME | NULL
+=== TABLE 17 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id | BIGINT UNSIGNED | FK → students.id, NOT NULL
+address_type | ENUM | NOT NULL  — permanent, postal, guardian
+postal_address / physical_address / county / sub_county / phone | VARCHAR | NULL
+=== TABLE 18 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id | BIGINT UNSIGNED | FK → students.id, NOT NULL
+full_name / relationship / phone_number / alt_phone / email / physical_address / occupation | VARCHAR | NOT NULL / NULL
+=== TABLE 19 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id | BIGINT UNSIGNED | FK → students.id, NOT NULL
+blood_group / known_medical_conditions / allergies / special_needs | VARCHAR/TEXT | NULL
+disability_status | ENUM | DEFAULT none  — none, physical, visual, hearing, learning, other
+disability_description | TEXT | NULL
+medical_form_file_path | VARCHAR(500) | NULL
+is_approved / reviewed_by / reviewed_at | TINYINT(1) / BIGINT UNSIGNED / DATETIME | NULL
+=== TABLE 20 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id | BIGINT UNSIGNED | FK → students.id, NOT NULL
+case_number | VARCHAR(50) | UK, NOT NULL
+incident_date / incident_description | DATE / TEXT | NOT NULL
+violation_type / severity | ENUM | NOT NULL
+reported_by / assigned_officer_id | BIGINT UNSIGNED | NOT NULL / NULL
+case_status | ENUM | DEFAULT open  — open, under_investigation, hearing_scheduled, resolved, closed, appealed
+hearing_date / decision / sanction | DATETIME / TEXT / VARCHAR(500) | NULL
+appeal_status / appeal_notes | ENUM / TEXT | NULL
+resolved_at / created_at | DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 21 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+applicant_id | BIGINT UNSIGNED | FK → applicants.id, NOT NULL
+program_id | BIGINT UNSIGNED | FK → academic_programs.id, NOT NULL
+prior_experience_type | ENUM | NOT NULL  — practical_trade, work_history, chp_status, informal_training
+prior_experience_years / supporting_documents | INT / JSON | NULL
+trade_equivalence_score | DECIMAL(5,2) | NULL
+credit_exemption_unit_ids | JSON | NULL  Units exempted
+status | ENUM | DEFAULT pending_assessment
+assessed_by / assessed_at | BIGINT UNSIGNED / DATETIME | NULL
+total_credits_awarded | INT | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 22 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+member_number | VARCHAR(50) | UK, NOT NULL
+staff_id | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+registration_fee | DECIMAL(12,2) | DEFAULT 500.00  KES 500 one-time
+registration_fee_paid | TINYINT(1) | DEFAULT 0
+registration_fee_paid_date | DATE | NULL
+membership_status | ENUM | DEFAULT pending_fee  — pending_fee, active, suspended, withdrawn
+monthly_contribution_min | DECIMAL(12,2) | DEFAULT 200.00  KES minimum
+total_savings_balance | DECIMAL(12,2) | DEFAULT 0.00
+max_loan_eligibility | DECIMAL(12,2) | DEFAULT 0.00  3× savings
+guarantor_1_id / guarantor_2_id | BIGINT UNSIGNED | FK → sacco_members.id, NULL
+joining_date / is_active | DATE / TINYINT(1) | NOT NULL / DEFAULT 1
+=== TABLE 23 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+member_id | BIGINT UNSIGNED | FK → sacco_members.id, NOT NULL
+transaction_type | ENUM | NOT NULL  — monthly_contribution, voluntary_deposit, interest_credit, withdrawal, fee_deduction
+amount | DECIMAL(12,2) | NOT NULL
+transaction_date / reference_number | DATE / VARCHAR(50) | NOT NULL / UK
+notes / processed_by | VARCHAR(500) / BIGINT UNSIGNED | NULL / NOT NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 24 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+loan_number | VARCHAR(50) | UK, NOT NULL
+member_id | BIGINT UNSIGNED | FK → sacco_members.id, NOT NULL
+loan_type | ENUM | NOT NULL  — toolkit, emergency, asset_financing, school_fee, other
+principal_amount / interest_rate / loan_term_months | DECIMAL / DECIMAL(5,2) / INT | NOT NULL
+monthly_repayment / total_interest / total_amount_due | DECIMAL(12,2) | NOT NULL
+max_eligible_amount | DECIMAL(12,2) | NOT NULL  3× savings at application time
+guarantor_1_id / guarantor_2_id | BIGINT UNSIGNED | FK → sacco_members.id, NULL
+application_date / application_status | DATE / ENUM | NOT NULL  — pending, under_review, approved, rejected, disbursed, closed, defaulted
+approved_by / approved_date / disbursement_date | BIGINT / DATE | NULL
+outstanding_balance | DECIMAL(12,2) | DEFAULT 0.00
+default_status | ENUM | DEFAULT none  — none, 30_days, 60_days, 90_days
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 25 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+loan_id | BIGINT UNSIGNED | FK → sacco_loans.id, NOT NULL
+repayment_number / due_date | INT / DATE | NOT NULL
+due_amount / principal_portion / interest_portion / amount_paid | DECIMAL(12,2) | NOT NULL / DEFAULT 0.00
+payment_date / payment_reference / payment_method | DATE / VARCHAR(100) / ENUM | NULL
+status | ENUM | DEFAULT pending  — pending, partial, paid, overdue
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 26 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+membership_status | ENUM | DEFAULT active
+monthly_deduction | DECIMAL(12,2) | DEFAULT 0.00
+enrolled_at / withdrawn_at | DATE / DATE | NOT NULL / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 27 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+program_id / unit_id | BIGINT UNSIGNED | FK → academic_programs.id / units.id
+semester | INT | NOT NULL
+block_id | BIGINT UNSIGNED | FK → nursing_blocks.id, NULL
+is_compulsory / is_active | TINYINT(1) | DEFAULT 1
+UK: (program_id, unit_id) |  | 
+=== TABLE 28 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_id / staff_id / semester_id / campus_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+is_coordinator | TINYINT(1) | DEFAULT 0
+contact_hours_assigned / is_active | INT / TINYINT(1) | DEFAULT 0 / 1
+IX: (unit_id, semester_id), (staff_id) |  | 
+=== TABLE 29 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+plan_number | VARCHAR(50) | UK, NOT NULL
+unit_allocation_id / prepared_by | BIGINT UNSIGNED | FK → unit_allocations.id / staff.id, NOT NULL
+lesson_objectives / topics_covered / competencies_targeted | TEXT | NOT NULL / NULL
+contact_hours / week_number / planned_date | INT / INT / DATE | NOT NULL
+teaching_methods / resources_required | VARCHAR(500) | NULL
+status | ENUM | DEFAULT draft  — draft, submitted, approved, rejected, modified
+hod_comments / hod_id / hod_action_at | TEXT / BIGINT UNSIGNED / DATETIME | NULL
+registrar_visible | TINYINT(1) | DEFAULT 0
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+=== TABLE 30 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+lesson_plan_id / approver_id | BIGINT UNSIGNED | FK → lesson_plans.id / staff.id, NOT NULL
+approval_level | ENUM | NOT NULL  — hod, registrar, academic_board
+decision | ENUM | NOT NULL  — approved, rejected, request_modification
+comments / decided_at | TEXT / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 31 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+session_number | VARCHAR(50) | UK, NOT NULL  System-generated tracking ID
+unit_allocation_id / session_date / start_time / end_time | BIGINT / DATE / TIME | NOT NULL
+venue / session_type | VARCHAR(200) / ENUM | NULL  — physical, virtual, field_practical, clinical
+virtual_meeting_url / is_mandatory | VARCHAR(500) / TINYINT(1) | NULL / DEFAULT 1
+total_expected_attendees | INT | DEFAULT 0
+signed_sheet_image_path | VARCHAR(500) | NULL  Uploaded photo of physical sheet
+recorded_by / recorded_at / is_locked | BIGINT / DATETIME / TINYINT(1) | NOT NULL / DEFAULT / 0
+=== TABLE 32 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+session_id / student_id | BIGINT UNSIGNED | FK → attendance_sessions.id / students.id, NOT NULL
+is_present / sign_in_time | TINYINT(1) / TIME | DEFAULT 0 / NULL
+recorded_by_tutor / verified_by_hod | TINYINT(1) | DEFAULT 0
+verification_note / created_at | TEXT / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (session_id, student_id) |  | 
+IX: (student_id), (student_id, unit_allocation_id) |  | 
+=== TABLE 33 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / unit_id / semester_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+total_sessions / total_present | INT | DEFAULT 0
+attendance_percentage | DECIMAL(5,2) | DEFAULT 0.00
+status_flag | ENUM | DEFAULT green  — green (>=90%), amber (75-89%), red (<75%)
+last_calculated_at | DATETIME | NOT NULL
+UK: (student_id, unit_id, semester_id) |  | 
+=== TABLE 34 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / semester_id | BIGINT UNSIGNED | FK → students.id / semesters.id, NOT NULL
+registration_date / registered_by | DATE / BIGINT UNSIGNED | NOT NULL / NULL
+registration_type | ENUM | DEFAULT self  — self, admin, bulk
+unit_count | INT | DEFAULT 0
+status / is_fee_cleared | ENUM / TINYINT(1) | DEFAULT registered / DEFAULT 0
+UK: (student_id, semester_id) |  | 
+=== TABLE 35 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+semester_registration_id / unit_id | BIGINT UNSIGNED | FK → student_semester_registrations.id / units.id
+is_additional / created_at | TINYINT(1) / DATETIME | DEFAULT 0 / DEFAULT CURRENT_TIMESTAMP
+UK: (semester_registration_id, unit_id) |  | 
+=== TABLE 36 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / requested_semester_id | BIGINT UNSIGNED | FK → students.id / semesters.id, NOT NULL
+reason / supporting_document_path | TEXT / VARCHAR(500) | NOT NULL / NULL
+status | ENUM | DEFAULT pending  — pending, approved, rejected
+reviewed_by / reviewed_at / review_comments | BIGINT / DATETIME / TEXT | NULL
+effective_from_semester_id | BIGINT UNSIGNED | FK → semesters.id, NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 37 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+applicant_id / program_id | BIGINT UNSIGNED | FK → applicants.id / academic_programs.id, NOT NULL
+cohort_preference / position | VARCHAR(20) / INT | NULL / NOT NULL
+enrolled_from_waitlist / enrolled_at | TINYINT(1) / DATETIME | DEFAULT 0 / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 38 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / unit_id / semester_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+assessment_type | ENUM | NOT NULL  — cat, assignment, practical, project, field_log, skills_lab
+assessment_name | VARCHAR(200) | NOT NULL  e.g., CAT 1, Assignment 2
+max_score / score_obtained / percentage_score | DECIMAL(5,2) | NOT NULL / NOT NULL / GENERATED
+weight_in_final / recorded_by | DECIMAL(5,2) / BIGINT UNSIGNED | DEFAULT 0.00 / NOT NULL
+verified_by_hod | TINYINT(1) | DEFAULT 0
+recorded_at / updated_at / updated_by | DATETIME / DATETIME / BIGINT UNSIGNED | DEFAULT / ON UPDATE / NULL
+IX: (student_id, unit_id, semester_id) |  | 
+=== TABLE 39 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / unit_id / semester_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+attendance_check_passed / attendance_percentage | TINYINT(1) / DECIMAL(5,2) | DEFAULT 0 / DEFAULT 0.00  >=90%
+fee_clearance_check_passed / invigilator_assigned / exam_card_issued | TINYINT(1) | DEFAULT 0
+eligible_for_exams | TINYINT(1) | GENERATED  attendance AND fee AND card
+calculated_at / created_at | DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (student_id, unit_id, semester_id) |  | 
+=== TABLE 40 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+exam_card_number | VARCHAR(50) | UK, NOT NULL
+student_id / semester_id | BIGINT UNSIGNED | FK → students.id / semesters.id, NOT NULL
+examination_number | VARCHAR(50) | NULL  Seat/invigilation number
+qr_code_data | VARCHAR(500) | NULL  Encrypted student + exam metadata
+issued_at | DATETIME | NOT NULL
+is_voided / voided_reason / voided_by | TINYINT(1) / VARCHAR(500) / BIGINT | DEFAULT 0 / NULL
+UK: (student_id, semester_id) |  | 
+=== TABLE 41 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_id / semester_id | BIGINT UNSIGNED | FK → units.id / semesters.id, NOT NULL
+exam_date / start_time / end_time / venue | DATE / TIME / TIME / VARCHAR(200) | NOT NULL
+exam_type | ENUM | DEFAULT main  — main, supplementary, special, clinical
+invigilator_id / second_invigilator_id | BIGINT UNSIGNED | FK → staff.id, NULL
+total_candidates / status | INT / ENUM | DEFAULT 0  — scheduled, in_progress, completed, cancelled
+IX: (unit_id, semester_id) |  | 
+=== TABLE 42 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+exam_card_id / student_id / unit_id / semester_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+cat_total / practical_total / final_exam_score | DECIMAL(5,2) | DEFAULT 0.00
+final_total_score / grade_letter / grade_points | DECIMAL(5,2) / VARCHAR(5) / DECIMAL(5,2) | DEFAULT 0.00 / NULL / NULL
+theory_pass_check / clinical_pass_check | TINYINT(1) | DEFAULT 0  >=60% theory, >=70% clinical
+is_supplementary / supplementary_triggered / clinical_supplementary_triggered | TINYINT(1) | DEFAULT 0
+is_special_exam / is_remark_requested | TINYINT(1) | DEFAULT 0
+remarks / moderator_id / moderated_at | TEXT / BIGINT UNSIGNED / DATETIME | NULL
+board_approved / board_approved_at / is_published / published_at | TINYINT(1) / DATETIME | DEFAULT 0 / NULL
+entered_by / created_at / updated_at | BIGINT UNSIGNED / DATETIME | NOT NULL / DEFAULT / ON UPDATE
+IX: (student_id, semester_id), (unit_id, semester_id) |  | 
+=== TABLE 43 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / exam_result_id | BIGINT UNSIGNED | FK → students.id / exam_results.id, NOT NULL
+supplementary_type | ENUM | NOT NULL  — theory, clinical, both
+fee_amount / fee_paid / fee_payment_ref / fee_paid_at | DECIMAL(12,2) / TINYINT(1) / VARCHAR(100) / DATETIME | NOT NULL / DEFAULT 0 / NULL
+application_status | ENUM | DEFAULT pending_fee  — pending_fee, scheduled, completed, cancelled
+scheduled_exam_id / new_score | BIGINT UNSIGNED / DECIMAL(5,2) | NULL / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 44 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / exam_result_id | BIGINT UNSIGNED | FK → students.id / exam_results.id, NOT NULL
+reason / supporting_docs | TEXT / JSON | NOT NULL / NULL
+status | ENUM | DEFAULT pending  — pending, approved, rejected
+reviewed_by / reviewed_at / scheduled_exam_id | BIGINT / DATETIME / BIGINT UNSIGNED | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 45 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / exam_result_id | BIGINT UNSIGNED | FK → students.id / exam_results.id, NOT NULL
+reason / fee_amount / fee_paid | TEXT / DECIMAL(12,2) / TINYINT(1) | NOT NULL / NOT NULL / DEFAULT 0
+status | ENUM | DEFAULT pending_fee  — pending_fee, assigned, in_progress, completed
+assigned_examiner_id | BIGINT UNSIGNED | FK → staff.id, NULL
+original_script_path | VARCHAR(500) | NULL
+new_marks / original_marks | DECIMAL(5,2) | NULL
+outcome / outcome_at | ENUM / DATETIME | NULL  — grade_unchanged, grade_increased, grade_decreased
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 46 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / unit_id / semester_id / nursing_block_id | BIGINT UNSIGNED | FK → respective tables
+exam_result_id | BIGINT UNSIGNED | FK → exam_results.id, NULL
+final_score / grade_letter / grade_points | DECIMAL(5,2) / VARCHAR(5) / DECIMAL(5,2) | NOT NULL
+credit_hours / is_repeat / is_supplementary_pass | DECIMAL(5,2) / TINYINT(1) | DEFAULT 0 / 0
+gpa_at_time | DECIMAL(5,2) | NULL  CGPA snapshot
+recorded_at / created_at | DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (student_id, unit_id, semester_id) |  | 
+=== TABLE 47 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_id / semester_id | BIGINT UNSIGNED | FK → units.id / semesters.id, NOT NULL
+exam_type / version | ENUM / VARCHAR(10) | NOT NULL  — main, supplementary, special / A, B
+draft_file_path / moderated_file_path / approved_file_path | VARCHAR(500) | NULL
+is_encrypted / encryption_key_hash | TINYINT(1) / VARCHAR(255) | DEFAULT 0 / NULL
+status | ENUM | DEFAULT draft  — draft, tabled, moderated, approved, printed
+prepared_by / tabled_at / moderated_at | BIGINT / DATETIME | NOT NULL / NULL
+approved_by / approved_at | BIGINT UNSIGNED / DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 48 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / block_id / program_id | BIGINT UNSIGNED | FK → students.id / nursing_blocks.id / academic_programs.id, NOT NULL
+start_date / expected_end_date / actual_end_date | DATE | NOT NULL / NULL
+clinical_field_logs_submitted / skills_lab_assessment_passed | TINYINT(1) | DEFAULT 0
+theory_block_exam_score / clinical_exam_score | DECIMAL(5,2) | NULL
+is_block_passed / is_progression_locked | TINYINT(1) | DEFAULT 0  Locked until clinical+field passed
+block_status | ENUM | DEFAULT in_progress  — in_progress, completed, failed, repeat
+completed_at / created_at | DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (student_id, block_id) |  | 
+=== TABLE 49 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_id / competency_code / competency_name | BIGINT UNSIGNED / VARCHAR(50/300) | FK → units.id / NOT NULL
+description / mentor_id / sub_county_hub_id | TEXT / BIGINT UNSIGNED / BIGINT | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 50 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / competency_checklist_id | BIGINT UNSIGNED | FK → students.id / competency_checklists.id, NOT NULL
+is_competent / assessment_date | TINYINT(1) / DATE | DEFAULT 0 / NOT NULL
+assessed_by / evidence_file_paths / notes | BIGINT / JSON / TEXT | NOT NULL / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (student_id) |  | 
+=== TABLE 51 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+unit_allocation_id / semester_id | BIGINT UNSIGNED | FK → unit_allocations.id / semesters.id, NOT NULL
+day_of_week / start_time / end_time | INT / TIME / TIME | NOT NULL  1=Monday..7=Sunday
+venue / timetable_type / class_group | VARCHAR(200) / ENUM / VARCHAR(100) | NULL  — class, practical, clinical, virtual
+is_active / created_at / updated_at | TINYINT(1) / DATETIME | DEFAULT 1 / DEFAULT / ON UPDATE
+=== TABLE 52 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+program_id / academic_year_id / semester_number | BIGINT UNSIGNED / INT | FK → academic_programs.id / academic_years.id, NOT NULL
+tuition_fee / examination_fee / library_fee / activity_fee | DECIMAL(12,2) | NOT NULL / DEFAULT 0.00
+hostel_fee / medical_insurance_fee / nursing_clinical_fee / graduation_fee | DECIMAL(12,2) | DEFAULT 0.00
+registration_fee / other_fees | DECIMAL(12,2) / JSON | DEFAULT 0.00 / NULL
+total_semester_fee | DECIMAL(12,2) | GENERATED  Sum of all components
+is_approved / approved_by / approved_at | TINYINT(1) / BIGINT / DATETIME | DEFAULT 0 / NULL
+effective_from / is_active | DATE / TINYINT(1) | NOT NULL / DEFAULT 1
+UK: (program_id, academic_year_id, semester_number) |  | 
+=== TABLE 53 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / academic_year_id | BIGINT UNSIGNED | FK → students.id / academic_years.id, NOT NULL
+total_chargeable / total_paid / outstanding_balance | DECIMAL(12,2) | DEFAULT 0.00
+work_study_credit / scholarship_amount / helb_amount / sponsor_amount | DECIMAL(12,2) | DEFAULT 0.00
+is_cleared / cleared_at / last_payment_date | TINYINT(1) / DATETIME / DATE | DEFAULT 0 / NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+UK: (student_id, academic_year_id) |  | 
+=== TABLE 54 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+invoice_number | VARCHAR(50) | UK, NOT NULL  THCM/J13/2026-001 format
+student_account_id / student_id | BIGINT UNSIGNED | FK → student_accounts.id / students.id, NOT NULL
+semester_id / invoice_type | BIGINT UNSIGNED / ENUM | FK → semesters.id, NULL / NOT NULL  — tuition, application, supplementary, graduation, hostel, other
+description / amount / amount_paid / balance | VARCHAR(500) / DECIMAL(12,2) | NOT NULL / DEFAULT 0.00 / GENERATED
+issue_date / due_date | DATE | NOT NULL
+status | ENUM | DEFAULT issued  — issued, partial, paid, overdue, waived
+payment_gateway_ref / is_sent_to_portal / sent_at | VARCHAR(100) / TINYINT(1) / DATETIME | NULL / DEFAULT 0 / NULL
+waiver_reason / waived_by | VARCHAR(500) / BIGINT UNSIGNED | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+IX: (student_id), (status) |  | 
+=== TABLE 55 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+payment_number | VARCHAR(50) | UK, NOT NULL  System-generated
+invoice_id / student_account_id / student_id | BIGINT UNSIGNED | FK → respective tables, NOT NULL
+payment_date / amount | DATE / DECIMAL(12,2) | NOT NULL
+payment_method | ENUM | NOT NULL  — mpesa, bank_transfer, cash, card, cheque, eft, helb, sponsor, work_study_credit
+payment_reference / transaction_channel_ref | VARCHAR(100) | NULL  M-Pesa code or bank ref
+is_reconciled / reconciled_by / reconciled_at | TINYINT(1) / BIGINT / DATETIME | DEFAULT 0 / NULL
+recorded_by / created_at | BIGINT UNSIGNED / DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+IX: (student_id, payment_date), (payment_reference) |  | 
+=== TABLE 56 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+ledger_date / transaction_type | DATE / ENUM | NOT NULL  — student_payment, invoice_raised, fee_waiver, payroll_disbursement, supplier_payment, donor_disbursement, statutory_remittance, journal_entry, contra
+debit_account_code / credit_account_code | VARCHAR(30) | NULL
+debit_amount / credit_amount | DECIMAL(12,2) | DEFAULT 0.00
+narration | VARCHAR(500) | NOT NULL
+reference_table / reference_id | VARCHAR(50) / VARCHAR(50) | NULL  e.g., payments, invoices
+source_module | ENUM | NOT NULL  — student_fees, payroll, procurement, sacco, donor, other
+is_reversed / reversal_ledger_id | TINYINT(1) / BIGINT UNSIGNED | DEFAULT 0 / NULL
+recorded_by / created_at | BIGINT UNSIGNED / DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+IX: (ledger_date), (reference_table, reference_id), (debit_account_code, credit_account_code) |  | 
+=== TABLE 57 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+account_code / account_name | VARCHAR(30/200) | UK, NOT NULL  e.g., 4001-TUITION
+account_type / account_category | ENUM | NOT NULL  — asset, liability, equity, revenue, expense
+parent_account_code | VARCHAR(30) | NULL  Hierarchy
+is_active / is_system_account | TINYINT(1) | DEFAULT 1 / DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 58 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+student_id / project_name | BIGINT UNSIGNED / VARCHAR(300) | FK → students.id, NOT NULL
+hours_logged / hourly_rate / total_earnings | DECIMAL(8,2/10,2) | NOT NULL / GENERATED
+tuition_offset_amount | DECIMAL(12,2) | NOT NULL  Applied to student account
+offset_reference | VARCHAR(50) | NULL  FK → account_ledger
+work_date / verified_by / verified_at | DATE / BIGINT / DATETIME | NOT NULL / NOT NULL / NULL
+status | ENUM | DEFAULT pending  — pending, verified, offset_applied
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 59 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+payslip_number | VARCHAR(50) | UK, NOT NULL
+staff_id / pay_period_year / pay_period_month | BIGINT UNSIGNED / INT | FK → staff.id, NOT NULL
+basic_salary / gross_salary / total_allowances / total_deductions / net_salary | DECIMAL(12,2) | NOT NULL / GENERATED
+is_processed / processed_by / processed_at | TINYINT(1) / BIGINT / DATETIME | DEFAULT 0 / NULL
+is_approved / approved_by / approved_at | TINYINT(1) / BIGINT / DATETIME | DEFAULT 0 / NULL
+is_disbursed / disbursement_date / eft_reference / bank_transaction_id | TINYINT(1) / DATE / VARCHAR(100) | DEFAULT 0 / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (staff_id, pay_period_year, pay_period_month) |  | 
+=== TABLE 60 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+payroll_item_id / staff_id | BIGINT UNSIGNED | FK → payroll_items.id / staff.id, NOT NULL
+deduction_type | ENUM | NOT NULL  — paye, nssf_tier1, nssf_tier2, sha, ahl, pension, union_fee, sacco_deduction, loan_repayment, other
+gross_salary_for_deduction / deduction_rate / employer_contribution | DECIMAL(12,2/5,2) | NOT NULL
+employee_amount / employer_amount | DECIMAL(12,2) | NOT NULL
+is_remitted / remittance_date / remittance_reference / kra_reference | TINYINT(1) / DATE / VARCHAR(100) | DEFAULT 0 / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 61 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+transaction_date / value_date | DATE | NOT NULL
+description | VARCHAR(500) | NOT NULL
+debit_amount / credit_amount / balance | DECIMAL(12,2) | NOT NULL
+bank_reference / eft_reference | VARCHAR(100) | NULL
+is_reconciled / reconciled_at | TINYINT(1) / DATETIME | DEFAULT 0 / NULL
+source_file / created_at | VARCHAR(500) / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 62 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+invoice_number / supplier_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → suppliers.id
+requisition_id / purchase_order_id | BIGINT UNSIGNED | FK → procurement_requisitions.id / purchase_orders.id, NULL
+invoice_date / due_date | DATE | NOT NULL
+invoice_amount / tax_amount / total_amount / amount_paid / balance | DECIMAL(12,2) | NOT NULL / DEFAULT 0.00 / GENERATED
+invoice_file_path | VARCHAR(500) | NULL
+three_way_match_status | ENUM | DEFAULT pending  — pending, approved, rejected, escalated
+three_way_match_by / three_way_match_at | BIGINT UNSIGNED / DATETIME | NULL
+finance_approval_status / finance_approved_by / finance_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+payment_status / payment_date / payment_reference / payment_method | ENUM / DATE / VARCHAR(100) / ENUM | DEFAULT unpaid
+is_quickbooks_synced / quickbooks_sync_ref | TINYINT(1) / VARCHAR(100) | DEFAULT 0 / NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+=== TABLE 63 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+supplier_code / supplier_name | VARCHAR(30/300) | UK, NOT NULL
+contact_person / email / phone | VARCHAR(200/255/30) | NULL / NOT NULL
+postal_address / physical_address / kra_pin | VARCHAR(300/500/50) | NULL
+tax_compliance_status / compliance_doc_path | ENUM / VARCHAR(500) | DEFAULT pending_review / NULL
+bank_name / bank_account_name / bank_account_number / bank_branch / bank_code | VARCHAR | NULL
+is_active / created_at | TINYINT(1) / DATETIME | DEFAULT 1 / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 64 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+requisition_number | VARCHAR(50) | UK, NOT NULL
+requesting_department_id / requested_by / request_date | BIGINT UNSIGNED / DATE | FK → departments.id / staff.id, NOT NULL
+justification / estimated_cost / budget_code / delivery_required_by | TEXT / DECIMAL(12,2) / VARCHAR(50) / DATE | NOT NULL / NULL
+status | ENUM | DEFAULT draft  — draft, submitted, hod_approved, finance_approved, ceo_approved, proc_in_progress, completed, rejected, cancelled
+hod_approval_status / hod_approved_by / hod_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+finance_approval_status / finance_approved_by / finance_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+ceo_approval_status / ceo_approved_by / ceo_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 65 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+po_number / supplier_id / requisition_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → suppliers.id / procurement_requisitions.id, NOT NULL
+issue_date / delivery_date / total_amount / terms | DATE / DECIMAL(12,2) / VARCHAR(500) | NOT NULL / NULL
+status | ENUM | DEFAULT issued  — issued, confirmed, partial_delivery, delivered, closed, cancelled
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 66 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+grn_number / purchase_order_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → purchase_orders.id, NOT NULL
+supplier_delivery_note / received_date / received_by | VARCHAR(100) / DATE / BIGINT UNSIGNED | NULL / NOT NULL / NOT NULL
+inspection_status | ENUM | DEFAULT pending  — pending, passed, failed, partial
+inspection_notes / shortages_or_damages | TEXT | NULL
+is_complete / created_at | TINYINT(1) / DATETIME | DEFAULT 0 / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 67 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+accounts_payable_id / purchase_order_id / goods_received_note_id | BIGINT UNSIGNED | FK → accounts_payable.id, NOT NULL / FK → purchase_orders.id / goods_received_notes.id, NULL
+match_result | ENUM | NOT NULL  — match, price_variance, qty_variance, rejected
+po_amount / invoice_amount / grn_amount / variance_amount | DECIMAL(12,2) | NOT NULL
+matched_by / matched_at / is_accepted / accepted_by / accepted_at | BIGINT / DATETIME / TINYINT(1) / BIGINT / DATETIME | NOT NULL / DEFAULT / DEFAULT 0 / NULL
+=== TABLE 68 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+project_code / project_name / donor_name / donor_type | VARCHAR(50/300) / ENUM | UK, NOT NULL
+total_grant_amount / currency / disbursed_amount | DECIMAL(14,2) | NOT NULL / DEFAULT KES / DEFAULT 0.00
+disbursement_currency / exchange_rate_at_disbursement / KES_equivalent | VARCHAR(10) / DECIMAL(12,4) | DEFAULT USD / DEFAULT 1.0000 / GENERATED
+start_date / end_date | DATE | NOT NULL
+project_leader_id / status | BIGINT UNSIGNED / ENUM | FK → staff.id, NOT NULL / DEFAULT active
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 69 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+disbursement_number / donor_project_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → donor_projects.id, NOT NULL
+amount_received / currency_received / exchange_rate / KES_amount | DECIMAL(14,2) / VARCHAR(10) / DECIMAL(12,4) | NOT NULL / DEFAULT USD / NOT NULL / NOT NULL
+receipt_date / bank_reference / purpose | DATE / VARCHAR(100) / VARCHAR(500) | NOT NULL / NULL
+account_ledger_id / created_at | BIGINT UNSIGNED / DATETIME | FK → account_ledger.id, NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 70 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+asset_number / asset_name / asset_category | VARCHAR(50/300) / ENUM | UK, NOT NULL
+serial_number / description | VARCHAR(100) / VARCHAR(500) | NULL
+acquisition_date / acquisition_cost / supplier_id / purchase_order_id | DATE / DECIMAL(12,2) / BIGINT | NOT NULL / NOT NULL / NULL
+useful_life_years / depreciation_method | INT / ENUM | DEFAULT 0 / DEFAULT straight_line
+salvage_value / current_value / depreciation_per_year / accumulated_depreciation | DECIMAL(12,2) | DEFAULT 0.00
+condition | ENUM | DEFAULT new  — new, good, fair, poor, disposed
+disposed_date / disposed_value / disposed_reason | DATE / DECIMAL(12,2) / VARCHAR(500) | NULL
+warranty_expiry_date / created_at / updated_at | DATE / DATETIME | NULL / DEFAULT / ON UPDATE
+=== TABLE 71 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+asset_id / assigned_to_type / assigned_to_id | BIGINT UNSIGNED / ENUM / BIGINT | FK → assets.id, NOT NULL / NOT NULL / FK to staff/dept/student table
+assignment_date / return_date | DATE | NOT NULL / NULL
+is_returned | TINYINT(1) | DEFAULT 0
+condition_on_assignment / condition_on_return | ENUM | DEFAULT new / NULL
+assigned_by / returned_to / notes | BIGINT UNSIGNED / BIGINT / TEXT | NOT NULL / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 72 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+item_code / item_name / category | VARCHAR(50/300/100) | UK, NOT NULL
+unit_of_measure / current_stock / minimum_stock / maximum_stock / reorder_level | VARCHAR(30) / INT | DEFAULT unit / DEFAULT 0
+unit_cost / supplier_id / store_location / is_active | DECIMAL(12,2) / BIGINT / VARCHAR(100) / TINYINT(1) | DEFAULT 0.00 / NULL / DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 73 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+inventory_item_id / transaction_type | BIGINT UNSIGNED / ENUM | FK → inventory_items.id, NOT NULL / NOT NULL
+quantity / unit_cost / total_cost | INT / DECIMAL(12,2) | NOT NULL / GENERATED
+reference_table / reference_id | VARCHAR(50) / VARCHAR(50) | NULL  e.g., purchase_orders
+from_location / to_location / department_id | VARCHAR(100) / BIGINT UNSIGNED | NULL / NULL
+recorded_by / transaction_date / notes | BIGINT UNSIGNED / DATE / TEXT | NOT NULL / NOT NULL / NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 74 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+employee_number | VARCHAR(50) | UK, NOT NULL
+title / first_name / middle_name / surname | VARCHAR(100) | NOT NULL
+date_of_birth / gender / national_id_number / passport_number / nationality | DATE / ENUM / VARCHAR(50) | NOT NULL
+email / phone_number / alt_phone_number | VARCHAR(255/30) | NOT NULL
+postal_address / physical_address | VARCHAR(300/500) | NULL
+emergency_contact_name / phone / relationship | VARCHAR(300/30/50) | NULL
+photo_path | VARCHAR(500) | NULL
+department_id / job_title / job_grade | BIGINT UNSIGNED / VARCHAR(200/20) | FK → departments.id, NOT NULL
+employment_category | ENUM | NOT NULL  — permanent, contract, intern, visiting, casual
+employment_start_date / contract_end_date | DATE | NOT NULL / NULL
+is_on_probation / probation_end_date | TINYINT(1) / DATE | DEFAULT 0 / NULL
+gross_monthly_salary | DECIMAL(12,2) | DEFAULT 0.00
+bank_id / kra_pin / nssf_number / sha_number | BIGINT UNSIGNED / VARCHAR(50) | FK → staff_bank_accounts.id, NULL
+pension_scheme_id | BIGINT UNSIGNED | FK → pension_schemes.id, NULL
+employment_status | ENUM | DEFAULT active  — active, on_leave, suspended, terminated, resigned
+exit_date / exit_reason | DATE / VARCHAR(500) | NULL
+user_id / is_teaching_staff / is_nursing_license_required | BIGINT / TINYINT(1) | FK → users.id, NULL / DEFAULT 0
+created_at / updated_at / created_by | DATETIME / BIGINT UNSIGNED | DEFAULT / ON UPDATE / NULL
+IX: (department_id), (employment_status), (national_id_number) |  | 
+=== TABLE 75 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id / account_name / account_number | BIGINT UNSIGNED / VARCHAR(300/50) | FK → staff.id, NOT NULL
+bank_name / bank_branch / bank_code | VARCHAR(200/20) | NOT NULL / NULL
+is_primary / is_active / created_at | TINYINT(1) / TINYINT(1) / DATETIME | DEFAULT 1 / DEFAULT 1 / DEFAULT CURRENT_TIMESTAMP
+UK: (staff_id, bank_code, account_number) |  | 
+=== TABLE 76 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+contract_number / staff_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → staff.id, NOT NULL
+contract_type / job_title / department_id | ENUM / VARCHAR(200) / BIGINT | NOT NULL
+gross_salary / start_date / end_date | DECIMAL(12,2) / DATE | NOT NULL / NULL
+is_renewable / renewal_notice_sent / renewal_notice_date | TINYINT(1) / TINYINT(1) / DATE | DEFAULT 0 / DEFAULT 0 / NULL
+renewal_status | ENUM | DEFAULT pending  — pending, renewed, terminated, expired
+new_contract_id | BIGINT UNSIGNED | FK → staff_contracts.id, NULL  Link to renewal
+probation_end_date / probation_status | DATE / ENUM | NULL / DEFAULT not_applicable
+contract_document_path / is_signed / signed_date / witnessed_by | VARCHAR(500) / TINYINT(1) / DATE / VARCHAR(200) | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+IX: (staff_id), (end_date) |  | 
+=== TABLE 77 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+leave_code / leave_name | VARCHAR(20/200) | UK, NOT NULL  e.g., ANNUAL, SICK, MATERNITY
+days_allowed_per_year / is_payable | INT / TINYINT(1) | NOT NULL / DEFAULT 1
+requires_medical_certificate / requires_approval_hod / requires_approval_hr | TINYINT(1) | DEFAULT 0 / DEFAULT 1
+gender_restriction | ENUM | DEFAULT any  — any, female_only, male_only
+min_service_months / carry_forward_days / is_active | INT / INT / TINYINT(1) | DEFAULT 0 / DEFAULT 0 / DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 78 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id / leave_type_id / year | BIGINT UNSIGNED / INT | FK → staff.id / leave_types.id, NOT NULL
+entitled_days / days_taken / days_pending | INT | NOT NULL / DEFAULT 0
+balance_days | DECIMAL(5,2) | GENERATED
+last_updated / created_at | DATE / DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (staff_id, leave_type_id, year) |  | 
+=== TABLE 79 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+leave_number / staff_id / leave_type_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → staff.id / leave_types.id, NOT NULL
+start_date / end_date / days_requested | DATE / DECIMAL(5,2) | NOT NULL
+reason / is_emergency / medical_certificate_path | TEXT / TINYINT(1) / VARCHAR(500) | NOT NULL / DEFAULT 0 / NULL
+hod_approval_status / hod_approved_by / hod_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+hr_approval_status / hr_approved_by / hr_approved_at | ENUM / BIGINT / DATETIME | DEFAULT pending / NULL
+overall_status | ENUM | DEFAULT pending_hod  — pending_hod, pending_hr, approved, rejected, cancelled
+is_cancelled / cancellation_reason | TINYINT(1) / TEXT | DEFAULT 0 / NULL
+return_date / is_completed / handover_notes | DATE / TINYINT(1) / TEXT | NULL / DEFAULT 0 / NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+IX: (staff_id), (overall_status) |  | 
+=== TABLE 80 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id / attendance_date | BIGINT UNSIGNED / DATE | FK → staff.id, NOT NULL
+clock_in_time / clock_out_time / work_hours | TIME / DECIMAL(5,2) | NULL / GENERATED
+is_present / is_leave_day / leave_request_id | TINYINT(1) / BIGINT | DEFAULT 0 / NULL
+is_off_campus / field_project_name / location_lat_long | TINYINT(1) / VARCHAR(300/100) | DEFAULT 0 / NULL
+notes / recorded_by / created_at | VARCHAR(500) / BIGINT / DATETIME | NULL / NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (staff_id, attendance_date) |  | 
+=== TABLE 81 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id / month / year | BIGINT UNSIGNED / INT | FK → staff.id, NOT NULL
+total_work_days / days_present / days_absent / days_on_leave | INT | NOT NULL / DEFAULT 0
+late_arrivals / early_departures / off_campus_days / overtime_hours | INT / DECIMAL(6,2) | DEFAULT 0
+attendance_percentage | DECIMAL(5,2) | GENERATED
+last_calculated_at / created_at | DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+UK: (staff_id, month, year) |  | 
+=== TABLE 82 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+review_number / staff_id / reviewer_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → staff.id, NOT NULL
+review_period_start / review_period_end / review_date | DATE | NOT NULL
+kpi_scores | JSON | NULL
+overall_rating | ENUM | NOT NULL  — exceptional, meets_exceeds, meets_expectations, needs_improvement, unsatisfactory
+strengths / development_areas / training_recommendations / goals_for_next_period | TEXT | NULL
+staff_comments / staff_agrees / staff_signed_at | TEXT / TINYINT(1) / DATETIME | NULL / DEFAULT 0 / NULL
+reviewer_signed_at / hr_approved_at | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (staff_id), (reviewer_id) |  | 
+=== TABLE 83 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+case_number / staff_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → staff.id, NOT NULL
+incident_date / incident_description | DATE / TEXT | NOT NULL
+violation_type | ENUM | NOT NULL  — misconduct, gross_misconduct, absenteeism, policy_breach, performance, other
+reported_by / assigned_investigator_id | BIGINT UNSIGNED | NOT NULL / NULL
+case_status | ENUM | DEFAULT open  — open, under_investigation, hearing_scheduled, hearing_held, resolved, closed
+hearing_date / hearing_outcome | DATETIME / TEXT | NULL
+sanction_type / sanction_start_date / sanction_end_date | ENUM / DATE | NULL
+staff_statement / witness_statements | TEXT / JSON | NULL  Array of file paths
+decision_date / decision_by | DATE / BIGINT | NULL
+is_appeal / appeal_outcome | TINYINT(1) / ENUM | DEFAULT 0 / NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+=== TABLE 84 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+qualification_type | ENUM | NOT NULL  — certificate, diploma, degree, masters, phd, professional_cert, trade_test
+qualification_name / institution / country | VARCHAR(300/100) | NOT NULL / DEFAULT Kenya
+year_completed / grade_or_class / certificate_number | INT / VARCHAR(50) | NOT NULL / NULL
+document_path / is_verified / verified_by / verified_at | VARCHAR(500) / TINYINT(1) / BIGINT / DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 85 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+license_type | ENUM | NOT NULL  — nursing_license, clinical_officer, teacher_registration, practicing_license, trade_license, other
+issuing_body / license_number | VARCHAR(300/100) | NOT NULL
+issue_date / expiry_date | DATE | NOT NULL
+is_expired / days_to_expiry | TINYINT(1) / INT | GENERATED
+alert_sent_30_days / alert_sent_60_days | TINYINT(1) | DEFAULT 0
+document_path / is_verified / verified_by / verified_at | VARCHAR(500) / TINYINT(1) / BIGINT / DATETIME | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE
+IX: (expiry_date) |  | 
+=== TABLE 86 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+staff_id | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+activity_type | ENUM | NOT NULL  — training, workshop, conference, seminar, cpd, study_leave, attachment, mentorship
+activity_name / organizer / start_date / end_date / hours_or_days | VARCHAR(300) / DATE / DECIMAL(6,2) | NOT NULL
+cpd_credits_earned / location / is_external / cost / funded_by | DECIMAL(5,2) / VARCHAR(300) / TINYINT(1) / DECIMAL(12,2) / ENUM | DEFAULT 0.00 / NULL
+certificate_path / is_completed / appraisal_relevance | VARCHAR(500) / TINYINT(1) / VARCHAR(500) | NULL / DEFAULT 0 / NULL
+approved_by / approved_at / created_at | BIGINT / DATETIME / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 87 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+vacancy_number / job_title / department_id | VARCHAR(50) / BIGINT | UK, NOT NULL / FK → departments.id, NOT NULL
+employment_type / position_grade / slots_available | ENUM / VARCHAR(20) / INT | NOT NULL / NULL / DEFAULT 1
+job_description / requirements / responsibilities | TEXT | NOT NULL
+salary_scale / benefits | VARCHAR(200) / TEXT | NULL
+min_qualification / closing_date | ENUM / DATE | NOT NULL
+is_published / published_on / is_closed / closes_automatically / slots_filled | TINYINT(1) / DATE / INT | DEFAULT 0 / NULL / DEFAULT 1 / DEFAULT 0
+created_by / created_at | BIGINT UNSIGNED / DATETIME | NOT NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 88 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+application_number / vacancy_id | VARCHAR(50) / BIGINT UNSIGNED | UK, NOT NULL / FK → job_vacancies.id, NOT NULL
+full_name / email / phone_number / postal_address | VARCHAR(300/255/30/300) | NOT NULL
+highest_qualification / current_organization / area_of_specialization / years_of_experience | ENUM / VARCHAR(300) / INT | NOT NULL / NULL / DEFAULT 0
+cv_file_path / cover_letter_file_path / certificates_file_paths | VARCHAR(500) / JSON | NOT NULL / NULL
+is_shortlisted / shortlist_status | TINYINT(1) / ENUM | DEFAULT 0 / DEFAULT pending
+interview_date / interview_panel_ids / interview_score / interview_notes | DATETIME / JSON / DECIMAL(5,2) / TEXT | NULL
+offer_made / offer_accepted | TINYINT(1) | DEFAULT 0
+new_staff_id / is_onboarded | BIGINT UNSIGNED / TINYINT(1) | FK → staff.id, NULL / DEFAULT 0
+rejection_reason / application_source / created_at / updated_at | TEXT / ENUM / DATETIME | DEFAULT portal / DEFAULT / ON UPDATE
+IX: (vacancy_id), (shortlist_status) |  | 
+=== TABLE 89 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+scheme_code / scheme_name | VARCHAR(20/300) | UK, NOT NULL
+scheme_type / employer_contribution_pct / employee_contribution_pct | ENUM / DECIMAL(5,2) | NOT NULL / DEFAULT 0.00
+is_active / created_at | TINYINT(1) / DATETIME | DEFAULT 1 / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 90 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+policy_name / policy_version / policy_file_path | VARCHAR(200/20/500) | NOT NULL
+effective_date / staff_id | DATE / BIGINT UNSIGNED | NOT NULL / FK → staff.id, NOT NULL
+is_acknowledged / acknowledged_at | TINYINT(1) / DATETIME | DEFAULT 0 / NULL
+acknowledgement_method | ENUM | DEFAULT digital  — digital, physical
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+UK: (staff_id, policy_name, policy_version) |  | 
+=== TABLE 91 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+block_key | VARCHAR(100) | UK, NOT NULL  e.g., about_tich, mission, vision
+title | VARCHAR(300) | NOT NULL  e.g., "Our Mission"
+subtitle | VARCHAR(500) | NULL  Optional tagline under the title
+body | LONGTEXT | NOT NULL  Rich HTML from the CMS editor
+featured_image_path | VARCHAR(500) | NULL  Hero/banner image
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+updated_by / updated_at | BIGINT UNSIGNED / DATETIME | NULL / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 92 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+year | INT | NOT NULL  e.g., 1979
+title | VARCHAR(300) | NOT NULL  e.g., "Saradidi Rural Health Program Launched"
+subtitle | VARCHAR(500) | NULL
+description | TEXT | NOT NULL
+image_path | VARCHAR(500) | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 93 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+partner_name | VARCHAR(300) | NOT NULL
+category | ENUM | NOT NULL  — regulator, funder, county_body, ngo, corporate, other
+logo_path | VARCHAR(500) | NOT NULL
+website_url | VARCHAR(500) | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 94 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+entity_type | VARCHAR(100) | NOT NULL  e.g., blog_post, research_project, event, about_content_block, testimonial
+entity_id | BIGINT UNSIGNED | NOT NULL
+file_path | VARCHAR(500) | NOT NULL
+file_type | ENUM | NOT NULL  — image, pdf, video, document, audio
+title / caption | VARCHAR(300/500) | NULL
+display_order | INT | DEFAULT 0
+uploaded_by / uploaded_at | BIGINT UNSIGNED / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+IX: (entity_type, entity_id) |  | 
+=== TABLE 95 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+name | VARCHAR(200) | NOT NULL  e.g., "Digital Health Integration", "CBHC Legacy Evaluation"
+description | TEXT | NULL
+icon_path | VARCHAR(500) | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 96 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+title | VARCHAR(300) | NOT NULL
+subtitle | VARCHAR(500) | NULL
+status | ENUM | NOT NULL  — ongoing, completed
+focus_area_id | BIGINT UNSIGNED | FK → research_focus_areas.id, NULL
+summary | TEXT | NOT NULL  Short card-view text
+abstract | LONGTEXT | NULL  Full write-up, rich HTML
+cover_image_path | VARCHAR(500) | NULL
+start_date / end_date | DATE | NULL
+lead_researcher_id | BIGINT UNSIGNED | FK → staff.id, NULL
+is_featured | TINYINT(1) | DEFAULT 0
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 97 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+title | VARCHAR(300) | NOT NULL
+subtitle | VARCHAR(500) | NULL
+publication_type | ENUM | NOT NULL  — policy_brief, peer_reviewed, field_data, toolkit
+authors | VARCHAR(500) | NULL
+cover_image_path | VARCHAR(500) | NULL  Thumbnail
+file_path | VARCHAR(500) | NOT NULL  Actual PDF/download
+publish_date | DATE | NOT NULL
+is_downloadable | TINYINT(1) | DEFAULT 1
+download_count | INT | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 98 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+request_number | VARCHAR(50) | UK, NOT NULL
+organization_name | VARCHAR(300) | NOT NULL
+organization_type | ENUM | NOT NULL  — ngo, county_government, academic_institution, corporate, individual
+contact_person / email / phone | VARCHAR(200/255/30) | NOT NULL
+proposed_scope | TEXT | NOT NULL  Collaboration or funding scope
+target_sub_counties | VARCHAR(500) | NULL
+supporting_document_path | VARCHAR(500) | NULL  Proposal or MOU draft
+status | ENUM | DEFAULT pending_review  — pending_review, under_evaluation, approved, declined
+reviewed_by / reviewed_at / review_notes | BIGINT UNSIGNED / DATETIME / TEXT | NULL
+alert_sent_to_registrar | TINYINT(1) | DEFAULT 0  Auto-alert Academic Board
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 99 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+title | VARCHAR(300) | NOT NULL
+subtitle | VARCHAR(500) | NULL
+slug | VARCHAR(300) | UK, NOT NULL  URL-friendly identifier
+excerpt | VARCHAR(500) | NULL  Card/preview summary
+body | LONGTEXT | NOT NULL  Rich HTML from WYSIWYG; images via media_attachments
+featured_image_path | VARCHAR(500) | NULL
+author_staff_id | BIGINT UNSIGNED | FK → staff.id, NULL
+status | ENUM | DEFAULT draft  — draft, in_review, published, archived
+published_at | DATETIME | NULL
+reading_time_minutes | INT | NULL  App-computed
+view_count | INT | DEFAULT 0
+seo_meta_title / seo_meta_description | VARCHAR(300/500) | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 100 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+post_id | BIGINT UNSIGNED | FK → blog_posts.id, NOT NULL
+revision_number | INT | NOT NULL
+title_snapshot | VARCHAR(300) | NOT NULL  Full title at save time
+body_snapshot | LONGTEXT | NOT NULL  Full body at save time
+edited_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+edited_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+change_summary | VARCHAR(500) | NULL  "What changed" note
+=== TABLE 101 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+name | VARCHAR(200) | UK, NOT NULL
+slug | VARCHAR(200) | UK, NOT NULL
+description | TEXT | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 102 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+post_id / category_id | BIGINT UNSIGNED | FK → blog_posts.id / blog_categories.id, NOT NULL
+UK: (post_id, category_id) |  | 
+=== TABLE 103 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+album_name | VARCHAR(300) | NOT NULL
+subtitle | VARCHAR(500) | NULL
+cover_image_path | VARCHAR(500) | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 104 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+album_id | BIGINT UNSIGNED | FK → gallery_albums.id, NOT NULL
+file_path | VARCHAR(500) | NOT NULL
+caption | VARCHAR(500) | NULL
+alt_text | VARCHAR(300) | NULL
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+uploaded_by / uploaded_at | BIGINT UNSIGNED / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 105 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+title | VARCHAR(300) | NOT NULL
+subtitle | VARCHAR(500) | NULL
+event_type | ENUM | NOT NULL  — graduation, health_drive, conference, exam_registration, open_day, outreach, community_event
+description | LONGTEXT | NULL  Rich HTML
+cover_image_path | VARCHAR(500) | NULL
+start_datetime / end_datetime | DATETIME | NOT NULL
+venue | VARCHAR(300) | NULL
+registration_url_or_form | VARCHAR(500) | NULL
+is_public | TINYINT(1) | DEFAULT 1
+is_featured | TINYINT(1) | DEFAULT 0
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 106 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+template_key | VARCHAR(100) | UK, NOT NULL  e.g., fee_reminder, timetable_change, exam_schedule, admission_letter, grade_published
+event_type | VARCHAR(100) | NOT NULL  e.g., fee, academic, admission, sacco, hr
+title_template | VARCHAR(500) | NOT NULL  e.g., "Reminder: Fee Balance of {{balance}} KES"
+body_template | TEXT | NOT NULL  Supports {{placeholder}} substitution
+channels | JSON | NOT NULL  Array: ["email","sms","push","whatsapp"]
+priority | ENUM | DEFAULT normal  — low, normal, high, urgent
+is_active | TINYINT(1) | DEFAULT 1
+language | ENUM | DEFAULT en  — en, sw (English/Swahili)
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 107 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+user_id | BIGINT UNSIGNED | FK → users.id, NOT NULL
+template_id | BIGINT UNSIGNED | FK → notification_templates.id, NULL
+title | VARCHAR(500) | NOT NULL
+body | TEXT | NOT NULL
+channels_sent | JSON | NOT NULL  Array of channels actually dispatched
+related_entity_type | VARCHAR(100) | NULL  e.g., students, invoices, exam_results
+related_entity_id | VARCHAR(50) | NULL
+is_read | TINYINT(1) | DEFAULT 0
+read_at | DATETIME | NULL
+read_device_info | VARCHAR(500) | NULL
+priority | ENUM | DEFAULT normal  — low, normal, high, urgent
+is_dismissed | TINYINT(1) | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (user_id), (user_id, is_read), (created_at) |  | 
+=== TABLE 108 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+user_id | BIGINT UNSIGNED | FK → users.id, NOT NULL
+device_token | VARCHAR(500) | NOT NULL
+platform | ENUM | NOT NULL  — ios, android, web
+device_name | VARCHAR(200) | NULL  e.g., "iPhone 15", "Samsung Galaxy"
+app_version | VARCHAR(20) | NULL
+is_active | TINYINT(1) | DEFAULT 1
+last_used_at | DATETIME | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+UK: (user_id, device_token, platform) |  | 
+=== TABLE 109 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+notification_id | BIGINT UNSIGNED | FK → notifications.id, NULL
+recipient_phone | VARCHAR(30) | NOT NULL
+message_body | TEXT | NOT NULL
+provider | ENUM | NOT NULL  — mpesa, africa_talking, bulk_sms_provider
+provider_message_id | VARCHAR(100) | NULL  External SMS gateway reference
+segments | INT | DEFAULT 1
+status | ENUM | DEFAULT queued  — queued, sent, delivered, failed, rejected, unknown
+status_code | VARCHAR(50) | NULL  Provider-specific status code
+error_message | VARCHAR(500) | NULL
+cost_KES | DECIMAL(10,2) | DEFAULT 0.00
+dispatched_at / delivered_at | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (notification_id), (recipient_phone), (created_at) |  | 
+=== TABLE 110 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+notification_id | BIGINT UNSIGNED | FK → notifications.id, NULL
+recipient_email | VARCHAR(255) | NOT NULL
+subject | VARCHAR(500) | NOT NULL
+body_preview | VARCHAR(500) | NULL
+provider | VARCHAR(100) | NOT NULL  e.g., smtp, sendgrid, mailgun
+provider_message_id | VARCHAR(200) | NULL
+status | ENUM | DEFAULT queued  — queued, sent, delivered, bounced, complained, failed
+bounce_reason / complaint_reason | VARCHAR(500) | NULL
+opened_at / clicked_at | DATETIME | NULL  Email tracking pixels
+dispatched_at | DATETIME | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (notification_id), (recipient_email), (created_at) |  | 
+=== TABLE 111 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+session_id | VARCHAR(100) | UK, NOT NULL  External session reference
+user_id | BIGINT UNSIGNED | FK → users.id, NULL  Nullable for anonymous guests
+user_type | ENUM | NULL  — student, staff, applicant, guest
+language | ENUM | DEFAULT en  — en, sw
+device_type | ENUM | DEFAULT mobile  — mobile, web, desktop
+escalated_to_human | TINYINT(1) | DEFAULT 0
+escalated_to_user_id | BIGINT UNSIGNED | FK → staff.id, NULL
+escalated_at | DATETIME | NULL
+satisfaction_rating | INT | NULL  1–5
+started_at / ended_at | DATETIME | NOT NULL / NULL
+message_count | INT | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 112 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+conversation_id | BIGINT UNSIGNED | FK → chatbot_conversations.id, NOT NULL
+sender | ENUM | NOT NULL  — user, bot, human_agent
+message_body | TEXT | NOT NULL
+intent_detected | VARCHAR(100) | NULL  Classified intent label
+intent_confidence | DECIMAL(5,2) | NULL  0–100
+entities_extracted | JSON | NULL  Named entities: programme, date, balance
+quick_reply_selected | VARCHAR(500) | NULL  If user clicked a quick-reply button
+is_escalation_trigger | TINYINT(1) | DEFAULT 0
+escalation_reason | VARCHAR(500) | NULL
+human_agent_id | BIGINT UNSIGNED | FK → staff.id, NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (conversation_id), (intent_detected) |  | 
+=== TABLE 113 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+plan_name | VARCHAR(300) | NOT NULL  e.g., "Annual QA Review 2026"
+period_start / period_end | DATE | NOT NULL
+scope_type | ENUM | NOT NULL  — institution_wide, department_specific
+department_ids | JSON | NULL  Array of department IDs if scoped
+deployed_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL  QA Officer
+deployed_at | DATETIME | NOT NULL
+status | ENUM | DEFAULT active  — active, closed, cancelled
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 114 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+qa_plan_id | BIGINT UNSIGNED | FK → qa_plans.id, NOT NULL
+checklist_item_text | TEXT | NOT NULL  e.g., "Confirm clinical pass mark >= 70%"
+item_category | VARCHAR(100) | NULL  e.g., academics, finance, hr
+weight | DECIMAL(5,2) | DEFAULT 1.00  Scoring weight
+max_score | DECIMAL(5,2) | DEFAULT 100.00
+applies_to_department_id | BIGINT UNSIGNED | FK → departments.id, NULL  Scope filter
+requires_evidence | TINYINT(1) | DEFAULT 1
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 115 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+qa_plan_id / checklist_item_id / department_id | BIGINT UNSIGNED | FK → qa_plans.id / qa_audit_checklists.id / departments.id, NOT NULL
+submitted_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL  HOD or delegate
+submission_text | TEXT | NULL  HOD response/justification
+score | DECIMAL(5,2) | NULL
+submission_status | ENUM | DEFAULT pending  — pending, submitted, verified, approved, rejected
+verified_by | BIGINT UNSIGNED | FK → staff.id, NULL  QA Officer verification
+verified_at / verified_notes | DATETIME / TEXT | NULL
+submitted_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+UK: (checklist_item_id, department_id, qa_plan_id) |  | 
+=== TABLE 116 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+qa_plan_id / department_id | BIGINT UNSIGNED | FK → qa_plans.id / departments.id, NOT NULL
+checklist_item_id | BIGINT UNSIGNED | FK → qa_audit_checklists.id, NULL
+flagged_reason | TEXT | NOT NULL  Why score triggered an action
+compliance_score_at_flag | DECIMAL(5,2) | NULL  Score when flag raised
+resolution_deadline | DATE | NOT NULL
+resolution_plan | TEXT | NULL  Department response
+responsible_officer_id | BIGINT UNSIGNED | FK → staff.id, NULL
+status | ENUM | DEFAULT open  — open, in_progress, resolved, overdue, closed
+resolved_at / resolved_by | DATETIME / BIGINT UNSIGNED | NULL
+resolution_notes | TEXT | NULL
+is_module_lock_active | TINYINT(1) | DEFAULT 0  Locks downstream module creation
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 117 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+qa_plan_id / department_id | BIGINT UNSIGNED | FK → qa_plans.id / departments.id, NOT NULL
+total_items | INT | DEFAULT 0
+items_submitted | INT | DEFAULT 0
+weighted_score | DECIMAL(5,2) | DEFAULT 0.00
+pass_fail_status | ENUM | DEFAULT pending  — pending, pass, fail
+is_below_threshold | TINYINT(1) | DEFAULT 0
+threshold_met_at | DATETIME | NULL
+calculated_at | DATETIME | NOT NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+UK: (qa_plan_id, department_id) |  | 
+=== TABLE 118 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+evidence_type | ENUM | NOT NULL  — checklist_submission, corrective_action, attendance_sheet, exam_draft, lesson_plan, compliance_doc
+linked_id | BIGINT UNSIGNED | NOT NULL  FK to qa_department_submissions or qa_corrective_actions
+file_path | VARCHAR(500) | NOT NULL
+file_type | ENUM | NOT NULL  — image, pdf, document, video
+description | VARCHAR(500) | NULL
+uploaded_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+uploaded_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+IX: (evidence_type, linked_id) |  | 
+=== TABLE 119 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+campaign_code | VARCHAR(50) | UK, NOT NULL
+title | VARCHAR(300) | NOT NULL
+description | TEXT | NULL  What the campaign funds
+fund_allocation | ENUM | NOT NULL  — student_bursaries, facility_construction, work_study_tools, research, general
+target_amount | DECIMAL(14,2) | NOT NULL  KES
+raised_amount | DECIMAL(14,2) | DEFAULT 0.00
+currency | VARCHAR(10) | DEFAULT KES
+cover_image_path | VARCHAR(500) | NULL
+mpesa_paybill_number | VARCHAR(50) | NULL
+mpesa_account_name | VARCHAR(200) | NULL
+bank_account_name / account_number / bank_name / swift_code | VARCHAR | NULL  International wire details
+start_date / end_date | DATE | NULL
+is_public | TINYINT(1) | DEFAULT 1
+is_featured | TINYINT(1) | DEFAULT 0
+status | ENUM | DEFAULT active  — draft, active, closed, cancelled
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 120 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+donation_number | VARCHAR(50) | UK, NOT NULL
+campaign_id | BIGINT UNSIGNED | FK → donation_campaigns.id, NULL
+donor_name | VARCHAR(300) | NULL  NULL if anonymous
+donor_email / donor_phone | VARCHAR(255/30) | NULL
+donor_type | ENUM | DEFAULT anonymous  — individual, corporate, foundation, government, anonymous
+amount | DECIMAL(14,2) | NOT NULL
+currency | VARCHAR(10) | DEFAULT KES
+amount_KES | DECIMAL(14,2) | NOT NULL  Converted if foreign
+exchange_rate_used | DECIMAL(12,4) | DEFAULT 1.0000
+payment_method | ENUM | NOT NULL  — mpesa, bank_transfer, card, international_wire, cash
+payment_reference | VARCHAR(100) | NULL  M-Pesa code or bank ref
+is_anonymous | TINYINT(1) | DEFAULT 0
+deductible_for_tax | TINYINT(1) | DEFAULT 0
+receipt_sent | TINYINT(1) | DEFAULT 0
+receipt_reference | VARCHAR(100) | NULL
+is_reconciled | TINYINT(1) | DEFAULT 0
+reconciled_by / reconciled_at | BIGINT UNSIGNED / DATETIME | NULL
+donation_date | DATE | NOT NULL
+notes / created_at | TEXT / DATETIME | NULL / DEFAULT CURRENT_TIMESTAMP
+=== TABLE 121 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+email | VARCHAR(255) | UK, NOT NULL
+subscriber_name | VARCHAR(200) | NULL
+subscriber_type | ENUM | DEFAULT guest  — student, staff, alumni, applicant, guest
+linked_user_id | BIGINT UNSIGNED | FK → users.id, NULL
+subscribed_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+unsubscribe_token | VARCHAR(100) | UK, NOT NULL  Secure random token for one-click unsubscribe
+is_active | TINYINT(1) | DEFAULT 1
+is_confirmed | TINYINT(1) | DEFAULT 0  Double opt-in confirmation
+confirmed_at | DATETIME | NULL
+unsubscribed_at | DATETIME | NULL
+last_sent_at | DATETIME | NULL
+source | VARCHAR(100) | NULL  e.g., website_footer, event_registration, manual_import
+=== TABLE 122 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+campaign_name | VARCHAR(300) | NOT NULL
+subject | VARCHAR(500) | NOT NULL
+preview_text | VARCHAR(200) | NULL
+body | LONGTEXT | NOT NULL  HTML content
+sender_name / sender_email | VARCHAR(200/255) | NOT NULL
+target_segment | ENUM | DEFAULT all_active  — all_active, students, staff, alumni, applicants, custom_filter
+custom_filter_json | JSON | NULL  Advanced segment criteria
+recipient_count | INT | DEFAULT 0
+scheduled_at / sent_at | DATETIME | NULL
+status | ENUM | DEFAULT draft  — draft, scheduled, sending, sent, failed, cancelled
+sent_by | BIGINT UNSIGNED | FK → staff.id, NOT NULL
+opens_count / clicks_count / unsubscribes_count | INT | DEFAULT 0
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 123 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+campaign_id / subscriber_id | BIGINT UNSIGNED | FK → newsletter_campaigns.id / newsletter_subscribers.id, NOT NULL
+email | VARCHAR(255) | NOT NULL
+status | ENUM | DEFAULT queued  — queued, sent, delivered, opened, clicked, bounced, unsubscribed
+opened_at / clicked_at | DATETIME | NULL
+bounced_reason | VARCHAR(500) | NULL
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+UK: (campaign_id, subscriber_id) |  | 
+=== TABLE 124 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+question | VARCHAR(500) | NOT NULL
+answer | TEXT | NOT NULL  HTML supported
+category | VARCHAR(100) | NOT NULL  e.g., admissions, academics, fees, sacco, portal
+subcategory | VARCHAR(100) | NULL
+tags | JSON | NULL  Search keywords array
+language | ENUM | DEFAULT en  — en, sw
+view_count | INT | DEFAULT 0
+is_featured | TINYINT(1) | DEFAULT 0  Shown in portal sidebar
+is_active | TINYINT(1) | DEFAULT 1
+display_order | INT | DEFAULT 0
+created_by / updated_by | BIGINT UNSIGNED | NULL
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 125 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+author_name | VARCHAR(300) | NOT NULL
+author_role | ENUM | NOT NULL  — alumni, student, staff, partner, donor
+author_program | VARCHAR(300) | NULL  e.g., "CHD Diploma, 2024"
+quote | TEXT | NOT NULL
+photo_path | VARCHAR(500) | NULL
+is_featured | TINYINT(1) | DEFAULT 0
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+consented | TINYINT(1) | DEFAULT 0  GDPR consent on record
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 126 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+setting_key | VARCHAR(100) | UK, NOT NULL
+setting_value | TEXT | NULL
+value_type | ENUM | DEFAULT string  — string, number, boolean, json, file_path
+group_name | VARCHAR(100) | NULL  e.g., branding, seo, integrations, academic
+label | VARCHAR(200) | NULL  Human-readable label for admin UI
+description | VARCHAR(500) | NULL  Tooltip/description in admin panel
+is_public | TINYINT(1) | DEFAULT 1
+is_active | TINYINT(1) | DEFAULT 1
+updated_by / updated_at | BIGINT UNSIGNED / DATETIME | NULL / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 127 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+platform | ENUM | NOT NULL  — twitter_x, linkedin, facebook, instagram, youtube, tiktok
+display_name | VARCHAR(200) | NOT NULL  e.g., "TICH Africa"
+url | VARCHAR(500) | NOT NULL
+icon_name | VARCHAR(50) | NULL  e.g., fa-twitter for FontAwesome
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 128 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+menu_name | VARCHAR(100) | UK, NOT NULL  e.g., header_main, footer_primary, quick_links
+display_label | VARCHAR(200) | NOT NULL  Human-readable name
+location | ENUM | NOT NULL  — header, footer, sidebar, mobile_drawer
+is_active | TINYINT(1) | DEFAULT 1
+display_order | INT | DEFAULT 0
+created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP
+=== TABLE 129 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+menu_id | BIGINT UNSIGNED | FK → navigation_menus.id, NOT NULL
+parent_item_id | BIGINT UNSIGNED | FK → navigation_menu_items.id, NULL  For dropdowns/sub-menus
+label | VARCHAR(200) | NOT NULL
+label_sw | VARCHAR(200) | NULL  Swahili label
+url_or_route | VARCHAR(500) | NULL  Full URL or internal route
+icon_name | VARCHAR(50) | NULL
+target | ENUM | DEFAULT self  — self, _blank (for external links)
+requires_auth | TINYINT(1) | DEFAULT 0
+allowed_user_types | JSON | NULL  Array: ["student","staff","alumni"]
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 130 ===
+Column | Type | Constraints / Notes
+id | BIGINT UNSIGNED | PK, AUTO_INCREMENT
+channel_type | ENUM | NOT NULL  — email, phone, physical_address, social_media, fax
+label | VARCHAR(200) | NOT NULL  e.g., "General Inquiries", "Admissions Office"
+label_sw | VARCHAR(200) | NULL  Swahili label
+value | VARCHAR(500) | NOT NULL  e.g., info@tichinafrica.org, +254-700-000000
+display_value | VARCHAR(500) | NULL  Formatted display (e.g., with country flag emoji)
+department_scope | ENUM | DEFAULT institution_wide  — institution_wide, academics, admissions, finance, hr, sacco, admin
+is_primary | TINYINT(1) | DEFAULT 0
+display_order | INT | DEFAULT 0
+is_active | TINYINT(1) | DEFAULT 1
+created_at / updated_at | DATETIME | DEFAULT / ON UPDATE CURRENT_TIMESTAMP
+=== TABLE 131 ===
+Source Module | Target Module | Trigger / Event | Integration Mechanism
+Academics | Communication | Exam schedule published → Notify all enrolled students | exam_schedules trigger → notification_templates (exam_schedule) → notifications batch insert
+Academics | Communication | Grade published → Student notified via portal and email | exam_results.is_published=1 → notification_templates (grade_published) → notifications
+Finance | Communication | Invoice generated → Student notified via email/SMS/push | invoices trigger → notification_templates (fee_invoice) → notifications
+Finance | Communication | Payment received → Student receipt via email/push | payments trigger → notification_templates (payment_received) → notifications
+Finance | Communication | Donor disbursement received → CFO alerted | donor_disbursements → notification_templates (donation_received) → notifications to finance staff
+HR | Communication | Leave approved → Staff notified via email/SMS/push | leave_requests.overall_status=approved → notifications
+HR | Communication | Contract expiring in 30 days → HR and HOD alerted | staff_contracts cron check → notification_templates (contract_expiry) → notifications
+HR | Communication | Professional license expiring → HR alerted | staff_professional_licenses days_to_expiry → notification_templates (license_expiry) → notifications
+Admin | Communication | Student admitted → Admission letter + portal activation notification | students record created → admission_letters → notifications
+Academics | QA | Departmental lesson plan compliance → QA score | lesson_plans linked to qa_audit_checklists via department_id
+Academics | Research | Research publications attached to portal | research_publications.media_attachments linked via entity_type/entity_id
+Communication | Chatbot | Unresolved chatbot session → Human agent alerted | chatbot_conversations.escalated_to_human=1 → notifications to chat support staff
+Admin | Site Settings | Footer links driven from navigation_menus | navigation_menus.location=footer rendered by renderer in public frontend
+Admin | Donations | Donation campaigns surfaced on Support Us page | donation_campaigns.is_public=1 AND is_featured=1 queried by public portal
+Communication | Newsletter | New blog post published → Subscribers notified | blog_posts.status=published → newsletter_campaigns queued for send
+Academics | Finance | Work-study offset applied → Student account updated | work_study_ledger.offset_applied → student_accounts balance recalculated
+Admin | Communication | SACCO loan approved → Member notified via SMS/email | sacco_loans.application_status=approved → notification_templates (loan_approved)
+Finance | Donations | Donation received → Finance reconciliation and receipt | donations.is_reconciled=1 → reconciliation_by finance officer
