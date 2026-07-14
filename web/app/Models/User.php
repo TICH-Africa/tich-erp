@@ -19,9 +19,23 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'user_type',
+        'username',
         'email',
-        'password',
+        'password_hash',
+        'staff_id',
+        'student_id',
+        'mfa_enabled',
+        'mfa_method',
+        'mfa_secret',
+        'mfa_backup_codes',
+        'mfa_enabled_at',
+        'mfa_last_verified_at',
+        'is_active',
+        'last_login_at',
+        'failed_login_attempts',
+        'locked_until',
+        'created_by',
     ];
 
     /**
@@ -30,7 +44,9 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password',
+        'password_hash',
+        'mfa_secret',
+        'mfa_backup_codes',
         'remember_token',
     ];
 
@@ -43,7 +59,71 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'mfa_backup_codes' => 'array',
+            'mfa_enabled_at' => 'datetime',
+            'mfa_last_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'locked_until' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the staff associated with the user.
+     */
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class);
+    }
+
+    /**
+     * Get the student associated with the user.
+     */
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    /**
+     * Get the roles for the user.
+     */
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles')
+            ->withPivot('campus_id', 'department_id', 'assigned_at', 'assigned_by', 'expires_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the permissions for the user.
+     */
+    public function permissions()
+    {
+        return $this->belongsToMany(Permission::class, 'user_permissions')
+            ->withPivot('campus_id', 'department_id', 'granted_at', 'granted_by', 'expires_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the session tokens for the user.
+     */
+    public function sessionTokens()
+    {
+        return $this->hasMany(SessionToken::class);
+    }
+
+    /**
+     * Check if user has specific permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return app(\App\Services\RBACService::class)->hasPermission($this, $permission);
+    }
+
+    /**
+     * Check if user has specific role.
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return app(\App\Services\RBACService::class)->hasRole($this, $roleName);
     }
 }
