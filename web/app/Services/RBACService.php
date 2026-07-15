@@ -9,22 +9,27 @@ use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
+    // Check if user has specific permission (direct or via role)
     public function hasPermission(User $user, string $permission): bool
     {
+        // Check direct user permissions with proper joins
         $hasDirectPermission = DB::table('user_permissions as up')
             ->join('permissions as p', 'up.permission_id', '=', 'p.id')
             ->where('up.user_id', $user->id)
             ->where('p.slug', $permission)
             ->where(function ($query) use ($user) {
+                // Check campus/department scope
                 $query->whereNull('up.campus_id')
                     ->orWhere('up.campus_id', $user->staff?->department?->campus_id)
                     ->orWhere('up.campus_id', $user->student?->enrollment_campus_id ?? null);
             })
             ->where(function ($query) use ($user) {
+                // Check department scope
                 $query->whereNull('up.department_id')
                     ->orWhere('up.department_id', $user->staff?->department_id);
             })
             ->where(function ($query) {
+                // Check expiry
                 $query->whereNull('up.expires_at')
                     ->orWhere('up.expires_at', '>', now());
             })
@@ -34,6 +39,7 @@ class RBACService
             return true;
         }
 
+        // Check role permissions
         $userRoleIds = DB::table('user_roles')
             ->where('user_id', $user->id)
             ->where(function ($query) use ($user) {
@@ -55,6 +61,7 @@ class RBACService
             return false;
         }
 
+        // Check role permissions with proper joins
         return DB::table('role_permissions as rp')
             ->join('permissions as p', 'rp.permission_id', '=', 'p.id')
             ->whereIn('rp.role_id', $userRoleIds)
@@ -62,6 +69,7 @@ class RBACService
             ->exists();
     }
 
+    // Check if user has any of the given permissions
     public function hasAnyPermission(User $user, array $permissions): bool
     {
         foreach ($permissions as $permission) {
@@ -72,6 +80,7 @@ class RBACService
         return false;
     }
 
+    // Check if user has all of the given permissions
     public function hasAllPermissions(User $user, array $permissions): bool
     {
         foreach ($permissions as $permission) {
@@ -82,6 +91,7 @@ class RBACService
         return true;
     }
 
+    // Check if user has specific role
     public function hasRole(User $user, string $roleName): bool
     {
         return DB::table('user_roles as ur')
@@ -104,6 +114,7 @@ class RBACService
             ->exists();
     }
 
+    // Check if user has any of the given roles
     public function hasAnyRole(User $user, array $roleNames): bool
     {
         foreach ($roleNames as $roleName) {
@@ -114,6 +125,7 @@ class RBACService
         return false;
     }
 
+    // Check if user can access resource in specific campus
     public function canAccessCampus(User $user, int $campusId): bool
     {
         if ($this->hasRole($user, 'Super Admin')) {
@@ -130,6 +142,7 @@ class RBACService
             ->exists();
     }
 
+    // Check if user can access resource in specific department
     public function canAccessDepartment(User $user, int $departmentId): bool
     {
         if ($this->hasRole($user, 'Super Admin')) {
@@ -146,6 +159,7 @@ class RBACService
             ->exists();
     }
 
+    // Check if user can access student record
     public function canAccessStudent(User $user, int $studentId): bool
     {
         if ($this->hasRole($user, 'Super Admin')) {
@@ -172,6 +186,7 @@ class RBACService
         return false;
     }
 
+    // Check if user can access staff record
     public function canAccessStaff(User $user, int $staffId): bool
     {
         if ($this->hasRole($user, 'Super Admin')) {
@@ -201,6 +216,7 @@ class RBACService
         return false;
     }
 
+    // Check if user can approve requests in hierarchy
     public function canApprove(User $user, string $module, string $level): bool
     {
         $permission = "{$module}.approve.{$level}";
@@ -209,6 +225,7 @@ class RBACService
             return true;
         }
 
+        // Hierarchy-based approval mapping
         $approvalHierarchy = [
             'hod' => 'HOD',
             'finance' => 'Finance Manager',
@@ -223,6 +240,7 @@ class RBACService
         return false;
     }
 
+    // Get user's effective permissions (direct + role-based)
     public function getUserPermissions(User $user): array
     {
         $directPermissions = DB::table('user_permissions')
@@ -253,6 +271,7 @@ class RBACService
             ->toArray();
     }
 
+    // Get user's roles with scope
     public function getUserRoles(User $user): array
     {
         return DB::table('user_roles as ur')
@@ -267,6 +286,7 @@ class RBACService
             ->toArray();
     }
 
+    // Assign permission to user
     public function assignPermissionToUser(User $user, int $permissionId, ?int $campusId = null, ?int $departmentId = null, ?int $grantedBy = null): void
     {
         DB::table('user_permissions')->insert([
@@ -279,6 +299,7 @@ class RBACService
         ]);
     }
 
+    // Assign role to user
     public function assignRoleToUser(User $user, int $roleId, ?int $campusId = null, ?int $departmentId = null, ?int $assignedBy = null): void
     {
         DB::table('user_roles')->insert([
@@ -291,6 +312,7 @@ class RBACService
         ]);
     }
 
+    // Revoke permission from user
     public function revokePermissionFromUser(User $user, int $permissionId): void
     {
         DB::table('user_permissions')
@@ -299,6 +321,7 @@ class RBACService
             ->delete();
     }
 
+    // Revoke role from user
     public function revokeRoleFromUser(User $user, int $roleId): void
     {
         DB::table('user_roles')
