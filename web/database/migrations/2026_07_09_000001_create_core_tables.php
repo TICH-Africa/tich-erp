@@ -127,7 +127,7 @@ return new class extends Migration
             $table->foreign('program_id')->references('id')->on('academic_programs')->restrictOnDelete();
         });
 
-        Schema::create('audit_logs', function (Blueprint $table) {
+Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('action', 100);
@@ -138,6 +138,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->string('user_agent', 500)->nullable();
             $table->string('reason', 500)->nullable();
+            $table->string('status', 50)->default('success');
             $table->dateTime('created_at')->useCurrent();
             $table->index(['entity_type', 'entity_id']);
             $table->index('user_id');

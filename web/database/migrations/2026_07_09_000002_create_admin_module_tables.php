@@ -78,12 +78,13 @@ return new class extends Migration
             $table->foreign('program_id')->references('id')->on('academic_programs')->restrictOnDelete();
         });
 
-        Schema::create('applicants', function (Blueprint $table) {
+Schema::create('applicants', function (Blueprint $table) {
             $table->id();
             $table->string('application_number', 50)->unique();
             $table->unsignedBigInteger('program_id');
             $table->unsignedBigInteger('preferred_campus_id')->nullable();
             $table->string('first_name', 100);
+            $table->string('middle_name', 100)->nullable();
             $table->string('surname', 100);
             $table->date('date_of_birth');
             $table->string('gender', 20);

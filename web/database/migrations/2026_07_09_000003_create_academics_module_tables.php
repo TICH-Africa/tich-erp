@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('block_id')->nullable();
             $table->tinyInteger('is_compulsory')->default(1);
             $table->tinyInteger('is_active')->default(1);
-            $table->unique(['program_id', 'unit_id']);
+            $table->unique(['program_id', 'unit_id'], 'prog_unit_unique');
             $table->foreign('program_id')->references('id')->on('academic_programs')->restrictOnDelete();
             $table->foreign('unit_id')->references('id')->on('units')->restrictOnDelete();
             $table->foreign('block_id')->references('id')->on('nursing_blocks')->nullOnDelete();
@@ -106,7 +106,7 @@ return new class extends Migration
             $table->tinyInteger('verified_by_hod')->default(0);
             $table->text('verification_note')->nullable();
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['session_id', 'student_id']);
+            $table->unique(['session_id', 'student_id'], 'att_rec_unique');
             $table->foreign('session_id')->references('id')->on('attendance_sessions')->restrictOnDelete();
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->index('student_id');
@@ -122,7 +122,7 @@ return new class extends Migration
             $table->decimal('attendance_percentage', 5, 2)->default(0.00);
             $table->string('status_flag', 20)->default('green'); // green, amber, red
             $table->dateTime('last_calculated_at');
-            $table->unique(['student_id', 'unit_id', 'semester_id']);
+            $table->unique(['student_id', 'unit_id', 'semester_id'], 'att_sum_unique');
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('unit_id')->references('id')->on('units')->restrictOnDelete();
             $table->foreign('semester_id')->references('id')->on('semesters')->restrictOnDelete();
@@ -138,7 +138,7 @@ return new class extends Migration
             $table->integer('unit_count')->default(0);
             $table->string('status', 50)->default('registered');
             $table->tinyInteger('is_fee_cleared')->default(0);
-            $table->unique(['student_id', 'semester_id']);
+            $table->unique(['student_id', 'semester_id'], 'sem_reg_unique');
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('semester_id')->references('id')->on('semesters')->restrictOnDelete();
             $table->foreign('registered_by')->references('id')->on('staff')->nullOnDelete();
@@ -150,7 +150,7 @@ return new class extends Migration
             $table->unsignedBigInteger('unit_id');
             $table->tinyInteger('is_additional')->default(0);
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['semester_registration_id', 'unit_id']);
+            $table->unique(['semester_registration_id', 'unit_id'], 'reg_units_unique');
             $table->foreign('semester_registration_id')->references('id')->on('student_semester_registrations')->restrictOnDelete();
             $table->foreign('unit_id')->references('id')->on('units')->restrictOnDelete();
         });
@@ -239,7 +239,7 @@ return new class extends Migration
             $table->tinyInteger('is_voided')->default(0);
             $table->string('voided_reason', 500)->nullable();
             $table->unsignedBigInteger('voided_by')->nullable();
-            $table->unique(['student_id', 'semester_id']);
+            $table->unique(['student_id', 'semester_id'], 'exam_card_unique');
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('semester_id')->references('id')->on('semesters')->restrictOnDelete();
             $table->foreign('voided_by')->references('id')->on('staff')->nullOnDelete();
@@ -375,7 +375,7 @@ return new class extends Migration
             $table->decimal('gpa_at_time', 5, 2)->nullable();
             $table->dateTime('recorded_at');
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['student_id', 'unit_id', 'semester_id']);
+            $table->unique(['student_id', 'unit_id', 'semester_id'], 'grade_rec_unique');
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('unit_id')->references('id')->on('units')->restrictOnDelete();
             $table->foreign('semester_id')->references('id')->on('semesters')->restrictOnDelete();

@@ -1,38 +1,61 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuditController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\MFAController;
-use App\Http\Controllers\RBACController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// MFA Routes
-Route::middleware('auth:sanctum')->prefix('mfa')->group(function () {
-    Route::post('/send-email-otp', [MFAController::class, 'sendEmailOTP']);
-    Route::post('/verify-email-otp', [MFAController::class, 'verifyEmailOTP']);
-    Route::post('/setup-totp', [MFAController::class, 'setupTOTP']);
-    Route::post('/enable-totp', [MFAController::class, 'enableTOTP']);
-    Route::post('/enable-email-mfa', [MFAController::class, 'enableEmailMFA']);
-    Route::post('/verify-totp', [MFAController::class, 'verifyTOTP']);
-    Route::post('/verify-backup-code', [MFAController::class, 'verifyBackupCode']);
-    Route::post('/disable-mfa', [MFAController::class, 'disableMFA']);
-    Route::get('/status', [MFAController::class, 'getMFAStatus']);
-    Route::post('/regenerate-backup-codes', [MFAController::class, 'regenerateBackupCodes']);
+// ─── Authentication & MFA ─────────────────────────────────────────────────
+
+Route::prefix('auth')->group(function () {
+
+    // Standard login
+    Route::post('/login', [AuthController::class, 'login']);
+
+    // MFA challenge — after login credentials verified
+    Route::post('/mfa/challenge',  [AuthController::class, 'mfaChallenge'])
+        ->middleware('auth:sanctum');
+
+    // MFA setup initiation
+    Route::post('/mfa/setup',      [AuthController::class, 'mfaSetup'])
+        ->middleware('auth:sanctum');
+
+    // MFA setup verification (confirm first TOTP scan)
+    Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify'])
+        ->middleware('auth:sanctum');
+
+    // Disable MFA (requires current password + reason)
+    Route::post('/mfa/disable',    [AuthController::class, 'mfaDisable'])
+        ->middleware('auth:sanctum');
+
+    Route::post('/logout',          [AuthController::class, 'logout'])
+        ->middleware('auth:sanctum');
 });
 
-// RBAC Routes
-Route::middleware('auth:sanctum')->prefix('rbac')->group(function () {
-    Route::get('/user/permissions', [RBACController::class, 'getUserPermissions']);
-    Route::get('/user/roles', [RBACController::class, 'getUserRoles']);
-    Route::post('/assign-role', [RBACController::class, 'assignRole']);
-    Route::post('/revoke-role', [RBACController::class, 'revokeRole']);
-    Route::post('/assign-permission', [RBACController::class, 'assignPermission']);
-    Route::post('/revoke-permission', [RBACController::class, 'revokePermission']);
-    Route::get('/roles', [RBACController::class, 'getRoles']);
-    Route::get('/permissions', [RBACController::class, 'getPermissions']);
-    Route::get('/roles/{role_id}/permissions', [RBACController::class, 'getRolePermissions']);
-    Route::post('/roles/{role_id}/permissions', [RBACController::class, 'assignPermissionsToRole']);
+// ─── MFA Status for Logged-in User ───────────────────────────────────────
+
+Route::middleware('auth:sanctum')->get('/mfa/status', function (\Illuminate\Http\Request $request) {
+    $user = $request->user('sanctum');
+    return response()->json([
+        'mfa_enabled'   => (bool) $user->mfa_enabled,
+        'mfa_method'    => $user->mfa_method,
+        'mfa_verified'  => $request->session()->has('mfa_verified_at'),
+    ]);
+});
+
+// ─── Audit Log Viewer ────────────────────────────────────────────────────
+
+Route::middleware(['auth:sanctum', 'permission:audit_logs:read'])->prefix('admin')->group(function () {
+
+    Route::get('/audit-logs',        [AuditController::class, 'index']);
+    Route::get('/audit-logs/{id}',   [AuditController::class, 'show']);
+    Route::get('/audit-logs/verify', [AuditController::class, 'verifyChain']);
+
+    // Export (itself audited)
+    Route::get('/audit-logs/export', [AuditController::class, 'export'])
+        ->middleware('permission:audit_logs:read');
 });

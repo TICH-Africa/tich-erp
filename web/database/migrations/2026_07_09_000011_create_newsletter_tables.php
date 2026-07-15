@@ -58,7 +58,7 @@ return new class extends Migration
             $table->dateTime('clicked_at')->nullable();
             $table->string('bounced_reason', 500)->nullable();
             $table->dateTime('created_at')->useCurrent();
-            $table->unique(['campaign_id', 'subscriber_id'], 'newsletter_campaign_recipients_unique');
+            $table->unique(['campaign_id', 'subscriber_id'], 'nl_camp_sub_unique');
             $table->foreign('campaign_id')->references('id')->on('newsletter_campaigns')->restrictOnDelete();
             $table->foreign('subscriber_id')->references('id')->on('newsletter_subscribers')->restrictOnDelete();
         });
