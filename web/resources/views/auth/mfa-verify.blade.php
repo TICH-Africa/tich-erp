@@ -5,21 +5,21 @@
 @section('subheadline', 'Enter the verification code from your authenticator app or SMS to complete sign-in.')
 
 @section('content')
-    <div class="mb-8">
-        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Verify your identity</h2>
-        <p class="mt-2 text-sm text-slate-600">
+    <div class="tich-mb-8">
+        <h2 class="tich-h2">Verify your identity</h2>
+        <p class="tich-text tich-mt-2">
             Multi-factor authentication is enabled on your account.
             @if (!empty($mfaMethod))
-                <span class="block mt-1 text-slate-500">Method: {{ ucfirst(str_replace('_', ' ', $mfaMethod)) }}</span>
+                <span class="tich-caption" style="display: block; margin-top: 0.25rem;">Method: {{ ucfirst(str_replace('_', ' ', $mfaMethod)) }}</span>
             @endif
         </p>
     </div>
 
-    <form method="POST" action="{{ route('mfa.verify') }}" class="space-y-5">
+    <form method="POST" action="{{ route('mfa.verify') }}">
         @csrf
 
-        <div>
-            <label for="code" class="mb-1.5 block text-sm font-medium text-slate-700">Verification code</label>
+        <div class="tich-form-group">
+            <label for="code" class="tich-label">Verification code</label>
             <input
                 type="text"
                 id="code"
@@ -30,25 +30,22 @@
                 inputmode="numeric"
                 autocomplete="one-time-code"
                 maxlength="6"
-                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-lg font-semibold tracking-[0.3em] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 @error('code') border-red-400 @enderror"
+                class="tich-input tich-input--code @error('code') tich-input--error @enderror"
                 placeholder="000000"
             >
             @error('code')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                <p class="tich-field-error">{{ $message }}</p>
             @enderror
         </div>
 
-        <button
-            type="submit"
-            class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-        >
+        <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">
             Verify and continue
         </button>
     </form>
 
-    <form method="POST" action="{{ route('logout') }}" class="mt-6 text-center">
+    <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center">
         @csrf
-        <button type="submit" class="text-sm font-medium text-slate-500 hover:text-slate-700">
+        <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">
             Cancel and sign out
         </button>
     </form>

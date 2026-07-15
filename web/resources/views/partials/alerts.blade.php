@@ -1,19 +1,19 @@
 @if (session('status'))
-    <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="alert">
+    <div class="tich-alert tich-alert--success" role="alert">
         {{ session('status') }}
     </div>
 @endif
 
 @if (session('error'))
-    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+    <div class="tich-alert tich-alert--error" role="alert">
         {{ session('error') }}
     </div>
 @endif
 
 @if ($errors->any())
-    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-        <p class="font-medium">Please fix the following:</p>
-        <ul class="mt-2 list-inside list-disc space-y-1">
+    <div class="tich-alert tich-alert--error" role="alert">
+        <p style="font-weight: 600; margin: 0 0 0.5rem;">Please fix the following:</p>
+        <ul style="margin: 0; padding-left: 1.25rem;">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach

@@ -1,0 +1,653 @@
+/**
+ * TICH in Africa — Platform Design System
+ * Brand colours, typography, components, and icon rules.
+ */
+
+/* ─── Brand tokens ─────────────────────────────────────────────────────── */
+
+:root {
+    /* Primary palette */
+    --tich-green: #6cab33;
+    --tich-blue: #1669a6;
+    --tich-grey: #494c50;
+    --tich-white: #ffffff;
+
+    /* Derived tones */
+    --tich-green-dark: #5a9430;
+    --tich-green-light: #e8f3dc;
+    --tich-blue-dark: #125a8c;
+    --tich-blue-light: #d6e8f5;
+    --tich-neutral: #f5f6f6;
+    --tich-neutral-border: #e2e4e5;
+    --tich-neutral-muted: #6b6e72;
+
+    /* Typography families */
+    --font-heading: "Times New Roman", Times, serif;
+    --font-body: Merriweather, Georgia, serif;
+    --font-ui: Arial, Calibri, ui-sans-serif, sans-serif;
+
+    /* Type scale */
+    --text-h1: 2.75rem;   /* 44px */
+    --text-h2: 2rem;      /* 32px */
+    --text-h3: 1.375rem;  /* 22px */
+    --text-body: 0.875rem; /* 14px */
+    --text-caption: 0.625rem; /* 10px */
+
+    /* Spacing & layout */
+    --container-max: 80rem;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+
+    /* Icon stroke (flat line icons) */
+    --icon-stroke: 1.5;
+}
+
+/* ─── Base ─────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body.tich-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--tich-grey);
+    background-color: var(--tich-neutral);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────── */
+
+.tich-h1,
+h1.tich-h1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--tich-green);
+    margin: 0 0 0.75rem;
+    text-transform: none;
+}
+
+.tich-h2,
+h2.tich-h2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-h2);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--tich-green);
+    margin: 0 0 0.5rem;
+    text-transform: none;
+}
+
+.tich-h3,
+h3.tich-h3 {
+    font-family: var(--font-heading);
+    font-size: var(--text-h3);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--tich-green);
+    margin: 0 0 0.5rem;
+    text-transform: none;
+}
+
+.tich-text {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    color: var(--tich-grey);
+    line-height: 1.6;
+}
+
+.tich-caption {
+    font-family: var(--font-body);
+    font-size: var(--text-caption);
+    color: var(--tich-blue);
+    line-height: 1.4;
+}
+
+.tich-label {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    font-weight: 500;
+    color: var(--tich-grey);
+}
+
+/* ─── Links ──────────────────────────────────────────────────────────── */
+
+.tich-link {
+    color: var(--tich-blue);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s ease;
+}
+
+.tich-link:hover {
+    color: var(--tich-blue-dark);
+    text-decoration: underline;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────── */
+
+.tich-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    font-weight: 600;
+    line-height: 1.4;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tich-btn-primary {
+    background-color: var(--tich-green);
+    color: var(--tich-white);
+    border-color: var(--tich-green);
+}
+
+.tich-btn-primary:hover {
+    background-color: var(--tich-green-dark);
+    border-color: var(--tich-green-dark);
+    color: var(--tich-white);
+}
+
+.tich-btn-secondary {
+    background-color: var(--tich-white);
+    color: var(--tich-green);
+    border-color: var(--tich-green);
+}
+
+.tich-btn-secondary:hover {
+    background-color: var(--tich-green-light);
+}
+
+.tich-btn-ghost {
+    background-color: transparent;
+    color: var(--tich-grey);
+    border-color: var(--tich-neutral-border);
+}
+
+.tich-btn-ghost:hover {
+    background-color: var(--tich-white);
+    border-color: var(--tich-grey);
+}
+
+.tich-btn-outline-white {
+    background-color: transparent;
+    color: var(--tich-white);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.tich-btn-outline-white:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tich-btn-block {
+    width: 100%;
+}
+
+/* ─── Forms ──────────────────────────────────────────────────────────── */
+
+.tich-form-group {
+    margin-bottom: 1.25rem;
+}
+
+.tich-input,
+.tich-select {
+    display: block;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    color: var(--tich-grey);
+    background-color: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tich-input::placeholder {
+    color: var(--tich-neutral-muted);
+}
+
+.tich-input:focus,
+.tich-select:focus {
+    outline: none;
+    border-color: var(--tich-green);
+    box-shadow: 0 0 0 3px rgba(108, 171, 51, 0.15);
+}
+
+.tich-input--error {
+    border-color: #c53030;
+}
+
+.tich-input--code {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+}
+
+.tich-checkbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--tich-green);
+}
+
+.tich-field-error {
+    margin-top: 0.375rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    color: #c53030;
+}
+
+/* ─── Alerts ─────────────────────────────────────────────────────────── */
+
+.tich-alert {
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    border-radius: var(--radius-md);
+    border: 1px solid;
+}
+
+.tich-alert--success {
+    background-color: var(--tich-green-light);
+    border-color: var(--tich-green);
+    color: var(--tich-green-dark);
+}
+
+.tich-alert--error {
+    background-color: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────── */
+
+.tich-card {
+    background-color: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: border-color 0.15s ease;
+}
+
+.tich-card:hover {
+    border-color: var(--tich-green);
+}
+
+.tich-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    background-color: var(--tich-green-light);
+    color: var(--tich-green);
+}
+
+.tich-stat {
+    background-color: var(--tich-neutral);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────────── */
+
+.tich-container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+    .tich-container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+.tich-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: var(--tich-white);
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+}
+
+.tich-footer {
+    background-color: var(--tich-white);
+    border-top: 1px solid var(--tich-neutral-border);
+    padding: 2rem 0;
+}
+
+.tich-footer__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: var(--text-body);
+    color: var(--tich-neutral-muted);
+}
+
+@media (min-width: 640px) {
+    .tich-footer__inner {
+        flex-direction: row;
+    }
+}
+
+/* ─── Hero & auth panels ─────────────────────────────────────────────── */
+
+.tich-hero {
+    background-color: var(--tich-green);
+    color: var(--tich-white);
+    padding: 5rem 0;
+}
+
+.tich-hero .tich-h1 {
+    color: var(--tich-white);
+}
+
+.tich-hero__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: 500;
+    color: var(--tich-white);
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+}
+
+.tich-hero__lead {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 42rem;
+}
+
+.tich-auth-aside {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 50%;
+    padding: 3rem;
+    background-color: var(--tich-green);
+    color: var(--tich-white);
+}
+
+@media (min-width: 1024px) {
+    .tich-auth-aside {
+        display: flex;
+    }
+}
+
+.tich-auth-aside .tich-h1 {
+    color: var(--tich-white);
+    font-size: 2.25rem;
+}
+
+.tich-auth-aside__lead {
+    font-size: var(--text-body);
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tich-auth-aside__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tich-auth-aside__list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: var(--text-body);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tich-auth-aside__list li::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background-color: var(--tich-white);
+    flex-shrink: 0;
+}
+
+.tich-auth-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    padding: 3rem 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .tich-auth-main {
+        width: 50%;
+        padding: 3rem 4rem;
+    }
+}
+
+.tich-auth-form {
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+}
+
+/* ─── Brand mark ─────────────────────────────────────────────────────── */
+
+.tich-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.tich-brand__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--tich-white);
+    background-color: var(--tich-green);
+    border-radius: var(--radius-md);
+}
+
+.tich-brand__name {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: var(--text-body);
+    line-height: 1.2;
+    color: var(--tich-grey);
+}
+
+.tich-brand__tagline {
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    color: var(--tich-blue);
+}
+
+.tich-brand--light .tich-brand__name,
+.tich-brand--light .tich-brand__tagline {
+    color: var(--tich-white);
+}
+
+.tich-brand--light .tich-brand__tagline {
+    opacity: 0.85;
+}
+
+.tich-brand--light .tich-brand__mark {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Icons (flat line style) ────────────────────────────────────────── */
+
+.tich-icon svg {
+    stroke: currentColor;
+    stroke-width: var(--icon-stroke);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.tich-icon--accent-green {
+    color: var(--tich-green);
+}
+
+.tich-icon--accent-blue {
+    color: var(--tich-blue);
+}
+
+.tich-icon--muted {
+    color: var(--tich-grey);
+}
+
+/* ─── Grid helpers ───────────────────────────────────────────────────── */
+
+.tich-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.tich-grid--2 {
+    grid-template-columns: 1fr;
+}
+
+.tich-grid--4 {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .tich-grid--2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tich-grid--4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .tich-grid--4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.tich-section {
+    padding: 4rem 0;
+}
+
+.tich-section--white {
+    background-color: var(--tich-white);
+    border-top: 1px solid var(--tich-neutral-border);
+}
+
+.tich-section__intro {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.tich-section__intro .tich-text {
+    margin-top: 0.75rem;
+}
+
+/* ─── Nav ────────────────────────────────────────────────────────────── */
+
+.tich-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tich-nav__link {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    font-weight: 500;
+    color: var(--tich-grey);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.tich-nav__link:hover {
+    color: var(--tich-green);
+    background-color: var(--tich-neutral);
+}
+
+.tich-nav__user {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    color: var(--tich-neutral-muted);
+}
+
+/* ─── Utility ────────────────────────────────────────────────────────── */
+
+.tich-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.tich-flex-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tich-mt-2 { margin-top: 0.5rem; }
+.tich-mt-4 { margin-top: 1rem; }
+.tich-mt-6 { margin-top: 1.5rem; }
+.tich-mt-8 { margin-top: 2rem; }
+.tich-mb-8 { margin-bottom: 2rem; }
+.tich-text-center { text-align: center; }

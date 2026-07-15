@@ -5,16 +5,16 @@
 @section('subheadline', 'Enter the email linked to your account and we will send you a reset link.')
 
 @section('content')
-    <div class="mb-8">
-        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Forgot password</h2>
-        <p class="mt-2 text-sm text-slate-600">We'll email you instructions to set a new password.</p>
+    <div class="tich-mb-8">
+        <h2 class="tich-h2">Forgot password</h2>
+        <p class="tich-text tich-mt-2">We'll email you instructions to set a new password.</p>
     </div>
 
-    <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
+    <form method="POST" action="{{ route('password.email') }}">
         @csrf
 
-        <div>
-            <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">Email address</label>
+        <div class="tich-form-group">
+            <label for="email" class="tich-label">Email address</label>
             <input
                 type="email"
                 id="email"
@@ -23,24 +23,21 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 @error('email') border-red-400 @enderror"
+                class="tich-input @error('email') tich-input--error @enderror"
                 placeholder="you@tich.ac.ke"
             >
             @error('email')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                <p class="tich-field-error">{{ $message }}</p>
             @enderror
         </div>
 
-        <button
-            type="submit"
-            class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-        >
+        <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">
             Send reset link
         </button>
     </form>
 
-    <p class="mt-8 text-center text-sm text-slate-600">
+    <p class="tich-text tich-mt-8 tich-text-center">
         Remember your password?
-        <a href="{{ route('login') }}" class="font-semibold text-emerald-700 hover:text-emerald-800">Back to sign in</a>
+        <a href="{{ route('login') }}" class="tich-link">Back to sign in</a>
     </p>
 @endsection

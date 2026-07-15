@@ -5,16 +5,16 @@
 @section('subheadline', 'Sign in to access admissions, academics, finance, and HR modules across your campus.')
 
 @section('content')
-    <div class="mb-8">
-        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Sign in</h2>
-        <p class="mt-2 text-sm text-slate-600">Enter your credentials to continue to the ERP portal.</p>
+    <div class="tich-mb-8">
+        <h2 class="tich-h2">Sign in</h2>
+        <p class="tich-text tich-mt-2">Enter your credentials to continue to the ERP portal.</p>
     </div>
 
-    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+    <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <div>
-            <label for="login" class="mb-1.5 block text-sm font-medium text-slate-700">Email or username</label>
+        <div class="tich-form-group">
+            <label for="login" class="tich-label">Email or username</label>
             <input
                 type="text"
                 id="login"
@@ -23,20 +23,18 @@
                 required
                 autofocus
                 autocomplete="username"
-                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 @error('login') border-red-400 @enderror"
+                class="tich-input @error('login') tich-input--error @enderror"
                 placeholder="you@tich.ac.ke or username"
             >
             @error('login')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                <p class="tich-field-error">{{ $message }}</p>
             @enderror
         </div>
 
-        <div>
-            <div class="mb-1.5 flex items-center justify-between">
-                <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
-                <a href="{{ route('password.request') }}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">
-                    Forgot password?
-                </a>
+        <div class="tich-form-group">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.375rem;">
+                <label for="password" class="tich-label">Password</label>
+                <a href="{{ route('password.request') }}" class="tich-link" style="font-size: var(--text-body);">Forgot password?</a>
             </div>
             <input
                 type="password"
@@ -44,36 +42,33 @@
                 name="password"
                 required
                 autocomplete="current-password"
-                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 @error('password') border-red-400 @enderror"
+                class="tich-input @error('password') tich-input--error @enderror"
                 placeholder="Enter your password"
             >
             @error('password')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                <p class="tich-field-error">{{ $message }}</p>
             @enderror
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="tich-form-group" style="display: flex; align-items: center; gap: 0.5rem;">
             <input
                 type="checkbox"
                 id="remember"
                 name="remember"
                 value="1"
                 {{ old('remember') ? 'checked' : '' }}
-                class="h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-500/20"
+                class="tich-checkbox"
             >
-            <label for="remember" class="text-sm text-slate-600">Keep me signed in on this device</label>
+            <label for="remember" class="tich-text">Keep me signed in on this device</label>
         </div>
 
-        <button
-            type="submit"
-            class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-        >
+        <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">
             Sign in
         </button>
     </form>
 
-    <p class="mt-8 text-center text-sm text-slate-600">
+    <p class="tich-text tich-mt-8 tich-text-center">
         Don't have an account?
-        <a href="{{ route('register') }}" class="font-semibold text-emerald-700 hover:text-emerald-800">Create one</a>
+        <a href="{{ route('register') }}" class="tich-link">Create one</a>
     </p>
 @endsection
