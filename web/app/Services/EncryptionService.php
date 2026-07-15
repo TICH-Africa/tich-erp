@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Exception;
 use Illuminate\Support\Facades\Crypt;
 
 class EncryptionService
