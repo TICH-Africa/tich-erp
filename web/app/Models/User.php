@@ -28,8 +28,11 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
+        'locked_until' => 'datetime',
         'mfa_enabled' => 'boolean',
         'mfa_verified' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     // ─── RBAC Relationships ─────────────────────────────────────────────────
@@ -71,5 +74,10 @@ class User extends Authenticatable
     public function hasRole(string $roleName): bool
     {
         return app(\App\Services\RBACService::class)->hasRole($this, $roleName);
+    }
+
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
     }
 }
