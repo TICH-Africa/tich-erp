@@ -22,7 +22,7 @@
                         <button type="submit" class="tich-btn tich-btn-ghost">Sign out</button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="tich-nav__link">Sign in</a>
+                    <a href="{{ route('login') }}" class="tich-btn tich-btn-blue">Sign in</a>
                     <a href="{{ route('register') }}" class="tich-btn tich-btn-primary">Create account</a>
                 @endauth
             </nav>
