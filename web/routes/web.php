@@ -1,13 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Week4\ApplicationController;
 use App\Http\Controllers\Week4\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 /*
 |--------------------------------------------------------------------------

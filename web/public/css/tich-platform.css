@@ -693,3 +693,306 @@ h3.tich-h3 {
 .tich-mt-8 { margin-top: 2rem; }
 .tich-mb-8 { margin-bottom: 2rem; }
 .tich-text-center { text-align: center; }
+
+/* ─── Homepage carousel ─────────────────────────────────────────────── */
+
+.tich-carousel {
+    position: relative;
+    overflow: hidden;
+    background: var(--tich-white);
+    border-bottom: 3px solid var(--tich-green);
+}
+
+.tich-carousel__track {
+    position: relative;
+    min-height: 28rem;
+}
+
+.tich-carousel__slide {
+    display: none;
+    position: relative;
+}
+
+.tich-carousel__slide.is-active {
+    display: block;
+}
+
+.tich-carousel__media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.tich-carousel__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tich-carousel__placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 28rem;
+    background: linear-gradient(135deg, var(--tich-blue-light) 0%, var(--tich-green-light) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tich-carousel__placeholder span {
+    font-family: var(--font-heading);
+    font-size: 6rem;
+    color: rgba(22, 105, 166, 0.15);
+    font-weight: 700;
+}
+
+.tich-carousel__content {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 1rem 4rem;
+    max-width: 42rem;
+}
+
+.tich-carousel__title {
+    font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.tich-carousel__controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0 1.5rem;
+}
+
+.tich-carousel__btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: 9999px;
+    background: var(--tich-white);
+    color: var(--tich-blue);
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.tich-carousel__dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tich-carousel__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    border: none;
+    background: var(--tich-neutral-border);
+    cursor: pointer;
+}
+
+.tich-carousel__dot.is-active {
+    background: var(--tich-blue);
+}
+
+/* ─── Homepage cards ────────────────────────────────────────────────── */
+
+.tich-program-card__meta {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tich-program-card__meta li {
+    font-size: var(--text-body);
+    color: var(--tich-grey);
+}
+
+.tich-event-card__date {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: var(--tich-blue);
+}
+
+.tich-blog-card__image,
+.tich-blog-card__placeholder {
+    width: 100%;
+    height: 10rem;
+    object-fit: cover;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.tich-blog-card__placeholder {
+    background: linear-gradient(135deg, var(--tich-blue-light), var(--tich-neutral));
+}
+
+.tich-blog-card__body {
+    padding-top: 1rem;
+}
+
+.tich-research-card__image {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+}
+
+.tich-research-card__placeholder {
+    padding: 2rem;
+    background: var(--tich-blue-light);
+    border-radius: var(--radius-lg);
+    min-height: 16rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ─── Rich footer ───────────────────────────────────────────────────── */
+
+.tich-footer--rich {
+    padding: 3rem 0 1.5rem;
+    background: var(--tich-white);
+}
+
+.tich-footer__grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .tich-footer__grid {
+        grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+    }
+}
+
+.tich-footer__list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tich-footer__list a {
+    color: var(--tich-grey);
+    text-decoration: none;
+}
+
+.tich-footer__list a:hover {
+    color: var(--tich-blue);
+}
+
+.tich-footer__social {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tich-footer__social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: var(--tich-blue-light);
+    color: var(--tich-blue);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.tich-footer__newsletter-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tich-footer__newsletter-row .tich-input {
+    flex: 1;
+}
+
+.tich-footer__bottom {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--tich-neutral-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+@media (min-width: 640px) {
+    .tich-footer__bottom {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+    }
+}
+
+/* ─── Responsive navigation ─────────────────────────────────────────── */
+
+.tich-nav-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-white);
+    cursor: pointer;
+}
+
+.tich-nav-toggle span {
+    display: block;
+    height: 2px;
+    margin: 0 0.5rem;
+    background: var(--tich-grey);
+}
+
+.tich-nav--desktop {
+    display: none;
+}
+
+.tich-nav-drawer {
+    border-top: 1px solid var(--tich-neutral-border);
+    background: var(--tich-white);
+    padding: 1rem 0;
+}
+
+.tich-nav-drawer__inner {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.tich-nav-drawer__link {
+    display: block;
+    padding: 0.75rem 0;
+    color: var(--tich-grey);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-nav-drawer__actions {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .tich-nav-toggle {
+        display: none;
+    }
+
+    .tich-nav--desktop {
+        display: flex;
+    }
+
+    .tich-nav-drawer {
+        display: none !important;
+    }
+}

@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(PermissionsSeeder::class);
+        $this->call(NavigationSeeder::class);
+        $this->call(HomepageContentSeeder::class);
 
         $rbac = app(RBACService::class);
 
