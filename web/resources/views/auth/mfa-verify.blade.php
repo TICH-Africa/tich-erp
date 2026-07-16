@@ -43,6 +43,15 @@
         </button>
     </form>
 
+    @if (($mfaMethod ?? '') === 'email')
+        <form method="POST" action="{{ route('mfa.resend') }}" class="tich-mt-4 tich-text-center">
+            @csrf
+            <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">
+                Resend email code
+            </button>
+        </form>
+    @endif
+
     <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center">
         @csrf
         <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">

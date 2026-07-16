@@ -2,74 +2,43 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\Role;
-use App\Models\Permission;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
-    // Check if user has specific permission (direct or via role)
+    public function resolvePermissionSlug(string $permission): string
+    {
+        $aliases = config('tich.permission_aliases', []);
+
+        if (isset($aliases[$permission])) {
+            return $aliases[$permission];
+        }
+
+        return str_replace(['.', ':', '-'], '_', $permission);
+    }
+
     public function hasPermission(User $user, string $permission): bool
     {
-        // Check direct user permissions with proper joins
-        $hasDirectPermission = DB::table('user_permissions as up')
-            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
-            ->where('up.user_id', $user->id)
-            ->where('p.slug', $permission)
-            ->where(function ($query) use ($user) {
-                // Check campus/department scope
-                $query->whereNull('up.campus_id')
-                    ->orWhere('up.campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('up.campus_id', $user->student?->enrollment_campus_id ?? null);
-            })
-            ->where(function ($query) use ($user) {
-                // Check department scope
-                $query->whereNull('up.department_id')
-                    ->orWhere('up.department_id', $user->staff?->department_id);
-            })
-            ->where(function ($query) {
-                // Check expiry
-                $query->whereNull('up.expires_at')
-                    ->orWhere('up.expires_at', '>', now());
-            })
-            ->exists();
-
-        if ($hasDirectPermission) {
+        if ($this->hasRole($user, 'Super Admin')) {
             return true;
         }
 
-        // Check role permissions
-        $userRoleIds = DB::table('user_roles')
-            ->where('user_id', $user->id)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('campus_id')
-                    ->orWhere('campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('campus_id', $user->student?->enrollment_campus_id ?? null);
-            })
-            ->where(function ($query) use ($user) {
-                $query->whereNull('department_id')
-                    ->orWhere('department_id', $user->staff?->department_id);
-            })
-            ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->pluck('role_id');
+        $slug = $this->resolvePermissionSlug($permission);
 
-        if ($userRoleIds->isEmpty()) {
-            return false;
+        if ($this->userHasPermissionSlug($user, $slug)) {
+            return true;
         }
 
-        // Check role permissions with proper joins
-        return DB::table('role_permissions as rp')
-            ->join('permissions as p', 'rp.permission_id', '=', 'p.id')
-            ->whereIn('rp.role_id', $userRoleIds)
-            ->where('p.slug', $permission)
-            ->exists();
+        // Allow category wildcard e.g. admin_manage_applicants_* via prefix match on module+action
+        if (str_contains($slug, '_') && $this->userHasPermissionPrefix($user, $slug)) {
+            return true;
+        }
+
+        return false;
     }
 
-    // Check if user has any of the given permissions
     public function hasAnyPermission(User $user, array $permissions): bool
     {
         foreach ($permissions as $permission) {
@@ -77,21 +46,21 @@ class RBACService
                 return true;
             }
         }
+
         return false;
     }
 
-    // Check if user has all of the given permissions
     public function hasAllPermissions(User $user, array $permissions): bool
     {
         foreach ($permissions as $permission) {
-            if (!$this->hasPermission($user, $permission)) {
+            if (! $this->hasPermission($user, $permission)) {
                 return false;
             }
         }
+
         return true;
     }
 
-    // Check if user has specific role
     public function hasRole(User $user, string $roleName): bool
     {
         return DB::table('user_roles as ur')
@@ -101,7 +70,7 @@ class RBACService
             ->where(function ($query) use ($user) {
                 $query->whereNull('ur.campus_id')
                     ->orWhere('ur.campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('ur.campus_id', $user->student?->enrollment_campus_id ?? null);
+                    ->orWhere('ur.campus_id', $user->student?->enrollment_campus_id);
             })
             ->where(function ($query) use ($user) {
                 $query->whereNull('ur.department_id')
@@ -114,7 +83,6 @@ class RBACService
             ->exists();
     }
 
-    // Check if user has any of the given roles
     public function hasAnyRole(User $user, array $roleNames): bool
     {
         foreach ($roleNames as $roleName) {
@@ -122,19 +90,41 @@ class RBACService
                 return true;
             }
         }
+
         return false;
     }
 
-    // Check if user can access resource in specific campus
+    public function roleLevel(string $roleName): int
+    {
+        return config("tich.role_hierarchy.{$roleName}", 0);
+    }
+
+    public function hasMinimumRole(User $user, string $minimumRole): bool
+    {
+        $requiredLevel = $this->roleLevel($minimumRole);
+        $roles = $this->getUserRoles($user);
+
+        foreach ($roles as $role) {
+            if ($this->roleLevel($role['role_name']) >= $requiredLevel) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function canAccessCampus(User $user, int $campusId): bool
     {
-        if ($this->hasRole($user, 'Super Admin')) {
+        if ($this->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar'])) {
             return true;
         }
 
         return DB::table('user_roles')
             ->where('user_id', $user->id)
-            ->where('campus_id', $campusId)
+            ->where(function ($query) use ($campusId) {
+                $query->whereNull('campus_id')
+                    ->orWhere('campus_id', $campusId);
+            })
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -142,16 +132,22 @@ class RBACService
             ->exists();
     }
 
-    // Check if user can access resource in specific department
     public function canAccessDepartment(User $user, int $departmentId): bool
     {
-        if ($this->hasRole($user, 'Super Admin')) {
+        if ($this->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean', 'HR Manager', 'Finance Manager'])) {
+            return true;
+        }
+
+        if ($this->hasRole($user, 'HOD') && $user->staff?->department_id === $departmentId) {
             return true;
         }
 
         return DB::table('user_roles')
             ->where('user_id', $user->id)
-            ->where('department_id', $departmentId)
+            ->where(function ($query) use ($departmentId) {
+                $query->whereNull('department_id')
+                    ->orWhere('department_id', $departmentId);
+            })
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -159,64 +155,6 @@ class RBACService
             ->exists();
     }
 
-    // Check if user can access student record
-    public function canAccessStudent(User $user, int $studentId): bool
-    {
-        if ($this->hasRole($user, 'Super Admin')) {
-            return true;
-        }
-
-        if ($this->hasRole($user, 'HOD')) {
-            $userDepartmentId = $user->staff?->department_id;
-            if (!$userDepartmentId) {
-                return false;
-            }
-
-            return DB::table('students as s')
-                ->join('programs as p', 's.program_id', '=', 'p.id')
-                ->where('s.id', $studentId)
-                ->where('p.department_id', $userDepartmentId)
-                ->exists();
-        }
-
-        if ($user->user_type === 'student') {
-            return $user->student_id === $studentId;
-        }
-
-        return false;
-    }
-
-    // Check if user can access staff record
-    public function canAccessStaff(User $user, int $staffId): bool
-    {
-        if ($this->hasRole($user, 'Super Admin')) {
-            return true;
-        }
-
-        if ($this->hasRole($user, 'HR Manager')) {
-            return true;
-        }
-
-        if ($this->hasRole($user, 'HOD')) {
-            $userDepartmentId = $user->staff?->department_id;
-            if (!$userDepartmentId) {
-                return false;
-            }
-
-            return DB::table('staff')
-                ->where('id', $staffId)
-                ->where('department_id', $userDepartmentId)
-                ->exists();
-        }
-
-        if ($user->user_type === 'staff') {
-            return $user->staff_id === $staffId;
-        }
-
-        return false;
-    }
-
-    // Check if user can approve requests in hierarchy
     public function canApprove(User $user, string $module, string $level): bool
     {
         $permission = "{$module}.approve.{$level}";
@@ -225,22 +163,18 @@ class RBACService
             return true;
         }
 
-        // Hierarchy-based approval mapping
         $approvalHierarchy = [
             'hod' => 'HOD',
             'finance' => 'Finance Manager',
-            'ceo' => 'Principal',
+            'ceo' => 'CEO',
+            'registrar' => 'Academic Registrar',
             'hr' => 'HR Manager',
         ];
 
-        if (isset($approvalHierarchy[$level]) && $this->hasRole($user, $approvalHierarchy[$level])) {
-            return true;
-        }
-
-        return false;
+        return isset($approvalHierarchy[$level])
+            && $this->hasRole($user, $approvalHierarchy[$level]);
     }
 
-    // Get user's effective permissions (direct + role-based)
     public function getUserPermissions(User $user): array
     {
         $directPermissions = DB::table('user_permissions')
@@ -265,13 +199,13 @@ class RBACService
 
         $allPermissionIds = $directPermissions->merge($rolePermissions)->unique()->values();
 
-        return Permission::whereIn('id', $allPermissionIds)
+        return DB::table('permissions')
+            ->whereIn('id', $allPermissionIds)
             ->select('slug', 'permission_name', 'module', 'category')
             ->get()
             ->toArray();
     }
 
-    // Get user's roles with scope
     public function getUserRoles(User $user): array
     {
         return DB::table('user_roles as ur')
@@ -283,50 +217,112 @@ class RBACService
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->select('r.role_name', 'r.role_category', 'ur.campus_id', 'ur.department_id')
             ->get()
+            ->map(fn ($row) => (array) $row)
             ->toArray();
     }
 
-    // Assign permission to user
-    public function assignPermissionToUser(User $user, int $permissionId, ?int $campusId = null, ?int $departmentId = null, ?int $grantedBy = null): void
-    {
-        DB::table('user_permissions')->insert([
-            'user_id' => $user->id,
-            'permission_id' => $permissionId,
-            'campus_id' => $campusId,
-            'department_id' => $departmentId,
-            'granted_at' => now(),
-            'granted_by' => $grantedBy
-        ]);
-    }
-
-    // Assign role to user
     public function assignRoleToUser(User $user, int $roleId, ?int $campusId = null, ?int $departmentId = null, ?int $assignedBy = null): void
     {
-        DB::table('user_roles')->insert([
-            'user_id' => $user->id,
-            'role_id' => $roleId,
-            'campus_id' => $campusId,
-            'department_id' => $departmentId,
-            'assigned_at' => now(),
-            'assigned_by' => $assignedBy
-        ]);
+        DB::table('user_roles')->updateOrInsert(
+            [
+                'user_id' => $user->id,
+                'role_id' => $roleId,
+                'campus_id' => $campusId,
+                'department_id' => $departmentId,
+            ],
+            [
+                'assigned_at' => now(),
+                'assigned_by' => $assignedBy,
+            ]
+        );
     }
 
-    // Revoke permission from user
-    public function revokePermissionFromUser(User $user, int $permissionId): void
+    public function assignDefaultRole(User $user): void
     {
-        DB::table('user_permissions')
-            ->where('user_id', $user->id)
-            ->where('permission_id', $permissionId)
-            ->delete();
+        $roleName = config("tich.default_roles.{$user->user_type}");
+
+        if (! $roleName) {
+            return;
+        }
+
+        $roleId = Role::query()->where('role_name', $roleName)->value('id');
+
+        if ($roleId) {
+            $this->assignRoleToUser($user, $roleId);
+        }
     }
 
-    // Revoke role from user
-    public function revokeRoleFromUser(User $user, int $roleId): void
+    private function userHasPermissionSlug(User $user, string $slug): bool
     {
-        DB::table('user_roles')
+        $hasDirectPermission = DB::table('user_permissions as up')
+            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
+            ->where('up.user_id', $user->id)
+            ->where('p.slug', $slug)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('up.campus_id')
+                    ->orWhere('up.campus_id', $user->staff?->department?->campus_id)
+                    ->orWhere('up.campus_id', $user->student?->enrollment_campus_id);
+            })
+            ->where(function ($query) use ($user) {
+                $query->whereNull('up.department_id')
+                    ->orWhere('up.department_id', $user->staff?->department_id);
+            })
+            ->where(function ($query) {
+                $query->whereNull('up.expires_at')
+                    ->orWhere('up.expires_at', '>', now());
+            })
+            ->exists();
+
+        if ($hasDirectPermission) {
+            return true;
+        }
+
+        $userRoleIds = DB::table('user_roles')
             ->where('user_id', $user->id)
-            ->where('role_id', $roleId)
-            ->delete();
+            ->where(function ($query) use ($user) {
+                $query->whereNull('campus_id')
+                    ->orWhere('campus_id', $user->staff?->department?->campus_id)
+                    ->orWhere('campus_id', $user->student?->enrollment_campus_id);
+            })
+            ->where(function ($query) use ($user) {
+                $query->whereNull('department_id')
+                    ->orWhere('department_id', $user->staff?->department_id);
+            })
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->pluck('role_id');
+
+        if ($userRoleIds->isEmpty()) {
+            return false;
+        }
+
+        return DB::table('role_permissions as rp')
+            ->join('permissions as p', 'rp.permission_id', '=', 'p.id')
+            ->whereIn('rp.role_id', $userRoleIds)
+            ->where('p.slug', $slug)
+            ->exists();
+    }
+
+    private function userHasPermissionPrefix(User $user, string $slug): bool
+    {
+        $parts = explode('_', $slug);
+        if (count($parts) < 3) {
+            return false;
+        }
+
+        array_pop($parts);
+        $prefix = implode('_', $parts).'_';
+
+        $permissions = $this->getUserPermissions($user);
+
+        foreach ($permissions as $permission) {
+            if (str_starts_with($permission->slug ?? $permission['slug'], $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -6,18 +6,20 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'username', 'email', 'password_hash', 'user_type',
         'mfa_enabled', 'mfa_method', 'mfa_secret', 'mfa_secret_temp', 'mfa_verified',
+        'mfa_backup_codes', 'mfa_enabled_at', 'mfa_last_verified_at',
         'login_attempts', 'locked_until', 'last_login_at', 'staff_id', 'student_id',
         'is_active', 'failed_login_attempts', 'created_by',
     ];
@@ -30,6 +32,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'locked_until' => 'datetime',
+        'mfa_enabled_at' => 'datetime',
+        'mfa_last_verified_at' => 'datetime',
+        'mfa_backup_codes' => 'array',
         'mfa_enabled' => 'boolean',
         'mfa_verified' => 'boolean',
         'is_active' => 'boolean',
@@ -56,14 +61,14 @@ class User extends Authenticatable
 
     // ─── Staff relationship (optional) ──────────────────────────────────────
 
-    public function staff(): HasOne
+    public function staff(): BelongsTo
     {
-        return $this->hasOne(Staff::class);
+        return $this->belongsTo(Staff::class);
     }
 
-    public function student(): HasOne
+    public function student(): BelongsTo
     {
-        return $this->hasOne(Student::class);
+        return $this->belongsTo(Student::class);
     }
 
     public function hasPermission(string $permission): bool

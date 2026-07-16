@@ -1,61 +1,38 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuditController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\MFAController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-// ─── Authentication & MFA ─────────────────────────────────────────────────
-
 Route::prefix('auth')->group(function () {
-
-    // Standard login
     Route::post('/login', [AuthController::class, 'login']);
 
-    // MFA challenge — after login credentials verified
-    Route::post('/mfa/challenge',  [AuthController::class, 'mfaChallenge'])
-        ->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/mfa/challenge', [AuthController::class, 'mfaChallenge']);
+        Route::post('/mfa/setup', [AuthController::class, 'mfaSetup']);
+        Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify']);
+        Route::post('/mfa/disable', [AuthController::class, 'mfaDisable']);
+        Route::post('/logout', [AuthController::class, 'logout']);
 
-    // MFA setup initiation
-    Route::post('/mfa/setup',      [AuthController::class, 'mfaSetup'])
-        ->middleware('auth:sanctum');
-
-    // MFA setup verification (confirm first TOTP scan)
-    Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify'])
-        ->middleware('auth:sanctum');
-
-    // Disable MFA (requires current password + reason)
-    Route::post('/mfa/disable',    [AuthController::class, 'mfaDisable'])
-        ->middleware('auth:sanctum');
-
-    Route::post('/logout',          [AuthController::class, 'logout'])
-        ->middleware('auth:sanctum');
+        Route::prefix('mfa')->group(function () {
+            Route::get('/status', [MFAController::class, 'getMFAStatus']);
+            Route::post('/email/send', [MFAController::class, 'sendEmailOTP']);
+            Route::post('/email/verify', [MFAController::class, 'verifyEmailOTP']);
+            Route::post('/totp/setup', [MFAController::class, 'setupTOTP']);
+            Route::post('/totp/enable', [MFAController::class, 'enableTOTP']);
+            Route::post('/totp/verify', [MFAController::class, 'verifyTOTP']);
+            Route::post('/backup/verify', [MFAController::class, 'verifyBackupCode']);
+            Route::post('/disable', [MFAController::class, 'disableMFA']);
+            Route::post('/backup/regenerate', [MFAController::class, 'regenerateBackupCodes']);
+        });
+    });
 });
 
-// ─── MFA Status for Logged-in User ───────────────────────────────────────
-
-Route::middleware('auth:sanctum')->get('/mfa/status', function (\Illuminate\Http\Request $request) {
-    $user = $request->user('sanctum');
-    return response()->json([
-        'mfa_enabled'   => (bool) $user->mfa_enabled,
-        'mfa_method'    => $user->mfa_method,
-        'mfa_verified'  => $request->session()->has('mfa_verified_at'),
-    ]);
-});
-
-// ─── Audit Log Viewer ────────────────────────────────────────────────────
-
-Route::middleware(['auth:sanctum', 'permission:audit_logs:read'])->prefix('admin')->group(function () {
-
-    Route::get('/audit-logs',        [AuditController::class, 'index']);
-    Route::get('/audit-logs/{id}',   [AuditController::class, 'show']);
+Route::middleware(['auth:sanctum', 'mfa', 'permission:audit_logs.read'])->prefix('admin')->group(function () {
+    Route::get('/audit-logs', [AuditController::class, 'index']);
+    Route::get('/audit-logs/{id}', [AuditController::class, 'show']);
     Route::get('/audit-logs/verify', [AuditController::class, 'verifyChain']);
-
-    // Export (itself audited)
-    Route::get('/audit-logs/export', [AuditController::class, 'export'])
-        ->middleware('permission:audit_logs:read');
+    Route::get('/audit-logs/export', [AuditController::class, 'export']);
 });

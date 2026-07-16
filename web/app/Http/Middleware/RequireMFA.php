@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AuthService;
 use App\Services\MFAService;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,60 +11,51 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RequireMFA
 {
-    protected MFAService $mfaService;
+    public function __construct(
+        protected MFAService $mfaService,
+        protected AuthService $authService,
+    ) {}
 
-    public function __construct(MFAService $mfaService)
-    {
-        $this->mfaService = $mfaService;
-    }
-
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
+        if (! $user) {
+            return $this->deny($request, 'Unauthenticated', 401);
         }
 
-        // Check if MFA is required for this user
-        if (!$this->mfaService->isMFARequired($user)) {
+        if (! $this->mfaService->isMFARequired($user)) {
             return $next($request);
         }
 
-        // Check if MFA is enabled
-        if (!$user->mfa_enabled) {
-            return response()->json([
-                'message' => 'MFA must be enabled for your account',
-                'mfa_required' => true
-            ], 403);
+        if (! $user->mfa_enabled) {
+            return $this->deny($request, 'MFA must be configured for your account', 403, [
+                'mfa_setup_required' => true,
+                'redirect' => route('mfa.setup'),
+            ]);
         }
 
-        // Check if MFA has been verified in current session
-        $mfaVerified = session('mfa_verified_' . $user->id);
-
-        if (!$mfaVerified) {
-            return response()->json([
-                'message' => 'MFA verification required',
+        if (! $this->authService->isMfaSessionValid($request, $user)) {
+            return $this->deny($request, 'MFA verification required', 403, [
                 'mfa_required' => true,
-                'mfa_method' => $user->mfa_method
-            ], 403);
-        }
-
-        // Check if MFA verification is still valid (30 minutes)
-        $verifiedAt = session('mfa_verified_at_' . $user->id);
-        if ($verifiedAt && now()->diffInMinutes($verifiedAt) > 30) {
-            session()->forget(['mfa_verified_' . $user->id, 'mfa_verified_at_' . $user->id]);
-            
-            return response()->json([
-                'message' => 'MFA verification expired',
-                'mfa_required' => true,
-                'mfa_method' => $user->mfa_method
-            ], 403);
+                'mfa_method' => $user->mfa_method,
+                'redirect' => route('mfa.verify'),
+            ]);
         }
 
         return $next($request);
+    }
+
+    private function deny(Request $request, string $message, int $status, array $extra = []): Response
+    {
+        if ($request->expectsJson()) {
+            return response()->json(array_merge(['message' => $message], $extra), $status);
+        }
+
+        if (! empty($extra['mfa_setup_required'])) {
+            return redirect()->route('mfa.setup')->with('status', $message);
+        }
+
+        return redirect()->route('mfa.verify')->with('status', $message);
     }
 }

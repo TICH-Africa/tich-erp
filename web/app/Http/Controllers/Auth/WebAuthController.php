@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\AuthService;
+use App\Services\MFAService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class WebAuthController extends Controller
 {
+    public function __construct(
+        protected AuthService $authService,
+        protected MFAService $mfaService,
+    ) {}
+
     public function showLogin(): View
     {
         return view('auth.login');
@@ -25,41 +30,18 @@ class WebAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $loginField = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $user = $this->authService->attemptLogin($credentials['login'], $credentials['password']);
 
-        $user = User::query()
-            ->where($loginField, $credentials['login'])
-            ->where('is_active', 1)
-            ->first();
-
-        if (! $user || ! Hash::check($credentials['password'], $user->password_hash)) {
+        if (! $user) {
             return back()
                 ->withInput($request->only('login', 'remember'))
-                ->withErrors(['login' => 'These credentials do not match our records.']);
-        }
-
-        if ($user->locked_until && $user->locked_until->isFuture()) {
-            return back()
-                ->withInput($request->only('login', 'remember'))
-                ->withErrors(['login' => 'This account is temporarily locked. Please try again later.']);
+                ->withErrors(['login' => 'These credentials do not match our records or the account is locked.']);
         }
 
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        $user->forceFill([
-            'last_login_at' => now(),
-            'failed_login_attempts' => 0,
-            'locked_until' => null,
-        ])->save();
-
-        if ($user->mfa_enabled) {
-            $request->session()->forget('mfa_verified_at');
-
-            return redirect()->route('mfa.verify');
-        }
-
-        return redirect()->intended(route('home'));
+        return redirect()->intended($this->authService->postLoginDestination($user, $request));
     }
 
     public function showRegister(): View
@@ -77,19 +59,19 @@ class WebAuthController extends Controller
             'terms' => ['accepted'],
         ]);
 
-        $user = User::create([
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'user_type' => $validated['user_type'],
-            'password_hash' => Hash::make($validated['password']),
-            'is_active' => 1,
-        ]);
+        $user = $this->authService->registerUser($validated);
 
         Auth::login($user);
         $request->session()->regenerate();
 
+        if ($this->mfaService->isMFARequired($user)) {
+            return redirect()
+                ->route('mfa.setup')
+                ->with('status', 'Account created. Please configure multi-factor authentication to continue.');
+        }
+
         return redirect()
-            ->route('home')
+            ->route('dashboard')
             ->with('status', 'Your account has been created successfully.');
     }
 
@@ -100,9 +82,7 @@ class WebAuthController extends Controller
 
     public function sendResetLink(Request $request): RedirectResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
+        $request->validate(['email' => ['required', 'email']]);
 
         return back()->with('status', 'If an account exists for that email, a password reset link will be sent shortly.');
     }
@@ -126,35 +106,132 @@ class WebAuthController extends Controller
         return back()->with('status', 'Password reset is not yet configured. Please contact your administrator.');
     }
 
+    public function showMfaSetup(Request $request): View|RedirectResponse
+    {
+        if (! Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+
+        if ($user->mfa_enabled && $this->authService->isMfaSessionValid($request, $user)) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.mfa-setup', [
+            'userType' => $user->user_type,
+        ]);
+    }
+
+    public function setupMfa(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'method' => ['required', 'in:email,auth_app'],
+            'code' => ['nullable', 'string'],
+        ]);
+
+        $user = Auth::user();
+
+        if ($validated['method'] === 'email') {
+            if (empty($validated['code'])) {
+                $this->mfaService->sendEmailOTP($user);
+
+                return back()->with('status', 'A verification code has been sent to your email.');
+            }
+
+            if (! $this->mfaService->verifyEmailOTP($user, $validated['code'])) {
+                return back()->withErrors(['code' => 'Invalid or expired verification code.']);
+            }
+
+            $this->mfaService->enableMFA($user, 'email');
+            $this->authService->markMfaVerified($request, $user);
+
+            return redirect()->route('dashboard')->with('status', 'Email MFA is now active on your account.');
+        }
+
+        if (empty($validated['code'])) {
+            $secret = $this->mfaService->generateTOTPSecret();
+            $this->mfaService->stageTOTPSecret($user, $secret);
+
+            return back()
+                ->with('totp_secret', $secret)
+                ->with('totp_uri', $this->mfaService->getTOTPQRCodeURI($user, $secret))
+                ->with('status', 'Scan the QR code with your authenticator app, then enter the 6-digit code.');
+        }
+
+        if (! $this->mfaService->verifyTOTP($user, $validated['code'])) {
+            return back()
+                ->with('totp_secret', $user->mfa_secret_temp)
+                ->with('totp_uri', $this->mfaService->getTOTPQRCodeURI($user))
+                ->withErrors(['code' => 'Invalid authenticator code. Please try again.']);
+        }
+
+        $backupCodes = $this->mfaService->generateBackupCodes();
+        $this->mfaService->enableMFA($user, 'auth_app', $user->mfa_secret_temp, $backupCodes);
+        $this->authService->markMfaVerified($request, $user);
+
+        return redirect()
+            ->route('dashboard')
+            ->with('status', 'Authenticator MFA enabled. Save your backup codes: '.implode(', ', $backupCodes));
+    }
+
     public function showMfaVerify(Request $request): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
         }
 
-        if ($request->session()->has('mfa_verified_at')) {
-            return redirect()->route('home');
+        $user = Auth::user();
+
+        if (! $user->mfa_enabled) {
+            return redirect()->route('mfa.setup');
+        }
+
+        if ($this->authService->isMfaSessionValid($request, $user)) {
+            return redirect()->route('dashboard');
+        }
+
+        if ($user->mfa_method === 'email') {
+            $this->mfaService->sendEmailOTP($user);
         }
 
         return view('auth.mfa-verify', [
-            'mfaMethod' => Auth::user()->mfa_method,
+            'mfaMethod' => $user->mfa_method,
         ]);
     }
 
     public function verifyMfa(Request $request): RedirectResponse
     {
         $request->validate([
-            'code' => ['required', 'string', 'size:6'],
+            'code' => ['required', 'string'],
         ]);
 
-        return back()->withErrors([
-            'code' => 'MFA verification is not yet wired for web sessions. Please contact your administrator.',
-        ]);
+        $user = Auth::user();
+
+        if (! $this->authService->verifyMfaCode($user, $request->code)) {
+            return back()->withErrors(['code' => 'Invalid or expired verification code.']);
+        }
+
+        $this->authService->markMfaVerified($request, $user);
+
+        return redirect()->intended(route('dashboard'));
+    }
+
+    public function resendMfaCode(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        if ($user->mfa_method === 'email') {
+            $this->mfaService->sendEmailOTP($user);
+        }
+
+        return back()->with('status', 'A new verification code has been sent.');
     }
 
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
+        $this->authService->clearMfaSession($request);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

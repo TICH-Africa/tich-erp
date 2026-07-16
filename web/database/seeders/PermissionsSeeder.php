@@ -9,6 +9,10 @@ class PermissionsSeeder extends Seeder
 {
     public function run(): void
     {
+        if (DB::table('permissions')->exists()) {
+            return;
+        }
+
         $modules = [
             'core' => ['manage_campuses', 'manage_departments', 'manage_programs', 'manage_units', 'manage_academic_years', 'manage_semesters', 'manage_nursing_blocks'],
             'admin' => ['manage_staff', 'manage_applicants', 'manage_students', 'manage_admissions', 'manage_sacco', 'manage_cafeteria'],
@@ -20,7 +24,7 @@ class PermissionsSeeder extends Seeder
             'notifications' => ['manage_templates', 'send_notifications', 'manage_chatbot'],
             'donations' => ['manage_campaigns', 'manage_donations'],
             'newsletter' => ['manage_subscribers', 'manage_campaigns', 'send_newsletters'],
-            'site_settings' => ['manage_settings', 'manage_social_links', 'manage_navigation', 'manage_contact_channels']
+            'site_settings' => ['manage_settings', 'manage_social_links', 'manage_navigation', 'manage_contact_channels'],
         ];
 
         $categories = ['view', 'create', 'edit', 'delete', 'approve', 'reject', 'export', 'import', 'manage', 'audit'];
@@ -37,7 +41,7 @@ class PermissionsSeeder extends Seeder
                         'category' => $category,
                         'description' => "Permission to {$category} {$action} in {$module} module",
                         'is_system' => 1,
-                        'created_at' => now()
+                        'created_at' => now(),
                     ];
                 }
             }
@@ -45,23 +49,26 @@ class PermissionsSeeder extends Seeder
 
         DB::table('permissions')->insert($permissions);
 
-        // Define default roles
         $roles = [
-            ['role_name' => 'Super Admin', 'role_category' => 'executive', 'description' => 'Full system access', 'is_system_role' => 1],
-            ['role_name' => 'Principal', 'role_category' => 'executive', 'description' => 'Institution head with full access', 'is_system_role' => 1],
-            ['role_name' => 'Dean', 'role_category' => 'academic', 'description' => 'Faculty head with academic oversight', 'is_system_role' => 1],
-            ['role_name' => 'HOD', 'role_category' => 'academic', 'description' => 'Department head with departmental access', 'is_system_role' => 1],
-            ['role_name' => 'Lecturer', 'role_category' => 'teaching', 'description' => 'Teaching staff with academic functions', 'is_system_role' => 1],
-            ['role_name' => 'Finance Manager', 'role_category' => 'administrative', 'description' => 'Financial management access', 'is_system_role' => 1],
-            ['role_name' => 'HR Manager', 'role_category' => 'administrative', 'description' => 'Human resources management access', 'is_system_role' => 1],
-            ['role_name' => 'QA Officer', 'role_category' => 'administrative', 'description' => 'Quality assurance oversight', 'is_system_role' => 1],
-            ['role_name' => 'Student', 'role_category' => 'student', 'description' => 'Student with limited access', 'is_system_role' => 1],
-            ['role_name' => 'Staff', 'role_category' => 'administrative', 'description' => 'General staff access', 'is_system_role' => 1],
+            ['role_name' => 'Super Admin', 'display_name' => 'Super Administrator', 'role_category' => 'executive', 'description' => 'Full system access across all campuses', 'is_system_role' => 1],
+            ['role_name' => 'CEO', 'display_name' => 'Chief Executive Officer', 'role_category' => 'executive', 'description' => 'Executive oversight and final approvals', 'is_system_role' => 1],
+            ['role_name' => 'Academic Registrar', 'display_name' => 'Academic Registrar', 'role_category' => 'executive', 'description' => 'Academic records, admissions, and student lifecycle', 'is_system_role' => 1],
+            ['role_name' => 'Principal', 'display_name' => 'Principal', 'role_category' => 'executive', 'description' => 'Institution head with broad operational access', 'is_system_role' => 1],
+            ['role_name' => 'Dean', 'display_name' => 'Dean', 'role_category' => 'academic', 'description' => 'Faculty head with academic oversight', 'is_system_role' => 1],
+            ['role_name' => 'HOD', 'display_name' => 'Head of Department', 'role_category' => 'academic', 'description' => 'Departmental academic and staff oversight', 'is_system_role' => 1],
+            ['role_name' => 'Lecturer', 'display_name' => 'Lecturer', 'role_category' => 'teaching', 'description' => 'Teaching staff with academic delivery functions', 'is_system_role' => 1],
+            ['role_name' => 'Admissions Officer', 'display_name' => 'Admissions Officer', 'role_category' => 'administrative', 'description' => 'Applicant intake, screening, and onboarding', 'is_system_role' => 1],
+            ['role_name' => 'Finance Manager', 'display_name' => 'Finance Manager', 'role_category' => 'administrative', 'description' => 'Financial management and approvals', 'is_system_role' => 1],
+            ['role_name' => 'HR Manager', 'display_name' => 'HR Manager', 'role_category' => 'administrative', 'description' => 'Human resources management', 'is_system_role' => 1],
+            ['role_name' => 'QA Officer', 'display_name' => 'Quality Assurance Officer', 'role_category' => 'administrative', 'description' => 'Quality assurance and compliance oversight', 'is_system_role' => 1],
+            ['role_name' => 'Staff', 'display_name' => 'General Staff', 'role_category' => 'administrative', 'description' => 'General institutional staff access', 'is_system_role' => 1],
+            ['role_name' => 'Student', 'display_name' => 'Student', 'role_category' => 'student', 'description' => 'Student portal and academic self-service', 'is_system_role' => 1],
+            ['role_name' => 'Applicant', 'display_name' => 'Applicant', 'role_category' => 'student', 'description' => 'Pre-admission applicant portal access', 'is_system_role' => 1],
+            ['role_name' => 'Alumni', 'display_name' => 'Alumni', 'role_category' => 'student', 'description' => 'Alumni engagement and records access', 'is_system_role' => 1],
         ];
 
         DB::table('roles')->insert($roles);
 
-        // Assign all permissions to Super Admin
         $superAdminId = DB::table('roles')->where('role_name', 'Super Admin')->value('id');
         $allPermissionIds = DB::table('permissions')->pluck('id');
 
@@ -69,32 +76,41 @@ class PermissionsSeeder extends Seeder
             DB::table('role_permissions')->insert([
                 'role_id' => $superAdminId,
                 'permission_id' => $permissionId,
-                'granted_at' => now()
+                'granted_at' => now(),
             ]);
         }
 
-        // Assign module-specific permissions to other roles
+        $this->assignRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa'], ['approve', 'view', 'manage', 'audit', 'export']);
+        $this->assignRolePermissions('Academic Registrar', ['core', 'admin', 'academics'], ['approve', 'view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Principal', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa']);
-        $this->assignRolePermissions('Dean', ['core', 'academics', 'hr', 'portal']);
-        $this->assignRolePermissions('HOD', ['core', 'academics', 'hr']);
-        $this->assignRolePermissions('Lecturer', ['academics']);
-        $this->assignRolePermissions('Finance Manager', ['core', 'finance']);
-        $this->assignRolePermissions('HR Manager', ['core', 'hr']);
-        $this->assignRolePermissions('QA Officer', ['core', 'qa']);
-        $this->assignRolePermissions('Student', ['academics', 'finance', 'portal']);
-        $this->assignRolePermissions('Staff', ['core', 'hr']);
+        $this->assignRolePermissions('Dean', ['core', 'academics', 'hr', 'portal'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
+        $this->assignRolePermissions('HOD', ['core', 'academics', 'hr'], ['view', 'create', 'edit', 'approve', 'manage']);
+        $this->assignRolePermissions('Lecturer', ['academics'], ['view', 'create', 'edit', 'manage']);
+        $this->assignRolePermissions('Admissions Officer', ['admin'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
+        $this->assignRolePermissions('Finance Manager', ['core', 'finance'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
+        $this->assignRolePermissions('HR Manager', ['core', 'hr'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
+        $this->assignRolePermissions('QA Officer', ['core', 'qa'], ['view', 'create', 'edit', 'approve', 'manage', 'audit']);
+        $this->assignRolePermissions('Student', ['academics', 'finance', 'portal'], ['view']);
+        $this->assignRolePermissions('Applicant', ['admin'], ['view', 'create']);
+        $this->assignRolePermissions('Alumni', ['portal'], ['view']);
+        $this->assignRolePermissions('Staff', ['core', 'hr'], ['view']);
     }
 
-    private function assignRolePermissions(string $roleName, array $modules): void
+    private function assignRolePermissions(string $roleName, array $modules, ?array $categories = null): void
     {
         $roleId = DB::table('roles')->where('role_name', $roleName)->value('id');
-        $permissionIds = DB::table('permissions')->whereIn('module', $modules)->pluck('id');
 
-        foreach ($permissionIds as $permissionId) {
+        $query = DB::table('permissions')->whereIn('module', $modules);
+
+        if ($categories) {
+            $query->whereIn('category', $categories);
+        }
+
+        foreach ($query->pluck('id') as $permissionId) {
             DB::table('role_permissions')->insert([
                 'role_id' => $roleId,
                 'permission_id' => $permissionId,
-                'granted_at' => now()
+                'granted_at' => now(),
             ]);
         }
     }

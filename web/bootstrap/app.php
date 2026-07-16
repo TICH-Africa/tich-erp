@@ -14,7 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'mfa' => \App\Http\Middleware\RequireMFA::class,
+            'mfa.setup' => \App\Http\Middleware\EnsureMfaConfigured::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

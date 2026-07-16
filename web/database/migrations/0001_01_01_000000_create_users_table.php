@@ -32,31 +32,12 @@ return new class extends Migration
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('role_name', 100)->unique();
-            $table->string('display_name', 200);
+            $table->string('display_name', 200)->nullable();
             $table->enum('role_category', ['executive', 'academic', 'administrative', 'teaching', 'student']);
             $table->text('description')->nullable();
             $table->tinyInteger('is_system_role')->default(0);
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->nullable()->useCurrentOnUpdate();
-        });
-
-        Schema::create('permissions', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 100)->unique();
-            $table->string('display_name', 200);
-            $table->string('group', 100)->default('system');
-            $table->text('description')->nullable();
-            $table->dateTime('created_at')->useCurrent();
-            $table->dateTime('updated_at')->nullable()->useCurrentOnUpdate();
-        });
-
-        Schema::create('role_permission', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('role_id');
-            $table->unsignedBigInteger('permission_id');
-            $table->unique(['role_id', 'permission_id']);
-            $table->foreign('role_id')->references('id')->on('roles')->restrictOnDelete();
-            $table->foreign('permission_id')->references('id')->on('permissions')->restrictOnDelete();
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
@@ -95,8 +76,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('session_tokens');
         Schema::dropIfExists('user_roles');
-        Schema::dropIfExists('role_permission');
-        Schema::dropIfExists('permissions');
         Schema::dropIfExists('roles');
         Schema::dropIfExists('users');
     }

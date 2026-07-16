@@ -8,11 +8,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckPermission
+class CheckRole
 {
     public function __construct(protected RBACService $rbacService) {}
 
-    public function handle(Request $request, Closure $next, string ...$permissions): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = Auth::user();
 
@@ -24,21 +24,32 @@ class CheckPermission
             return redirect()->route('login');
         }
 
-        $allowed = count($permissions) > 1
-            ? $this->rbacService->hasAnyPermission($user, $permissions)
-            : $this->rbacService->hasPermission($user, $permissions[0] ?? '');
+        $minimumRole = null;
+        $roleNames = [];
+
+        foreach ($roles as $role) {
+            if (str_starts_with($role, 'min:')) {
+                $minimumRole = substr($role, 4);
+            } else {
+                $roleNames[] = $role;
+            }
+        }
+
+        $allowed = $minimumRole
+            ? $this->rbacService->hasMinimumRole($user, $minimumRole)
+            : $this->rbacService->hasAnyRole($user, $roleNames);
 
         if (! $allowed) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'You do not have permission to perform this action',
-                    'required_permission' => $permissions,
+                    'message' => 'Your role does not allow access to this resource',
+                    'required_roles' => $roles,
                 ], 403);
             }
 
             return redirect()
                 ->route('dashboard')
-                ->withErrors(['permission' => 'You do not have permission to access that area.']);
+                ->withErrors(['role' => 'Your role does not allow access to that area.']);
         }
 
         return $next($request);

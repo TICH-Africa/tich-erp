@@ -197,7 +197,7 @@ class MFAController extends Controller
             return response()->json([
                 'message' => 'Backup code verified successfully',
                 'verified_at' => now(),
-                'remaining_codes' => count(json_decode($user->mfa_backup_codes, true))
+                'remaining_codes' => is_array($user->mfa_backup_codes) ? count($user->mfa_backup_codes) : 0,
             ]);
         }
 
@@ -280,7 +280,7 @@ class MFAController extends Controller
         }
 
         $backupCodes = $this->mfaService->generateBackupCodes();
-        $user->update(['mfa_backup_codes' => json_encode($backupCodes)]);
+        $user->update(['mfa_backup_codes' => $backupCodes]);
 
         return response()->json([
             'message' => 'Backup codes regenerated successfully',
