@@ -28,11 +28,19 @@ class MFAController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $this->mfaService->sendEmailOTP($user);
+        $delivery = $this->mfaService->sendEmailOTP($user, $request);
+
+        if (! $delivery['sent']) {
+            return response()->json([
+                'message' => 'Could not send OTP email',
+                'error' => config('app.debug') ? $delivery['error'] : 'Mail configuration error',
+                'dev_code' => config('app.debug') ? $delivery['otp'] : null,
+            ], 503);
+        }
 
         return response()->json([
             'message' => 'OTP sent to your email',
-            'expires_in' => 600 // 10 minutes
+            'expires_in' => 600,
         ]);
     }
 

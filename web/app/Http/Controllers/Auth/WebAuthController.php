@@ -134,9 +134,17 @@ class WebAuthController extends Controller
 
         if ($validated['method'] === 'email') {
             if (empty($validated['code'])) {
-                $this->mfaService->sendEmailOTP($user);
+                $delivery = $this->mfaService->sendEmailOTP($user, $request);
 
-                return back()->with('status', 'A verification code has been sent to your email.');
+                if (! $delivery['sent'] && ! config('app.debug')) {
+                    return back()->withErrors([
+                        'code' => 'Verification email could not be sent. Ask an administrator to configure Gmail App Password in MAIL_PASSWORD.',
+                    ]);
+                }
+
+                return back()->with('status', $delivery['sent']
+                    ? 'A verification code has been sent to your email.'
+                    : 'Email delivery failed — use the development code below if shown.');
             }
 
             if (! $this->mfaService->verifyEmailOTP($user, $validated['code'])) {
@@ -196,7 +204,13 @@ class WebAuthController extends Controller
         }
 
         if ($user->mfa_method === 'email') {
-            $this->mfaService->sendEmailOTP($user);
+            $delivery = $this->mfaService->sendEmailOTP($user, $request);
+
+            if (! $delivery['sent'] && ! config('app.debug')) {
+                return redirect()
+                    ->route('login')
+                    ->withErrors(['login' => 'Could not send MFA verification email. Please contact your administrator.']);
+            }
         }
 
         return view('auth.mfa-verify', [
@@ -228,7 +242,15 @@ class WebAuthController extends Controller
         $user = Auth::user();
 
         if ($user->mfa_method === 'email') {
-            $this->mfaService->sendEmailOTP($user);
+            $delivery = $this->mfaService->sendEmailOTP($user, $request);
+
+            if ($delivery['sent']) {
+                return back()->with('status', 'A new verification code has been sent.');
+            }
+
+            return back()->with('status', config('app.debug')
+                ? 'Email delivery failed — use the development code below if shown.'
+                : 'Could not resend verification email. Please try again later.');
         }
 
         return back()->with('status', 'A new verification code has been sent.');

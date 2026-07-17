@@ -68,7 +68,15 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($request->method === 'email') {
-            $this->mfaService->sendEmailOTP($user);
+            $delivery = $this->mfaService->sendEmailOTP($user, $request);
+
+            if (! $delivery['sent']) {
+                return response()->json([
+                    'message' => 'Could not send verification email',
+                    'error' => config('app.debug') ? $delivery['error'] : 'Mail configuration error',
+                    'dev_code' => config('app.debug') ? $delivery['otp'] : null,
+                ], 503);
+            }
 
             return response()->json([
                 'message' => 'Verification code sent to your email',

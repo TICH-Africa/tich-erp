@@ -6,15 +6,20 @@ use App\Mail\MfaVerificationMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use OTPHP\TOTP;
 use ParagonIE\ConstantTime\Base32;
+use Throwable;
 
 class MFAService
 {
     public function __construct(protected AuditService $auditService) {}
 
-    public function sendEmailOTP(User $user, ?Request $request = null): string
+    /**
+     * @return array{otp: string, sent: bool, error: ?string}
+     */
+    public function sendEmailOTP(User $user, ?Request $request = null): array
     {
         $otp = $this->generateOTP();
         $expiry = now()->addMinutes(10);
@@ -25,21 +30,80 @@ class MFAService
             'attempts' => 0,
         ], 600);
 
-        Mail::to($user->email)->send(new MfaVerificationMail($otp, 10));
+        $delivery = $this->deliverOtpEmail($user, $otp, $request);
 
-        $this->auditService->log(
-            'auth.mfa.otp_sent',
-            'users',
-            $user->id,
-            null,
-            ['mfa_method' => 'email'],
-            null,
-            'success',
-            $user->id,
-            $request
-        );
+        if (! $delivery['sent'] && config('app.debug')) {
+            Log::warning('MFA OTP (dev fallback — email not sent)', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'otp' => $otp,
+                'smtp_error' => $delivery['error'],
+            ]);
 
-        return $otp;
+            session()->flash(
+                'status',
+                'Email could not be sent. For local testing, use the development code shown below or set MAIL_PASSWORD to a Google App Password.'
+            );
+            session()->flash('mfa_dev_code', $otp);
+            session()->flash('mail_error', $delivery['error']);
+        }
+
+        return [
+            'otp' => $otp,
+            'sent' => $delivery['sent'],
+            'error' => $delivery['error'],
+        ];
+    }
+
+    /**
+     * @return array{sent: bool, error: ?string}
+     */
+    private function deliverOtpEmail(User $user, string $otp, ?Request $request = null): array
+    {
+        if (empty(config('mail.mailers.smtp.password')) && config('mail.default') === 'smtp') {
+            return [
+                'sent' => false,
+                'error' => 'MAIL_PASSWORD is not set. Use a Google App Password for tichinafricaict@gmail.com.',
+            ];
+        }
+
+        try {
+            Mail::to($user->email)->send(new MfaVerificationMail($otp, 10));
+
+            $this->auditService->log(
+                'auth.mfa.otp_sent',
+                'users',
+                $user->id,
+                null,
+                ['mfa_method' => 'email', 'recipient' => $user->email],
+                null,
+                'success',
+                $user->id,
+                $request
+            );
+
+            return ['sent' => true, 'error' => null];
+        } catch (Throwable $e) {
+            Log::error('MFA email delivery failed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'message' => $e->getMessage(),
+            ]);
+
+            $this->auditService->log(
+                'auth.mfa.otp_sent',
+                'users',
+                $user->id,
+                null,
+                ['mfa_method' => 'email', 'recipient' => $user->email],
+                $e->getMessage(),
+                'failure',
+                $user->id,
+                $request
+            );
+
+            return ['sent' => false, 'error' => $e->getMessage()];
+        }
     }
 
     public function verifyEmailOTP(User $user, string $otp): bool

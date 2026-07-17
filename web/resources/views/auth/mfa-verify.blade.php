@@ -15,6 +15,13 @@
         </p>
     </div>
 
+    @if (config('app.debug') && session('mfa_dev_code'))
+        <div class="tich-mb-6" style="padding: 1rem; background: #fff8e6; border: 1px solid #f0d48a; border-radius: 0.5rem;">
+            <p class="tich-caption tich-mb-2">Development only — email not delivered</p>
+            <p class="tich-text" style="font-family: monospace; font-size: 1.25rem; letter-spacing: 0.2em;">{{ session('mfa_dev_code') }}</p>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('mfa.verify') }}">
         @csrf
 
