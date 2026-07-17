@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use OTPHP\TOTP;
@@ -10,7 +11,9 @@ use ParagonIE\ConstantTime\Base32;
 
 class MFAService
 {
-    public function sendEmailOTP(User $user): string
+    public function __construct(protected AuditService $auditService) {}
+
+    public function sendEmailOTP(User $user, ?Request $request = null): string
     {
         $otp = $this->generateOTP();
         $expiry = now()->addMinutes(10);
@@ -27,6 +30,18 @@ class MFAService
                 $message->to($user->email)
                     ->subject('TICH ERP - MFA Verification Code');
             }
+        );
+
+        $this->auditService->log(
+            'auth.mfa.otp_sent',
+            'users',
+            $user->id,
+            null,
+            ['mfa_method' => 'email'],
+            null,
+            'success',
+            $user->id,
+            $request
         );
 
         return $otp;
@@ -84,8 +99,13 @@ class MFAService
         return $codes;
     }
 
-    public function enableMFA(User $user, string $method, ?string $secret = null, ?array $backupCodes = null): void
+    public function enableMFA(User $user, string $method, ?string $secret = null, ?array $backupCodes = null, ?Request $request = null): void
     {
+        $old = [
+            'mfa_enabled' => (bool) $user->mfa_enabled,
+            'mfa_method' => $user->mfa_method,
+        ];
+
         $user->update([
             'mfa_enabled' => 1,
             'mfa_method' => $method,
@@ -95,6 +115,18 @@ class MFAService
             'mfa_verified' => 1,
             'mfa_enabled_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'auth.mfa.enabled',
+            'users',
+            $user->id,
+            $old,
+            ['mfa_method' => $method, 'has_backup_codes' => ! empty($backupCodes)],
+            null,
+            'success',
+            $user->id,
+            $request
+        );
     }
 
     public function stageTOTPSecret(User $user, string $secret): void
@@ -102,8 +134,13 @@ class MFAService
         $user->update(['mfa_secret_temp' => $secret]);
     }
 
-    public function disableMFA(User $user): void
+    public function disableMFA(User $user, ?string $reason = null, ?Request $request = null): void
     {
+        $old = [
+            'mfa_enabled' => (bool) $user->mfa_enabled,
+            'mfa_method' => $user->mfa_method,
+        ];
+
         $user->update([
             'mfa_enabled' => 0,
             'mfa_method' => null,
@@ -114,6 +151,18 @@ class MFAService
             'mfa_enabled_at' => null,
             'mfa_last_verified_at' => null,
         ]);
+
+        $this->auditService->log(
+            'auth.mfa.disabled',
+            'users',
+            $user->id,
+            $old,
+            ['mfa_enabled' => false],
+            $reason,
+            'success',
+            $user->id,
+            $request
+        );
     }
 
     public function verifyTOTP(User $user, string $code): bool
@@ -149,6 +198,17 @@ class MFAService
 
         $remaining = array_values(array_diff($backupCodes, [$normalized]));
         $user->update(['mfa_backup_codes' => $remaining]);
+
+        $this->auditService->log(
+            'auth.mfa.backup_used',
+            'users',
+            $user->id,
+            null,
+            ['remaining_backup_codes' => count($remaining)],
+            'Backup code consumed during MFA verification',
+            'success',
+            $user->id
+        );
 
         return true;
     }

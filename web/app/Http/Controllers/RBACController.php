@@ -117,7 +117,7 @@ class RBACController extends Controller
 
         $targetUser = User::findOrFail($request->user_id);
 
-        $this->rbacService->revokeRoleFromUser($targetUser, $request->role_id);
+        $this->rbacService->revokeRoleFromUser($targetUser, $request->role_id, $currentUser->id);
 
         return response()->json([
             'message' => 'Role revoked successfully',
@@ -187,7 +187,7 @@ class RBACController extends Controller
 
         $targetUser = User::findOrFail($request->user_id);
 
-        $this->rbacService->revokePermissionFromUser($targetUser, $request->permission_id);
+        $this->rbacService->revokePermissionFromUser($targetUser, $request->permission_id, $currentUser->id);
 
         return response()->json([
             'message' => 'Permission revoked successfully',
@@ -293,9 +293,21 @@ class RBACController extends Controller
         }
 
         $role = Role::findOrFail($request->role_id);
+        $oldPermissionIds = $role->permissions()->pluck('permissions.id')->all();
 
-        // Sync permissions
         $role->permissions()->sync($request->permission_ids);
+
+        app(\App\Services\AuditService::class)->log(
+            'rbac.role.permissions_synced',
+            'roles',
+            $role->id,
+            ['permission_ids' => $oldPermissionIds],
+            ['permission_ids' => $request->permission_ids],
+            null,
+            'success',
+            $currentUser->id,
+            $request
+        );
 
         return response()->json([
             'message' => 'Permissions assigned to role successfully',

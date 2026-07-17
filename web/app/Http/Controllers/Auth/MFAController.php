@@ -228,7 +228,7 @@ class MFAController extends Controller
             ], 422);
         }
 
-        $this->mfaService->disableMFA($user);
+        $this->mfaService->disableMFA($user, 'Disabled via MFA API', $request);
 
         return response()->json([
             'message' => 'MFA disabled successfully',

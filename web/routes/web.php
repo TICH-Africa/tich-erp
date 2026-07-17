@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Week4\ApplicationController;
@@ -58,6 +60,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/applications/{id}/shortlist', [OnboardingController::class, 'shortlistApplication'])
             ->middleware('permission:admissions.write')
             ->name('week4.application.shortlist');
+    });
+
+    Route::prefix('admin/audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {
+        Route::get('/', [AuditController::class, 'index'])->name('admin.audit-logs.index');
+        Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
+        Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
     });
 });
 

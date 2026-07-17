@@ -26,7 +26,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = $this->authService->attemptLogin($credentials['login'], $credentials['password']);
+        $user = $this->authService->attemptLogin($credentials['login'], $credentials['password'], $request);
 
         if (! $user) {
             return response()->json(['message' => 'Invalid credentials or account locked'], 401);
@@ -46,6 +46,8 @@ class AuthController extends Controller
         $user = $request->user();
 
         if (! $this->authService->verifyMfaCode($user, $request->code)) {
+            $this->authService->logMfaVerifyFailed($user, $request);
+
             return response()->json(['message' => 'Invalid or expired verification code'], 422);
         }
 
@@ -98,7 +100,7 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Invalid or expired verification code'], 422);
             }
 
-            $this->mfaService->enableMFA($user, 'email');
+            $this->mfaService->enableMFA($user, 'email', null, null, $request);
         } else {
             if (! $this->mfaService->verifyTOTP($user, $request->code)) {
                 return response()->json(['message' => 'Invalid authenticator code'], 422);
@@ -109,7 +111,8 @@ class AuthController extends Controller
                 $user,
                 'auth_app',
                 $user->mfa_secret_temp,
-                $backupCodes
+                $backupCodes,
+                $request
             );
 
             return response()->json([
@@ -140,7 +143,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid password'], 422);
         }
 
-        $this->mfaService->disableMFA($user);
+        $this->mfaService->disableMFA($user, $request->reason, $request);
         $this->authService->clearMfaSession($request);
 
         return response()->json(['message' => 'MFA disabled successfully']);
@@ -151,6 +154,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($user) {
+            $this->authService->logLogout($user, $request);
             $user->currentAccessToken()?->delete();
         }
 

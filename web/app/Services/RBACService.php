@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
+    public function __construct(protected AuditService $auditService) {}
     public function resolvePermissionSlug(string $permission): string
     {
         $aliases = config('tich.permission_aliases', []);
@@ -234,6 +235,104 @@ class RBACService
                 'assigned_at' => now(),
                 'assigned_by' => $assignedBy,
             ]
+        );
+
+        $roleName = DB::table('roles')->where('id', $roleId)->value('role_name');
+
+        $this->auditService->log(
+            'rbac.role.assigned',
+            'user_roles',
+            "{$user->id}:{$roleId}",
+            null,
+            [
+                'target_user_id' => $user->id,
+                'role_id' => $roleId,
+                'role_name' => $roleName,
+                'campus_id' => $campusId,
+                'department_id' => $departmentId,
+                'assigned_by' => $assignedBy,
+            ],
+            null,
+            'success',
+            $assignedBy
+        );
+    }
+
+    public function revokeRoleFromUser(User $user, int $roleId, ?int $revokedBy = null): void
+    {
+        $roleName = DB::table('roles')->where('id', $roleId)->value('role_name');
+
+        DB::table('user_roles')
+            ->where('user_id', $user->id)
+            ->where('role_id', $roleId)
+            ->delete();
+
+        $this->auditService->log(
+            'rbac.role.revoked',
+            'user_roles',
+            "{$user->id}:{$roleId}",
+            ['role_id' => $roleId, 'role_name' => $roleName],
+            null,
+            null,
+            'success',
+            $revokedBy
+        );
+    }
+
+    public function assignPermissionToUser(User $user, int $permissionId, ?int $campusId = null, ?int $departmentId = null, ?int $grantedBy = null): void
+    {
+        DB::table('user_permissions')->updateOrInsert(
+            [
+                'user_id' => $user->id,
+                'permission_id' => $permissionId,
+                'campus_id' => $campusId,
+                'department_id' => $departmentId,
+            ],
+            [
+                'granted_at' => now(),
+                'granted_by' => $grantedBy,
+            ]
+        );
+
+        $slug = DB::table('permissions')->where('id', $permissionId)->value('slug');
+
+        $this->auditService->log(
+            'rbac.permission.assigned',
+            'user_permissions',
+            "{$user->id}:{$permissionId}",
+            null,
+            [
+                'target_user_id' => $user->id,
+                'permission_id' => $permissionId,
+                'permission_slug' => $slug,
+                'campus_id' => $campusId,
+                'department_id' => $departmentId,
+                'granted_by' => $grantedBy,
+            ],
+            null,
+            'success',
+            $grantedBy
+        );
+    }
+
+    public function revokePermissionFromUser(User $user, int $permissionId, ?int $revokedBy = null): void
+    {
+        $slug = DB::table('permissions')->where('id', $permissionId)->value('slug');
+
+        DB::table('user_permissions')
+            ->where('user_id', $user->id)
+            ->where('permission_id', $permissionId)
+            ->delete();
+
+        $this->auditService->log(
+            'rbac.permission.revoked',
+            'user_permissions',
+            "{$user->id}:{$permissionId}",
+            ['permission_id' => $permissionId, 'permission_slug' => $slug],
+            null,
+            null,
+            'success',
+            $revokedBy
         );
     }
 

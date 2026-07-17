@@ -12,9 +12,10 @@ class AuthService
     public function __construct(
         protected MFAService $mfaService,
         protected RBACService $rbacService,
+        protected AuditService $auditService,
     ) {}
 
-    public function attemptLogin(string $login, string $password): ?User
+    public function attemptLogin(string $login, string $password, ?Request $request = null): ?User
     {
         $loginField = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
@@ -25,13 +26,37 @@ class AuthService
 
         if (! $user || ! Hash::check($password, $user->password_hash)) {
             if ($user) {
-                $this->recordFailedAttempt($user);
+                $this->recordFailedAttempt($user, $request, $login);
+            } else {
+                $this->auditService->log(
+                    'auth.login.failed',
+                    'users',
+                    'unknown',
+                    null,
+                    ['login' => $login, 'channel' => $this->channel($request)],
+                    'Invalid credentials',
+                    'failure',
+                    null,
+                    $request
+                );
             }
 
             return null;
         }
 
         if ($user->locked_until && $user->locked_until->isFuture()) {
+            $this->auditService->log(
+                'auth.login.failed',
+                'users',
+                $user->id,
+                null,
+                ['login' => $login, 'locked_until' => $user->locked_until->toIso8601String(), 'channel' => $this->channel($request)],
+                'Account locked',
+                'failure',
+                $user->id,
+                $request
+            );
+
             return null;
         }
 
@@ -41,22 +66,74 @@ class AuthService
             'locked_until' => null,
         ])->save();
 
+        $this->auditService->log(
+            'auth.login.success',
+            'users',
+            $user->id,
+            null,
+            [
+                'username' => $user->username,
+                'user_type' => $user->user_type,
+                'channel' => $this->channel($request),
+            ],
+            null,
+            'success',
+            $user->id,
+            $request
+        );
+
         return $user;
     }
 
-    public function recordFailedAttempt(User $user): void
+    public function recordFailedAttempt(User $user, ?Request $request = null, ?string $login = null): void
     {
         $attempts = ($user->failed_login_attempts ?? 0) + 1;
         $maxAttempts = config('tich.auth.max_login_attempts', 5);
         $lockoutMinutes = config('tich.auth.lockout_minutes', 15);
 
         $updates = ['failed_login_attempts' => $attempts];
+        $locked = false;
 
         if ($attempts >= $maxAttempts) {
             $updates['locked_until'] = now()->addMinutes($lockoutMinutes);
+            $locked = true;
         }
 
         $user->forceFill($updates)->save();
+
+        $this->auditService->log(
+            'auth.login.failed',
+            'users',
+            $user->id,
+            ['failed_login_attempts' => $attempts - 1],
+            [
+                'failed_login_attempts' => $attempts,
+                'login' => $login ?? $user->email,
+                'channel' => $this->channel($request),
+            ],
+            $locked ? 'Maximum login attempts exceeded' : 'Invalid password',
+            'failure',
+            $user->id,
+            $request
+        );
+
+        if ($locked) {
+            $this->auditService->log(
+                'auth.login.locked',
+                'users',
+                $user->id,
+                null,
+                [
+                    'locked_until' => $user->locked_until->toIso8601String(),
+                    'failed_login_attempts' => $attempts,
+                    'channel' => $this->channel($request),
+                ],
+                'Account locked after repeated failed login attempts',
+                'success',
+                $user->id,
+                $request
+            );
+        }
     }
 
     public function postLoginDestination(User $user, Request $request): string
@@ -92,6 +169,18 @@ class AuthService
         $this->mfaService->recordVerification($user);
 
         $user->forceFill(['mfa_verified' => 1])->save();
+
+        $this->auditService->log(
+            'auth.mfa.verify.success',
+            'users',
+            $user->id,
+            null,
+            ['mfa_method' => $user->mfa_method, 'channel' => $this->channel($request)],
+            null,
+            'success',
+            $user->id,
+            $request
+        );
     }
 
     public function clearMfaSession(Request $request): void
@@ -157,6 +246,21 @@ class AuthService
 
         $this->rbacService->assignDefaultRole($user);
 
+        $this->auditService->log(
+            'auth.register',
+            'users',
+            $user->id,
+            null,
+            [
+                'username' => $user->username,
+                'email' => $user->email,
+                'user_type' => $user->user_type,
+            ],
+            'Self-registration',
+            'success',
+            $user->id
+        );
+
         return $user;
     }
 
@@ -182,5 +286,48 @@ class AuthService
             'mfa_setup_required' => $this->mfaService->isMFARequired($user) && ! $user->mfa_enabled,
             'roles' => $this->rbacService->getUserRoles($user),
         ];
+    }
+
+    public function logLogout(?User $user, ?Request $request = null): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        $this->auditService->log(
+            'auth.logout',
+            'users',
+            $user->id,
+            null,
+            ['channel' => $this->channel($request)],
+            null,
+            'success',
+            $user->id,
+            $request
+        );
+    }
+
+    public function logMfaVerifyFailed(User $user, ?Request $request = null): void
+    {
+        $this->auditService->log(
+            'auth.mfa.verify.failed',
+            'users',
+            $user->id,
+            null,
+            ['mfa_method' => $user->mfa_method, 'channel' => $this->channel($request)],
+            'Invalid or expired verification code',
+            'failure',
+            $user->id,
+            $request
+        );
+    }
+
+    private function channel(?Request $request): string
+    {
+        if (! $request) {
+            return 'system';
+        }
+
+        return $request->expectsJson() || $request->is('api/*') ? 'api' : 'web';
     }
 }

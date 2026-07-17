@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AuditService;
 use App\Services\RBACService;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,7 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckPermission
 {
-    public function __construct(protected RBACService $rbacService) {}
+    public function __construct(
+        protected RBACService $rbacService,
+        protected AuditService $auditService,
+    ) {}
 
     public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
@@ -29,6 +33,22 @@ class CheckPermission
             : $this->rbacService->hasPermission($user, $permissions[0] ?? '');
 
         if (! $allowed) {
+            $this->auditService->log(
+                'access.denied',
+                'routes',
+                $request->path(),
+                null,
+                [
+                    'required_permissions' => $permissions,
+                    'method' => $request->method(),
+                    'route' => $request->route()?->getName(),
+                ],
+                'Permission check failed',
+                'failure',
+                $user->id,
+                $request
+            );
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'You do not have permission to perform this action',

@@ -30,7 +30,7 @@ class WebAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = $this->authService->attemptLogin($credentials['login'], $credentials['password']);
+        $user = $this->authService->attemptLogin($credentials['login'], $credentials['password'], $request);
 
         if (! $user) {
             return back()
@@ -140,10 +140,12 @@ class WebAuthController extends Controller
             }
 
             if (! $this->mfaService->verifyEmailOTP($user, $validated['code'])) {
+                $this->authService->logMfaVerifyFailed($user, $request);
+
                 return back()->withErrors(['code' => 'Invalid or expired verification code.']);
             }
 
-            $this->mfaService->enableMFA($user, 'email');
+            $this->mfaService->enableMFA($user, 'email', null, null, $request);
             $this->authService->markMfaVerified($request, $user);
 
             return redirect()->route('dashboard')->with('status', 'Email MFA is now active on your account.');
@@ -160,6 +162,8 @@ class WebAuthController extends Controller
         }
 
         if (! $this->mfaService->verifyTOTP($user, $validated['code'])) {
+            $this->authService->logMfaVerifyFailed($user, $request);
+
             return back()
                 ->with('totp_secret', $user->mfa_secret_temp)
                 ->with('totp_uri', $this->mfaService->getTOTPQRCodeURI($user))
@@ -167,7 +171,7 @@ class WebAuthController extends Controller
         }
 
         $backupCodes = $this->mfaService->generateBackupCodes();
-        $this->mfaService->enableMFA($user, 'auth_app', $user->mfa_secret_temp, $backupCodes);
+        $this->mfaService->enableMFA($user, 'auth_app', $user->mfa_secret_temp, $backupCodes, $request);
         $this->authService->markMfaVerified($request, $user);
 
         return redirect()
@@ -209,6 +213,8 @@ class WebAuthController extends Controller
         $user = Auth::user();
 
         if (! $this->authService->verifyMfaCode($user, $request->code)) {
+            $this->authService->logMfaVerifyFailed($user, $request);
+
             return back()->withErrors(['code' => 'Invalid or expired verification code.']);
         }
 
@@ -230,6 +236,9 @@ class WebAuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $this->authService->logLogout($user, $request);
+
         Auth::logout();
         $this->authService->clearMfaSession($request);
 

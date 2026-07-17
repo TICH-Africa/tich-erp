@@ -27,8 +27,15 @@
                 </article>
                 @endcan
 
+                @can('audit_logs.read')
                 <article class="tich-card">
-                    <h3 class="tich-h3">Security</h3>
+                    <h3 class="tich-h3">Audit logs</h3>
+                    <p class="tich-text">Review authentication, MFA, RBAC, and access control activity.</p>
+                    <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View audit trail</a>
+                </article>
+                @endcan
+
+                <article class="tich-card">
                     <p class="tich-text">
                         MFA status:
                         @if (auth()->user()->mfa_enabled)
