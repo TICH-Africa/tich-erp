@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\MfaVerificationMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -24,13 +25,7 @@ class MFAService
             'attempts' => 0,
         ], 600);
 
-        Mail::raw(
-            "Your TICH ERP verification code is: {$otp}\n\nThis code expires in 10 minutes.",
-            function ($message) use ($user) {
-                $message->to($user->email)
-                    ->subject('TICH ERP - MFA Verification Code');
-            }
-        );
+        Mail::to($user->email)->send(new MfaVerificationMail($otp, 10));
 
         $this->auditService->log(
             'auth.mfa.otp_sent',

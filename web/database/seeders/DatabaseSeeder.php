@@ -29,6 +29,15 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
+                'username' => 'superadmin',
+                'email' => 'osumbaevans21@gmail.com',
+                'user_type' => 'admin',
+                'password' => 'Password123!',
+                'role' => 'Super Admin',
+                'mfa_enabled' => true,
+                'mfa_method' => 'email',
+            ],
+            [
                 'username' => 'registrar',
                 'email' => 'registrar@tich.ac.ke',
                 'user_type' => 'staff',
