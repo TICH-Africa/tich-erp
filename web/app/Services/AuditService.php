@@ -32,30 +32,33 @@ class AuditService
         $sanitizedOld = $this->sanitize($oldValue);
         $sanitizedNew = $this->sanitize($newValue);
 
-        $previousHash = $this->latestRecordHash();
+        $previousHash = $this->supportsHashChain() ? $this->latestRecordHash() : null;
         $ipAddress = $request?->ip();
         $userAgent = $request?->userAgent();
 
-        $recordHash = $this->computeHash([
-            'user_id' => $userId,
-            'action' => $action,
-            'module' => $module,
-            'entity_type' => $entityType,
-            'entity_id' => (string) ($entityId ?? ''),
-            'old_value' => $sanitizedOld,
-            'new_value' => $sanitizedNew,
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-            'reason' => $reason,
-            'status' => $status,
-            'created_at' => $createdAt->toIso8601String(),
-            'previous_hash' => $previousHash,
-        ]);
+        $recordHash = null;
 
-        return AuditLog::create([
+        if ($this->supportsHashChain()) {
+            $recordHash = $this->computeHash([
+                'user_id' => $userId,
+                'action' => $action,
+                'module' => $module,
+                'entity_type' => $entityType,
+                'entity_id' => (string) ($entityId ?? ''),
+                'old_value' => $sanitizedOld,
+                'new_value' => $sanitizedNew,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'reason' => $reason,
+                'status' => $status,
+                'created_at' => $createdAt->toIso8601String(),
+                'previous_hash' => $previousHash,
+            ]);
+        }
+
+        $payload = [
             'user_id' => $userId,
             'action' => $action,
-            'module' => $module,
             'entity_type' => $entityType,
             'entity_id' => (string) ($entityId ?? ''),
             'old_value' => $sanitizedOld,
@@ -63,11 +66,23 @@ class AuditService
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent ? substr($userAgent, 0, 500) : null,
             'reason' => $reason,
-            'status' => $status,
-            'previous_hash' => $previousHash,
-            'record_hash' => $recordHash,
             'created_at' => $createdAt,
-        ]);
+        ];
+
+        if (Schema::hasColumn('audit_logs', 'status')) {
+            $payload['status'] = $status;
+        }
+
+        if (Schema::hasColumn('audit_logs', 'module')) {
+            $payload['module'] = $module;
+        }
+
+        if ($this->supportsHashChain()) {
+            $payload['previous_hash'] = $previousHash;
+            $payload['record_hash'] = $recordHash;
+        }
+
+        return AuditLog::create($payload);
     }
 
     public function verifyChain(?int $limit = null): array
@@ -76,6 +91,15 @@ class AuditService
             return [
                 'verified' => false,
                 'message' => 'Audit log table is not available',
+                'checked' => 0,
+                'broken_at_id' => null,
+            ];
+        }
+
+        if (! $this->supportsHashChain()) {
+            return [
+                'verified' => false,
+                'message' => 'Hash chain columns are not available — run migrations',
                 'checked' => 0,
                 'broken_at_id' => null,
             ];
@@ -146,7 +170,7 @@ class AuditService
             $query->where('action', $filters['action']);
         }
 
-        if (! empty($filters['module'])) {
+        if (! empty($filters['module']) && Schema::hasColumn('audit_logs', 'module')) {
             $query->where('module', $filters['module']);
         }
 
@@ -158,7 +182,7 @@ class AuditService
             $query->where('user_id', $filters['user_id']);
         }
 
-        if (! empty($filters['status'])) {
+        if (! empty($filters['status']) && Schema::hasColumn('audit_logs', 'status')) {
             $query->where('status', $filters['status']);
         }
 
@@ -221,9 +245,20 @@ class AuditService
 
     private function latestRecordHash(): string
     {
+        if (! $this->supportsHashChain()) {
+            return config('audit.genesis_hash');
+        }
+
         $latest = AuditLog::query()->orderByDesc('id')->value('record_hash');
 
         return $latest ?? config('audit.genesis_hash');
+    }
+
+    private function supportsHashChain(): bool
+    {
+        return $this->isAvailable()
+            && Schema::hasColumn('audit_logs', 'record_hash')
+            && Schema::hasColumn('audit_logs', 'previous_hash');
     }
 
     private function isAvailable(): bool
