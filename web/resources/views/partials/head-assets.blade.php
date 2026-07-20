@@ -1,6 +1,8 @@
 <link rel="preconnect" href="https://fonts.bunny.net">
+@include('partials.theme-init')
 <link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" />
 <link rel="stylesheet" href="{{ asset('css/tich-platform.css') }}">
+<script src="{{ asset('js/tich-theme.js') }}" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {

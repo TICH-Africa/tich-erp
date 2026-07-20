@@ -32,6 +32,9 @@
         </aside>
 
         <main class="tich-auth-main">
+            <div class="tich-auth-main__toolbar">
+                @include('partials.theme-toggle')
+            </div>
             <div class="tich-auth-form">
                 <div class="mb-8 lg:hidden">
                     @include('partials.brand-logo')

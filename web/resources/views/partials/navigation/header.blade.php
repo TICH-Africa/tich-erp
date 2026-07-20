@@ -11,6 +11,8 @@
                 @include('partials.navigation.menu-item', ['item' => $item])
             @endforeach
 
+            @include('partials.theme-toggle')
+
             @auth
                 <a href="{{ route('dashboard') }}" class="tich-nav__link">Dashboard</a>
                 <form method="POST" action="{{ route('logout') }}" class="inline">
@@ -30,6 +32,10 @@
                 @include('partials.navigation.menu-item', ['item' => $item, 'mobile' => true])
             @endforeach
             <div class="tich-nav-drawer__actions">
+                <div class="tich-nav-drawer__theme">
+                    @include('partials.theme-toggle')
+                    <span class="tich-caption">Appearance</span>
+                </div>
                 @auth
                     <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Dashboard</a>
                 @else

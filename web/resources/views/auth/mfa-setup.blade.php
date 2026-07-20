@@ -14,9 +14,9 @@
     </div>
 
     @if (config('app.debug') && session('mfa_dev_code'))
-        <div class="tich-mb-6" style="padding: 1rem; background: #fff8e6; border: 1px solid #f0d48a; border-radius: 0.5rem;">
+        <div class="tich-notice tich-notice--warning tich-mb-6">
             <p class="tich-caption tich-mb-2">Development only — your verification code</p>
-            <p class="tich-text" style="font-family: monospace; font-size: 1.5rem; letter-spacing: 0.25em; font-weight: 600;">{{ session('mfa_dev_code') }}</p>
+            <p class="tich-text tich-notice__code">{{ session('mfa_dev_code') }}</p>
             @if (session('mail_error'))
                 <p class="tich-caption tich-mt-2">Email error: {{ session('mail_error') }}</p>
             @endif
@@ -24,7 +24,7 @@
     @endif
 
     @if (session('totp_uri'))
-        <div class="tich-mb-6" style="padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;">
+        <div class="tich-notice tich-notice--info tich-mb-6">
             <p class="tich-caption tich-mb-2">Scan with Google Authenticator, Microsoft Authenticator, or similar:</p>
             <p class="tich-text" style="word-break: break-all; font-size: 0.85rem;">{{ session('totp_uri') }}</p>
             @if (session('totp_secret'))
