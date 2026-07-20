@@ -1282,3 +1282,99 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     border-color: var(--tich-primary);
     box-shadow: 0 0 0 1px var(--tich-primary);
 }
+
+/* ─── Programs catalogue ─────────────────────────────────────────────── */
+
+.tich-section--hero-plain {
+    background: var(--tich-blue-light);
+    border-bottom: 3px solid var(--tich-green);
+}
+
+.tich-featured-program {
+    border: 2px solid var(--tich-green);
+}
+
+.tich-featured-program__aside {
+    padding: 1.25rem;
+    background: var(--tich-neutral);
+    border-radius: var(--radius-md);
+}
+
+/* ─── Application portal ─────────────────────────────────────────────── */
+
+.tich-apply-progress {
+    display: flex;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-x: auto;
+}
+
+.tich-apply-progress__item {
+    flex: 1;
+    min-width: 5rem;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-white);
+}
+
+.tich-apply-progress__item.is-current {
+    border-color: var(--tich-blue);
+    background: var(--tich-blue-light);
+}
+
+.tich-apply-progress__item.is-complete {
+    border-color: var(--tich-green);
+}
+
+.tich-apply-progress__index {
+    display: block;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    color: var(--tich-blue);
+}
+
+.tich-apply-progress__label {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    color: var(--tich-grey);
+    margin-top: 0.25rem;
+}
+
+.tich-apply-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.tich-review-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.tich-review-list div {
+    display: grid;
+    gap: 0.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-review-list dt {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tich-grey);
+}
+
+.tich-review-list dd {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--tich-grey);
+}

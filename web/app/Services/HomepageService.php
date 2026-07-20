@@ -95,7 +95,7 @@ class HomepageService
 
         return collect(config('tich-homepage.programs', []))
             ->map(fn ($program) => (object) array_merge($program, [
-                'apply_url' => url($program['apply_url'] ?? '/apply'),
+                'apply_url' => route('apply.index', ['program' => $program['program_code'] ?? '']),
             ]));
     }
 
@@ -192,7 +192,7 @@ class HomepageService
             'homepage_tagline' => $program->homepage_tagline ?? null,
             'entry_requirements' => $program->entry_requirements ?? 'See admissions guide for entry requirements.',
             'fee_display' => $feeDisplay,
-            'apply_url' => url('/apply'),
+            'apply_url' => route('apply.index', ['program' => $program->program_code]),
         ];
     }
 

@@ -26,7 +26,7 @@
                             <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-primary">Go to dashboard</a>
                         @else
                             <a href="{{ route('login') }}" class="tich-btn tich-btn-blue">Sign in to portal</a>
-                            <a href="{{ url('/apply') }}" class="tich-btn tich-btn-primary">Start application</a>
+                            <a href="{{ route('apply.index') }}" class="tich-btn tich-btn-primary">Start application</a>
                         @endauth
                     </div>
                 </div>

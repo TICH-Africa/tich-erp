@@ -7,7 +7,7 @@ return [
         ['label' => 'About Us', 'url' => '#about'],
         ['label' => 'Research', 'url' => '#research'],
         ['label' => 'Academics', 'url' => '#programs'],
-        ['label' => 'Admissions', 'url' => '/apply'],
+        ['label' => 'Programs/Courses', 'url' => '/programs'],
         ['label' => 'Events', 'url' => '#events'],
         ['label' => 'Blog', 'url' => '#blog'],
     ],
@@ -17,7 +17,7 @@ return [
         ['label' => 'About Us', 'url' => '#about'],
         ['label' => 'Research Portal', 'url' => '#research'],
         ['label' => 'Academics Catalog', 'url' => '#programs'],
-        ['label' => 'Admissions Guide', 'url' => '/apply'],
+        ['label' => 'Programs & Courses', 'url' => '/programs'],
     ],
 
     'footer_quick_links' => [

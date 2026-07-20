@@ -8,12 +8,14 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
-use App\Http\Controllers\Week4\ApplicationController;
+use App\Http\Controllers\Public\ProgramsController;
 use App\Http\Controllers\Week4\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 
 /*
 |--------------------------------------------------------------------------
@@ -105,8 +107,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 */
 
 Route::prefix('apply')->group(function () {
-    Route::get('/', [ApplicationController::class, 'showPortal'])->name('week4.application.portal');
-    Route::post('/step/{step}', [ApplicationController::class, 'handleStep'])->name('week4.application.step');
-    Route::post('/submit/{applicantId}', [ApplicationController::class, 'submitApplication'])->name('week4.application.submit');
-    Route::get('/check-status', [ApplicationController::class, 'checkStatus'])->name('week4.application.status');
+    Route::get('/', [ApplicationController::class, 'index'])->name('apply.index');
+    Route::post('/step/{step}', [ApplicationController::class, 'handleStep'])->name('apply.step');
+    Route::get('/confirmation/{number}', [ApplicationController::class, 'confirmation'])->name('apply.confirmation');
+    Route::match(['get', 'post'], '/check-status', [ApplicationController::class, 'checkStatus'])->name('apply.status');
+    Route::post('/reset', [ApplicationController::class, 'reset'])->name('apply.reset');
 });

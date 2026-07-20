@@ -38,7 +38,7 @@
         </div>
 
         <div class="tich-text-center tich-mt-8">
-            <a href="#programs" class="tich-btn tich-btn-blue">View all academic programmes</a>
+            <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-blue">View all academic programmes</a>
         </div>
     </div>
 </section>
