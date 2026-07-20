@@ -1,6 +1,6 @@
-<header class="tich-header">
+<header id="site-header" class="tich-header{{ request()->routeIs('home') ? ' tich-header--over-hero' : '' }}">
     <div class="tich-container tich-header__inner">
-        @include('partials.brand-logo')
+        @include('partials.brand-logo', ['variant' => request()->routeIs('home') ? 'light' : 'default'])
 
         <button type="button" class="tich-nav-toggle" aria-label="Open menu" data-nav-toggle>
             <span></span><span></span><span></span>

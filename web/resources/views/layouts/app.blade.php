@@ -7,7 +7,7 @@
     <title>@yield('title', 'Home') — {{ $siteMeta['short_name'] ?? config('app.name', 'TICH ERP') }}</title>
     @include('partials.head-assets')
 </head>
-<body class="tich-body">
+<body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
     @include('partials.navigation.header')
 
     <main>

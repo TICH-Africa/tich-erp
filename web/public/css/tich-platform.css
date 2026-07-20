@@ -360,6 +360,87 @@ h3.tich-h3 {
     z-index: 50;
     background-color: var(--tich-white);
     border-bottom: 2px solid var(--tich-blue);
+    transition: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* Transparent header over full-bleed home hero (Animal IQ / Onagi style) */
+body.page-home .tich-header--over-hero {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+    border-bottom-color: transparent;
+    box-shadow: none;
+}
+
+body.page-home .tich-header--over-hero .tich-nav__link {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.page-home .tich-header--over-hero .tich-nav__link:hover {
+    color: var(--tich-white);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+body.page-home .tich-header--over-hero .tich-nav-toggle {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.page-home .tich-header--over-hero .tich-nav-toggle span {
+    background: var(--tich-white);
+}
+
+body.page-home .tich-header--over-hero .tich-btn-ghost {
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+body.page-home .tich-header--over-hero .tich-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--tich-white);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom-color: var(--tich-blue);
+    box-shadow: 0 4px 24px rgba(22, 105, 166, 0.08);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__name,
+body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline {
+    color: var(--tich-grey);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline {
+    color: var(--tich-blue);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link {
+    color: var(--tich-grey);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link:hover {
+    color: var(--tich-blue);
+    background-color: var(--tich-blue-light);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle {
+    border-color: var(--tich-neutral-border);
+    background: var(--tich-white);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle span {
+    background: var(--tich-grey);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
+    color: var(--tich-grey);
+    border-color: var(--tich-neutral-border);
 }
 
 .tich-header__inner {
@@ -694,104 +775,224 @@ h3.tich-h3 {
 .tich-mb-8 { margin-bottom: 2rem; }
 .tich-text-center { text-align: center; }
 
-/* ─── Homepage carousel ─────────────────────────────────────────────── */
+/* ─── Homepage hero carousel (Animal IQ / Onagi style) ─────────────── */
 
-.tich-carousel {
+.tich-hero-carousel {
     position: relative;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
-    background: var(--tich-white);
-    border-bottom: 3px solid var(--tich-green);
+    background: #0f172a;
 }
 
-.tich-carousel__track {
-    position: relative;
-    min-height: 28rem;
+.tich-hero-carousel__slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 6rem 0 5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.9s ease, visibility 0.9s ease;
+    z-index: 0;
 }
 
-.tich-carousel__slide {
-    display: none;
-    position: relative;
+.tich-hero-carousel__slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 1;
 }
 
-.tich-carousel__slide.is-active {
-    display: block;
-}
-
-.tich-carousel__media {
+.tich-hero-carousel__bg {
     position: absolute;
     inset: 0;
     z-index: 0;
 }
 
-.tich-carousel__image {
+.tich-hero-carousel__image {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
 }
 
-.tich-carousel__placeholder {
+.tich-hero-carousel__placeholder {
     width: 100%;
     height: 100%;
-    min-height: 28rem;
-    background: linear-gradient(135deg, var(--tich-blue-light) 0%, var(--tich-green-light) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.tich-carousel__placeholder span {
-    font-family: var(--font-heading);
-    font-size: 6rem;
-    color: rgba(22, 105, 166, 0.15);
-    font-weight: 700;
+.tich-hero-carousel__placeholder--1 {
+    background: var(--tich-blue);
 }
 
-.tich-carousel__content {
+.tich-hero-carousel__placeholder--2 {
+    background: var(--tich-green);
+}
+
+.tich-hero-carousel__placeholder--3 {
+    background: var(--tich-grey);
+}
+
+.tich-hero-carousel__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.tich-hero-carousel__content {
     position: relative;
-    z-index: 1;
-    padding: 5rem 1rem 4rem;
+    z-index: 2;
+    width: 100%;
+}
+
+.tich-hero-carousel__inner {
+    max-width: 52rem;
+    margin: 0 auto;
+    text-align: center;
+    padding-top: 3rem;
+}
+
+.tich-hero-carousel__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0.45rem 1rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--tich-green-light);
+    background: rgba(108, 171, 51, 0.18);
+    border: 1px solid rgba(108, 171, 51, 0.35);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s;
+}
+
+.tich-hero-carousel__eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--tich-green);
+}
+
+.tich-hero-carousel__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--tich-white);
+    margin: 0 0 1.25rem;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease 0.25s, transform 0.6s ease 0.25s;
+}
+
+.tich-hero-carousel__lead {
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 2.2vw, 1.25rem);
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.88);
     max-width: 42rem;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s;
 }
 
-.tich-carousel__title {
-    font-size: clamp(2rem, 5vw, 3rem);
+.tich-hero-carousel__actions {
+    margin-top: 2rem;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease 0.55s, transform 0.6s ease 0.55s;
 }
 
-.tich-carousel__controls {
+.tich-hero-carousel__inner.is-visible .tich-hero-carousel__eyebrow,
+.tich-hero-carousel__inner.is-visible .tich-hero-carousel__title,
+.tich-hero-carousel__inner.is-visible .tich-hero-carousel__lead,
+.tich-hero-carousel__inner.is-visible .tich-hero-carousel__actions {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tich-hero-carousel__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.42);
+    color: var(--tich-white);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
-    padding: 1rem 0 1.5rem;
-}
-
-.tich-carousel__btn {
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 1px solid var(--tich-neutral-border);
-    border-radius: 9999px;
-    background: var(--tich-white);
-    color: var(--tich-blue);
-    font-size: 1.25rem;
     cursor: pointer;
+    transition: background 0.2s ease;
 }
 
-.tich-carousel__dots {
+.tich-hero-carousel__arrow:hover {
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.tich-hero-carousel__arrow--prev { left: 1rem; }
+.tich-hero-carousel__arrow--next { right: 1rem; }
+
+@media (min-width: 768px) {
+    .tich-hero-carousel__arrow {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .tich-hero-carousel__arrow--prev { left: 1.5rem; }
+    .tich-hero-carousel__arrow--next { right: 1.5rem; }
+}
+
+.tich-hero-carousel__indicators {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
     display: flex;
     gap: 0.5rem;
 }
 
-.tich-carousel__dot {
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 9999px;
+.tich-hero-carousel__indicator {
+    width: 2rem;
+    height: 0.25rem;
+    padding: 0;
     border: none;
-    background: var(--tich-neutral-border);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.28);
     cursor: pointer;
+    transition: background 0.3s ease, width 0.3s ease;
 }
 
-.tich-carousel__dot.is-active {
-    background: var(--tich-blue);
+.tich-hero-carousel__indicator.is-active {
+    width: 3rem;
+    background: var(--tich-green);
+}
+
+@media (max-width: 767px) {
+    .tich-hero-carousel__slide {
+        padding: 5.5rem 0 4.5rem;
+    }
+
+    .tich-hero-carousel__inner {
+        padding-top: 1.5rem;
+    }
+
+    .tich-hero-carousel__indicators {
+        bottom: 1.75rem;
+    }
 }
 
 /* ─── Homepage cards ────────────────────────────────────────────────── */

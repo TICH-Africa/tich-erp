@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     initCarousel();
+    initHeaderOverHero();
     initMobileNav();
 });
 
@@ -19,7 +20,20 @@ function initCarousel() {
 
     const show = (index) => {
         current = (index + slides.length) % slides.length;
-        slides.forEach((slide, i) => slide.classList.toggle('is-active', i === current));
+
+        slides.forEach((slide, i) => {
+            const isActive = i === current;
+            slide.classList.toggle('is-active', isActive);
+
+            const content = slide.querySelector('[data-carousel-content]');
+            if (content) {
+                content.classList.remove('is-visible');
+                if (isActive) {
+                    requestAnimationFrame(() => content.classList.add('is-visible'));
+                }
+            }
+        });
+
         dots.forEach((dot, i) => dot.classList.toggle('is-active', i === current));
     };
 
@@ -42,8 +56,28 @@ function initCarousel() {
 
     carousel.addEventListener('mouseenter', () => timer && clearInterval(timer));
     carousel.addEventListener('mouseleave', restart);
+    carousel.addEventListener('focusin', () => timer && clearInterval(timer));
+    carousel.addEventListener('focusout', restart);
 
     restart();
+}
+
+function initHeaderOverHero() {
+    const header = document.getElementById('site-header');
+    const hero = document.getElementById('home-hero');
+
+    if (!header || !header.classList.contains('tich-header--over-hero')) {
+        return;
+    }
+
+    const update = () => {
+        const threshold = hero ? Math.max(80, hero.offsetHeight * 0.12) : 80;
+        header.classList.toggle('tich-header--solid', window.scrollY > threshold);
+    };
+
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
 }
 
 function initMobileNav() {
