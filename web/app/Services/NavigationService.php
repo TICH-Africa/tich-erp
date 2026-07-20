@@ -147,10 +147,29 @@ class NavigationService
         }
 
         return $menu->items
-            ->map(fn ($item) => $this->mapDbItem($item))
+            ->map(fn ($item) => $this->normalizeNavItem($this->mapDbItem($item)))
             ->filter(fn ($item) => $this->itemVisible($item))
             ->values()
             ->all();
+    }
+
+    private function normalizeNavItem(array $item): array
+    {
+        $legacyLabels = ['Admissions', 'Admissions Guide', 'Programs/Courses', 'Programs & Courses'];
+
+        if (in_array($item['label'], $legacyLabels, true)) {
+            $item['label'] = 'Programs & courses';
+            $item['url_or_route'] = '/programs';
+            $item['url'] = route('programs.index', absolute: false);
+        }
+
+        if (! empty($item['children'])) {
+            $item['children'] = collect($item['children'])
+                ->map(fn ($child) => $this->normalizeNavItem($child))
+                ->all();
+        }
+
+        return $item;
     }
 
     private function mapDbItem($item): array
@@ -183,7 +202,7 @@ class NavigationService
             ->map(function ($item) {
                 $url = $item['url'] ?? $item['url_or_route'] ?? '#';
 
-                return [
+                return $this->normalizeNavItem([
                     'label' => $item['label'],
                     'label_sw' => $item['label_sw'] ?? null,
                     'url' => $this->resolveUrl($url),
@@ -192,7 +211,7 @@ class NavigationService
                     'requires_auth' => $item['requires_auth'] ?? false,
                     'allowed_user_types' => $item['allowed_user_types'] ?? null,
                     'children' => $item['children'] ?? [],
-                ];
+                ]);
             })
             ->filter(fn ($item) => $this->itemVisible($item))
             ->values()

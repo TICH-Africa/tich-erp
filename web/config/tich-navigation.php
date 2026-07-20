@@ -7,7 +7,7 @@ return [
         ['label' => 'About Us', 'url' => '#about'],
         ['label' => 'Research', 'url' => '#research'],
         ['label' => 'Academics', 'url' => '#programs'],
-        ['label' => 'Programs/Courses', 'url' => '/programs'],
+        ['label' => 'Programs & courses', 'url' => '/programs'],
         ['label' => 'Events', 'url' => '#events'],
         ['label' => 'Blog', 'url' => '#blog'],
     ],

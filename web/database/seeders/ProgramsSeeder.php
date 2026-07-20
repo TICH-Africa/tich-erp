@@ -10,6 +10,8 @@ class ProgramsSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->syncNavigationLabels();
+
         if (! Schema::hasTable('campuses') || ! Schema::hasTable('departments') || ! Schema::hasTable('academic_programs')) {
             return;
         }
@@ -89,15 +91,20 @@ class ProgramsSeeder extends Seeder
                 'created_at' => now(),
             ]);
         }
+    }
 
-        if (Schema::hasTable('navigation_menu_items')) {
-            DB::table('navigation_menu_items')
-                ->where('label', 'Admissions')
-                ->update(['label' => 'Programs/Courses', 'url_or_route' => '/programs']);
-
-            DB::table('navigation_menu_items')
-                ->where('label', 'Admissions Guide')
-                ->update(['label' => 'Programs & Courses', 'url_or_route' => '/programs']);
+    private function syncNavigationLabels(): void
+    {
+        if (! Schema::hasTable('navigation_menu_items')) {
+            return;
         }
+
+        DB::table('navigation_menu_items')
+            ->whereIn('label', ['Admissions', 'Programs/Courses', 'Programs & Courses'])
+            ->update(['label' => 'Programs & courses', 'url_or_route' => '/programs']);
+
+        DB::table('navigation_menu_items')
+            ->where('label', 'Admissions Guide')
+            ->update(['label' => 'Programs & courses', 'url_or_route' => '/programs']);
     }
 }

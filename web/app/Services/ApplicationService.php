@@ -166,6 +166,8 @@ class ApplicationService
             ]);
         }
 
+        $validated['program_code'] = strtoupper($program->program_code ?? '');
+
         return $validated;
     }
 

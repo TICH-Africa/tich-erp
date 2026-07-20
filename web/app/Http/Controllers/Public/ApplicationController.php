@@ -21,8 +21,14 @@ class ApplicationController extends Controller
         $programCode = $request->query('program');
         if ($programCode) {
             $program = $this->programsService->findProgramByCode($programCode);
-            if ($program && ! empty($program->id)) {
-                $this->applicationService->saveDraft(['program_id' => $program->id], 1);
+            if ($program) {
+                $payload = [
+                    'program_code' => strtoupper($program->program_code ?? $programCode),
+                ];
+                if (! empty($program->id)) {
+                    $payload['program_id'] = (int) $program->id;
+                }
+                $this->applicationService->saveDraft($payload, 1);
             }
         }
 
