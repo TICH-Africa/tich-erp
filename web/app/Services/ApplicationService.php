@@ -81,25 +81,9 @@ class ApplicationService
         }
 
         return DB::transaction(function () use ($data, $program, $request) {
-            $applicant = Applicant::create([
-                'application_number' => $this->generateApplicationNumber(),
-                'program_id' => $program->id,
-                'preferred_campus_id' => $data['preferred_campus_id'] ?? null,
-                'first_name' => $data['first_name'],
-                'middle_name' => $data['middle_name'] ?? null,
-                'surname' => $data['surname'],
-                'date_of_birth' => $data['date_of_birth'],
-                'gender' => $data['gender'],
-                'national_id_number' => $data['national_id_number'] ?? null,
-                'passport_number' => $data['passport_number'] ?? null,
-                'email' => $data['email'],
-                'phone_number' => $data['phone_number'],
-                'home_county' => $data['home_county'] ?? null,
-                'entry_qualification' => $data['entry_qualification'],
-                'status' => 'submitted',
-                'academic_review_status' => 'pending',
-                'application_source' => 'online',
-            ]);
+            $applicant = Applicant::create(
+                $this->buildApplicantAttributes($data, (int) $program->id)
+            );
 
             $this->persistUploadedDocuments($applicant, $data['documents'] ?? [], $request);
 
@@ -258,6 +242,38 @@ class ApplicationService
                 'mime_type' => $meta['mime_type'] ?? 'application/octet-stream',
             ]);
         }
+    }
+
+    private function buildApplicantAttributes(array $data, int $programId): array
+    {
+        $firstName = trim($data['first_name']);
+        if (! Schema::hasColumn('applicants', 'middle_name') && ! empty($data['middle_name'])) {
+            $firstName = trim($firstName.' '.$data['middle_name']);
+        }
+
+        $attributes = [
+            'application_number' => $this->generateApplicationNumber(),
+            'program_id' => $programId,
+            'preferred_campus_id' => $data['preferred_campus_id'] ?? null,
+            'first_name' => $firstName,
+            'middle_name' => $data['middle_name'] ?? null,
+            'surname' => $data['surname'],
+            'date_of_birth' => $data['date_of_birth'],
+            'gender' => $data['gender'],
+            'national_id_number' => $data['national_id_number'] ?? null,
+            'passport_number' => $data['passport_number'] ?? null,
+            'email' => $data['email'],
+            'phone_number' => $data['phone_number'],
+            'home_county' => $data['home_county'] ?? null,
+            'entry_qualification' => $data['entry_qualification'],
+            'status' => 'submitted',
+            'academic_review_status' => 'pending',
+            'application_source' => 'online',
+        ];
+
+        return collect($attributes)
+            ->filter(fn ($value, $key) => Schema::hasColumn('applicants', $key))
+            ->all();
     }
 
     private function generateApplicationNumber(): string
