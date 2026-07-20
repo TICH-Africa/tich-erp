@@ -336,6 +336,66 @@ class RBACService
         );
     }
 
+    public function syncUserAccess(
+        User $user,
+        int $roleId,
+        ?int $campusId,
+        ?int $departmentId,
+        array $modulePermissionKeys,
+        int $assignedBy,
+    ): void {
+        DB::table('user_roles')->where('user_id', $user->id)->delete();
+        $this->assignRoleToUser($user, $roleId, $campusId, $departmentId, $assignedBy);
+
+        $moduleSlugs = collect(config('tich-dashboards.modules', []))
+            ->pluck('permission')
+            ->map(fn ($key) => $this->resolvePermissionSlug($key))
+            ->unique()
+            ->values();
+
+        $modulePermissionIds = DB::table('permissions')
+            ->whereIn('slug', $moduleSlugs)
+            ->pluck('id');
+
+        DB::table('user_permissions')
+            ->where('user_id', $user->id)
+            ->whereIn('permission_id', $modulePermissionIds)
+            ->delete();
+
+        foreach ($modulePermissionKeys as $permissionKey) {
+            $slug = $this->resolvePermissionSlug($permissionKey);
+            $permissionId = DB::table('permissions')->where('slug', $slug)->value('id');
+
+            if (! $permissionId) {
+                continue;
+            }
+
+            $this->assignPermissionToUser(
+                $user,
+                (int) $permissionId,
+                $campusId,
+                $departmentId,
+                $assignedBy
+            );
+        }
+
+        $this->auditService->log(
+            'rbac.user.access_synced',
+            'users',
+            $user->id,
+            null,
+            [
+                'role_id' => $roleId,
+                'campus_id' => $campusId,
+                'department_id' => $departmentId,
+                'modules' => $modulePermissionKeys,
+            ],
+            'User platform access updated by administrator',
+            'success',
+            $assignedBy
+        );
+    }
+
     public function assignDefaultRole(User $user): void
     {
         $roleName = config("tich.default_roles.{$user->user_type}");

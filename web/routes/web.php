@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Week4\ApplicationController;
 use App\Http\Controllers\Week4\OnboardingController;
@@ -43,9 +48,39 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->middleware('permission:dashboard.access')->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)
+        ->middleware('permission:dashboard.access')
+        ->name('dashboard');
+
+    Route::prefix('admin')->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])
+            ->middleware('permission:admin.access')
+            ->name('admin.index');
+
+        Route::middleware(['permission:campuses.manage'])->group(function () {
+            Route::get('/campuses', [CampusController::class, 'index'])->name('admin.campuses.index');
+            Route::post('/campuses', [CampusController::class, 'store'])->name('admin.campuses.store');
+            Route::put('/campuses/{campus}', [CampusController::class, 'update'])->name('admin.campuses.update');
+        });
+
+        Route::middleware(['permission:departments.manage'])->group(function () {
+            Route::get('/departments', [DepartmentController::class, 'index'])->name('admin.departments.index');
+            Route::post('/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
+            Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
+        });
+
+        Route::middleware(['permission:users.access.manage'])->group(function () {
+            Route::get('/users', [UserAccessController::class, 'index'])->name('admin.users.index');
+            Route::get('/users/{user}/access', [UserAccessController::class, 'edit'])->name('admin.users.edit');
+            Route::put('/users/{user}/access', [UserAccessController::class, 'update'])->name('admin.users.update');
+        });
+
+        Route::prefix('audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {
+            Route::get('/', [AuditController::class, 'index'])->name('admin.audit-logs.index');
+            Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
+            Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
+        });
+    });
 
     Route::prefix('week4')->middleware(['permission:admissions.read'])->group(function () {
         Route::get('/dashboard', [OnboardingController::class, 'showDashboard'])
@@ -60,12 +95,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/applications/{id}/shortlist', [OnboardingController::class, 'shortlistApplication'])
             ->middleware('permission:admissions.write')
             ->name('week4.application.shortlist');
-    });
-
-    Route::prefix('admin/audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {
-        Route::get('/', [AuditController::class, 'index'])->name('admin.audit-logs.index');
-        Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
-        Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
     });
 });
 

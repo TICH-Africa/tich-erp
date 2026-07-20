@@ -19,25 +19,34 @@
             </div>
 
             <div class="tich-grid tich-grid--3">
-                @can('dashboard.access')
-                <article class="tich-card">
-                    <h3 class="tich-h3">Admissions</h3>
-                    <p class="tich-text">Review and manage applicant submissions.</p>
-                    <a href="{{ route('week4.dashboard') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open admissions</a>
+                @can('admin.access')
+                <article class="tich-card tich-card--highlight">
+                    <h3 class="tich-h3">Platform administration</h3>
+                    <p class="tich-text">Campuses, departments, users, roles, and module access.</p>
+                    <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
                 </article>
                 @endcan
 
-                @can('audit_logs.read')
-                <article class="tich-card">
-                    <h3 class="tich-h3">Audit logs</h3>
-                    <p class="tich-text">Review authentication, MFA, RBAC, and access control activity.</p>
-                    <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View audit trail</a>
-                </article>
-                @endcan
+                @foreach ($modules as $module)
+                    @if ($module['key'] === 'admin_hub')
+                        @continue
+                    @endif
+                    <article class="tich-card">
+                        <p class="tich-caption">{{ ucfirst($module['category'] ?? 'module') }}</p>
+                        <h3 class="tich-h3 tich-mt-2">{{ $module['label'] }}</h3>
+                        <p class="tich-text tich-mt-2">{{ $module['description'] }}</p>
+                        @if (!empty($module['coming_soon']))
+                            <p class="tich-caption tich-mt-4">Coming soon</p>
+                        @elseif (!empty($module['route']))
+                            <a href="{{ route($module['route']) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open</a>
+                        @endif
+                    </article>
+                @endforeach
 
                 <article class="tich-card">
+                    <h3 class="tich-h3">Security</h3>
                     <p class="tich-text">
-                        MFA status:
+                        MFA:
                         @if (auth()->user()->mfa_enabled)
                             <span class="tich-caption">Enabled ({{ str_replace('_', ' ', auth()->user()->mfa_method) }})</span>
                         @else
@@ -51,7 +60,7 @@
 
                 <article class="tich-card">
                     <h3 class="tich-h3">Account</h3>
-                    <p class="tich-text">Manage your session and sign out securely.</p>
+                    <p class="tich-text">Sign out securely from this device.</p>
                     <form method="POST" action="{{ route('logout') }}" class="tich-mt-4">
                         @csrf
                         <button type="submit" class="tich-btn tich-btn-secondary">Sign out</button>

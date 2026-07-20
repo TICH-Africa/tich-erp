@@ -10,7 +10,12 @@ class Department extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'dept_code', 'dept_name', 'dept_category', 'hod_id', 'parent_dept_id', 'campus_id', 'is_active',
+        'dept_code', 'dept_name', 'dept_category', 'hod_id', 'parent_dept_id',
+        'campus_id', 'is_active', 'created_by',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function campus(): BelongsTo
