@@ -12,10 +12,10 @@ class ProgramsService
 {
     public function __construct(protected HomepageService $homepageService) {}
 
-    public function getCatalog(): array
+    public function getCatalog(?string $search = null, ?string $departmentCode = null): array
     {
         $usingFallback = false;
-        $allPrograms = $this->loadPrograms($usingFallback);
+        $allPrograms = $this->loadPrograms($usingFallback, $search, $departmentCode);
         $featured = $this->resolveFeatured($allPrograms);
 
         $programs = $featured
@@ -26,6 +26,7 @@ class ProgramsService
             'featured' => $featured,
             'programs' => $programs,
             'campuses' => $this->getCampuses(),
+            'departments' => $this->getDepartments(),
             'usingFallback' => $usingFallback,
         ];
     }
@@ -55,12 +56,27 @@ class ProgramsService
         return $this->getProgramOptions()->first(fn ($program) => ($program->id ?? null) == $id);
     }
 
-    private function loadPrograms(bool &$usingFallback): Collection
+    private function loadPrograms(bool &$usingFallback, ?string $search = null, ?string $departmentCode = null): Collection
     {
         if ($this->tableExists('academic_programs')) {
             $query = AcademicProgram::query()
                 ->with('department:id,dept_name')
                 ->where('status', 'active');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('program_name', 'like', "%{$search}%")
+                      ->orWhere('program_code', 'like', "%{$search}%")
+                      ->orWhere('homepage_tagline', 'like', "%{$search}%");
+                });
+            }
+
+            if ($departmentCode && $this->tableExists('departments')) {
+                $deptId = DB::table('departments')->where('dept_code', $departmentCode)->value('id');
+                if ($deptId) {
+                    $query->where('department_id', $deptId);
+                }
+            }
 
             $records = $query->orderBy('homepage_display_order')
                 ->orderBy('program_name')
@@ -133,6 +149,26 @@ class ProgramsService
 
         return collect([
             (object) ['id' => null, 'campus_name' => 'Main Campus, Kisumu', 'campus_code' => 'MAIN'],
+        ]);
+    }
+
+    private function getDepartments(): Collection
+    {
+        if ($this->tableExists('departments')) {
+            return DB::table('departments')
+                ->where('is_active', 1)
+                ->orderBy('dept_name')
+                ->get(['dept_code', 'dept_name']);
+        }
+
+        return collect([
+            (object) ['dept_code' => 'CHS', 'dept_name' => 'Health and Social Sciences'],
+            (object) ['dept_code' => 'HOS', 'dept_name' => 'Hospitality and Institutional Management'],
+            (object) ['dept_code' => 'BUS', 'dept_name' => 'Business and Accounting'],
+            (object) ['dept_code' => 'DAT', 'dept_name' => 'Data Science and Analytics'],
+            (object) ['dept_code' => 'ICT', 'dept_name' => 'Computer & Informatics'],
+            (object) ['dept_code' => 'TEC', 'dept_name' => 'Technical Department / vocational'],
+            (object) ['dept_code' => 'EEE', 'dept_name' => 'Electrical & electronic engineering'],
         ]);
     }
 

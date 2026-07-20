@@ -15,6 +15,32 @@
         </div>
     </section>
 
+    <section class="tich-section" style="padding-top: 0;">
+        <div class="tich-container">
+            <form method="GET" action="{{ route('programs.index') }}" class="tich-flex-wrap" style="gap: 1rem; align-items: end;">
+                <div class="tich-form-group" style="margin: 0;">
+                    <label for="search" class="tich-label">Search programs</label>
+                    <input type="text" id="search" name="search" value="{{ request('search') }}" placeholder="Program name or code..." class="tich-input" style="width: 200px;">
+                </div>
+                <div class="tich-form-group" style="margin: 0;">
+                    <label for="department" class="tich-label">Department</label>
+                    <select id="department" name="department" class="tich-select" onchange="this.form.submit()">
+                        <option value="">All departments</option>
+                        @foreach ($departments as $dept)
+                            <option value="{{ $dept->dept_code }}" {{ request('department') === $dept->dept_code ? 'selected' : '' }}>
+                                {{ $dept->dept_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="tich-btn tich-btn-primary" style="height: fit-content;">Search</button>
+                @if (request('search') || request('department'))
+                    <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-secondary" style="height: fit-content;">Clear</a>
+                @endif
+            </form>
+        </div>
+    </section>
+
     @if ($featured)
         <section class="tich-section" style="padding-top: 0;">
             <div class="tich-container">

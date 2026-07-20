@@ -10,8 +10,13 @@ class ProgramsController extends Controller
 {
     public function __construct(protected ProgramsService $programsService) {}
 
-    public function index(): View
+    public function index(\Illuminate\Http\Request $request): View
     {
-        return view('programs.index', $this->programsService->getCatalog());
+        $search = $request->query('search');
+        $departmentCode = $request->query('department');
+
+        $data = $this->programsService->getCatalog($search, $departmentCode);
+
+        return view('programs.index', $data);
     }
 }

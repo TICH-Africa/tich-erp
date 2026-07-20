@@ -716,6 +716,10 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     grid-template-columns: 1fr;
 }
 
+.tich-grid--3 {
+    grid-template-columns: 1fr;
+}
+
 .tich-grid--4 {
     grid-template-columns: 1fr;
 }
@@ -725,12 +729,20 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .tich-grid--3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     .tich-grid--4 {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (min-width: 1024px) {
+    .tich-grid--3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
     .tich-grid--4 {
         grid-template-columns: repeat(4, 1fr);
     }
