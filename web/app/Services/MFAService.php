@@ -32,20 +32,18 @@ class MFAService
 
         $delivery = $this->deliverOtpEmail($user, $otp, $request);
 
-        if (! $delivery['sent'] && config('app.debug')) {
-            Log::warning('MFA OTP (dev fallback — email not sent)', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'otp' => $otp,
-                'smtp_error' => $delivery['error'],
-            ]);
-
-            session()->flash(
-                'status',
-                'Email could not be sent. For local testing, use the development code shown below or set MAIL_PASSWORD to a Google App Password.'
-            );
+        if (config('app.debug')) {
             session()->flash('mfa_dev_code', $otp);
-            session()->flash('mail_error', $delivery['error']);
+
+            if (! $delivery['sent']) {
+                Log::warning('MFA OTP (dev fallback — email not sent)', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'otp' => $otp,
+                    'smtp_error' => $delivery['error'],
+                ]);
+                session()->flash('mail_error', $delivery['error']);
+            }
         }
 
         return [
