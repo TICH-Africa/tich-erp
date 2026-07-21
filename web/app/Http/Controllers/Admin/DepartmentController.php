@@ -39,6 +39,9 @@ class DepartmentController extends Controller
         return view('admin.departments.index', [
             'groups' => $groups,
             'ungrouped' => $ungrouped,
+            'allDepartments' => Department::query()
+                ->orderBy('dept_name')
+                ->get(['id', 'dept_code', 'dept_name', 'dept_category', 'department_group_id', 'parent_dept_id', 'campus_id', 'display_order', 'is_active']),
             'campuses' => Campus::query()->where('is_active', 1)->orderBy('campus_name')->get(['id', 'campus_name']),
             'departmentGroups' => DepartmentGroup::query()->where('is_active', 1)->orderBy('display_order')->get(['id', 'group_name', 'group_code']),
             'parentDepartments' => Department::query()
