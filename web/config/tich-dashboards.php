@@ -25,8 +25,8 @@ return [
         ],
         [
             'key' => 'admissions',
-            'label' => 'Admissions',
-            'description' => 'Applicant intake, review, and onboarding.',
+            'label' => 'Approval dashboard',
+            'description' => 'Verify, accept, and reject student onboarding applications by department.',
             'route' => 'week4.dashboard',
             'permission' => 'admissions.read',
             'category' => 'admin',
@@ -42,12 +42,11 @@ return [
         ],
         [
             'key' => 'academics',
-            'label' => 'Academics',
-            'description' => 'Units, grades, timetables, and examinations.',
-            'route' => 'dashboard',
-            'permission' => 'academics.read',
+            'label' => 'Application approvals',
+            'description' => 'Review and approve onboarding applications for your learning department.',
+            'route' => 'week4.dashboard',
+            'permission' => 'admissions.read',
             'category' => 'academics',
-            'coming_soon' => true,
         ],
         [
             'key' => 'finance',

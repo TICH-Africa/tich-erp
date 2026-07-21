@@ -48,6 +48,14 @@
         </article>
         @endcan
 
+        @can('admissions.read')
+        <article class="tich-card tich-card--highlight">
+            <h3 class="tich-h3">Approval dashboard</h3>
+            <p class="tich-text">Verify, accept, and reject student onboarding applications by department.</p>
+            <a href="{{ route('week4.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open approval dashboard</a>
+        </article>
+        @endcan
+
         @can('users.access.manage')
         <article class="tich-card">
             <h3 class="tich-h3">Users &amp; access</h3>

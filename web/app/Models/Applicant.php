@@ -15,6 +15,7 @@ class Applicant extends Model
     protected $fillable = [
         'application_number',
         'program_id',
+        'handling_department_id',
         'preferred_campus_id',
         'first_name',
         'middle_name',
@@ -30,6 +31,10 @@ class Applicant extends Model
         'application_fee_paid',
         'status',
         'academic_review_status',
+        'review_notes',
+        'rejection_reason',
+        'reviewed_at',
+        'academic_reviewer_id',
         'application_source',
     ];
 
@@ -37,11 +42,17 @@ class Applicant extends Model
         'date_of_birth' => 'date',
         'application_fee_paid' => 'boolean',
         'created_at' => 'datetime',
+        'reviewed_at' => 'datetime',
     ];
 
     public function program(): BelongsTo
     {
         return $this->belongsTo(AcademicProgram::class, 'program_id');
+    }
+
+    public function handlingDepartment(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'handling_department_id');
     }
 
     public function preferredCampus(): BelongsTo
@@ -52,5 +63,21 @@ class Applicant extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(ApplicationDocument::class, 'applicant_id');
+    }
+
+    public function fullName(): string
+    {
+        return trim(collect([$this->first_name, $this->middle_name, $this->surname])->filter()->implode(' '));
+    }
+
+    public function isPendingReview(): bool
+    {
+        return in_array($this->status, ['submitted', 'academic_review'], true)
+            && ! in_array($this->academic_review_status, ['approved', 'rejected'], true);
+    }
+
+    public function isFinalized(): bool
+    {
+        return in_array($this->status, ['admitted', 'rejected'], true);
     }
 }

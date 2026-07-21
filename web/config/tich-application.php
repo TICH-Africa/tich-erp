@@ -26,6 +26,12 @@ return [
         'passport_photo' => 'Passport-size photo',
     ],
 
+    'fallback_review_emails' => [
+        'admissions@tich.ac.ke',
+        'admin@tich.ac.ke',
+        'osumbaevans21@gmail.com',
+    ],
+
     'counties' => [
         'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet', 'Embu', 'Garissa', 'Homa Bay',
         'Isiolo', 'Kajiado', 'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga', 'Kisii',

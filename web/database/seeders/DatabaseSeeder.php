@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\RBACService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -83,7 +84,14 @@ class DatabaseSeeder extends Seeder
             $roleId = Role::query()->where('role_name', $data['role'])->value('id');
 
             if ($roleId) {
-                $rbac->assignRoleToUser($user, $roleId);
+                $hasDefaultRole = DB::table('user_roles')
+                    ->where('user_id', $user->id)
+                    ->where('role_id', $roleId)
+                    ->exists();
+
+                if (! $hasDefaultRole) {
+                    $rbac->assignRoleToUser($user, $roleId);
+                }
             }
         }
     }

@@ -16,6 +16,7 @@ class ApplicationService
     public function __construct(
         protected ProgramsService $programsService,
         protected AuditService $auditService,
+        protected ApplicationMailService $mailService,
     ) {}
 
     public function draft(): array
@@ -80,7 +81,7 @@ class ApplicationService
             ]);
         }
 
-        return DB::transaction(function () use ($data, $program, $request) {
+        $applicant = DB::transaction(function () use ($data, $program, $request) {
             $applicant = Applicant::create(
                 $this->buildApplicantAttributes($data, (int) $program->id)
             );
@@ -107,6 +108,21 @@ class ApplicationService
 
             return $applicant;
         });
+
+        $applicant->load('program');
+        $mailResult = $this->mailService->sendSubmissionConfirmation($applicant, $request);
+
+        if (! $mailResult['sent']) {
+            session()->flash('application_mail_error', $mailResult['error']);
+        }
+
+        $staffMail = $this->mailService->notifyStaffForReview($applicant, $request);
+
+        if ($staffMail['sent'] === 0 && config('app.debug') && ! empty($staffMail['errors'])) {
+            session()->flash('staff_mail_error', $staffMail['errors'][0]);
+        }
+
+        return $applicant;
     }
 
     public function lookupStatus(string $applicationNumber, string $email): ?Applicant
@@ -116,6 +132,7 @@ class ApplicationService
         }
 
         return Applicant::query()
+            ->with('program:id,program_name,program_code')
             ->where('application_number', $applicationNumber)
             ->where('email', $email)
             ->first();
@@ -254,6 +271,7 @@ class ApplicationService
         $attributes = [
             'application_number' => $this->generateApplicationNumber(),
             'program_id' => $programId,
+            'handling_department_id' => $this->resolveProgramDepartmentId($programId),
             'preferred_campus_id' => $data['preferred_campus_id'] ?? null,
             'first_name' => $firstName,
             'middle_name' => $data['middle_name'] ?? null,
@@ -290,5 +308,14 @@ class ApplicationService
         }
 
         return sprintf('APP-%s-%05d', $year, $sequence);
+    }
+
+    private function resolveProgramDepartmentId(int $programId): ?int
+    {
+        if (! Schema::hasColumn('applicants', 'handling_department_id')) {
+            return null;
+        }
+
+        return DB::table('academic_programs')->where('id', $programId)->value('department_id');
     }
 }

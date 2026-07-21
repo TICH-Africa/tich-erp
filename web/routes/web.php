@@ -109,6 +109,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/applications/{id}/shortlist', [OnboardingController::class, 'shortlistApplication'])
             ->middleware('permission:admissions.write')
             ->name('week4.application.shortlist');
+        Route::post('/applications/{id}/approve', [OnboardingController::class, 'approveApplication'])
+            ->middleware('permission:admissions.approve')
+            ->name('week4.application.approve');
+        Route::post('/applications/{id}/reject', [OnboardingController::class, 'rejectApplication'])
+            ->middleware('permission:admissions.approve')
+            ->name('week4.application.reject');
     });
 });
 

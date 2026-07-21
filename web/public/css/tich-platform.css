@@ -1326,6 +1326,59 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     color: var(--tich-grey);
 }
 
+.tich-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: capitalize;
+    background: var(--tich-neutral-border);
+    color: var(--tich-grey);
+}
+
+.tich-status-badge.is-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.tich-status-badge.is-info {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.tich-status-badge.is-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.tich-status-badge.is-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+[data-theme="dark"] .tich-status-badge.is-pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .tich-status-badge.is-info {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .tich-status-badge.is-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .tich-status-badge.is-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
 .tich-card--highlight {
     border-color: var(--tich-primary);
     box-shadow: 0 0 0 1px var(--tich-primary);

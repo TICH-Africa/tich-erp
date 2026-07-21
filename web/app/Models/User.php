@@ -81,6 +81,11 @@ class User extends Authenticatable
         return app(\App\Services\RBACService::class)->hasRole($this, $roleName);
     }
 
+    public function hasAnyRole(array $roleNames): bool
+    {
+        return app(\App\Services\RBACService::class)->hasAnyRole($this, $roleNames);
+    }
+
     public function getAuthPassword(): string
     {
         return $this->password_hash;

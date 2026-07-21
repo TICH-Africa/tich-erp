@@ -15,11 +15,20 @@
             </p>
 
             @if ($email)
-                <p class="tich-caption tich-mt-4">Confirmation sent to {{ $email }}. Keep your application number for status checks.</p>
+                @if (session('application_mail_error'))
+                    <p class="tich-caption tich-mt-4" style="color: #c0392b;">
+                        We could not send a confirmation email right now. Please save your application number and check status using the link below.
+                        @if (config('app.debug'))
+                            <br>{{ session('application_mail_error') }}
+                        @endif
+                    </p>
+                @else
+                    <p class="tich-caption tich-mt-4">A confirmation email with your application number and status link has been sent to {{ $email }}.</p>
+                @endif
             @endif
 
             <div class="tich-flex-wrap tich-mt-8" style="justify-content: center;">
-                <a href="{{ route('apply.status') }}" class="tich-btn tich-btn-primary">Check application status</a>
+                <a href="{{ route('apply.status', ['application_number' => $applicationNumber, 'email' => $email]) }}" class="tich-btn tich-btn-primary">Check application status</a>
                 <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-blue">Back to programmes</a>
             </div>
         </div>

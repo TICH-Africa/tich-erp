@@ -76,21 +76,32 @@ class ApplicationController extends Controller
 
     public function checkStatus(Request $request): View
     {
+        $applicationNumber = old('application_number', $request->query('application_number'));
+        $email = old('email', $request->query('email'));
         $applicant = null;
 
-        if ($request->isMethod('post')) {
-            $validated = $request->validate([
-                'application_number' => ['required', 'string', 'max:50'],
-                'email' => ['required', 'email', 'max:255'],
-            ]);
+        if ($request->isMethod('post') || ($applicationNumber && $email)) {
+            if ($request->isMethod('post')) {
+                $validated = $request->validate([
+                    'application_number' => ['required', 'string', 'max:50'],
+                    'email' => ['required', 'email', 'max:255'],
+                ]);
+                $applicationNumber = $validated['application_number'];
+                $email = $validated['email'];
+            }
 
             $applicant = $this->applicationService->lookupStatus(
-                $validated['application_number'],
-                $validated['email']
+                (string) $applicationNumber,
+                (string) $email
             );
         }
 
-        return view('apply.status', compact('applicant'));
+        return view('apply.status', [
+            'applicant' => $applicant,
+            'applicationNumber' => $applicationNumber,
+            'email' => $email,
+            'lookedUp' => $applicant !== null || ($applicationNumber && $email && ($request->isMethod('post') || $request->query('application_number'))),
+        ]);
     }
 
     public function reset(): RedirectResponse
