@@ -20,28 +20,41 @@
 
             <div class="tich-grid tich-grid--3">
                 @can('admin.access')
-                <article class="tich-card tich-card--highlight">
-                    <h3 class="tich-h3">Platform administration</h3>
-                    <p class="tich-text">Campuses, departments, users, roles, and module access.</p>
-                    <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
-                </article>
+                    <article class="tich-card tich-card--highlight">
+                        <p class="tich-caption">Core</p>
+                        <h3 class="tich-h3 tich-mt-2">Platform administration</h3>
+                        <p class="tich-text tich-mt-2">Campuses, departments, users, roles, and module access.</p>
+                        <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
+                    </article>
                 @endcan
 
-                @foreach ($modules as $module)
-                    @if ($module['key'] === 'admin_hub')
-                        @continue
-                    @endif
+                @forelse ($departments as $department)
                     <article class="tich-card">
-                        <p class="tich-caption">{{ ucfirst($module['category'] ?? 'module') }}</p>
-                        <h3 class="tich-h3 tich-mt-2">{{ $module['label'] }}</h3>
-                        <p class="tich-text tich-mt-2">{{ $module['description'] }}</p>
-                        @if (!empty($module['coming_soon']))
-                            <p class="tich-caption tich-mt-4">Coming soon</p>
-                        @elseif (!empty($module['route']))
-                            <a href="{{ route($module['route']) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open</a>
+                        <p class="tich-caption">{{ $categoryLabel($department) }}</p>
+                        <h3 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h3>
+                        <p class="tich-text tich-mt-2">{{ $cardDescription($department) }}</p>
+                        @if ($department->group)
+                            <p class="tich-caption tich-mt-2">{{ $department->group->group_name }}</p>
                         @endif
+                        <a href="{{ route('departments.show', $department) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open department</a>
                     </article>
-                @endforeach
+                @empty
+                    @unless (auth()->user()->can('admin.access'))
+                        <article class="tich-card">
+                            <h3 class="tich-h3">No departments assigned</h3>
+                            <p class="tich-text">You are not assigned to any department yet. Contact a platform administrator if you need access.</p>
+                        </article>
+                    @endunless
+                @endforelse
+
+                @can('audit_logs.read')
+                    <article class="tich-card">
+                        <p class="tich-caption">Security</p>
+                        <h3 class="tich-h3 tich-mt-2">Audit logs</h3>
+                        <p class="tich-text tich-mt-2">Security and compliance activity trail.</p>
+                        <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View audit logs</a>
+                    </article>
+                @endcan
 
                 <article class="tich-card">
                     <h3 class="tich-h3">Security</h3>

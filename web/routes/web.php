@@ -10,6 +10,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:dashboard.access')
         ->name('dashboard');
+
+    Route::get('/departments/{department}', [DepartmentDashboardController::class, 'show'])
+        ->middleware('permission:dashboard.access')
+        ->name('departments.show');
 
     Route::prefix('admin')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])

@@ -48,4 +48,69 @@ class Department extends Model
     {
         return $this->dept_category === 'academic' && $this->parent_dept_id !== null;
     }
+
+    public function isMainDepartment(): bool
+    {
+        return $this->parent_dept_id === null;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeMain($query)
+    {
+        return $query->whereNull('parent_dept_id');
+    }
+
+    public function resolveRootId(): int
+    {
+        $current = $this;
+
+        while ($current->parent_dept_id !== null) {
+            $parent = static::query()->find($current->parent_dept_id);
+
+            if (! $parent) {
+                break;
+            }
+
+            $current = $parent;
+        }
+
+        return (int) $current->id;
+    }
+
+    public static function parentMap(): array
+    {
+        return static::query()->pluck('parent_dept_id', 'id')->all();
+    }
+
+    public static function resolveRootIdFromMap(int $departmentId, array $parentMap): int
+    {
+        $current = $departmentId;
+
+        while (! empty($parentMap[$current])) {
+            $current = (int) $parentMap[$current];
+        }
+
+        return $current;
+    }
+
+    /**
+     * @return list<int> Department id plus all descendant ids.
+     */
+    public function selfAndDescendantIds(): array
+    {
+        $ids = [(int) $this->id];
+        $children = static::query()
+            ->where('parent_dept_id', $this->id)
+            ->pluck('id');
+
+        foreach ($children as $childId) {
+            $ids = array_merge($ids, static::find($childId)?->selfAndDescendantIds() ?? []);
+        }
+
+        return array_values(array_unique($ids));
+    }
 }
