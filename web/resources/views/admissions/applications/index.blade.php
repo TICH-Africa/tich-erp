@@ -6,7 +6,7 @@
         Review onboarding submissions and identify the department handling each application.
     </p>
 
-    <form method="GET" action="{{ route('week4.applications.list') }}" class="tich-card tich-mb-6" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
+    <form method="GET" action="{{ route('admissions.applications.index') }}" class="tich-card tich-mb-6" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
         <div class="tich-form-group" style="margin: 0; min-width: 12rem;">
             <label class="tich-label">Department</label>
             <select name="department" class="tich-input">
@@ -28,7 +28,7 @@
             </select>
         </div>
         <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-        <a href="{{ route('week4.applications.list') }}" class="tich-link">Clear</a>
+        <a href="{{ route('admissions.applications.index') }}" class="tich-link">Clear</a>
     </form>
 
     <div class="tich-card" style="overflow-x: auto;">
@@ -62,9 +62,9 @@
                         </td>
                         <td>{{ $application->preferredCampus?->campus_name ?? '—' }}</td>
                         <td>{{ $application->created_at?->format('d M Y') ?? '—' }}</td>
-                        <td>@include('week4.partials.status-badge', ['applicant' => $application])</td>
+                        <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
                         <td>
-                            <a href="{{ route('week4.application.review', $application->id) }}" class="tich-link">Review</a>
+                            <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">Review</a>
                         </td>
                     </tr>
                 @empty

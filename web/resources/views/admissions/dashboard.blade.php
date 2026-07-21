@@ -54,7 +54,7 @@
                                 <td>{{ $row->pending_count }}</td>
                                 <td>{{ $row->total }}</td>
                                 <td>
-                                    <a href="{{ route('week4.applications.list', ['department' => $row->id, 'status' => 'pending']) }}" class="tich-link">Review</a>
+                                    <a href="{{ route('admissions.applications.index', ['department' => $row->id, 'status' => 'pending']) }}" class="tich-link">Review</a>
                                 </td>
                             </tr>
                         @endforeach
@@ -66,7 +66,7 @@
         <article class="tich-card">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                 <h2 class="tich-h3">Recent applications</h2>
-                <a href="{{ route('week4.applications.list') }}" class="tich-link">View all</a>
+                <a href="{{ route('admissions.applications.index') }}" class="tich-link">View all</a>
             </div>
 
             @if ($recentApplications->isEmpty())
@@ -85,7 +85,7 @@
                         @foreach ($recentApplications as $application)
                             <tr>
                                 <td>
-                                    <a href="{{ route('week4.application.review', $application->id) }}" class="tich-link">
+                                    <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">
                                         {{ $application->fullName() }}
                                     </a>
                                     <br>
@@ -93,7 +93,7 @@
                                 </td>
                                 <td>{{ $application->program?->program_name ?? '—' }}</td>
                                 <td>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? '—' }}</td>
-                                <td>@include('week4.partials.status-badge', ['applicant' => $application])</td>
+                                <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -105,9 +105,9 @@
     <div class="tich-card tich-mt-6">
         <h2 class="tich-h3">Quick actions</h2>
         <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;" class="tich-mt-4">
-            <a href="{{ route('week4.applications.list', ['status' => 'pending']) }}" class="tich-btn tich-btn-primary">Review pending</a>
-            <a href="{{ route('week4.applications.list', ['status' => 'admitted']) }}" class="tich-btn tich-btn-secondary">View admitted</a>
-            <a href="{{ route('week4.applications.list', ['status' => 'rejected']) }}" class="tich-btn tich-btn-secondary">View rejected</a>
+            <a href="{{ route('admissions.applications.index', ['status' => 'pending']) }}" class="tich-btn tich-btn-primary">Review pending</a>
+            <a href="{{ route('admissions.applications.index', ['status' => 'admitted']) }}" class="tich-btn tich-btn-secondary">View admitted</a>
+            <a href="{{ route('admissions.applications.index', ['status' => 'rejected']) }}" class="tich-btn tich-btn-secondary">View rejected</a>
         </div>
     </div>
 @endsection

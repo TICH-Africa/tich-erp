@@ -13,7 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
-use App\Http\Controllers\Week4\OnboardingController;
+use App\Http\Controllers\Admissions\ApprovalController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -96,25 +96,19 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         });
     });
 
-    Route::prefix('week4')->middleware(['permission:admissions.read'])->group(function () {
-        Route::get('/dashboard', [OnboardingController::class, 'showDashboard'])
-            ->middleware('permission:admissions.read')
-            ->name('week4.dashboard');
-        Route::get('/applications', [OnboardingController::class, 'listApplications'])
-            ->middleware('permission:admissions.read')
-            ->name('week4.applications.list');
-        Route::get('/applications/{id}', [OnboardingController::class, 'reviewApplication'])
-            ->middleware('permission:admissions.read')
-            ->name('week4.application.review');
-        Route::post('/applications/{id}/shortlist', [OnboardingController::class, 'shortlistApplication'])
+    Route::prefix('admissions')->middleware(['permission:admissions.read'])->group(function () {
+        Route::get('/', [ApprovalController::class, 'dashboard'])->name('admissions.dashboard');
+        Route::get('/applications', [ApprovalController::class, 'index'])->name('admissions.applications.index');
+        Route::get('/applications/{id}', [ApprovalController::class, 'show'])->name('admissions.applications.show');
+        Route::post('/applications/{id}/shortlist', [ApprovalController::class, 'shortlist'])
             ->middleware('permission:admissions.write')
-            ->name('week4.application.shortlist');
-        Route::post('/applications/{id}/approve', [OnboardingController::class, 'approveApplication'])
+            ->name('admissions.applications.shortlist');
+        Route::post('/applications/{id}/approve', [ApprovalController::class, 'approve'])
             ->middleware('permission:admissions.approve')
-            ->name('week4.application.approve');
-        Route::post('/applications/{id}/reject', [OnboardingController::class, 'rejectApplication'])
+            ->name('admissions.applications.approve');
+        Route::post('/applications/{id}/reject', [ApprovalController::class, 'reject'])
             ->middleware('permission:admissions.approve')
-            ->name('week4.application.reject');
+            ->name('admissions.applications.reject');
     });
 });
 

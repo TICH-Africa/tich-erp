@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="tich-admin">
-    @include('week4.partials.sidebar')
+    @include('admissions.partials.sidebar')
 
     <div class="tich-admin__main">
         @include('partials.alerts')

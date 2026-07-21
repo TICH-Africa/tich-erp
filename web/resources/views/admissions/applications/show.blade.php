@@ -1,14 +1,14 @@
 @extends('layouts.approval')
 
 @section('approval-content')
-    <a href="{{ route('week4.applications.list') }}" class="tich-link">&larr; All applications</a>
+    <a href="{{ route('admissions.applications.index') }}" class="tich-link">&larr; All applications</a>
 
     <div class="tich-mt-4" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; align-items: start;">
         <div>
             <h1 class="tich-h1" style="font-size: 2rem;">{{ $applicant->fullName() }}</h1>
             <p class="tich-text">{{ $applicant->application_number }} · {{ $applicant->email }}</p>
         </div>
-        <div>@include('week4.partials.status-badge', ['applicant' => $applicant])</div>
+        <div>@include('admissions.partials.status-badge', ['applicant' => $applicant])</div>
     </div>
 
     @if (session('status'))
@@ -99,7 +99,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Shortlist</h2>
                 <p class="tich-text tich-mb-4">Mark as shortlisted for final approval by the department.</p>
-                <form method="POST" action="{{ route('week4.application.shortlist', $applicant->id) }}">
+                <form method="POST" action="{{ route('admissions.applications.shortlist', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Notes (optional)</label>
@@ -114,7 +114,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Accept</h2>
                 <p class="tich-text tich-mb-4">Approve onboarding and mark the applicant as admitted.</p>
-                <form method="POST" action="{{ route('week4.application.approve', $applicant->id) }}">
+                <form method="POST" action="{{ route('admissions.applications.approve', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Notes (optional)</label>
@@ -127,7 +127,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Reject</h2>
                 <p class="tich-text tich-mb-4">Decline the application with a reason visible to reviewers.</p>
-                <form method="POST" action="{{ route('week4.application.reject', $applicant->id) }}">
+                <form method="POST" action="{{ route('admissions.applications.reject', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Rejection reason</label>

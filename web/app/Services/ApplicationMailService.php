@@ -233,7 +233,7 @@ class ApplicationMailService
                 $reviewer,
                 $applicant->program?->program_name ?? 'Selected programme',
                 $departmentName,
-                route('week4.application.review', $applicant->id),
+                route('admissions.applications.show', $applicant->id),
             ),
             'admissions.application.staff_notified',
             'Staff review notification sent',

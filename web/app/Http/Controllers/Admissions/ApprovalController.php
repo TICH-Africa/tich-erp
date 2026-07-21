@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Week4;
+namespace App\Http\Controllers\Admissions;
 
 use App\Http\Controllers\Controller;
 use App\Services\AdmissionsReviewService;
@@ -8,15 +8,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class OnboardingController extends Controller
+class ApprovalController extends Controller
 {
     public function __construct(protected AdmissionsReviewService $reviewService) {}
 
-    public function showDashboard(Request $request): View
+    public function dashboard(Request $request): View
     {
         $user = $request->user();
 
-        return view('week4.dashboard', [
+        return view('admissions.dashboard', [
             'stats' => $this->reviewService->dashboardStats($user),
             'departmentBreakdown' => $this->reviewService->departmentBreakdown($user),
             'departments' => $this->reviewService->filterDepartmentsForUser($user),
@@ -25,13 +25,13 @@ class OnboardingController extends Controller
         ]);
     }
 
-    public function listApplications(Request $request): View
+    public function index(Request $request): View
     {
         $user = $request->user();
         $departmentId = $request->integer('department') ?: null;
         $status = $request->string('status')->toString() ?: null;
 
-        return view('week4.applications.index', [
+        return view('admissions.applications.index', [
             'applications' => $this->reviewService->listApplications($user, $departmentId, $status),
             'departments' => $this->reviewService->filterDepartmentsForUser($user),
             'filters' => [
@@ -42,18 +42,18 @@ class OnboardingController extends Controller
         ]);
     }
 
-    public function reviewApplication(Request $request, int $id): View
+    public function show(Request $request, int $id): View
     {
         $applicant = $this->reviewService->findForReview($request->user(), $id);
 
-        return view('week4.applications.show', [
+        return view('admissions.applications.show', [
             'applicant' => $applicant,
             'handlingDepartment' => $this->reviewService->handlingDepartmentName($applicant),
             'canApprove' => $request->user()->hasPermission('admissions.approve') || $request->user()->hasRole('Super Admin'),
         ]);
     }
 
-    public function shortlistApplication(Request $request, int $id): RedirectResponse
+    public function shortlist(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
             'review_notes' => ['nullable', 'string', 'max:2000'],
@@ -63,11 +63,11 @@ class OnboardingController extends Controller
         $this->reviewService->shortlist($request->user(), $applicant, $validated['review_notes'] ?? null);
 
         return redirect()
-            ->route('week4.application.review', $id)
+            ->route('admissions.applications.show', $id)
             ->with('status', 'Application shortlisted for final approval.');
     }
 
-    public function approveApplication(Request $request, int $id): RedirectResponse
+    public function approve(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
             'review_notes' => ['nullable', 'string', 'max:2000'],
@@ -77,11 +77,11 @@ class OnboardingController extends Controller
         $this->reviewService->approve($request->user(), $applicant, $validated['review_notes'] ?? null);
 
         return redirect()
-            ->route('week4.application.review', $id)
+            ->route('admissions.applications.show', $id)
             ->with('status', 'Application accepted. The applicant has been marked as admitted.');
     }
 
-    public function rejectApplication(Request $request, int $id): RedirectResponse
+    public function reject(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
             'rejection_reason' => ['required', 'string', 'max:500'],
@@ -97,7 +97,7 @@ class OnboardingController extends Controller
         );
 
         return redirect()
-            ->route('week4.application.review', $id)
+            ->route('admissions.applications.show', $id)
             ->with('status', 'Application rejected.');
     }
 }
