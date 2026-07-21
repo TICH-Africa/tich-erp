@@ -40,6 +40,8 @@ return [
         'campuses.manage' => 'core_manage_campuses_manage',
         'departments.read' => 'core_manage_departments_view',
         'departments.manage' => 'core_manage_departments_manage',
+        'programs.read' => 'core_manage_programs_view',
+        'programs.manage' => 'core_manage_programs_manage',
         'users.access.manage' => 'admin_manage_staff_manage',
         'admissions.read' => 'admin_manage_applicants_view',
         'admissions.write' => 'admin_manage_applicants_manage',

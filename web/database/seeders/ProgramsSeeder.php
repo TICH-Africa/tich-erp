@@ -16,6 +16,36 @@ class ProgramsSeeder extends Seeder
             return;
         }
 
+        $campusId = $this->ensureMainCampus();
+        $groups = $this->getOrCreateDepartmentGroups();
+        $departments = $this->getOrCreateDepartmentStructure($campusId, $groups);
+
+        foreach ($this->programs() as $program) {
+            $code = $program['program_code'];
+            $payload = [
+                ...$program,
+                'department_id' => $this->getDepartmentForProgram($code, $departments),
+                'status' => 'active',
+            ];
+
+            $existingId = DB::table('academic_programs')->where('program_code', $code)->value('id');
+
+            if ($existingId) {
+                DB::table('academic_programs')->where('id', $existingId)->update([
+                    ...$payload,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('academic_programs')->insert([
+                    ...$payload,
+                    'created_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    private function ensureMainCampus(): int
+    {
         $campusId = DB::table('campuses')->where('campus_code', 'MAIN')->value('id');
 
         if (! $campusId) {
@@ -30,22 +60,131 @@ class ProgramsSeeder extends Seeder
             ]);
         }
 
-        $departments = $this->getOrCreateDepartments($campusId);
+        return (int) $campusId;
+    }
 
-        if (DB::table('academic_programs')->count() > 0) {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            DB::table('academic_programs')->delete();
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    private function getOrCreateDepartmentGroups(): array
+    {
+        $groups = [
+            'IDM' => ['name' => 'Institutional Development Management', 'order' => 1],
+            'OTH' => ['name' => 'Others', 'order' => 2],
+        ];
+
+        $result = [];
+
+        foreach ($groups as $code => $meta) {
+            if (Schema::hasTable('department_groups')) {
+                $id = DB::table('department_groups')->where('group_code', $code)->value('id');
+
+                if (! $id) {
+                    $id = DB::table('department_groups')->insertGetId([
+                        'group_code' => $code,
+                        'group_name' => $meta['name'],
+                        'display_order' => $meta['order'],
+                        'is_active' => 1,
+                        'created_at' => now(),
+                    ]);
+                } else {
+                    DB::table('department_groups')->where('id', $id)->update([
+                        'group_name' => $meta['name'],
+                        'display_order' => $meta['order'],
+                    ]);
+                }
+
+                $result[$code] = (int) $id;
+            }
         }
 
-        foreach ($this->programs() as $program) {
-            DB::table('academic_programs')->insert([
-                ...$program,
-                'department_id' => $this->getDepartmentForProgram($program['program_code'], $departments),
-                'status' => 'active',
+        return $result;
+    }
+
+    private function getOrCreateDepartmentStructure(int $campusId, array $groups): array
+    {
+        $idmGroupId = $groups['IDM'] ?? null;
+        $othGroupId = $groups['OTH'] ?? null;
+
+        $adminUnits = [
+            ['code' => 'HR', 'name' => 'Human Resource', 'group' => 'IDM', 'order' => 1],
+            ['code' => 'FIN', 'name' => 'Finance', 'group' => 'IDM', 'order' => 2],
+            ['code' => 'PRC', 'name' => 'Procurement & Logistics', 'group' => 'IDM', 'order' => 3],
+            ['code' => 'RES', 'name' => 'Research', 'group' => 'OTH', 'order' => 1],
+            ['code' => 'ICTO', 'name' => 'ICT', 'group' => 'OTH', 'order' => 2],
+            ['code' => 'ACAD', 'name' => 'Academics', 'group' => 'OTH', 'order' => 3],
+            ['code' => 'ADM', 'name' => 'Admin', 'group' => 'OTH', 'order' => 4],
+            ['code' => 'MKT', 'name' => 'Marketing', 'group' => 'OTH', 'order' => 5],
+        ];
+
+        $learningDepartments = [
+            ['code' => 'CHS', 'name' => 'Health and Social Sciences', 'parent' => 'ACAD', 'order' => 1],
+            ['code' => 'HOS', 'name' => 'Catering and Hospitality', 'parent' => 'ACAD', 'order' => 2],
+            ['code' => 'BUS', 'name' => 'Business and Accounting', 'parent' => 'ACAD', 'order' => 3],
+            ['code' => 'ICT', 'name' => 'Information Communication Technology', 'parent' => 'ACAD', 'order' => 4],
+            ['code' => 'TEC', 'name' => 'Technical Department', 'parent' => 'ACAD', 'order' => 5],
+        ];
+
+        $result = [];
+
+        foreach ($adminUnits as $unit) {
+            $groupId = $unit['group'] === 'IDM' ? $idmGroupId : $othGroupId;
+            $result[$unit['code']] = $this->upsertDepartment(
+                $unit['code'],
+                $unit['name'],
+                'administrative',
+                $campusId,
+                $groupId,
+                null,
+                $unit['order']
+            );
+        }
+
+        foreach ($learningDepartments as $dept) {
+            $parentId = $result[$dept['parent']] ?? null;
+            $result[$dept['code']] = $this->upsertDepartment(
+                $dept['code'],
+                $dept['name'],
+                'academic',
+                $campusId,
+                $othGroupId,
+                $parentId,
+                $dept['order']
+            );
+        }
+
+        return $result;
+    }
+
+    private function upsertDepartment(
+        string $code,
+        string $name,
+        string $category,
+        int $campusId,
+        ?int $groupId,
+        ?int $parentId,
+        int $order,
+    ): int {
+        $id = DB::table('departments')->where('dept_code', $code)->value('id');
+
+        $payload = [
+            'dept_name' => $name,
+            'dept_category' => $category,
+            'campus_id' => $campusId,
+            'department_group_id' => $groupId,
+            'parent_dept_id' => $parentId,
+            'display_order' => $order,
+            'is_active' => 1,
+        ];
+
+        if (! $id) {
+            $id = DB::table('departments')->insertGetId([
+                'dept_code' => $code,
+                ...$payload,
                 'created_at' => now(),
             ]);
+        } else {
+            DB::table('departments')->where('id', $id)->update($payload);
         }
+
+        return (int) $id;
     }
 
     private function programs(): array
@@ -114,39 +253,6 @@ class ProgramsSeeder extends Seeder
         ];
     }
 
-    private function getOrCreateDepartments(int $campusId): array
-    {
-        $depts = [
-            'CHS' => 'Health and Social Sciences',
-            'HOS' => 'Hospitality and Institutional Management',
-            'BUS' => 'Business and Accounting',
-            'DAT' => 'Data Science and Analytics',
-            'ICT' => 'Computer & Informatics',
-            'TEC' => 'Technical Department / vocational',
-            'EEE' => 'Electrical & electronic engineering',
-        ];
-
-        $result = [];
-        foreach ($depts as $code => $name) {
-            $id = DB::table('departments')->where('dept_code', $code)->value('id');
-            if (! $id) {
-                $id = DB::table('departments')->insertGetId([
-                    'dept_code' => $code,
-                    'dept_name' => $name,
-                    'dept_category' => 'academic',
-                    'campus_id' => $campusId,
-                    'is_active' => 1,
-                    'created_at' => now(),
-                ]);
-            } else {
-                DB::table('departments')->where('dept_code', $code)->update(['dept_name' => $name]);
-            }
-            $result[$code] = $id;
-        }
-
-        return $result;
-    }
-
     private function getDepartmentForProgram(string $code, array $departments): ?int
     {
         $mapping = [
@@ -154,7 +260,7 @@ class ProgramsSeeder extends Seeder
             'HCA-CC' => 'CHS', 'HCA-C' => 'CHS', 'CLM' => 'CHS', 'PHT' => 'CHS', 'HDT' => 'CHS',
             'FBV4' => 'HOS', 'FBV5' => 'HOS', 'FBV6' => 'HOS', 'FBP' => 'HOS', 'FBS' => 'HOS',
             'CPA' => 'BUS', 'ATD' => 'BUS', 'AGD' => 'BUS', 'AGC' => 'BUS',
-            'DSC' => 'DAT', 'DSD' => 'DAT',
+            'DSC' => 'ICT', 'DSD' => 'ICT',
             'ICT4' => 'ICT', 'ICT5' => 'ICT', 'ICT6' => 'ICT', 'CRM' => 'ICT',
             'CPK' => 'ICT', 'CHM' => 'ICT', 'SWE' => 'ICT', 'CNS' => 'ICT', 'SYS' => 'ICT', 'WDD' => 'ICT',
             'EWI' => 'TEC', 'MAS' => 'TEC', 'CPO' => 'TEC', 'GRD' => 'TEC', 'PLB' => 'TEC',
@@ -165,7 +271,7 @@ class ProgramsSeeder extends Seeder
 
         $deptCode = $mapping[$code] ?? 'CHS';
 
-        return $departments[$deptCode] ?? $departments['CHS'];
+        return $departments[$deptCode] ?? $departments['CHS'] ?? null;
     }
 
     private function syncNavigationLabels(): void

@@ -15,7 +15,7 @@ class AcademicProgram extends Model
         'program_code', 'program_name', 'program_type', 'regulatory_body',
         'department_id', 'duration_months', 'status',
         'is_featured_on_homepage', 'homepage_display_order',
-        'homepage_tagline', 'entry_requirements',
+        'homepage_tagline', 'entry_requirements', 'created_by',
     ];
 
     protected $casts = [

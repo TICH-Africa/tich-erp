@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\DepartmentGroupController;
+use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
@@ -66,9 +68,19 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         });
 
         Route::middleware(['permission:departments.manage'])->group(function () {
+            Route::get('/department-groups', [DepartmentGroupController::class, 'index'])->name('admin.department-groups.index');
+            Route::post('/department-groups', [DepartmentGroupController::class, 'store'])->name('admin.department-groups.store');
+            Route::put('/department-groups/{departmentGroup}', [DepartmentGroupController::class, 'update'])->name('admin.department-groups.update');
+
             Route::get('/departments', [DepartmentController::class, 'index'])->name('admin.departments.index');
             Route::post('/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
             Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
+        });
+
+        Route::middleware(['permission:programs.manage'])->group(function () {
+            Route::get('/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
+            Route::post('/programs', [ProgramController::class, 'store'])->name('admin.programs.store');
+            Route::put('/programs/{program}', [ProgramController::class, 'update'])->name('admin.programs.update');
         });
 
         Route::middleware(['permission:users.access.manage'])->group(function () {

@@ -6,7 +6,11 @@
             <a href="{{ route('admin.campuses.index') }}" class="{{ request()->routeIs('admin.campuses.*') ? 'is-active' : '' }}">Campuses</a>
         @endcan
         @can('departments.manage')
+            <a href="{{ route('admin.department-groups.index') }}" class="{{ request()->routeIs('admin.department-groups.*') ? 'is-active' : '' }}">Department groups</a>
             <a href="{{ route('admin.departments.index') }}" class="{{ request()->routeIs('admin.departments.*') ? 'is-active' : '' }}">Departments</a>
+        @endcan
+        @can('programs.manage')
+            <a href="{{ route('admin.programs.index') }}" class="{{ request()->routeIs('admin.programs.*') ? 'is-active' : '' }}">Programmes &amp; courses</a>
         @endcan
         @can('users.access.manage')
             <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}">Users &amp; access</a>

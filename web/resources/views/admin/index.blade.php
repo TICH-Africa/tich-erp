@@ -10,7 +10,12 @@
 
     <div class="tich-grid tich-grid--4 tich-mb-8">
         <div class="tich-stat"><p class="tich-stat__label">Active campuses</p><p class="tich-stat__value">{{ $stats['campuses'] }}</p></div>
+        <div class="tich-stat"><p class="tich-stat__label">Department groups</p><p class="tich-stat__value">{{ $stats['department_groups'] }}</p></div>
         <div class="tich-stat"><p class="tich-stat__label">Departments</p><p class="tich-stat__value">{{ $stats['departments'] }}</p></div>
+        <div class="tich-stat"><p class="tich-stat__label">Active programmes</p><p class="tich-stat__value">{{ $stats['programs'] }}</p></div>
+    </div>
+
+    <div class="tich-grid tich-grid--2 tich-mb-8">
         <div class="tich-stat"><p class="tich-stat__label">Active users</p><p class="tich-stat__value">{{ $stats['users'] }}</p></div>
         <div class="tich-stat"><p class="tich-stat__label">Roles</p><p class="tich-stat__value">{{ $stats['roles'] }}</p></div>
     </div>
@@ -26,9 +31,20 @@
 
         @can('departments.manage')
         <article class="tich-card">
-            <h3 class="tich-h3">Departments</h3>
-            <p class="tich-text">Academic, administrative, and support departments per campus.</p>
-            <a href="{{ route('admin.departments.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Manage departments</a>
+            <h3 class="tich-h3">Organisation structure</h3>
+            <p class="tich-text">Department groups, administrative units, learning departments, and programme catalogue.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;" class="tich-mt-4">
+                <a href="{{ route('admin.department-groups.index') }}" class="tich-btn tich-btn-primary">Department groups</a>
+                <a href="{{ route('admin.departments.index') }}" class="tich-btn tich-btn-primary">Departments</a>
+            </div>
+        </article>
+        @endcan
+
+        @can('programs.manage')
+        <article class="tich-card">
+            <h3 class="tich-h3">Programmes &amp; courses</h3>
+            <p class="tich-text">Create and manage courses offered under learning departments.</p>
+            <a href="{{ route('admin.programs.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Manage programmes</a>
         </article>
         @endcan
 

@@ -157,18 +157,19 @@ class ProgramsService
         if ($this->tableExists('departments')) {
             return DB::table('departments')
                 ->where('is_active', 1)
+                ->where('dept_category', 'academic')
+                ->whereNotNull('parent_dept_id')
+                ->orderBy('display_order')
                 ->orderBy('dept_name')
                 ->get(['dept_code', 'dept_name']);
         }
 
         return collect([
             (object) ['dept_code' => 'CHS', 'dept_name' => 'Health and Social Sciences'],
-            (object) ['dept_code' => 'HOS', 'dept_name' => 'Hospitality and Institutional Management'],
+            (object) ['dept_code' => 'HOS', 'dept_name' => 'Catering and Hospitality'],
             (object) ['dept_code' => 'BUS', 'dept_name' => 'Business and Accounting'],
-            (object) ['dept_code' => 'DAT', 'dept_name' => 'Data Science and Analytics'],
-            (object) ['dept_code' => 'ICT', 'dept_name' => 'Computer & Informatics'],
-            (object) ['dept_code' => 'TEC', 'dept_name' => 'Technical Department / vocational'],
-            (object) ['dept_code' => 'EEE', 'dept_name' => 'Electrical & electronic engineering'],
+            (object) ['dept_code' => 'ICT', 'dept_name' => 'Information Communication Technology'],
+            (object) ['dept_code' => 'TEC', 'dept_name' => 'Technical Department'],
         ]);
     }
 
