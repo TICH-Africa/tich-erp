@@ -14,6 +14,7 @@ use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
 use App\Http\Controllers\Admissions\ApprovalController;
+use App\Http\Controllers\Admissions\ApplicationDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -100,6 +101,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/', [ApprovalController::class, 'dashboard'])->name('admissions.dashboard');
         Route::get('/applications', [ApprovalController::class, 'index'])->name('admissions.applications.index');
         Route::get('/applications/{id}', [ApprovalController::class, 'show'])->name('admissions.applications.show');
+        Route::get('/applications/{applicationId}/documents/{documentId}', [ApplicationDocumentController::class, 'show'])
+            ->name('admissions.applications.documents.show');
+        Route::get('/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'])
+            ->name('admissions.applications.documents.download');
         Route::post('/applications/{id}/shortlist', [ApprovalController::class, 'shortlist'])
             ->middleware('permission:admissions.write')
             ->name('admissions.applications.shortlist');

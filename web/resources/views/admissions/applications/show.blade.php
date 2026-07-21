@@ -15,6 +15,15 @@
         <p class="tich-text tich-mt-4" style="color: var(--tich-green);">{{ session('status') }}</p>
     @endif
 
+    @if (session('application_mail_error'))
+        <p class="tich-text tich-mt-4" style="color: #c0392b;">
+            The applicant notification email could not be sent.
+            @if (config('app.debug'))
+                {{ session('application_mail_error') }}
+            @endif
+        </p>
+    @endif
+
     @if ($errors->any())
         <div class="tich-card tich-mt-4" style="border-color: #c0392b;">
             <ul style="margin: 0; padding-left: 1.25rem;">
@@ -67,38 +76,36 @@
         </article>
 
         <article class="tich-card">
-            <h2 class="tich-h3">Documents</h2>
-            @if ($applicant->documents->isEmpty())
-                <p class="tich-caption tich-mt-4">No documents uploaded.</p>
-            @else
-                <ul class="tich-mt-4" style="margin: 0; padding-left: 1.25rem;">
-                    @foreach ($applicant->documents as $document)
-                        <li class="tich-text">
-                            {{ str_replace('_', ' ', ucfirst($document->document_type)) }}
-                            — {{ $document->original_filename }}
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-
+            <h2 class="tich-h3">Review notes</h2>
             @if ($applicant->review_notes)
-                <h3 class="tich-h3 tich-mt-6">Review notes</h3>
-                <p class="tich-text">{{ $applicant->review_notes }}</p>
+                <p class="tich-text tich-mt-4">{{ $applicant->review_notes }}</p>
+            @else
+                <p class="tich-caption tich-mt-4">No review notes yet.</p>
             @endif
 
             @if ($applicant->rejection_reason)
                 <h3 class="tich-h3 tich-mt-6">Rejection reason</h3>
                 <p class="tich-text">{{ $applicant->rejection_reason }}</p>
             @endif
+
+            @if ($applicant->academic_review_status === 'shortlisted')
+                <div class="tich-mt-6" style="padding: 1rem; background: rgba(108, 171, 51, 0.08); border-left: 3px solid var(--tich-green, #6cab33);">
+                    <p class="tich-text" style="margin: 0;">
+                        <strong>Shortlisted.</strong> Applicant notified to pay admission fee once Finance creates the invoice.
+                    </p>
+                </div>
+            @endif
         </article>
     </div>
+
+    @include('admissions.partials.document-viewer', ['applicant' => $applicant])
 
     @unless ($applicant->isFinalized())
         <div class="tich-grid tich-grid--3 tich-mt-8" style="align-items: start; gap: 2rem;">
             @can('admissions.write')
             <article class="tich-card">
                 <h2 class="tich-h3">Shortlist</h2>
-                <p class="tich-text tich-mb-4">Mark as shortlisted for final approval by the department.</p>
+                <p class="tich-text tich-mb-4">Mark as shortlisted and notify the applicant to pay the admission fee (invoice to be created by Finance).</p>
                 <form method="POST" action="{{ route('admissions.applications.shortlist', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">

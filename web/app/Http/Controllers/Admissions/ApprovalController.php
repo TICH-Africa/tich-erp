@@ -64,7 +64,7 @@ class ApprovalController extends Controller
 
         return redirect()
             ->route('admissions.applications.show', $id)
-            ->with('status', 'Application shortlisted for final approval.');
+            ->with('status', 'Application shortlisted. The applicant has been emailed about the admission fee requirement.');
     }
 
     public function approve(Request $request, int $id): RedirectResponse

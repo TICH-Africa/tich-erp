@@ -159,7 +159,11 @@ class AdmissionsReviewService
         $this->logDecision($user, $applicant, 'admissions.application.shortlisted', 'Application shortlisted');
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
-        $this->mailService->sendStatusUpdate($applicant);
+        $mailResult = $this->mailService->sendShortlistNotification($applicant);
+
+        if (! $mailResult['sent']) {
+            session()->flash('application_mail_error', $mailResult['error']);
+        }
 
         return $applicant;
     }

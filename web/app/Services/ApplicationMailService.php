@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\ApplicationShortlistedMail;
 use App\Mail\ApplicationStaffReviewMail;
 use App\Mail\ApplicationStatusUpdatedMail;
 use App\Mail\ApplicationSubmittedMail;
@@ -76,6 +77,27 @@ class ApplicationMailService
         }
 
         return compact('sent', 'failed', 'errors');
+    }
+
+    /**
+     * @return array{sent: bool, error: ?string}
+     */
+    public function sendShortlistNotification(Applicant $applicant, ?Request $request = null): array
+    {
+        $applicant = $this->prepareApplicant($applicant);
+
+        return $this->deliverToApplicant(
+            $applicant,
+            new ApplicationShortlistedMail(
+                $applicant,
+                $applicant->program?->program_name ?? 'Selected programme',
+                $this->statusCheckUrl($applicant),
+                config('tich-application.admission_fee_notice'),
+            ),
+            'admissions.application.shortlist_email_sent',
+            'Application shortlist notification email sent',
+            $request
+        );
     }
 
     /**
@@ -250,7 +272,7 @@ class ApplicationMailService
      */
     private function sendMail(
         string $email,
-        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationStaffReviewMail $mailable,
+        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationStaffReviewMail|ApplicationShortlistedMail $mailable,
         string $auditAction,
         string $auditDescription,
         Applicant $applicant,
