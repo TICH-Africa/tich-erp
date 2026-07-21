@@ -10,7 +10,7 @@
             </p>
 
             <div class="tich-mb-8">
-                <p class="tich-caption">{{ $categoryLabel }}</p>
+                <p class="tich-caption">{{ $categoryLabel($department) }}</p>
                 <h1 class="tich-h1 tich-mt-2">{{ $department->dept_name }}</h1>
                 <p class="tich-text tich-mt-2">
                     {{ $department->dept_code }}

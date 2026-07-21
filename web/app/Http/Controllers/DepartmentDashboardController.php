@@ -26,7 +26,7 @@ class DepartmentDashboardController extends Controller
             'department' => $department->load(['group', 'campus']),
             'childDepartments' => $departmentDashboard->accessibleChildDepartments($user, $department),
             'modules' => $departmentDashboard->modulesForDepartment($user, $department),
-            'categoryLabel' => $departmentDashboard->categoryLabel($department),
+            'categoryLabel' => fn (Department $dept) => $departmentDashboard->categoryLabel($dept),
             'cardDescription' => fn (Department $dept) => $departmentDashboard->cardDescription(
                 $dept->loadCount(['children' => fn ($query) => $query->where('is_active', true)])
             ),
