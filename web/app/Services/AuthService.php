@@ -234,7 +234,7 @@ class AuthService
             || $this->mfaService->verifyTOTP($user, $code);
     }
 
-    public function registerUser(array $data): User
+    public function registerUser(array $data, ?Request $request = null): User
     {
         $user = User::create([
             'username' => $data['username'],
@@ -258,7 +258,8 @@ class AuthService
             ],
             'Self-registration',
             'success',
-            $user->id
+            $user->id,
+            $request
         );
 
         return $user;

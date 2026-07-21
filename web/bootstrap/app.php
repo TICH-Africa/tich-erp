@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\CaptureClientContext::class,
+        ]);
+
         $middleware->alias([
             'mfa' => \App\Http\Middleware\RequireMFA::class,
             'mfa.setup' => \App\Http\Middleware\EnsureMfaConfigured::class,

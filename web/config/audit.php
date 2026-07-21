@@ -4,6 +4,8 @@ return [
 
     'genesis_hash' => '0000000000000000000000000000000000000000000000000000000000000000',
 
+    'geo_lookup_enabled' => env('AUDIT_GEO_LOOKUP_ENABLED', true),
+
     'sensitive_keys' => [
         'password', 'password_hash', 'password_confirmation',
         'mfa_secret', 'mfa_secret_temp', 'mfa_backup_codes',

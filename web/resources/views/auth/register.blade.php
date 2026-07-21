@@ -10,8 +10,9 @@
         <p class="tich-text tich-mt-2">Register for access to the TICH ERP portal.</p>
     </div>
 
-    <form method="POST" action="{{ route('register') }}">
+    <form method="POST" action="{{ route('register') }}" data-client-context>
         @csrf
+        @include('partials.client-context-fields')
 
         <div class="tich-form-group">
             <label for="username" class="tich-label">Username</label>

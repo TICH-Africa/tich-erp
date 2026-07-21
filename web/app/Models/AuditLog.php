@@ -13,13 +13,14 @@ class AuditLog extends Model
 
     protected $fillable = [
         'user_id', 'action', 'module', 'entity_type', 'entity_id',
-        'old_value', 'new_value', 'ip_address', 'user_agent',
+        'old_value', 'new_value', 'ip_address', 'user_agent', 'client_context',
         'reason', 'status', 'previous_hash', 'record_hash', 'created_at',
     ];
 
     protected $casts = [
         'old_value' => 'array',
         'new_value' => 'array',
+        'client_context' => 'array',
         'created_at' => 'datetime',
     ];
 

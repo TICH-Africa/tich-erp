@@ -3,13 +3,15 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Support\ClientContextResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AuditService
 {
+    public function __construct(protected ClientContextResolver $clientContextResolver) {}
+
     public function log(
         string $action,
         string $entityType,
@@ -33,13 +35,14 @@ class AuditService
         $sanitizedNew = $this->sanitize($newValue);
 
         $previousHash = $this->supportsHashChain() ? $this->latestRecordHash() : null;
-        $ipAddress = $request?->ip();
-        $userAgent = $request?->userAgent();
+        $clientContext = $this->resolveClientContext($request);
+        $ipAddress = $clientContext['ip_address'] ?? $request?->ip();
+        $userAgent = $clientContext['user_agent'] ?? ($request?->userAgent() ? substr($request->userAgent(), 0, 500) : null);
 
         $recordHash = null;
 
         if ($this->supportsHashChain()) {
-            $recordHash = $this->computeHash([
+            $hashPayload = [
                 'user_id' => $userId,
                 'action' => $action,
                 'module' => $module,
@@ -53,7 +56,13 @@ class AuditService
                 'status' => $status,
                 'created_at' => $createdAt->toIso8601String(),
                 'previous_hash' => $previousHash,
-            ]);
+            ];
+
+            if ($this->hasClientContextColumn() && $clientContext !== []) {
+                $hashPayload['client_context'] = $clientContext;
+            }
+
+            $recordHash = $this->computeHash($hashPayload);
         }
 
         $payload = [
@@ -64,10 +73,14 @@ class AuditService
             'old_value' => $sanitizedOld,
             'new_value' => $sanitizedNew,
             'ip_address' => $ipAddress,
-            'user_agent' => $userAgent ? substr($userAgent, 0, 500) : null,
+            'user_agent' => $userAgent,
             'reason' => $reason,
             'created_at' => $createdAt,
         ];
+
+        if ($this->hasClientContextColumn() && $clientContext !== []) {
+            $payload['client_context'] = $clientContext;
+        }
 
         if (Schema::hasColumn('audit_logs', 'status')) {
             $payload['status'] = $status;
@@ -125,7 +138,7 @@ class AuditService
                 ];
             }
 
-            $recomputed = $this->computeHash([
+            $hashPayload = [
                 'user_id' => $log->user_id,
                 'action' => $log->action,
                 'module' => $log->module,
@@ -139,7 +152,13 @@ class AuditService
                 'status' => $log->status,
                 'created_at' => $log->created_at?->toIso8601String(),
                 'previous_hash' => $log->previous_hash,
-            ]);
+            ];
+
+            if ($this->hasClientContextColumn() && ! empty($log->client_context)) {
+                $hashPayload['client_context'] = $log->client_context;
+            }
+
+            $recomputed = $this->computeHash($hashPayload);
 
             if ($recomputed !== $log->record_hash) {
                 return [
@@ -200,7 +219,15 @@ class AuditService
                 $q->where('action', 'like', "%{$search}%")
                     ->orWhere('entity_type', 'like', "%{$search}%")
                     ->orWhere('entity_id', 'like', "%{$search}%")
-                    ->orWhere('reason', 'like', "%{$search}%");
+                    ->orWhere('reason', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%");
+
+                if ($this->hasClientContextColumn()) {
+                    $q->orWhere('client_context->browser', 'like', "%{$search}%")
+                        ->orWhere('client_context->os', 'like', "%{$search}%")
+                        ->orWhere('client_context->device_type', 'like', "%{$search}%")
+                        ->orWhere('client_context->location->label', 'like', "%{$search}%");
+                }
             });
         }
 
@@ -238,6 +265,37 @@ class AuditService
         return $walk($data);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveClientContext(?Request $request): array
+    {
+        if ($request) {
+            $context = $this->clientContextResolver->fromRequest($request);
+
+            if ($context !== []) {
+                return $context;
+            }
+        }
+
+        $sessionContext = session('audit.client_context');
+
+        if (is_array($sessionContext) && $sessionContext !== []) {
+            if ($request) {
+                $fresh = $this->clientContextResolver->fromRequest($request);
+
+                return array_merge($sessionContext, array_filter([
+                    'ip_address' => $fresh['ip_address'] ?? null,
+                    'user_agent' => $fresh['user_agent'] ?? null,
+                ]));
+            }
+
+            return $sessionContext;
+        }
+
+        return $request ? $this->clientContextResolver->fromRequest($request) : [];
+    }
+
     private function computeHash(array $payload): string
     {
         return hash('sha256', json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -259,6 +317,11 @@ class AuditService
         return $this->isAvailable()
             && Schema::hasColumn('audit_logs', 'record_hash')
             && Schema::hasColumn('audit_logs', 'previous_hash');
+    }
+
+    private function hasClientContextColumn(): bool
+    {
+        return $this->isAvailable() && Schema::hasColumn('audit_logs', 'client_context');
     }
 
     private function isAvailable(): bool

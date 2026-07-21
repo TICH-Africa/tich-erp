@@ -3,6 +3,12 @@
 @section('title', 'Audit Log #'.$log->id)
 
 @section('content')
+    @php
+        $client = $log->client_context ?? [];
+        $location = is_array($client['location'] ?? null) ? $client['location'] : [];
+        $network = is_array($client['network'] ?? null) ? $client['network'] : [];
+    @endphp
+
     <section class="tich-section">
         <div class="tich-container" style="max-width: 56rem;">
             <a href="{{ route('admin.audit-logs.index') }}" class="tich-link">&larr; Back to audit logs</a>
@@ -30,7 +36,7 @@
                     <dd>{{ ucfirst($log->status) }}</dd>
 
                     <dt class="tich-caption">IP address</dt>
-                    <dd>{{ $log->ip_address ?? '—' }}</dd>
+                    <dd>{{ $client['ip_address'] ?? $log->ip_address ?? '—' }}</dd>
 
                     <dt class="tich-caption">Reason</dt>
                     <dd>{{ $log->reason ?? '—' }}</dd>
@@ -42,6 +48,76 @@
                     <dd style="word-break: break-all; font-family: monospace; font-size: 0.75rem;">{{ $log->previous_hash ?? '—' }}</dd>
                 </dl>
             </div>
+
+            @if ($client !== [])
+                <div class="tich-card tich-mt-4" style="padding: 1.5rem;">
+                    <h2 class="tich-h3">Client &amp; session context</h2>
+                    <dl style="display: grid; grid-template-columns: 10rem 1fr; gap: 0.75rem 1rem; margin: 1rem 0 0;">
+                        <dt class="tich-caption">Device type</dt>
+                        <dd>{{ ucfirst($client['device_type'] ?? '—') }}</dd>
+
+                        <dt class="tich-caption">Browser</dt>
+                        <dd>
+                            {{ $client['browser'] ?? '—' }}
+                            @if (! empty($client['browser_version']))
+                                ({{ $client['browser_version'] }})
+                            @endif
+                        </dd>
+
+                        <dt class="tich-caption">Operating system</dt>
+                        <dd>
+                            {{ $client['os'] ?? '—' }}
+                            @if (! empty($client['os_version']))
+                                ({{ $client['os_version'] }})
+                            @endif
+                        </dd>
+
+                        <dt class="tich-caption">Location</dt>
+                        <dd>{{ $location['label'] ?? '—' }}</dd>
+
+                        <dt class="tich-caption">Internet / network</dt>
+                        <dd>{{ $network['label'] ?? ($location['isp'] ?? '—') }}</dd>
+
+                        <dt class="tich-caption">Connection</dt>
+                        <dd>
+                            @if (! empty($network['connection_type']) || ! empty($network['effective_type']))
+                                {{ $network['connection_type'] ?? 'Unknown' }}
+                                @if (! empty($network['effective_type']))
+                                    · {{ strtoupper($network['effective_type']) }}
+                                @endif
+                                @if (! empty($network['downlink_mbps']))
+                                    · {{ $network['downlink_mbps'] }} Mbps
+                                @endif
+                            @else
+                                —
+                            @endif
+                        </dd>
+
+                        <dt class="tich-caption">ISP / carrier</dt>
+                        <dd>{{ $location['isp'] ?? '—' }}</dd>
+
+                        <dt class="tich-caption">Timezone</dt>
+                        <dd>{{ $client['timezone'] ?? '—' }}</dd>
+
+                        <dt class="tich-caption">Language</dt>
+                        <dd>{{ $client['language'] ?? '—' }}</dd>
+
+                        <dt class="tich-caption">Screen</dt>
+                        <dd>{{ $client['screen'] ?? '—' }}</dd>
+
+                        <dt class="tich-caption">Channel</dt>
+                        <dd>{{ ucfirst($client['channel'] ?? '—') }}</dd>
+
+                        <dt class="tich-caption">User agent</dt>
+                        <dd style="word-break: break-word;">{{ $client['user_agent'] ?? $log->user_agent ?? '—' }}</dd>
+                    </dl>
+                </div>
+            @elseif ($log->user_agent)
+                <div class="tich-card tich-mt-4" style="padding: 1.5rem;">
+                    <h2 class="tich-h3">Client context</h2>
+                    <p class="tich-text tich-mt-2" style="word-break: break-word;">{{ $log->user_agent }}</p>
+                </div>
+            @endif
 
             @if ($log->old_value)
                 <div class="tich-card tich-mt-4" style="padding: 1.5rem;">

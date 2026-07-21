@@ -22,8 +22,9 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('mfa.verify') }}">
+    <form method="POST" action="{{ route('mfa.verify') }}" data-client-context>
         @csrf
+        @include('partials.client-context-fields')
 
         <div class="tich-form-group">
             <label for="code" class="tich-label">Verification code</label>

@@ -10,8 +10,9 @@
         <p class="tich-text tich-mt-2">Enter your credentials to continue to the ERP portal.</p>
     </div>
 
-    <form method="POST" action="{{ route('login') }}">
+    <form method="POST" action="{{ route('login') }}" data-client-context>
         @csrf
+        @include('partials.client-context-fields')
 
         <div class="tich-form-group">
             <label for="login" class="tich-label">Email or username</label>

@@ -59,7 +59,7 @@ class WebAuthController extends Controller
             'terms' => ['accepted'],
         ]);
 
-        $user = $this->authService->registerUser($validated);
+        $user = $this->authService->registerUser($validated, $request);
 
         Auth::login($user);
         $request->session()->regenerate();

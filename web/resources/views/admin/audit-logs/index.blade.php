@@ -53,12 +53,17 @@
                             <th style="padding: 0.75rem;">User</th>
                             <th style="padding: 0.75rem;">Action</th>
                             <th style="padding: 0.75rem;">Entity</th>
+                            <th style="padding: 0.75rem;">Client</th>
                             <th style="padding: 0.75rem;">Status</th>
                             <th style="padding: 0.75rem;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($logs as $log)
+                            @php
+                                $client = $log->client_context ?? [];
+                                $location = is_array($client['location'] ?? null) ? ($client['location']['label'] ?? null) : null;
+                            @endphp
                             <tr style="border-bottom: 1px solid var(--tich-neutral-border);">
                                 <td style="padding: 0.75rem; white-space: nowrap;">{{ $log->created_at?->format('Y-m-d H:i') }}</td>
                                 <td style="padding: 0.75rem;">
@@ -74,6 +79,18 @@
                                 </td>
                                 <td style="padding: 0.75rem;">{{ $log->entity_type }} #{{ $log->entity_id }}</td>
                                 <td style="padding: 0.75rem;">
+                                    @if ($client !== [])
+                                        <span class="tich-caption">{{ ucfirst($client['device_type'] ?? 'unknown') }}</span><br>
+                                        {{ $client['browser'] ?? 'Unknown browser' }} · {{ $client['os'] ?? 'Unknown OS' }}<br>
+                                        {{ $client['ip_address'] ?? $log->ip_address ?? '—' }}
+                                        @if ($location)
+                                            <br><span class="tich-caption">{{ $location }}</span>
+                                        @endif
+                                    @else
+                                        {{ $log->ip_address ?? '—' }}
+                                    @endif
+                                </td>
+                                <td style="padding: 0.75rem;">
                                     <span style="color: {{ $log->status === 'success' ? 'var(--tich-green)' : '#b45309' }};">
                                         {{ ucfirst($log->status) }}
                                     </span>
@@ -84,7 +101,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" style="padding: 2rem; text-align: center;" class="tich-text">No audit records yet.</td>
+                                <td colspan="7" style="padding: 2rem; text-align: center;" class="tich-text">No audit records yet.</td>
                             </tr>
                         @endforelse
                     </tbody>
