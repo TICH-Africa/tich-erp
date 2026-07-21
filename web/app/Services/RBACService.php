@@ -92,6 +92,51 @@ class RBACService
         return false;
     }
 
+    public function hasInstitutionWideAdmissionsAccess(User $user): bool
+    {
+        if ($this->hasAnyRole($user, ['Super Admin', 'Academic Registrar', 'Admissions Officer', 'CEO'])) {
+            return true;
+        }
+
+        return $this->hasUnscopedPermission($user, 'admissions.read');
+    }
+
+    public function hasUnscopedPermission(User $user, string $permission): bool
+    {
+        if ($this->hasRole($user, 'Super Admin')) {
+            return true;
+        }
+
+        $slug = $this->resolvePermissionSlug($permission);
+
+        $hasDirect = DB::table('user_permissions as up')
+            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
+            ->where('up.user_id', $user->id)
+            ->where('p.slug', $slug)
+            ->whereNull('up.department_id')
+            ->where(function ($query) {
+                $query->whereNull('up.expires_at')
+                    ->orWhere('up.expires_at', '>', now());
+            })
+            ->exists();
+
+        if ($hasDirect) {
+            return true;
+        }
+
+        return DB::table('user_roles as ur')
+            ->join('role_permissions as rp', 'rp.role_id', '=', 'ur.role_id')
+            ->join('permissions as p', 'p.id', '=', 'rp.permission_id')
+            ->where('ur.user_id', $user->id)
+            ->where('p.slug', $slug)
+            ->whereNull('ur.department_id')
+            ->where(function ($query) {
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
+            })
+            ->exists();
+    }
+
     public function roleLevel(string $roleName): int
     {
         return config("tich.role_hierarchy.{$roleName}", 0);

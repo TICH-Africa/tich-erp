@@ -7,6 +7,7 @@ use App\Mail\ApplicationStatusUpdatedMail;
 use App\Mail\ApplicationSubmittedMail;
 use App\Models\Applicant;
 use App\Models\User;
+use App\Support\MailConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -256,15 +257,16 @@ class ApplicationMailService
         ?Request $request = null,
         array $auditExtra = [],
     ): array {
-        if (! $this->mailIsConfigured()) {
-            $error = 'Mail is not configured. Set MAIL_MAILER, MAIL_HOST, MAIL_USERNAME, and MAIL_PASSWORD in .env.';
+        $configError = MailConfig::smtpPasswordIssue()
+            ?? ($this->mailIsConfigured() ? null : 'Mail is not configured. Set MAIL_MAILER, MAIL_HOST, MAIL_USERNAME, and MAIL_PASSWORD in .env.');
 
-            Log::warning($error, [
+        if ($configError) {
+            Log::warning($configError, [
                 'applicant_id' => $applicant->id,
                 'recipient' => $email,
             ]);
 
-            return ['sent' => false, 'error' => $error];
+            return ['sent' => false, 'error' => $configError];
         }
 
         try {
@@ -294,9 +296,11 @@ class ApplicationMailService
                 'message' => $e->getMessage(),
             ]);
 
+            $error = MailConfig::friendlySmtpError($e->getMessage());
+
             return [
                 'sent' => false,
-                'error' => config('app.debug') ? $e->getMessage() : 'Unable to send email at this time.',
+                'error' => config('app.debug') ? $error : 'Unable to send email at this time.',
             ];
         }
     }

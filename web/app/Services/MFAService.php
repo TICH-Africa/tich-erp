@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\MfaVerificationMail;
 use App\Models\User;
+use App\Support\MailConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -58,11 +59,8 @@ class MFAService
      */
     private function deliverOtpEmail(User $user, string $otp, ?Request $request = null): array
     {
-        if (empty(config('mail.mailers.smtp.password')) && config('mail.default') === 'smtp') {
-            return [
-                'sent' => false,
-                'error' => 'MAIL_PASSWORD is not set. Use a Google App Password for tichinafricaict@gmail.com.',
-            ];
+        if ($issue = MailConfig::smtpPasswordIssue()) {
+            return ['sent' => false, 'error' => $issue];
         }
 
         try {
@@ -100,7 +98,7 @@ class MFAService
                 $request
             );
 
-            return ['sent' => false, 'error' => $e->getMessage()];
+            return ['sent' => false, 'error' => MailConfig::friendlySmtpError($e->getMessage())];
         }
     }
 

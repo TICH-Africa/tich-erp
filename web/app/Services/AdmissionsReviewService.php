@@ -24,10 +24,7 @@ class AdmissionsReviewService
      */
     public function visibleDepartmentIds(User $user): ?array
     {
-        if ($user->hasRole('Super Admin')
-            || $user->hasRole('Academic Registrar')
-            || $user->hasRole('Admissions Officer')
-            || $user->hasRole('CEO')) {
+        if ($this->rbacService->hasInstitutionWideAdmissionsAccess($user)) {
             return null;
         }
 
