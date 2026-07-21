@@ -53,6 +53,11 @@
     --tich-notice-info-bg: #f8fafc;
     --tich-notice-info-border: #e2e8f0;
     --tich-focus-ring: rgba(22, 105, 166, 0.15);
+
+    /* Semantic aliases (modals, elevated surfaces) */
+    --tich-surface: var(--tich-white);
+    --tich-text: var(--tich-grey);
+    --tich-border: var(--tich-neutral-border);
 }
 
 /* ─── Base ─────────────────────────────────────────────────────────────── */
@@ -1590,6 +1595,10 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     --tich-notice-info-bg: #1e293b;
     --tich-notice-info-border: #475569;
     --tich-focus-ring: rgba(96, 165, 250, 0.25);
+
+    --tich-surface: var(--tich-white);
+    --tich-text: var(--tich-grey);
+    --tich-border: var(--tich-neutral-border);
 }
 
 [data-theme="dark"] .tich-h1,
@@ -1696,4 +1705,163 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] select option {
     background: var(--tich-white);
     color: var(--tich-grey);
+}
+
+/* ─── Modals (admin popups) ──────────────────────────────────────────── */
+
+.tich-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.tich-modal.is-open {
+    display: flex;
+}
+
+.tich-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(73, 76, 80, 0.55);
+}
+
+[data-theme="dark"] .tich-modal__backdrop {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.tich-modal__dialog {
+    position: relative;
+    width: min(100%, 32rem);
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    background: var(--tich-surface);
+    color: var(--tich-text);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18);
+    border-top: 4px solid var(--tich-green);
+}
+
+[data-theme="dark"] .tich-modal__dialog {
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
+}
+
+.tich-modal__dialog--wide {
+    width: min(100%, 40rem);
+}
+
+.tich-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem 0;
+}
+
+.tich-modal__close {
+    border: 0;
+    background: transparent;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--tich-neutral-muted);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+}
+
+.tich-modal__close:hover {
+    color: var(--tich-text);
+}
+
+.tich-modal__body {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.tich-modal__errors {
+    margin-bottom: 1rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--tich-error-border);
+    border-radius: var(--radius-sm);
+    background: var(--tich-error-bg);
+    color: var(--tich-error-text);
+}
+
+.tich-modal__errors .tich-text {
+    color: inherit;
+}
+
+.tich-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--tich-border);
+}
+
+.tich-squircle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--tich-border);
+    border-radius: 0.65rem;
+    background: var(--tich-surface);
+    color: var(--tich-blue);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tich-squircle-btn:hover {
+    background: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+}
+
+.tich-squircle-btn:focus-visible {
+    outline: 2px solid var(--tich-blue);
+    outline-offset: 2px;
+}
+
+/* Readable typography inside modals (overrides global dark blue headings/captions) */
+
+[data-theme="dark"] .tich-modal .tich-h3,
+[data-theme="dark"] .tich-modal h3.tich-h3 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .tich-modal .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-modal .tich-label,
+[data-theme="dark"] .tich-modal .tich-text {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-modal .tich-input,
+[data-theme="dark"] .tich-modal .tich-select,
+[data-theme="dark"] .tich-modal textarea.tich-input {
+    background-color: var(--tich-neutral);
+    border-color: var(--tich-neutral-border);
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-modal .tich-input::placeholder {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-modal .tich-btn-secondary {
+    background-color: var(--tich-neutral);
+    border-color: var(--tich-neutral-border);
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-modal .tich-btn-secondary:hover {
+    background-color: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+    color: var(--tich-blue);
 }
