@@ -32,7 +32,7 @@
         @can('departments.manage')
         <article class="tich-card">
             <h3 class="tich-h3">Organisation structure</h3>
-            <p class="tich-text">Department groups, administrative units, learning departments, and programme catalogue.</p>
+            <p class="tich-text">Department groups, administrative units, academic departments, and programme catalogue.</p>
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;" class="tich-mt-4">
                 <a href="{{ route('admin.department-groups.index') }}" class="tich-btn tich-btn-primary">Department groups</a>
                 <a href="{{ route('admin.departments.index') }}" class="tich-btn tich-btn-primary">Departments</a>
@@ -43,7 +43,7 @@
         @can('programs.manage')
         <article class="tich-card">
             <h3 class="tich-h3">Programmes &amp; courses</h3>
-            <p class="tich-text">Create and manage courses offered under learning departments.</p>
+            <p class="tich-text">Create and manage courses offered under academic departments.</p>
             <a href="{{ route('admin.programs.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Manage programmes</a>
         </article>
         @endcan

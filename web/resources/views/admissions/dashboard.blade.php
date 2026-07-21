@@ -33,7 +33,7 @@
     <div class="tich-grid tich-grid--2" style="align-items: start; gap: 2rem;">
         <article class="tich-card">
             <h2 class="tich-h3">By handling department</h2>
-            <p class="tich-text tich-mb-4">Each application is routed to the learning department offering the selected programme.</p>
+            <p class="tich-text tich-mb-4">Each application is routed to the academic department offering the selected programme.</p>
 
             @if ($departmentBreakdown->isEmpty())
                 <p class="tich-caption">No applications in your scope yet.</p>

@@ -7,7 +7,7 @@
         <div>
             <h1 class="tich-h1" style="font-size: 2rem;">Departments</h1>
             <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
-                Administrative units sit under department groups. Learning departments (courses/programs) sit under <strong>Academics</strong>.
+                Administrative units sit under department groups. Academic departments (courses/programs) sit under <strong>Academics</strong>.
             </p>
         </div>
         <button type="button" class="tich-btn tich-btn-primary" data-open-modal="department-create-modal">

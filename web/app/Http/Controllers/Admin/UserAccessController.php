@@ -11,6 +11,7 @@ use App\Services\DashboardService;
 use App\Services\RBACService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class UserAccessController extends Controller
@@ -23,14 +24,23 @@ class UserAccessController extends Controller
     public function index(): View
     {
         $users = User::query()
-            ->with(['roles' => fn ($query) => $query->withPivot('department_id', 'campus_id')])
+            ->with([
+                'roles' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
+                'permissions' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
+            ])
             ->where('is_active', 1)
             ->orderBy('username')
             ->paginate(20);
 
         $departmentNames = Department::query()->pluck('dept_name', 'id');
+        $slugToPermission = $this->rbacService->dashboardModuleSlugMap();
+        $moduleLabelsBySlug = $slugToPermission->map(function (string $permissionKey) {
+            $module = collect(config('tich-dashboards.modules', []))->firstWhere('permission', $permissionKey);
 
-        return view('admin.users.index', compact('users', 'departmentNames'));
+            return $module['label'] ?? $permissionKey;
+        });
+
+        return view('admin.users.index', compact('users', 'departmentNames', 'moduleLabelsBySlug'));
     }
 
     public function edit(User $user): View
@@ -43,21 +53,21 @@ class UserAccessController extends Controller
             'campus_id' => $role->pivot->campus_id,
         ])->values()->all();
 
-        $modulePermissions = collect(config('tich-dashboards.modules', []))
-            ->map(function ($module) use ($user) {
-                return [
-                    ...$module,
-                    'granted' => $user->hasPermission($module['permission']),
-                ];
-            });
+        $permissionGrants = $this->rbacService->getUserModulePermissionGrants($user);
+
+        $assignableModules = collect(config('tich-dashboards.modules', []))
+            ->unique('permission')
+            ->values();
 
         return view('admin.users.edit', [
             'user' => $user,
             'roles' => Role::query()->orderBy('role_name')->get(),
+            'roleNamesById' => Role::query()->pluck('role_name', 'id'),
             'campuses' => Campus::query()->where('is_active', 1)->orderBy('campus_name')->get(['id', 'campus_name']),
             'departments' => Department::query()->where('is_active', 1)->orderBy('dept_name')->get(['id', 'dept_name', 'campus_id']),
             'assignments' => $assignments,
-            'modulePermissions' => $modulePermissions,
+            'permissionGrants' => $permissionGrants,
+            'assignableModules' => $assignableModules,
             'effectiveModules' => $this->dashboardService->modulesForUser($user),
         ]);
     }
@@ -69,9 +79,13 @@ class UserAccessController extends Controller
             'assignments.*.role_id' => ['nullable', 'exists:roles,id'],
             'assignments.*.campus_id' => ['nullable', 'exists:campuses,id'],
             'assignments.*.department_id' => ['nullable', 'exists:departments,id'],
-            'modules' => ['nullable', 'array'],
-            'modules.*' => ['string'],
+            'permission_grants' => ['nullable', 'array'],
+            'permission_grants.*.permission' => ['nullable', 'string'],
+            'permission_grants.*.campus_id' => ['nullable', 'exists:campuses,id'],
+            'permission_grants.*.department_id' => ['nullable', 'exists:departments,id'],
         ]);
+
+        $roleNamesById = Role::query()->pluck('role_name', 'id');
 
         $assignments = collect($validated['assignments'] ?? [])
             ->filter(fn (array $row) => ! empty($row['role_id']))
@@ -86,13 +100,50 @@ class UserAccessController extends Controller
         if ($assignments === []) {
             return back()
                 ->withInput()
-                ->withErrors(['assignments' => 'Add at least one role assignment with a department.']);
+                ->withErrors(['assignments' => 'Add at least one role assignment.']);
+        }
+
+        foreach ($assignments as $index => $assignment) {
+            $roleName = $roleNamesById[$assignment['role_id']] ?? null;
+
+            if ($roleName && ! $this->rbacService->roleAllowsInstitutionWideAssignment($roleName) && empty($assignment['department_id'])) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        "assignments.{$index}.department_id" => "Select a department for the {$roleName} role.",
+                    ]);
+            }
+        }
+
+        $permissionGrants = collect($validated['permission_grants'] ?? [])
+            ->filter(fn (array $row) => ! empty($row['permission']))
+            ->map(fn (array $row) => [
+                'permission' => $row['permission'],
+                'campus_id' => ! empty($row['campus_id']) ? (int) $row['campus_id'] : null,
+                'department_id' => ! empty($row['department_id']) ? (int) $row['department_id'] : null,
+            ])
+            ->unique(fn (array $row) => implode(':', [
+                $row['permission'],
+                $row['department_id'] ?? 'all',
+                $row['campus_id'] ?? 'all',
+            ]))
+            ->values()
+            ->all();
+
+        foreach ($permissionGrants as $index => $grant) {
+            if ($this->rbacService->permissionRequiresDepartment($grant['permission']) && empty($grant['department_id'])) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        "permission_grants.{$index}.department_id" => 'This permission must be assigned to a department.',
+                    ]);
+            }
         }
 
         $this->rbacService->syncUserAccess(
             $user,
             $assignments,
-            $validated['modules'] ?? [],
+            $permissionGrants,
             $request->user()->id
         );
 

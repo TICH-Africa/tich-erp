@@ -28,28 +28,35 @@
 
         <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
             <article class="tich-card">
-                <h2 class="tich-h3">Department assignments</h2>
+                <h2 class="tich-h3">Role assignments</h2>
                 <p class="tich-text tich-mb-4">
-                    Each row grants a role within a department. Users can hold multiple roles across different departments.
+                    Assign a role per department. Most roles require a department; executive roles may be institution-wide.
                 </p>
 
                 @php
-                    $rows = old('assignments', $assignments);
-                    if ($rows === []) {
-                        $rows = [['role_id' => '', 'department_id' => '', 'campus_id' => '']];
+                    $assignmentRows = old('assignments', $assignments);
+                    if ($assignmentRows === []) {
+                        $assignmentRows = [['role_id' => '', 'department_id' => '', 'campus_id' => '']];
                     }
-                    $rows[] = ['role_id' => '', 'department_id' => '', 'campus_id' => ''];
+                    $assignmentRows[] = ['role_id' => '', 'department_id' => '', 'campus_id' => ''];
                 @endphp
 
-                <div id="assignments-list" style="display: grid; gap: 1rem;">
-                    @foreach ($rows as $index => $row)
-                        <div class="tich-assignment-row" style="display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--tich-border, #e5e7eb); border-radius: 0.5rem;">
+                <div style="display: grid; gap: 1rem;">
+                    @foreach ($assignmentRows as $index => $row)
+                        @php
+                            $selectedRoleId = old("assignments.{$index}.role_id", $row['role_id'] ?? '');
+                            $selectedRoleName = $roleNamesById[$selectedRoleId] ?? null;
+                            $roleIsInstitutionWide = $selectedRoleName
+                                ? in_array($selectedRoleName, config('tich.institution_wide_roles', []), true)
+                                : false;
+                        @endphp
+                        <div style="display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--tich-border, #e5e7eb); border-radius: 0.5rem;">
                             <div class="tich-form-group" style="margin: 0;">
                                 <label class="tich-label">Role</label>
                                 <select name="assignments[{{ $index }}][role_id]" class="tich-input">
                                     <option value="">Select role…</option>
                                     @foreach ($roles as $role)
-                                        <option value="{{ $role->id }}" @selected(old("assignments.{$index}.role_id", $row['role_id'] ?? '') == $role->id)>
+                                        <option value="{{ $role->id }}" @selected($selectedRoleId == $role->id)>
                                             {{ $role->role_name }}
                                         </option>
                                     @endforeach
@@ -57,9 +64,14 @@
                             </div>
 
                             <div class="tich-form-group" style="margin: 0;">
-                                <label class="tich-label">Department</label>
+                                <label class="tich-label">
+                                    Department
+                                    @unless ($roleIsInstitutionWide)
+                                        <span style="color: #c0392b;">*</span>
+                                    @endunless
+                                </label>
                                 <select name="assignments[{{ $index }}][department_id]" class="tich-input">
-                                    <option value="">Institution-wide (no department)</option>
+                                    <option value="">@if ($roleIsInstitutionWide) Institution-wide @else Select department… @endif</option>
                                     @foreach ($departments as $department)
                                         <option value="{{ $department->id }}" @selected(old("assignments.{$index}.department_id", $row['department_id'] ?? '') == $department->id)>
                                             {{ $department->dept_name }}
@@ -87,29 +99,85 @@
             </article>
 
             <article class="tich-card">
-                <h2 class="tich-h3">Dashboard modules</h2>
-                <p class="tich-text tich-mb-4">Grant direct access to platform areas. Role permissions from all department assignments also apply.</p>
+                <h2 class="tich-h3">Department permissions</h2>
+                <p class="tich-text tich-mb-4">
+                    Grant dashboard permissions scoped to a department. Admissions and academic modules require a department; admin and audit modules are institution-wide.
+                </p>
 
-                <div style="display: grid; gap: 0.75rem;">
-                    @foreach ($modulePermissions as $module)
-                        <label style="display: flex; gap: 0.5rem; align-items: flex-start;">
-                            <input
-                                type="checkbox"
-                                name="modules[]"
-                                value="{{ $module['permission'] }}"
-                                @checked(in_array($module['permission'], old('modules', collect($modulePermissions)->where('granted', true)->pluck('permission')->all())))
-                            >
-                            <span>
-                                <strong>{{ $module['label'] }}</strong>
-                                @if (!empty($module['coming_soon']))
-                                    <span class="tich-caption"> (coming soon)</span>
-                                @endif
-                                <br>
-                                <span class="tich-caption">{{ $module['description'] }}</span>
-                            </span>
-                        </label>
+                @php
+                    $grantRows = old('permission_grants', $permissionGrants);
+                    if ($grantRows === []) {
+                        $grantRows = [['permission' => '', 'department_id' => '', 'campus_id' => '']];
+                    }
+                    $grantRows[] = ['permission' => '', 'department_id' => '', 'campus_id' => ''];
+                @endphp
+
+                <div style="display: grid; gap: 1rem;">
+                    @foreach ($grantRows as $index => $grant)
+                        @php
+                            $selectedPermission = old("permission_grants.{$index}.permission", $grant['permission'] ?? '');
+                            $selectedModule = $assignableModules->firstWhere('permission', $selectedPermission);
+                            $requiresDepartment = $selectedModule
+                                ? ($selectedModule['scope'] ?? 'department') === 'department'
+                                : true;
+                        @endphp
+                        <div style="display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--tich-border, #e5e7eb); border-radius: 0.5rem;">
+                            <div class="tich-form-group" style="margin: 0;">
+                                <label class="tich-label">Permission</label>
+                                <select name="permission_grants[{{ $index }}][permission]" class="tich-input">
+                                    <option value="">Select permission…</option>
+                                    @foreach ($assignableModules as $module)
+                                        <option value="{{ $module['permission'] }}" @selected($selectedPermission === $module['permission'])>
+                                            {{ $module['label'] }}
+                                            @if (($module['scope'] ?? 'department') === 'institution')
+                                                (institution-wide)
+                                            @else
+                                                (per department)
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="tich-form-group" style="margin: 0;">
+                                <label class="tich-label">
+                                    Department
+                                    @if ($requiresDepartment)
+                                        <span style="color: #c0392b;">*</span>
+                                    @endif
+                                </label>
+                                <select name="permission_grants[{{ $index }}][department_id]" class="tich-input">
+                                    <option value="">
+                                        @if ($requiresDepartment)
+                                            Select department…
+                                        @else
+                                            Institution-wide
+                                        @endif
+                                    </option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" @selected(old("permission_grants.{$index}.department_id", $grant['department_id'] ?? '') == $department->id)>
+                                            {{ $department->dept_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="tich-form-group" style="margin: 0;">
+                                <label class="tich-label">Campus scope (optional)</label>
+                                <select name="permission_grants[{{ $index }}][campus_id]" class="tich-input">
+                                    <option value="">All campuses</option>
+                                    @foreach ($campuses as $campus)
+                                        <option value="{{ $campus->id }}" @selected(old("permission_grants.{$index}.campus_id", $grant['campus_id'] ?? '') == $campus->id)>
+                                            {{ $campus->campus_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     @endforeach
                 </div>
+
+                <p class="tich-caption tich-mt-4">Role permissions from assignments above also apply. Use this section for extra department-scoped access.</p>
             </article>
         </div>
 
@@ -119,9 +187,26 @@
                 @forelse ($effectiveModules as $module)
                     <li class="tich-text">{{ $module['label'] }}</li>
                 @empty
-                    <li class="tich-caption">No modules currently visible — assign role permissions or check modules above.</li>
+                    <li class="tich-caption">No modules currently visible — assign roles or department permissions.</li>
                 @endforelse
             </ul>
+
+            @if ($permissionGrants !== [])
+                <h3 class="tich-h3 tich-mt-6" style="font-size: 1rem;">Current department permissions</h3>
+                <ul class="tich-mt-2" style="margin: 0; padding-left: 1.25rem;">
+                    @foreach ($permissionGrants as $grant)
+                        <li class="tich-text">
+                            {{ $grant['label'] }}
+                            @if ($grant['department_id'])
+                                · {{ $departments->firstWhere('id', $grant['department_id'])?->dept_name ?? 'Department #'.$grant['department_id'] }}
+                            @else
+                                · Institution-wide
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
             <p class="tich-caption tich-mt-4">Preview reflects current access before saving changes.</p>
         </div>
 

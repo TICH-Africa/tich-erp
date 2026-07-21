@@ -14,6 +14,7 @@ return [
             'route' => 'dashboard',
             'permission' => 'dashboard.access',
             'category' => 'core',
+            'scope' => 'institution',
         ],
         [
             'key' => 'admin_hub',
@@ -22,6 +23,7 @@ return [
             'route' => 'admin.index',
             'permission' => 'admin.access',
             'category' => 'core',
+            'scope' => 'institution',
         ],
         [
             'key' => 'admissions',
@@ -30,6 +32,7 @@ return [
             'route' => 'admissions.dashboard',
             'permission' => 'admissions.read',
             'category' => 'admin',
+            'scope' => 'department',
         ],
         [
             'key' => 'students',
@@ -39,14 +42,16 @@ return [
             'permission' => 'students.read',
             'category' => 'admin',
             'coming_soon' => true,
+            'scope' => 'department',
         ],
         [
             'key' => 'academics',
             'label' => 'Application approvals',
-            'description' => 'Review and approve onboarding applications for your learning department.',
+            'description' => 'Review and approve onboarding applications for your academic department.',
             'route' => 'admissions.dashboard',
             'permission' => 'admissions.read',
             'category' => 'academics',
+            'scope' => 'department',
         ],
         [
             'key' => 'finance',
@@ -56,6 +61,7 @@ return [
             'permission' => 'finance.read',
             'category' => 'finance',
             'coming_soon' => true,
+            'scope' => 'department',
         ],
         [
             'key' => 'hr',
@@ -65,6 +71,7 @@ return [
             'permission' => 'hr.read',
             'category' => 'hr',
             'coming_soon' => true,
+            'scope' => 'department',
         ],
         [
             'key' => 'audit',
@@ -73,6 +80,7 @@ return [
             'route' => 'admin.audit-logs.index',
             'permission' => 'audit_logs.read',
             'category' => 'security',
+            'scope' => 'institution',
         ],
     ],
 

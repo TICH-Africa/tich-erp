@@ -52,4 +52,12 @@ return [
         'audit_logs.read' => 'core_manage_campuses_audit',
     ],
 
+    /** Roles that may be assigned without a department (institution-wide). */
+    'institution_wide_roles' => [
+        'Super Admin',
+        'CEO',
+        'Academic Registrar',
+        'Admissions Officer',
+    ],
+
 ];

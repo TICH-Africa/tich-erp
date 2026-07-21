@@ -5,7 +5,7 @@
 @section('admin-content')
     <h1 class="tich-h1" style="font-size: 2rem;">Programmes &amp; courses</h1>
     <p class="tich-text tich-mb-8">
-        Courses and programmes offered under learning departments (children of Academics).
+        Courses and programmes offered under academic departments (children of Academics).
         Active programmes appear on the public <a href="{{ route('programs.index') }}" class="tich-link">Programs &amp; courses</a> page.
     </p>
 
@@ -27,7 +27,7 @@
                     <input type="text" name="program_name" class="tich-input" value="{{ old('program_name') }}" required>
                 </div>
                 <div class="tich-form-group">
-                    <label class="tich-label">Learning department</label>
+                    <label class="tich-label">Academic department</label>
                     <select name="department_id" class="tich-input" required>
                         <option value="">Select department…</option>
                         @foreach ($learningDepartments as $department)
@@ -170,7 +170,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5">No programmes yet. Add learning departments under Academics first.</td></tr>
+                        <tr><td colspan="5">No programmes yet. Add academic departments under Academics first.</td></tr>
                     @endforelse
                 </tbody>
             </table>

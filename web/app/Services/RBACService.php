@@ -422,12 +422,12 @@ class RBACService
 
     /**
      * @param  list<array{role_id: int, department_id?: int|null, campus_id?: int|null}>  $assignments
-     * @param  list<string>  $modulePermissionKeys
+     * @param  list<array{permission: string, department_id?: int|null, campus_id?: int|null}>  $permissionGrants
      */
     public function syncUserAccess(
         User $user,
         array $assignments,
-        array $modulePermissionKeys,
+        array $permissionGrants,
         int $assignedBy,
     ): void {
         DB::table('user_roles')->where('user_id', $user->id)->delete();
@@ -442,14 +442,10 @@ class RBACService
             );
         }
 
-        $moduleSlugs = collect(config('tich-dashboards.modules', []))
-            ->pluck('permission')
-            ->map(fn ($key) => $this->resolvePermissionSlug($key))
-            ->unique()
-            ->values();
+        $moduleSlugs = $this->dashboardModuleSlugMap();
 
         $modulePermissionIds = DB::table('permissions')
-            ->whereIn('slug', $moduleSlugs)
+            ->whereIn('slug', $moduleSlugs->keys()->all())
             ->pluck('id');
 
         DB::table('user_permissions')
@@ -457,8 +453,12 @@ class RBACService
             ->whereIn('permission_id', $modulePermissionIds)
             ->delete();
 
-        foreach ($modulePermissionKeys as $permissionKey) {
-            $slug = $this->resolvePermissionSlug($permissionKey);
+        foreach ($permissionGrants as $grant) {
+            if (empty($grant['permission'])) {
+                continue;
+            }
+
+            $slug = $this->resolvePermissionSlug($grant['permission']);
             $permissionId = DB::table('permissions')->where('slug', $slug)->value('id');
 
             if (! $permissionId) {
@@ -468,8 +468,8 @@ class RBACService
             $this->assignPermissionToUser(
                 $user,
                 (int) $permissionId,
-                null,
-                null,
+                ! empty($grant['campus_id']) ? (int) $grant['campus_id'] : null,
+                ! empty($grant['department_id']) ? (int) $grant['department_id'] : null,
                 $assignedBy
             );
         }
@@ -481,12 +481,70 @@ class RBACService
             null,
             [
                 'assignments' => $assignments,
-                'modules' => $modulePermissionKeys,
+                'permission_grants' => $permissionGrants,
             ],
             'User platform access updated by administrator',
             'success',
             $assignedBy
         );
+    }
+
+    /**
+     * @return list<array{permission: string, department_id: ?int, campus_id: ?int, label: string}>
+     */
+    public function getUserModulePermissionGrants(User $user): array
+    {
+        $slugToPermission = $this->dashboardModuleSlugMap();
+        $slugToLabel = collect(config('tich-dashboards.modules', []))
+            ->keyBy('permission')
+            ->map(fn (array $module) => $module['label']);
+
+        return DB::table('user_permissions as up')
+            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
+            ->where('up.user_id', $user->id)
+            ->whereIn('p.slug', $slugToPermission->keys()->all())
+            ->where(function ($query) {
+                $query->whereNull('up.expires_at')
+                    ->orWhere('up.expires_at', '>', now());
+            })
+            ->get(['p.slug', 'up.department_id', 'up.campus_id'])
+            ->map(function ($row) use ($slugToPermission, $slugToLabel) {
+                $permission = $slugToPermission[$row->slug] ?? $row->slug;
+
+                return [
+                    'permission' => $permission,
+                    'department_id' => $row->department_id ? (int) $row->department_id : null,
+                    'campus_id' => $row->campus_id ? (int) $row->campus_id : null,
+                    'label' => $slugToLabel[$permission] ?? $permission,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function permissionRequiresDepartment(string $permissionKey): bool
+    {
+        $module = collect(config('tich-dashboards.modules', []))
+            ->firstWhere('permission', $permissionKey);
+
+        return ($module['scope'] ?? 'department') === 'department';
+    }
+
+    public function roleAllowsInstitutionWideAssignment(string $roleName): bool
+    {
+        return in_array($roleName, config('tich.institution_wide_roles', []), true);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<string, string> slug => permission key
+     */
+    public function dashboardModuleSlugMap(): \Illuminate\Support\Collection
+    {
+        return collect(config('tich-dashboards.modules', []))
+            ->unique('permission')
+            ->mapWithKeys(fn (array $module) => [
+                $this->resolvePermissionSlug($module['permission']) => $module['permission'],
+            ]);
     }
 
     public function assignDefaultRole(User $user): void

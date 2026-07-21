@@ -4,7 +4,7 @@
 
 @section('admin-content')
     <h1 class="tich-h1" style="font-size: 2rem;">Users &amp; access</h1>
-    <p class="tich-text tich-mb-8">Assign roles per department, campus scope, and dashboard module permissions.</p>
+    <p class="tich-text tich-mb-8">Assign roles and permissions per department, with optional campus scope.</p>
 
     <div class="tich-card" style="overflow-x: auto;">
         <table class="tich-admin-table">
@@ -14,17 +14,26 @@
                     <th>Type</th>
                     <th>Roles</th>
                     <th>Departments</th>
+                    <th>Permissions</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($users as $user)
                     @php
-                        $departmentIds = $user->roles
+                        $roleDepartmentIds = $user->roles
                             ->pluck('pivot.department_id')
                             ->filter()
                             ->unique()
                             ->values();
+
+                        $permissionDepartmentIds = $user->permissions
+                            ->pluck('pivot.department_id')
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        $departmentIds = $roleDepartmentIds->merge($permissionDepartmentIds)->unique()->values();
                     @endphp
                     <tr>
                         <td>
@@ -37,6 +46,8 @@
                                 {{ $role->role_name }}
                                 @if ($role->pivot->department_id)
                                     <span class="tich-caption">· {{ $departmentNames[$role->pivot->department_id] ?? 'Dept #'.$role->pivot->department_id }}</span>
+                                @else
+                                    <span class="tich-caption">· Institution-wide</span>
                                 @endif
                                 @if (!$loop->last)<br>@endif
                             @empty
@@ -49,6 +60,24 @@
                             @empty
                                 <span class="tich-caption">Institution-wide</span>
                             @endforelse
+                        </td>
+                        <td>
+                            @php $shownPermission = false; @endphp
+                            @foreach ($user->permissions as $permission)
+                                @if ($moduleLabelsBySlug->has($permission->slug))
+                                    @php $shownPermission = true; @endphp
+                                    {{ $moduleLabelsBySlug[$permission->slug] }}
+                                    @if ($permission->pivot->department_id)
+                                        <span class="tich-caption">· {{ $departmentNames[$permission->pivot->department_id] ?? 'Dept #'.$permission->pivot->department_id }}</span>
+                                    @else
+                                        <span class="tich-caption">· Institution-wide</span>
+                                    @endif
+                                    @if (!$loop->last)<br>@endif
+                                @endif
+                            @endforeach
+                            @unless ($shownPermission)
+                                <span class="tich-caption">From roles only</span>
+                            @endunless
                         </td>
                         <td>
                             <a href="{{ route('admin.users.edit', $user) }}" class="tich-link">Configure access</a>

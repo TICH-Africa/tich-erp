@@ -48,7 +48,7 @@ class DepartmentController extends Controller
                 ->get(['id', 'dept_name', 'dept_code', 'department_group_id']),
             'deptCategories' => [
                 'administrative' => 'Administrative unit',
-                'academic' => 'Learning department',
+                'academic' => 'Academic department',
                 'support' => 'Support',
             ],
         ]);
