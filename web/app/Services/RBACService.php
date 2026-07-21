@@ -62,20 +62,17 @@ class RBACService
         return true;
     }
 
-    public function hasRole(User $user, string $roleName): bool
+    public function hasRole(User $user, string $roleName, ?int $departmentId = null): bool
     {
         return DB::table('user_roles as ur')
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->where('ur.user_id', $user->id)
             ->where('r.role_name', $roleName)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('ur.campus_id')
-                    ->orWhere('ur.campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('ur.campus_id', $user->student?->enrollment_campus_id);
-            })
-            ->where(function ($query) use ($user) {
-                $query->whereNull('ur.department_id')
-                    ->orWhere('ur.department_id', $user->staff?->department_id);
+            ->when($departmentId !== null, function ($query) use ($departmentId) {
+                $query->where(function ($scoped) use ($departmentId) {
+                    $scoped->whereNull('ur.department_id')
+                        ->orWhere('ur.department_id', $departmentId);
+                });
             })
             ->where(function ($query) {
                 $query->whereNull('ur.expires_at')
@@ -136,10 +133,6 @@ class RBACService
     public function canAccessDepartment(User $user, int $departmentId): bool
     {
         if ($this->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean', 'HR Manager', 'Finance Manager'])) {
-            return true;
-        }
-
-        if ($this->hasRole($user, 'HOD') && $user->staff?->department_id === $departmentId) {
             return true;
         }
 
@@ -216,10 +209,56 @@ class RBACService
                     ->orWhere('ur.expires_at', '>', now());
             })
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
-            ->select('r.role_name', 'r.role_category', 'ur.campus_id', 'ur.department_id')
+            ->leftJoin('departments as d', 'ur.department_id', '=', 'd.id')
+            ->leftJoin('campuses as c', 'ur.campus_id', '=', 'c.id')
+            ->select(
+                'r.role_name',
+                'r.role_category',
+                'ur.role_id',
+                'ur.campus_id',
+                'ur.department_id',
+                'd.dept_name',
+                'c.campus_name',
+            )
             ->get()
             ->map(fn ($row) => (array) $row)
             ->toArray();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function getUserDepartmentIds(User $user): array
+    {
+        $fromRoles = DB::table('user_roles')
+            ->where('user_id', $user->id)
+            ->whereNotNull('department_id')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->pluck('department_id');
+
+        $fromPermissions = DB::table('user_permissions')
+            ->where('user_id', $user->id)
+            ->whereNotNull('department_id')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->pluck('department_id');
+
+        $fromStaff = $user->staff?->department_id
+            ? collect([$user->staff->department_id])
+            : collect();
+
+        return $fromRoles
+            ->merge($fromPermissions)
+            ->merge($fromStaff)
+            ->unique()
+            ->values()
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     public function assignRoleToUser(User $user, int $roleId, ?int $campusId = null, ?int $departmentId = null, ?int $assignedBy = null): void
@@ -336,16 +375,27 @@ class RBACService
         );
     }
 
+    /**
+     * @param  list<array{role_id: int, department_id?: int|null, campus_id?: int|null}>  $assignments
+     * @param  list<string>  $modulePermissionKeys
+     */
     public function syncUserAccess(
         User $user,
-        int $roleId,
-        ?int $campusId,
-        ?int $departmentId,
+        array $assignments,
         array $modulePermissionKeys,
         int $assignedBy,
     ): void {
         DB::table('user_roles')->where('user_id', $user->id)->delete();
-        $this->assignRoleToUser($user, $roleId, $campusId, $departmentId, $assignedBy);
+
+        foreach ($assignments as $assignment) {
+            $this->assignRoleToUser(
+                $user,
+                (int) $assignment['role_id'],
+                ! empty($assignment['campus_id']) ? (int) $assignment['campus_id'] : null,
+                ! empty($assignment['department_id']) ? (int) $assignment['department_id'] : null,
+                $assignedBy
+            );
+        }
 
         $moduleSlugs = collect(config('tich-dashboards.modules', []))
             ->pluck('permission')
@@ -373,8 +423,8 @@ class RBACService
             $this->assignPermissionToUser(
                 $user,
                 (int) $permissionId,
-                $campusId,
-                $departmentId,
+                null,
+                null,
                 $assignedBy
             );
         }
@@ -385,9 +435,7 @@ class RBACService
             $user->id,
             null,
             [
-                'role_id' => $roleId,
-                'campus_id' => $campusId,
-                'department_id' => $departmentId,
+                'assignments' => $assignments,
                 'modules' => $modulePermissionKeys,
             ],
             'User platform access updated by administrator',
@@ -413,18 +461,18 @@ class RBACService
 
     private function userHasPermissionSlug(User $user, string $slug): bool
     {
+        $departmentIds = $this->getUserDepartmentIds($user);
+
         $hasDirectPermission = DB::table('user_permissions as up')
             ->join('permissions as p', 'up.permission_id', '=', 'p.id')
             ->where('up.user_id', $user->id)
             ->where('p.slug', $slug)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('up.campus_id')
-                    ->orWhere('up.campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('up.campus_id', $user->student?->enrollment_campus_id);
-            })
-            ->where(function ($query) use ($user) {
-                $query->whereNull('up.department_id')
-                    ->orWhere('up.department_id', $user->staff?->department_id);
+            ->where(function ($query) use ($departmentIds) {
+                $query->whereNull('up.department_id');
+
+                if ($departmentIds !== []) {
+                    $query->orWhereIn('up.department_id', $departmentIds);
+                }
             })
             ->where(function ($query) {
                 $query->whereNull('up.expires_at')
@@ -438,15 +486,6 @@ class RBACService
 
         $userRoleIds = DB::table('user_roles')
             ->where('user_id', $user->id)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('campus_id')
-                    ->orWhere('campus_id', $user->staff?->department?->campus_id)
-                    ->orWhere('campus_id', $user->student?->enrollment_campus_id);
-            })
-            ->where(function ($query) use ($user) {
-                $query->whereNull('department_id')
-                    ->orWhere('department_id', $user->staff?->department_id);
-            })
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
