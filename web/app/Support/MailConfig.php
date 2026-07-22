@@ -34,7 +34,9 @@ class MailConfig
     public static function friendlySmtpError(string $message): string
     {
         if (str_contains($message, '535') || str_contains($message, 'BadCredentials')) {
-            return 'Gmail rejected the SMTP login. Enable 2-Step Verification on tichinafricaict@gmail.com, create an App Password at https://myaccount.google.com/apppasswords, set MAIL_PASSWORD in .env to that 16-character password (no spaces), then run php artisan config:clear.';
+            $username = config('mail.mailers.smtp.username', 'your mailbox');
+
+            return "SMTP login rejected for {$username}. Check MAIL_USERNAME and MAIL_PASSWORD in .env, then run: php artisan config:clear";
         }
 
         return $message;
