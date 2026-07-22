@@ -68,4 +68,55 @@ class AcademicProgram extends Model
     {
         return $this->curriculum_format === 'block' || (bool) $this->is_nursing_track;
     }
+
+    public function termsPerYear(): int
+    {
+        if ($this->semester_count > 0) {
+            return (int) $this->semester_count;
+        }
+
+        return match ($this->curriculum_format) {
+            'semester' => 2,
+            'trimester' => 3,
+            default => 3,
+        };
+    }
+
+    public function programYears(): int
+    {
+        return max(1, (int) ceil(((int) ($this->duration_months ?: 12)) / 12));
+    }
+
+    public function totalTeachingPeriods(): int
+    {
+        if ($this->usesBlocks()) {
+            $blockTotal = $this->relationLoaded('nursingBlocks')
+                ? $this->nursingBlocks->count()
+                : $this->nursingBlocks()->count();
+
+            return max(1, (int) ($blockTotal ?: $this->block_count ?: 1));
+        }
+
+        return $this->programYears() * $this->termsPerYear();
+    }
+
+    public function periodLabel(int $periodNumber): string
+    {
+        if ($this->usesBlocks()) {
+            $block = $this->nursingBlocks->firstWhere('block_order', $periodNumber);
+
+            return $block?->block_label ?? "Block {$periodNumber}";
+        }
+
+        $termsPerYear = $this->termsPerYear();
+        $year = (int) ceil($periodNumber / $termsPerYear);
+        $termInYear = (($periodNumber - 1) % $termsPerYear) + 1;
+        $termName = match ($this->curriculum_format) {
+            'trimester' => 'Trimester',
+            'semester' => 'Semester',
+            default => 'Term',
+        };
+
+        return "Year {$year} · {$termName} {$termInYear}";
+    }
 }

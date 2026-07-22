@@ -1,14 +1,16 @@
 @extends('layouts.academics')
 
 @section('academics-content')
+    @php($hub = ['department' => $department->id])
+
     <div class="tich-section__intro" style="text-align:left;">
         <h1 class="tich-h1" style="font-size: 2rem;">Academic calendar</h1>
-        <p class="tich-text">Configure academic years and trimester/semester terms synced to January, May, and September intakes.</p>
+        <p class="tich-text">Configure institution-wide academic years and trimester/semester terms for {{ $department->dept_name }}.</p>
     </div>
 
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Create academic year</h2>
-        <form method="POST" action="{{ route('academics.calendar.store-year') }}" class="tich-mt-4">
+        <form method="POST" action="{{ route('departments.academics.calendar.store-year', $hub) }}" class="tich-mt-4">
             @csrf
             <div class="tich-grid tich-grid--3" style="gap:1rem;">
                 <div class="tich-form-group">
@@ -43,7 +45,7 @@
             <p class="tich-caption">{{ $year->start_date?->format('d M Y') }} – {{ $year->end_date?->format('d M Y') }}</p>
 
             @foreach ($year->semesters as $semester)
-                <form method="POST" action="{{ route('academics.calendar.update-semester', $semester) }}" class="tich-mt-6" style="border-top:1px solid var(--tich-border); padding-top:1rem;">
+                <form method="POST" action="{{ route('departments.academics.calendar.update-semester', array_merge($hub, ['semester' => $semester->id])) }}" class="tich-mt-6" style="border-top:1px solid var(--tich-border); padding-top:1rem;">
                     @csrf
                     @method('PUT')
                     <div class="tich-grid tich-grid--4" style="gap:1rem;">

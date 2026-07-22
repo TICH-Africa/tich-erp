@@ -14,17 +14,20 @@ class AcademicsDashboardService
     /**
      * @return array<string, int>
      */
-    public function stats(User $user): array
+    public function stats(User $user, Department $hub): array
     {
-        $departmentIds = $this->access->learningDepartmentsForUser($user)->pluck('id')->all();
+        $departmentIds = $this->access->scopeDepartmentIds($hub);
 
         return [
             'departments' => count($departmentIds),
-            'pending_departments' => Department::query()
-                ->whereIn('id', $departmentIds)
-                ->where('approval_status', 'pending_ceo')
+            'learning_departments' => count($departmentIds),
+            'programs' => $this->access->programsQueryForHub($user, $hub)->count(),
+            'units' => Unit::query()
+                ->where(function ($builder) use ($departmentIds) {
+                    $builder->whereIn('department_id', $departmentIds)
+                        ->orWhereHas('program', fn ($q) => $q->whereIn('department_id', $departmentIds));
+                })
                 ->count(),
-            'units' => Unit::query()->whereIn('department_id', $departmentIds)->count(),
             'pending_units' => Unit::query()
                 ->whereIn('department_id', $departmentIds)
                 ->where('status', 'pending_registry')

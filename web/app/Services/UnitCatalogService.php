@@ -10,25 +10,26 @@ use Illuminate\Support\Collection;
 
 class UnitCatalogService
 {
-    public function __construct(
-        protected AcademicsAccessService $access,
-        protected AuditService $auditService,
-    ) {}
+    public function __construct(protected AuditService $auditService) {}
 
     /**
      * @return Collection<int, Unit>
      */
-    public function listForDepartment(User $user, ?int $departmentId = null, ?string $status = null): Collection
+    public function listForHub(Department $hub, ?int $learningDepartmentId = null, ?string $status = null): Collection
     {
-        $departmentIds = $departmentId
-            ? [$this->access->findDepartmentForUser($user, $departmentId)->id]
-            : $this->access->learningDepartmentsForUser($user)->pluck('id')->all();
+        $scopeIds = $learningDepartmentId
+            ? [(int) $learningDepartmentId]
+            : $hub->academicsScopeDepartmentIds();
+
+        if ($scopeIds === []) {
+            return collect();
+        }
 
         $query = Unit::query()
             ->with(['department:id,dept_name,dept_code', 'program:id,program_code,program_name,department_id'])
-            ->where(function ($builder) use ($departmentIds) {
-                $builder->whereIn('department_id', $departmentIds)
-                    ->orWhereHas('program', fn ($programQuery) => $programQuery->whereIn('department_id', $departmentIds));
+            ->where(function ($builder) use ($scopeIds) {
+                $builder->whereIn('department_id', $scopeIds)
+                    ->orWhereHas('program', fn ($programQuery) => $programQuery->whereIn('department_id', $scopeIds));
             })
             ->orderBy('display_priority')
             ->orderBy('unit_code');
@@ -40,15 +41,16 @@ class UnitCatalogService
         return $query->get();
     }
 
-    public function create(User $user, array $data, ?Request $request = null): Unit
+    public function create(User $user, Department $hub, array $data, ?Request $request = null): Unit
     {
-        $department = $this->access->findDepartmentForUser($user, (int) $data['department_id']);
+        $scopeIds = $hub->academicsScopeDepartmentIds();
+        abort_unless(in_array((int) $data['department_id'], $scopeIds, true), 422, 'Invalid department for this academics hub.');
 
         $unit = Unit::create([
             'unit_code' => $data['unit_code'],
             'unit_name' => $data['unit_name'],
             'description' => $data['description'] ?? null,
-            'department_id' => $department->id,
+            'department_id' => (int) $data['department_id'],
             'program_id' => $data['program_id'] ?? null,
             'semester' => $data['semester'] ?? 1,
             'block' => $data['block'] ?? null,
@@ -80,9 +82,9 @@ class UnitCatalogService
         return $unit;
     }
 
-    public function update(User $user, Unit $unit, array $data, ?Request $request = null): Unit
+    public function update(User $user, Department $hub, Unit $unit, array $data, ?Request $request = null): Unit
     {
-        abort_unless($unit->department_id && $this->access->userCanAccessDepartment($user, $unit->department), 403);
+        $this->assertUnitInHub($hub, $unit);
         abort_unless($unit->isEditable(), 422, 'This unit can no longer be edited.');
 
         $old = $unit->only(['unit_code', 'unit_name', 'contact_hours', 'total_learning_hours', 'status']);
@@ -119,9 +121,9 @@ class UnitCatalogService
         return $unit->fresh();
     }
 
-    public function submitForRegistry(User $user, Unit $unit, ?Request $request = null): Unit
+    public function submitForRegistry(User $user, Department $hub, Unit $unit, ?Request $request = null): Unit
     {
-        abort_unless($unit->department_id && $this->access->userCanAccessDepartment($user, $unit->department), 403);
+        $this->assertUnitInHub($hub, $unit);
         abort_unless(in_array($unit->status, ['draft', 'pending_registry'], true), 422);
 
         $unit->update([
@@ -146,9 +148,9 @@ class UnitCatalogService
         return $unit->fresh();
     }
 
-    public function approveRegistry(User $user, Unit $unit, ?Request $request = null): Unit
+    public function approveRegistry(User $user, Department $hub, Unit $unit, ?Request $request = null): Unit
     {
-        abort_unless($this->access->canApproveRegistry($user), 403);
+        $this->assertUnitInHub($hub, $unit);
         abort_unless($unit->status === 'pending_registry', 422);
 
         $unit->update([
@@ -171,6 +173,15 @@ class UnitCatalogService
         );
 
         return $unit->fresh();
+    }
+
+    private function assertUnitInHub(Department $hub, Unit $unit): void
+    {
+        $scopeIds = $hub->academicsScopeDepartmentIds();
+        $inScope = in_array((int) $unit->department_id, $scopeIds, true)
+            || ($unit->program && in_array((int) $unit->program->department_id, $scopeIds, true));
+
+        abort_unless($inScope, 403);
     }
 
     /**

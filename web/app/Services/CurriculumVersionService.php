@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionUnit;
+use App\Models\Department;
 use App\Models\ProgramUnit;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CurriculumVersionService
 {
@@ -17,9 +17,9 @@ class CurriculumVersionService
         protected AuditService $auditService,
     ) {}
 
-    public function createDraft(User $user, AcademicProgram $program, array $data, ?Request $request = null): CurriculumVersion
+    public function createDraft(User $user, Department $hub, AcademicProgram $program, array $data, ?Request $request = null): CurriculumVersion
     {
-        abort_unless($this->access->userCanAccessProgram($user, $program), 403);
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $program), 403);
 
         $latestNumber = CurriculumVersion::query()
             ->where('program_id', $program->id)
@@ -52,10 +52,10 @@ class CurriculumVersionService
         return $version;
     }
 
-    public function submit(User $user, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
+    public function submit(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
     {
         $version->loadMissing('program');
-        abort_unless($this->access->userCanAccessProgram($user, $version->program), 403);
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
         abort_unless($version->status === 'draft', 422);
 
         $mappedCount = ProgramUnit::query()->where('program_id', $version->program_id)->count();
@@ -83,12 +83,14 @@ class CurriculumVersionService
         return $version->fresh();
     }
 
-    public function approveRegistry(User $user, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
+    public function approveRegistry(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
     {
         abort_unless($this->access->canApproveRegistry($user), 403);
         abort_unless($version->status === 'pending_registry', 422);
 
         $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+
         $program = $version->program;
         $needsCeo = $program->status === 'pending_ceo';
 
@@ -121,10 +123,13 @@ class CurriculumVersionService
         return $version->fresh('items.unit');
     }
 
-    public function approveCeo(User $user, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
+    public function approveCeo(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
     {
         abort_unless($this->access->canApproveCeo($user), 403);
         abort_unless($version->status === 'pending_ceo', 422);
+
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
 
         $version->update([
             'status' => 'published',

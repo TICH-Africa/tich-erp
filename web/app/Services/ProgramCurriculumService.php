@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\Department;
+use App\Models\NursingBlock;
 use App\Models\ProgramUnit;
 use App\Models\Unit;
 use App\Models\User;
@@ -44,19 +45,27 @@ class ProgramCurriculumService
         ];
     }
 
-    public function updateProgramFormat(User $user, AcademicProgram $program, array $data, ?Request $request = null): AcademicProgram
+    public function updateProgramFormat(User $user, Department $hub, AcademicProgram $program, array $data, ?Request $request = null): AcademicProgram
     {
-        abort_unless($this->access->userCanAccessProgram($user, $program), 403);
+        $scopeIds = $hub->academicsScopeDepartmentIds();
+        abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
 
-        $old = $program->only(['curriculum_format', 'semester_count', 'block_count', 'is_nursing_track']);
+        $old = $program->only(['curriculum_format', 'semester_count', 'block_count', 'is_nursing_track', 'duration_months']);
+
+        $blockCount = (int) ($data['block_count'] ?? $program->block_count ?? 0);
 
         $program->update([
             'curriculum_format' => $data['curriculum_format'],
-            'semester_count' => $data['semester_count'] ?? $program->semester_count,
-            'block_count' => $data['block_count'] ?? $program->block_count,
+            'semester_count' => (int) ($data['semester_count'] ?? $program->semester_count ?? 3),
+            'block_count' => $blockCount,
+            'duration_months' => (int) ($data['duration_months'] ?? $program->duration_months ?? 12),
             'is_nursing_track' => ($data['curriculum_format'] ?? '') === 'block' ? 1 : ($program->is_nursing_track ?? 0),
             'updated_at' => now(),
         ]);
+
+        if (($data['curriculum_format'] ?? '') === 'block' && $blockCount > 0) {
+            $this->syncNursingBlocks($program, $blockCount);
+        }
 
         $this->auditService->log(
             'academics.program.curriculum_format_updated',
@@ -73,17 +82,23 @@ class ProgramCurriculumService
         return $program->fresh();
     }
 
-    public function syncProgramUnits(User $user, AcademicProgram $program, array $mappings, ?Request $request = null): void
+    public function syncProgramUnits(User $user, Department $hub, AcademicProgram $program, array $mappings, ?Request $request = null): void
     {
-        abort_unless($this->access->userCanAccessProgram($user, $program), 403);
+        $scopeIds = $hub->academicsScopeDepartmentIds();
+        abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
 
         $activeUnitIds = Unit::query()
-            ->where('department_id', $program->department_id)
             ->where('status', 'active')
+            ->where(function ($builder) use ($scopeIds) {
+                $builder->whereIn('department_id', $scopeIds)
+                    ->orWhereHas('program', fn ($q) => $q->whereIn('department_id', $scopeIds));
+            })
             ->pluck('id')
             ->all();
 
         ProgramUnit::query()->where('program_id', $program->id)->delete();
+
+        $included = [];
 
         foreach ($mappings as $index => $row) {
             if (empty($row['include'])) {
@@ -92,6 +107,17 @@ class ProgramCurriculumService
 
             $unitId = (int) ($row['unit_id'] ?? 0);
 
+            if ($unitId === 0) {
+                continue;
+            }
+
+            $included[$unitId] = array_merge($row, [
+                'display_order' => (int) ($row['display_order'] ?? ($index + 1)),
+                'priority' => (int) ($row['priority'] ?? ($row['display_order'] ?? ($index + 1))),
+            ]);
+        }
+
+        foreach ($included as $unitId => $row) {
             if (! in_array($unitId, $activeUnitIds, true)) {
                 continue;
             }
@@ -104,8 +130,8 @@ class ProgramCurriculumService
                 'semester' => (int) ($row['semester'] ?? 1),
                 'block_id' => $row['block_id'] ?? null,
                 'is_compulsory' => ! empty($row['is_compulsory']) ? 1 : 0,
-                'display_order' => (int) ($row['display_order'] ?? ($index + 1)),
-                'priority' => (int) ($row['priority'] ?? ($row['display_order'] ?? ($index + 1))),
+                'display_order' => (int) ($row['display_order'] ?? 1),
+                'priority' => (int) ($row['priority'] ?? 1),
                 'contact_hours' => (int) ($row['contact_hours'] ?? $unit?->contact_hours ?? 0),
                 'total_learning_hours' => (int) ($row['total_learning_hours'] ?? $unit?->total_learning_hours ?? 0),
                 'is_active' => 1,
@@ -138,70 +164,27 @@ class ProgramCurriculumService
             ->get();
     }
 
-    public function initializeDepartment(User $user, array $data, ?Request $request = null): Department
+    private function syncNursingBlocks(AcademicProgram $program, int $count): void
     {
-        abort_unless($this->access->canAccessAll($user), 403);
+        $existing = $program->nursingBlocks()->orderBy('block_order')->get();
 
-        $parent = Department::query()->where('dept_code', 'ACAD')->first();
+        for ($order = 1; $order <= $count; $order++) {
+            if ($existing->firstWhere('block_order', $order)) {
+                continue;
+            }
 
-        $department = Department::create([
-            'dept_code' => strtoupper($data['dept_code']),
-            'dept_name' => $data['dept_name'],
-            'dept_category' => 'academic',
-            'curriculum_profile' => $data['curriculum_profile'] ?? 'standard',
-            'parent_dept_id' => $parent?->id,
-            'campus_id' => $data['campus_id'] ?? null,
-            'is_active' => false,
-            'approval_status' => 'pending_ceo',
-            'created_by' => $user->id,
-            'created_at' => now(),
-        ]);
-
-        $this->auditService->log(
-            'academics.department.initialized',
-            'departments',
-            $department->id,
-            null,
-            $department->only(['dept_code', 'dept_name', 'curriculum_profile', 'approval_status']),
-            'Academic department initialized — pending CEO sign-off',
-            'success',
-            $user->id,
-            $request
-        );
-
-        return $department;
-    }
-
-    public function approveDepartmentCeo(User $user, Department $department, ?Request $request = null): Department
-    {
-        abort_unless($this->access->canApproveCeo($user), 403);
-        abort_unless($department->approval_status === 'pending_ceo', 422);
-
-        $department->update([
-            'is_active' => true,
-            'approval_status' => 'active',
-            'updated_at' => now(),
-        ]);
-
-        $this->auditService->log(
-            'academics.department.ceo_approved',
-            'departments',
-            $department->id,
-            ['approval_status' => 'pending_ceo'],
-            ['approval_status' => 'active', 'is_active' => true],
-            'Academic department activated by CEO',
-            'success',
-            $user->id,
-            $request
-        );
-
-        return $department->fresh();
+            NursingBlock::create([
+                'program_id' => $program->id,
+                'block_label' => "Block {$order}",
+                'block_order' => $order,
+                'duration_months' => 4,
+                'is_active' => 1,
+            ]);
+        }
     }
 
     public function updateDepartmentProfile(User $user, Department $department, array $data, ?Request $request = null): Department
     {
-        abort_unless($this->access->userCanAccessDepartment($user, $department), 403);
-
         $department->update([
             'curriculum_profile' => $data['curriculum_profile'],
             'updated_at' => now(),

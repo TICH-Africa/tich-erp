@@ -54,6 +54,44 @@ class Department extends Model
         return $this->dept_category === 'academic' && $this->parent_dept_id !== null;
     }
 
+    public function isAcademicsHub(): bool
+    {
+        return $this->isMainDepartment() && $this->dept_code === 'ACAD';
+    }
+
+    /**
+     * Learning department ids managed under this academics hub scope.
+     *
+     * @return list<int>
+     */
+    public function academicsScopeDepartmentIds(): array
+    {
+        if ($this->isAcademicsHub()) {
+            return static::query()
+                ->where('parent_dept_id', $this->id)
+                ->where('dept_category', 'academic')
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        if ($this->isLearningDepartment()) {
+            return [(int) $this->id];
+        }
+
+        return [];
+    }
+
+    public static function findAcademicsHub(): ?self
+    {
+        return static::query()
+            ->where('dept_code', 'ACAD')
+            ->whereNull('parent_dept_id')
+            ->where('is_active', true)
+            ->first();
+    }
+
     public function isMainDepartment(): bool
     {
         return $this->parent_dept_id === null;

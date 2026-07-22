@@ -14,8 +14,14 @@ use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
+use App\Http\Controllers\Academics\CalendarController as AcademicsCalendarController;
+use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardController;
+use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentController;
+use App\Http\Controllers\Academics\ProgramCurriculumController;
+use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
+use App\Models\Department;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -132,50 +138,53 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
     });
 
-    Route::prefix('academics')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Academics\DashboardController::class, '__invoke'])
+    Route::get('/academics', function () {
+        $hub = Department::findAcademicsHub();
+        abort_unless($hub, 404);
+
+        return redirect()->route('departments.academics.dashboard', $hub);
+    })->middleware('permission:academics.read')->name('academics.hub');
+
+    Route::prefix('departments/{department}/academics')->group(function () {
+        Route::get('/', AcademicsDashboardController::class)
             ->middleware('permission:academics.read')
-            ->name('academics.dashboard');
+            ->name('departments.academics.dashboard');
 
         Route::middleware('permission:academics.read')->group(function () {
-            Route::get('/departments', [\App\Http\Controllers\Academics\DepartmentController::class, 'index'])->name('academics.departments.index');
-            Route::get('/units', [\App\Http\Controllers\Academics\UnitController::class, 'index'])->name('academics.units.index');
-            Route::get('/programs', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'index'])->name('academics.programs.index');
-            Route::get('/programs/{program}/curriculum', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'show'])->name('academics.programs.curriculum');
+            Route::get('/departments', [AcademicsDepartmentController::class, 'index'])->name('departments.academics.departments.index');
+            Route::get('/units', [AcademicsUnitController::class, 'index'])->name('departments.academics.units.index');
+            Route::get('/programs', [ProgramCurriculumController::class, 'index'])->name('departments.academics.programs.index');
+            Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
         });
 
         Route::middleware('permission:academics.write')->group(function () {
-            Route::post('/departments', [\App\Http\Controllers\Academics\DepartmentController::class, 'store'])->name('academics.departments.store');
-            Route::put('/departments/{department}/profile', [\App\Http\Controllers\Academics\DepartmentController::class, 'updateProfile'])->name('academics.departments.update-profile');
-            Route::post('/units', [\App\Http\Controllers\Academics\UnitController::class, 'store'])->name('academics.units.store');
-            Route::put('/units/{unit}', [\App\Http\Controllers\Academics\UnitController::class, 'update'])->name('academics.units.update');
-            Route::post('/units/{unit}/submit', [\App\Http\Controllers\Academics\UnitController::class, 'submit'])->name('academics.units.submit');
-            Route::put('/programs/{program}/format', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'updateFormat'])->name('academics.programs.update-format');
-            Route::post('/programs/{program}/units', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'syncUnits'])->name('academics.programs.sync-units');
-            Route::post('/programs/{program}/versions', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'createVersion'])->name('academics.programs.versions.create');
-            Route::post('/versions/{version}/submit', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'submitVersion'])->name('academics.versions.submit');
+            Route::put('/learning-departments/{learningDepartment}/profile', [AcademicsDepartmentController::class, 'updateProfile'])
+                ->name('departments.academics.departments.update-profile');
+            Route::post('/units', [AcademicsUnitController::class, 'store'])->name('departments.academics.units.store');
+            Route::put('/units/{unit}', [AcademicsUnitController::class, 'update'])->name('departments.academics.units.update');
+            Route::post('/units/{unit}/submit', [AcademicsUnitController::class, 'submit'])->name('departments.academics.units.submit');
+            Route::put('/programs/{program}/format', [ProgramCurriculumController::class, 'updateFormat'])->name('departments.academics.programs.update-format');
+            Route::post('/programs/{program}/units', [ProgramCurriculumController::class, 'syncUnits'])->name('departments.academics.programs.sync-units');
+            Route::post('/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.versions.create');
+            Route::post('/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'])->name('departments.academics.versions.submit');
         });
 
-        Route::post('/departments/{department}/approve-ceo', [\App\Http\Controllers\Academics\DepartmentController::class, 'approveCeo'])
+        Route::post('/units/{unit}/approve', [AcademicsUnitController::class, 'approve'])
             ->middleware('permission:academics.approve')
-            ->name('academics.departments.approve-ceo');
+            ->name('departments.academics.units.approve');
 
-        Route::post('/units/{unit}/approve', [\App\Http\Controllers\Academics\UnitController::class, 'approve'])
+        Route::post('/versions/{version}/approve-registry', [ProgramCurriculumController::class, 'approveVersionRegistry'])
             ->middleware('permission:academics.approve')
-            ->name('academics.units.approve');
+            ->name('departments.academics.versions.approve-registry');
 
-        Route::post('/versions/{version}/approve-registry', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'approveVersionRegistry'])
+        Route::post('/versions/{version}/approve-ceo', [ProgramCurriculumController::class, 'approveVersionCeo'])
             ->middleware('permission:academics.approve')
-            ->name('academics.versions.approve-registry');
-
-        Route::post('/versions/{version}/approve-ceo', [\App\Http\Controllers\Academics\ProgramCurriculumController::class, 'approveVersionCeo'])
-            ->middleware('permission:academics.approve')
-            ->name('academics.versions.approve-ceo');
+            ->name('departments.academics.versions.approve-ceo');
 
         Route::middleware('permission:academics.calendar')->group(function () {
-            Route::get('/calendar', [\App\Http\Controllers\Academics\CalendarController::class, 'index'])->name('academics.calendar.index');
-            Route::post('/calendar/years', [\App\Http\Controllers\Academics\CalendarController::class, 'storeYear'])->name('academics.calendar.store-year');
-            Route::put('/calendar/semesters/{semester}', [\App\Http\Controllers\Academics\CalendarController::class, 'updateSemester'])->name('academics.calendar.update-semester');
+            Route::get('/calendar', [AcademicsCalendarController::class, 'index'])->name('departments.academics.calendar.index');
+            Route::post('/calendar/years', [AcademicsCalendarController::class, 'storeYear'])->name('departments.academics.calendar.store-year');
+            Route::put('/calendar/semesters/{semester}', [AcademicsCalendarController::class, 'updateSemester'])->name('departments.academics.calendar.update-semester');
         });
     });
 

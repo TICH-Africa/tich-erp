@@ -47,7 +47,7 @@ return [
             'key' => 'academics',
             'label' => 'Academics & curriculum',
             'description' => 'Course versioning, unit catalog, department mapping, and academic calendar.',
-            'route' => 'academics.dashboard',
+            'route' => 'academics.hub',
             'permission' => 'academics.read',
             'category' => 'academics',
             'scope' => 'department',

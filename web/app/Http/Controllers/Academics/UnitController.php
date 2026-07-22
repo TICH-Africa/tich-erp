@@ -2,30 +2,40 @@
 
 namespace App\Http\Controllers\Academics;
 
-use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\Unit;
 use App\Services\AcademicsAccessService;
+use App\Services\DepartmentDashboardService;
 use App\Services\UnitCatalogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class UnitController extends Controller
+class UnitController extends DepartmentAcademicsController
 {
     public function __construct(
-        protected AcademicsAccessService $access,
         protected UnitCatalogService $units,
-    ) {}
+        AcademicsAccessService $access,
+        DepartmentDashboardService $departmentDashboard,
+    ) {
+        parent::__construct($access, $departmentDashboard);
+    }
 
-    public function index(Request $request): View
+    public function index(Request $request, Department $department): View
     {
-        $departmentId = $request->integer('department') ?: null;
+        $hub = $this->authorizeHub($request, $department);
+        $learningDepartmentId = $request->integer('learning_department') ?: null;
 
         return view('academics.units.index', [
-            'units' => $this->units->listForDepartment($request->user(), $departmentId, $request->string('status')->toString() ?: null),
-            'departments' => $this->access->learningDepartmentsForUser($request->user()),
+            'department' => $hub,
+            'units' => $this->units->listForHub(
+                $hub,
+                $learningDepartmentId,
+                $request->string('status')->toString() ?: null
+            ),
+            'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'filters' => [
-                'department' => $departmentId,
+                'learning_department' => $learningDepartmentId,
                 'status' => $request->string('status')->toString(),
             ],
             'statusLabels' => UnitCatalogService::statusLabels(),
@@ -33,32 +43,36 @@ class UnitController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, Department $department): RedirectResponse
     {
+        $hub = $this->authorizeHub($request, $department);
         $validated = $this->validateUnit($request);
-        $this->units->create($request->user(), $validated, $request);
+        $this->units->create($request->user(), $hub, $validated, $request);
 
         return back()->with('status', 'Unit created as draft.');
     }
 
-    public function update(Request $request, Unit $unit): RedirectResponse
+    public function update(Request $request, Department $department, Unit $unit): RedirectResponse
     {
+        $hub = $this->authorizeHub($request, $department);
         $validated = $this->validateUnit($request, $unit);
-        $this->units->update($request->user(), $unit, $validated, $request);
+        $this->units->update($request->user(), $hub, $unit, $validated, $request);
 
         return back()->with('status', 'Unit updated.');
     }
 
-    public function submit(Request $request, Unit $unit): RedirectResponse
+    public function submit(Request $request, Department $department, Unit $unit): RedirectResponse
     {
-        $this->units->submitForRegistry($request->user(), $unit, $request);
+        $hub = $this->authorizeHub($request, $department);
+        $this->units->submitForRegistry($request->user(), $hub, $unit, $request);
 
         return back()->with('status', 'Unit submitted for registry verification.');
     }
 
-    public function approve(Request $request, Unit $unit): RedirectResponse
+    public function approve(Request $request, Department $department, Unit $unit): RedirectResponse
     {
-        $this->units->approveRegistry($request->user(), $unit, $request);
+        $hub = $this->authorizeHub($request, $department);
+        $this->units->approveRegistry($request->user(), $hub, $unit, $request);
 
         return back()->with('status', 'Unit approved and activated.');
     }
@@ -69,7 +83,7 @@ class UnitController extends Controller
     private function validateUnit(Request $request, ?Unit $unit = null): array
     {
         return $request->validate([
-            'department_id' => [$unit ? 'sometimes' : 'required', 'exists:departments,id'],
+            'department_id' => ['required', 'exists:departments,id'],
             'unit_code' => ['required', 'string', 'max:30', 'unique:units,unit_code,'.($unit?->id ?? 'NULL')],
             'unit_name' => ['required', 'string', 'max:300'],
             'description' => ['nullable', 'string', 'max:2000'],

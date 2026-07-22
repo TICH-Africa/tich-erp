@@ -2,28 +2,41 @@
 
 namespace App\Http\Controllers\Academics;
 
-use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\Semester;
 use App\Services\AcademicCalendarService;
+use App\Services\AcademicsAccessService;
+use App\Services\DepartmentDashboardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class CalendarController extends Controller
+class CalendarController extends DepartmentAcademicsController
 {
-    public function __construct(protected AcademicCalendarService $calendar) {}
+    public function __construct(
+        protected AcademicCalendarService $calendar,
+        AcademicsAccessService $access,
+        DepartmentDashboardService $departmentDashboard,
+    ) {
+        parent::__construct($access, $departmentDashboard);
+    }
 
-    public function index(): View
+    public function index(Request $request, Department $department): View
     {
+        $hub = $this->authorizeHub($request, $department);
+
         return view('academics.calendar.index', [
+            'department' => $hub,
             'years' => $this->calendar->listYears(),
             'defaultTrimesters' => config('tich-academics.default_trimester_count'),
             'intakeMonths' => config('tich-academics.default_intake_months'),
         ]);
     }
 
-    public function storeYear(Request $request): RedirectResponse
+    public function storeYear(Request $request, Department $department): RedirectResponse
     {
+        $hub = $this->authorizeHub($request, $department);
+
         $validated = $request->validate([
             'year_label' => ['required', 'string', 'max:20', 'unique:academic_years,year_label'],
             'start_date' => ['required', 'date'],
@@ -37,8 +50,10 @@ class CalendarController extends Controller
         return back()->with('status', 'Academic year and terms created.');
     }
 
-    public function updateSemester(Request $request, Semester $semester): RedirectResponse
+    public function updateSemester(Request $request, Department $department, Semester $semester): RedirectResponse
     {
+        $this->authorizeHub($request, $department);
+
         $validated = $request->validate([
             'semester_label' => ['required', 'string', 'max:20'],
             'semester_number' => ['required', 'integer', 'min:1', 'max:12'],

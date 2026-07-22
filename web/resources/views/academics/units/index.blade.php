@@ -1,10 +1,12 @@
 @extends('layouts.academics')
 
 @section('academics-content')
+    @php($hub = ['department' => $department->id])
+
     <div class="tich-section__intro" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; text-align:left;">
         <div>
             <h1 class="tich-h1" style="font-size: 2rem;">Unit catalog</h1>
-            <p class="tich-text">Create units, define learning hours, and route drafts through registry verification.</p>
+            <p class="tich-text">Create units for learning departments under {{ $department->dept_name }} and route drafts through registry verification.</p>
         </div>
         @can('academics.write')
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="unit-create">Add unit</button>
@@ -13,11 +15,11 @@
 
     <form method="GET" class="tich-card tich-mt-8" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
         <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Department</label>
-            <select name="department" class="tich-input">
+            <label class="tich-label">Learning department</label>
+            <select name="learning_department" class="tich-input">
                 <option value="">All</option>
-                @foreach ($departments as $department)
-                    <option value="{{ $department->id }}" @selected(($filters['department'] ?? '') == $department->id)>{{ $department->dept_name }}</option>
+                @foreach ($learningDepartments as $learningDepartment)
+                    <option value="{{ $learningDepartment->id }}" @selected(($filters['learning_department'] ?? '') == $learningDepartment->id)>{{ $learningDepartment->dept_name }}</option>
                 @endforeach
             </select>
         </div>
@@ -63,14 +65,14 @@
                                     <button type="button" class="tich-link" data-open-modal="unit-edit-{{ $unit->id }}">Edit</button>
                                 @endif
                                 @if ($unit->status === 'draft')
-                                    <form method="POST" action="{{ route('academics.units.submit', $unit) }}" style="display:inline;">
+                                    <form method="POST" action="{{ route('departments.academics.units.submit', array_merge($hub, ['unit' => $unit->id])) }}" style="display:inline;">
                                         @csrf
                                         <button type="submit" class="tich-link">Submit</button>
                                     </form>
                                 @endif
                             @endcan
                             @if ($canApproveRegistry && $unit->status === 'pending_registry')
-                                <form method="POST" action="{{ route('academics.units.approve', $unit) }}" style="display:inline;">
+                                <form method="POST" action="{{ route('departments.academics.units.approve', array_merge($hub, ['unit' => $unit->id])) }}" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="tich-link">Approve</button>
                                 </form>
@@ -85,10 +87,10 @@
     </div>
 
     @can('academics.write')
-        @include('academics.units.partials.modal', ['modalId' => 'unit-create', 'unit' => null, 'departments' => $departments])
+        @include('academics.units.partials.modal', ['modalId' => 'unit-create', 'unit' => null, 'departments' => $learningDepartments, 'hub' => $hub])
         @foreach ($units as $unit)
             @if (in_array($unit->status, ['draft', 'pending_registry']))
-                @include('academics.units.partials.modal', ['modalId' => 'unit-edit-'.$unit->id, 'unit' => $unit, 'departments' => $departments])
+                @include('academics.units.partials.modal', ['modalId' => 'unit-edit-'.$unit->id, 'unit' => $unit, 'departments' => $learningDepartments, 'hub' => $hub])
             @endif
         @endforeach
         @include('admin.partials.tich-modal-assets')

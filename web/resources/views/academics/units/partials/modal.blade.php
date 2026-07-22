@@ -2,7 +2,7 @@
     <div class="tich-modal__backdrop" data-close-modal></div>
     <div class="tich-modal__dialog">
         <h2 class="tich-h3">{{ $unit ? 'Edit unit' : 'New unit' }}</h2>
-        <form method="POST" action="{{ $unit ? route('academics.units.update', $unit) : route('academics.units.store') }}" class="tich-mt-4">
+        <form method="POST" action="{{ $unit ? route('departments.academics.units.update', array_merge($hub, ['unit' => $unit->id])) : route('departments.academics.units.store', $hub) }}" class="tich-mt-4">
             @csrf
             @if ($unit)
                 @method('PUT')

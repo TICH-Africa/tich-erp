@@ -88,6 +88,14 @@ class DepartmentDashboardService
      */
     public function modulesForDepartment(User $user, Department $department): array
     {
+        if ($department->isAcademicsHub()) {
+            $hubModules = $this->academicsHubModules($user, $department);
+
+            if ($hubModules !== []) {
+                return $hubModules;
+            }
+        }
+
         if ($department->children()->active()->exists()) {
             return [];
         }
@@ -125,7 +133,10 @@ class DepartmentDashboardService
                 'label' => $module['label'],
                 'description' => $module['description'],
                 'route' => $module['route'],
-                'params' => $module['params'] ?? [],
+                'params' => array_merge(
+                    ['department' => $department->id],
+                    $module['params'] ?? []
+                ),
                 'coming_soon' => $module['coming_soon'] ?? false,
             ];
         }
@@ -135,6 +146,12 @@ class DepartmentDashboardService
 
     public function cardDescription(Department $department): string
     {
+        if ($department->isAcademicsHub()) {
+            $count = (int) ($department->children_count ?? $department->children()->active()->count());
+
+            return "Academics hub with {$count} learning ".($count === 1 ? 'department' : 'departments').'. Open curriculum tools, unit catalog, and programme builder.';
+        }
+
         if (($department->children_count ?? 0) > 0) {
             $count = (int) $department->children_count;
 
@@ -192,7 +209,8 @@ class DepartmentDashboardService
                 'permission' => 'academics.read',
                 'label' => 'Curriculum hub',
                 'description' => 'Course versioning, units, department mapping, and calendar.',
-                'route' => 'academics.dashboard',
+                'route' => 'departments.academics.dashboard',
+                'params' => [],
             ],
             'SIS' => [
                 'permission' => 'students.read',
@@ -206,6 +224,53 @@ class DepartmentDashboardService
     private function shouldOfferAdmissions(Department $department): bool
     {
         return $department->dept_code === 'ADM' || $department->dept_category === 'academic';
+    }
+
+    /**
+     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, coming_soon?: bool}>
+     */
+    private function academicsHubModules(User $user, Department $department): array
+    {
+        $modules = [];
+        $params = ['department' => $department->id];
+
+        if ($this->rbacService->hasPermission($user, 'academics.read')) {
+            $modules[] = [
+                'label' => 'Curriculum overview',
+                'description' => 'Summary stats and quick links for programmes, units, and versions.',
+                'route' => 'departments.academics.dashboard',
+                'params' => $params,
+            ];
+            $modules[] = [
+                'label' => 'Learning department profiles',
+                'description' => 'Set curriculum profiles for CHS, ICT, Business, and other schools.',
+                'route' => 'departments.academics.departments.index',
+                'params' => $params,
+            ];
+            $modules[] = [
+                'label' => 'Unit catalog',
+                'description' => 'Create and approve units before mapping them to programmes.',
+                'route' => 'departments.academics.units.index',
+                'params' => $params,
+            ];
+            $modules[] = [
+                'label' => 'Programme curriculum',
+                'description' => 'Course length, terms per year, semester/block unit mapping, and versioning.',
+                'route' => 'departments.academics.programs.index',
+                'params' => $params,
+            ];
+        }
+
+        if ($this->rbacService->hasPermission($user, 'academics.calendar')) {
+            $modules[] = [
+                'label' => 'Academic calendar',
+                'description' => 'Configure academic years and intake terms.',
+                'route' => 'departments.academics.calendar.index',
+                'params' => $params,
+            ];
+        }
+
+        return $modules;
     }
 
     /**
