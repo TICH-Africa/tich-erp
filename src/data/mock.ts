@@ -925,4 +925,122 @@ export const SACCO_CONTRIBUTIONS: SaccoContribution[] = [
   { id: 'SC-004', memberId: 'SAC-001', memberName: 'Mr. David Kamau', amount: 10000, type: 'deposit', date: '2025-06-15', description: 'Top-up deposit' },
 ]
 
+export interface QualityPlan {
+  id: string
+  title: string
+  department: string
+  status: 'draft' | 'active' | 'completed' | 'archived'
+  startDate: string
+  endDate: string
+  targetScore: number
+  currentScore: number
+  description: string
+}
+
+export const QUALITY_PLANS: QualityPlan[] = [
+  { id: 'QP-001', title: 'Curriculum Review 2025', department: 'Academics', status: 'active', startDate: '2025-01-15', endDate: '2025-12-31', targetScore: 90, currentScore: 88, description: 'Comprehensive review of all curricula to align with CBET standards.' },
+  { id: 'QP-002', title: 'Teaching Effectiveness', department: 'All Departments', status: 'active', startDate: '2025-02-01', endDate: '2025-11-30', targetScore: 85, currentScore: 83, description: 'Enhance teaching methodologies through mentorship and training.' },
+  { id: 'QP-003', title: 'Student Satisfaction Improvement', department: 'Student Affairs', status: 'completed', startDate: '2024-06-01', endDate: '2024-12-31', targetScore: 85, currentScore: 91, description: 'Improve student services and feedback mechanisms.' },
+  { id: 'QP-004', title: 'Research Output Enhancement', department: 'Research', status: 'active', startDate: '2025-03-01', endDate: '2025-12-31', targetScore: 75, currentScore: 67, description: 'Increase research publications and grant acquisitions.' },
+  { id: 'QP-005', title: 'ICT Infrastructure Upgrade', department: 'ICT', status: 'draft', startDate: '2025-09-01', endDate: '2026-03-31', targetScore: 90, currentScore: 0, description: 'Upgrade computer labs and library digital resources.' },
+]
+
+export interface TrainingSession {
+  id: string
+  title: string
+  trainer: string
+  department: string
+  date: string
+  duration: string
+  attendees: number
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled'
+  type: 'capacity_building' | 'compliance' | 'technical' | 'pedagogical'
+}
+
+export const TRAINING_SESSIONS: TrainingSession[] = [
+  { id: 'TRN-001', title: 'CBET Pedagogy Workshop', trainer: 'Internal QA Team', department: 'All Departments', date: '2025-08-15', duration: '3 days', attendees: 45, status: 'scheduled', type: 'pedagogical' },
+  { id: 'TRN-002', title: 'NITA Competency Assessment Training', trainer: 'NITA Assessors', department: 'Vocational Training', date: '2025-08-20', duration: '2 days', attendees: 30, status: 'scheduled', type: 'technical' },
+  { id: 'TRN-003', title: 'Data Protection & Privacy Compliance', trainer: 'ICT Team', department: 'All Departments', date: '2025-07-10', duration: '1 day', attendees: 60, status: 'completed', type: 'compliance' },
+  { id: 'TRN-004', title: 'Community Health Outreach Skills', trainer: 'Ministry of Health', department: 'Health & Nursing', date: '2025-09-05', duration: '4 days', attendees: 25, status: 'scheduled', type: 'capacity_building' },
+]
+
+export interface AuditLog {
+  id: string
+  action: string
+  department: string
+  user: string
+  timestamp: string
+  severity: 'info' | 'warning' | 'critical'
+  resolved: boolean
+  resolution?: string
+  resolvedAt?: string
+}
+
+export const AUDIT_LOGS: AuditLog[] = [
+  { id: 'AUD-001', action: 'Clinical practical pass mark deviation detected', department: 'Health & Nursing', user: 'System', timestamp: '2025-07-20 14:30', severity: 'critical', resolved: false, resolution: '', resolvedAt: '' },
+  { id: 'AUD-002', action: 'NITA practical checklist not used for Semester 2 assessment', department: 'Vocational Training', user: 'Dr. Lilian Gitau', timestamp: '2025-07-19 09:15', severity: 'warning', resolved: true, resolution: 'HOD notified; checklist implemented for remaining assessments.', resolvedAt: '2025-07-19 16:00' },
+  { id: 'AUD-003', action: 'Computer Lab usage exceeds capacity during peak hours', department: 'ICT', user: 'System', timestamp: '2025-07-18 11:00', severity: 'warning', resolved: false, resolution: '', resolvedAt: '' },
+  { id: 'AUD-004', action: 'Nursing student missing K.C.S.E cluster subject', department: 'Admissions', user: 'System', timestamp: '2025-07-17 10:00', severity: 'critical', resolved: true, resolution: 'Student supplementary exam scheduled.', resolvedAt: '2025-07-17 14:30' },
+]
+
+export interface AssessmentSheet {
+  id: string
+  title: string
+  department: string
+  status: 'draft' | 'dispatched' | 'in_progress' | 'evidence_pending' | 'submitted' | 'compiled' | 'rejected'
+  dispatchedDate?: string
+  dueDate: string
+  submittedDate?: string
+  complianceScore?: number
+  assignedTo: string[]
+  formType: 'chd_nursing' | 'vocational' | 'ict' | 'admissions' | 'general'
+}
+
+export const ASSESSMENT_SHEETS: AssessmentSheet[] = [
+  { id: 'AS-001', title: 'CHD Clinical Practical Assessment Q2', department: 'Health & Nursing', status: 'submitted', dispatchedDate: '2025-07-01', dueDate: '2025-07-31', submittedDate: '2025-07-15', complianceScore: 92, assignedTo: ['HOD Health'], formType: 'chd_nursing' },
+  { id: 'AS-002', title: 'NITA Trade Progress Evaluation', department: 'Vocational Training', status: 'in_progress', dispatchedDate: '2025-07-10', dueDate: '2025-08-10', assignedTo: ['HOD Vocational'], formType: 'vocational' },
+  { id: 'AS-003', title: 'ICT Lab Resources Audit', department: 'ICT', status: 'evidence_pending', dispatchedDate: '2025-07-05', dueDate: '2025-07-25', assignedTo: ['HOD ICT'], formType: 'ict' },
+  { id: 'AS-004', title: 'Admissions Pipeline Verification', department: 'Admissions', status: 'draft', dueDate: '2025-08-15', assignedTo: ['Registrar'], formType: 'admissions' },
+]
+
+export interface SelfAudit {
+  id: string
+  department: string
+  auditType: 'clinical_practice' | 'vocational_competency' | 'it_resources' | 'admissions_verification'
+  period: string
+  status: 'pending' | 'in_progress' | 'completed' | 'flagged'
+  score?: number
+  findings: string
+  actionPlan?: string
+  completedBy?: string
+  completedAt?: string
+}
+
+export const SELF_AUDITS: SelfAudit[] = [
+  { id: 'SA-001', department: 'Health & Nursing', auditType: 'clinical_practice', period: 'Q2 2025', status: 'completed', score: 92, findings: 'Clinical pass marks consistently above 70%. Theory grades aligned to 60% threshold.', actionPlan: '', completedBy: 'Dr. Miriam Akinyi', completedAt: '2025-07-10' },
+  { id: 'SA-002', department: 'Vocational Training', auditType: 'vocational_competency', period: 'Q2 2025', status: 'completed', score: 85, findings: 'Practical checklists used for 95% of NITA assessments. One written test identified.', actionPlan: 'Removed written test; replaced with practical checklist for Unit 3.', completedBy: 'Mr. George Muthomi', completedAt: '2025-07-12' },
+  { id: 'SA-003', department: 'ICT', auditType: 'it_resources', period: 'Q2 2025', status: 'flagged', score: 68, findings: 'Lab usage logs show 120% capacity during 10:00-12:00 slots. 8 workstations non-functional.', actionPlan: 'Requesting procurement of 15 new workstations and lab re-scheduling.', completedBy: '', completedAt: '' },
+  { id: 'SA-004', department: 'Admissions', auditType: 'admissions_verification', period: 'Q2 2025', status: 'in_progress', score: 0, findings: 'Verifying K.C.S.E cluster grades for 45 active Nursing students.', actionPlan: '', completedBy: '', completedAt: '' },
+]
+
+export interface CorrectiveAction {
+  id: string
+  title: string
+  department: string
+  relatedAuditId?: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  status: 'open' | 'in_progress' | 'resolved' | 'escalated'
+  description: string
+  resolutionPlan?: string
+  assignedTo: string
+  dueDate: string
+  createdAt: string
+  resolvedAt?: string
+}
+
+export const CORRECTIVE_ACTIONS: CorrectiveAction[] = [
+  { id: 'CA-001', title: 'Lab overcrowding resolution', department: 'ICT', relatedAuditId: 'SA-003', severity: 'high', status: 'in_progress', description: 'Computer lab exceeds safe capacity during peak hours.', resolutionPlan: 'Procurement of 15 new workstations and re-scheduling of practical sessions.', assignedTo: 'HOD ICT', dueDate: '2025-08-15', createdAt: '2025-07-18' },
+  { id: 'CA-002', title: 'NITA assessment compliance', department: 'Vocational Training', relatedAuditId: 'SA-002', severity: 'medium', status: 'resolved', description: 'One written test used instead of practical checklist.', resolutionPlan: 'Replaced written test with practical checklist for remaining assessments.', assignedTo: 'HOD Vocational', dueDate: '2025-07-20', createdAt: '2025-07-12', resolvedAt: '2025-07-19' },
+]
+
 

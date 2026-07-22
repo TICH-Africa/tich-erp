@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Users, FileCheck, BookOpen, DollarSign, UserCog,
   BarChart3, Settings, Bell, LogOut, ChevronDown, Menu, X,
   ClipboardList, GraduationCap, Star, Calendar, Wallet, Clock, Receipt, FileText,
-  Calculator, Landmark, Building2, Download, Award, Mail
+  Calculator, Landmark, Building2, Download, Award, Mail,
+  Shield, AlertTriangle
 } from 'lucide-react'
 
 type Page =
@@ -16,6 +17,7 @@ type Page =
   | 'academics-overview' | 'academics-students' | 'academics-programs' | 'academics-admissions' | 'academics-staff' | 'academics-examinations' | 'academics-timetable' | 'academics-departments' | 'academics-records' | 'academics-courses'
   | 'admissions-overview' | 'admissions-applications' | 'admissions-reviews' | 'admissions-shortlisted' | 'admissions-offers' | 'admissions-registered'
   | 'cms' | 'events'
+  | 'qa-overview' | 'qa-quality-plans' | 'qa-training' | 'qa-audits' | 'qa-assessments' | 'qa-self-audits' | 'qa-corrective-actions' | 'qa-reports'
 
 const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.ReactNode }[]> = {
   super_admin: [
@@ -31,7 +33,7 @@ const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.React
     { label: 'Admissions', page: 'admissions-overview', icon: <ClipboardList size={17} /> },
     { label: 'Approvals Override', page: 'approvals', icon: <FileCheck size={17} /> },
     { label: 'Finance Summary', page: 'finance', icon: <DollarSign size={17} /> },
-    { label: 'Reports', page: 'reports', icon: <BarChart3 size={17} /> },
+    { label: 'QA Reports', page: 'qa-reports', icon: <BarChart3 size={17} /> },
   ],
   academic_registrar: [
     { label: 'Dashboard', page: 'dashboard', icon: <LayoutDashboard size={17} /> },
@@ -42,6 +44,7 @@ const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.React
     { label: 'Student Records', page: 'academics-records', icon: <Award size={17} /> },
     { label: 'Examinations', page: 'academics-examinations', icon: <FileText size={17} /> },
     { label: 'Timetable', page: 'academics-timetable', icon: <Calendar size={17} /> },
+    { label: 'QA', page: 'qa-overview', icon: <Shield size={17} /> },
   ],
   hod: [
     { label: 'Dashboard', page: 'dashboard', icon: <LayoutDashboard size={17} /> },
@@ -51,6 +54,8 @@ const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.React
     { label: 'Courses', page: 'academics-courses', icon: <BookOpen size={17} /> },
     { label: 'Timetable', page: 'academics-timetable', icon: <Calendar size={17} /> },
     { label: 'Examinations', page: 'academics-examinations', icon: <FileText size={17} /> },
+    { label: 'Self-Audit', page: 'qa-self-audits', icon: <Shield size={17} /> },
+    { label: 'Assessments', page: 'qa-assessments', icon: <ClipboardList size={17} /> },
   ],
   admissions_officer: [
     { label: 'Dashboard', page: 'dashboard', icon: <LayoutDashboard size={17} /> },
@@ -60,6 +65,7 @@ const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.React
     { label: 'Shortlisted', page: 'admissions-shortlisted', icon: <Star size={17} /> },
     { label: 'Offers', page: 'admissions-offers', icon: <Mail size={17} /> },
     { label: 'Registered', page: 'admissions-registered', icon: <GraduationCap size={17} /> },
+    { label: 'QA Verification', page: 'qa-self-audits', icon: <Shield size={17} /> },
   ],
   finance_manager: [
     { label: 'Finance Dashboard', page: 'finance-overview', icon: <BarChart3 size={17} /> },
@@ -83,10 +89,14 @@ const NAV_BY_ROLE: Record<string, { label: string; page: Page; icon: React.React
     { label: 'HR Reports', page: 'hr-reports', icon: <BarChart3 size={17} /> },
   ],
   qa_officer: [
-    { label: 'Dashboard', page: 'dashboard', icon: <LayoutDashboard size={17} /> },
-    { label: 'QA Metrics', page: 'qa', icon: <Star size={17} /> },
-    { label: 'Programs Review', page: 'programs', icon: <BookOpen size={17} /> },
-    { label: 'Reports', page: 'reports', icon: <BarChart3 size={17} /> },
+    { label: 'Command Center', page: 'qa-overview', icon: <BarChart3 size={17} /> },
+    { label: 'Quality Plans', page: 'qa-quality-plans', icon: <ClipboardList size={17} /> },
+    { label: 'Training', page: 'qa-training', icon: <GraduationCap size={17} /> },
+    { label: 'Audit Logs', page: 'qa-audits', icon: <FileText size={17} /> },
+    { label: 'Assessments', page: 'qa-assessments', icon: <FileCheck size={17} /> },
+    { label: 'Self-Audits', page: 'qa-self-audits', icon: <Shield size={17} /> },
+    { label: 'Corrective Actions', page: 'qa-corrective-actions', icon: <AlertTriangle size={17} /> },
+    { label: 'Reports', page: 'qa-reports', icon: <Download size={17} /> },
   ],
 }
 

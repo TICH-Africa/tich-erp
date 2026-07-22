@@ -11,8 +11,7 @@ import { renderHRPages } from '../hr/HRPages'
 import { renderFinancePages } from '../finance/FinancePages'
 import { renderAcademicsPages } from '../academics/AcademicsPages'
 import { renderAdmissionsPages } from '../admissions/AdmissionsPages'
-import { renderProcurementPages } from '../procurement/ProcurementPages'
-import { renderSaccoPages } from '../sacco/SaccoPages'
+import { renderQAPages } from '../qa/QAPages'
 import {
   TrendingUp, TrendingDown, Users, GraduationCap, DollarSign, FileCheck,
   AlertTriangle, CheckCircle, XCircle, Clock, Eye, Filter, Download,
@@ -978,7 +977,7 @@ function SettingsPage() {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 
-type Page = 'dashboard' | 'approvals' | 'students' | 'staff' | 'finance' | 'programs' | 'reports' | 'settings' | 'hr' | 'qa' | 'hr-leave' | 'hr-payroll' | 'hr-attendance' | 'hr-expenses' | 'hr-documents' | 'hr-reports' | 'hr-employees' | 'finance-overview' | 'finance-invoices' | 'finance-bills' | 'finance-banking' | 'finance-accounts' | 'finance-reports' | 'finance-customers' | 'finance-vendors' | 'finance-journal' | 'academics-overview' | 'academics-students' | 'academics-programs' | 'academics-admissions' | 'academics-staff' | 'academics-examinations' | 'academics-timetable' | 'academics-departments' | 'academics-records' | 'academics-courses' | 'admissions-overview' | 'admissions-applications' | 'admissions-reviews' | 'admissions-shortlisted' | 'admissions-offers' | 'admissions-registered' | 'cms' | 'events' | 'procurement-overview' | 'procurement-requisitions' | 'procurement-suppliers' | 'procurement-orders' | 'procurement-invoices' | 'procurement-assets' | 'procurement-inventory' | 'sacco-overview' | 'sacco-members' | 'sacco-savings' | 'sacco-loans'
+type Page = 'dashboard' | 'approvals' | 'students' | 'staff' | 'finance' | 'programs' | 'reports' | 'settings' | 'hr' | 'qa' | 'hr-leave' | 'hr-payroll' | 'hr-attendance' | 'hr-expenses' | 'hr-documents' | 'hr-reports' | 'hr-employees' | 'finance-overview' | 'finance-invoices' | 'finance-bills' | 'finance-banking' | 'finance-accounts' | 'finance-reports' | 'finance-customers' | 'finance-vendors' | 'finance-journal' | 'academics-overview' | 'academics-students' | 'academics-programs' | 'academics-admissions' | 'academics-staff' | 'academics-examinations' | 'academics-timetable' | 'academics-departments' | 'academics-records' | 'academics-courses' | 'admissions-overview' | 'admissions-applications' | 'admissions-reviews' | 'admissions-shortlisted' | 'admissions-offers' | 'admissions-registered' | 'cms' | 'events' | 'qa-overview' | 'qa-quality-plans' | 'qa-training' | 'qa-audits' | 'qa-assessments' | 'qa-self-audits' | 'qa-corrective-actions' | 'qa-reports'
 
 export function renderDashboard(role: Role, page: Page) {
   if (page === 'hr') return renderHRPages('overview')
@@ -999,13 +998,9 @@ export function renderDashboard(role: Role, page: Page) {
     const subPage = page.replace('admissions-', '') as 'overview' | 'applications' | 'reviews' | 'shortlisted' | 'offers' | 'registered'
     return renderAdmissionsPages(subPage)
   }
-  if (page.startsWith('procurement-')) {
-    const subPage = page.replace('procurement-', '') as 'overview' | 'requisitions' | 'suppliers' | 'orders' | 'invoices' | 'assets' | 'inventory'
-    return renderProcurementPages(subPage)
-  }
-  if (page.startsWith('sacco-')) {
-    const subPage = page.replace('sacco-', '') as 'overview' | 'members' | 'savings' | 'loans'
-    return renderSaccoPages(subPage)
+  if (page.startsWith('qa-')) {
+    const subPage = page.replace('qa-', '') as 'overview' | 'quality-plans' | 'training' | 'audits' | 'assessments' | 'self-audits' | 'corrective-actions' | 'reports'
+    return renderQAPages(subPage)
   }
   if (page === 'approvals') return <ApprovalsPanel role={role} />
   if (page === 'students') return <StudentsPage />

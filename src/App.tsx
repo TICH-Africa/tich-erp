@@ -10,6 +10,7 @@ import AcademicsPages from '@/pages/admin/academics/AcademicsPages'
 import AdmissionsPages from '@/pages/admin/admissions/AdmissionsPages'
 import ProcurementShell from '@/pages/procurement/ProcurementShell'
 import SaccoShell from '@/pages/sacco/SaccoShell'
+import QAPages from '@/pages/admin/qa/QAPages'
 import { type User, type Role } from '@/data/mock'
 
 type AppPage = 'landing' | 'login' | 'admin' | 'programs' | 'hr' | 'procurement' | 'sacco'
@@ -86,6 +87,10 @@ export default function App() {
           if (activePage.startsWith('academics-')) {
             const subPage = activePage.replace('academics-', '') as 'overview' | 'students' | 'programs' | 'admissions' | 'staff' | 'examinations' | 'timetable' | 'departments' | 'records' | 'courses'
             return <AcademicsPages key={subPage} initialSubPage={subPage} />
+          }
+          if (activePage.startsWith('qa-')) {
+            const subPage = activePage.replace('qa-', '') as 'overview' | 'quality-plans' | 'training' | 'audits' | 'assessments' | 'self-audits' | 'corrective-actions' | 'reports'
+            return <QAPages key={subPage} initialSubPage={subPage} />
           }
           return renderDashboard(user.role, activePage)
         }}
