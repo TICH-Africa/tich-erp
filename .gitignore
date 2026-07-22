@@ -1,7 +1,13 @@
-cat > .gitignore << 'EOF'
+# Dependencies
+node_modules/
+/web/node_modules/
+/mobile/erp_mobile/.dart_tool/
+/mobile/erp_mobile/build/
+/desktop/node_modules/
+/desktop/build/
+
 # Laravel / PHP
 /web/vendor/
-/web/node_modules/
 /web/.env
 /web/storage/*.key
 /web/public/hot
@@ -14,22 +20,17 @@ cat > .gitignore << 'EOF'
 /web/.phpunit.result.cache
 
 # Flutter / Dart
-/mobile/erp_mobile/.dart_tool/
 /mobile/erp_mobile/.flutter-plugins
 /mobile/erp_mobile/.flutter-plugins-dependencies
-/mobile/erp_mobile/build/
 /mobile/erp_mobile/.packages
 /mobile/erp_mobile/ios/Pods/
 /mobile/erp_mobile/android/.gradle/
 /mobile/erp_mobile/.idea/
 
 # Desktop (adjust once stack is chosen)
-/desktop/build/
-/desktop/node_modules/
 
 # General
 .DS_Store
 *.log
 .idea/
 .vscode/
-EOF
