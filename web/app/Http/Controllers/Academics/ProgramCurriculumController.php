@@ -29,10 +29,26 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeHub($request, $department);
+        $learningDepartmentId = $request->integer('learning_department') ?: null;
+
+        if ($learningDepartmentId) {
+            abort_unless(in_array($learningDepartmentId, $hub->academicsScopeDepartmentIds(), true), 404);
+        }
+
+        $programsQuery = $this->access->programsQueryForHub($request->user(), $hub);
+
+        if ($learningDepartmentId) {
+            $programsQuery->where('department_id', $learningDepartmentId);
+        }
+
+        $learningDepartment = $learningDepartmentId
+            ? Department::query()->find($learningDepartmentId)
+            : null;
 
         return view('academics.programs.index', [
             'department' => $hub,
-            'programs' => $this->access->programsQueryForHub($request->user(), $hub)->get(),
+            'learningDepartment' => $learningDepartment,
+            'programs' => $programsQuery->get(),
             'formats' => ProgramCurriculumService::curriculumFormats(),
         ]);
     }
@@ -46,7 +62,15 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $blocks = NursingBlock::query()->where('program_id', $program->id)->orderBy('block_order')->get();
         $mappings = $this->curriculum->mappedUnits($program);
         $availableUnits = $this->access->unitsInScope($hub, $program->department_id)
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->values();
+
+        $catalogUnitCounts = $this->access->unitsInScope($hub, $program->department_id)
+            ->groupBy('status')
+            ->map->count();
+
+        $learningDepartmentId = $request->integer('learning_department') ?: (int) $program->department_id;
+        $learningDepartment = Department::query()->find($learningDepartmentId);
 
         $periods = $program->usesBlocks()
             ? $blocks->map(fn (NursingBlock $block) => [
@@ -64,6 +88,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return view('academics.programs.curriculum', [
             'department' => $hub,
+            'learningDepartment' => $learningDepartment,
             'program' => $program,
             'periods' => $periods,
             'totalTeachingPeriods' => $program->totalTeachingPeriods(),
@@ -73,6 +98,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'mappingsBySemester' => $mappings->groupBy('semester'),
             'mappingsByBlock' => $mappings->groupBy('block_id'),
             'availableUnits' => $availableUnits,
+            'catalogUnitCounts' => $catalogUnitCounts,
             'formats' => ProgramCurriculumService::curriculumFormats(),
             'blocks' => $blocks,
             'versions' => $program->curriculumVersions,
@@ -106,7 +132,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
 
         $validated = $request->validate([
-            'mappings' => ['required', 'array'],
+            'mappings' => ['nullable', 'array'],
             'mappings.*.unit_id' => ['required', 'exists:units,id'],
             'mappings.*.include' => ['nullable', 'boolean'],
             'mappings.*.semester' => ['nullable', 'integer', 'min:1', 'max:12'],
@@ -118,7 +144,13 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'mappings.*.total_learning_hours' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $this->curriculum->syncProgramUnits($request->user(), $hub, $program, $validated['mappings'], $request);
+        $this->curriculum->syncProgramUnits(
+            $request->user(),
+            $hub,
+            $program,
+            $validated['mappings'] ?? [],
+            $request
+        );
 
         return back()->with('status', 'Programme unit mapping saved.');
     }

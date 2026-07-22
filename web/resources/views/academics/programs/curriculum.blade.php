@@ -3,8 +3,13 @@
 @section('academics-content')
     @php
         $hub = ['department' => $department->id];
+        if (! empty($learningDepartment)) {
+            $hub['learning_department'] = $learningDepartment->id;
+        }
         $mappingIndex = 0;
     @endphp
+
+    @include('academics.partials.learning-department-context')
 
     <a href="{{ route('departments.academics.programs.index', $hub) }}" class="tich-link">&larr; All programmes</a>
 
@@ -98,6 +103,33 @@
 
         @if ($periods->isEmpty())
             <p class="tich-text">Save the programme structure above to generate teaching periods{{ $program->usesBlocks() ? ' (set block count for nursing programmes)' : '' }}.</p>
+        @elseif ($availableUnits->isEmpty())
+            <article class="tich-card" style="padding:1.5rem;">
+                <h3 class="tich-h3">No active units in the catalog</h3>
+                <p class="tich-text tich-mt-2">
+                    Add units in the unit catalog for {{ $program->department?->dept_name ?? 'this department' }}, then submit and approve them before mapping to this programme.
+                </p>
+                @php
+                    $unitCatalogParams = ['department' => $department->id];
+                    if (! empty($learningDepartment)) {
+                        $unitCatalogParams['learning_department'] = $learningDepartment->id;
+                    }
+                @endphp
+                @if (($catalogUnitCounts['draft'] ?? 0) > 0 || ($catalogUnitCounts['pending_registry'] ?? 0) > 0)
+                    <p class="tich-caption tich-mt-4">
+                        @if (($catalogUnitCounts['draft'] ?? 0) > 0)
+                            {{ $catalogUnitCounts['draft'] }} draft unit(s)
+                        @endif
+                        @if (($catalogUnitCounts['pending_registry'] ?? 0) > 0)
+                            · {{ $catalogUnitCounts['pending_registry'] }} pending registry approval
+                        @endif
+                        — only <strong>active</strong> units can be mapped.
+                    </p>
+                @endif
+                @can('academics.write')
+                    <a href="{{ route('departments.academics.units.index', $unitCatalogParams) }}" class="tich-btn tich-btn-primary tich-mt-4">Open unit catalog</a>
+                @endcan
+            </article>
         @else
             <form method="POST" action="{{ route('departments.academics.programs.sync-units', array_merge($hub, ['program' => $program->id])) }}">
                 @csrf

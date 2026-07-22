@@ -23,9 +23,11 @@ class DepartmentDashboardController extends Controller
         }
 
         $section = $departmentDashboard->resolveSection($request, $user, $department);
+        $department->load(['group', 'campus', 'parent']);
 
         return view('departments.show', [
-            'department' => $department->load(['group', 'campus']),
+            'department' => $department,
+            'academicsHub' => $department->isLearningDepartment() ? $department->academicsHub() : null,
             'section' => $section,
             'childDepartments' => $departmentDashboard->accessibleChildDepartments($user, $department),
             'modules' => $departmentDashboard->modulesForDepartment($user, $department),

@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
+use App\Models\Applicant;
 use App\Models\Department;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -100,6 +103,10 @@ class DepartmentDashboardService
             return [];
         }
 
+        if ($department->isLearningDepartment()) {
+            return $this->learningDepartmentModules($user, $department);
+        }
+
         $modules = [];
 
         if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
@@ -145,12 +152,16 @@ class DepartmentDashboardService
     }
 
     /**
-     * @return 'hub'|'academic'|'operational'|'empty'
+     * @return 'hub'|'learning'|'academic'|'operational'|'empty'
      */
     public function dashboardViewType(User $user, Department $department): string
     {
         if ($this->accessibleChildDepartments($user, $department)->isNotEmpty()) {
             return 'hub';
+        }
+
+        if ($department->isLearningDepartment()) {
+            return 'learning';
         }
 
         if ($this->modulesForDepartment($user, $department) !== []) {
@@ -205,16 +216,30 @@ class DepartmentDashboardService
         $modules = $this->modulesForDepartment($user, $department);
 
         if ($modules !== []) {
-            $items[] = ['type' => 'heading', 'label' => 'Tools'];
+            $groupLabels = [
+                'education' => 'Education',
+                'admissions' => 'Admissions',
+                'tools' => 'Tools',
+            ];
 
-            foreach ($modules as $module) {
-                $items[] = [
-                    'type' => 'link',
-                    'label' => $module['label'],
-                    'route' => $module['route'],
-                    'params' => $module['params'] ?? [],
-                    'coming_soon' => $module['coming_soon'] ?? false,
-                ];
+            $grouped = collect($modules)->groupBy(fn (array $module) => $module['group'] ?? 'tools');
+
+            foreach ($groupLabels as $groupKey => $groupLabel) {
+                if (! $grouped->has($groupKey)) {
+                    continue;
+                }
+
+                $items[] = ['type' => 'heading', 'label' => $groupLabel];
+
+                foreach ($grouped->get($groupKey) as $module) {
+                    $items[] = [
+                        'type' => 'link',
+                        'label' => $module['label'],
+                        'route' => $module['route'],
+                        'params' => $module['params'] ?? [],
+                        'coming_soon' => $module['coming_soon'] ?? false,
+                    ];
+                }
             }
         }
 
@@ -228,7 +253,18 @@ class DepartmentDashboardService
                     'label' => $parent->dept_name,
                     'route' => 'departments.show',
                     'params' => ['department' => $parent->id],
+                    'section' => 'overview',
                 ];
+
+                if ($parent->isAcademicsHub()) {
+                    $items[] = [
+                        'type' => 'link',
+                        'label' => 'All departments',
+                        'route' => 'departments.show',
+                        'params' => ['department' => $parent->id, 'section' => 'departments'],
+                        'section' => 'departments',
+                    ];
+                }
             }
         }
 
@@ -251,12 +287,32 @@ class DepartmentDashboardService
         $children = $this->accessibleChildDepartments($user, $department);
         $modules = $this->modulesForDepartment($user, $department);
 
-        return [
+        $stats = [
             'child_count' => $children->count(),
             'tool_count' => count($modules),
             'category' => $this->categoryLabel($department),
             'view_type' => $this->dashboardViewType($user, $department),
         ];
+
+        if ($department->isLearningDepartment()) {
+            $stats['program_count'] = AcademicProgram::query()
+                ->where('department_id', $department->id)
+                ->count();
+            $stats['unit_count'] = Unit::query()
+                ->where('department_id', $department->id)
+                ->count();
+            $stats['pending_applications'] = Applicant::query()
+                ->where(function ($query) use ($department) {
+                    $query->where('handling_department_id', $department->id)
+                        ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $department->id));
+                })
+                ->whereIn('status', ['submitted', 'academic_review'])
+                ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
+                ->count();
+            $stats['curriculum_profile'] = $department->curriculum_profile ?? 'standard';
+        }
+
+        return $stats;
     }
 
     public function cardDescription(Department $department): string
@@ -274,7 +330,7 @@ class DepartmentDashboardService
         }
 
         return match ($department->dept_category) {
-            'academic' => 'Academic programmes, applications, and student records.',
+            'academic' => 'Programmes, unit catalog, applications, and curriculum for this school.',
             'administrative' => 'Department operations, workflows, and records.',
             default => 'Department workspace and tools.',
         };
@@ -339,6 +395,49 @@ class DepartmentDashboardService
     private function shouldOfferAdmissions(Department $department): bool
     {
         return $department->dept_code === 'ADM' || $department->dept_category === 'academic';
+    }
+
+    /**
+     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, group?: string, coming_soon?: bool}>
+     */
+    private function learningDepartmentModules(User $user, Department $department): array
+    {
+        $modules = [];
+        $hub = $department->academicsHub();
+
+        if ($hub && $this->rbacService->hasPermission($user, 'academics.read')) {
+            $scope = [
+                'department' => $hub->id,
+                'learning_department' => $department->id,
+            ];
+
+            $modules[] = [
+                'label' => 'Programmes',
+                'description' => 'Configure course length, terms per year, and map units for programmes in this department.',
+                'route' => 'departments.academics.programs.index',
+                'params' => $scope,
+                'group' => 'education',
+            ];
+            $modules[] = [
+                'label' => 'Unit catalog',
+                'description' => 'Create and manage units offered by this department.',
+                'route' => 'departments.academics.units.index',
+                'params' => $scope,
+                'group' => 'education',
+            ];
+        }
+
+        if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
+            $modules[] = [
+                'label' => 'Application approvals',
+                'description' => 'Review onboarding applications for programmes in this department.',
+                'route' => 'admissions.applications.index',
+                'params' => ['department' => $department->id, 'status' => 'pending'],
+                'group' => 'admissions',
+            ];
+        }
+
+        return $modules;
     }
 
     /**

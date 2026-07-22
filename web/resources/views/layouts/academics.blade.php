@@ -4,7 +4,10 @@
 
 @section('content')
 <div class="tich-admin">
-    @include('academics.partials.sidebar')
+    @include('academics.partials.sidebar', [
+        'department' => $department,
+        'learningDepartment' => $learningDepartment ?? null,
+    ])
 
     <div class="tich-admin__main">
         @include('partials.alerts')

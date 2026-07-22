@@ -26,8 +26,17 @@ class UnitController extends DepartmentAcademicsController
         $hub = $this->authorizeHub($request, $department);
         $learningDepartmentId = $request->integer('learning_department') ?: null;
 
+        if ($learningDepartmentId) {
+            abort_unless(in_array($learningDepartmentId, $hub->academicsScopeDepartmentIds(), true), 404);
+        }
+
+        $learningDepartment = $learningDepartmentId
+            ? Department::query()->find($learningDepartmentId)
+            : null;
+
         return view('academics.units.index', [
             'department' => $hub,
+            'learningDepartment' => $learningDepartment,
             'units' => $this->units->listForHub(
                 $hub,
                 $learningDepartmentId,

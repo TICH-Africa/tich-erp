@@ -1,12 +1,25 @@
 @extends('layouts.academics')
 
 @section('academics-content')
-    @php($hub = ['department' => $department->id])
+    @php
+        $hub = ['department' => $department->id];
+        if (! empty($learningDepartment)) {
+            $hub['learning_department'] = $learningDepartment->id;
+        }
+    @endphp
+
+    @include('academics.partials.learning-department-context')
 
     <div class="tich-section__intro" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; text-align:left;">
         <div>
             <h1 class="tich-h1" style="font-size: 2rem;">Unit catalog</h1>
-            <p class="tich-text">Create units for learning departments under {{ $department->dept_name }} and route drafts through registry verification.</p>
+            <p class="tich-text">
+                @if (! empty($learningDepartment))
+                    Units for {{ $learningDepartment->dept_name }}.
+                @else
+                    Create units for learning departments under {{ $department->dept_name }} and route drafts through registry verification.
+                @endif
+            </p>
         </div>
         @can('academics.write')
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="unit-create">Add unit</button>
@@ -14,15 +27,19 @@
     </div>
 
     <form method="GET" class="tich-card tich-mt-8" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Learning department</label>
-            <select name="learning_department" class="tich-input">
-                <option value="">All</option>
-                @foreach ($learningDepartments as $learningDepartment)
-                    <option value="{{ $learningDepartment->id }}" @selected(($filters['learning_department'] ?? '') == $learningDepartment->id)>{{ $learningDepartment->dept_name }}</option>
-                @endforeach
-            </select>
-        </div>
+        @if (empty($learningDepartment))
+            <div class="tich-form-group" style="margin:0;">
+                <label class="tich-label">Learning department</label>
+                <select name="learning_department" class="tich-input">
+                    <option value="">All</option>
+                    @foreach ($learningDepartments as $learningDepartmentOption)
+                        <option value="{{ $learningDepartmentOption->id }}" @selected(($filters['learning_department'] ?? '') == $learningDepartmentOption->id)>{{ $learningDepartmentOption->dept_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @else
+            <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+        @endif
         <div class="tich-form-group" style="margin:0;">
             <label class="tich-label">Status</label>
             <select name="status" class="tich-input">

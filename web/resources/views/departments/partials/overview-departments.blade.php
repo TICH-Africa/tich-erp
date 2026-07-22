@@ -12,7 +12,7 @@
             <p class="tich-caption">{{ $categoryLabel($child) }}</p>
             <h3 class="tich-h3 tich-mt-2">{{ $child->dept_name }}</h3>
             <p class="tich-text tich-mt-2">{{ $cardDescription($child) }}</p>
-            <a href="{{ route('departments.show', $child) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open department</a>
+                <a href="{{ route('departments.show', $child) }}" class="tich-btn tich-btn-primary tich-mt-4">Open department dashboard</a>
         </article>
     @endforeach
 </div>

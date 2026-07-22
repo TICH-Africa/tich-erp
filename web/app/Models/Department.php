@@ -92,6 +92,28 @@ class Department extends Model
             ->first();
     }
 
+    public function academicsHub(): ?self
+    {
+        if ($this->isAcademicsHub()) {
+            return $this;
+        }
+
+        if ($this->isLearningDepartment()) {
+            $parent = $this->relationLoaded('parent') ? $this->parent : $this->parent()->first();
+
+            if ($parent?->isAcademicsHub()) {
+                return $parent;
+            }
+        }
+
+        return static::findAcademicsHub();
+    }
+
+    public function isUnderAcademicsHub(): bool
+    {
+        return $this->isLearningDepartment() && $this->academicsHub() !== null;
+    }
+
     public function isMainDepartment(): bool
     {
         return $this->parent_dept_id === null;

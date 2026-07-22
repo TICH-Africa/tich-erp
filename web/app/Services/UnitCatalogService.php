@@ -46,12 +46,11 @@ class UnitCatalogService
         $scopeIds = $hub->academicsScopeDepartmentIds();
         abort_unless(in_array((int) $data['department_id'], $scopeIds, true), 422, 'Invalid department for this academics hub.');
 
-        $unit = Unit::create([
+        $payload = [
             'unit_code' => $data['unit_code'],
             'unit_name' => $data['unit_name'],
             'description' => $data['description'] ?? null,
             'department_id' => (int) $data['department_id'],
-            'program_id' => $data['program_id'] ?? null,
             'semester' => $data['semester'] ?? 1,
             'block' => $data['block'] ?? null,
             'credit_hours' => $data['credit_hours'] ?? 0,
@@ -65,7 +64,13 @@ class UnitCatalogService
             'status' => 'draft',
             'created_by' => $user->id,
             'created_at' => now(),
-        ]);
+        ];
+
+        if (! empty($data['program_id'])) {
+            $payload['program_id'] = (int) $data['program_id'];
+        }
+
+        $unit = Unit::create($payload);
 
         $this->auditService->log(
             'academics.unit.created',

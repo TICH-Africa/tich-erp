@@ -5,6 +5,7 @@
         @include($section === 'departments' ? 'departments.partials.overview-departments' : 'departments.partials.overview-hub')
     @else
         @include(match ($dashboardViewType) {
+            'learning' => 'departments.partials.overview-learning',
             'academic' => 'departments.partials.overview-academic',
             'operational' => 'departments.partials.overview-operational',
             default => 'departments.partials.overview-empty',
