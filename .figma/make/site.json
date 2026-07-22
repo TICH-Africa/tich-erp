@@ -1,0 +1,10 @@
+{
+  "description": "Streamline administrative tasks for educational institutions with a dashboard that allows executives and staff to manage and approve student applications efficiently.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
