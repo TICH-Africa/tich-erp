@@ -189,6 +189,12 @@ class DepartmentDashboardService
                 'coming_soon' => true,
             ],
             'ACAD' => [
+                'permission' => 'academics.read',
+                'label' => 'Curriculum hub',
+                'description' => 'Course versioning, units, department mapping, and calendar.',
+                'route' => 'academics.dashboard',
+            ],
+            'SIS' => [
                 'permission' => 'students.read',
                 'label' => 'Student Information System',
                 'description' => '360° student biodata and enrolment records.',

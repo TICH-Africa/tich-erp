@@ -11,8 +11,8 @@ class Department extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'dept_code', 'dept_name', 'dept_category', 'department_group_id', 'display_order',
-        'hod_id', 'parent_dept_id', 'campus_id', 'is_active', 'created_by',
+        'dept_code', 'dept_name', 'dept_category', 'curriculum_profile', 'department_group_id', 'display_order',
+        'hod_id', 'parent_dept_id', 'campus_id', 'is_active', 'approval_status', 'created_by',
     ];
 
     protected $casts = [
@@ -42,6 +42,11 @@ class Department extends Model
     public function programs(): HasMany
     {
         return $this->hasMany(AcademicProgram::class, 'department_id');
+    }
+
+    public function catalogUnits(): HasMany
+    {
+        return $this->hasMany(Unit::class, 'department_id');
     }
 
     public function isLearningDepartment(): bool

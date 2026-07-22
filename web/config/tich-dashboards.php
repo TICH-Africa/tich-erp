@@ -45,6 +45,15 @@ return [
         ],
         [
             'key' => 'academics',
+            'label' => 'Academics & curriculum',
+            'description' => 'Course versioning, unit catalog, department mapping, and academic calendar.',
+            'route' => 'academics.dashboard',
+            'permission' => 'academics.read',
+            'category' => 'academics',
+            'scope' => 'department',
+        ],
+        [
+            'key' => 'academics_approvals',
             'label' => 'Application approvals',
             'description' => 'Review and approve onboarding applications for your academic department.',
             'route' => 'admissions.dashboard',
