@@ -21,6 +21,7 @@ class ApplicationStatusUpdatedMail extends Mailable
         public string $statusUrl,
         public ?string $rejectionReason = null,
         public ?string $reviewNotes = null,
+        public ?string $portalActivationUrl = null,
     ) {}
 
     public function envelope(): Envelope

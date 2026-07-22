@@ -36,6 +36,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password', [WebAuthController::class, 'resetPassword'])->name('password.update');
+
+    Route::get('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'show'])->name('portal.activate');
+    Route::post('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'store'])->name('portal.activate.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -119,7 +122,19 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/applications/{id}/reject', [ApprovalController::class, 'reject'])
             ->middleware('permission:admissions.approve')
             ->name('admissions.applications.reject');
+        Route::post('/applications/{id}/resend-portal-signup', [ApprovalController::class, 'resendPortalSignup'])
+            ->middleware('permission:admissions.write')
+            ->name('admissions.applications.resend-portal-signup');
     });
+
+    Route::prefix('sis')->middleware(['permission:students.read'])->group(function () {
+        Route::get('/students', [\App\Http\Controllers\Sis\StudentController::class, 'index'])->name('sis.students.index');
+        Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
+    });
+
+    Route::get('/portal', [\App\Http\Controllers\Portal\PortalDashboardController::class, '__invoke'])
+        ->middleware('student.portal')
+        ->name('portal.dashboard');
 });
 
 /*

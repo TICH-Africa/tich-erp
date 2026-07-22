@@ -65,6 +65,11 @@ class Applicant extends Model
         return $this->hasMany(ApplicationDocument::class, 'applicant_id');
     }
 
+    public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Student::class, 'application_id');
+    }
+
     public function fullName(): string
     {
         return trim(collect([$this->first_name, $this->middle_name, $this->surname])->filter()->implode(' '));

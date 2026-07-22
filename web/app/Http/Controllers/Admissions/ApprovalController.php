@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Admissions;
 
 use App\Http\Controllers\Controller;
 use App\Services\AdmissionsReviewService;
+use App\Services\ApplicationMailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ApprovalController extends Controller
 {
-    public function __construct(protected AdmissionsReviewService $reviewService) {}
+    public function __construct(
+        protected AdmissionsReviewService $reviewService,
+        protected ApplicationMailService $mailService,
+    ) {}
 
     public function dashboard(Request $request): View
     {
@@ -50,7 +54,26 @@ class ApprovalController extends Controller
             'applicant' => $applicant,
             'handlingDepartment' => $this->reviewService->handlingDepartmentName($applicant),
             'canApprove' => $request->user()->hasPermission('admissions.approve') || $request->user()->hasRole('Super Admin'),
+            'portalSignupEmail' => $applicant->status === 'admitted'
+                ? $this->mailService->portalSignupEmailStatus($applicant)
+                : null,
         ]);
+    }
+
+    public function resendPortalSignup(Request $request, int $id): RedirectResponse
+    {
+        $applicant = $this->reviewService->findForReview($request->user(), $id);
+        $result = $this->mailService->resendPortalSignupEmail($applicant, $request);
+
+        if ($result['sent']) {
+            return redirect()
+                ->route('admissions.applications.show', $id)
+                ->with('status', 'Student portal signup email sent to '.$applicant->email.'.');
+        }
+
+        return redirect()
+            ->route('admissions.applications.show', $id)
+            ->with('application_mail_error', $result['error'] ?? 'Unable to send student portal signup email.');
     }
 
     public function shortlist(Request $request, int $id): RedirectResponse

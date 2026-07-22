@@ -45,6 +45,21 @@
                                 </tr>
                             </table>
 
+                            @if ($portalActivationUrl)
+                                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 16px;">
+                                    <tr>
+                                        <td style="border-radius:4px;background:#6cab33;">
+                                            <a href="{{ $portalActivationUrl }}" style="display:inline-block;padding:12px 20px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">
+                                                Activate student portal
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p style="margin:0 0 24px;font-size:13px;line-height:1.6;color:#494c50;">
+                                    You have been admitted. Use the button above to create your password and access your student portal with your registration details, documents, and enrolment information.
+                                </p>
+                            @endif
+
                             <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
                                 <tr>
                                     <td style="border-radius:4px;background:#1669a6;">

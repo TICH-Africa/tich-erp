@@ -191,6 +191,7 @@ class AdmissionsReviewService
         $this->logDecision($user, $applicant, 'admissions.application.approved', 'Application approved — student admitted');
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
+        app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $user->id);
         $this->mailService->sendStatusUpdate($applicant);
 
         return $applicant;

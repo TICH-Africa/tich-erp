@@ -15,6 +15,9 @@
         @can('users.access.manage')
             <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}">Users &amp; access</a>
         @endcan
+        @can('students.read')
+            <a href="{{ route('sis.students.index') }}" class="{{ request()->routeIs('sis.students.*') ? 'is-active' : '' }}">Student records (SIS)</a>
+        @endcan
         @can('audit_logs.read')
             <a href="{{ route('admin.audit-logs.index') }}">Audit logs</a>
         @endcan

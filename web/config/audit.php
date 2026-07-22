@@ -34,6 +34,13 @@ return [
         'access.denied' => ['module' => 'security', 'sensitive' => false],
         'audit.view' => ['module' => 'audit', 'sensitive' => false],
         'audit.export' => ['module' => 'audit', 'sensitive' => false],
+        'sis.student.enrolled' => ['module' => 'sis', 'sensitive' => false],
+        'sis.portal.activated' => ['module' => 'sis', 'sensitive' => false],
+        'admissions.application.confirmation_sent' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.shortlist_email_sent' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.status_email_sent' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.portal_signup_email_sent' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.staff_notified' => ['module' => 'admissions', 'sensitive' => false],
     ],
 
 ];

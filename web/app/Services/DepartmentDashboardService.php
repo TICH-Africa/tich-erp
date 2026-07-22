@@ -188,6 +188,12 @@ class DepartmentDashboardService
                 'route' => 'dashboard',
                 'coming_soon' => true,
             ],
+            'ACAD' => [
+                'permission' => 'students.read',
+                'label' => 'Student Information System',
+                'description' => '360° student biodata and enrolment records.',
+                'route' => 'sis.students.index',
+            ],
         ];
     }
 

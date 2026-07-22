@@ -148,6 +148,10 @@ class AuthService
             return route('mfa.verify');
         }
 
+        if ($user->student_id || \App\Models\Student::query()->where('user_id', $user->id)->exists()) {
+            return route('portal.dashboard');
+        }
+
         return route('dashboard');
     }
 

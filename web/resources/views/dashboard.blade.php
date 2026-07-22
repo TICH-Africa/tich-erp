@@ -47,6 +47,24 @@
                     @endunless
                 @endforelse
 
+                @if (auth()->user()->student_id || auth()->user()->student)
+                    <article class="tich-card tich-card--highlight">
+                        <p class="tich-caption">Student</p>
+                        <h3 class="tich-h3 tich-mt-2">Student portal</h3>
+                        <p class="tich-text tich-mt-2">View your enrolment profile, application history, and student services.</p>
+                        <a href="{{ route('portal.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open student portal</a>
+                    </article>
+                @endif
+
+                @can('students.read')
+                    <article class="tich-card">
+                        <p class="tich-caption">Administration</p>
+                        <h3 class="tich-h3 tich-mt-2">Student Information System</h3>
+                        <p class="tich-text tich-mt-2">360° student biodata records compiled from admissions and enrolment.</p>
+                        <a href="{{ route('sis.students.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS hub</a>
+                    </article>
+                @endcan
+
                 @can('audit_logs.read')
                     <article class="tich-card">
                         <p class="tich-caption">Security</p>

@@ -93,7 +93,8 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
             'Approved',
             $statusUrl,
             null,
-            'Congratulations — your application has been approved.'
+            'Congratulations — your application has been approved.',
+            url('/portal/activate/sample-token'),
         ),
         'Application rejected' => new \App\Mail\ApplicationStatusUpdatedMail(
             $applicant,
@@ -130,3 +131,22 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
 
     return 0;
 })->purpose('Send every automated email template for smoke testing');
+
+Artisan::command('sis:backfill-admitted', function () {
+    $service = app(\App\Services\StudentEnrollmentService::class);
+    $count = 0;
+
+    \App\Models\Applicant::query()
+        ->where('status', 'admitted')
+        ->whereDoesntHave('student')
+        ->orderBy('id')
+        ->each(function (\App\Models\Applicant $applicant) use ($service, &$count) {
+            $student = $service->enrollFromAdmittedApplicant($applicant);
+            $count++;
+            $this->line("Enrolled: {$applicant->application_number} → {$student->registration_number}");
+        });
+
+    $this->info("Created {$count} student record(s) from admitted applications.");
+
+    return 0;
+})->purpose('Create student records and portal invites for already-admitted applicants');

@@ -100,6 +100,69 @@
 
     @include('admissions.partials.document-viewer', ['applicant' => $applicant])
 
+    @if ($portalSignupEmail)
+        <article class="tich-card tich-mt-8">
+            <h2 class="tich-h3">Student portal signup email</h2>
+            <dl class="tich-mt-4" style="display: grid; grid-template-columns: 12rem 1fr; gap: 0.75rem 1rem; margin: 0;">
+                <dt class="tich-caption">Portal status</dt>
+                <dd class="tich-text" style="margin: 0;">
+                    @if ($portalSignupEmail['portal_activated'])
+                        <strong style="color: var(--tich-green);">Activated</strong>
+                        @if ($portalSignupEmail['portal_activated_at'])
+                            · {{ $portalSignupEmail['portal_activated_at']->format('d M Y H:i') }}
+                        @endif
+                    @elseif ($portalSignupEmail['invite_pending'])
+                        <strong>Pending activation</strong>
+                        @if ($portalSignupEmail['invite_expires_at'])
+                            · invite expires {{ $portalSignupEmail['invite_expires_at']->format('d M Y H:i') }}
+                        @endif
+                    @elseif ($portalSignupEmail['student_registered'])
+                        <strong>Invite expired or missing</strong>
+                    @else
+                        <strong>No student record yet</strong>
+                    @endif
+                </dd>
+
+                @if ($portalSignupEmail['registration_number'])
+                    <dt class="tich-caption">Registration no.</dt>
+                    <dd class="tich-text" style="margin: 0;">{{ $portalSignupEmail['registration_number'] }}</dd>
+                @endif
+
+                <dt class="tich-caption">Signup email</dt>
+                <dd class="tich-text" style="margin: 0;">
+                    @if ($portalSignupEmail['email_sent'])
+                        <strong style="color: var(--tich-green);">Sent</strong>
+                        @if ($portalSignupEmail['last_recipient'])
+                            to {{ $portalSignupEmail['last_recipient'] }}
+                        @endif
+                        @if ($portalSignupEmail['last_sent_at'])
+                            · {{ $portalSignupEmail['last_sent_at']->format('d M Y H:i') }}
+                        @endif
+                    @else
+                        <strong style="color: #c0392b;">Not sent</strong>
+                    @endif
+                </dd>
+            </dl>
+
+            @can('admissions.write')
+                @if ($portalSignupEmail['can_resend'])
+                    <form method="POST" action="{{ route('admissions.applications.resend-portal-signup', $applicant->id) }}" class="tich-mt-6">
+                        @csrf
+                        <p class="tich-text tich-mb-4">
+                            Resend the admission email with the student portal activation link to <strong>{{ $applicant->email }}</strong>.
+                            @if (! $portalSignupEmail['invite_pending'])
+                                A fresh activation link will be generated if the previous invite expired.
+                            @endif
+                        </p>
+                        <button type="submit" class="tich-btn tich-btn-secondary">Resend portal signup email</button>
+                    </form>
+                @elseif ($portalSignupEmail['portal_activated'])
+                    <p class="tich-caption tich-mt-6">The student has already activated their portal account. No resend is needed.</p>
+                @endif
+            @endcan
+        </article>
+    @endif
+
     @unless ($applicant->isFinalized())
         <div class="tich-grid tich-grid--3 tich-mt-8" style="align-items: start; gap: 2rem;">
             @can('admissions.write')

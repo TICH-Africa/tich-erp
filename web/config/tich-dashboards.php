@@ -36,12 +36,11 @@ return [
         ],
         [
             'key' => 'students',
-            'label' => 'Student records',
-            'description' => 'Enrolled student lifecycle and records.',
-            'route' => 'dashboard',
+            'label' => 'Student records (SIS)',
+            'description' => 'Centralized 360° student biodata and enrolment records.',
+            'route' => 'sis.students.index',
             'permission' => 'students.read',
             'category' => 'admin',
-            'coming_soon' => true,
             'scope' => 'department',
         ],
         [

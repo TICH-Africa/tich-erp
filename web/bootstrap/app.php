@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mfa.setup' => \App\Http\Middleware\EnsureMfaConfigured::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'student.portal' => \App\Http\Middleware\EnsureStudentPortalAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

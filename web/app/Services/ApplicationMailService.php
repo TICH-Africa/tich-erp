@@ -7,6 +7,8 @@ use App\Mail\ApplicationStaffReviewMail;
 use App\Mail\ApplicationStatusUpdatedMail;
 use App\Mail\ApplicationSubmittedMail;
 use App\Models\Applicant;
+use App\Models\AuditLog;
+use App\Models\Student;
 use App\Models\User;
 use App\Support\MailConfig;
 use Illuminate\Http\Request;
@@ -117,6 +119,7 @@ class ApplicationMailService
                 $this->statusCheckUrl($applicant),
                 $applicant->rejection_reason,
                 $applicant->review_notes,
+                $this->portalActivationUrlForApplicant($applicant),
             ),
             'admissions.application.status_email_sent',
             'Application status update email sent',
@@ -139,6 +142,122 @@ class ApplicationMailService
         }
 
         return ucwords(str_replace('_', ' ', $value));
+    }
+
+    public function portalActivationUrlForApplicant(Applicant $applicant): ?string
+    {
+        if ($applicant->status !== 'admitted') {
+            return null;
+        }
+
+        $student = Student::query()->where('application_id', $applicant->id)->first();
+
+        return $student?->portalActivationUrl();
+    }
+
+    /**
+     * @return array{
+     *     is_admitted: bool,
+     *     portal_activated: bool,
+     *     portal_activated_at: ?\Illuminate\Support\Carbon,
+     *     student_registered: bool,
+     *     registration_number: ?string,
+     *     invite_pending: bool,
+     *     invite_expires_at: ?\Illuminate\Support\Carbon,
+     *     email_sent: bool,
+     *     last_sent_at: ?\Illuminate\Support\Carbon,
+     *     last_recipient: ?string,
+     *     can_resend: bool
+     * }
+     */
+    public function portalSignupEmailStatus(Applicant $applicant): array
+    {
+        $student = Student::query()->where('application_id', $applicant->id)->first();
+        $portalActivated = $student !== null
+            && ($student->portal_activated_at !== null || $student->user_id !== null);
+
+        $lastSent = AuditLog::query()
+            ->where('entity_type', 'applicants')
+            ->where('entity_id', (string) $applicant->id)
+            ->where('status', 'success')
+            ->whereIn('action', [
+                'admissions.application.status_email_sent',
+                'admissions.application.portal_signup_email_sent',
+            ])
+            ->orderByDesc('created_at')
+            ->get()
+            ->first(function (AuditLog $log) {
+                if ($log->action === 'admissions.application.portal_signup_email_sent') {
+                    return true;
+                }
+
+                return ($log->new_value['status'] ?? null) === 'admitted';
+            });
+
+        $isAdmitted = $applicant->status === 'admitted';
+
+        return [
+            'is_admitted' => $isAdmitted,
+            'portal_activated' => $portalActivated,
+            'portal_activated_at' => $student?->portal_activated_at,
+            'student_registered' => $student !== null,
+            'registration_number' => $student?->registration_number,
+            'invite_pending' => $student?->hasActivePortalInvite() ?? false,
+            'invite_expires_at' => $student?->portal_invite_expires_at,
+            'email_sent' => $lastSent !== null,
+            'last_sent_at' => $lastSent?->created_at,
+            'last_recipient' => $lastSent?->new_value['recipient'] ?? null,
+            'can_resend' => $isAdmitted && ! $portalActivated,
+        ];
+    }
+
+    /**
+     * @return array{sent: bool, error: ?string}
+     */
+    public function resendPortalSignupEmail(Applicant $applicant, ?Request $request = null): array
+    {
+        if ($applicant->status !== 'admitted') {
+            return [
+                'sent' => false,
+                'error' => 'Portal signup email is only available for admitted applications.',
+            ];
+        }
+
+        $enrollmentService = app(StudentEnrollmentService::class);
+        $student = Student::query()->where('application_id', $applicant->id)->first();
+
+        if ($student === null) {
+            $student = $enrollmentService->enrollFromAdmittedApplicant(
+                $applicant,
+                $request?->user()?->id
+            );
+        } elseif ($student->portal_activated_at !== null || $student->user_id !== null) {
+            return [
+                'sent' => false,
+                'error' => 'Student portal is already activated.',
+            ];
+        } elseif (! $student->hasActivePortalInvite()) {
+            $student = $enrollmentService->refreshPortalInvite($student);
+        }
+
+        $applicant = $this->prepareApplicant($applicant);
+
+        return $this->deliverToApplicant(
+            $applicant,
+            new ApplicationStatusUpdatedMail(
+                $applicant,
+                $applicant->program?->program_name ?? 'Selected programme',
+                $this->formatStatus($applicant->status),
+                $this->formatStatus($applicant->academic_review_status),
+                $this->statusCheckUrl($applicant),
+                $applicant->rejection_reason,
+                $applicant->review_notes,
+                $student->portalActivationUrl(),
+            ),
+            'admissions.application.portal_signup_email_sent',
+            'Student portal signup email sent',
+            $request
+        );
     }
 
     public function ensureHandlingDepartment(Applicant $applicant): Applicant
