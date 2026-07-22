@@ -144,6 +144,121 @@ class DepartmentDashboardService
         return $modules;
     }
 
+    /**
+     * @return 'hub'|'academic'|'operational'|'empty'
+     */
+    public function dashboardViewType(User $user, Department $department): string
+    {
+        if ($this->accessibleChildDepartments($user, $department)->isNotEmpty()) {
+            return 'hub';
+        }
+
+        if ($this->modulesForDepartment($user, $department) !== []) {
+            return $department->dept_category === 'academic' ? 'academic' : 'operational';
+        }
+
+        return 'empty';
+    }
+
+    public function resolveSection(\Illuminate\Http\Request $request, User $user, Department $department): string
+    {
+        $section = $request->string('section')->toString() ?: 'overview';
+
+        if ($section === 'departments') {
+            if ($this->accessibleChildDepartments($user, $department)->isEmpty()) {
+                return 'overview';
+            }
+
+            return 'departments';
+        }
+
+        return 'overview';
+    }
+
+    /**
+     * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, coming_soon?: bool}>
+     */
+    public function sidebarNavigation(User $user, Department $department): array
+    {
+        $items = [
+            [
+                'type' => 'link',
+                'label' => 'Overview',
+                'route' => 'departments.show',
+                'params' => ['department' => $department->id],
+                'section' => 'overview',
+            ],
+        ];
+
+        $children = $this->accessibleChildDepartments($user, $department);
+
+        if ($children->isNotEmpty()) {
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Departments',
+                'route' => 'departments.show',
+                'params' => ['department' => $department->id, 'section' => 'departments'],
+                'section' => 'departments',
+            ];
+        }
+
+        $modules = $this->modulesForDepartment($user, $department);
+
+        if ($modules !== []) {
+            $items[] = ['type' => 'heading', 'label' => 'Tools'];
+
+            foreach ($modules as $module) {
+                $items[] = [
+                    'type' => 'link',
+                    'label' => $module['label'],
+                    'route' => $module['route'],
+                    'params' => $module['params'] ?? [],
+                    'coming_soon' => $module['coming_soon'] ?? false,
+                ];
+            }
+        }
+
+        if ($department->parent_dept_id) {
+            $parent = Department::query()->find($department->parent_dept_id);
+
+            if ($parent && $this->userCanAccessDepartment($user, $parent)) {
+                $items[] = ['type' => 'heading', 'label' => 'Navigation'];
+                $items[] = [
+                    'type' => 'link',
+                    'label' => $parent->dept_name,
+                    'route' => 'departments.show',
+                    'params' => ['department' => $parent->id],
+                ];
+            }
+        }
+
+        $items[] = ['type' => 'heading', 'label' => 'Account'];
+        $items[] = [
+            'type' => 'link',
+            'label' => 'Main dashboard',
+            'route' => 'dashboard',
+            'params' => [],
+        ];
+
+        return $items;
+    }
+
+    /**
+     * @return array<string, int|string|null>
+     */
+    public function overviewStats(User $user, Department $department): array
+    {
+        $children = $this->accessibleChildDepartments($user, $department);
+        $modules = $this->modulesForDepartment($user, $department);
+
+        return [
+            'child_count' => $children->count(),
+            'tool_count' => count($modules),
+            'category' => $this->categoryLabel($department),
+            'view_type' => $this->dashboardViewType($user, $department),
+        ];
+    }
+
     public function cardDescription(Department $department): string
     {
         if ($department->isAcademicsHub()) {

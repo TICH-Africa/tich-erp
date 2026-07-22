@@ -22,10 +22,16 @@ class DepartmentDashboardController extends Controller
             abort(403, 'You do not have access to this department.');
         }
 
+        $section = $departmentDashboard->resolveSection($request, $user, $department);
+
         return view('departments.show', [
             'department' => $department->load(['group', 'campus']),
+            'section' => $section,
             'childDepartments' => $departmentDashboard->accessibleChildDepartments($user, $department),
             'modules' => $departmentDashboard->modulesForDepartment($user, $department),
+            'sidebarNavigation' => $departmentDashboard->sidebarNavigation($user, $department),
+            'dashboardViewType' => $departmentDashboard->dashboardViewType($user, $department),
+            'overviewStats' => $departmentDashboard->overviewStats($user, $department),
             'categoryLabel' => fn (Department $dept) => $departmentDashboard->categoryLabel($dept),
             'cardDescription' => fn (Department $dept) => $departmentDashboard->cardDescription(
                 $dept->loadCount(['children' => fn ($query) => $query->where('is_active', true)])
