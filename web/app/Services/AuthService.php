@@ -148,11 +148,25 @@ class AuthService
             return route('mfa.verify');
         }
 
-        if ($user->student_id || \App\Models\Student::query()->where('user_id', $user->id)->exists()) {
+        return $this->authenticatedHome($user);
+    }
+
+    public function authenticatedHome(User $user): string
+    {
+        if ($this->isEnrolledStudent($user)) {
             return route('portal.dashboard');
         }
 
         return route('dashboard');
+    }
+
+    public function isEnrolledStudent(User $user): bool
+    {
+        if ($user->student_id) {
+            return true;
+        }
+
+        return \App\Models\Student::query()->where('user_id', $user->id)->exists();
     }
 
     public function markMfaVerified(Request $request, User $user): void

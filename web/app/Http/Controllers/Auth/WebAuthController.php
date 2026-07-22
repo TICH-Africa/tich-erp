@@ -71,7 +71,7 @@ class WebAuthController extends Controller
         }
 
         return redirect()
-            ->route('dashboard')
+            ->to($this->authService->authenticatedHome($user))
             ->with('status', 'Your account has been created successfully.');
     }
 
@@ -115,7 +115,7 @@ class WebAuthController extends Controller
         $user = Auth::user();
 
         if ($user->mfa_enabled && $this->authService->isMfaSessionValid($request, $user)) {
-            return redirect()->route('dashboard');
+            return redirect()->to($this->authService->authenticatedHome($user));
         }
 
         return view('auth.mfa-setup', [
@@ -164,7 +164,9 @@ class WebAuthController extends Controller
             $this->mfaService->enableMFA($user, 'email', null, null, $request);
             $this->authService->markMfaVerified($request, $user);
 
-            return redirect()->route('dashboard')->with('status', 'Email MFA is now active on your account.');
+            return redirect()
+                ->to($this->authService->authenticatedHome($user))
+                ->with('status', 'Email MFA is now active on your account.');
         }
 
         if (empty($validated['code'])) {
@@ -191,7 +193,7 @@ class WebAuthController extends Controller
         $this->authService->markMfaVerified($request, $user);
 
         return redirect()
-            ->route('dashboard')
+            ->to($this->authService->authenticatedHome($user))
             ->with('status', 'Authenticator MFA enabled. Save your backup codes: '.implode(', ', $backupCodes));
     }
 
@@ -208,7 +210,7 @@ class WebAuthController extends Controller
         }
 
         if ($this->authService->isMfaSessionValid($request, $user)) {
-            return redirect()->route('dashboard');
+            return redirect()->to($this->authService->authenticatedHome($user));
         }
 
         if ($user->mfa_method === 'email') {
@@ -242,7 +244,7 @@ class WebAuthController extends Controller
 
         $this->authService->markMfaVerified($request, $user);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended($this->authService->authenticatedHome($user));
     }
 
     public function resendMfaCode(Request $request): RedirectResponse
