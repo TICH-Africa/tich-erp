@@ -214,7 +214,7 @@ class ApplicationMailService
      */
     private function deliverToApplicant(
         Applicant $applicant,
-        ApplicationSubmittedMail|ApplicationStatusUpdatedMail $mailable,
+        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationShortlistedMail $mailable,
         string $auditAction,
         string $auditDescription,
         ?Request $request = null,

@@ -138,7 +138,7 @@ class WebAuthController extends Controller
 
                 if (! $delivery['sent'] && ! config('app.debug')) {
                     return back()->withErrors([
-                        'code' => 'Verification email could not be sent. Ask an administrator to configure Gmail App Password in MAIL_PASSWORD.',
+                        'code' => 'Verification email could not be sent. Check MAIL_* settings in .env and run php artisan config:clear.',
                     ]);
                 }
 
