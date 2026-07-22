@@ -1,0 +1,349 @@
+TICH ERP PLATFORM
+DATABASE BLUEPRINT
+MySQL Entity-Relationship Schemas for Core Web Modules
+Administration  ·  Academics  ·  Finance & Fees  ·  Human Resources
+Document Version:  1.0
+Date:  July 2026
+Institution:  Tropical Institute of Community Health and Development (TICH) in Africa
+Prepared By:  Evans Osumba & Vincent Ouma
+Database Engine:  MySQL 8.x  |  Character Set: utf8mb4  |  Collation: utf8mb4_unicode_ci
+1. Document Overview & Design Conventions
+This document defines the highly relational MySQL database schema for the four core modules of the TICH Enterprise Resource Planning (ERP) Platform: Administration, Academics, Finance & Fees, and Human Resources. Each module schema is presented as a set of normalised entity definitions, primary/foreign key relationships, index strategies, and business-rule constraints drawn directly from the verified system requirements.
+1.1 Design Principles
+Third Normal Form (3NF): All tables are in 3NF; lookup tables separate repeating data.
+Entity Integrity: Every table has a surrogate primary key (id) plus natural keys where required.
+Referential Integrity: Foreign keys enforce ON DELETE RESTRICT or SET NULL as appropriate.
+Audit Trail: All mutable tables carry created_at, updated_at, and created_by.
+Soft Deletes: is_active flag used for entities where hard delete is prohibited (regulatory requirement).
+Code-First Enums: Low-cardinality status fields stored as VARCHAR with check constraints; no database ENUM type.
+UUIDs for External Keys: Public-facing IDs (student reg numbers, invoice codes) stored as VARCHAR(50) with application-generated format.
+1.2 Data Types Summary
+1.3 Index Naming
+Indexes follow the convention:  idx_<table>_<column(s)>
+2. Shared Infrastructure: Core Reference Tables
+All four modules reference these tables. They are created first and never deleted.
+2.x  CAMPUSES
+Hierarchical location registry — central campus, community colleges, and sub-county hubs.
+2.x  DEPARTMENTS
+Institutional departments (academic and administrative).
+2.x  ACADEMIC_PROGRAMS
+Program registry — courses, certificates, diplomas offered across departments.
+2.x  UNITS
+Individual course units/modules per program.
+2.x  ACADEMIC_YEARS
+Academic year registry.
+2.x  SEMESTERS
+Trimester/semester configuration.
+2.x  NURSING_BLOCKS
+Clinical block registry for the Nursing program.
+2.x  USERS
+Unified authentication and RBAC (staff and students share this table).
+2.x  ROLES
+Role definitions for RBAC.
+2.x  USER_ROLES
+User-role assignments with optional scope.
+2.x  AUDIT_LOGS
+Immutable audit trail for all significant system events.
+2.x  COMMUNICATION_LOGS
+Email/SMS/WhatsApp/push notification dispatch log.
+3. Module A — Administration
+Budgeting · Admissions · Compliance · SACCO · 
+Key entities: applicants · students · admission_letters · sacco_members · sacco_loans · sacco_savings · boarding_ledger · medical_records · disciplinary_records · rpl_applications · cafeteria_memberships
+3.x  APPLICANTS
+Student applicant registry. Status flow: submitted → academic_review → fee_pending → paid → admitted | rejected.
+3.x  STUDENTS
+Central student record — created when an application is admitted.
+3.x  ADMISSION_LETTERS
+Issued admission letters with tracking.
+3.x  APPLICATION_DOCUMENTS
+Uploaded documents for applicant verification.
+3.x  STUDENT_ADDRESSES
+Student address records (permanent, postal, guardian).
+3.x  STUDENT_NEXT_OF_KIN
+Emergency contact / next of kin for each student.
+3.x  MEDICAL_RECORDS
+Student health information.
+3.x  DISCIPLINARY_RECORDS
+Student disciplinary cases.
+3.x  RPL_APPLICATIONS
+Recognition of Prior Learning — non-standard entry pathway.
+3.x  SACCO_MEMBERS
+TICH SACCO membership registry.
+3.x  SACCO_SAVINGS
+Individual savings transactions.
+3.x  SACCO_LOANS
+SACCO loan accounts.
+3.x  SACCO_LOAN_REPAYMENTS
+Loan installment schedule and payments.
+3.x  CAFETERIA_STAFF_MEMBERSHIPS
+SACCO cafeteria staff membership.
+4. Module B — Academics
+Curriculum · Attendance · Continuous Assessment · Examinations · Clinical Blocks
+Key entities: program_units · unit_allocations · lesson_plans · attendance_sessions · attendance_records · student_semester_registrations · cat_scores · exam_eligibility_matrix · exam_cards · exam_schedules · exam_results · nursing_block_progress · competency_checklists · competency_assessments · timetable_entries · grade_records
+4.x  PROGRAM_UNITS
+M:N join — which units belong to which program.
+4.x  UNIT_ALLOCATIONS
+Assigns a tutor to a unit in a given semester.
+4.x  LESSON_PLANS
+Weekly lesson plan preparation and HOD approval workflow.
+4.x  LESSON_PLAN_APPROVALS
+Approval chain for lesson plans.
+4.x  ATTENDANCE_SESSIONS
+Individual class sessions for which attendance is recorded.
+4.x  ATTENDANCE_RECORDS
+One row per student per session. Tutor confirms digital match.
+4.x  ATTENDANCE_SUMMARIES
+Pre-computed cumulative attendance per student per unit.
+4.x  STUDENT_SEMESTER_REGISTRATIONS
+Tracks which students are registered for which semester.
+4.x  REGISTERED_UNITS
+Individual unit registrations within a semester registration.
+4.x  DEFERRAL_REQUESTS
+Student deferral (pause) applications.
+4.x  WAITLIST_ENTRIES
+Applicant waitlist for full cohorts.
+4.x  CAT_SCORES
+Continuous Assessment scores per student per unit per semester.
+4.x  EXAM_ELIGIBILITY_MATRIX
+Pre-computed eligibility checks before exam card generation.
+4.x  EXAM_CARDS
+Official digital examination cards.
+4.x  EXAM_SCHEDULES
+Examination timetable and invigilation assignments.
+4.x  EXAM_RESULTS
+Raw final exam scores with weighted totals and grading.
+4.x  SUPPLEMENTARY_REQUESTS
+Supplementary exam applications linked to fee payment.
+4.x  SPECIAL_EXAM_REQUESTS
+Special examination requests for documented extenuating circumstances.
+4.x  REMARK_REQUESTS
+Remark (recheck) applications for contested results.
+4.x  GRADE_RECORDS
+Official cumulative academic record — master transcript source.
+4.x  EXAMINATION_PAPERS
+Exam paper draft, moderation, and encrypted final versions.
+4.x  NURSING_BLOCK_PROGRESS
+Clinical block progression tracking for nursing students.
+4.x  COMPETENCY_CHECKLISTS
+NITA/CDACC competency tracking for vocational students.
+4.x  COMPETENCY_ASSESSMENTS
+Individual competency assessment outcomes.
+4.x  TIMETABLE_ENTRIES
+Master timetable — one entry per scheduled class slot.
+5. Module C — Finance & Fees
+Student Accounts · General Ledger · Procurement · Donor Projects
+Key entities: fee_structures · student_accounts · invoices · payments · account_ledger · chart_of_accounts · work_study_ledger · payroll_items · accounts_payable · suppliers · procurement_requisitions · purchase_orders · goods_received_notes · three_way_matches · donor_projects · donor_disbursements · assets · asset_assignments · inventory_items · inventory_transactions
+5.x  FEE_STRUCTURES
+Base fee configuration per program per semester per academic year.
+5.x  STUDENT_ACCOUNTS
+Master financial account per student per academic year.
+5.x  INVOICES
+Student billing invoices with payment tracking.
+5.x  PAYMENTS
+All student and institutional payment transactions.
+5.x  ACCOUNT_LEDGER
+Double-entry bookkeeping — all financial transactions.
+5.x  CHART_OF_ACCOUNTS
+Master chart of accounts.
+5.x  WORK_STUDY_LEDGER
+Student work-study hours and tuition offset calculations.
+5.x  PAYROLL_ITEMS
+Monthly payroll records per employee (links to HR module).
+5.x  STATUTORY_DEDUCTIONS
+PAYE, NSSF, SHA, AHL, pension deductions per payroll run.
+5.x  BANK_TRANSACTIONS
+Imported bank feed transactions for reconciliation.
+5.x  ACCOUNTS_PAYABLE
+Supplier invoice tracking — procurement-to-pay pipeline.
+5.x  SUPPLIERS
+Approved supplier/vendor registry.
+5.x  PROCUREMENT_REQUISITIONS
+Department requisition initiation and multi-tier approval.
+5.x  PURCHASE_ORDERS
+Issued purchase orders to approved suppliers.
+5.x  GOODS_RECEIVED_NOTES
+Goods received verification against purchase orders.
+5.x  THREE_WAY_MATCHES
+Three-way match verification: PO vs. Goods Received vs. Invoice.
+5.x  DONOR_PROJECTS
+Donor-funded project tracking with multi-currency support.
+5.x  DONOR_DISBURSEMENTS
+Individual donor disbursement receipts.
+5.x  ASSETS
+Institutional fixed asset registry with depreciation tracking.
+5.x  ASSET_ASSIGNMENTS
+Asset assignment tracking to staff, departments, or students.
+5.x  INVENTORY_ITEMS
+Stock item catalogue with reorder thresholds.
+5.x  INVENTORY_TRANSACTIONS
+Stock movement log (purchases, issues, adjustments, stock takes).
+6. Module D — Human Resources
+Staff Lifecycle · Recruitment · Leave · Attendance · Performance · Disciplinary
+Key entities: staff · staff_contracts · leave_types · leave_balances · leave_requests · staff_attendance · staff_attendance_summary · performance_reviews · staff_disciplinary_cases · staff_qualifications · staff_professional_licenses · professional_development · job_vacancies · recruitment_applications · pension_schemes · policy_acknowledgements
+6.x  STAFF
+Core employee record — full employment lifecycle.
+6.x  STAFF_BANK_ACCOUNTS
+Staff bank account details for payroll disbursement.
+6.x  STAFF_CONTRACTS
+Contract lifecycle with probation tracking and renewal alerts.
+6.x  LEAVE_TYPES
+Leave type configuration (annual, sick, maternity, paternity, compassionate).
+6.x  LEAVE_BALANCES
+Running leave entitlement and usage per staff per year.
+6.x  LEAVE_REQUESTS
+Staff leave applications with multi-level approval.
+6.x  STAFF_ATTENDANCE
+Daily clock-in/out records for all staff.
+6.x  STAFF_ATTENDANCE_SUMMARY
+Monthly attendance summary per staff member.
+6.x  PERFORMANCE_REVIEWS
+Annual/bi-annual staff performance reviews with KPI scoring.
+6.x  STAFF_DISCIPLINARY_CASES
+Staff disciplinary and grievance tracking.
+6.x  STAFF_QUALIFICATIONS
+Academic and professional qualifications on staff record.
+6.x  STAFF_PROFESSIONAL_LICENSES
+Professional operational licenses with expiry alerts.
+6.x  PROFESSIONAL_DEVELOPMENT
+Staff CPD, training, workshops, and conference records.
+6.x  JOB_VACANCIES
+Vacancy registry with publishing and closure tracking.
+6.x  RECRUITMENT_APPLICATIONS
+Job application pipeline with shortlisting and onboarding.
+6.x  PENSION_SCHEMES
+Pension and retirement scheme registry.
+6.x  POLICY_ACKNOWLEDGEMENTS
+Tracks staff digital sign-off on institutional policies.
+7. Module 7 — About Us & Institutional Content
+Institutional narrative, history timeline, and partner management
+Key entities: about_content_blocks · institutional_timeline_events · partner_logos · media_attachments
+7.x  ABOUT_CONTENT_BLOCKS
+CMS-managed narrative sections on the public About Us page.
+7.x  INSTITUTIONAL_TIMELINE_EVENTS
+Historical milestones for the interactive About Us timeline.
+7.x  PARTNER_LOGOS
+Institutional partner and regulatory body logos on the website.
+7.x  MEDIA_ATTACHMENTS
+Shared polymorphic file store linking media to any entity.
+8. Module 8 — Research Portal
+Research focus areas · Projects · Publications · Partnership requests
+Key entities: research_focus_areas · research_projects · research_publications · partnership_requests
+7.x  RESEARCH_FOCUS_AREAS
+Thematic research areas displayed as filter tabs on the portal.
+7.x  RESEARCH_PROJECTS
+Active and completed community health research projects.
+7.x  RESEARCH_PUBLICATIONS
+ downloadable publications, policy briefs, and toolkits.
+7.x  PARTNERSHIP_REQUESTS
+Inbound collaboration requests from NGOs, county govts, and institutions.
+9. Module 9 — News, Events & Blog
+Institutional blog · Events calendar · Gallery albums
+Key entities: blog_posts · blog_post_revisions · blog_categories · blog_post_categories · gallery_albums · gallery_images · events
+7.x  BLOG_POSTS
+Faculty/researcher blog articles with WYSIWYG content and SEO metadata.
+7.x  BLOG_POST_REVISIONS
+Full content snapshots at each save — supports content audit trail.
+7.x  BLOG_CATEGORIES
+Organisational categories for blog posts.
+7.x  BLOG_POST_CATEGORIES
+M:N join — blog post to category assignment.
+7.x  GALLERY_ALBUMS
+Organised photo albums for events and activities.
+7.x  GALLERY_IMAGES
+Individual photos within a gallery album.
+7.x  EVENTS
+Institutional calendar events — graduations, drives, conferences, open days.
+10. Module 10 — Notifications, Communications & AI Chatbot
+Template-driven notifications · Multi-channel dispatch · AI chatbot sessions
+Key entities: notification_templates · notifications · device_tokens · sms_gateway_logs · email_gateway_logs · chatbot_conversations · chatbot_messages
+7.x  NOTIFICATION_TEMPLATES
+Reusable notification templates per event type, with placeholder support.
+7.x  NOTIFICATIONS
+Individual notification instances delivered to a user.
+7.x  DEVICE_TOKENS
+Push notification tokens per user per mobile device.
+7.x  SMS_GATEWAY_LOGS
+SMS delivery audit trail per provider transaction.
+7.x  EMAIL_GATEWAY_LOGS
+Email delivery audit trail with bounce/complaint tracking.
+7.x  CHATBOT_CONVERSATIONS
+AI chatbot session management with language and intent tracking.
+7.x  CHATBOT_MESSAGES
+Individual messages within a chatbot conversation.
+11. Module 11 — Quality Assurance
+QA plans · Departmental audits · Compliance scores · Corrective actions
+Key entities: qa_plans · qa_audit_checklists · qa_department_submissions · qa_corrective_actions · qa_compliance_scores · qa_evidence_attachments
+7.x  QA_PLANS
+Quality assurance deployment plan per department scope and period.
+7.x  QA_AUDIT_CHECKLISTS
+Standardised checklist items with weights per QA plan.
+7.x  QA_DEPARTMENT_SUBMISSIONS
+Per-department submission against a checklist item.
+7.x  QA_CORRECTIVE_ACTIONS
+Quality corrective action flags when compliance falls below threshold.
+7.x  QA_COMPLIANCE_SCORES
+Rolling computed compliance score per department per QA plan.
+7.x  QA_EVIDENCE_ATTACHMENTS
+Generic evidence file linker for any QA submission or corrective action.
+12. Module 12 — Support / Donations (TICH Fund)
+Donation campaigns · Individual donations with payment tracking
+Key entities: donation_campaigns · donations
+7.x  DONATION_CAMPAIGNS
+Public fundraising campaign with progress tracking.
+7.x  DONATIONS
+Individual donation records from public and institutional donors.
+13. Module 13 — Newsletter & Footer
+Subscriber management · On-platform email campaigns
+Key entities: newsletter_subscribers · newsletter_campaigns
+7.x  NEWSLETTER_SUBSCRIBERS
+Newsletter subscription with GDPR-compliant unsubscribe tokens.
+7.x  NEWSLETTER_CAMPAIGNS
+On-platform email campaign sending and tracking.
+7.x  NEWSLETTER_CAMPAIGN_RECIPIENTS
+Individual delivery record per campaign per subscriber.
+14. Module 14 — FAQs & Testimonials
+Self-service knowledge base · Alumni and student testimonials
+Key entities: faqs · testimonials
+7.x  FAQS
+Institution-wide knowledge base with category and display ordering.
+7.x  TESTIMONIALS
+Featured quotes from alumni, students, and staff on the website.
+15. Module 15 — Site Settings & Branding
+Key-value settings · Social links · Navigation menus · Contact channels
+Key entities: site_settings · social_links · navigation_menus · navigation_menu_items · contact_channels
+7.x  SITE_SETTINGS
+Key-value store for all site-wide branding and configuration.
+7.x  SOCIAL_LINKS
+Institutional social media channel configuration.
+7.x  NAVIGATION_MENUS
+Named navigation menus (header, footer, quick links).
+7.x  NAVIGATION_MENU_ITEMS
+Individual menu items with optional nesting.
+7.x  CONTACT_CHANNELS
+Institutional contact information with department scope.
+16. Cross-Module Integration Map 
+Updated integration map including new modules. Cross-module data flows between Academics, Finance, HR, Admin, and the newly added modules are listed below.
+17. Naming Conventions & Standards
+17.1 Table Naming
+Plural noun, snake_case: students, sacco_loans, staff_attendance
+Junction/associative tables: <table1>_<table2> → registered_units
+Avoid MySQL reserved words: use academic_rank, order_status instead of rank, order
+Maximum 64 characters — keep names concise
+17.2 Column Naming
+snake_case throughout: registration_number, outstanding_balance
+Surrogate PK always id: BIGINT UNSIGNED PK AUTO_INCREMENT
+Foreign keys: <referenced_table>_id → student_id, staff_id, unit_id
+Booleans: is_ prefix → is_active, is_cleared, is_published
+Dates: _date suffix → admission_date, due_date, incident_date
+Timestamps: _at suffix → created_at, updated_at, approved_at
+References: _ref suffix → payment_reference, transaction_reference
+Amounts: no prefix, stored as DECIMAL → amount, balance, outstanding_balance
+17.3 General Rules
+All monetary columns: DECIMAL(12,2) for KES; DECIMAL(14,2) for donor/project amounts
+All dates: DATE; all timestamps: DATETIME
+JSON fields used for truly dynamic, schema-less data only
+No ENUM type in MySQL — use VARCHAR with application-enforced check constraints
+Audit columns (created_at, updated_at, created_by) on all mutable tables
+is_active TINYINT(1) DEFAULT 1 for all entities with soft-delete requirements
+UNIQUE constraints enforced at DB level for all natural keys
+All FK columns indexed for join performance

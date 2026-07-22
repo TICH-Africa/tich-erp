@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application received</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f6f6;font-family:Georgia,serif;color:#494c50;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f6f6;padding:32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-top:4px solid #6cab33;border-bottom:3px solid #1669a6;">
+                    <tr>
+                        <td style="padding:32px 28px;">
+                            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#1669a6;">
+                                TICH in Africa
+                            </p>
+                            <h1 style="margin:0 0 16px;font-size:24px;line-height:1.3;color:#6cab33;">
+                                Application received
+                            </h1>
+                            <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
+                                Dear {{ trim($applicant->first_name.' '.$applicant->surname) }},
+                                thank you for applying to <strong>{{ $programName }}</strong>. We have received your application and it is now queued for review by the relevant academic department.
+                            </p>
+
+                            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#1669a6;">
+                                Application number
+                            </p>
+                            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:0.08em;color:#494c50;">
+                                {{ $applicant->application_number }}
+                            </p>
+
+                            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#1669a6;">
+                                Current status
+                            </p>
+                            <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
+                                {{ ucwords(str_replace('_', ' ', $applicant->status)) }}
+                                @if ($applicant->academic_review_status)
+                                    · Academic review: {{ ucwords(str_replace('_', ' ', $applicant->academic_review_status)) }}
+                                @endif
+                            </p>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
+                                <tr>
+                                    <td style="border-radius:4px;background:#1669a6;">
+                                        <a href="{{ $statusUrl }}" style="display:inline-block;padding:12px 20px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">
+                                            Check application status
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0;font-size:13px;line-height:1.6;color:#494c50;">
+                                Keep your application number safe. You will need it together with this email address (<strong>{{ $applicant->email }}</strong>) to verify your application status online.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 28px;background:#f5f6f6;border-top:1px solid #e2e4e5;font-family:Arial,sans-serif;font-size:11px;color:#6b6e72;">
+                            Tropical Institute of Community Health and Development in Africa
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
