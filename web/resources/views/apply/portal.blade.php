@@ -24,7 +24,7 @@
                         <button type="submit" name="action" value="back" class="tich-btn tich-btn-secondary">Back</button>
                     @endif
 
-                    @if ($step < 5)
+                    @if ($step < 7)
                         <button type="submit" name="action" value="next" class="tich-btn tich-btn-primary">Save &amp; continue</button>
                     @else
                         <button type="submit" name="action" value="submit" class="tich-btn tich-btn-primary">Submit application</button>

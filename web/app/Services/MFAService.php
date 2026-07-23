@@ -275,6 +275,10 @@ class MFAService
 
     public function isMFARequired(User $user): bool
     {
+        if ($user->mfa_verified) {
+            return false;
+        }
+
         $mandatoryTypes = config('tich.auth.mandatory_mfa_user_types', ['staff', 'student', 'admin', 'external']);
 
         return in_array($user->user_type, $mandatoryTypes, true);

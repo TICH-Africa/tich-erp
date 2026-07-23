@@ -32,14 +32,14 @@ class ApplicationController extends Controller
             }
         }
 
-        $step = max(1, min(5, (int) $request->query('step', $this->applicationService->currentStep())));
+        $step = max(1, min(7, (int) $request->query('step', $this->applicationService->currentStep())));
 
         return view('apply.portal', $this->portalPayload($step));
     }
 
     public function handleStep(Request $request, int $step): RedirectResponse
     {
-        $step = max(1, min(5, $step));
+        $step = max(1, min(7, $step));
 
         if ($request->input('action') === 'back') {
             $previous = max(1, $step - 1);
@@ -48,8 +48,8 @@ class ApplicationController extends Controller
             return redirect()->route('apply.index', ['step' => $previous]);
         }
 
-        if ($step === 5 && $request->input('action') === 'submit') {
-            $this->applicationService->validateStep($request, 5);
+        if ($step === 7 && $request->input('action') === 'submit') {
+            $this->applicationService->validateStep($request, 7);
             $applicant = $this->applicationService->submit($request);
 
             return redirect()
@@ -60,7 +60,7 @@ class ApplicationController extends Controller
         $validated = $this->applicationService->validateStep($request, $step);
         $this->applicationService->saveDraft($validated, $step);
 
-        $next = min(5, $step + 1);
+        $next = min(7, $step + 1);
         $this->applicationService->setStep($next);
 
         return redirect()->route('apply.index', ['step' => $next]);
@@ -125,7 +125,9 @@ class ApplicationController extends Controller
             'entryQualifications' => config('tich-application.entry_qualifications', []),
             'documentTypes' => config('tich-application.document_types', []),
             'counties' => config('tich-application.counties', []),
-            'review' => $step === 5 ? $this->applicationService->reviewSummary() : null,
+            'sponsorshipOptions' => config('tich-application.sponsorship_options', []),
+            'relationshipOptions' => config('tich-application.next_of_kin_relationships', []),
+            'review' => $step === 7 ? $this->applicationService->reviewSummary() : null,
         ];
     }
 }

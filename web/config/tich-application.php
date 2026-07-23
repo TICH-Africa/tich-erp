@@ -8,8 +8,10 @@ return [
         1 => ['key' => 'program', 'label' => 'Programme'],
         2 => ['key' => 'personal', 'label' => 'Personal details'],
         3 => ['key' => 'academic', 'label' => 'Qualifications'],
-        4 => ['key' => 'documents', 'label' => 'Documents'],
-        5 => ['key' => 'review', 'label' => 'Review & submit'],
+        4 => ['key' => 'sponsorship', 'label' => 'Sponsorship'],
+        5 => ['key' => 'documents', 'label' => 'Documents'],
+        6 => ['key' => 'next_of_kin', 'label' => 'Next of kin'],
+        7 => ['key' => 'review', 'label' => 'Review & submit'],
     ],
 
     'entry_qualifications' => [
@@ -20,9 +22,25 @@ return [
         'rpl' => 'Recognition of Prior Learning (RPL)',
     ],
 
+    'sponsorship_options' => [
+        'self' => 'Self-sponsored',
+        'parent' => 'Parent / Guardian',
+        'organization' => 'Organization / Sponsor',
+    ],
+
+    'next_of_kin_relationships' => [
+        'parent' => 'Parent',
+        'guardian' => 'Guardian',
+        'sibling' => 'Sibling',
+        'spouse' => 'Spouse',
+        'relative' => 'Relative',
+        'friend' => 'Friend',
+    ],
+
     'document_types' => [
         'id_copy' => 'National ID or passport copy',
         'kcse_slip' => 'KCSE result slip / certificate',
+        'kcse_school_leaving' => 'KCSE school leaving certificate',
         'passport_photo' => 'Passport-size photo',
     ],
 

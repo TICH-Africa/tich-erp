@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
-                'username' => 'superadmin',
+                'username' => 'admin2',
                 'email' => 'osumbaevans21@gmail.com',
                 'user_type' => 'admin',
                 'password' => 'Password123!',
@@ -46,8 +46,9 @@ class DatabaseSeeder extends Seeder
                 'user_type' => 'staff',
                 'password' => 'Password123!',
                 'role' => 'Academic Registrar',
-                'mfa_enabled' => true,
-                'mfa_method' => 'auth_app',
+                'mfa_enabled' => false,
+                'mfa_method' => null,
+                'mfa_verified' => true,
             ],
             [
                 'username' => 'admissions',
@@ -77,8 +78,9 @@ class DatabaseSeeder extends Seeder
                     'user_type' => $data['user_type'],
                     'password_hash' => Hash::make($data['password']),
                     'is_active' => 1,
-                    'mfa_enabled' => $data['mfa_enabled'],
-                    'mfa_method' => $data['mfa_method'],
+                    'mfa_enabled' => $data['mfa_enabled'] ?? false,
+                    'mfa_method' => $data['mfa_method'] ?? null,
+                    'mfa_verified' => $data['mfa_verified'] ?? false,
                 ]
             );
 

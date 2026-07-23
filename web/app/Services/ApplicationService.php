@@ -58,8 +58,10 @@ class ApplicationService
             1 => $this->validateProgramStep($request),
             2 => $this->validatePersonalStep($request),
             3 => $this->validateAcademicStep($request),
-            4 => $this->validateDocumentsStep($request),
-            5 => $this->validateReviewStep($request),
+            4 => $this->validateSponsorshipStep($request),
+            5 => $this->validateDocumentsStep($request),
+            6 => $this->validateNextOfKinStep($request),
+            7 => $this->validateReviewStep($request),
             default => throw ValidationException::withMessages(['step' => 'Invalid application step.']),
         };
     }
@@ -198,6 +200,16 @@ class ApplicationService
         ])->validate();
     }
 
+    private function validateSponsorshipStep(Request $request): array
+    {
+        return Validator::make($request->all(), [
+            'sponsorship_type' => ['required', 'in:'.implode(',', array_keys(config('tich-application.sponsorship_options', [])))],
+            'sponsor_organization' => ['nullable', 'string', 'max:200'],
+            'sponsor_address' => ['nullable', 'string', 'max:500'],
+            'sponsor_phone' => ['nullable', 'string', 'max:30'],
+        ])->validate();
+    }
+
     private function validateDocumentsStep(Request $request): array
     {
         $rules = [];
@@ -231,6 +243,16 @@ class ApplicationService
         ])->validate();
 
         return [];
+    }
+
+    private function validateNextOfKinStep(Request $request): array
+    {
+        return Validator::make($request->all(), [
+            'next_of_kin_name' => ['required', 'string', 'max:200'],
+            'next_of_kin_relationship' => ['required', 'in:'.implode(',', array_keys(config('tich-application.next_of_kin_relationships', [])))],
+            'next_of_kin_address' => ['nullable', 'string', 'max:500'],
+            'next_of_kin_phone' => ['required', 'string', 'max:30'],
+        ])->validate();
     }
 
     private function persistUploadedDocuments(Applicant $applicant, array $documents, Request $request): void
@@ -284,6 +306,14 @@ class ApplicationService
             'phone_number' => $data['phone_number'],
             'home_county' => $data['home_county'] ?? null,
             'entry_qualification' => $data['entry_qualification'],
+            'sponsorship_type' => $data['sponsorship_type'] ?? null,
+            'sponsor_organization' => $data['sponsor_organization'] ?? null,
+            'sponsor_address' => $data['sponsor_address'] ?? null,
+            'sponsor_phone' => $data['sponsor_phone'] ?? null,
+            'next_of_kin_name' => $data['next_of_kin_name'] ?? null,
+            'next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
+            'next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
+            'next_of_kin_address' => $data['next_of_kin_address'] ?? null,
             'status' => 'submitted',
             'academic_review_status' => 'pending',
             'application_source' => 'online',
