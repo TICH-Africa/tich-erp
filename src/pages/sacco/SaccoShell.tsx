@@ -7,7 +7,7 @@ import {
   Search, Plus, ChevronRight, CheckCircle,
   Clock, BarChart3, DollarSign,
   Users, TrendingUp, Wallet,
-  Bell, ChevronDown
+  Bell, ChevronDown, Menu
 } from 'lucide-react'
 
 interface Props {
@@ -21,6 +21,7 @@ export default function SaccoShell({ user, onLogout }: Props) {
   const [activeSubPage, setActiveSubPage] = useState<SaccoSubPage>('overview')
   const [notifOpen, setNotifOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const subNavItems: { label: string; page: SaccoSubPage; icon: React.ReactNode }[] = [
     { label: 'Overview', page: 'overview', icon: <BarChart3 size={15} /> },
@@ -31,7 +32,11 @@ export default function SaccoShell({ user, onLogout }: Props) {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+      {/* Mobile backdrop */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setMobileNavOpen(false)} />
+      )}
+      <aside className={`w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0`}>
         <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
           <div className="w-8 h-8 rounded-full bg-amber-700 flex items-center justify-center text-white font-bold text-xs">S</div>
           <div>
@@ -61,9 +66,14 @@ export default function SaccoShell({ user, onLogout }: Props) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-5 flex-shrink-0">
-          <div>
-            <p className="text-sm font-bold text-gray-800">{subNavItems.find(n => n.page === activeSubPage)?.label ?? 'Dashboard'}</p>
-            <p className="text-xs text-gray-400">SACCO · {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMobileNavOpen(true)} className="text-gray-400 hover:text-gray-700 transition-colors lg:hidden">
+              <Menu size={20} />
+            </button>
+            <div>
+              <p className="text-sm font-bold text-gray-800">{subNavItems.find(n => n.page === activeSubPage)?.label ?? 'Dashboard'}</p>
+              <p className="text-xs text-gray-400">SACCO · {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">

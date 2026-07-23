@@ -108,9 +108,10 @@ interface Props {
 
 export default function AdminShell({ user, onLogout, children }: Props) {
   const [activePage, setActivePage] = useState<Page>('dashboard')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen] = useState(true)
   const [notifOpen, setNotifOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const navItems = NAV_BY_ROLE[user.role] ?? NAV_BY_ROLE.super_admin
   const role = ROLES[user.role]
@@ -123,8 +124,12 @@ export default function AdminShell({ user, onLogout, children }: Props) {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Mobile backdrop */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setMobileNavOpen(false)} />
+      )}
       {/* ── SIDEBAR ── */}
-      <aside className={`${sidebarOpen ? 'w-60' : 'w-16'} flex-shrink-0 bg-white border-r border-gray-100 flex flex-col transition-all duration-200 z-30`}>
+      <aside className={`${sidebarOpen ? 'w-60' : 'w-16'} flex-shrink-0 bg-white border-r border-gray-100 flex flex-col transition-all duration-200 z-40 fixed inset-y-0 left-0 transform ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0`}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
           <img src={logoImg} alt="TICH" className="h-9 w-9 object-contain flex-shrink-0" />
@@ -171,8 +176,8 @@ export default function AdminShell({ user, onLogout, children }: Props) {
         {/* Top bar */}
         <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-5 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-gray-700 transition-colors">
-              {sidebarOpen ? <Menu size={20} /> : <Menu size={20} />}
+            <button onClick={() => setMobileNavOpen(true)} className="text-gray-400 hover:text-gray-700 transition-colors lg:hidden">
+              <Menu size={20} />
             </button>
             <div>
               <p className="text-sm font-700 text-gray-800" style={{ fontFamily: 'var(--font-sans)', fontWeight: 700 }}>
