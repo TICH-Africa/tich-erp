@@ -203,6 +203,7 @@ class ProgramCurriculumService
     {
         return [
             'structure' => 'Programme structure',
+            'timetable' => 'Timetable',
             'intakes' => 'Intakes',
             'catalog' => 'Unit catalog',
             'semesters' => 'Semester units',
@@ -250,7 +251,7 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $requiresIntake = ['semesters', 'applications', 'workflow'];
+        $requiresIntake = ['semesters', 'applications', 'workflow', 'timetable'];
         $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
 
         foreach (self::curriculumSections() as $key => $label) {

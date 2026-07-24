@@ -6,6 +6,8 @@ use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionPeriod;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Services\TimetableSchedulingService;
+use App\Services\TimetableTemplateService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +15,7 @@ class StudentPortalDashboardService
 {
     public function __construct(
         protected CurriculumVersionService $curriculumVersions,
+        protected TimetableSchedulingService $timetableScheduling,
     ) {}
 
     /**
@@ -28,6 +31,7 @@ class StudentPortalDashboardService
         return [
             'overview_stats' => $this->overviewStats($student, $biodata, $academics, $finance),
             'academics' => $academics,
+            'timetable' => $this->timetable($student, $academics),
             'finance' => $finance,
         ];
     }
@@ -148,7 +152,7 @@ class StudentPortalDashboardService
             'curriculum' => $curriculum,
             'curriculum_is_published' => $curriculum?->isPublished() ?? false,
             'curriculum_units' => $curriculumUnits,
-            'curriculum_by_semester' => $curriculumUnits->groupBy('semester'),
+            'curriculum_by_semester' => collect($curriculumUnits->groupBy('semester')),
             'periods' => $periods,
             'periods_by_semester' => $periods->keyBy('semester'),
             'current_period' => $currentPeriod,
@@ -290,14 +294,31 @@ class StudentPortalDashboardService
     {
         if ($periods->isNotEmpty()) {
             $today = now()->startOfDay();
+            $ordered = $periods->sortBy('semester')->values();
 
-            $active = $periods->first(fn (CurriculumVersionPeriod $period) => $period->isActiveOn($today));
-            if ($active) {
-                return $active;
+            $inProgress = $ordered->first(fn (CurriculumVersionPeriod $period) => $period->isActiveOn($today));
+            if ($inProgress) {
+                return $inProgress;
             }
 
-            $upcoming = $periods
-                ->filter(fn (CurriculumVersionPeriod $period) => $period->start_date && $period->start_date->isAfter($today))
+            $latestCompleted = $ordered
+                ->filter(fn (CurriculumVersionPeriod $period) => $period->end_date && $period->end_date->lt($today))
+                ->sortByDesc('semester')
+                ->first();
+
+            if ($latestCompleted) {
+                $nextSemester = $ordered
+                    ->first(fn (CurriculumVersionPeriod $period) => $period->semester > $latestCompleted->semester);
+
+                if ($nextSemester) {
+                    return $nextSemester;
+                }
+
+                return $latestCompleted;
+            }
+
+            $upcoming = $ordered
+                ->filter(fn (CurriculumVersionPeriod $period) => $period->start_date && $period->start_date->gt($today))
                 ->sortBy('start_date')
                 ->first();
 
@@ -305,11 +326,7 @@ class StudentPortalDashboardService
                 return $upcoming;
             }
 
-            return $periods
-                ->filter(fn (CurriculumVersionPeriod $period) => $period->end_date)
-                ->sortByDesc('end_date')
-                ->first()
-                ?? $periods->sortBy('semester')->first();
+            return $ordered->first();
         }
 
         if ($curriculumUnits->isEmpty()) {
@@ -343,5 +360,45 @@ class StudentPortalDashboardService
         }
 
         return 'in_progress';
+    }
+
+    /**
+     * @param  array<string, mixed>  $academics
+     * @return array<string, mixed>
+     */
+    private function timetable(Student $student, array $academics): array
+    {
+        $curriculum = $academics['curriculum'] ?? null;
+        $period = $academics['current_period'] ?? null;
+        $teachingPeriod = $period?->semester ?? 1;
+
+        $published = ($curriculum && $student->program_id)
+            ? $this->timetableScheduling->publishedTimetable(
+                (int) $student->program_id,
+                $curriculum->id,
+                (int) $teachingPeriod
+            )
+            : null;
+
+        if (! $published && $curriculum && $student->program_id && ($student->portal_activated_at || $student->enrollment_status === 'active')) {
+            $published = $this->timetableScheduling->latestTimetable(
+                (int) $student->program_id,
+                $curriculum->id,
+                (int) $teachingPeriod
+            );
+        }
+
+        $template = $published?->template?->load(['segments', 'days']);
+
+        return [
+            'timetable' => $published,
+            'sessions' => $published?->sessions ?? collect(),
+            'template' => $template,
+            'day_labels' => TimetableTemplateService::dayLabels(),
+            'segment_types' => TimetableTemplateService::segmentTypes(),
+            'active_days' => $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5],
+            'teaching_period' => $teachingPeriod,
+            'is_provisional' => $published && ! $published->isPublished(),
+        ];
     }
 }

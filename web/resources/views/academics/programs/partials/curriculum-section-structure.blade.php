@@ -57,5 +57,9 @@
         @endif
 
         <p class="tich-caption tich-mt-4">Each intake gets the same {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} because cohorts overlap.</p>
+
+        <p class="tich-mt-4">
+            <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'timetable', 'intake' => $selectedIntake?->id])) }}" class="tich-btn tich-btn-secondary">Open timetable builder</a>
+        </p>
     </article>
 </div>

@@ -1,4 +1,29 @@
-@php($academics = $portalData['academics'])
+@php
+    $academics = $portalData['academics'];
+    $currentSemesterNumber = $academics['current_period']?->semester;
+    $allSemesters = collect($academics['curriculum_by_semester'])->sortKeys();
+    $otherSemesters = $currentSemesterNumber
+        ? $allSemesters->except($currentSemesterNumber)
+        : $allSemesters;
+
+    $portalPeriodStatus = function ($period) {
+        if (! $period?->start_date || ! $period?->end_date) {
+            return null;
+        }
+
+        $today = now()->startOfDay();
+
+        if ($today->lt($period->start_date)) {
+            return 'Upcoming';
+        }
+
+        if ($today->gt($period->end_date)) {
+            return 'Completed';
+        }
+
+        return 'In progress';
+    };
+@endphp
 
 <header class="tich-dept-header">
     <p class="tich-caption">Learning</p>
@@ -172,51 +197,100 @@
     </section>
 @endif
 
-@if ($academics['curriculum_by_semester']->isNotEmpty())
+@if ($otherSemesters->isNotEmpty())
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
-            <h2 class="tich-h2 tich-dept-panel__title">Programme curriculum</h2>
+            <h2 class="tich-h2 tich-dept-panel__title">Other semesters</h2>
             <p class="tich-text">
                 @if ($academics['curriculum'])
-                    Published plan for {{ $academics['curriculum']->intakeLabel() }}.
+                    Full programme plan for {{ $academics['curriculum']->intakeLabel() }}.
                 @else
-                    Units mapped to each semester of your programme.
+                    All semesters in your programme.
                 @endif
             </p>
         </div>
 
-        @foreach ($academics['curriculum_by_semester'] as $semesterNumber => $units)
-            @php($period = $academics['periods_by_semester']->get($semesterNumber))
-            <fieldset class="tich-mt-6" style="border:1px solid var(--tich-border); border-radius:0.5rem; padding:1rem;">
-                <legend class="tich-h3" style="padding:0 0.5rem;">
-                    Semester {{ $semesterNumber }}
-                    @if ($period?->scheduleLabel())
-                        <span class="tich-caption">· {{ $period->scheduleLabel() }}</span>
-                    @endif
-                </legend>
-                <table class="tich-admin-table">
-                    <thead>
-                        <tr>
-                            <th>Unit</th>
-                            <th>Contact hrs</th>
-                            <th>Learning hrs</th>
-                            <th>Core</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($units as $mapping)
+        <ul class="tich-semester-list tich-mt-4">
+            @foreach ($otherSemesters as $semesterNumber => $units)
+                @php($period = $academics['periods_by_semester']->get($semesterNumber))
+                @php($status = $portalPeriodStatus($period))
+                <li class="tich-semester-list__item">
+                    <span class="tich-semester-list__label">Semester {{ $semesterNumber }}</span>
+                    <span class="tich-semester-list__meta">
+                        @if ($period?->scheduleLabel())
+                            {{ $period->scheduleLabel() }}
+                        @else
+                            Dates not published
+                        @endif
+                        · {{ $units->count() }} {{ str('unit')->plural($units->count()) }}
+                        @if ($status)
+                            · {{ $status }}
+                        @endif
+                    </span>
+                </li>
+            @endforeach
+        </ul>
+
+        <div class="tich-form-group tich-semester-picker tich-mt-6">
+            <label for="semester-units-select" class="tich-label">View units for semester</label>
+            <select id="semester-units-select" class="tich-input">
+                <option value="">Choose a semester…</option>
+                @foreach ($otherSemesters as $semesterNumber => $units)
+                    @php($period = $academics['periods_by_semester']->get($semesterNumber))
+                    <option value="semester-{{ $semesterNumber }}">
+                        Semester {{ $semesterNumber }}
+                        @if ($period?->scheduleLabel())
+                            ({{ $period->scheduleLabel() }})
+                        @endif
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        @foreach ($otherSemesters as $semesterNumber => $units)
+            <div id="semester-{{ $semesterNumber }}" class="tich-semester-units-panel" hidden>
+                <div class="tich-card" style="overflow-x:auto;">
+                    <table class="tich-admin-table">
+                        <thead>
                             <tr>
-                                <td>{{ $mapping->unit?->unit_code }} — {{ $mapping->unit?->unit_name }}</td>
-                                <td>{{ $mapping->contact_hours ?? 0 }}</td>
-                                <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
-                                <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
+                                <th>Unit</th>
+                                <th>Contact hrs</th>
+                                <th>Learning hrs</th>
+                                <th>Core</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </fieldset>
+                        </thead>
+                        <tbody>
+                            @foreach ($units as $mapping)
+                                <tr>
+                                    <td>{{ $mapping->unit?->unit_code }} — {{ $mapping->unit?->unit_name }}</td>
+                                    <td>{{ $mapping->contact_hours ?? 0 }}</td>
+                                    <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
+                                    <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         @endforeach
     </section>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('semester-units-select');
+        if (!select) {
+            return;
+        }
+
+        var panels = document.querySelectorAll('.tich-semester-units-panel');
+
+        select.addEventListener('change', function () {
+            panels.forEach(function (panel) {
+                panel.hidden = panel.id !== select.value;
+            });
+        });
+    });
+    </script>
 @elseif ($academics['registered_units']->isEmpty() && $academics['grades']->isEmpty() && ! $academics['curriculum'])
     <article class="tich-card tich-dept-empty tich-mt-8">
         <h2 class="tich-h3">No academic records yet</h2>

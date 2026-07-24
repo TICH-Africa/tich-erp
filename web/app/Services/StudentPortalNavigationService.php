@@ -19,6 +19,7 @@ class StudentPortalNavigationService
             'enrolment' => 'Enrolment',
             'documents' => 'Documents',
             'academics' => 'Academics',
+            'timetable' => 'Timetable',
             'finance' => 'Finance',
             'account' => 'Account',
         ];
@@ -70,6 +71,11 @@ class StudentPortalNavigationService
             ],
             [
                 'type' => 'link',
+                'label' => 'Timetable',
+                'section' => 'timetable',
+            ],
+            [
+                'type' => 'link',
                 'label' => 'Finance',
                 'section' => 'finance',
             ],
@@ -111,6 +117,12 @@ class StudentPortalNavigationService
                 'description' => 'Certificates and files submitted with your application.',
                 'section' => 'documents',
                 'group' => 'services',
+            ],
+            [
+                'label' => 'Timetable',
+                'description' => 'Weekly lesson, exam, and special exam schedule.',
+                'section' => 'timetable',
+                'group' => 'learning',
             ],
             [
                 'label' => 'Academics',

@@ -365,6 +365,126 @@ h3.tich-h3 {
     }
 }
 
+.tich-semester-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tich-semester-list__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--tich-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface);
+}
+
+.tich-semester-list__label {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: var(--tich-grey);
+}
+
+.tich-semester-list__meta {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    color: var(--tich-neutral-muted);
+}
+
+.tich-semester-picker {
+    max-width: 20rem;
+}
+
+.tich-semester-units-panel {
+    margin-top: 1rem;
+}
+
+.tich-semester-units-panel[hidden] {
+    display: none;
+}
+
+[data-theme="dark"] .tich-semester-list__item {
+    background: var(--tich-white);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-semester-list__label {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-semester-list__meta {
+    color: var(--tich-neutral-muted);
+}
+
+.tich-timetable-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+}
+
+.tich-timetable-grid th,
+.tich-timetable-grid td {
+    border: 1px solid var(--tich-border);
+    padding: 0.65rem 0.75rem;
+    vertical-align: top;
+}
+
+.tich-timetable-grid th {
+    background: var(--tich-surface-muted);
+    text-align: left;
+}
+
+.tich-timetable-grid__time {
+    min-width: 7rem;
+    white-space: nowrap;
+}
+
+.tich-timetable-grid__break td {
+    background: var(--tich-surface-muted);
+    text-align: center;
+    font-style: italic;
+    color: var(--tich-neutral-muted);
+}
+
+.tich-timetable-session {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.35rem;
+    background: var(--tich-blue-light);
+    border-left: 3px solid var(--tich-blue);
+}
+
+.tich-timetable-session.is-exam,
+.tich-timetable-session.is-supplementary,
+.tich-timetable-session.is-special-exam {
+    background: #fef2f2;
+    border-left-color: #dc2626;
+}
+
+.tich-timetable-session.is-break {
+    background: var(--tich-surface-muted);
+    border-left-color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-timetable-session {
+    background: var(--tich-blue-light);
+}
+
+[data-theme="dark"] .tich-timetable-session.is-exam,
+[data-theme="dark"] .tich-timetable-session.is-supplementary,
+[data-theme="dark"] .tich-timetable-session.is-special-exam {
+    background: #3f1515;
+}
+
 /* ─── Cards ──────────────────────────────────────────────────────────── */
 
 .tich-card {

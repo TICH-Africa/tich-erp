@@ -7,10 +7,15 @@ use App\Models\AcademicYear;
 use App\Models\CurriculumVersion;
 use App\Models\Department;
 use App\Models\NursingBlock;
+use App\Models\ProgramTimetable;
+use App\Models\Room;
+use App\Models\Staff;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
 use App\Services\ProgramCurriculumService;
+use App\Services\TimetableSchedulingService;
+use App\Services\TimetableTemplateService;
 use App\Services\UnitCatalogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +27,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected ProgramCurriculumService $curriculum,
         protected CurriculumVersionService $versions,
         protected UnitCatalogService $unitCatalog,
+        protected TimetableTemplateService $timetableTemplates,
+        protected TimetableSchedulingService $timetableScheduling,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -141,6 +148,25 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 ? $this->curriculum->applicationsForIntake($program, $selectedIntake)
                 : ['matched' => collect(), 'unassigned' => collect()],
             'canViewApplications' => $request->user()->hasPermission('admissions.read'),
+            'timetableTemplate' => $section === 'timetable'
+                ? $this->timetableTemplates->templateForProgram($program->id)
+                : null,
+            'timetableSegmentTypes' => TimetableTemplateService::segmentTypes(),
+            'timetableDayLabels' => TimetableTemplateService::dayLabels(),
+            'timetableTeachingPeriod' => $request->integer('teaching_period') ?: 1,
+            'timetableDraft' => ($section === 'timetable' && $selectedIntake)
+                ? $this->timetableScheduling->latestTimetable(
+                    $program->id,
+                    $selectedIntake->id,
+                    $request->integer('teaching_period') ?: 1
+                )
+                : null,
+            'timetableRooms' => $section === 'timetable'
+                ? Room::query()->with('campus')->where('is_active', 1)->orderBy('room_code')->get()
+                : collect(),
+            'timetableStaff' => $section === 'timetable'
+                ? Staff::query()->orderBy('surname')->limit(200)->get()
+                : collect(),
         ]);
     }
 
@@ -279,6 +305,105 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
 
         return back()->with('status', 'Semester dates saved.');
+    }
+
+    public function syncTimetableTemplate(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'name' => ['nullable', 'string', 'max:120'],
+            'days' => ['nullable', 'array'],
+            'days.*' => ['integer', 'min:1', 'max:7'],
+            'segments' => ['nullable', 'array'],
+            'segments.*.label' => ['nullable', 'string', 'max:120'],
+            'segments.*.start_time' => ['nullable', 'date_format:H:i'],
+            'segments.*.end_time' => ['nullable', 'date_format:H:i'],
+            'segments.*.segment_type' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $this->timetableTemplates->syncTemplate(
+            $request->user(),
+            $program,
+            $validated,
+            $request
+        );
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => 'timetable',
+                'teaching_period' => $request->integer('teaching_period') ?: null,
+            ]))
+            ->with('status', 'Bell schedule saved.');
+    }
+
+    public function generateTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $version->program_id === (int) $program->id, 404);
+
+        $teachingPeriod = $request->integer('teaching_period') ?: 1;
+
+        $this->timetableScheduling->generate(
+            $request->user(),
+            $hub,
+            $program,
+            $version,
+            $teachingPeriod,
+            $request
+        );
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $version->id,
+                'section' => 'timetable',
+                'teaching_period' => $teachingPeriod,
+            ]))
+            ->with('status', 'Timetable draft generated. Review conflicts, add exams if needed, then publish.');
+    }
+
+    public function addTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'unit_id' => ['nullable', 'exists:units,id'],
+            'staff_id' => ['nullable', 'exists:staff,id'],
+            'room_id' => ['nullable', 'exists:rooms,id'],
+            'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i'],
+            'session_type' => ['required', 'in:'.implode(',', array_keys(TimetableTemplateService::segmentTypes()))],
+            'title' => ['nullable', 'string', 'max:200'],
+            'venue' => ['nullable', 'string', 'max:200'],
+            'class_group' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $this->timetableScheduling->addSession($request->user(), $timetable, $validated, $request);
+
+        return back()->with('status', 'Session added to timetable draft.');
+    }
+
+    public function publishTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+
+        $this->timetableScheduling->publish($request->user(), $timetable, $request);
+
+        return back()->with('status', 'Timetable published. Students can now view it in the portal.');
     }
 
     public function addIntakeUnit(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version, int $semester): RedirectResponse
