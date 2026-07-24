@@ -319,6 +319,23 @@ class DepartmentDashboardService
         return $stats;
     }
 
+    /**
+     * Programmes offered by a learning department (school under Academics).
+     *
+     * @return Collection<int, AcademicProgram>
+     */
+    public function programsForDepartment(Department $department): Collection
+    {
+        if (! $department->isLearningDepartment()) {
+            return collect();
+        }
+
+        return AcademicProgram::query()
+            ->where('department_id', $department->id)
+            ->orderBy('program_name')
+            ->get();
+    }
+
     public function cardDescription(Department $department): string
     {
         if ($department->isAcademicsHub()) {

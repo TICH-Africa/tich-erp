@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Services\DepartmentDashboardService;
+use App\Services\ProgramCurriculumService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -44,6 +45,10 @@ class DepartmentDashboardController extends Controller
             'sidebarNavigation' => $departmentDashboard->sidebarNavigation($user, $department),
             'dashboardViewType' => $departmentDashboard->dashboardViewType($user, $department),
             'overviewStats' => $departmentDashboard->overviewStats($user, $department),
+            'programs' => $department->isLearningDepartment()
+                ? $departmentDashboard->programsForDepartment($department)
+                : collect(),
+            'curriculumFormats' => ProgramCurriculumService::curriculumFormats(),
             'categoryLabel' => fn (Department $dept) => $departmentDashboard->categoryLabel($dept),
             'cardDescription' => fn (Department $dept) => $departmentDashboard->cardDescription(
                 $dept->loadCount(['children' => fn ($query) => $query->where('is_active', true)])
