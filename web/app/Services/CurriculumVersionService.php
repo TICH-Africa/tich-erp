@@ -7,8 +7,11 @@ use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionUnit;
 use App\Models\Department;
 use App\Models\ProgramUnit;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class CurriculumVersionService
 {
@@ -17,18 +20,53 @@ class CurriculumVersionService
         protected AuditService $auditService,
     ) {}
 
+    /**
+     * @return list<string>
+     */
+    public static function mappableUnitStatuses(): array
+    {
+        return ['active', 'draft', 'pending_registry'];
+    }
+
     public function createDraft(User $user, Department $hub, AcademicProgram $program, array $data, ?Request $request = null): CurriculumVersion
     {
         abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $program), 403);
+
+        $intakeYear = (int) ($data['intake_year'] ?? 0);
+        $intakeMonth = (int) ($data['intake_month'] ?? 0);
+
+        if ($intakeYear < 2000 || $intakeMonth < 1 || $intakeMonth > 12) {
+            throw ValidationException::withMessages([
+                'intake_year' => 'Intake year and month are required.',
+                'intake_month' => 'Intake year and month are required.',
+            ]);
+        }
+
+        $duplicate = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->where('intake_year', $intakeYear)
+            ->where('intake_month', $intakeMonth)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'intake_year' => 'An intake already exists for this programme in that month and year.',
+            ]);
+        }
 
         $latestNumber = CurriculumVersion::query()
             ->where('program_id', $program->id)
             ->max('version_number') ?? 0;
 
+        $monthLabel = date('M', mktime(0, 0, 0, $intakeMonth, 1));
+        $defaultLabel = "{$monthLabel} {$intakeYear} intake";
+
         $version = CurriculumVersion::create([
             'program_id' => $program->id,
             'academic_year_id' => $data['academic_year_id'] ?? null,
-            'version_label' => $data['version_label'] ?? ('v'.($latestNumber + 1)),
+            'intake_year' => $intakeYear,
+            'intake_month' => $intakeMonth,
+            'version_label' => $data['version_label'] ?? $defaultLabel,
             'version_number' => $latestNumber + 1,
             'curriculum_format' => $data['curriculum_format'] ?? $program->curriculum_format ?? 'trimester',
             'status' => 'draft',
@@ -37,19 +75,177 @@ class CurriculumVersionService
             'created_at' => now(),
         ]);
 
+        $copyFromId = (int) ($data['copy_from_version_id'] ?? 0);
+
+        if ($copyFromId > 0) {
+            $source = CurriculumVersion::query()
+                ->where('program_id', $program->id)
+                ->where('id', $copyFromId)
+                ->first();
+
+            if ($source) {
+                $this->copyUnits($source, $version);
+            }
+        } elseif (! empty($data['copy_from_program_template'])) {
+            $this->copyFromProgramTemplate($program, $version);
+        }
+
         $this->auditService->log(
             'academics.curriculum_version.created',
             'curriculum_versions',
             $version->id,
             null,
-            $version->only(['program_id', 'version_label', 'status']),
-            'Curriculum version draft created',
+            $version->only(['program_id', 'version_label', 'intake_year', 'intake_month', 'status']),
+            'Programme intake draft created',
             'success',
             $user->id,
             $request
         );
 
-        return $version;
+        return $version->fresh('items.unit');
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $mappings
+     */
+    public function syncVersionUnits(
+        User $user,
+        Department $hub,
+        CurriculumVersion $version,
+        array $mappings,
+        ?Request $request = null
+    ): void {
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+        abort_unless($version->status === 'draft', 422, 'Only draft intakes can be edited.');
+
+        $program = $version->program;
+        $scopeIds = $hub->academicsScopeDepartmentIds();
+
+        $mappableUnitIds = Unit::query()
+            ->whereIn('status', self::mappableUnitStatuses())
+            ->where(function ($builder) use ($scopeIds) {
+                $builder->whereIn('department_id', $scopeIds)
+                    ->orWhereHas('program', fn ($q) => $q->whereIn('department_id', $scopeIds));
+            })
+            ->pluck('id')
+            ->all();
+
+        CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->delete();
+
+        $included = [];
+
+        foreach ($mappings as $index => $row) {
+            if (empty($row['include'])) {
+                continue;
+            }
+
+            $unitId = (int) ($row['unit_id'] ?? 0);
+
+            if ($unitId === 0 || ! in_array($unitId, $mappableUnitIds, true)) {
+                continue;
+            }
+
+            $included[$unitId] = array_merge($row, [
+                'display_order' => (int) ($row['display_order'] ?? ($index + 1)),
+                'priority' => (int) ($row['priority'] ?? ($row['display_order'] ?? ($index + 1))),
+            ]);
+        }
+
+        foreach ($included as $unitId => $row) {
+            $unit = Unit::query()->find($unitId);
+
+            CurriculumVersionUnit::create([
+                'curriculum_version_id' => $version->id,
+                'unit_id' => $unitId,
+                'semester' => (int) ($row['semester'] ?? 1),
+                'block_id' => $row['block_id'] ?? null,
+                'is_compulsory' => ! empty($row['is_compulsory']) ? 1 : 0,
+                'display_order' => (int) ($row['display_order'] ?? 1),
+                'priority' => (int) ($row['priority'] ?? 1),
+                'credit_hours' => $unit?->credit_hours ?? 0,
+                'contact_hours' => (int) ($row['contact_hours'] ?? $unit?->contact_hours ?? 0),
+                'total_learning_hours' => (int) ($row['total_learning_hours'] ?? $unit?->total_learning_hours ?? 0),
+            ]);
+        }
+
+        $this->auditService->log(
+            'academics.curriculum_version.units_synced',
+            'curriculum_versions',
+            $version->id,
+            null,
+            ['mapped_units' => count($included), 'program_id' => $program->id],
+            'Intake unit mapping updated',
+            'success',
+            $user->id,
+            $request
+        );
+    }
+
+    public function addUnitToPeriod(
+        User $user,
+        Department $hub,
+        CurriculumVersion $version,
+        int $unitId,
+        int $semester,
+        ?int $blockId = null,
+        ?Request $request = null
+    ): CurriculumVersionUnit {
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+        abort_unless($version->status === 'draft', 422);
+
+        $unit = Unit::query()
+            ->where('id', $unitId)
+            ->whereIn('status', self::mappableUnitStatuses())
+            ->firstOrFail();
+
+        if (CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->where('unit_id', $unitId)->exists()) {
+            throw ValidationException::withMessages([
+                'unit_id' => 'This unit is already assigned in this intake.',
+            ]);
+        }
+
+        $mapping = CurriculumVersionUnit::create([
+            'curriculum_version_id' => $version->id,
+            'unit_id' => $unitId,
+            'semester' => $semester,
+            'block_id' => $blockId,
+            'is_compulsory' => $unit->is_core ?? true,
+            'display_order' => CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->max('display_order') + 1,
+            'priority' => $unit->display_priority ?? 1,
+            'credit_hours' => $unit->credit_hours ?? 0,
+            'contact_hours' => $unit->contact_hours ?? 0,
+            'total_learning_hours' => $unit->total_learning_hours ?? 0,
+        ]);
+
+        $this->auditService->log(
+            'academics.curriculum_version.unit_added',
+            'curriculum_versions',
+            $version->id,
+            null,
+            ['unit_id' => $unitId, 'semester' => $semester],
+            'Unit added to intake semester',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $mapping;
+    }
+
+    /**
+     * @return Collection<int, CurriculumVersionUnit>
+     */
+    public function mappedUnits(CurriculumVersion $version): Collection
+    {
+        return CurriculumVersionUnit::query()
+            ->with(['unit', 'block'])
+            ->where('curriculum_version_id', $version->id)
+            ->orderBy('semester')
+            ->orderBy('display_order')
+            ->orderBy('priority')
+            ->get();
     }
 
     public function submit(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
@@ -58,8 +254,24 @@ class CurriculumVersionService
         abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
         abort_unless($version->status === 'draft', 422);
 
-        $mappedCount = ProgramUnit::query()->where('program_id', $version->program_id)->count();
-        abort_if($mappedCount === 0, 422, 'Map at least one active unit to the programme before submitting.');
+        $mappedCount = CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->count();
+
+        if ($mappedCount === 0) {
+            throw ValidationException::withMessages([
+                'intake' => 'Assign at least one unit to this intake before submitting. Use “Add unit” on each semester below.',
+            ]);
+        }
+
+        $inactiveMapped = CurriculumVersionUnit::query()
+            ->where('curriculum_version_id', $version->id)
+            ->whereHas('unit', fn ($query) => $query->where('status', '!=', 'active'))
+            ->count();
+
+        if ($inactiveMapped > 0) {
+            throw ValidationException::withMessages([
+                'intake' => "All mapped units must be active before submitting. {$inactiveMapped} unit(s) are still draft or pending registry approval — approve them in the unit catalog first.",
+            ]);
+        }
 
         $version->update([
             'status' => 'pending_registry',
@@ -74,7 +286,7 @@ class CurriculumVersionService
             $version->id,
             ['status' => 'draft'],
             ['status' => 'pending_registry'],
-            'Curriculum version submitted for registry verification',
+            'Intake curriculum submitted for registry verification',
             'success',
             $user->id,
             $request
@@ -104,7 +316,7 @@ class CurriculumVersionService
         ]);
 
         if (! $needsCeo) {
-            $this->snapshotUnits($version);
+            $this->mirrorToProgramTemplate($version);
             $this->supersedePrevious($version);
         }
 
@@ -114,7 +326,7 @@ class CurriculumVersionService
             $version->id,
             null,
             ['status' => $version->status],
-            'Curriculum version approved by registrar',
+            'Intake curriculum approved by registrar',
             'success',
             $user->id,
             $request
@@ -148,7 +360,7 @@ class CurriculumVersionService
             ]);
         }
 
-        $this->snapshotUnits($version);
+        $this->mirrorToProgramTemplate($version);
         $this->supersedePrevious($version);
 
         $this->auditService->log(
@@ -157,7 +369,7 @@ class CurriculumVersionService
             $version->id,
             null,
             ['status' => 'published'],
-            'Curriculum version published after CEO approval',
+            'Intake curriculum published after CEO approval',
             'success',
             $user->id,
             $request
@@ -166,18 +378,36 @@ class CurriculumVersionService
         return $version->fresh('items.unit');
     }
 
-    private function snapshotUnits(CurriculumVersion $version): void
+    private function copyUnits(CurriculumVersion $source, CurriculumVersion $target): void
     {
-        CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->delete();
+        $source->loadMissing('items');
 
+        foreach ($source->items as $item) {
+            CurriculumVersionUnit::create([
+                'curriculum_version_id' => $target->id,
+                'unit_id' => $item->unit_id,
+                'semester' => $item->semester,
+                'block_id' => $item->block_id,
+                'is_compulsory' => $item->is_compulsory,
+                'display_order' => $item->display_order,
+                'priority' => $item->priority,
+                'credit_hours' => $item->credit_hours,
+                'contact_hours' => $item->contact_hours,
+                'total_learning_hours' => $item->total_learning_hours,
+            ]);
+        }
+    }
+
+    private function copyFromProgramTemplate(AcademicProgram $program, CurriculumVersion $target): void
+    {
         $mappings = ProgramUnit::query()
             ->with('unit')
-            ->where('program_id', $version->program_id)
+            ->where('program_id', $program->id)
             ->get();
 
         foreach ($mappings as $mapping) {
             CurriculumVersionUnit::create([
-                'curriculum_version_id' => $version->id,
+                'curriculum_version_id' => $target->id,
                 'unit_id' => $mapping->unit_id,
                 'semester' => $mapping->semester,
                 'block_id' => $mapping->block_id,
@@ -187,6 +417,30 @@ class CurriculumVersionService
                 'credit_hours' => $mapping->unit?->credit_hours ?? 0,
                 'contact_hours' => $mapping->contact_hours ?: ($mapping->unit?->contact_hours ?? 0),
                 'total_learning_hours' => $mapping->total_learning_hours ?: ($mapping->unit?->total_learning_hours ?? 0),
+            ]);
+        }
+    }
+
+    /** Keep program_units as a reusable template from the latest published intake. */
+    private function mirrorToProgramTemplate(CurriculumVersion $version): void
+    {
+        $version->loadMissing(['items.unit', 'program']);
+        $program = $version->program;
+
+        ProgramUnit::query()->where('program_id', $program->id)->delete();
+
+        foreach ($version->items as $item) {
+            ProgramUnit::create([
+                'program_id' => $program->id,
+                'unit_id' => $item->unit_id,
+                'semester' => $item->semester,
+                'block_id' => $item->block_id,
+                'is_compulsory' => $item->is_compulsory,
+                'display_order' => $item->display_order,
+                'priority' => $item->priority,
+                'contact_hours' => $item->contact_hours,
+                'total_learning_hours' => $item->total_learning_hours,
+                'is_active' => 1,
             ]);
         }
     }
@@ -208,5 +462,29 @@ class CurriculumVersionService
             ->where('status', 'published')
             ->orderByDesc('published_at')
             ->first();
+    }
+
+    /**
+     * @return Collection<int, CurriculumVersion>
+     */
+    public function intakesForProgram(int $programId): Collection
+    {
+        return CurriculumVersion::query()
+            ->where('program_id', $programId)
+            ->orderByDesc('intake_year')
+            ->orderByDesc('intake_month')
+            ->orderByDesc('version_number')
+            ->get();
+    }
+
+    public function resolveSelectedIntake(AcademicProgram $program, ?int $intakeId): ?CurriculumVersion
+    {
+        $intakes = $this->intakesForProgram($program->id);
+
+        if ($intakeId) {
+            return $intakes->firstWhere('id', $intakeId);
+        }
+
+        return $intakes->firstWhere('status', 'draft') ?? $intakes->first();
     }
 }

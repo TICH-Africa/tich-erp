@@ -6,7 +6,12 @@
         if (! empty($learningDepartment)) {
             $hub['learning_department'] = $learningDepartment->id;
         }
+        $intakeQuery = $hub;
+        if ($selectedIntake) {
+            $intakeQuery['intake'] = $selectedIntake->id;
+        }
         $mappingIndex = 0;
+        $assignedUnitIds = $mappings->pluck('unit_id')->all();
     @endphp
 
     @include('academics.partials.learning-department-context')
@@ -18,10 +23,17 @@
         <p class="tich-text">{{ $program->program_code }} · {{ $program->department?->dept_name }}</p>
     </div>
 
+    @if (session('status'))
+        <p class="tich-text tich-mt-4" style="color: var(--tich-success, #15803d);">{{ session('status') }}</p>
+    @endif
+    @error('intake')
+        <p class="tich-text tich-mt-4" style="color: var(--tich-danger, #b91c1c);">{{ $message }}</p>
+    @enderror
+
     <div class="tich-grid tich-grid--2 tich-mt-8" style="gap:1.5rem; align-items:start;">
         <article class="tich-card">
             <h2 class="tich-h3">Programme structure</h2>
-            <p class="tich-text tich-mt-2">Set course length and how many semesters or trimesters run in each academic year.</p>
+            <p class="tich-text tich-mt-2">Set course length and how many semesters or trimesters run in each academic year. This defines the teaching periods copied for every intake.</p>
 
             <form method="POST" action="{{ route('departments.academics.programs.update-format', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
                 @csrf
@@ -64,181 +76,301 @@
         </article>
 
         <article class="tich-card">
-            <h2 class="tich-h3">Published version</h2>
+            <h2 class="tich-h3">Published intake</h2>
             @if ($publishedVersion)
                 <p class="tich-text tich-mt-4">
-                    <strong>{{ $publishedVersion->version_label }}</strong>
+                    <strong>{{ $publishedVersion->intakeLabel() }}</strong>
                     · {{ $publishedVersion->items->count() }} units
                     · {{ $publishedVersion->published_at?->format('d M Y') }}
                 </p>
             @else
-                <p class="tich-caption tich-mt-4">No published curriculum version yet.</p>
+                <p class="tich-caption tich-mt-4">No published intake curriculum yet.</p>
             @endif
 
-            @can('academics.write')
-                <form method="POST" action="{{ route('departments.academics.programs.versions.create', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-6">
-                    @csrf
-                    <div class="tich-form-group">
-                        <label class="tich-label">Version label</label>
-                        <input type="text" name="version_label" class="tich-input" placeholder="e.g. 2026 intake">
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Academic year</label>
-                        <select name="academic_year_id" class="tich-input">
-                            <option value="">—</option>
-                            @foreach ($academicYears as $year)
-                                <option value="{{ $year->id }}">{{ $year->year_label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Create draft version</button>
-                </form>
-            @endcan
+            <p class="tich-caption tich-mt-4">Each intake gets the same {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} because cohorts overlap — January and May intakes both follow the full programme timeline.</p>
         </article>
     </div>
 
     <article class="tich-card tich-mt-8">
-        <h2 class="tich-h3">Units by {{ $program->usesBlocks() ? 'clinical block' : 'semester / term' }}</h2>
-        <p class="tich-text tich-mb-4">Assign active catalog units to each {{ $program->usesBlocks() ? 'block' : 'teaching period' }}. Each unit can only belong to one period per programme.</p>
+        <div class="tich-dept-panel__head">
+            <h2 class="tich-h3">Intakes</h2>
+            <p class="tich-text">Create an intake by year and month, then assign catalog units to each semester for that cohort.</p>
+        </div>
 
-        @if ($periods->isEmpty())
-            <p class="tich-text">Save the programme structure above to generate teaching periods{{ $program->usesBlocks() ? ' (set block count for nursing programmes)' : '' }}.</p>
-        @elseif ($availableUnits->isEmpty())
-            <article class="tich-card" style="padding:1.5rem;">
-                <h3 class="tich-h3">No active units in the catalog</h3>
-                <p class="tich-text tich-mt-2">
-                    Add units in the unit catalog for {{ $program->department?->dept_name ?? 'this department' }}, then submit and approve them before mapping to this programme.
+        @if ($intakes->isNotEmpty())
+            <div class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                @foreach ($intakes as $intake)
+                    <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $intake->id])) }}"
+                       class="tich-btn {{ ($selectedIntake?->id === $intake->id) ? 'tich-btn-primary' : 'tich-btn-secondary' }}"
+                       style="font-size:0.875rem;">
+                        {{ $intake->intakeLabel() }}
+                        <span class="tich-caption">· {{ ucwords(str_replace('_', ' ', $intake->status)) }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
+
+        @can('academics.write')
+            <form method="POST" action="{{ route('departments.academics.programs.intakes.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-6" style="border-top:1px solid var(--tich-border); padding-top:1.5rem;">
+                @csrf
+                <h3 class="tich-h3">New intake</h3>
+                <div class="tich-grid tich-grid--4 tich-mt-4" style="gap:1rem; align-items:end;">
+                    <div class="tich-form-group">
+                        <label class="tich-label">Intake year</label>
+                        <input type="number" name="intake_year" class="tich-input" min="2000" max="2100" value="{{ old('intake_year', now()->year) }}" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Intake month</label>
+                        <select name="intake_month" class="tich-input" required>
+                            @foreach ($intakeMonths as $monthNum => $monthName)
+                                <option value="{{ $monthNum }}" @selected((int) old('intake_month', now()->month) === $monthNum)>{{ $monthName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Copy units from</label>
+                        <select name="copy_from_version_id" class="tich-input">
+                            <option value="">Blank intake</option>
+                            @foreach ($intakes as $intake)
+                                <option value="{{ $intake->id }}">{{ $intake->intakeLabel() }}</option>
+                            @endforeach
+                            @if ($publishedVersion)
+                                <option value="{{ $publishedVersion->id }}">{{ $publishedVersion->intakeLabel() }} (published)</option>
+                            @endif
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <button type="submit" class="tich-btn tich-btn-primary" @disabled($periods->isEmpty())>Create intake</button>
+                    </div>
+                </div>
+                @error('intake_year')
+                    <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
+                @enderror
+                @error('intake_month')
+                    <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
+                @enderror
+            </form>
+        @endcan
+    </article>
+
+    @include('academics.programs.partials.unit-catalog-embedded')
+
+    @if ($periods->isEmpty())
+        <article class="tich-card tich-mt-8">
+            <p class="tich-text">Save the programme structure above to generate {{ $program->usesBlocks() ? 'clinical blocks' : 'semesters' }} before creating intakes.</p>
+        </article>
+    @elseif (! $selectedIntake)
+        <article class="tich-card tich-mt-8">
+            <p class="tich-text">Create an intake above to start mapping units to each {{ $program->usesBlocks() ? 'block' : 'semester' }}.</p>
+        </article>
+    @else
+        <article class="tich-card tich-mt-8">
+            <div class="tich-dept-panel__head">
+                <h2 class="tich-h3">{{ $selectedIntake->intakeLabel() }} — units by {{ $program->usesBlocks() ? 'block' : 'semester' }}</h2>
+                <p class="tich-text">
+                    {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} for this intake
+                    @if ($selectedIntake->status !== 'draft')
+                        · <span class="tich-caption">{{ ucwords(str_replace('_', ' ', $selectedIntake->status)) }} (read-only)</span>
+                    @endif
                 </p>
+            </div>
+
+            @if ($selectedIntake->status === 'draft')
+                <form id="intake-sync-form" method="POST" action="{{ route('departments.academics.programs.intakes.sync-units', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" style="display:none;">
+                    @csrf
+                </form>
+            @endif
+
+            @if ($availableUnits->isNotEmpty())
                 @php
-                    $unitCatalogParams = ['department' => $department->id];
-                    if (! empty($learningDepartment)) {
-                        $unitCatalogParams['learning_department'] = $learningDepartment->id;
-                    }
+                    $inactiveCatalogUnits = $availableUnits->where('status', '!=', 'active')->count();
                 @endphp
-                @if (($catalogUnitCounts['draft'] ?? 0) > 0 || ($catalogUnitCounts['pending_registry'] ?? 0) > 0)
+                @if ($inactiveCatalogUnits > 0)
                     <p class="tich-caption tich-mt-4">
-                        @if (($catalogUnitCounts['draft'] ?? 0) > 0)
-                            {{ $catalogUnitCounts['draft'] }} draft unit(s)
-                        @endif
-                        @if (($catalogUnitCounts['pending_registry'] ?? 0) > 0)
-                            · {{ $catalogUnitCounts['pending_registry'] }} pending registry approval
-                        @endif
-                        — only <strong>active</strong> units can be mapped.
+                        {{ $inactiveCatalogUnits }} catalog unit(s) are still draft or pending — approve them above before submitting this intake.
                     </p>
                 @endif
-                @can('academics.write')
-                    <a href="{{ route('departments.academics.units.index', $unitCatalogParams) }}" class="tich-btn tich-btn-primary tich-mt-4">Open unit catalog</a>
-                @endcan
-            </article>
-        @else
-            <form method="POST" action="{{ route('departments.academics.programs.sync-units', array_merge($hub, ['program' => $program->id])) }}">
-                @csrf
+            @elseif ($catalogUnits->isEmpty())
+                <p class="tich-text tich-mt-4">Create units in the catalog above, then assign them below or use <strong>Assign</strong> from the catalog table.</p>
+            @endif
 
-                @foreach ($periods as $period)
+            @foreach ($periods as $period)
                     @php
                         $periodMappings = $program->usesBlocks()
                             ? $mappingsByBlock->get($period['block_id'], collect())
                             : $mappingsBySemester->get($period['semester'], collect());
-                        $assignedUnitIds = $periodMappings->pluck('unit_id')->all();
+                        $periodAssignedIds = $periodMappings->pluck('unit_id')->all();
+                        $periodAvailableUnits = $availableUnits->reject(fn ($unit) => in_array($unit->id, $assignedUnitIds, true));
                     @endphp
 
                     <fieldset class="tich-mt-6" style="border:1px solid var(--tich-border); border-radius:0.5rem; padding:1rem;">
-                        <legend class="tich-h3" style="padding:0 0.5rem;">{{ $period['label'] }}</legend>
-                        <p class="tich-caption tich-mb-4">{{ $periodMappings->count() }} unit(s) assigned</p>
+                        <legend class="tich-h3" style="padding:0 0.5rem;">
+                            {{ $period['label'] }}
+                            @if (! $program->usesBlocks())
+                                <span class="tich-caption">· Semester {{ $period['semester'] }} of {{ $totalTeachingPeriods }}</span>
+                            @endif
+                        </legend>
 
-                        <div style="overflow-x:auto;">
-                            <table class="tich-admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Include</th>
-                                        <th>Unit</th>
-                                        <th>Priority</th>
-                                        <th>Contact hrs</th>
-                                        <th>Total learning hrs</th>
-                                        <th>Core</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($availableUnits as $unit)
-                                        @php
-                                            $map = $mappings->firstWhere('unit_id', $unit->id);
-                                            $included = $map && (
-                                                ($program->usesBlocks() && (int) $map->block_id === (int) $period['block_id'])
-                                                || (! $program->usesBlocks() && (int) $map->semester === (int) $period['semester'])
-                                            );
-                                        @endphp
+                        @if ($periodMappings->isEmpty())
+                            <p class="tich-caption tich-mb-4">No units assigned yet.</p>
+                        @else
+                            <div style="overflow-x:auto;">
+                                <table class="tich-admin-table">
+                                    <thead>
                                         <tr>
-                                            <td>
-                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][unit_id]" value="{{ $unit->id }}">
-                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][semester]" value="{{ $period['semester'] ?? ($map?->semester ?? 1) }}">
-                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][block_id]" value="{{ $period['block_id'] }}">
-                                                <input type="checkbox" name="mappings[{{ $mappingIndex }}][include]" value="1" @checked($included)>
-                                            </td>
-                                            <td>{{ $unit->unit_code }} — {{ $unit->unit_name }}</td>
-                                            <td><input type="number" name="mappings[{{ $mappingIndex }}][priority]" class="tich-input" style="width:5rem;" min="0" value="{{ $included ? ($map?->priority ?? $unit->display_priority ?? 1) : ($unit->display_priority ?? 1) }}"></td>
-                                            <td><input type="number" name="mappings[{{ $mappingIndex }}][contact_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $included ? ($map?->contact_hours ?? $unit->contact_hours ?? 0) : ($unit->contact_hours ?? 0) }}"></td>
-                                            <td><input type="number" name="mappings[{{ $mappingIndex }}][total_learning_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $included ? ($map?->total_learning_hours ?? $unit->total_learning_hours ?? 0) : ($unit->total_learning_hours ?? 0) }}"></td>
-                                            <td><input type="checkbox" name="mappings[{{ $mappingIndex }}][is_compulsory]" value="1" @checked($included ? ($map?->is_compulsory ?? $unit->is_core ?? true) : ($unit->is_core ?? false))></td>
+                                            @if ($selectedIntake->status === 'draft')
+                                                <th>Keep</th>
+                                            @endif
+                                            <th>Unit</th>
+                                            <th>Priority</th>
+                                            <th>Contact hrs</th>
+                                            <th>Total learning hrs</th>
+                                            <th>Core</th>
                                         </tr>
-                                        @php($mappingIndex++)
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($periodMappings as $map)
+                                            @php($mappingIndex++)
+                                            <tr>
+                                                @if ($selectedIntake->status === 'draft')
+                                                    <td>
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][unit_id]" value="{{ $map->unit_id }}">
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][semester]" value="{{ $period['semester'] ?? $map->semester }}">
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][block_id]" value="{{ $period['block_id'] }}">
+                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $mappingIndex }}][include]" value="1" checked>
+                                                    </td>
+                                                @endif
+                                                <td>
+                                                    {{ $map->unit?->unit_code }} — {{ $map->unit?->unit_name }}
+                                                    @if (($map->unit?->status ?? '') !== 'active')
+                                                        <span class="tich-caption">· {{ ucwords(str_replace('_', ' ', $map->unit->status)) }}</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($selectedIntake->status === 'draft')
+                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $mappingIndex }}][priority]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->priority ?? 1 }}">
+                                                    @else
+                                                        {{ $map->priority ?? 1 }}
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($selectedIntake->status === 'draft')
+                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $mappingIndex }}][contact_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->contact_hours ?? 0 }}">
+                                                    @else
+                                                        {{ $map->contact_hours ?? 0 }}
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($selectedIntake->status === 'draft')
+                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $mappingIndex }}][total_learning_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->total_learning_hours ?? 0 }}">
+                                                    @else
+                                                        {{ $map->total_learning_hours ?? 0 }}
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($selectedIntake->status === 'draft')
+                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $mappingIndex }}][is_compulsory]" value="1" @checked($map->is_compulsory)>
+                                                    @else
+                                                        {{ $map->is_compulsory ? 'Yes' : 'No' }}
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+
+                        @if ($selectedIntake->status === 'draft')
+                            @can('academics.write')
+                                @if ($periodAvailableUnits->isNotEmpty())
+                                    <form method="POST" action="{{ route('departments.academics.programs.intakes.add-unit', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id, 'semester' => $period['semester'] ?? 1])) }}" class="tich-mt-4" style="display:flex; gap:0.75rem; align-items:end; flex-wrap:wrap;">
+                                        @csrf
+                                        @if ($period['block_id'])
+                                            <input type="hidden" name="block_id" value="{{ $period['block_id'] }}">
+                                        @endif
+                                        <div class="tich-form-group" style="flex:1; min-width:16rem;">
+                                            <label class="tich-label">Add unit to this {{ $program->usesBlocks() ? 'block' : 'semester' }}</label>
+                                            <select name="unit_id" class="tich-input" required>
+                                                <option value="">Select unit…</option>
+                                                @foreach ($periodAvailableUnits as $unit)
+                                                    <option value="{{ $unit->id }}">
+                                                        {{ $unit->unit_code }} — {{ $unit->unit_name }}
+                                                        @if ($unit->status !== 'active')
+                                                            ({{ ucwords(str_replace('_', ' ', $unit->status)) }})
+                                                        @endif
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="tich-btn tich-btn-secondary">Add unit</button>
+                                    </form>
+                                @else
+                                    <p class="tich-caption tich-mt-4">All available catalog units are already assigned in this intake.</p>
+                                @endif
+                            @endcan
+                        @endif
                     </fieldset>
                 @endforeach
 
+            @if ($selectedIntake->status === 'draft')
                 @can('academics.write')
-                    <button type="submit" class="tich-btn tich-btn-primary tich-mt-6">Save unit mapping</button>
+                    <button type="submit" form="intake-sync-form" class="tich-btn tich-btn-primary tich-mt-6">Save intake mapping</button>
                 @endcan
-            </form>
-        @endif
-    </article>
+            @endif
+        </article>
 
-    @if ($versions->isNotEmpty())
-        <article class="tich-card tich-mt-8">
-            <h2 class="tich-h3">Version workflow</h2>
-            <table class="tich-admin-table tich-mt-4">
-                <thead>
-                    <tr>
-                        <th>Version</th>
-                        <th>Format</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($versions as $version)
+        @if ($selectedIntake)
+            <article class="tich-card tich-mt-8">
+                <h2 class="tich-h3">Intake workflow</h2>
+                <table class="tich-admin-table tich-mt-4">
+                    <thead>
                         <tr>
-                            <td>{{ $version->version_label }} (v{{ $version->version_number }})</td>
-                            <td>{{ $formats[$version->curriculum_format] ?? $version->curriculum_format }}</td>
-                            <td>{{ ucwords(str_replace('_', ' ', $version->status)) }}</td>
+                            <th>Intake</th>
+                            <th>Format</th>
+                            <th>Units</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ $selectedIntake->intakeLabel() }}</td>
+                            <td>{{ $formats[$selectedIntake->curriculum_format] ?? $selectedIntake->curriculum_format }}</td>
+                            <td>{{ $mappings->count() }}</td>
+                            <td>{{ ucwords(str_replace('_', ' ', $selectedIntake->status)) }}</td>
                             <td style="white-space:nowrap;">
-                                @if ($version->status === 'draft')
+                                @if ($selectedIntake->status === 'draft')
                                     @can('academics.write')
-                                        <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $version->id])) }}" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="tich-link">Submit</button>
-                                        </form>
+                                        @if ($mappings->isEmpty())
+                                            <span class="tich-caption">Add units to semesters above first</span>
+                                        @elseif ($mappings->contains(fn ($map) => ($map->unit?->status ?? '') !== 'active'))
+                                            <span class="tich-caption">Approve all mapped units before submitting</span>
+                                        @else
+                                            <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $selectedIntake->id])) }}" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="tich-link">Submit for approval</button>
+                                            </form>
+                                        @endif
                                     @endcan
                                 @endif
-                                @if ($version->status === 'pending_registry' && $canApproveRegistry)
-                                    <form method="POST" action="{{ route('departments.academics.versions.approve-registry', array_merge($hub, ['version' => $version->id])) }}" style="display:inline;">
+                                @if ($selectedIntake->status === 'pending_registry' && $canApproveRegistry)
+                                    <form method="POST" action="{{ route('departments.academics.versions.approve-registry', array_merge($hub, ['version' => $selectedIntake->id])) }}" style="display:inline;">
                                         @csrf
                                         <button type="submit" class="tich-link">Registrar approve</button>
                                     </form>
                                 @endif
-                                @if ($version->status === 'pending_ceo' && $canApproveCeo)
-                                    <form method="POST" action="{{ route('departments.academics.versions.approve-ceo', array_merge($hub, ['version' => $version->id])) }}" style="display:inline;">
+                                @if ($selectedIntake->status === 'pending_ceo' && $canApproveCeo)
+                                    <form method="POST" action="{{ route('departments.academics.versions.approve-ceo', array_merge($hub, ['version' => $selectedIntake->id])) }}" style="display:inline;">
                                         @csrf
                                         <button type="submit" class="tich-link">CEO publish</button>
                                     </form>
                                 @endif
                             </td>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </article>
+                    </tbody>
+                </table>
+            </article>
+        @endif
     @endif
 @endsection

@@ -13,7 +13,8 @@ class CurriculumVersion extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'program_id', 'academic_year_id', 'version_label', 'version_number',
+        'program_id', 'academic_year_id', 'intake_year', 'intake_month',
+        'version_label', 'version_number',
         'curriculum_format', 'status', 'notes',
         'created_by', 'submitted_at', 'submitted_by',
         'registrar_approved_at', 'registrar_approved_by',
@@ -55,5 +56,28 @@ class CurriculumVersion extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function intakeLabel(): string
+    {
+        if ($this->intake_year && $this->intake_month) {
+            $month = date('M', mktime(0, 0, 0, (int) $this->intake_month, 1));
+
+            return "{$month} {$this->intake_year} intake";
+        }
+
+        return $this->version_label;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function intakeMonths(): array
+    {
+        return [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+        ];
     }
 }

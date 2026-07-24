@@ -434,15 +434,8 @@ class DepartmentDashboardService
 
             $modules[] = [
                 'label' => 'Programmes',
-                'description' => 'Configure course length, terms per year, and map units for programmes in this department.',
+                'description' => 'Configure course length, intakes, unit catalog, and semester mapping for programmes in this department.',
                 'route' => 'departments.academics.programs.index',
-                'params' => $scope,
-                'group' => 'education',
-            ];
-            $modules[] = [
-                'label' => 'Unit catalog',
-                'description' => 'Create and manage units offered by this department.',
-                'route' => 'departments.academics.units.index',
                 'params' => $scope,
                 'group' => 'education',
             ];

@@ -166,6 +166,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/units/{unit}/submit', [AcademicsUnitController::class, 'submit'])->name('departments.academics.units.submit');
             Route::put('/programs/{program}/format', [ProgramCurriculumController::class, 'updateFormat'])->name('departments.academics.programs.update-format');
             Route::post('/programs/{program}/units', [ProgramCurriculumController::class, 'syncUnits'])->name('departments.academics.programs.sync-units');
+            Route::post('/programs/{program}/intakes', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.intakes.store');
+            Route::post('/programs/{program}/intakes/{version}/units', [ProgramCurriculumController::class, 'syncIntakeUnits'])->name('departments.academics.programs.intakes.sync-units');
+            Route::post('/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'])->name('departments.academics.programs.intakes.add-unit');
             Route::post('/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.versions.create');
             Route::post('/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'])->name('departments.academics.versions.submit');
         });
