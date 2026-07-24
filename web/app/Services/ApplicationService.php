@@ -213,11 +213,33 @@ class ApplicationService
     private function validateDocumentsStep(Request $request): array
     {
         $rules = [];
+        $messages = [];
+
         foreach (array_keys(config('tich-application.document_types', [])) as $type) {
-            $rules["documents.{$type}"] = ['nullable', 'file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'];
+            $uploadRules = $this->documentUploadRulesFor($type);
+            $maxKb = (int) ($uploadRules['max_kb'] ?? 5120);
+            $mimes = $uploadRules['mimes'] ?? 'pdf,jpg,jpeg,png';
+
+            $fieldRules = ['nullable', 'file', 'max:'.$maxKb, 'mimes:'.$mimes];
+
+            if ($type === 'passport_photo') {
+                $fieldRules[] = 'image';
+                $fieldRules[] = 'mimetypes:image/jpeg,image/png,image/webp';
+                $fieldRules[] = 'dimensions:max_width=4000,max_height=4000';
+            }
+
+            $rules["documents.{$type}"] = $fieldRules;
+            $messages["documents.{$type}.image"] = 'The passport photo must be an image file (JPEG, PNG, or WebP). PDFs are not accepted.';
+            $messages["documents.{$type}.mimes"] = $type === 'passport_photo'
+                ? 'The passport photo must be a JPEG, PNG, or WebP image.'
+                : 'This document must be a PDF or image (JPEG/PNG).';
+            $messages["documents.{$type}.max"] = $type === 'passport_photo'
+                ? 'The passport photo must not be larger than 2 MB.'
+                : 'Each document must not be larger than 5 MB.';
+            $messages["documents.{$type}.mimetypes"] = 'The passport photo must be a JPEG, PNG, or WebP image.';
         }
 
-        Validator::make($request->all(), $rules)->validate();
+        Validator::make($request->all(), $rules, $messages)->validate();
 
         $existing = $this->draft()['data']['documents'] ?? [];
 
@@ -347,5 +369,16 @@ class ApplicationService
         }
 
         return DB::table('academic_programs')->where('id', $programId)->value('department_id');
+    }
+
+    /**
+     * @return array{accept: string, mimes: string, max_kb: int, hint: string}
+     */
+    public function documentUploadRulesFor(string $type): array
+    {
+        $defaults = config('tich-application.document_upload_rules.default', []);
+        $specific = config("tich-application.document_upload_rules.{$type}", []);
+
+        return array_merge($defaults, $specific);
     }
 }

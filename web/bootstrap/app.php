@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,5 +27,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (PostTooLargeException $e, Request $request) {
+            if ($request->is('apply/*')) {
+                return redirect()
+                    ->route('apply.index', ['step' => 5])
+                    ->withErrors([
+                        'documents' => 'One or more files exceed the server upload limit. Passport photos must be JPEG, PNG, or WebP images under 2 MB. Other documents must be under 5 MB.',
+                    ]);
+            }
+
+            return null;
+        });
     })->create();

@@ -44,6 +44,25 @@ return [
         'passport_photo' => 'Passport-size photo',
     ],
 
+    /*
+    | Per-document upload constraints shown in the form and enforced on upload.
+    | max_kb is applied to Laravel's file max rule (kilobytes).
+    */
+    'document_upload_rules' => [
+        'passport_photo' => [
+            'accept' => 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
+            'mimes' => 'jpg,jpeg,png,webp',
+            'max_kb' => 2048,
+            'hint' => 'Upload a passport-size photo — JPEG, PNG, or WebP only (max 2 MB). PDFs are not accepted.',
+        ],
+        'default' => [
+            'accept' => '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',
+            'mimes' => 'pdf,jpg,jpeg,png',
+            'max_kb' => 5120,
+            'hint' => 'PDF or image file (max 5 MB).',
+        ],
+    ],
+
     'admission_fee_notice' => 'Congratulations on being shortlisted. To proceed with admission processing, you are required to pay an admission fee. The Finance Department will create your fee invoice and send payment instructions to this email address. Admission cannot be finalized until the fee is confirmed.',
 
     'fallback_review_emails' => [
