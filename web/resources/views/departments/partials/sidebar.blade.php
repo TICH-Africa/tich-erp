@@ -1,6 +1,6 @@
 <aside class="tich-admin-sidebar">
     <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
-    <p class="tich-caption" style="margin: -0.5rem 0 1rem;">{{ $categoryLabel($department) }} · {{ $department->dept_code }}</p>
+    <p class="tich-caption" style="margin: -0.5rem 0 1rem;">{{ $categoryLabel($department) }} · {{ $department->dept_code }} · /departments/{{ $department->getRouteKey() }}</p>
 
     <nav class="tich-admin-sidebar__nav">
         @foreach ($sidebarNavigation as $item)
@@ -13,8 +13,9 @@
                     if (($item['route'] ?? '') === 'departments.show') {
                         $currentSection = request()->query('section', 'overview');
                         $itemSection = $item['section'] ?? 'overview';
+                        $targetId = $item['target_id'] ?? ($item['params']['department'] ?? null);
                         $isActive = request()->routeIs('departments.show')
-                            && (int) request()->route('department')?->id === (int) ($item['params']['department'] ?? 0)
+                            && (int) request()->route('department')?->id === (int) $targetId
                             && $currentSection === $itemSection;
                     } elseif (($item['route'] ?? '') === 'dashboard') {
                         $isActive = request()->routeIs('dashboard');

@@ -196,7 +196,8 @@ class DepartmentDashboardService
                 'type' => 'link',
                 'label' => 'Overview',
                 'route' => 'departments.show',
-                'params' => ['department' => $department->id],
+                'params' => ['department' => $department->getRouteKey()],
+                'target_id' => $department->id,
                 'section' => 'overview',
             ],
         ];
@@ -208,7 +209,8 @@ class DepartmentDashboardService
                 'type' => 'link',
                 'label' => 'Departments',
                 'route' => 'departments.show',
-                'params' => ['department' => $department->id, 'section' => 'departments'],
+                'params' => ['department' => $department->getRouteKey(), 'section' => 'departments'],
+                'target_id' => $department->id,
                 'section' => 'departments',
             ];
         }
@@ -252,7 +254,8 @@ class DepartmentDashboardService
                     'type' => 'link',
                     'label' => $parent->dept_name,
                     'route' => 'departments.show',
-                    'params' => ['department' => $parent->id],
+                    'params' => ['department' => $parent->getRouteKey()],
+                    'target_id' => $parent->id,
                     'section' => 'overview',
                 ];
 
@@ -261,7 +264,8 @@ class DepartmentDashboardService
                         'type' => 'link',
                         'label' => 'All departments',
                         'route' => 'departments.show',
-                        'params' => ['department' => $parent->id, 'section' => 'departments'],
+                        'params' => ['department' => $parent->getRouteKey(), 'section' => 'departments'],
+                        'target_id' => $parent->id,
                         'section' => 'departments',
                     ];
                 }

@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Services\DepartmentDashboardService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DepartmentDashboardController extends Controller
 {
-    public function show(Request $request, Department $department, DepartmentDashboardService $departmentDashboard): View
+    public function show(Request $request, Department $department, DepartmentDashboardService $departmentDashboard): View|RedirectResponse
     {
         if (! $department->is_active) {
             throw new NotFoundHttpException();
@@ -20,6 +21,15 @@ class DepartmentDashboardController extends Controller
 
         if (! $departmentDashboard->userCanAccessDepartment($user, $department)) {
             abort(403, 'You do not have access to this department.');
+        }
+
+        $requestedKey = (string) $request->route()->originalParameter('department');
+
+        if ($requestedKey !== $department->getRouteKey()) {
+            return redirect()->route('departments.show', array_filter([
+                'department' => $department->getRouteKey(),
+                'section' => $request->query('section'),
+            ]));
         }
 
         $section = $departmentDashboard->resolveSection($request, $user, $department);

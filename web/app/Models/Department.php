@@ -119,6 +119,44 @@ class Department extends Model
         return $this->parent_dept_id === null;
     }
 
+    /**
+     * URL segment for department dashboards.
+     * Main departments: "14"
+     * Child departments: "14-2" (parent id + child id)
+     */
+    public function getRouteKey(): string
+    {
+        if ($this->parent_dept_id !== null) {
+            return $this->parent_dept_id.'-'.$this->id;
+        }
+
+        return (string) $this->id;
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return static::resolveFromRouteKey((string) $value);
+    }
+
+    public static function resolveFromRouteKey(string $key): ?self
+    {
+        if (preg_match('/^(\d+)-(\d+)$/', $key, $matches)) {
+            $department = static::query()->find((int) $matches[2]);
+
+            if ($department && (int) $department->parent_dept_id === (int) $matches[1]) {
+                return $department;
+            }
+
+            return null;
+        }
+
+        if (ctype_digit($key)) {
+            return static::query()->find((int) $key);
+        }
+
+        return null;
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

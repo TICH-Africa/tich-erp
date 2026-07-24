@@ -69,6 +69,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::get('/departments/{department}', [DepartmentDashboardController::class, 'show'])
         ->middleware('permission:dashboard.access')
+        ->where('department', '[0-9]+(-[0-9]+)?')
         ->name('departments.show');
 
     Route::prefix('admin')->group(function () {
