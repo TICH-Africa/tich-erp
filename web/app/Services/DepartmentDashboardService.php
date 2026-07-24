@@ -320,6 +320,15 @@ class DepartmentDashboardService
                     'learning_department' => $department->id,
                 ],
             ];
+
+            if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
+                $items[] = [
+                    'type' => 'link',
+                    'label' => 'Application approvals',
+                    'route' => 'admissions.applications.index',
+                    'params' => ['department' => $department->id, 'status' => 'pending'],
+                ];
+            }
         }
 
         $items[] = ['type' => 'heading', 'label' => 'Account'];
@@ -355,18 +364,48 @@ class DepartmentDashboardService
             $stats['unit_count'] = Unit::query()
                 ->where('department_id', $department->id)
                 ->count();
-            $stats['pending_applications'] = Applicant::query()
-                ->where(function ($query) use ($department) {
-                    $query->where('handling_department_id', $department->id)
-                        ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $department->id));
-                })
-                ->whereIn('status', ['submitted', 'academic_review'])
-                ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
-                ->count();
+            $stats['pending_applications'] = $this->pendingApplicationsCount($department);
             $stats['curriculum_profile'] = $department->curriculum_profile ?? 'standard';
         }
 
         return $stats;
+    }
+
+    public function pendingApplicationsCount(Department $department): int
+    {
+        if (! $department->isLearningDepartment()) {
+            return 0;
+        }
+
+        return Applicant::query()
+            ->where(function ($query) use ($department) {
+                $query->where('handling_department_id', $department->id)
+                    ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $department->id));
+            })
+            ->whereIn('status', ['submitted', 'academic_review'])
+            ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
+            ->count();
+    }
+
+    /**
+     * @param  list<int>  $programIds
+     * @return array<int, int>
+     */
+    public function pendingApplicationsCountByProgram(array $programIds): array
+    {
+        if ($programIds === []) {
+            return [];
+        }
+
+        return Applicant::query()
+            ->whereIn('program_id', $programIds)
+            ->whereIn('status', ['submitted', 'academic_review'])
+            ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
+            ->groupBy('program_id')
+            ->selectRaw('program_id, COUNT(*) as aggregate')
+            ->pluck('aggregate', 'program_id')
+            ->map(fn ($count) => (int) $count)
+            ->all();
     }
 
     /**

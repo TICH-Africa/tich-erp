@@ -28,7 +28,12 @@
                 @if (! empty($item['coming_soon']))
                     <span class="tich-admin-sidebar__disabled">{{ $item['label'] }} <small>(soon)</small></span>
                 @else
-                    <a href="{{ route($item['route'], $item['params'] ?? []) }}" @class(['is-active' => $isActive])>{{ $item['label'] }}</a>
+                    <a href="{{ route($item['route'], $item['params'] ?? []) }}" @class(['is-active' => $isActive])>
+                        <span>{{ $item['label'] }}</span>
+                        @if (! empty($item['badge']))
+                            <span class="tich-notification-badge" aria-label="{{ $item['badge'] }} pending applications">{{ $item['badge'] }}</span>
+                        @endif
+                    </a>
                 @endif
             @endif
         @endforeach

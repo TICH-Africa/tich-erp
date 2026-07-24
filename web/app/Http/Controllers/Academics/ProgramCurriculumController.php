@@ -47,11 +47,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ? Department::query()->find($learningDepartmentId)
             : null;
 
+        $programs = $programsQuery->get();
+
         return view('academics.programs.index', [
             'department' => $hub,
             'learningDepartment' => $learningDepartment,
-            'programs' => $programsQuery->get(),
+            'programs' => $programs,
             'formats' => ProgramCurriculumService::curriculumFormats(),
+            'pendingApplicationsByProgram' => $this->departmentDashboard->pendingApplicationsCountByProgram(
+                $programs->pluck('id')->all()
+            ),
+            'canViewApplications' => $request->user()->hasPermission('admissions.read'),
         ]);
     }
 

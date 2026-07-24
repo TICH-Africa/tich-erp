@@ -162,11 +162,7 @@ class AuthService
 
     public function isEnrolledStudent(User $user): bool
     {
-        if ($user->student_id) {
-            return true;
-        }
-
-        return \App\Models\Student::query()->where('user_id', $user->id)->exists();
+        return $user->isEnrolledStudent();
     }
 
     public function markMfaVerified(Request $request, User $user): void

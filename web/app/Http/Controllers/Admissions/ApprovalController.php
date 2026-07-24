@@ -34,13 +34,15 @@ class ApprovalController extends Controller
         $user = $request->user();
         $departmentId = $request->integer('department') ?: null;
         $status = $request->string('status')->toString() ?: null;
+        $programId = $request->integer('program') ?: null;
 
         return view('admissions.applications.index', [
-            'applications' => $this->reviewService->listApplications($user, $departmentId, $status),
+            'applications' => $this->reviewService->listApplications($user, $departmentId, $status, $programId),
             'departments' => $this->reviewService->filterDepartmentsForUser($user),
             'filters' => [
                 'department' => $departmentId,
                 'status' => $status,
+                'program' => $programId,
             ],
             'canAccessAll' => $this->reviewService->canAccessAllDepartments($user),
         ]);

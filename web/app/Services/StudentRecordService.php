@@ -59,7 +59,7 @@ class StudentRecordService
      */
     public function biodata360(Student $student): array
     {
-        $student->loadMissing(['applicant.documents', 'program.department', 'campus', 'user']);
+        $student->loadMissing(['applicant.documents', 'applicant.preferredCampus', 'program.department', 'campus', 'user']);
         $applicant = $student->applicant;
 
         return [
@@ -90,6 +90,23 @@ class StudentRecordService
                 'submitted_at' => $applicant?->created_at?->format('Y-m-d H:i'),
                 'reviewed_at' => $applicant?->reviewed_at?->format('Y-m-d H:i'),
                 'review_notes' => $applicant?->review_notes,
+                'rejection_reason' => $applicant?->rejection_reason,
+                'intake_year' => $applicant?->intake_year,
+                'intake_month' => $applicant?->intake_month,
+                'preferred_campus' => $applicant?->preferredCampus?->campus_name,
+                'entry_qualification' => $applicant?->entry_qualification,
+                'sponsorship_type' => $applicant?->sponsorship_type,
+            ],
+            'next_of_kin' => [
+                'name' => $applicant?->next_of_kin_name,
+                'relationship' => $applicant?->next_of_kin_relationship,
+                'phone' => $applicant?->next_of_kin_phone,
+                'address' => $applicant?->next_of_kin_address,
+            ],
+            'emergency' => [
+                'name' => $student->emergency_contact_name,
+                'phone' => $student->emergency_contact_phone,
+                'relationship' => $student->emergency_contact_relationship,
             ],
             'enrollment' => [
                 'enrollment_status' => $student->enrollment_status,

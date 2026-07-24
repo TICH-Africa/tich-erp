@@ -85,7 +85,7 @@ class AdmissionsReviewService
         return $query->get();
     }
 
-    public function listApplications(User $user, ?int $departmentId = null, ?string $status = null): Collection
+    public function listApplications(User $user, ?int $departmentId = null, ?string $status = null, ?int $programId = null): Collection
     {
         $this->backfillMissingHandlingDepartments();
 
@@ -103,6 +103,10 @@ class AdmissionsReviewService
                 $scoped->where('handling_department_id', $departmentId)
                     ->orWhereHas('program', fn (Builder $programQuery) => $programQuery->where('department_id', $departmentId));
             });
+        }
+
+        if ($programId) {
+            $query->where('program_id', $programId);
         }
 
         if ($status === 'pending') {

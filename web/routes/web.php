@@ -196,6 +196,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
     Route::get('/portal', [\App\Http\Controllers\Portal\PortalDashboardController::class, '__invoke'])
         ->middleware('student.portal')
         ->name('portal.dashboard');
+    Route::middleware('student.portal')->prefix('portal')->group(function () {
+        Route::get('/documents/{document}', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'show'])
+            ->name('portal.documents.show');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
+            ->name('portal.documents.download');
+    });
 });
 
 /*

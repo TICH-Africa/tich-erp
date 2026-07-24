@@ -71,6 +71,15 @@ class User extends Authenticatable
         return $this->belongsTo(Student::class);
     }
 
+    public function isEnrolledStudent(): bool
+    {
+        if ($this->student_id) {
+            return true;
+        }
+
+        return Student::query()->where('user_id', $this->id)->exists();
+    }
+
     public function hasPermission(string $permission): bool
     {
         return app(\App\Services\RBACService::class)->hasPermission($this, $permission);

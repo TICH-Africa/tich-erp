@@ -19,6 +19,10 @@ class ApplicationDocument extends Model
         'mime_type',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
+
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');

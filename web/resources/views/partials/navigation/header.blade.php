@@ -14,7 +14,11 @@
             @include('partials.theme-toggle')
 
             @auth
-                <a href="{{ route('dashboard') }}" class="tich-nav__link">Dashboard</a>
+                @if (auth()->user()->isEnrolledStudent())
+                    <a href="{{ route('portal.dashboard') }}" class="tich-nav__link{{ request()->routeIs('portal.*') ? ' is-active' : '' }}">Student portal</a>
+                @else
+                    <a href="{{ route('dashboard') }}" class="tich-nav__link{{ request()->routeIs('dashboard') ? ' is-active' : '' }}">Dashboard</a>
+                @endif
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-ghost">Sign out</button>
@@ -37,7 +41,11 @@
                     <span class="tich-caption">Appearance</span>
                 </div>
                 @auth
-                    <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Dashboard</a>
+                    @if (auth()->user()->isEnrolledStudent())
+                        <a href="{{ route('portal.dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Student portal</a>
+                    @else
+                        <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Dashboard</a>
+                    @endif
                 @else
                     <a href="{{ route('login') }}" class="tich-btn tich-btn-blue tich-btn-block">Sign in</a>
                     <a href="{{ route('register') }}" class="tich-btn tich-btn-primary tich-btn-block">Apply / Register</a>

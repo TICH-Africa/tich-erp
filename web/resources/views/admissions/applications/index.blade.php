@@ -27,6 +27,9 @@
                 <option value="rejected" @selected($filters['status'] === 'rejected')>Rejected</option>
             </select>
         </div>
+        @if (! empty($filters['program']))
+            <input type="hidden" name="program" value="{{ $filters['program'] }}">
+        @endif
         <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
         <a href="{{ route('admissions.applications.index') }}" class="tich-link">Clear</a>
     </form>
