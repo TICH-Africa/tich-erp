@@ -57,6 +57,7 @@
 
     /* Semantic aliases (modals, elevated surfaces) */
     --tich-surface: var(--tich-white);
+    --tich-surface-muted: #f8fafc;
     --tich-text: var(--tich-grey);
     --tich-border: var(--tich-neutral-border);
 }
@@ -333,6 +334,35 @@ h3.tich-h3 {
     font-size: 1.25rem;
     letter-spacing: 0.2em;
     font-weight: 600;
+}
+
+.tich-inset-panel {
+    padding: 1rem;
+    border: 1px solid var(--tich-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface-muted);
+}
+
+.tich-period-dates-grid {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) repeat(2, minmax(10rem, 1fr));
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 0.75rem;
+}
+
+.tich-period-dates-grid .tich-form-group {
+    margin-bottom: 0;
+}
+
+.tich-period-dates-grid .tich-label {
+    display: block;
+}
+
+@media (max-width: 640px) {
+    .tich-period-dates-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ─── Cards ──────────────────────────────────────────────────────────── */
@@ -1727,8 +1757,48 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     --tich-focus-ring: rgba(96, 165, 250, 0.25);
 
     --tich-surface: var(--tich-white);
+    --tich-surface-muted: #131c28;
     --tich-text: var(--tich-grey);
     --tich-border: var(--tich-neutral-border);
+}
+
+[data-theme="dark"] .tich-input,
+[data-theme="dark"] .tich-select,
+[data-theme="dark"] textarea.tich-input {
+    color: var(--tich-grey);
+    background-color: var(--tich-neutral);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-input[type="date"],
+[data-theme="dark"] .tich-input[type="datetime-local"],
+[data-theme="dark"] .tich-input[type="time"] {
+    color-scheme: dark;
+}
+
+[data-theme="dark"] .tich-input::placeholder {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-input:focus,
+[data-theme="dark"] .tich-select:focus,
+[data-theme="dark"] textarea.tich-input:focus {
+    border-color: var(--tich-blue);
+    box-shadow: 0 0 0 3px var(--tich-focus-ring);
+}
+
+[data-theme="dark"] .tich-inset-panel {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-inset-panel .tich-text,
+[data-theme="dark"] .tich-inset-panel .tich-label {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-inset-panel .tich-caption {
+    color: var(--tich-neutral-muted);
 }
 
 [data-theme="dark"] .tich-h1,

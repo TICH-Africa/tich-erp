@@ -127,6 +127,7 @@ class ApplicationController extends Controller
             'counties' => config('tich-application.counties', []),
             'sponsorshipOptions' => config('tich-application.sponsorship_options', []),
             'relationshipOptions' => config('tich-application.next_of_kin_relationships', []),
+            'programIntakes' => $this->applicationService->intakesByProgram(),
             'review' => $step === 7 ? $this->applicationService->reviewSummary() : null,
         ];
     }

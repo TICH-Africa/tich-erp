@@ -5,7 +5,9 @@
     <h1 class="tich-h1 tich-dept-header__title">Academics</h1>
     <p class="tich-text tich-dept-header__meta">
         {{ $biodata['academic']['program'] }}
-        @if ($academics['current_semester'])
+        @if ($academics['current_period'])
+            · Semester {{ $academics['current_period']->semester }}
+        @elseif ($academics['current_semester'])
             · Current: {{ $academics['current_semester']->semester_label }}
         @endif
         @if ($academics['curriculum'])
@@ -13,6 +15,68 @@
         @endif
     </p>
 </header>
+
+@if ($academics['curriculum'] && ! $academics['curriculum_is_published'])
+    <div class="tich-notice tich-notice--info tich-mt-4">
+        <p class="tich-text" style="margin:0;">
+            Your programme curriculum for {{ $academics['curriculum']->intakeLabel() }} is still being finalised by the academic office.
+            The units and dates shown below are provisional until the intake is published.
+        </p>
+    </div>
+@endif
+
+@if ($academics['current_period'])
+    <section class="tich-dept-panel tich-mt-8">
+        <div class="tich-dept-panel__head">
+            <h2 class="tich-h2 tich-dept-panel__title">
+                Semester {{ $academics['current_period']->semester }}
+                @if ($academics['current_period_status'] === 'in_progress')
+                    <span class="tich-caption">· In progress</span>
+                @elseif ($academics['current_period_status'] === 'upcoming')
+                    <span class="tich-caption">· Upcoming</span>
+                @elseif ($academics['current_period_status'] === 'completed')
+                    <span class="tich-caption">· Completed</span>
+                @endif
+            </h2>
+            <p class="tich-text">
+                @if ($academics['current_period']->scheduleLabel())
+                    {{ $academics['current_period']->scheduleLabel() }}
+                @else
+                    Semester dates have not been published yet.
+                @endif
+            </p>
+        </div>
+
+        @if ($academics['current_period_units']->isNotEmpty())
+            <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>Contact hrs</th>
+                            <th>Learning hrs</th>
+                            <th>Core</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($academics['current_period_units'] as $mapping)
+                            <tr>
+                                <td>{{ $mapping->unit?->unit_code }} — {{ $mapping->unit?->unit_name }}</td>
+                                <td>{{ $mapping->contact_hours ?? 0 }}</td>
+                                <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
+                                <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <article class="tich-card tich-mt-4">
+                <p class="tich-text">No units are mapped to this semester yet.</p>
+            </article>
+        @endif
+    </section>
+@endif
 
 @if ($academics['registered_units']->isNotEmpty())
     <section class="tich-dept-panel tich-mt-8">
@@ -122,8 +186,14 @@
         </div>
 
         @foreach ($academics['curriculum_by_semester'] as $semesterNumber => $units)
+            @php($period = $academics['periods_by_semester']->get($semesterNumber))
             <fieldset class="tich-mt-6" style="border:1px solid var(--tich-border); border-radius:0.5rem; padding:1rem;">
-                <legend class="tich-h3" style="padding:0 0.5rem;">Semester {{ $semesterNumber }}</legend>
+                <legend class="tich-h3" style="padding:0 0.5rem;">
+                    Semester {{ $semesterNumber }}
+                    @if ($period?->scheduleLabel())
+                        <span class="tich-caption">· {{ $period->scheduleLabel() }}</span>
+                    @endif
+                </legend>
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -147,9 +217,15 @@
             </fieldset>
         @endforeach
     </section>
-@elseif ($academics['registered_units']->isEmpty() && $academics['grades']->isEmpty())
+@elseif ($academics['registered_units']->isEmpty() && $academics['grades']->isEmpty() && ! $academics['curriculum'])
     <article class="tich-card tich-dept-empty tich-mt-8">
         <h2 class="tich-h3">No academic records yet</h2>
-        <p class="tich-text tich-mt-2">Unit registration, grades, and attendance will appear here once the academic office publishes your semester registration.</p>
+        <p class="tich-text tich-mt-2">
+            @if ($student->program_id)
+                Unit registration, grades, and attendance will appear here once your programme curriculum is published and semester registration is open.
+            @else
+                Your programme has not been assigned yet. Contact the admissions office if this persists.
+            @endif
+        </p>
     </article>
 @endif

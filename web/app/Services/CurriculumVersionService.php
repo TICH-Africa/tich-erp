@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
+use App\Models\CurriculumVersionPeriod;
 use App\Models\CurriculumVersionUnit;
 use App\Models\Department;
 use App\Models\ProgramUnit;
@@ -85,6 +86,7 @@ class CurriculumVersionService
 
             if ($source) {
                 $this->copyUnits($source, $version);
+                $this->copyPeriods($source, $version);
             }
         } elseif (! empty($data['copy_from_program_template'])) {
             $this->copyFromProgramTemplate($program, $version);
@@ -318,6 +320,79 @@ class CurriculumVersionService
     }
 
     /**
+     * @return \Illuminate\Support\Collection<string, CurriculumVersionPeriod>
+     */
+    public function periodsKeyed(CurriculumVersion $version): Collection
+    {
+        return CurriculumVersionPeriod::query()
+            ->where('curriculum_version_id', $version->id)
+            ->orderBy('semester')
+            ->get()
+            ->keyBy(fn (CurriculumVersionPeriod $period) => $this->periodKey($period->semester, $period->block_id));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $periods
+     */
+    public function syncPeriodDates(
+        User $user,
+        Department $hub,
+        CurriculumVersion $version,
+        array $periods,
+        ?Request $request = null
+    ): void {
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+        abort_unless($version->status !== 'superseded', 422, 'Superseded intakes cannot be edited.');
+
+        foreach ($periods as $row) {
+            $semester = (int) ($row['semester'] ?? 0);
+            $blockId = isset($row['block_id']) && $row['block_id'] !== '' ? (int) $row['block_id'] : null;
+            $startDate = $row['start_date'] ?? null;
+            $endDate = $row['end_date'] ?? null;
+
+            if ($semester < 1) {
+                continue;
+            }
+
+            if ($startDate && $endDate && $startDate > $endDate) {
+                throw ValidationException::withMessages([
+                    "periods.{$semester}.end_date" => 'End date must be on or after the start date.',
+                ]);
+            }
+
+            CurriculumVersionPeriod::query()->updateOrCreate(
+                [
+                    'curriculum_version_id' => $version->id,
+                    'semester' => $semester,
+                    'block_id' => $blockId,
+                ],
+                [
+                    'start_date' => $startDate ?: null,
+                    'end_date' => $endDate ?: null,
+                ]
+            );
+        }
+
+        $this->auditService->log(
+            'academics.curriculum_version.periods_updated',
+            'curriculum_versions',
+            $version->id,
+            null,
+            ['period_count' => count($periods)],
+            'Intake semester dates updated',
+            'success',
+            $user->id,
+            $request
+        );
+    }
+
+    public function periodKey(int $semester, ?int $blockId): string
+    {
+        return $semester.':'.($blockId ?? '');
+    }
+
+    /**
      * @return Collection<int, CurriculumVersionUnit>
      */
     public function mappedUnits(CurriculumVersion $version): Collection
@@ -477,6 +552,21 @@ class CurriculumVersionService
                 'credit_hours' => $item->credit_hours,
                 'contact_hours' => $item->contact_hours,
                 'total_learning_hours' => $item->total_learning_hours,
+            ]);
+        }
+    }
+
+    private function copyPeriods(CurriculumVersion $source, CurriculumVersion $target): void
+    {
+        $source->loadMissing('periods');
+
+        foreach ($source->periods as $period) {
+            CurriculumVersionPeriod::create([
+                'curriculum_version_id' => $target->id,
+                'semester' => $period->semester,
+                'block_id' => $period->block_id,
+                'start_date' => $period->start_date,
+                'end_date' => $period->end_date,
             ]);
         }
     }

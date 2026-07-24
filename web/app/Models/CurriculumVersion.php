@@ -48,6 +48,12 @@ class CurriculumVersion extends Model
             ->orderBy('priority');
     }
 
+    public function periods(): HasMany
+    {
+        return $this->hasMany(CurriculumVersionPeriod::class, 'curriculum_version_id')
+            ->orderBy('semester');
+    }
+
     public function isDraft(): bool
     {
         return $this->status === 'draft';

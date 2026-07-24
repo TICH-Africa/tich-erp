@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Applicant;
 use App\Models\ApplicationDocument;
+use App\Models\CurriculumVersion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -150,23 +151,69 @@ class ApplicationService
         return [
             'program' => $program,
             'campus' => $campus,
+            'intakeLabel' => $this->intakeLabelFromData($data),
             'data' => $data,
         ];
     }
 
+    /**
+     * @return array<int, \Illuminate\Support\Collection<int, CurriculumVersion>>
+     */
+    public function intakesByProgram(): array
+    {
+        if (! Schema::hasTable('curriculum_versions')) {
+            return [];
+        }
+
+        return CurriculumVersion::query()
+            ->whereNotNull('intake_year')
+            ->whereNotNull('intake_month')
+            ->whereNotIn('status', ['superseded'])
+            ->orderByDesc('intake_year')
+            ->orderByDesc('intake_month')
+            ->get()
+            ->groupBy('program_id')
+            ->all();
+    }
+
     private function validateProgramStep(Request $request): array
     {
-        $validated = Validator::make($request->all(), [
-            'program_id' => ['required', 'integer'],
-            'preferred_campus_id' => ['nullable', 'integer'],
-        ])->validate();
-
-        $program = $this->programsService->findProgramById((int) $validated['program_id']);
+        $program = $this->programsService->findProgramById((int) $request->input('program_id'));
 
         if (! $program || empty($program->id)) {
             throw ValidationException::withMessages([
                 'program_id' => 'Please select a programme from the list.',
             ]);
+        }
+
+        $programId = (int) $program->id;
+        $intakes = $this->intakesForProgram($programId);
+        $rules = [
+            'program_id' => ['required', 'integer'],
+            'preferred_campus_id' => ['nullable', 'integer'],
+        ];
+
+        if ($intakes->isNotEmpty()) {
+            $rules['intake_year'] = ['required', 'integer', 'min:2000', 'max:2100'];
+            $rules['intake_month'] = ['required', 'integer', 'min:1', 'max:12'];
+        } else {
+            $rules['intake_year'] = ['nullable', 'integer', 'min:2000', 'max:2100'];
+            $rules['intake_month'] = ['nullable', 'integer', 'min:1', 'max:12'];
+        }
+
+        $validated = Validator::make($request->all(), $rules)->validate();
+
+        if ($intakes->isNotEmpty()) {
+            $validIntake = $intakes->contains(
+                fn (CurriculumVersion $intake) => (int) $intake->intake_year === (int) $validated['intake_year']
+                    && (int) $intake->intake_month === (int) $validated['intake_month']
+            );
+
+            if (! $validIntake) {
+                throw ValidationException::withMessages([
+                    'intake_year' => 'Select a valid intake for this programme.',
+                ]);
+            }
         }
 
         $validated['program_code'] = strtoupper($program->program_code ?? '');
@@ -315,6 +362,8 @@ class ApplicationService
         $attributes = [
             'application_number' => $this->generateApplicationNumber(),
             'program_id' => $programId,
+            'intake_year' => $data['intake_year'] ?? null,
+            'intake_month' => $data['intake_month'] ?? null,
             'handling_department_id' => $this->resolveProgramDepartmentId($programId),
             'preferred_campus_id' => $data['preferred_campus_id'] ?? null,
             'first_name' => $firstName,
@@ -369,6 +418,39 @@ class ApplicationService
         }
 
         return DB::table('academic_programs')->where('id', $programId)->value('department_id');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, CurriculumVersion>
+     */
+    private function intakesForProgram(int $programId): \Illuminate\Support\Collection
+    {
+        if (! Schema::hasTable('curriculum_versions')) {
+            return collect();
+        }
+
+        return CurriculumVersion::query()
+            ->where('program_id', $programId)
+            ->whereNotNull('intake_year')
+            ->whereNotNull('intake_month')
+            ->whereNotIn('status', ['superseded'])
+            ->orderByDesc('intake_year')
+            ->orderByDesc('intake_month')
+            ->get();
+    }
+
+    private function intakeLabelFromData(array $data): ?string
+    {
+        $year = $data['intake_year'] ?? null;
+        $month = $data['intake_month'] ?? null;
+
+        if (! $year || ! $month) {
+            return null;
+        }
+
+        $monthName = CurriculumVersion::intakeMonths()[(int) $month] ?? (string) $month;
+
+        return "{$monthName} {$year} intake";
     }
 
     /**

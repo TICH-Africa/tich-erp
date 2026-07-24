@@ -69,7 +69,7 @@
 
         @if (! $intakeEditable)
             @can('academics.write')
-                <div class="tich-mt-4" style="padding:1rem; border:1px solid var(--tich-border); border-radius:0.5rem; background:var(--tich-surface-muted, #f8fafc);">
+                <div class="tich-inset-panel tich-mt-4">
                     <p class="tich-text" style="margin:0 0 0.75rem;">
                         This intake is {{ str_replace('_', ' ', $selectedIntake->status) }} and cannot be edited.
                         Return it to draft to assign or reorder units.
@@ -89,6 +89,41 @@
                 @csrf
             </form>
         @endif
+
+        @can('academics.write')
+            @if ($selectedIntake->status !== 'superseded')
+                <form id="intake-periods-form" method="POST" action="{{ route('departments.academics.programs.intakes.sync-periods', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-inset-panel tich-mt-4">
+                    @csrf
+                    <p class="tich-text" style="margin:0 0 1rem;">Set the start and end date for each {{ $program->usesBlocks() ? 'block' : 'semester' }} in this intake. Students see these dates in the portal.</p>
+                    @php $periodIndex = 0; @endphp
+                    @foreach ($periods as $period)
+                        @php
+                            $periodKey = $period['semester'].':'.($period['block_id'] ?? '');
+                            $periodDate = $periodDates->get($periodKey);
+                            $periodIndex++;
+                        @endphp
+                        <input type="hidden" name="periods[{{ $periodIndex }}][semester]" value="{{ $period['semester'] }}">
+                        @if ($period['block_id'])
+                            <input type="hidden" name="periods[{{ $periodIndex }}][block_id]" value="{{ $period['block_id'] }}">
+                        @endif
+                        <div class="tich-period-dates-grid">
+                            <div>
+                                <span class="tich-label">{{ $period['label'] }}</span>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-caption">Start date</label>
+                                <input type="date" name="periods[{{ $periodIndex }}][start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d')) }}">
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-caption">End date</label>
+                                <input type="date" name="periods[{{ $periodIndex }}][end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d')) }}">
+                            </div>
+                        </div>
+                    @endforeach
+                    <button type="submit" class="tich-btn tich-btn-secondary">Save semester dates</button>
+                </form>
+            @endif
+        @endcan
 
         @if ($intakeEditable && $availableUnits->isNotEmpty())
             @php $inactiveCatalogUnits = $availableUnits->where('status', '!=', 'active')->count(); @endphp
@@ -115,6 +150,8 @@
                     ? $mappingsByBlock->get($period['block_id'], collect())
                     : $mappingsBySemester->get($period['semester'], collect());
                 $periodAvailableUnits = $availableUnits->reject(fn ($unit) => in_array($unit->id, $assignedUnitIds, true));
+                $periodKey = $period['semester'].':'.($period['block_id'] ?? '');
+                $periodDate = $periodDates->get($periodKey);
             @endphp
 
             <fieldset class="tich-mt-6" style="border:1px solid var(--tich-border); border-radius:0.5rem; padding:1rem;">
@@ -122,6 +159,9 @@
                     {{ $period['label'] }}
                     @if (! $program->usesBlocks())
                         <span class="tich-caption">· Semester {{ $period['semester'] }} of {{ $totalTeachingPeriods }}</span>
+                    @endif
+                    @if ($periodDate?->scheduleLabel())
+                        <span class="tich-caption">· {{ $periodDate->scheduleLabel() }}</span>
                     @endif
                 </legend>
 

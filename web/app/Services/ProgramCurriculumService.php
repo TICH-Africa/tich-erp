@@ -295,20 +295,31 @@ class ProgramCurriculumService
     }
 
     /**
-     * @return Collection<int, Applicant>
+     * @return array{matched: Collection<int, Applicant>, unassigned: Collection<int, Applicant>}
      */
-    public function applicationsForIntake(AcademicProgram $program, ?CurriculumVersion $intake): Collection
+    public function applicationsForIntake(AcademicProgram $program, ?CurriculumVersion $intake): array
     {
-        $query = Applicant::query()
+        $base = Applicant::query()
             ->with(['preferredCampus', 'program.department', 'handlingDepartment'])
             ->where('program_id', $program->id)
             ->orderByDesc('created_at');
 
+        $unassigned = (clone $base)
+            ->whereNull('intake_year')
+            ->whereNull('intake_month')
+            ->get();
+
+        $matched = collect();
         if ($intake?->intake_year && $intake?->intake_month) {
-            $query->where('intake_year', $intake->intake_year)
-                ->where('intake_month', $intake->intake_month);
+            $matched = (clone $base)
+                ->where('intake_year', $intake->intake_year)
+                ->where('intake_month', $intake->intake_month)
+                ->get();
         }
 
-        return $query->get();
+        return [
+            'matched' => $matched,
+            'unassigned' => $unassigned,
+        ];
     }
 }

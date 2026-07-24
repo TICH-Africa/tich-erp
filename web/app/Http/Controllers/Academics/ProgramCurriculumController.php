@@ -86,6 +86,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ? $this->versions->mappedUnits($selectedIntake)
             : collect();
 
+        $periodDates = $selectedIntake
+            ? $this->versions->periodsKeyed($selectedIntake)
+            : collect();
+
         $periods = $program->usesBlocks()
             ? $blocks->map(fn (NursingBlock $block) => [
                 'key' => 'block-'.$block->id,
@@ -113,6 +117,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'mappings' => $mappings,
             'mappingsBySemester' => $mappings->groupBy('semester'),
             'mappingsByBlock' => $mappings->groupBy('block_id'),
+            'periodDates' => $periodDates,
             'availableUnits' => $availableUnits,
             'catalogUnitCounts' => $catalogUnitCounts,
             'formats' => ProgramCurriculumService::curriculumFormats(),
@@ -134,7 +139,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ),
             'applications' => $section === 'applications'
                 ? $this->curriculum->applicationsForIntake($program, $selectedIntake)
-                : collect(),
+                : ['matched' => collect(), 'unassigned' => collect()],
             'canViewApplications' => $request->user()->hasPermission('admissions.read'),
         ]);
     }
@@ -249,6 +254,31 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
 
         return back()->with('status', 'Intake unit mapping saved.');
+    }
+
+    public function syncIntakePeriods(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $version->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'periods' => ['nullable', 'array'],
+            'periods.*.semester' => ['required', 'integer', 'min:1', 'max:24'],
+            'periods.*.block_id' => ['nullable', 'exists:nursing_blocks,id'],
+            'periods.*.start_date' => ['nullable', 'date'],
+            'periods.*.end_date' => ['nullable', 'date'],
+        ]);
+
+        $this->versions->syncPeriodDates(
+            $request->user(),
+            $hub,
+            $version,
+            $validated['periods'] ?? [],
+            $request
+        );
+
+        return back()->with('status', 'Semester dates saved.');
     }
 
     public function addIntakeUnit(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version, int $semester): RedirectResponse

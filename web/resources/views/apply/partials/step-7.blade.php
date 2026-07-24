@@ -4,6 +4,7 @@
 @if ($review)
     <dl class="tich-review-list tich-mt-6">
         <div><dt>Programme</dt><dd>{{ $review['program']->program_name ?? '—' }} ({{ $review['program']->program_code ?? '—' }})</dd></div>
+        <div><dt>Target intake</dt><dd>{{ $review['intakeLabel'] ?? '—' }}</dd></div>
         <div><dt>Preferred campus</dt><dd>{{ $review['campus']->campus_name ?? 'No preference' }}</dd></div>
         <div><dt>Full name</dt><dd>{{ trim(($review['data']['first_name'] ?? '').' '.($review['data']['middle_name'] ?? '').' '.($review['data']['surname'] ?? '')) }}</dd></div>
         <div><dt>Email</dt><dd>{{ $review['data']['email'] ?? '—' }}</dd></div>

@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\CurriculumVersion;
+use App\Models\CurriculumVersionPeriod;
 use App\Models\Semester;
 use App\Models\Student;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StudentPortalDashboardService
@@ -58,6 +60,21 @@ class StudentPortalDashboardService
         $curriculum = $this->resolveCurriculum($student);
         $curriculumUnits = $curriculum
             ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
+            : collect();
+
+        $periods = $curriculum
+            ? $curriculum->periods->sortBy('semester')->values()
+            : collect();
+
+        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+        $currentPeriodUnits = $currentPeriod
+            ? $curriculumUnits->filter(function ($mapping) use ($currentPeriod) {
+                if ($currentPeriod->block_id) {
+                    return (int) $mapping->block_id === (int) $currentPeriod->block_id;
+                }
+
+                return (int) $mapping->semester === (int) $currentPeriod->semester;
+            })->values()
             : collect();
 
         $registrations = DB::table('student_semester_registrations as ssr')
@@ -129,8 +146,14 @@ class StudentPortalDashboardService
 
         return [
             'curriculum' => $curriculum,
+            'curriculum_is_published' => $curriculum?->isPublished() ?? false,
             'curriculum_units' => $curriculumUnits,
             'curriculum_by_semester' => $curriculumUnits->groupBy('semester'),
+            'periods' => $periods,
+            'periods_by_semester' => $periods->keyBy('semester'),
+            'current_period' => $currentPeriod,
+            'current_period_units' => $currentPeriodUnits,
+            'current_period_status' => $this->periodStatus($currentPeriod),
             'registrations' => $registrations,
             'registered_units' => $registeredUnits,
             'registered_unit_count' => $registeredUnits->count(),
@@ -195,15 +218,44 @@ class StudentPortalDashboardService
         }
 
         $applicant = $student->applicant;
+        $programId = (int) $student->program_id;
+        $relations = ['items.unit', 'periods'];
 
         if ($applicant?->intake_year && $applicant?->intake_month) {
-            $intakeMatch = CurriculumVersion::query()
-                ->with(['items.unit'])
-                ->where('program_id', $student->program_id)
+            $publishedIntake = CurriculumVersion::query()
+                ->with($relations)
+                ->where('program_id', $programId)
                 ->where('status', 'published')
                 ->where('intake_year', $applicant->intake_year)
                 ->where('intake_month', $applicant->intake_month)
                 ->orderByDesc('published_at')
+                ->first();
+
+            if ($publishedIntake) {
+                return $publishedIntake;
+            }
+        }
+
+        $published = $this->curriculumVersions->publishedVersionForProgram($programId);
+
+        if ($published) {
+            return $published->load($relations);
+        }
+
+        if (! $this->studentMayViewProvisionalCurriculum($student)) {
+            return null;
+        }
+
+        if ($applicant?->intake_year && $applicant?->intake_month) {
+            $intakeMatch = CurriculumVersion::query()
+                ->with($relations)
+                ->where('program_id', $programId)
+                ->whereNot('status', 'superseded')
+                ->where('intake_year', $applicant->intake_year)
+                ->where('intake_month', $applicant->intake_month)
+                ->whereHas('items')
+                ->orderByDesc('intake_year')
+                ->orderByDesc('intake_month')
                 ->first();
 
             if ($intakeMatch) {
@@ -211,6 +263,85 @@ class StudentPortalDashboardService
             }
         }
 
-        return $this->curriculumVersions->publishedVersionForProgram((int) $student->program_id);
+        return CurriculumVersion::query()
+            ->with($relations)
+            ->where('program_id', $programId)
+            ->whereNot('status', 'superseded')
+            ->whereHas('items')
+            ->orderByDesc('intake_year')
+            ->orderByDesc('intake_month')
+            ->first();
+    }
+
+    private function studentMayViewProvisionalCurriculum(Student $student): bool
+    {
+        if ($student->portal_activated_at) {
+            return true;
+        }
+
+        return in_array($student->enrollment_status, ['active', 'enrolled', 'registered'], true);
+    }
+
+    /**
+     * @param  Collection<int, CurriculumVersionPeriod>  $periods
+     * @param  Collection<int, \App\Models\CurriculumVersionUnit>  $curriculumUnits
+     */
+    private function resolveCurrentPeriod(Collection $periods, Collection $curriculumUnits): ?CurriculumVersionPeriod
+    {
+        if ($periods->isNotEmpty()) {
+            $today = now()->startOfDay();
+
+            $active = $periods->first(fn (CurriculumVersionPeriod $period) => $period->isActiveOn($today));
+            if ($active) {
+                return $active;
+            }
+
+            $upcoming = $periods
+                ->filter(fn (CurriculumVersionPeriod $period) => $period->start_date && $period->start_date->isAfter($today))
+                ->sortBy('start_date')
+                ->first();
+
+            if ($upcoming) {
+                return $upcoming;
+            }
+
+            return $periods
+                ->filter(fn (CurriculumVersionPeriod $period) => $period->end_date)
+                ->sortByDesc('end_date')
+                ->first()
+                ?? $periods->sortBy('semester')->first();
+        }
+
+        if ($curriculumUnits->isEmpty()) {
+            return null;
+        }
+
+        $semester = (int) $curriculumUnits->sortBy('semester')->first()->semester;
+
+        return new CurriculumVersionPeriod([
+            'semester' => $semester,
+            'block_id' => null,
+            'start_date' => null,
+            'end_date' => null,
+        ]);
+    }
+
+    private function periodStatus(?CurriculumVersionPeriod $period): ?string
+    {
+        if (! $period?->start_date || ! $period?->end_date) {
+            return null;
+        }
+
+        $today = now()->startOfDay();
+
+        if ($today->lt($period->start_date)) {
+            return 'upcoming';
+        }
+
+        if ($today->gt($period->end_date)) {
+            return 'completed';
+        }
+
+        return 'in_progress';
     }
 }
