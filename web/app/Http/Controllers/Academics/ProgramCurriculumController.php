@@ -75,6 +75,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $intakes = $this->versions->intakesForProgram($program->id);
         $selectedIntake = $this->versions->resolveSelectedIntake($program, $request->integer('intake') ?: null);
+        $section = $this->curriculum->resolveSection($request);
         $mappings = $selectedIntake
             ? $this->versions->mappedUnits($selectedIntake)
             : collect();
@@ -117,6 +118,18 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'canApproveCeo' => $this->access->canApproveCeo($request->user()),
             'catalogUnits' => $this->unitCatalog->listForHub($hub, (int) $program->department_id),
             'statusLabels' => UnitCatalogService::statusLabels(),
+            'section' => $section,
+            'curriculumSidebarNavigation' => $this->curriculum->curriculumSidebarNavigation(
+                $hub,
+                $learningDepartment,
+                $program,
+                $selectedIntake,
+                $request->user()
+            ),
+            'applications' => $section === 'applications'
+                ? $this->curriculum->applicationsForIntake($program, $selectedIntake)
+                : collect(),
+            'canViewApplications' => $request->user()->hasPermission('admissions.read'),
         ]);
     }
 
@@ -134,7 +147,15 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $this->curriculum->updateProgramFormat($request->user(), $hub, $program, $validated, $request);
 
-        return back()->with('status', 'Programme structure updated.');
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => $request->string('return_section')->toString() ?: 'structure',
+            ]))
+            ->with('status', 'Programme structure updated.');
     }
 
     public function syncUnits(Request $request, Department $department, AcademicProgram $program): RedirectResponse
@@ -189,6 +210,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $version->id,
+                'section' => 'intakes',
             ]))
             ->with('status', "Intake {$version->intakeLabel()} created.");
     }
@@ -230,21 +252,38 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         abort_unless((int) $version->program_id === (int) $program->id, 404);
 
         $validated = $request->validate([
-            'unit_id' => ['required', 'exists:units,id'],
+            'unit_id' => ['nullable', 'exists:units,id'],
+            'unit_ids' => ['nullable', 'array'],
+            'unit_ids.*' => ['integer', 'exists:units,id'],
             'block_id' => ['nullable', 'exists:nursing_blocks,id'],
         ]);
 
-        $this->versions->addUnitToPeriod(
+        $unitIds = $validated['unit_ids'] ?? [];
+        if (! empty($validated['unit_id'])) {
+            $unitIds[] = (int) $validated['unit_id'];
+        }
+
+        $added = $this->versions->addUnitsToPeriod(
             $request->user(),
             $hub,
             $version,
-            (int) $validated['unit_id'],
+            $unitIds,
             $semester,
             isset($validated['block_id']) ? (int) $validated['block_id'] : null,
             $request
         );
 
-        return back()->with('status', 'Unit added to semester.');
+        $count = count($added);
+
+        return back()->with('status', $count === 1 ? 'Unit added to semester.' : "{$count} units added to semester.");
+    }
+
+    public function reopenVersion(Request $request, Department $department, CurriculumVersion $version): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $this->versions->reopenDraft($request->user(), $hub, $version, $request);
+
+        return back()->with('status', 'Intake reopened for editing. You can now assign units by semester.');
     }
 
     public function submitVersion(Request $request, Department $department, CurriculumVersion $version): RedirectResponse

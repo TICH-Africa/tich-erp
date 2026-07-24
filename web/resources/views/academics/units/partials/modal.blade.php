@@ -48,14 +48,6 @@
                     <input type="number" name="total_learning_hours" class="tich-input" min="0" value="{{ old('total_learning_hours', $unit?->total_learning_hours ?? 0) }}">
                 </div>
                 <div class="tich-form-group">
-                    <label class="tich-label">Priority / order</label>
-                    <input type="number" name="display_priority" class="tich-input" min="0" value="{{ old('display_priority', $unit?->display_priority ?? 0) }}">
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Credit hours</label>
-                    <input type="number" step="0.01" name="credit_hours" class="tich-input" min="0" value="{{ old('credit_hours', $unit?->credit_hours ?? 0) }}">
-                </div>
-                <div class="tich-form-group">
                     <label class="tich-label"><input type="checkbox" name="is_core" value="1" @checked(old('is_core', $unit?->is_core ?? true))> Core unit</label>
                 </div>
                 <div class="tich-form-group">

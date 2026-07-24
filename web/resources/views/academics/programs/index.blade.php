@@ -43,7 +43,7 @@
                         <td>{{ $program->duration_months ? $program->duration_months.' months' : '—' }}</td>
                         <td>{{ $program->semester_count ?: $program->termsPerYear() }}</td>
                         <td>{{ $formats[$program->curriculum_format ?? 'trimester'] ?? ucfirst($program->curriculum_format ?? 'trimester') }}</td>
-                        <td><a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id])) }}" class="tich-link">Open builder</a></td>
+                        <td><a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'structure'])) }}" class="tich-link">Open builder</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="7" style="padding:2rem;text-align:center;" class="tich-text">No programmes{{ ! empty($learningDepartment) ? ' for this department' : ' in this academics hub' }}.</td></tr>

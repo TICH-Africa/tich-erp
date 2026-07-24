@@ -171,6 +171,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'])->name('departments.academics.programs.intakes.add-unit');
             Route::post('/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.versions.create');
             Route::post('/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'])->name('departments.academics.versions.submit');
+            Route::post('/versions/{version}/reopen', [ProgramCurriculumController::class, 'reopenVersion'])->name('departments.academics.versions.reopen');
         });
 
         Route::post('/units/{unit}/approve', [AcademicsUnitController::class, 'approve'])

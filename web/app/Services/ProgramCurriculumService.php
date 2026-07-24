@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\AcademicProgram;
+use App\Models\Applicant;
+use App\Models\CurriculumVersion;
 use App\Models\Department;
 use App\Models\NursingBlock;
 use App\Models\ProgramUnit;
@@ -16,6 +18,7 @@ class ProgramCurriculumService
     public function __construct(
         protected AcademicsAccessService $access,
         protected AuditService $auditService,
+        protected RBACService $rbacService,
     ) {}
 
     /**
@@ -191,5 +194,121 @@ class ProgramCurriculumService
         ]);
 
         return $department->fresh();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function curriculumSections(): array
+    {
+        return [
+            'structure' => 'Programme structure',
+            'intakes' => 'Intakes',
+            'catalog' => 'Unit catalog',
+            'semesters' => 'Semester units',
+            'applications' => 'Applications',
+            'workflow' => 'Intake workflow',
+        ];
+    }
+
+    public function resolveSection(Request $request): string
+    {
+        $section = $request->string('section')->toString() ?: 'structure';
+
+        return array_key_exists($section, self::curriculumSections()) ? $section : 'structure';
+    }
+
+    /**
+     * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, target_id?: int}>
+     */
+    public function curriculumSidebarNavigation(
+        Department $hub,
+        ?Department $learningDepartment,
+        AcademicProgram $program,
+        ?CurriculumVersion $selectedIntake,
+        User $user,
+    ): array {
+        $programParams = array_filter([
+            'department' => $hub->id,
+            'program' => $program->id,
+            'learning_department' => $learningDepartment?->id,
+            'intake' => $selectedIntake?->id,
+        ]);
+
+        $listParams = array_filter([
+            'department' => $hub->id,
+            'learning_department' => $learningDepartment?->id,
+        ]);
+
+        $items = [
+            [
+                'type' => 'link',
+                'label' => 'All programmes',
+                'route' => 'departments.academics.programs.index',
+                'params' => $listParams,
+            ],
+            ['type' => 'heading', 'label' => $program->program_code],
+        ];
+
+        $requiresIntake = ['semesters', 'applications', 'workflow'];
+        $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
+
+        foreach (self::curriculumSections() as $key => $label) {
+            if ($key === 'applications' && ! $canViewApplications) {
+                continue;
+            }
+
+            if (in_array($key, $requiresIntake, true) && ! $selectedIntake) {
+                continue;
+            }
+
+            $items[] = [
+                'type' => 'link',
+                'label' => $label,
+                'route' => 'departments.academics.programs.curriculum',
+                'params' => array_merge($programParams, ['section' => $key]),
+                'section' => $key,
+            ];
+        }
+
+        if ($learningDepartment) {
+            $items[] = ['type' => 'heading', 'label' => 'Department'];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Overview',
+                'route' => 'departments.show',
+                'params' => ['department' => $learningDepartment->getRouteKey()],
+                'target_id' => $learningDepartment->id,
+                'section' => 'overview',
+            ];
+        }
+
+        $items[] = ['type' => 'heading', 'label' => 'Account'];
+        $items[] = [
+            'type' => 'link',
+            'label' => 'Main dashboard',
+            'route' => 'dashboard',
+            'params' => [],
+        ];
+
+        return $items;
+    }
+
+    /**
+     * @return Collection<int, Applicant>
+     */
+    public function applicationsForIntake(AcademicProgram $program, ?CurriculumVersion $intake): Collection
+    {
+        $query = Applicant::query()
+            ->with(['preferredCampus', 'program.department', 'handlingDepartment'])
+            ->where('program_id', $program->id)
+            ->orderByDesc('created_at');
+
+        if ($intake?->intake_year && $intake?->intake_month) {
+            $query->where('intake_year', $intake->intake_year)
+                ->where('intake_month', $intake->intake_month);
+        }
+
+        return $query->get();
     }
 }

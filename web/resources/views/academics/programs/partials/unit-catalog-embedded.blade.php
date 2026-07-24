@@ -1,10 +1,11 @@
 @php
     $catalogHub = $hub;
-    $returnFields = [
-        'return_program' => $program->id,
-        'return_learning_department' => $learningDepartment?->id,
-        'return_intake' => $selectedIntake?->id,
-    ];
+        $returnFields = [
+            'return_program' => $program->id,
+            'return_learning_department' => $learningDepartment?->id,
+            'return_intake' => $selectedIntake?->id,
+            'return_section' => $section ?? 'catalog',
+        ];
 @endphp
 
 <article class="tich-card tich-mt-8">

@@ -133,6 +133,7 @@ class UnitController extends DepartmentAcademicsController
                 'program' => $request->integer('return_program'),
                 'learning_department' => $request->integer('return_learning_department') ?: null,
                 'intake' => $request->integer('return_intake') ?: null,
+                'section' => $request->string('return_section')->toString() ?: 'catalog',
             ]))->with('status', $message);
         }
 
@@ -164,6 +165,7 @@ class UnitController extends DepartmentAcademicsController
             'return_program' => ['nullable', 'integer'],
             'return_learning_department' => ['nullable', 'integer'],
             'return_intake' => ['nullable', 'integer'],
+            'return_section' => ['nullable', 'string', 'max:50'],
             'assign_intake' => ['nullable', 'integer'],
         ]);
 

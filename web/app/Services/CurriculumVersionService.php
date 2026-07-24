@@ -206,14 +206,22 @@ class CurriculumVersionService
             ]);
         }
 
+        $periodQuery = CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id);
+        if ($blockId) {
+            $periodQuery->where('block_id', $blockId);
+        } else {
+            $periodQuery->where('semester', $semester);
+        }
+        $nextOrder = ((int) $periodQuery->max('display_order')) + 1;
+
         $mapping = CurriculumVersionUnit::create([
             'curriculum_version_id' => $version->id,
             'unit_id' => $unitId,
             'semester' => $semester,
             'block_id' => $blockId,
             'is_compulsory' => $unit->is_core ?? true,
-            'display_order' => CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->max('display_order') + 1,
-            'priority' => $unit->display_priority ?? 1,
+            'display_order' => $nextOrder,
+            'priority' => $nextOrder,
             'credit_hours' => $unit->credit_hours ?? 0,
             'contact_hours' => $unit->contact_hours ?? 0,
             'total_learning_hours' => $unit->total_learning_hours ?? 0,
@@ -232,6 +240,81 @@ class CurriculumVersionService
         );
 
         return $mapping;
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     * @return list<CurriculumVersionUnit>
+     */
+    public function addUnitsToPeriod(
+        User $user,
+        Department $hub,
+        CurriculumVersion $version,
+        array $unitIds,
+        int $semester,
+        ?int $blockId = null,
+        ?Request $request = null
+    ): array {
+        $added = [];
+
+        foreach (array_values(array_unique(array_map('intval', $unitIds))) as $unitId) {
+            if ($unitId <= 0) {
+                continue;
+            }
+
+            $added[] = $this->addUnitToPeriod($user, $hub, $version, $unitId, $semester, $blockId, $request);
+        }
+
+        if ($added === []) {
+            throw ValidationException::withMessages([
+                'unit_ids' => 'Select at least one unit to assign.',
+            ]);
+        }
+
+        return $added;
+    }
+
+    public function reopenDraft(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
+    {
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+
+        if ($version->status === 'draft') {
+            return $version;
+        }
+
+        if (! in_array($version->status, ['pending_registry', 'pending_ceo', 'published'], true)) {
+            abort(422, 'This intake cannot be reopened for editing.');
+        }
+
+        $previousStatus = $version->status;
+
+        $version->update([
+            'status' => 'draft',
+            'submitted_at' => null,
+            'submitted_by' => null,
+            'registrar_approved_at' => null,
+            'registrar_approved_by' => null,
+            'ceo_approved_at' => null,
+            'ceo_approved_by' => null,
+            'published_at' => null,
+            'published_by' => null,
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'academics.curriculum_version.reopened',
+            'curriculum_versions',
+            $version->id,
+            ['status' => $previousStatus],
+            ['status' => 'draft'],
+            'Intake returned to draft for unit mapping edits',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $version->fresh();
     }
 
     /**

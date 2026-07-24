@@ -191,6 +191,10 @@ class DepartmentDashboardService
      */
     public function sidebarNavigation(User $user, Department $department): array
     {
+        if ($department->isLearningDepartment()) {
+            return $this->learningDepartmentSidebarNavigation($user, $department);
+        }
+
         $items = [
             [
                 'type' => 'link',
@@ -217,7 +221,8 @@ class DepartmentDashboardService
 
         $modules = $this->modulesForDepartment($user, $department);
 
-        if ($modules !== []) {
+        // Hub departments show tools on the overview panel; keep the sidebar to navigation only.
+        if ($modules !== [] && $children->isEmpty()) {
             $groupLabels = [
                 'education' => 'Education',
                 'admissions' => 'Admissions',
@@ -270,6 +275,51 @@ class DepartmentDashboardService
                     ];
                 }
             }
+        }
+
+        $items[] = ['type' => 'heading', 'label' => 'Account'];
+        $items[] = [
+            'type' => 'link',
+            'label' => 'Main dashboard',
+            'route' => 'dashboard',
+            'params' => [],
+        ];
+
+        return $items;
+    }
+
+    /**
+     * Sidebar for schools under the Academics hub (e.g. CHS at /departments/14-2).
+     *
+     * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, coming_soon?: bool, target_id?: int}>
+     */
+    private function learningDepartmentSidebarNavigation(User $user, Department $department): array
+    {
+        $items = [
+            [
+                'type' => 'link',
+                'label' => 'Overview',
+                'route' => 'departments.show',
+                'params' => ['department' => $department->getRouteKey()],
+                'target_id' => $department->id,
+                'section' => 'overview',
+            ],
+        ];
+
+        $hub = $department->academicsHub();
+
+        if ($hub && $this->rbacService->hasPermission($user, 'academics.read')) {
+            $items[] = ['type' => 'heading', 'label' => 'Education'];
+
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Programmes',
+                'route' => 'departments.academics.programs.index',
+                'params' => [
+                    'department' => $hub->id,
+                    'learning_department' => $department->id,
+                ],
+            ];
         }
 
         $items[] = ['type' => 'heading', 'label' => 'Account'];
