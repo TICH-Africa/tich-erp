@@ -35,6 +35,7 @@
 
     /* Spacing & layout */
     --container-max: 80rem;
+    --tich-header-height: 4rem;
     --radius-sm: 0.25rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
@@ -1256,12 +1257,13 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-admin {
     display: grid;
     gap: 1.5rem;
-    min-height: calc(100vh - 12rem);
+    min-height: calc(100vh - var(--tich-header-height));
 }
 
 @media (min-width: 1024px) {
     .tich-admin {
         grid-template-columns: 240px minmax(0, 1fr);
+        gap: 0;
         align-items: start;
     }
 }
@@ -1271,6 +1273,23 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     border: 1px solid var(--tich-neutral-border);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+    .tich-admin-sidebar {
+        position: sticky;
+        top: var(--tich-header-height);
+        align-self: start;
+        min-height: calc(100vh - var(--tich-header-height));
+        border-radius: 0;
+        border-top: none;
+        border-bottom: none;
+        border-left: none;
+    }
+
+    .tich-admin__main {
+        padding: 1.5rem;
+    }
 }
 
 .tich-admin-sidebar__title {
