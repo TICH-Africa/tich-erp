@@ -40,7 +40,7 @@
                 <p class="tich-text" style="margin:0;">
                     <strong>{{ $otherStudents->count() }}</strong>
                     {{ str('student')->plural($otherStudents->count()) }}
-                    on this programme belong to a different intake and are listed separately below.
+                    on this programme {{ $otherStudents->count() === 1 ? 'is' : 'are' }} assigned to a different intake than {{ $selectedIntake->intakeLabel() }}.
                 </p>
             </div>
         @endif

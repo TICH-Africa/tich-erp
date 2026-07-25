@@ -66,7 +66,7 @@
                             <td>{{ $curriculumFormats[$program->curriculum_format ?? 'trimester'] ?? ucfirst($program->curriculum_format ?? 'trimester') }}</td>
                             @if ($curriculumScope)
                                 <td>
-                                    <a href="{{ route('departments.academics.programs.curriculum', array_merge($curriculumScope, ['program' => $program->id, 'section' => 'structure'])) }}" class="tich-link">Open builder</a>
+                                    <a href="{{ route('departments.academics.programs.curriculum', array_merge($curriculumScope, ['program' => $program->id, 'section' => 'intakes'])) }}" class="tich-link">Open builder</a>
                                 </td>
                             @endif
                         </tr>

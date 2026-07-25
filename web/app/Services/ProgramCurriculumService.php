@@ -252,9 +252,10 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $requiresIntake = ['semesters', 'applications', 'enrolled', 'workflow', 'timetable'];
+        $requiresIntake = ['semesters', 'applications', 'enrolled', 'timetable'];
         $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');
+        $programHasIntakes = CurriculumVersion::query()->where('program_id', $program->id)->exists();
 
         foreach (self::curriculumSections() as $key => $label) {
             if ($key === 'applications' && ! $canViewApplications) {
@@ -265,7 +266,7 @@ class ProgramCurriculumService
                 continue;
             }
 
-            if (in_array($key, $requiresIntake, true) && ! $selectedIntake) {
+            if (in_array($key, $requiresIntake, true) && ! $programHasIntakes) {
                 continue;
             }
 

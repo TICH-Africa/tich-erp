@@ -22,5 +22,11 @@
         <p class="tich-text tich-mb-4" style="color: var(--tich-danger, #b91c1c);">{{ $message }}</p>
     @enderror
 
-    @include('academics.programs.partials.curriculum-section-' . $section)
+    @include('academics.programs.partials.working-intake-bar')
+
+    @if ($intakeSelectionRequired ?? false)
+        @include('academics.programs.partials.intake-selection-required')
+    @else
+        @include('academics.programs.partials.curriculum-section-' . $section)
+    @endif
 @endsection

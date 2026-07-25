@@ -16,6 +16,7 @@ use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
+use App\Services\WorkingIntakeService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
 use App\Services\UnitCatalogService;
@@ -33,6 +34,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected TimetableTemplateService $timetableTemplates,
         protected TimetableSchedulingService $timetableScheduling,
         protected StudentAcademicRecordService $studentAcademicRecords,
+        protected WorkingIntakeService $workingIntake,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -91,8 +93,16 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $learningDepartment = Department::query()->find($learningDepartmentId);
 
         $intakes = $this->versions->intakesForProgram($program->id);
-        $selectedIntake = $this->versions->resolveSelectedIntake($program, $request->integer('intake') ?: null);
         $section = $this->curriculum->resolveSection($request);
+
+        if (in_array($section, ['workflow', 'intakes'], true)) {
+            $intakes->load(['items.unit']);
+        }
+
+        $selectedIntake = $this->workingIntake->resolve($program, $request);
+        $intakeSelectionRequired = $this->workingIntake->sectionRequiresIntake($section)
+            && $this->workingIntake->programHasIntakes($program->id)
+            && ! $selectedIntake;
         $mappings = $selectedIntake
             ? $this->versions->mappedUnits($selectedIntake)
             : collect();
@@ -176,6 +186,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'catalogUnits' => $this->unitCatalog->listForHub($hub, (int) $program->department_id),
             'statusLabels' => UnitCatalogService::statusLabels(),
             'section' => $section,
+            'intakeSelectionRequired' => $intakeSelectionRequired,
+            'intakeRequiredSections' => WorkingIntakeService::intakeRequiredSections(),
             'curriculumSidebarNavigation' => $this->curriculum->curriculumSidebarNavigation(
                 $hub,
                 $learningDepartment,

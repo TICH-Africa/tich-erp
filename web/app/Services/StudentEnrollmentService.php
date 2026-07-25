@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Applicant;
 use App\Models\Campus;
 use App\Models\Student;
+use App\Support\IntakeIdentity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -30,7 +31,7 @@ class StudentEnrollmentService
                 'registration_number' => $this->generateRegistrationNumber(),
                 'application_id' => $applicant->id,
                 'program_id' => $applicant->program_id,
-                'cohort_intake' => $this->currentCohortIntake(),
+                'cohort_intake' => $this->cohortIntakeFromApplicant($applicant),
                 'enrollment_campus_id' => $this->resolveCampusId($applicant),
                 'enrollment_status' => 'pending',
                 'entry_pathway' => $this->mapEntryPathway($applicant->entry_qualification),
@@ -102,6 +103,18 @@ class StudentEnrollmentService
         }
 
         return sprintf('REG-%s-%05d', $year, $sequence);
+    }
+
+    private function cohortIntakeFromApplicant(Applicant $applicant): string
+    {
+        if ($applicant->intake_year && $applicant->intake_month) {
+            return IntakeIdentity::cohortLabel(
+                (int) $applicant->intake_year,
+                (int) $applicant->intake_month
+            );
+        }
+
+        return $this->currentCohortIntake();
     }
 
     private function currentCohortIntake(): string

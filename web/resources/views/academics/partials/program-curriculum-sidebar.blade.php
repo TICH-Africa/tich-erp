@@ -1,6 +1,14 @@
 <aside class="tich-admin-sidebar">
+    @php
+        $sidebarWorkingIntake = ! empty($program)
+            ? app(\App\Services\WorkingIntakeService::class)->resolve($program, request())
+            : null;
+    @endphp
     <p class="tich-admin-sidebar__title">{{ $program->program_name }}</p>
     <p class="tich-caption" style="margin: -0.5rem 0 1rem;">{{ $program->program_code }} · {{ $program->department?->dept_name }}</p>
+    @if ($sidebarWorkingIntake)
+        <p class="tich-caption" style="margin: -0.35rem 0 1rem; color: var(--tich-blue);">Working intake: {{ $sidebarWorkingIntake->intakeLabel() }}</p>
+    @endif
 
     <nav class="tich-admin-sidebar__nav">
         @foreach ($curriculumSidebarNavigation as $item)

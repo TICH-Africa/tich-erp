@@ -7,6 +7,7 @@ use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionPeriod;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Support\IntakeIdentity;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -153,24 +154,9 @@ class StudentAcademicRecordService
             ];
         }
 
-        $year = (int) $intake->intake_year;
-        $month = (int) $intake->intake_month;
+        $matched = $students->filter(fn (Student $student) => IntakeIdentity::studentMatchesIntake($student, $intake))->values();
 
-        $matched = $students->filter(function (Student $student) use ($year, $month) {
-            $applicant = $student->applicant;
-
-            return $applicant
-                && (int) $applicant->intake_year === $year
-                && (int) $applicant->intake_month === $month;
-        })->values();
-
-        $other = $students->reject(function (Student $student) use ($year, $month) {
-            $applicant = $student->applicant;
-
-            return $applicant
-                && (int) $applicant->intake_year === $year
-                && (int) $applicant->intake_month === $month;
-        })->values();
+        $other = $students->reject(fn (Student $student) => IntakeIdentity::studentMatchesIntake($student, $intake))->values();
 
         return [
             'matched' => $matched,

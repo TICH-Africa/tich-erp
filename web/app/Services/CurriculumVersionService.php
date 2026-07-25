@@ -675,7 +675,7 @@ class CurriculumVersionService
             return $intakes->firstWhere('id', $intakeId);
         }
 
-        return $intakes->firstWhere('status', 'draft') ?? $intakes->first();
+        return null;
     }
 
     private function validatePeriodDateRange(?string $start, ?string $end, string $field, string $message): void
