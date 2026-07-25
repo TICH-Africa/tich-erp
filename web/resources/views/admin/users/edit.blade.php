@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Configure access — '.$user->username)
+@section('title', 'Configure access - '.$user->username)
 
 @section('admin-content')
     <a href="{{ route('admin.users.index') }}" class="tich-link">&larr; All users</a>
@@ -187,7 +187,7 @@
                 @forelse ($effectiveModules as $module)
                     <li class="tich-text">{{ $module['label'] }}</li>
                 @empty
-                    <li class="tich-caption">No modules currently visible — assign roles or department permissions.</li>
+                    <li class="tich-caption">No modules currently visible - assign roles or department permissions.</li>
                 @endforelse
             </ul>
 

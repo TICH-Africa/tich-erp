@@ -27,7 +27,7 @@ class ApplicationStatusUpdatedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'TICH — Application update ('.$this->applicant->application_number.')',
+            subject: 'TICH - Application update ('.$this->applicant->application_number.')',
         );
     }
 

@@ -112,7 +112,7 @@ class AuditService
         if (! $this->supportsHashChain()) {
             return [
                 'verified' => false,
-                'message' => 'Hash chain columns are not available — run migrations',
+                'message' => 'Hash chain columns are not available - run migrations',
                 'checked' => 0,
                 'broken_at_id' => null,
             ];
@@ -163,7 +163,7 @@ class AuditService
             if ($recomputed !== $log->record_hash) {
                 return [
                     'verified' => false,
-                    'message' => 'Record hash mismatch — possible tampering',
+                    'message' => 'Record hash mismatch - possible tampering',
                     'checked' => $checked,
                     'broken_at_id' => $log->id,
                 ];

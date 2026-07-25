@@ -57,14 +57,14 @@
                             <span class="tich-caption">{{ $application->email }}</span>
                         </td>
                         <td>
-                            {{ $application->program?->program_name ?? '—' }}<br>
+                            {{ $application->program?->program_name ?? '-' }}<br>
                             <span class="tich-caption">{{ $application->program?->program_code }}</span>
                         </td>
                         <td>
                             <strong>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? 'Unassigned' }}</strong>
                         </td>
-                        <td>{{ $application->preferredCampus?->campus_name ?? '—' }}</td>
-                        <td>{{ $application->created_at?->format('d M Y') ?? '—' }}</td>
+                        <td>{{ $application->preferredCampus?->campus_name ?? '-' }}</td>
+                        <td>{{ $application->created_at?->format('d M Y') ?? '-' }}</td>
                         <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
                         <td>
                             <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">Review</a>

@@ -9,8 +9,8 @@
     </td>
     <td>{{ $department->dept_name }}</td>
     <td>{{ $deptCategories[$department->dept_category] ?? ucfirst($department->dept_category) }}</td>
-    <td>{{ $department->parent?->dept_name ?? '—' }}</td>
-    <td>{{ $department->campus?->campus_name ?? '—' }}</td>
+    <td>{{ $department->parent?->dept_name ?? '-' }}</td>
+    <td>{{ $department->campus?->campus_name ?? '-' }}</td>
     <td>{{ $department->is_active ? 'Active' : 'Inactive' }}</td>
     <td>
         <button

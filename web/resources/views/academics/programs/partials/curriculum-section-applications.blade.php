@@ -10,7 +10,7 @@
 
     <article class="tich-card">
         <div class="tich-dept-panel__head">
-            <h2 class="tich-h3">Applications — {{ $selectedIntake->intakeLabel() }}</h2>
+            <h2 class="tich-h3">Applications - {{ $selectedIntake->intakeLabel() }}</h2>
             <p class="tich-text">Onboarding applications for {{ $program->program_name }} targeting this intake.</p>
         </div>
 
@@ -54,8 +54,8 @@
                                     <span class="tich-caption" style="color:#dc2626;">Not specified</span>
                                 @endif
                             </td>
-                            <td>{{ $application->preferredCampus?->campus_name ?? '—' }}</td>
-                            <td>{{ $application->created_at?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $application->preferredCampus?->campus_name ?? '-' }}</td>
+                            <td>{{ $application->created_at?->format('d M Y') ?? '-' }}</td>
                             <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
                             <td>
                                 <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">Review</a>

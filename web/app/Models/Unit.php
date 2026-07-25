@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -68,5 +69,10 @@ class Unit extends Model
     public function isEditable(): bool
     {
         return in_array($this->status, ['draft', 'pending_registry'], true);
+    }
+
+    public function displayLabel(): string
+    {
+        return UiText::unitLabel($this->unit_code, $this->unit_name);
     }
 }

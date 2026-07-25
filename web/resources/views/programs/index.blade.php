@@ -74,7 +74,7 @@
                         </div>
                         <div class="tich-featured-program__aside">
                             <h3 class="tich-h3">Why this programme?</h3>
-                            <p class="tich-text tich-mt-2">Designed for frontline community health practice across Western Kenya — combining classroom learning, field placement, and NITA/CDACC-aligned assessment.</p>
+                            <p class="tich-text tich-mt-2">Designed for frontline community health practice across Western Kenya - combining classroom learning, field placement, and NITA/CDACC-aligned assessment.</p>
                             <p class="tich-caption tich-mt-4">Applications are reviewed by the academic department. You will receive your application number immediately after submission.</p>
                         </div>
                     </div>

@@ -42,7 +42,7 @@
     @foreach ($years as $year)
         <article class="tich-card tich-mt-8">
             <h2 class="tich-h3">{{ $year->year_label }} @if($year->is_current)<span class="tich-caption">(current)</span>@endif</h2>
-            <p class="tich-caption">{{ $year->start_date?->format('d M Y') }} – {{ $year->end_date?->format('d M Y') }}</p>
+            <p class="tich-caption">{{ $year->start_date?->format('d M Y') }} - {{ $year->end_date?->format('d M Y') }}</p>
 
             @foreach ($year->semesters as $semester)
                 <form method="POST" action="{{ route('departments.academics.calendar.update-semester', array_merge($hub, ['semester' => $semester->id])) }}" class="tich-mt-6" style="border-top:1px solid var(--tich-border); padding-top:1rem;">

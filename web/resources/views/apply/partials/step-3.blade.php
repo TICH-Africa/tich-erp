@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 3 — Academic qualifications</h2>
+<h2 class="tich-h3">Step 3 - Academic qualifications</h2>
 <p class="tich-text tich-mt-2">Provide your highest entry qualification for the programme you selected.</p>
 
 <div class="tich-form-group tich-mt-6">

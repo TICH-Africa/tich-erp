@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,10 +40,11 @@ class ProgramTimetable extends Model
     public function displayTitle(): string
     {
         if ($this->title) {
-            return $this->title;
+            return UiText::normalizeDash($this->title) ?? '';
         }
 
-        return $this->kindLabel().' — Semester '.$this->teaching_period;
+        return UiText::normalizeDash($this->kindLabel().' - Semester '.$this->teaching_period)
+            ?? ($this->kindLabel().' - Semester '.$this->teaching_period);
     }
 
     protected $casts = [

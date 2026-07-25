@@ -91,8 +91,8 @@
                                     <br>
                                     <span class="tich-caption">{{ $application->application_number }}</span>
                                 </td>
-                                <td>{{ $application->program?->program_name ?? '—' }}</td>
-                                <td>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? '—' }}</td>
+                                <td>{{ $application->program?->program_name ?? '-' }}</td>
+                                <td>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? '-' }}</td>
                                 <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
                             </tr>
                         @endforeach

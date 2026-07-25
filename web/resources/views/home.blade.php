@@ -19,7 +19,7 @@
                 <div>
                     <h2 class="tich-h2">Built for community health education</h2>
                     <p class="tich-text tich-mt-4">
-                        The Tropical Institute of Community Health and Development in Africa supports multi-campus operations — from the main campus to community colleges and sub-county hubs — with programmes tailored to TVET, nursing, and public health practice.
+                        The Tropical Institute of Community Health and Development in Africa supports multi-campus operations - from the main campus to community colleges and sub-county hubs - with programmes tailored to TVET, nursing, and public health practice.
                     </p>
                     <div class="tich-flex-wrap tich-mt-6">
                         @auth

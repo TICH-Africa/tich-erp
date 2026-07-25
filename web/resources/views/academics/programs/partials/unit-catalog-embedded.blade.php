@@ -12,7 +12,7 @@
     <div class="tich-dept-panel__head" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
         <div>
             <h2 class="tich-h3">Unit catalog</h2>
-            <p class="tich-text">Create, approve, and assign units for {{ $program->department?->dept_name ?? 'this department' }} — all from this programme curriculum page.</p>
+            <p class="tich-text">Create, approve, and assign units for {{ $program->department?->dept_name ?? 'this department' }} - all from this programme curriculum page.</p>
         </div>
         @can('academics.write')
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="unit-create">Add unit</button>

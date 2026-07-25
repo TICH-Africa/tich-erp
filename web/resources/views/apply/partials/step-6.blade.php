@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 6 — Next of kin</h2>
+<h2 class="tich-h3">Step 6 - Next of kin</h2>
 <p class="tich-text tich-mt-2">Provide emergency contact information for next of kin.</p>
 
 <div class="tich-form-group tich-mt-6">

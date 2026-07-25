@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -49,11 +50,11 @@ class ProgramTimetableSession extends Model
     public function displayTitle(): string
     {
         if ($this->title) {
-            return $this->title;
+            return UiText::normalizeDash($this->title) ?? '';
         }
 
         if ($this->unit) {
-            return $this->unit->unit_code.' — '.$this->unit->unit_name;
+            return $this->unit->displayLabel();
         }
 
         return ucfirst(str_replace('_', ' ', $this->session_type));
@@ -68,6 +69,6 @@ class ProgramTimetableSession extends Model
             ? $this->end_time->format('H:i')
             : substr((string) $this->end_time, 0, 5);
 
-        return "{$start} – {$end}";
+        return UiText::normalizeDash("{$start} - {$end}") ?? "{$start} - {$end}";
     }
 }

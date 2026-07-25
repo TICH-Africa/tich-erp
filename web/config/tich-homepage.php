@@ -5,7 +5,7 @@ return [
     'carousel' => [
         [
             'title' => 'Train for community health impact',
-            'subtitle' => 'Certificate and diploma programmes in community health practice, development, and health technology — accredited by NITA and CDACC.',
+            'subtitle' => 'Certificate and diploma programmes in community health practice, development, and health technology - accredited by NITA and CDACC.',
             'image_path' => null,
             'cta_label' => 'Apply now',
             'cta_url' => '/apply',
@@ -19,7 +19,7 @@ return [
         ],
         [
             'title' => 'Multi-campus, one mission',
-            'subtitle' => 'From the main campus to community colleges and sub-county hubs — education rooted in community health and development.',
+            'subtitle' => 'From the main campus to community colleges and sub-county hubs - education rooted in community health and development.',
             'image_path' => null,
             'cta_label' => 'View programmes',
             'cta_url' => '#programs',

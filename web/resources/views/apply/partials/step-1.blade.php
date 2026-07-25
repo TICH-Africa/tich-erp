@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 1 — Choose programme</h2>
+<h2 class="tich-h3">Step 1 - Choose programme</h2>
 <p class="tich-text tich-mt-2">Select the programme you wish to apply for, your target intake, and your preferred campus.</p>
 
 @php
@@ -28,7 +28,7 @@
                     || ($selectedProgramCode !== '' && $selectedProgramCode === strtoupper($program->program_code ?? ''))
                 )
             >
-                {{ $program->program_code }} — {{ $program->program_name }}
+                {{ $program->program_code }} - {{ $program->program_name }}
             </option>
         @endforeach
     </select>

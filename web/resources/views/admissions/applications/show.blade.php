@@ -42,31 +42,31 @@
                 <dd class="tich-text" style="margin: 0;"><strong>{{ $handlingDepartment }}</strong></dd>
 
                 <dt class="tich-caption">Programme</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->program?->program_name ?? '—' }} ({{ $applicant->program?->program_code }})</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->program?->program_name ?? '-' }} ({{ $applicant->program?->program_code }})</dd>
 
                 <dt class="tich-caption">Preferred campus</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->preferredCampus?->campus_name ?? '—' }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->preferredCampus?->campus_name ?? '-' }}</dd>
 
                 <dt class="tich-caption">Entry qualification</dt>
-                <dd class="tich-text" style="margin: 0;">{{ strtoupper($applicant->entry_qualification ?? '—') }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ strtoupper($applicant->entry_qualification ?? '-') }}</dd>
 
                 <dt class="tich-caption">Date of birth</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->date_of_birth?->format('d M Y') ?? '—' }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->date_of_birth?->format('d M Y') ?? '-' }}</dd>
 
                 <dt class="tich-caption">Gender</dt>
-                <dd class="tich-text" style="margin: 0;">{{ ucfirst(str_replace('_', ' ', $applicant->gender ?? '—')) }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ ucfirst(str_replace('_', ' ', $applicant->gender ?? '-')) }}</dd>
 
                 <dt class="tich-caption">Phone</dt>
                 <dd class="tich-text" style="margin: 0;">{{ $applicant->phone_number }}</dd>
 
                 <dt class="tich-caption">County</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->home_county ?? '—' }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->home_county ?? '-' }}</dd>
 
                 <dt class="tich-caption">ID / Passport</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->national_id_number ?? $applicant->passport_number ?? '—' }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->national_id_number ?? $applicant->passport_number ?? '-' }}</dd>
 
                 <dt class="tich-caption">Submitted</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->created_at?->format('d M Y H:i') ?? '—' }}</dd>
+                <dd class="tich-text" style="margin: 0;">{{ $applicant->created_at?->format('d M Y H:i') ?? '-' }}</dd>
 
                 @if ($applicant->reviewed_at)
                     <dt class="tich-caption">Last reviewed</dt>

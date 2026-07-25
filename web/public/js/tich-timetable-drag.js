@@ -40,7 +40,7 @@
         if (!cell.querySelector('.tich-timetable-grid__empty')) {
             var placeholder = document.createElement('span');
             placeholder.className = 'tich-timetable-grid__empty';
-            placeholder.textContent = '—';
+            placeholder.textContent = '-';
             cell.appendChild(placeholder);
         }
     }

@@ -20,7 +20,7 @@ class MfaVerificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'TICH ERP — Verification Code',
+            subject: 'TICH ERP - Verification Code',
         );
     }
 

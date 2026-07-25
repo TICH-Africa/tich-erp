@@ -21,8 +21,8 @@
                 @foreach ($biodata['documents'] as $document)
                     <tr>
                         <td>{{ $document->displayLabel() }}</td>
-                        <td>{{ $document->original_filename ?? $document->file_path ?? '—' }}</td>
-                        <td>{{ $document->created_at?->format('d M Y') ?? '—' }}</td>
+                        <td>{{ $document->original_filename ?? $document->file_path ?? '-' }}</td>
+                        <td>{{ $document->created_at?->format('d M Y') ?? '-' }}</td>
                         <td style="white-space:nowrap;">
                             @if ($document->isPreviewable())
                                 <a href="{{ route('portal.documents.show', $document) }}" class="tich-link" target="_blank" rel="noopener">View</a>

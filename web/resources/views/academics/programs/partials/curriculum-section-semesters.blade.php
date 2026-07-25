@@ -46,7 +46,7 @@
     <article class="tich-card">
         <div class="tich-dept-panel__head" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
             <div>
-                <h2 class="tich-h3">{{ $selectedIntake->intakeLabel() }} — units by {{ $program->usesBlocks() ? 'block' : 'semester' }}</h2>
+                <h2 class="tich-h3">{{ $selectedIntake->intakeLabel() }} - units by {{ $program->usesBlocks() ? 'block' : 'semester' }}</h2>
                 <p class="tich-text">
                     {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} for this intake.
                     @if ($intakeEditable)
@@ -229,7 +229,7 @@
             @php $inactiveCatalogUnits = $availableUnits->where('status', '!=', 'active')->count(); @endphp
             @if ($inactiveCatalogUnits > 0)
                 <p class="tich-caption tich-mt-4">
-                    {{ $inactiveCatalogUnits }} catalog unit(s) are still draft or pending — you can map them now; approve them in the
+                    {{ $inactiveCatalogUnits }} catalog unit(s) are still draft or pending - you can map them now; approve them in the
                     <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $selectedIntake->id, 'section' => 'catalog'])) }}" class="tich-link">unit catalog</a> before submitting the intake.
                 </p>
             @endif
@@ -298,7 +298,7 @@
                                             </td>
                                         @endif
                                         <td>
-                                            {{ $map->unit?->unit_code }} — {{ $map->unit?->unit_name }}
+                                            {{ $map->unit?->unit_code }} - {{ $map->unit?->unit_name }}
                                             @if (($map->unit?->status ?? '') !== 'active')
                                                 <span class="tich-caption">· {{ ucwords(str_replace('_', ' ', $map->unit->status)) }}</span>
                                             @endif
@@ -345,7 +345,7 @@
                                         <label>
                                             <input type="checkbox" name="unit_ids[]" value="{{ $unit->id }}">
                                             <span>
-                                                {{ $unit->unit_code }} — {{ $unit->unit_name }}
+                                                {{ $unit->unit_code }} - {{ $unit->unit_name }}
                                                 @if ($unit->status !== 'active')
                                                     <span class="tich-caption">({{ ucwords(str_replace('_', ' ', $unit->status)) }})</span>
                                                 @endif

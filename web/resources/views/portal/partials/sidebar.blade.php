@@ -2,7 +2,7 @@
     <p class="tich-admin-sidebar__title">Student portal</p>
     <p class="tich-caption" style="margin: -0.5rem 0 1rem;">
         {{ $student->registration_number }}<br>
-        {{ $biodata['academic']['program'] ?? '—' }}
+        {{ $biodata['academic']['program'] ?? '-' }}
     </p>
 
     <nav class="tich-admin-sidebar__nav">

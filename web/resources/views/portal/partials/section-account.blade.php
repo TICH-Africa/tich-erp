@@ -12,9 +12,9 @@
             <dt class="tich-caption">Email</dt>
             <dd>{{ $biodata['contact']['email'] ?? auth()->user()->email }}</dd>
             <dt class="tich-caption">Last login</dt>
-            <dd>{{ $biodata['portal']['last_login_at'] ?? '—' }}</dd>
+            <dd>{{ $biodata['portal']['last_login_at'] ?? '-' }}</dd>
             <dt class="tich-caption">Portal activated</dt>
-            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '—' }}</dd>
+            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '-' }}</dd>
         </dl>
     </article>
 

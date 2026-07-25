@@ -27,7 +27,7 @@
                     <dd>{{ $log->action }}</dd>
 
                     <dt class="tich-caption">Module</dt>
-                    <dd>{{ $log->module ?? '—' }}</dd>
+                    <dd>{{ $log->module ?? '-' }}</dd>
 
                     <dt class="tich-caption">Entity</dt>
                     <dd>{{ $log->entity_type }} #{{ $log->entity_id }}</dd>
@@ -36,16 +36,16 @@
                     <dd>{{ ucfirst($log->status) }}</dd>
 
                     <dt class="tich-caption">IP address</dt>
-                    <dd>{{ $client['ip_address'] ?? $log->ip_address ?? '—' }}</dd>
+                    <dd>{{ $client['ip_address'] ?? $log->ip_address ?? '-' }}</dd>
 
                     <dt class="tich-caption">Reason</dt>
-                    <dd>{{ $log->reason ?? '—' }}</dd>
+                    <dd>{{ $log->reason ?? '-' }}</dd>
 
                     <dt class="tich-caption">Record hash</dt>
-                    <dd style="word-break: break-all; font-family: monospace; font-size: 0.75rem;">{{ $log->record_hash ?? '—' }}</dd>
+                    <dd style="word-break: break-all; font-family: monospace; font-size: 0.75rem;">{{ $log->record_hash ?? '-' }}</dd>
 
                     <dt class="tich-caption">Previous hash</dt>
-                    <dd style="word-break: break-all; font-family: monospace; font-size: 0.75rem;">{{ $log->previous_hash ?? '—' }}</dd>
+                    <dd style="word-break: break-all; font-family: monospace; font-size: 0.75rem;">{{ $log->previous_hash ?? '-' }}</dd>
                 </dl>
             </div>
 
@@ -54,11 +54,11 @@
                     <h2 class="tich-h3">Client &amp; session context</h2>
                     <dl style="display: grid; grid-template-columns: 10rem 1fr; gap: 0.75rem 1rem; margin: 1rem 0 0;">
                         <dt class="tich-caption">Device type</dt>
-                        <dd>{{ ucfirst($client['device_type'] ?? '—') }}</dd>
+                        <dd>{{ ucfirst($client['device_type'] ?? '-') }}</dd>
 
                         <dt class="tich-caption">Browser</dt>
                         <dd>
-                            {{ $client['browser'] ?? '—' }}
+                            {{ $client['browser'] ?? '-' }}
                             @if (! empty($client['browser_version']))
                                 ({{ $client['browser_version'] }})
                             @endif
@@ -66,17 +66,17 @@
 
                         <dt class="tich-caption">Operating system</dt>
                         <dd>
-                            {{ $client['os'] ?? '—' }}
+                            {{ $client['os'] ?? '-' }}
                             @if (! empty($client['os_version']))
                                 ({{ $client['os_version'] }})
                             @endif
                         </dd>
 
                         <dt class="tich-caption">Location</dt>
-                        <dd>{{ $location['label'] ?? '—' }}</dd>
+                        <dd>{{ $location['label'] ?? '-' }}</dd>
 
                         <dt class="tich-caption">Internet / network</dt>
-                        <dd>{{ $network['label'] ?? ($location['isp'] ?? '—') }}</dd>
+                        <dd>{{ $network['label'] ?? ($location['isp'] ?? '-') }}</dd>
 
                         <dt class="tich-caption">Connection</dt>
                         <dd>
@@ -89,27 +89,27 @@
                                     · {{ $network['downlink_mbps'] }} Mbps
                                 @endif
                             @else
-                                —
+                                -
                             @endif
                         </dd>
 
                         <dt class="tich-caption">ISP / carrier</dt>
-                        <dd>{{ $location['isp'] ?? '—' }}</dd>
+                        <dd>{{ $location['isp'] ?? '-' }}</dd>
 
                         <dt class="tich-caption">Timezone</dt>
-                        <dd>{{ $client['timezone'] ?? '—' }}</dd>
+                        <dd>{{ $client['timezone'] ?? '-' }}</dd>
 
                         <dt class="tich-caption">Language</dt>
-                        <dd>{{ $client['language'] ?? '—' }}</dd>
+                        <dd>{{ $client['language'] ?? '-' }}</dd>
 
                         <dt class="tich-caption">Screen</dt>
-                        <dd>{{ $client['screen'] ?? '—' }}</dd>
+                        <dd>{{ $client['screen'] ?? '-' }}</dd>
 
                         <dt class="tich-caption">Channel</dt>
-                        <dd>{{ ucfirst($client['channel'] ?? '—') }}</dd>
+                        <dd>{{ ucfirst($client['channel'] ?? '-') }}</dd>
 
                         <dt class="tich-caption">User agent</dt>
-                        <dd style="word-break: break-word;">{{ $client['user_agent'] ?? $log->user_agent ?? '—' }}</dd>
+                        <dd style="word-break: break-word;">{{ $client['user_agent'] ?? $log->user_agent ?? '-' }}</dd>
                     </dl>
                 </div>
             @elseif ($log->user_agent)

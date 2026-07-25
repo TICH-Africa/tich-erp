@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 2 — Personal details</h2>
+<h2 class="tich-h3">Step 2 - Personal details</h2>
 <p class="tich-text tich-mt-2">Tell us about yourself. Use the same email you will check for application updates.</p>
 
 <div class="tich-grid tich-grid--2 tich-mt-6" style="gap: 1rem;">

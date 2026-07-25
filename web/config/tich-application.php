@@ -53,7 +53,7 @@ return [
             'accept' => 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
             'mimes' => 'jpg,jpeg,png,webp',
             'max_kb' => 2048,
-            'hint' => 'Upload a passport-size photo — JPEG, PNG, or WebP only (max 2 MB). PDFs are not accepted.',
+            'hint' => 'Upload a passport-size photo - JPEG, PNG, or WebP only (max 2 MB). PDFs are not accepted.',
         ],
         'default' => [
             'accept' => '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',

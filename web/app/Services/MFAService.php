@@ -37,7 +37,7 @@ class MFAService
             session()->flash('mfa_dev_code', $otp);
 
             if (! $delivery['sent']) {
-                Log::warning('MFA OTP (dev fallback — email not sent)', [
+                Log::warning('MFA OTP (dev fallback - email not sent)', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'otp' => $otp,

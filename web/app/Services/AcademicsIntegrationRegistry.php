@@ -3,7 +3,7 @@
 namespace App\Services;
 
 /**
- * Phase C integration hooks — downstream modules consume published curriculum data.
+ * Phase C integration hooks - downstream modules consume published curriculum data.
  */
 class AcademicsIntegrationRegistry
 {

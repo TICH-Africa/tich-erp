@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 5 — Supporting documents</h2>
+<h2 class="tich-h3">Step 5 - Supporting documents</h2>
 <p class="tich-text tich-mt-2">Upload your supporting documents. Passport photo must be an image file. You may submit these now or provide them later if requested by admissions.</p>
 
 @foreach ($documentTypes as $type => $label)

@@ -10,7 +10,7 @@
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             @foreach ($biodata['identity'] as $label => $value)
                 <dt class="tich-caption">{{ ucwords(str_replace('_', ' ', $label)) }}</dt>
-                <dd>{{ $value ?: '—' }}</dd>
+                <dd>{{ $value ?: '-' }}</dd>
             @endforeach
         </dl>
     </article>
@@ -20,7 +20,7 @@
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             @foreach ($biodata['contact'] as $label => $value)
                 <dt class="tich-caption">{{ ucwords(str_replace('_', ' ', $label)) }}</dt>
-                <dd>{{ $value ?: '—' }}</dd>
+                <dd>{{ $value ?: '-' }}</dd>
             @endforeach
         </dl>
     </article>
@@ -30,7 +30,7 @@
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             @foreach ($biodata['academic'] as $label => $value)
                 <dt class="tich-caption">{{ ucwords(str_replace('_', ' ', $label)) }}</dt>
-                <dd>{{ $value ?: '—' }}</dd>
+                <dd>{{ $value ?: '-' }}</dd>
             @endforeach
         </dl>
     </article>
@@ -40,7 +40,7 @@
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             @foreach ($biodata['next_of_kin'] as $label => $value)
                 <dt class="tich-caption">{{ ucwords(str_replace('_', ' ', $label)) }}</dt>
-                <dd>{{ $value ?: '—' }}</dd>
+                <dd>{{ $value ?: '-' }}</dd>
             @endforeach
         </dl>
     </article>
@@ -50,7 +50,7 @@
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             @foreach ($biodata['emergency'] as $label => $value)
                 <dt class="tich-caption">{{ ucwords(str_replace('_', ' ', $label)) }}</dt>
-                <dd>{{ $value ?: '—' }}</dd>
+                <dd>{{ $value ?: '-' }}</dd>
             @endforeach
         </dl>
     </article>
@@ -61,9 +61,9 @@
             <dt class="tich-caption">Username</dt>
             <dd>{{ $biodata['portal']['username'] ?? auth()->user()->username }}</dd>
             <dt class="tich-caption">Activated</dt>
-            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '—' }}</dd>
+            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '-' }}</dd>
             <dt class="tich-caption">Last login</dt>
-            <dd>{{ $biodata['portal']['last_login_at'] ?? '—' }}</dd>
+            <dd>{{ $biodata['portal']['last_login_at'] ?? '-' }}</dd>
         </dl>
     </article>
 </div>

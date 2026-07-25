@@ -38,9 +38,9 @@
         <article class="tich-card">
             <h3 class="tich-h3">Application</h3>
             <p class="tich-text tich-mt-2">
-                <strong>{{ $biodata['application']['application_number'] ?? '—' }}</strong><br>
-                Status: {{ $stats['application_status'] ?: '—' }}<br>
-                Review: {{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['academic_review_status'] ?? ''))) ?: '—' }}
+                <strong>{{ $biodata['application']['application_number'] ?? '-' }}</strong><br>
+                Status: {{ $stats['application_status'] ?: '-' }}<br>
+                Review: {{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['academic_review_status'] ?? ''))) ?: '-' }}
             </p>
             <a href="{{ route('portal.dashboard', ['section' => 'application']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View application</a>
         </article>
@@ -48,9 +48,9 @@
         <article class="tich-card">
             <h3 class="tich-h3">Enrolment</h3>
             <p class="tich-text tich-mt-2">
-                Campus: {{ $biodata['enrollment']['campus'] ?? '—' }}<br>
-                Admitted: {{ $biodata['enrollment']['date_of_admission'] ?? '—' }}<br>
-                Intake: {{ $biodata['academic']['cohort_intake'] ?? '—' }}
+                Campus: {{ $biodata['enrollment']['campus'] ?? '-' }}<br>
+                Admitted: {{ $biodata['enrollment']['date_of_admission'] ?? '-' }}<br>
+                Intake: {{ $biodata['academic']['cohort_intake'] ?? '-' }}
             </p>
             <a href="{{ route('portal.dashboard', ['section' => 'enrolment']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View enrolment</a>
         </article>

@@ -182,10 +182,10 @@
             <div class="tich-inset-panel tich-mt-4">
                 <p class="tich-text" style="margin:0 0 0.35rem;"><strong>Semester {{ $timetableTeachingPeriod }}</strong> · {{ $semesterPeriod->scheduleLabel() }}</p>
                 @if ($semesterPeriod->effectiveLearningStart() || $semesterPeriod->learning_end_date)
-                    <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->effectiveLearningStart()?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '—' }}</p>
+                    <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->effectiveLearningStart()?->format('d M Y') ?? '-' }} - {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '-' }}</p>
                 @endif
                 @if ($semesterPeriod->exam_start_date || $semesterPeriod->effectiveExamEnd())
-                    <p class="tich-caption" style="margin:0;">Exams: {{ $semesterPeriod->exam_start_date?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->effectiveExamEnd()?->format('d M Y') ?? '—' }}</p>
+                    <p class="tich-caption" style="margin:0;">Exams: {{ $semesterPeriod->exam_start_date?->format('d M Y') ?? '-' }} - {{ $semesterPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}</p>
                 @endif
                 @if (! $semesterPeriod->effectiveLearningStart() && ! $semesterPeriod->exam_start_date)
                     <p class="tich-caption" style="margin:0.35rem 0 0;">Set learning and exam dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $selectedIntake->id, 'section' => 'semesters'])) }}" class="tich-link">Semester units</a> page for more accurate scheduling.</p>
@@ -203,7 +203,7 @@
                 <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
                 <div class="tich-form-group" style="max-width:28rem;">
                     <label class="tich-label">Timetable title</label>
-                    <input type="text" name="title" class="tich-input" value="{{ old('title', $timetableDraft?->title) }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} — Semester {{ $timetableTeachingPeriod }}" maxlength="200">
+                    <input type="text" name="title" class="tich-input" value="{{ old('title', $timetableDraft?->title) }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - Semester {{ $timetableTeachingPeriod }}" maxlength="200">
                 </div>
                 <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Generate {{ strtolower($timetableKinds[$timetableKind] ?? 'timetable') }}</button>
             </form>
@@ -305,9 +305,9 @@
                                 <div class="tich-form-group">
                                     <label class="tich-label">Unit (optional)</label>
                                     <select name="unit_id" class="tich-input">
-                                        <option value="">—</option>
+                                        <option value="">-</option>
                                         @foreach ($catalogUnits as $unit)
-                                            <option value="{{ $unit->id }}">{{ $unit->unit_code }} — {{ $unit->unit_name }}</option>
+                                            <option value="{{ $unit->id }}">{{ $unit->unit_code }} - {{ $unit->unit_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -322,16 +322,16 @@
                                 <div class="tich-form-group">
                                     <label class="tich-label">Room</label>
                                     <select name="room_id" class="tich-input">
-                                        <option value="">—</option>
+                                        <option value="">-</option>
                                         @foreach ($timetableRooms as $room)
-                                            <option value="{{ $room->id }}">{{ $room->room_code }} — {{ $room->room_name }}</option>
+                                            <option value="{{ $room->id }}">{{ $room->room_code }} - {{ $room->room_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-label">Lecturer</label>
                                     <select name="staff_id" class="tich-input">
-                                        <option value="">—</option>
+                                        <option value="">-</option>
                                         @foreach ($timetableStaff as $member)
                                             <option value="{{ $member->id }}">{{ $member->first_name }} {{ $member->surname }}</option>
                                         @endforeach

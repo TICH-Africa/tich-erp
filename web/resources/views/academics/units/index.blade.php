@@ -71,7 +71,7 @@
                     <tr>
                         <td>{{ $unit->unit_code }}</td>
                         <td>{{ $unit->unit_name }}</td>
-                        <td>{{ $unit->department?->dept_name ?? '—' }}</td>
+                        <td>{{ $unit->department?->dept_name ?? '-' }}</td>
                         <td>{{ $unit->contact_hours }}</td>
                         <td>{{ $unit->total_learning_hours }}</td>
                         <td>{{ $unit->display_priority }}</td>

@@ -144,12 +144,12 @@ class WebAuthController extends Controller
 
                 $status = $delivery['sent']
                     ? 'A verification code has been sent to your email.'
-                    : 'Email delivery failed — use the development code below.';
+                    : 'Email delivery failed - use the development code below.';
 
                 if (config('app.debug')) {
                     $status = $delivery['sent']
                         ? 'Verification code sent. For development, your code is shown below.'
-                        : 'Email delivery failed — use the development code below.';
+                        : 'Email delivery failed - use the development code below.';
                 }
 
                 return back()->with('status', $status);
@@ -261,7 +261,7 @@ class WebAuthController extends Controller
             return back()->with('status', config('app.debug')
                 ? ($delivery['sent']
                     ? 'A new code was sent. For development, your code is shown below.'
-                    : 'Email delivery failed — use the development code below.')
+                    : 'Email delivery failed - use the development code below.')
                 : 'Could not resend verification email. Please try again later.');
         }
 

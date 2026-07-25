@@ -79,7 +79,7 @@
                             <td>KES {{ number_format((float) $invoice->amount, 2) }}</td>
                             <td>KES {{ number_format((float) $invoice->amount_paid, 2) }}</td>
                             <td>KES {{ number_format((float) $invoice->balance, 2) }}</td>
-                            <td>{{ $invoice->due_date ? \Illuminate\Support\Carbon::parse($invoice->due_date)->format('d M Y') : '—' }}</td>
+                            <td>{{ $invoice->due_date ? \Illuminate\Support\Carbon::parse($invoice->due_date)->format('d M Y') : '-' }}</td>
                             <td>{{ ucfirst($invoice->status) }}</td>
                         </tr>
                     @endforeach
@@ -109,10 +109,10 @@
                     @foreach ($finance['payments'] as $payment)
                         <tr>
                             <td>{{ $payment->payment_number }}</td>
-                            <td>{{ $payment->payment_date ? \Illuminate\Support\Carbon::parse($payment->payment_date)->format('d M Y') : '—' }}</td>
+                            <td>{{ $payment->payment_date ? \Illuminate\Support\Carbon::parse($payment->payment_date)->format('d M Y') : '-' }}</td>
                             <td>KES {{ number_format((float) $payment->amount, 2) }}</td>
                             <td>{{ ucwords(str_replace('_', ' ', $payment->payment_method)) }}</td>
-                            <td>{{ $payment->payment_reference ?? '—' }}</td>
+                            <td>{{ $payment->payment_reference ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

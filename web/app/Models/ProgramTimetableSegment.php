@@ -39,6 +39,6 @@ class ProgramTimetableSegment extends Model
             ? $this->end_time->format('H:i')
             : substr((string) $this->end_time, 0, 5);
 
-        return "{$start} – {$end}";
+        return "{$start} - {$end}";
     }
 }

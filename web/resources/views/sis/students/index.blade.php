@@ -46,11 +46,11 @@
                     <tr>
                         <td>{{ $student->registration_number }}</td>
                         <td>
-                            {{ $student->applicant?->fullName() ?? '—' }}<br>
+                            {{ $student->applicant?->fullName() ?? '-' }}<br>
                             <span class="tich-caption">{{ $student->applicant?->email }}</span>
                         </td>
-                        <td>{{ $student->program?->program_name ?? '—' }}</td>
-                        <td>{{ $student->campus?->campus_name ?? '—' }}</td>
+                        <td>{{ $student->program?->program_name ?? '-' }}</td>
+                        <td>{{ $student->campus?->campus_name ?? '-' }}</td>
                         <td>{{ ucfirst($student->enrollment_status) }}</td>
                         <td>
                             @if ($student->user_id)
@@ -58,7 +58,7 @@
                             @elseif ($student->hasActivePortalInvite())
                                 <span class="tich-caption">Invite pending</span>
                             @else
-                                <span class="tich-caption">—</span>
+                                <span class="tich-caption">-</span>
                             @endif
                         </td>
                         <td><a href="{{ route('sis.students.show', $student) }}" class="tich-link">View 360°</a></td>

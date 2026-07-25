@@ -25,7 +25,7 @@ class MailConfig
         }
 
         if (in_array(strtolower((string) $password), self::PLACEHOLDER_PASSWORDS, true)) {
-            return 'MAIL_PASSWORD is still a placeholder. Gmail requires a Google App Password — not your normal login password. Create one at https://myaccount.google.com/apppasswords for tichinafricaict@gmail.com, then run: php artisan config:clear';
+            return 'MAIL_PASSWORD is still a placeholder. Gmail requires a Google App Password - not your normal login password. Create one at https://myaccount.google.com/apppasswords for tichinafricaict@gmail.com, then run: php artisan config:clear';
         }
 
         return null;

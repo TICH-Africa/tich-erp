@@ -11,19 +11,19 @@
             <dt class="tich-caption">Registration number</dt>
             <dd>{{ $student->registration_number }}</dd>
             <dt class="tich-caption">Programme</dt>
-            <dd>{{ $biodata['academic']['program'] ?? '—' }}</dd>
+            <dd>{{ $biodata['academic']['program'] ?? '-' }}</dd>
             <dt class="tich-caption">Department</dt>
-            <dd>{{ $biodata['academic']['department'] ?? '—' }}</dd>
+            <dd>{{ $biodata['academic']['department'] ?? '-' }}</dd>
             <dt class="tich-caption">Campus</dt>
-            <dd>{{ $biodata['enrollment']['campus'] ?? '—' }}</dd>
+            <dd>{{ $biodata['enrollment']['campus'] ?? '-' }}</dd>
             <dt class="tich-caption">Cohort / intake</dt>
-            <dd>{{ $biodata['academic']['cohort_intake'] ?? '—' }}</dd>
+            <dd>{{ $biodata['academic']['cohort_intake'] ?? '-' }}</dd>
             <dt class="tich-caption">Entry pathway</dt>
-            <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['academic']['entry_pathway'] ?? ''))) ?: '—' }}</dd>
+            <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['academic']['entry_pathway'] ?? ''))) ?: '-' }}</dd>
             <dt class="tich-caption">Date of admission</dt>
-            <dd>{{ $biodata['enrollment']['date_of_admission'] ?? '—' }}</dd>
+            <dd>{{ $biodata['enrollment']['date_of_admission'] ?? '-' }}</dd>
             <dt class="tich-caption">Enrolment status</dt>
-            <dd>{{ ucfirst($biodata['enrollment']['enrollment_status'] ?? '—') }}</dd>
+            <dd>{{ ucfirst($biodata['enrollment']['enrollment_status'] ?? '-') }}</dd>
         </dl>
     </article>
 
@@ -35,7 +35,7 @@
             <dt class="tich-caption">Outstanding balance</dt>
             <dd>KES {{ number_format((float) ($portalData['finance']['summary']['outstanding_balance'] ?? 0), 2) }}</dd>
             <dt class="tich-caption">Portal activated</dt>
-            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '—' }}</dd>
+            <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '-' }}</dd>
         </dl>
         <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View full finance</a>
     </article>
@@ -62,9 +62,9 @@
                     @foreach ($portalData['academics']['registrations'] as $registration)
                         <tr>
                             <td>{{ $registration->semester_label ?? ('Semester '.$registration->semester_number) }}</td>
-                            <td>{{ $registration->year_label ?? '—' }}</td>
+                            <td>{{ $registration->year_label ?? '-' }}</td>
                             <td>{{ $registration->unit_count }}</td>
-                            <td>{{ $registration->registration_date ? \Illuminate\Support\Carbon::parse($registration->registration_date)->format('d M Y') : '—' }}</td>
+                            <td>{{ $registration->registration_date ? \Illuminate\Support\Carbon::parse($registration->registration_date)->format('d M Y') : '-' }}</td>
                             <td>{{ ucfirst($registration->status ?? 'registered') }}</td>
                             <td>{{ $registration->is_fee_cleared ? 'Yes' : 'No' }}</td>
                         </tr>

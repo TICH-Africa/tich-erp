@@ -61,7 +61,7 @@
                         <tr>
                             <td>{{ $program->program_code }}</td>
                             <td>{{ $program->program_name }}</td>
-                            <td>{{ $program->duration_months ? $program->duration_months.' months' : '—' }}</td>
+                            <td>{{ $program->duration_months ? $program->duration_months.' months' : '-' }}</td>
                             <td>{{ $program->semester_count ?: $program->termsPerYear() }}</td>
                             <td>{{ $curriculumFormats[$program->curriculum_format ?? 'trimester'] ?? ucfirst($program->curriculum_format ?? 'trimester') }}</td>
                             @if ($curriculumScope)

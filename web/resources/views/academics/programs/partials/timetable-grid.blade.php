@@ -94,7 +94,7 @@
                                         <span class="tich-caption">{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
                                     </div>
                                 @empty
-                                    <span class="tich-timetable-grid__empty">—</span>
+                                    <span class="tich-timetable-grid__empty">-</span>
                                 @endforelse
                             </td>
                         @endforeach

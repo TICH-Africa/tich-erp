@@ -1,4 +1,4 @@
-<h2 class="tich-h3">Step 4 — Sponsorship</h2>
+<h2 class="tich-h3">Step 4 - Sponsorship</h2>
 <p class="tich-text tich-mt-2">Specify who will sponsor your education and provide supporting details.</p>
 
 <div class="tich-form-group tich-mt-6">

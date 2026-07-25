@@ -192,7 +192,7 @@ class AdmissionsReviewService
             'reviewed_at' => now(),
         ]);
 
-        $this->logDecision($user, $applicant, 'admissions.application.approved', 'Application approved — student admitted');
+        $this->logDecision($user, $applicant, 'admissions.application.approved', 'Application approved - student admitted');
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
         app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $user->id);

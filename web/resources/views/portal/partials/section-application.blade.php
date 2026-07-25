@@ -14,31 +14,31 @@
 <article class="tich-card tich-mt-8">
     <dl style="display: grid; grid-template-columns: 11rem 1fr; gap: 0.75rem 1rem; margin: 0;">
         <dt class="tich-caption">Application number</dt>
-        <dd><strong>{{ $biodata['application']['application_number'] ?? '—' }}</strong></dd>
+        <dd><strong>{{ $biodata['application']['application_number'] ?? '-' }}</strong></dd>
 
         <dt class="tich-caption">Status</dt>
-        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['status'] ?? ''))) ?: '—' }}</dd>
+        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['status'] ?? ''))) ?: '-' }}</dd>
 
         <dt class="tich-caption">Academic review</dt>
-        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['academic_review_status'] ?? ''))) ?: '—' }}</dd>
+        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['academic_review_status'] ?? ''))) ?: '-' }}</dd>
 
         <dt class="tich-caption">Submitted</dt>
-        <dd>{{ $biodata['application']['submitted_at'] ?? '—' }}</dd>
+        <dd>{{ $biodata['application']['submitted_at'] ?? '-' }}</dd>
 
         <dt class="tich-caption">Reviewed</dt>
-        <dd>{{ $biodata['application']['reviewed_at'] ?? '—' }}</dd>
+        <dd>{{ $biodata['application']['reviewed_at'] ?? '-' }}</dd>
 
         <dt class="tich-caption">Preferred intake</dt>
-        <dd>{{ $intakeLabel ?? '—' }}</dd>
+        <dd>{{ $intakeLabel ?? '-' }}</dd>
 
         <dt class="tich-caption">Preferred campus</dt>
-        <dd>{{ $biodata['application']['preferred_campus'] ?? '—' }}</dd>
+        <dd>{{ $biodata['application']['preferred_campus'] ?? '-' }}</dd>
 
         <dt class="tich-caption">Entry qualification</dt>
-        <dd>{{ $biodata['application']['entry_qualification'] ?? '—' }}</dd>
+        <dd>{{ $biodata['application']['entry_qualification'] ?? '-' }}</dd>
 
         <dt class="tich-caption">Sponsorship</dt>
-        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['sponsorship_type'] ?? ''))) ?: '—' }}</dd>
+        <dd>{{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['sponsorship_type'] ?? ''))) ?: '-' }}</dd>
 
         @if (! empty($biodata['application']['review_notes']))
             <dt class="tich-caption">Review notes</dt>

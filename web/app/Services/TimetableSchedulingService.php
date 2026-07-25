@@ -24,6 +24,8 @@ use App\Models\ProgramTimetableSession;
 
 use App\Models\User;
 
+use App\Support\UiText;
+
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Carbon;
@@ -290,7 +292,7 @@ class TimetableSchedulingService
 
 
 
-        $defaultTitle = $title ?: ProgramTimetable::kindLabels()[$timetableKind].' — Semester '.$teachingPeriod;
+        $defaultTitle = UiText::normalizeDash($title ?: ProgramTimetable::kindLabels()[$timetableKind].' - Semester '.$teachingPeriod);
 
 
 
@@ -442,7 +444,7 @@ class TimetableSchedulingService
 
             'session_type' => $data['session_type'] ?? 'lesson',
 
-            'title' => $data['title'] ?? null,
+            'title' => array_key_exists('title', $data) ? UiText::normalizeDash($data['title']) : null,
 
             'venue' => $data['venue'] ?? null,
 
@@ -991,7 +993,7 @@ class TimetableSchedulingService
 
                     'session_type' => $sessionType,
 
-                    'title' => $mapping->unit?->unit_code.' — '.$mapping->unit?->unit_name,
+                    'title' => $mapping->unit?->displayLabel() ?: null,
 
                     'segment_id' => $slot['segment_id'],
 

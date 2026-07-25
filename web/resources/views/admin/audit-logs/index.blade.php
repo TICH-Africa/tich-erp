@@ -82,12 +82,12 @@
                                     @if ($client !== [])
                                         <span class="tich-caption">{{ ucfirst($client['device_type'] ?? 'unknown') }}</span><br>
                                         {{ $client['browser'] ?? 'Unknown browser' }} · {{ $client['os'] ?? 'Unknown OS' }}<br>
-                                        {{ $client['ip_address'] ?? $log->ip_address ?? '—' }}
+                                        {{ $client['ip_address'] ?? $log->ip_address ?? '-' }}
                                         @if ($location)
                                             <br><span class="tich-caption">{{ $location }}</span>
                                         @endif
                                     @else
-                                        {{ $log->ip_address ?? '—' }}
+                                        {{ $log->ip_address ?? '-' }}
                                     @endif
                                 </td>
                                 <td style="padding: 0.75rem;">

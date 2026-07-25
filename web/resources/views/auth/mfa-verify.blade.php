@@ -17,7 +17,7 @@
 
     @if (config('app.debug') && session('mfa_dev_code'))
         <div class="tich-notice tich-notice--warning tich-mb-6">
-            <p class="tich-caption tich-mb-2">Development only — your verification code</p>
+            <p class="tich-caption tich-mb-2">Development only - your verification code</p>
             <p class="tich-text tich-notice__code">{{ session('mfa_dev_code') }}</p>
         </div>
     @endif

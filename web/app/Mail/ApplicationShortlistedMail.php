@@ -23,7 +23,7 @@ class ApplicationShortlistedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'TICH — Application shortlisted ('.$this->applicant->application_number.')',
+            subject: 'TICH - Application shortlisted ('.$this->applicant->application_number.')',
         );
     }
 

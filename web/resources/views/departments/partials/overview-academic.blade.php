@@ -13,7 +13,7 @@
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Campus</p>
-        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ $department->campus?->campus_name ?? '—' }}</p>
+        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ $department->campus?->campus_name ?? '-' }}</p>
     </article>
 </div>
 

@@ -23,7 +23,7 @@
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Group</p>
-        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ $department->group?->group_code ?? '—' }}</p>
+        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ $department->group?->group_code ?? '-' }}</p>
     </article>
 </div>
 

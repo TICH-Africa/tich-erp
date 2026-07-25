@@ -64,7 +64,7 @@ class StudentRecordService
 
         return [
             'identity' => [
-                'full_name' => $applicant?->fullName() ?? '—',
+                'full_name' => $applicant?->fullName() ?? '-',
                 'date_of_birth' => $applicant?->date_of_birth?->format('Y-m-d'),
                 'gender' => $applicant?->gender,
                 'national_id_number' => $applicant?->national_id_number,

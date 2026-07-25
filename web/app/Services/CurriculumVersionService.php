@@ -444,7 +444,7 @@ class CurriculumVersionService
 
         if ($inactiveMapped > 0) {
             throw ValidationException::withMessages([
-                'intake' => "All mapped units must be active before submitting. {$inactiveMapped} unit(s) are still draft or pending registry approval — approve them in the unit catalog first.",
+                'intake' => "All mapped units must be active before submitting. {$inactiveMapped} unit(s) are still draft or pending registry approval - approve them in the unit catalog first.",
             ]);
         }
 

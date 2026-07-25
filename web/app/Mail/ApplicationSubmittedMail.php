@@ -22,7 +22,7 @@ class ApplicationSubmittedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'TICH — Application received ('.$this->applicant->application_number.')',
+            subject: 'TICH - Application received ('.$this->applicant->application_number.')',
         );
     }
 

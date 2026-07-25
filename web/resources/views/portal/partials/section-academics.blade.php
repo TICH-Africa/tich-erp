@@ -86,7 +86,7 @@
                     <tbody>
                         @foreach ($academics['current_period_units'] as $mapping)
                             <tr>
-                                <td>{{ $mapping->unit?->unit_code }} — {{ $mapping->unit?->unit_name }}</td>
+                                <td>{{ $mapping->unit?->unit_code }} - {{ $mapping->unit?->unit_name }}</td>
                                 <td>{{ $mapping->contact_hours ?? 0 }}</td>
                                 <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
                                 <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
@@ -121,9 +121,9 @@
                 <tbody>
                     @foreach ($academics['registered_units'] as $row)
                         <tr>
-                            <td>{{ $row->unit_code }} — {{ $row->unit_name }}</td>
+                            <td>{{ $row->unit_code }} - {{ $row->unit_name }}</td>
                             <td>{{ $row->semester_label ?? ('Semester '.$row->semester_number) }}</td>
-                            <td>{{ $row->registration_date ? \Illuminate\Support\Carbon::parse($row->registration_date)->format('d M Y') : '—' }}</td>
+                            <td>{{ $row->registration_date ? \Illuminate\Support\Carbon::parse($row->registration_date)->format('d M Y') : '-' }}</td>
                             <td>{{ ucfirst($row->registration_status ?? 'registered') }}</td>
                         </tr>
                     @endforeach
@@ -152,11 +152,11 @@
                 <tbody>
                     @foreach ($academics['grades'] as $grade)
                         <tr>
-                            <td>{{ $grade->unit_code }} — {{ $grade->unit_name }}</td>
+                            <td>{{ $grade->unit_code }} - {{ $grade->unit_name }}</td>
                             <td>{{ $grade->semester_label }}</td>
                             <td>{{ number_format((float) $grade->final_score, 1) }}</td>
-                            <td>{{ $grade->grade_letter ?? '—' }}</td>
-                            <td>{{ $grade->recorded_at ? \Illuminate\Support\Carbon::parse($grade->recorded_at)->format('d M Y') : '—' }}</td>
+                            <td>{{ $grade->grade_letter ?? '-' }}</td>
+                            <td>{{ $grade->recorded_at ? \Illuminate\Support\Carbon::parse($grade->recorded_at)->format('d M Y') : '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -184,11 +184,11 @@
                 <tbody>
                     @foreach ($academics['attendance'] as $row)
                         <tr>
-                            <td>{{ $row->unit_code }} — {{ $row->unit_name }}</td>
+                            <td>{{ $row->unit_code }} - {{ $row->unit_name }}</td>
                             <td>{{ $row->semester_label }}</td>
                             <td>{{ $row->total_present }}/{{ $row->total_sessions }}</td>
                             <td>{{ number_format((float) $row->attendance_percentage, 1) }}%</td>
-                            <td>{{ ucfirst($row->status_flag ?? '—') }}</td>
+                            <td>{{ ucfirst($row->status_flag ?? '-') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -262,7 +262,7 @@
                         <tbody>
                             @foreach ($units as $mapping)
                                 <tr>
-                                    <td>{{ $mapping->unit?->unit_code }} — {{ $mapping->unit?->unit_name }}</td>
+                                    <td>{{ $mapping->unit?->unit_code }} - {{ $mapping->unit?->unit_name }}</td>
                                     <td>{{ $mapping->contact_hours ?? 0 }}</td>
                                     <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
                                     <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>

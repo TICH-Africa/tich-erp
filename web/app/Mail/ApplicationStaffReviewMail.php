@@ -25,7 +25,7 @@ class ApplicationStaffReviewMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'TICH — New application for review ('.$this->applicant->application_number.')',
+            subject: 'TICH - New application for review ('.$this->applicant->application_number.')',
         );
     }
 

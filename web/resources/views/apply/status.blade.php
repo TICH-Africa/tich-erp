@@ -29,10 +29,10 @@
                     <h2 class="tich-h3">{{ $applicant->application_number }}</h2>
                     <p class="tich-text tich-mt-2">{{ trim($applicant->first_name.' '.$applicant->surname) }}</p>
                     <ul class="tich-program-card__meta tich-mt-4">
-                        <li><span class="tich-caption">Programme</span> {{ $applicant->program?->program_name ?? '—' }}</li>
+                        <li><span class="tich-caption">Programme</span> {{ $applicant->program?->program_name ?? '-' }}</li>
                         <li><span class="tich-caption">Status</span> {{ ucfirst(str_replace('_', ' ', $applicant->status)) }}</li>
                         <li><span class="tich-caption">Academic review</span> {{ ucfirst(str_replace('_', ' ', $applicant->academic_review_status)) }}</li>
-                        <li><span class="tich-caption">Submitted</span> {{ $applicant->created_at?->format('M j, Y g:i A') ?? '—' }}</li>
+                        <li><span class="tich-caption">Submitted</span> {{ $applicant->created_at?->format('M j, Y g:i A') ?? '-' }}</li>
                         @if ($applicant->reviewed_at)
                             <li><span class="tich-caption">Last updated</span> {{ $applicant->reviewed_at->format('M j, Y g:i A') }}</li>
                         @endif

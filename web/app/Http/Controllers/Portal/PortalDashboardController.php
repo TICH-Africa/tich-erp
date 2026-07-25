@@ -37,7 +37,7 @@ class PortalDashboardController extends Controller
             'sections' => $this->navigation->sections(),
             'sidebarNavigation' => $this->navigation->sidebarNavigation($student),
             'modules' => $this->navigation->modules(),
-            'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' — Student portal',
+            'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Student portal',
         ]);
     }
 }

@@ -13,7 +13,7 @@
                     <tr>
                         <td style="padding:32px 28px;">
                             <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#1669a6;">
-                                TICH in Africa — Admissions
+                                TICH in Africa - Admissions
                             </p>
                             <h1 style="margin:0 0 16px;font-size:24px;line-height:1.3;color:#6cab33;">
                                 New application awaiting review
