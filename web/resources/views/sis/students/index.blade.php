@@ -21,6 +21,17 @@
                     @endforeach
                 </select>
             </div>
+            <div class="tich-form-group" style="margin: 0;">
+                <label for="program_id" class="tich-label">Programme</label>
+                <select id="program_id" name="program_id" class="tich-input">
+                    <option value="">All programmes</option>
+                    @foreach ($programs as $program)
+                        <option value="{{ $program->id }}" @selected((string) ($filters['program_id'] ?? '') === (string) $program->id)>
+                            {{ $program->program_code }} - {{ $program->program_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
         <div class="tich-mt-4">
             <button type="submit" class="tich-btn tich-btn-primary">Filter</button>

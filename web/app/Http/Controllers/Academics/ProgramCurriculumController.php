@@ -15,6 +15,7 @@ use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
 use App\Services\ProgramCurriculumService;
+use App\Services\StudentAcademicRecordService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
 use App\Services\UnitCatalogService;
@@ -31,6 +32,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected UnitCatalogService $unitCatalog,
         protected TimetableTemplateService $timetableTemplates,
         protected TimetableSchedulingService $timetableScheduling,
+        protected StudentAcademicRecordService $studentAcademicRecords,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -113,6 +115,41 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'block_id' => null,
             ]);
 
+        $enrolledStudents = ['matched' => collect(), 'other' => collect()];
+        $enrolledSummaries = collect();
+        $expandedStudentRecord = null;
+        $enrollmentStatusFilter = $request->string('enrollment_status')->toString() ?: null;
+
+        if ($section === 'enrolled') {
+            $enrolledStudents = $this->studentAcademicRecords->enrolledForProgram(
+                $program,
+                $selectedIntake,
+                $enrollmentStatusFilter
+            );
+
+            $studentIds = $enrolledStudents['matched']
+                ->pluck('id')
+                ->merge($enrolledStudents['other']->pluck('id'))
+                ->unique()
+                ->values()
+                ->all();
+
+            $enrolledSummaries = $this->studentAcademicRecords->rosterSummaries($studentIds);
+
+            $expandedStudentId = $request->integer('student') ?: null;
+            if ($expandedStudentId) {
+                $expandedStudent = $enrolledStudents['matched']->firstWhere('id', $expandedStudentId)
+                    ?? $enrolledStudents['other']->firstWhere('id', $expandedStudentId);
+
+                if ($expandedStudent) {
+                    $expandedStudentRecord = [
+                        'student' => $expandedStudent,
+                        'academics' => $this->studentAcademicRecords->forStudent($expandedStudent),
+                    ];
+                }
+            }
+        }
+
         return view('academics.programs.curriculum', [
             'department' => $hub,
             'learningDepartment' => $learningDepartment,
@@ -149,6 +186,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'applications' => $section === 'applications'
                 ? $this->curriculum->applicationsForIntake($program, $selectedIntake)
                 : ['matched' => collect(), 'unassigned' => collect()],
+            'enrolledStudents' => $enrolledStudents,
+            'enrolledSummaries' => $enrolledSummaries,
+            'expandedStudentRecord' => $expandedStudentRecord,
+            'enrollmentStatusFilter' => $enrollmentStatusFilter,
             'canViewApplications' => $request->user()->hasPermission('admissions.read'),
             'timetableTemplate' => $section === 'timetable'
                 ? $this->timetableTemplates->templateForProgram($program->id)
@@ -317,7 +358,19 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request
         );
 
-        return back()->with('status', 'Semester dates saved.');
+        $periodRow = collect($validated['periods'] ?? [])->first();
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $version->id,
+                'section' => 'semesters',
+                'semester' => $periodRow['semester'] ?? null,
+                'block_id' => $periodRow['block_id'] ?? null,
+            ]))
+            ->with('status', 'Semester dates saved.');
     }
 
     public function syncTimetableTemplate(Request $request, Department $department, AcademicProgram $program): RedirectResponse
@@ -502,7 +555,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $count = count($added);
 
-        return back()->with('status', $count === 1 ? 'Unit added to semester.' : "{$count} units added to semester.");
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $version->id,
+                'section' => 'semesters',
+                'semester' => $semester,
+                'block_id' => $validated['block_id'] ?? null,
+            ]))
+            ->with('status', $count === 1 ? 'Unit added to semester.' : "{$count} units added to semester.");
     }
 
     public function reopenVersion(Request $request, Department $department, CurriculumVersion $version): RedirectResponse

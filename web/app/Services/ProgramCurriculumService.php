@@ -208,6 +208,7 @@ class ProgramCurriculumService
             'catalog' => 'Unit catalog',
             'semesters' => 'Semester units',
             'applications' => 'Applications',
+            'enrolled' => 'Enrolled students',
             'workflow' => 'Intake workflow',
         ];
     }
@@ -251,11 +252,16 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $requiresIntake = ['semesters', 'applications', 'workflow', 'timetable'];
+        $requiresIntake = ['semesters', 'applications', 'enrolled', 'workflow', 'timetable'];
         $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
+        $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');
 
         foreach (self::curriculumSections() as $key => $label) {
             if ($key === 'applications' && ! $canViewApplications) {
+                continue;
+            }
+
+            if ($key === 'enrolled' && ! $canViewStudents) {
                 continue;
             }
 

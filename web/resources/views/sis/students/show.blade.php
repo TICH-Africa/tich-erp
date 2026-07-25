@@ -106,4 +106,14 @@
             </table>
         @endif
     </article>
+
+    <article class="tich-card tich-mt-6" id="academic-record">
+        <h2 class="tich-h3">Academic record</h2>
+        <p class="tich-text tich-mt-2">Registered units, CAT marks, exam results, grades, and attendance for this student.</p>
+
+        @include('sis.partials.student-academic-record', [
+            'academics' => $academics,
+            'compact' => false,
+        ])
+    </article>
 @endsection

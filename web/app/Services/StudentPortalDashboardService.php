@@ -2,19 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\CurriculumVersion;
-use App\Models\CurriculumVersionPeriod;
-use App\Models\Semester;
 use App\Models\Student;
-use App\Services\TimetableSchedulingService;
-use App\Services\TimetableTemplateService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StudentPortalDashboardService
 {
     public function __construct(
-        protected CurriculumVersionService $curriculumVersions,
+        protected StudentAcademicRecordService $academicRecords,
         protected TimetableSchedulingService $timetableScheduling,
     ) {}
 
@@ -25,7 +19,7 @@ class StudentPortalDashboardService
     {
         $student->loadMissing(['applicant', 'program', 'campus']);
 
-        $academics = $this->academics($student);
+        $academics = $this->academicRecords->forStudent($student, $this->mayViewProvisionalCurriculum($student));
         $finance = $this->finance($student);
 
         return [
@@ -53,117 +47,6 @@ class StudentPortalDashboardService
             'registered_unit_count' => $academics['registered_unit_count'],
             'grade_count' => $academics['grades']->count(),
             'curriculum_unit_count' => $academics['curriculum_units']->count(),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function academics(Student $student): array
-    {
-        $curriculum = $this->resolveCurriculum($student);
-        $curriculumUnits = $curriculum
-            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
-            : collect();
-
-        $periods = $curriculum
-            ? $curriculum->periods->sortBy('semester')->values()
-            : collect();
-
-        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
-        $currentPeriodUnits = $currentPeriod
-            ? $curriculumUnits->filter(function ($mapping) use ($currentPeriod) {
-                if ($currentPeriod->block_id) {
-                    return (int) $mapping->block_id === (int) $currentPeriod->block_id;
-                }
-
-                return (int) $mapping->semester === (int) $currentPeriod->semester;
-            })->values()
-            : collect();
-
-        $registrations = DB::table('student_semester_registrations as ssr')
-            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
-            ->leftJoin('academic_years as ay', 'ay.id', '=', 's.academic_year_id')
-            ->where('ssr.student_id', $student->id)
-            ->orderByDesc('ssr.registration_date')
-            ->select([
-                'ssr.*',
-                's.semester_label',
-                's.semester_number',
-                'ay.year_label',
-            ])
-            ->get();
-
-        $registeredUnits = DB::table('registered_units as ru')
-            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
-            ->join('units as u', 'u.id', '=', 'ru.unit_id')
-            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
-            ->where('ssr.student_id', $student->id)
-            ->orderByDesc('ssr.registration_date')
-            ->select([
-                'ru.id',
-                'ru.is_additional',
-                'u.unit_code',
-                'u.unit_name',
-                's.semester_label',
-                's.semester_number',
-                'ssr.status as registration_status',
-                'ssr.registration_date',
-            ])
-            ->get();
-
-        $grades = DB::table('grade_records as gr')
-            ->join('units as u', 'u.id', '=', 'gr.unit_id')
-            ->join('semesters as s', 's.id', '=', 'gr.semester_id')
-            ->where('gr.student_id', $student->id)
-            ->orderByDesc('gr.recorded_at')
-            ->select([
-                'gr.final_score',
-                'gr.grade_letter',
-                'gr.grade_points',
-                'gr.recorded_at',
-                'u.unit_code',
-                'u.unit_name',
-                's.semester_label',
-            ])
-            ->get();
-
-        $attendance = DB::table('attendance_summaries as a')
-            ->join('units as u', 'u.id', '=', 'a.unit_id')
-            ->join('semesters as s', 's.id', '=', 'a.semester_id')
-            ->where('a.student_id', $student->id)
-            ->orderByDesc('a.last_calculated_at')
-            ->select([
-                'a.attendance_percentage',
-                'a.total_present',
-                'a.total_sessions',
-                'a.status_flag',
-                'u.unit_code',
-                'u.unit_name',
-                's.semester_label',
-            ])
-            ->get();
-
-        $currentSemester = $student->current_semester_id
-            ? Semester::query()->with('academicYear')->find($student->current_semester_id)
-            : Semester::query()->with('academicYear')->where('is_current', 1)->first();
-
-        return [
-            'curriculum' => $curriculum,
-            'curriculum_is_published' => $curriculum?->isPublished() ?? false,
-            'curriculum_units' => $curriculumUnits,
-            'curriculum_by_semester' => collect($curriculumUnits->groupBy('semester')),
-            'periods' => $periods,
-            'periods_by_semester' => $periods->keyBy('semester'),
-            'current_period' => $currentPeriod,
-            'current_period_units' => $currentPeriodUnits,
-            'current_period_status' => $this->periodStatus($currentPeriod),
-            'registrations' => $registrations,
-            'registered_units' => $registeredUnits,
-            'registered_unit_count' => $registeredUnits->count(),
-            'grades' => $grades,
-            'attendance' => $attendance,
-            'current_semester' => $currentSemester,
         ];
     }
 
@@ -213,153 +96,6 @@ class StudentPortalDashboardService
                     || ($student->fee_clearance_status === 'cleared'),
             ],
         ];
-    }
-
-    private function resolveCurriculum(Student $student): ?CurriculumVersion
-    {
-        if (! $student->program_id) {
-            return null;
-        }
-
-        $applicant = $student->applicant;
-        $programId = (int) $student->program_id;
-        $relations = ['items.unit', 'periods'];
-
-        if ($applicant?->intake_year && $applicant?->intake_month) {
-            $publishedIntake = CurriculumVersion::query()
-                ->with($relations)
-                ->where('program_id', $programId)
-                ->where('status', 'published')
-                ->where('intake_year', $applicant->intake_year)
-                ->where('intake_month', $applicant->intake_month)
-                ->orderByDesc('published_at')
-                ->first();
-
-            if ($publishedIntake) {
-                return $publishedIntake;
-            }
-        }
-
-        $published = $this->curriculumVersions->publishedVersionForProgram($programId);
-
-        if ($published) {
-            return $published->load($relations);
-        }
-
-        if (! $this->studentMayViewProvisionalCurriculum($student)) {
-            return null;
-        }
-
-        if ($applicant?->intake_year && $applicant?->intake_month) {
-            $intakeMatch = CurriculumVersion::query()
-                ->with($relations)
-                ->where('program_id', $programId)
-                ->whereNot('status', 'superseded')
-                ->where('intake_year', $applicant->intake_year)
-                ->where('intake_month', $applicant->intake_month)
-                ->whereHas('items')
-                ->orderByDesc('intake_year')
-                ->orderByDesc('intake_month')
-                ->first();
-
-            if ($intakeMatch) {
-                return $intakeMatch;
-            }
-        }
-
-        return CurriculumVersion::query()
-            ->with($relations)
-            ->where('program_id', $programId)
-            ->whereNot('status', 'superseded')
-            ->whereHas('items')
-            ->orderByDesc('intake_year')
-            ->orderByDesc('intake_month')
-            ->first();
-    }
-
-    private function studentMayViewProvisionalCurriculum(Student $student): bool
-    {
-        if ($student->portal_activated_at) {
-            return true;
-        }
-
-        return in_array($student->enrollment_status, ['active', 'enrolled', 'registered'], true);
-    }
-
-    /**
-     * @param  Collection<int, CurriculumVersionPeriod>  $periods
-     * @param  Collection<int, \App\Models\CurriculumVersionUnit>  $curriculumUnits
-     */
-    private function resolveCurrentPeriod(Collection $periods, Collection $curriculumUnits): ?CurriculumVersionPeriod
-    {
-        if ($periods->isNotEmpty()) {
-            $today = now()->startOfDay();
-            $ordered = $periods->sortBy('semester')->values();
-
-            $inProgress = $ordered->first(fn (CurriculumVersionPeriod $period) => $period->isActiveOn($today));
-            if ($inProgress) {
-                return $inProgress;
-            }
-
-            $latestCompleted = $ordered
-                ->filter(fn (CurriculumVersionPeriod $period) => $period->end_date && $period->end_date->lt($today))
-                ->sortByDesc('semester')
-                ->first();
-
-            if ($latestCompleted) {
-                $nextSemester = $ordered
-                    ->first(fn (CurriculumVersionPeriod $period) => $period->semester > $latestCompleted->semester);
-
-                if ($nextSemester) {
-                    return $nextSemester;
-                }
-
-                return $latestCompleted;
-            }
-
-            $upcoming = $ordered
-                ->filter(fn (CurriculumVersionPeriod $period) => $period->start_date && $period->start_date->gt($today))
-                ->sortBy('start_date')
-                ->first();
-
-            if ($upcoming) {
-                return $upcoming;
-            }
-
-            return $ordered->first();
-        }
-
-        if ($curriculumUnits->isEmpty()) {
-            return null;
-        }
-
-        $semester = (int) $curriculumUnits->sortBy('semester')->first()->semester;
-
-        return new CurriculumVersionPeriod([
-            'semester' => $semester,
-            'block_id' => null,
-            'start_date' => null,
-            'end_date' => null,
-        ]);
-    }
-
-    private function periodStatus(?CurriculumVersionPeriod $period): ?string
-    {
-        if (! $period?->start_date || ! $period?->end_date) {
-            return null;
-        }
-
-        $today = now()->startOfDay();
-
-        if ($today->lt($period->start_date)) {
-            return 'upcoming';
-        }
-
-        if ($today->gt($period->end_date)) {
-            return 'completed';
-        }
-
-        return 'in_progress';
     }
 
     /**
@@ -413,5 +149,14 @@ class StudentPortalDashboardService
             'teaching_period' => $teachingPeriod,
             'is_provisional' => $primary && ! $primary->isPublished(),
         ];
+    }
+
+    private function mayViewProvisionalCurriculum(Student $student): bool
+    {
+        if ($student->portal_activated_at) {
+            return true;
+        }
+
+        return in_array($student->enrollment_status, ['active', 'enrolled', 'registered'], true);
     }
 }
