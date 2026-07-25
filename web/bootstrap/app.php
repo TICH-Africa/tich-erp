@@ -1,10 +1,15 @@
 <?php
 
+use App\Services\AuthService;
+use App\Services\ErrorNavigationService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,8 +31,63 @@ return Application::configure(basePath: dirname(__DIR__))
             'student.portal' => \App\Http\Middleware\EnsureStudentPortalAccess::class,
             'staff.portal' => \App\Http\Middleware\EnsureStaffPortalAccess::class,
         ]);
+
+        $middleware->redirectGuestsTo(fn (Request $request) => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your session expired. Please refresh the page and try again.',
+                ], 419);
+            }
+
+            $message = 'Your session expired. Please try again.';
+            $safeInput = $request->except('_token', 'password', 'password_confirmation', 'password_hash');
+
+            if ($request->user()) {
+                $home = app(ErrorNavigationService::class)->homeUrl($request->user());
+                $referer = $request->headers->get('referer');
+                $target = ($referer && $referer !== $request->fullUrl()) ? $referer : $home;
+
+                return redirect()
+                    ->to($target)
+                    ->withInput($safeInput)
+                    ->withErrors(['session' => $message]);
+            }
+
+            $referer = $request->headers->get('referer');
+            if ($referer) {
+                app(AuthService::class)->storeIntendedUrl($request, $referer);
+            }
+
+            return redirect()
+                ->route('login')
+                ->withInput($safeInput)
+                ->withErrors(['session' => $message]);
+        });
+
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'The requested resource was not found.'], 404);
+            }
+
+            return response()->view('errors.404', ['exception' => $e], 404);
+        });
+
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'Request could not be completed.',
+                ], $e->getStatusCode());
+            }
+
+            $status = $e->getStatusCode();
+            $view = view()->exists("errors.{$status}") ? "errors.{$status}" : 'errors.minimal';
+
+            return response()->view($view, ['exception' => $e], $status);
+        });
+
         $exceptions->render(function (PostTooLargeException $e, Request $request) {
             if ($request->is('apply/*')) {
                 return redirect()
@@ -37,6 +97,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     ]);
             }
 
-            return null;
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'The uploaded file is too large.'], 413);
+            }
+
+            $home = $request->user()
+                ? app(ErrorNavigationService::class)->homeUrl($request->user())
+                : route('home');
+
+            return redirect()
+                ->to($request->headers->get('referer') ?: $home)
+                ->withErrors(['upload' => 'The uploaded file exceeds the server size limit. Try a smaller file.']);
         });
     })->create();

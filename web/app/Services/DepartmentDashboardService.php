@@ -277,14 +277,6 @@ class DepartmentDashboardService
             }
         }
 
-        $items[] = ['type' => 'heading', 'label' => 'Account'];
-        $items[] = [
-            'type' => 'link',
-            'label' => 'Main dashboard',
-            'route' => 'dashboard',
-            'params' => [],
-        ];
-
         return $items;
     }
 
@@ -330,14 +322,6 @@ class DepartmentDashboardService
                 ];
             }
         }
-
-        $items[] = ['type' => 'heading', 'label' => 'Account'];
-        $items[] = [
-            'type' => 'link',
-            'label' => 'Main dashboard',
-            'route' => 'dashboard',
-            'params' => [],
-        ];
 
         return $items;
     }

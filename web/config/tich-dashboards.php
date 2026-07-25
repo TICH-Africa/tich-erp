@@ -9,7 +9,7 @@ return [
     'modules' => [
         [
             'key' => 'dashboard',
-            'label' => 'Main dashboard',
+            'label' => 'Dashboard',
             'description' => 'Personal landing page after sign-in.',
             'route' => 'dashboard',
             'permission' => 'dashboard.access',

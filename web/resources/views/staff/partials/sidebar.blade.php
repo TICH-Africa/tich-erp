@@ -11,8 +11,5 @@
                    @class(['is-active' => $section === ($item['section'] ?? '')])>{{ $item['label'] }}</a>
             @endif
         @endforeach
-
-        <p class="tich-admin-sidebar__section">Navigation</p>
-        <a href="{{ route('dashboard') }}">Main dashboard</a>
     </nav>
 </aside>

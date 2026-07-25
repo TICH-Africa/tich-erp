@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -140,15 +141,88 @@ class AuthService
     {
         $request->session()->forget('mfa_verified_at');
 
-        if ($this->mfaService->isMFARequired($user)) {
-            if (! $user->mfa_enabled) {
-                return route('mfa.setup');
-            }
-
-            return route('mfa.verify');
+        if ($this->mustCompleteMfaBeforeAccess($user, $request)) {
+            return $this->mfaEntryRoute($user);
         }
 
         return $this->authenticatedHome($user);
+    }
+
+    public function mustCompleteMfaBeforeAccess(User $user, Request $request): bool
+    {
+        if (! $this->mfaService->isMFARequired($user)) {
+            return false;
+        }
+
+        if (! $user->mfa_enabled) {
+            return true;
+        }
+
+        return ! $this->isMfaSessionValid($request, $user);
+    }
+
+    public function mfaEntryRoute(User $user): string
+    {
+        return $user->mfa_enabled
+            ? route('mfa.verify')
+            : route('mfa.setup');
+    }
+
+    public function isSafeIntendedUrl(?string $url): bool
+    {
+        if (! $url) {
+            return false;
+        }
+
+        if (! str_starts_with($url, url('/'))) {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: '';
+
+        foreach (['/login', '/register', '/mfa/', '/logout'] as $blocked) {
+            if (str_starts_with($path, $blocked)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function rememberIntendedUrl(Request $request): void
+    {
+        if (! in_array($request->method(), ['GET', 'HEAD'], true)) {
+            return;
+        }
+
+        if ($request->routeIs('login', 'register', 'password.*', 'mfa.*', 'logout', 'home')) {
+            return;
+        }
+
+        $this->storeIntendedUrl($request, $request->fullUrl());
+    }
+
+    public function storeIntendedUrl(Request $request, ?string $url): void
+    {
+        if ($this->isSafeIntendedUrl($url)) {
+            $request->session()->put('url.intended', $url);
+        }
+    }
+
+    public function redirectAfterAuthentication(User $user, Request $request): RedirectResponse
+    {
+        $request->session()->forget('mfa_verified_at');
+
+        if ($this->mustCompleteMfaBeforeAccess($user, $request)) {
+            return redirect()->to($this->mfaEntryRoute($user));
+        }
+
+        return redirect()->intended($this->authenticatedHome($user));
+    }
+
+    public function redirectAfterMfa(User $user, Request $request): RedirectResponse
+    {
+        return redirect()->intended($this->authenticatedHome($user));
     }
 
     public function authenticatedHome(User $user): string

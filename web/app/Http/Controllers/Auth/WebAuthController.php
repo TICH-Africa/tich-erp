@@ -18,8 +18,10 @@ class WebAuthController extends Controller
         protected MFAService $mfaService,
     ) {}
 
-    public function showLogin(): View
+    public function showLogin(Request $request): View
     {
+        $this->authService->storeIntendedUrl($request, $request->query('redirect'));
+
         return view('auth.login');
     }
 
@@ -41,7 +43,7 @@ class WebAuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        return redirect()->intended($this->authService->postLoginDestination($user, $request));
+        return $this->authService->redirectAfterAuthentication($user, $request);
     }
 
     public function showRegister(): View
@@ -115,7 +117,7 @@ class WebAuthController extends Controller
         $user = Auth::user();
 
         if ($user->mfa_enabled && $this->authService->isMfaSessionValid($request, $user)) {
-            return redirect()->to($this->authService->authenticatedHome($user));
+            return $this->authService->redirectAfterMfa($user, $request);
         }
 
         return view('auth.mfa-setup', [
@@ -164,8 +166,7 @@ class WebAuthController extends Controller
             $this->mfaService->enableMFA($user, 'email', null, null, $request);
             $this->authService->markMfaVerified($request, $user);
 
-            return redirect()
-                ->to($this->authService->authenticatedHome($user))
+            return $this->authService->redirectAfterMfa($user, $request)
                 ->with('status', 'Email MFA is now active on your account.');
         }
 
@@ -192,8 +193,7 @@ class WebAuthController extends Controller
         $this->mfaService->enableMFA($user, 'auth_app', $user->mfa_secret_temp, $backupCodes, $request);
         $this->authService->markMfaVerified($request, $user);
 
-        return redirect()
-            ->to($this->authService->authenticatedHome($user))
+        return $this->authService->redirectAfterMfa($user, $request)
             ->with('status', 'Authenticator MFA enabled. Save your backup codes: '.implode(', ', $backupCodes));
     }
 
@@ -210,7 +210,7 @@ class WebAuthController extends Controller
         }
 
         if ($this->authService->isMfaSessionValid($request, $user)) {
-            return redirect()->to($this->authService->authenticatedHome($user));
+            return $this->authService->redirectAfterMfa($user, $request);
         }
 
         if ($user->mfa_method === 'email') {
@@ -244,7 +244,7 @@ class WebAuthController extends Controller
 
         $this->authService->markMfaVerified($request, $user);
 
-        return redirect()->intended($this->authService->authenticatedHome($user));
+        return $this->authService->redirectAfterMfa($user, $request);
     }
 
     public function resendMfaCode(Request $request): RedirectResponse

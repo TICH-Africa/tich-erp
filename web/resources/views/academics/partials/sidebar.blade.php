@@ -37,9 +37,6 @@
 
             <p class="tich-admin-sidebar__section">Navigation</p>
             <a href="{{ route('departments.show', $department) }}">{{ $department->dept_name }} hub</a>
-
-            <p class="tich-admin-sidebar__section">Account</p>
-            <a href="{{ route('dashboard') }}" @class(['is-active' => request()->routeIs('dashboard')])>Main dashboard</a>
         </nav>
     </aside>
 @endif

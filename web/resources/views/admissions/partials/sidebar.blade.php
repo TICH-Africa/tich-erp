@@ -7,6 +7,5 @@
         @can('admin.access')
             <a href="{{ route('admin.index') }}">Platform admin</a>
         @endcan
-        <a href="{{ route('dashboard') }}">← Main dashboard</a>
     </nav>
 </aside>

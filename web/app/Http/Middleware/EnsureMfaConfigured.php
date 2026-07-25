@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AuthService;
 use App\Services\MFAService;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,7 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureMfaConfigured
 {
-    public function __construct(protected MFAService $mfaService) {}
+    public function __construct(
+        protected MFAService $mfaService,
+        protected AuthService $authService,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -31,6 +35,8 @@ class EnsureMfaConfigured
                     'mfa_setup_required' => true,
                 ], 403);
             }
+
+            $this->authService->rememberIntendedUrl($request);
 
             return redirect()->route('mfa.setup');
         }

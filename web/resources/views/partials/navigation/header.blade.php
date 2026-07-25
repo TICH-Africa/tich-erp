@@ -16,8 +16,8 @@
             @auth
                 @if (auth()->user()->isEnrolledStudent())
                     <a href="{{ route('portal.dashboard') }}" class="tich-nav__link{{ request()->routeIs('portal.*') ? ' is-active' : '' }}">Student portal</a>
-                @else
-                    <a href="{{ route('dashboard') }}" class="tich-nav__link{{ request()->routeIs('dashboard') ? ' is-active' : '' }}">Dashboard</a>
+                @elseif (auth()->user()->isTeachingStaff())
+                    <a href="{{ route('staff.dashboard') }}" class="tich-nav__link{{ request()->routeIs('staff.*') ? ' is-active' : '' }}">Staff portal</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
@@ -43,8 +43,8 @@
                 @auth
                     @if (auth()->user()->isEnrolledStudent())
                         <a href="{{ route('portal.dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Student portal</a>
-                    @else
-                        <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Dashboard</a>
+                    @elseif (auth()->user()->isTeachingStaff())
+                        <a href="{{ route('staff.dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Staff portal</a>
                     @endif
                 @else
                     <a href="{{ route('login') }}" class="tich-btn tich-btn-blue tich-btn-block">Sign in</a>

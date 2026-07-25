@@ -53,8 +53,12 @@ class RequireMFA
         }
 
         if (! empty($extra['mfa_setup_required'])) {
+            app(AuthService::class)->rememberIntendedUrl($request);
+
             return redirect()->route('mfa.setup')->with('status', $message);
         }
+
+        app(AuthService::class)->rememberIntendedUrl($request);
 
         return redirect()->route('mfa.verify')->with('status', $message);
     }

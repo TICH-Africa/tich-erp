@@ -21,7 +21,7 @@ class CheckRole
                 return response()->json(['message' => 'Unauthenticated'], 401);
             }
 
-            return redirect()->route('login');
+            return redirect()->guest(route('login'));
         }
 
         $minimumRole = null;
