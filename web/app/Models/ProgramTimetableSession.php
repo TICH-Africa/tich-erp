@@ -15,6 +15,7 @@ class ProgramTimetableSession extends Model
     protected $fillable = [
         'program_timetable_id', 'unit_id', 'staff_id', 'room_id', 'day_of_week',
         'start_time', 'end_time', 'session_type', 'title', 'venue', 'class_group', 'segment_id',
+        'lesson_plan_cleared', 'lesson_plan_id',
     ];
 
     protected $casts = [

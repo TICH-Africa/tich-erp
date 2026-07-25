@@ -15,6 +15,7 @@ class StaffTeachingService
 {
     public function __construct(
         protected AttendanceVerificationService $attendanceVerification,
+        protected LessonPlanApprovalService $lessonPlanApprovals,
     ) {}
     public function createLessonPlan(Staff $staff, UnitAllocation $allocation, array $data): LessonPlan
     {
@@ -39,16 +40,22 @@ class StaffTeachingService
 
     public function submitLessonPlan(LessonPlan $plan, Staff $staff): LessonPlan
     {
-        abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
+        return $this->lessonPlanApprovals->submitForApproval($plan, $staff);
+    }
 
-        $plan->update(['status' => 'submitted', 'updated_at' => now()]);
-
-        return $plan->fresh();
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateLessonPlan(LessonPlan $plan, Staff $staff, array $data): LessonPlan
+    {
+        return $this->lessonPlanApprovals->updateByTutor($plan, $staff, $data);
     }
 
     public function createAttendanceSession(Staff $staff, UnitAllocation $allocation, array $data): AttendanceSession
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+
+        $this->lessonPlanApprovals->assertCanInitiateSession($allocation, $data['session_date']);
 
         $session = AttendanceSession::query()->create([
             'session_number' => 'ATT-'.now()->format('YmdHis'),

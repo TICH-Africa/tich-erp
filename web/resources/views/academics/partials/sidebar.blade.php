@@ -30,6 +30,8 @@
                 <a href="{{ route('departments.academics.programs.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.programs.*')])>Programme curriculum</a>
                 <a href="{{ route('departments.academics.workload.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.workload.*')])>Workload allocation</a>
                 <a href="{{ route('departments.academics.attendance-ledger.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.attendance-ledger.*')])>Attendance ledger</a>
+                <a href="{{ route('departments.academics.lesson-plans.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.lesson-plans.index') || request()->routeIs('departments.academics.lesson-plans.show')])>Lesson plan approval</a>
+                <a href="{{ route('departments.academics.lesson-plans.audit', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.lesson-plans.audit')])>Lesson plan audit</a>
                 <a href="{{ route('departments.academics.performance.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.performance.*')])>Performance terminal</a>
             @endcan
 

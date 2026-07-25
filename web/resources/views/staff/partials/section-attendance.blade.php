@@ -116,6 +116,10 @@
 <div class="tich-grid tich-grid--2 tich-mt-8" style="align-items:start; gap:1.5rem;">
     <article class="tich-card">
         <h2 class="tich-h3">New session</h2>
+        <p class="tich-caption">Requires an HOD-approved lesson plan for the same unit and date.</p>
+        @if ($errors->has('lesson_plan'))
+            <p class="tich-text" style="color:var(--tich-danger, #b91c1c); margin-top:0.75rem;">{{ $errors->first('lesson_plan') }}</p>
+        @endif
         @if ($portalData['allocations']->isEmpty())
             <p class="tich-text tich-mt-4">You need a unit allocation before taking attendance.</p>
         @else

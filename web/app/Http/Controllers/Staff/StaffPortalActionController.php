@@ -7,6 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
 use App\Services\ContinuousAssessmentService;
+use App\Services\LessonPlanApprovalService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class StaffPortalActionController extends Controller
         protected StaffPortalService $portalService,
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
+        protected LessonPlanApprovalService $lessonPlanApprovals,
     ) {}
 
     public function storeLessonPlan(Request $request): RedirectResponse
@@ -29,10 +31,12 @@ class StaffPortalActionController extends Controller
             'allocation_id' => ['required', 'integer'],
             'lesson_objectives' => ['required', 'string'],
             'topics_covered' => ['nullable', 'string'],
+            'competencies_targeted' => ['nullable', 'string'],
             'planned_date' => ['required', 'date'],
             'week_number' => ['nullable', 'integer', 'min:1'],
-            'contact_hours' => ['nullable', 'integer', 'min:1'],
-            'teaching_methods' => ['nullable', 'string'],
+            'contact_hours' => ['required', 'integer', 'min:1'],
+            'teaching_methods' => ['nullable', 'string', 'max:500'],
+            'resources_required' => ['nullable', 'string', 'max:500'],
             'submit' => ['nullable', 'boolean'],
         ]);
 
@@ -54,6 +58,28 @@ class StaffPortalActionController extends Controller
         return back()->with('status', 'Lesson plan submitted for HOD approval.');
     }
 
+    public function updateLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
+
+        $validated = $request->validate([
+            'lesson_objectives' => ['required', 'string'],
+            'topics_covered' => ['nullable', 'string'],
+            'competencies_targeted' => ['nullable', 'string'],
+            'planned_date' => ['required', 'date'],
+            'week_number' => ['nullable', 'integer', 'min:1'],
+            'contact_hours' => ['required', 'integer', 'min:1'],
+            'teaching_methods' => ['nullable', 'string', 'max:500'],
+            'resources_required' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->teaching->updateLessonPlan($plan, $staff, $validated);
+
+        return redirect()->route('staff.dashboard', ['section' => 'lesson-plans', 'edit_plan' => $plan->id])
+            ->with('status', 'Lesson plan updated.');
+    }
+
     public function storeAttendanceSession(Request $request): RedirectResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
@@ -66,6 +92,11 @@ class StaffPortalActionController extends Controller
             'end_time' => ['nullable'],
             'venue' => ['nullable', 'string', 'max:200'],
         ]);
+
+        if (! $this->lessonPlanApprovals->hasApprovedPlanForSession($allocation, $validated['session_date'])) {
+            return redirect()->route('staff.dashboard', ['section' => 'lesson-plans'])
+                ->withErrors(['lesson_plan' => 'An HOD-approved lesson plan matching this unit and date is required before you can create a class session.']);
+        }
 
         $session = $this->teaching->createAttendanceSession($staff, $allocation, $validated);
 

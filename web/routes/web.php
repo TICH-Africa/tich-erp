@@ -15,6 +15,7 @@ use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
 use App\Http\Controllers\Academics\AttendanceLedgerController;
+use App\Http\Controllers\Academics\LessonPlanController;
 use App\Http\Controllers\Academics\PerformanceTerminalController;
 use App\Http\Controllers\Academics\CalendarController as AcademicsCalendarController;
 use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardController;
@@ -164,6 +165,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
             Route::get('/workload', [WorkloadController::class, 'index'])->name('departments.academics.workload.index');
             Route::get('/attendance-ledger', [AttendanceLedgerController::class, 'index'])->name('departments.academics.attendance-ledger.index');
+            Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->name('departments.academics.lesson-plans.index');
+            Route::get('/lesson-plans/audit', [LessonPlanController::class, 'audit'])->name('departments.academics.lesson-plans.audit');
+            Route::get('/lesson-plans/{plan}', [LessonPlanController::class, 'show'])->name('departments.academics.lesson-plans.show');
             Route::get('/performance', [PerformanceTerminalController::class, 'index'])->name('departments.academics.performance.index');
         });
 
@@ -172,6 +176,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::delete('/workload/{allocation}', [WorkloadController::class, 'destroy'])->name('departments.academics.workload.destroy');
             Route::post('/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'])->name('departments.academics.attendance-ledger.verify-hod');
             Route::post('/attendance-ledger/{session}/verify-registrar', [AttendanceLedgerController::class, 'verifyRegistrar'])->name('departments.academics.attendance-ledger.verify-registrar');
+            Route::put('/lesson-plans/{plan}', [LessonPlanController::class, 'update'])->name('departments.academics.lesson-plans.update');
+            Route::post('/lesson-plans/{plan}/approve', [LessonPlanController::class, 'approve'])->name('departments.academics.lesson-plans.approve');
+            Route::post('/lesson-plans/{plan}/reject', [LessonPlanController::class, 'reject'])->name('departments.academics.lesson-plans.reject');
+            Route::post('/lesson-plans/{plan}/request-modification', [LessonPlanController::class, 'requestModification'])->name('departments.academics.lesson-plans.request-modification');
             Route::put('/learning-departments/{learningDepartment}/profile', [AcademicsDepartmentController::class, 'updateProfile'])
                 ->name('departments.academics.departments.update-profile');
             Route::post('/units', [AcademicsUnitController::class, 'store'])->name('departments.academics.units.store');
@@ -225,6 +233,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
     Route::middleware('staff.portal')->prefix('staff')->group(function () {
         Route::get('/', StaffPortalDashboardController::class)->name('staff.dashboard');
         Route::post('/lesson-plans', [StaffPortalActionController::class, 'storeLessonPlan'])->name('staff.lesson-plans.store');
+        Route::put('/lesson-plans/{plan}', [StaffPortalActionController::class, 'updateLessonPlan'])->name('staff.lesson-plans.update');
         Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
         Route::post('/attendance', [StaffPortalActionController::class, 'storeAttendanceSession'])->name('staff.attendance.store');
         Route::post('/attendance/{session}', [StaffPortalActionController::class, 'saveAttendance'])->name('staff.attendance.save');

@@ -27,6 +27,7 @@ class LessonPlan extends Model
         'hod_comments',
         'hod_id',
         'hod_action_at',
+        'registrar_visible',
     ];
 
     protected $casts = [
@@ -44,5 +45,20 @@ class LessonPlan extends Model
     public function preparedByStaff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'prepared_by');
+    }
+
+    public function hodStaff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'hod_id');
+    }
+
+    public function approvals(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LessonPlanApproval::class)->orderByDesc('decided_at');
+    }
+
+    public function isEditableByTutor(): bool
+    {
+        return in_array($this->status, ['draft', 'modified', 'rejected'], true);
     }
 }
