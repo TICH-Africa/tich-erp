@@ -112,7 +112,7 @@ class StaffTeachingService
         $max = (float) $data['max_score'];
         $obtained = (float) $data['score_obtained'];
 
-        return CatScore::query()->create([
+        $score = CatScore::query()->create([
             'student_id' => (int) $data['student_id'],
             'unit_id' => $allocation->unit_id,
             'semester_id' => $allocation->semester_id,
@@ -125,6 +125,10 @@ class StaffTeachingService
             'recorded_by' => $staff->id,
             'recorded_at' => now(),
         ]);
+
+        app(ContinuousAssessmentService::class)->recalculateCumulativeScores($allocation);
+
+        return $score;
     }
 
     public function storeLearningContent(Staff $staff, int $unitId, array $data, string $storedPath): void

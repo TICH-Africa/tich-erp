@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
+use App\Services\ContinuousAssessmentService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,7 @@ class StaffPortalActionController extends Controller
     public function __construct(
         protected StaffPortalService $portalService,
         protected StaffTeachingService $teaching,
+        protected ContinuousAssessmentService $assessments,
     ) {}
 
     public function storeLessonPlan(Request $request): RedirectResponse
@@ -130,8 +132,38 @@ class StaffPortalActionController extends Controller
 
         $this->teaching->recordCatScore($staff, $allocation, $validated);
 
-        return redirect()->route('staff.dashboard', ['section' => 'grading'])
-            ->with('status', 'Score recorded.');
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+        ])->with('status', 'Score recorded.');
+    }
+
+    public function saveGradingGrid(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'columns' => ['required', 'array'],
+            'columns.*.key' => ['required', 'string'],
+            'columns.*.name' => ['required', 'string'],
+            'columns.*.type' => ['required', 'string'],
+            'columns.*.max' => ['required', 'numeric', 'min:0.01'],
+            'scores' => ['nullable', 'array'],
+        ]);
+
+        $this->assessments->saveGrid(
+            $allocation,
+            $staff,
+            $validated['columns'],
+            $validated['scores'] ?? [],
+        );
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+        ])->with('status', 'Competency spreadsheet saved. Cumulative scores updated.');
     }
 
     public function storeContent(Request $request): RedirectResponse

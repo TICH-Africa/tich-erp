@@ -7,6 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
 use App\Services\AttendanceVerificationService;
+use App\Services\ContinuousAssessmentService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
@@ -22,6 +23,7 @@ class StaffPortalDashboardController extends Controller
         protected StaffPortalNavigationService $navigation,
         protected StaffPortalDashboardService $dashboard,
         protected StaffTeachingService $teaching,
+        protected ContinuousAssessmentService $assessments,
     ) {}
 
     public function __invoke(Request $request): View
@@ -40,9 +42,17 @@ class StaffPortalDashboardController extends Controller
                 ->find($request->integer('attendance_session'));
         }
 
+        $gradingTerminal = null;
         if ($section === 'grading') {
-            foreach ($portalData['allocations'] as $allocation) {
-                $rostersByAllocation[$allocation->id] = $this->dashboard->rosterForAllocation($allocation->id);
+            $allocationId = $request->integer('allocation');
+            if ($allocationId) {
+                $allocation = UnitAllocation::query()
+                    ->with(['unit', 'semester', 'campus'])
+                    ->where('staff_id', $staff->id)
+                    ->find($allocationId);
+                if ($allocation) {
+                    $gradingTerminal = $this->assessments->terminalData($allocation, $staff);
+                }
             }
         }
 
@@ -55,6 +65,7 @@ class StaffPortalDashboardController extends Controller
             'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Staff portal',
             'attendanceSession' => $attendanceSession,
             'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
+            'gradingTerminal' => $gradingTerminal,
             'rostersByAllocation' => $rostersByAllocation,
         ]);
     }

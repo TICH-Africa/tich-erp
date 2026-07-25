@@ -2789,3 +2789,90 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 .tich-attendance-matrix td:last-child {
     max-width: 28rem;
 }
+
+/* ─── Competency spreadsheet / performance terminal ─────────────────────── */
+
+.tich-tabs__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tich-tabs__btn {
+    border: 1px solid var(--tich-neutral-border);
+    background: var(--tich-white);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+}
+
+.tich-tabs__btn.is-active {
+    background: var(--tich-blue);
+    border-color: var(--tich-blue);
+    color: var(--tich-on-brand);
+}
+
+.tich-tabs__panel {
+    display: none;
+}
+
+.tich-tabs__panel.is-active {
+    display: block;
+}
+
+.tich-competency-grid-wrap {
+    overflow: auto;
+    max-height: 70vh;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+}
+
+.tich-competency-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.tich-competency-grid th,
+.tich-competency-grid td {
+    border: 1px solid var(--tich-neutral-border);
+    padding: 0.45rem 0.5rem;
+    white-space: nowrap;
+    background: var(--tich-white);
+}
+
+.tich-competency-grid thead th {
+    background: var(--tich-neutral);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tich-competency-grid__sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--tich-white);
+    min-width: 7rem;
+}
+
+.tich-competency-grid thead .tich-competency-grid__sticky {
+    z-index: 3;
+    background: var(--tich-neutral);
+}
+
+.tich-competency-grid__input {
+    width: 4.5rem;
+    padding: 0.35rem 0.4rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+}
+
+.tich-competency-grid__fail {
+    background: #fef2f2;
+}

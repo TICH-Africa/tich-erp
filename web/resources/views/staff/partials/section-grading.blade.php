@@ -1,86 +1,180 @@
 <header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Assessment &amp; grading</h1>
-    <p class="tich-text">Record CATs, assignments, practicals, and skills lab scores.</p>
+    <h1 class="tich-h1 tich-dept-header__title">Continuous Assessment &amp; Performance Mapping</h1>
+    <p class="tich-text">Record CATs, theoretical reviews, assignments, and skills lab marks in a competency spreadsheet. Cumulative scores compile automatically using unit weighting rules.</p>
 </header>
 
-<div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap:1.5rem;">
-    <article class="tich-card">
-        <h2 class="tich-h3">Record score</h2>
-        @if ($portalData['allocations']->isEmpty())
-            <p class="tich-text tich-mt-4">No units assigned.</p>
-        @else
-            <form method="POST" action="{{ route('staff.grading.store') }}" class="tich-mt-4">
-                @csrf
-                <div class="tich-form-group">
-                    <label class="tich-label">Unit</label>
-                    <select name="allocation_id" id="grading-allocation" class="tich-input" required>
-                        @foreach ($portalData['allocations'] as $allocation)
-                            <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Student</label>
-                    <select name="student_id" class="tich-input" required>
-                        @foreach ($portalData['allocations'] as $allocation)
-                            @foreach (($rostersByAllocation[$allocation->id] ?? collect()) as $student)
-                                <option value="{{ $student->student_id }}" data-allocation="{{ $allocation->id }}">
-                                    {{ $student->registration_number }} · {{ trim($student->student_name) }}
-                                </option>
-                            @endforeach
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Assessment name</label>
-                    <input type="text" name="assessment_name" class="tich-input" required placeholder="CAT 1">
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Type</label>
-                    <select name="assessment_type" class="tich-input">
-                        <option value="cat">CAT</option>
-                        <option value="assignment">Assignment</option>
-                        <option value="practical">Practical</option>
-                        <option value="skills_lab">Skills lab</option>
-                    </select>
-                </div>
-                <div class="tich-grid tich-grid--2" style="gap:1rem;">
-                    <div class="tich-form-group">
-                        <label class="tich-label">Max score</label>
-                        <input type="number" step="0.01" name="max_score" class="tich-input" value="30" required>
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Score obtained</label>
-                        <input type="number" step="0.01" name="score_obtained" class="tich-input" required>
-                    </div>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Weight in final (%)</label>
-                    <input type="number" step="0.01" name="weight_in_final" class="tich-input" value="0">
-                </div>
-                <button type="submit" class="tich-btn tich-btn-primary">Save score</button>
-            </form>
-        @endif
-    </article>
+<article class="tich-card tich-mt-6">
+    <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">
+        <input type="hidden" name="section" value="grading">
+        <div class="tich-form-group" style="margin:0;">
+            <label class="tich-label">Unit</label>
+            <select name="allocation" class="tich-input" onchange="if (this.value) this.form.submit()">
+                <option value="">Select a unit…</option>
+                @foreach ($portalData['allocations'] as $allocation)
+                    <option value="{{ $allocation->id }}" @selected(request('allocation') == $allocation->id)>
+                        {{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </form>
+</article>
 
-    <article class="tich-card">
-        <h2 class="tich-h3">Recent scores</h2>
-        @if ($portalData['cat_scores']->isEmpty())
-            <p class="tich-text tich-mt-4">No scores recorded yet.</p>
-        @else
-            <table class="tich-admin-table tich-mt-4">
-                <thead><tr><th>Student</th><th>Unit</th><th>Assessment</th><th>Score</th></tr></thead>
-                <tbody>
-                    @foreach ($portalData['cat_scores']->take(20) as $score)
-                        <tr>
-                            <td>{{ trim($score->student_name) ?: $score->registration_number }}</td>
-                            <td>{{ $score->unit_code }}</td>
-                            <td>{{ $score->assessment_name }}</td>
-                            <td>{{ number_format((float) $score->score_obtained, 1) }}/{{ number_format((float) $score->max_score, 1) }}</td>
-                        </tr>
+@if ($gradingTerminal)
+    @php
+        $allocation = $gradingTerminal['allocation'];
+        $weights = $gradingTerminal['weights'];
+    @endphp
+
+    <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">CAT weight</p>
+            <p class="tich-stat__value">{{ number_format($weights['cat'], 0) }}%</p>
+        </article>
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">Practical weight</p>
+            <p class="tich-stat__value">{{ number_format($weights['practical'], 0) }}%</p>
+        </article>
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">Attendance weight</p>
+            <p class="tich-stat__value">{{ number_format($weights['attendance'], 0) }}%</p>
+        </article>
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">Exam weight</p>
+            <p class="tich-stat__value">{{ number_format($weights['exam'], 0) }}%</p>
+        </article>
+    </div>
+
+    <div class="tich-tabs tich-mt-6" data-tabs>
+        <div class="tich-tabs__nav">
+            <button type="button" class="tich-tabs__btn is-active" data-tab="spreadsheet">Competency spreadsheet</button>
+            <button type="button" class="tich-tabs__btn" data-tab="cumulative">Cumulative score sheet</button>
+        </div>
+
+        <div class="tich-tabs__panel is-active" data-panel="spreadsheet">
+            <article class="tich-card">
+                <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} — data entry grid</h2>
+                <p class="tich-caption">Enter scores out of each column maximum. Save to compile weighted cumulative marks.</p>
+
+                <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4">
+                    @csrf
+                    <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                    @foreach ($gradingTerminal['columns'] as $index => $column)
+                        <input type="hidden" name="columns[{{ $index }}][key]" value="{{ $column['key'] }}">
+                        <input type="hidden" name="columns[{{ $index }}][name]" value="{{ $column['name'] }}">
+                        <input type="hidden" name="columns[{{ $index }}][type]" value="{{ $column['type'] }}">
+                        <input type="hidden" name="columns[{{ $index }}][max]" value="{{ $column['max'] }}">
                     @endforeach
-                </tbody>
-            </table>
-        @endif
+
+                    <div class="tich-competency-grid-wrap">
+                        <table class="tich-competency-grid">
+                            <thead>
+                                <tr>
+                                    <th class="tich-competency-grid__sticky">Reg. no.</th>
+                                    <th class="tich-competency-grid__sticky">Student</th>
+                                    @foreach ($gradingTerminal['columns'] as $column)
+                                        <th>
+                                            {{ $column['label'] }}
+                                            <span class="tich-caption">/ {{ number_format($column['max'], 0) }}</span>
+                                            <br><span class="tich-caption">{{ $gradingTerminal['assessmentTypes'][$column['type']] ?? $column['type'] }}</span>
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($gradingTerminal['roster'] as $student)
+                                    @php
+                                        $studentScores = $gradingTerminal['scores'][$student->student_id] ?? [];
+                                    @endphp
+                                    <tr>
+                                        <td class="tich-competency-grid__sticky">{{ $student->registration_number }}</td>
+                                        <td class="tich-competency-grid__sticky">{{ trim($student->student_name) }}</td>
+                                        @foreach ($gradingTerminal['columns'] as $column)
+                                            @php
+                                                $cell = $studentScores[$column['key']] ?? null;
+                                                $value = $cell['score'] ?? '';
+                                            @endphp
+                                            <td>
+                                                <input type="number"
+                                                       step="0.01"
+                                                       min="0"
+                                                       max="{{ $column['max'] }}"
+                                                       name="scores[{{ $student->student_id }}][{{ $column['key'] }}]"
+                                                       value="{{ $value !== '' ? $value : '' }}"
+                                                       class="tich-competency-grid__input"
+                                                       placeholder="—">
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="{{ count($gradingTerminal['columns']) + 2 }}">No students registered for this unit.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if ($gradingTerminal['roster']->isNotEmpty())
+                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save spreadsheet &amp; update cumulative scores</button>
+                    @endif
+                </form>
+            </article>
+        </div>
+
+        <div class="tich-tabs__panel" data-panel="cumulative">
+            <article class="tich-card">
+                <h2 class="tich-h3">Automated cumulative score sheet</h2>
+                <p class="tich-caption">Weighted from CAT/review/assignment averages, practical/skills lab averages, and attendance participation.</p>
+                <div style="overflow-x:auto;" class="tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>CAT avg</th>
+                                <th>Practical avg</th>
+                                <th>Attendance</th>
+                                <th>Cumulative</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($gradingTerminal['cumulative'] as $row)
+                                <tr @class(['tich-competency-grid__fail' => $row['at_risk']])>
+                                    <td>{{ $row['registration_number'] }} · {{ $row['student_name'] }}</td>
+                                    <td>{{ number_format($row['breakdown']['cat_avg'], 1) }}%</td>
+                                    <td>{{ number_format($row['breakdown']['practical_avg'], 1) }}%</td>
+                                    <td>{{ number_format($row['breakdown']['attendance_pct'], 1) }}%</td>
+                                    <td><strong>{{ number_format($row['cumulative'], 1) }}%</strong></td>
+                                    <td>{{ $row['grade_letter'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-tabs]').forEach(function (tabs) {
+            tabs.querySelectorAll('[data-tab]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var name = btn.getAttribute('data-tab');
+                    tabs.querySelectorAll('[data-tab]').forEach(function (b) { b.classList.remove('is-active'); });
+                    tabs.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.remove('is-active'); });
+                    btn.classList.add('is-active');
+                    tabs.querySelector('[data-panel="' + name + '"]').classList.add('is-active');
+                });
+            });
+        });
+    });
+    </script>
+@elseif ($portalData['allocations']->isEmpty())
+    <article class="tich-card tich-mt-6">
+        <p class="tich-text">You need a unit allocation before using the performance terminal.</p>
     </article>
-</div>
+@else
+    <article class="tich-card tich-mt-6">
+        <p class="tich-text">Select a unit above to open the competency spreadsheet.</p>
+    </article>
+@endif
