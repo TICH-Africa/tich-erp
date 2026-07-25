@@ -94,7 +94,7 @@
             @if ($selectedIntake->status !== 'superseded')
                 <form id="intake-periods-form" method="POST" action="{{ route('departments.academics.programs.intakes.sync-periods', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-inset-panel tich-mt-4">
                     @csrf
-                    <p class="tich-text" style="margin:0 0 1rem;">Set the start and end date for each {{ $program->usesBlocks() ? 'block' : 'semester' }} in this intake. Students see these dates in the portal.</p>
+                    <p class="tich-text" style="margin:0 0 1rem;">Set semester, learning, and exam dates for each {{ $program->usesBlocks() ? 'block' : 'semester' }} in this intake. Learning and exam dates must fall within the semester range. Students see these dates in the portal.</p>
                     @php $periodIndex = 0; @endphp
                     @foreach ($periods as $period)
                         @php
@@ -106,17 +106,39 @@
                         @if ($period['block_id'])
                             <input type="hidden" name="periods[{{ $periodIndex }}][block_id]" value="{{ $period['block_id'] }}">
                         @endif
-                        <div class="tich-period-dates-grid">
-                            <div>
-                                <span class="tich-label">{{ $period['label'] }}</span>
+                        <div class="tich-period-dates-block">
+                            <span class="tich-label">{{ $period['label'] }}</span>
+                            <div class="tich-period-dates-grid">
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Semester start</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d')) }}">
+                                </div>
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Semester end</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d')) }}">
+                                </div>
                             </div>
-                            <div class="tich-form-group">
-                                <label class="tich-caption">Start date</label>
-                                <input type="date" name="periods[{{ $periodIndex }}][start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d')) }}">
+                            <p class="tich-caption tich-mt-2" style="margin-bottom:0.35rem;">Learning period</p>
+                            <div class="tich-period-dates-grid">
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Learning start</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][learning_start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.learning_start_date', $periodDate?->learning_start_date?->format('Y-m-d')) }}">
+                                </div>
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Learning end</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][learning_end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.learning_end_date', $periodDate?->learning_end_date?->format('Y-m-d')) }}">
+                                </div>
                             </div>
-                            <div class="tich-form-group">
-                                <label class="tich-caption">End date</label>
-                                <input type="date" name="periods[{{ $periodIndex }}][end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d')) }}">
+                            <p class="tich-caption tich-mt-2" style="margin-bottom:0.35rem;">Exam period</p>
+                            <div class="tich-period-dates-grid">
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Exam start</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][exam_start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.exam_start_date', $periodDate?->exam_start_date?->format('Y-m-d')) }}">
+                                </div>
+                                <div class="tich-form-group">
+                                    <label class="tich-caption">Exam end</label>
+                                    <input type="date" name="periods[{{ $periodIndex }}][exam_end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.exam_end_date', $periodDate?->exam_end_date?->format('Y-m-d')) }}">
+                                </div>
                             </div>
                         </div>
                     @endforeach

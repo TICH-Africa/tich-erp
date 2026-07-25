@@ -17,11 +17,19 @@ class CurriculumVersionPeriod extends Model
         'block_id',
         'start_date',
         'end_date',
+        'learning_start_date',
+        'learning_end_date',
+        'exam_start_date',
+        'exam_end_date',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'learning_start_date' => 'date',
+        'learning_end_date' => 'date',
+        'exam_start_date' => 'date',
+        'exam_end_date' => 'date',
     ];
 
     public function version(): BelongsTo

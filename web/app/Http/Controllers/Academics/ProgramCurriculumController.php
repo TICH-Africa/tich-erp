@@ -8,6 +8,7 @@ use App\Models\CurriculumVersion;
 use App\Models\Department;
 use App\Models\NursingBlock;
 use App\Models\ProgramTimetable;
+use App\Models\ProgramTimetableSession;
 use App\Models\Room;
 use App\Models\Staff;
 use App\Services\AcademicsAccessService;
@@ -17,6 +18,7 @@ use App\Services\ProgramCurriculumService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
 use App\Services\UnitCatalogService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -154,13 +156,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'timetableSegmentTypes' => TimetableTemplateService::segmentTypes(),
             'timetableDayLabels' => TimetableTemplateService::dayLabels(),
             'timetableTeachingPeriod' => $request->integer('teaching_period') ?: 1,
+            'timetableKind' => in_array($request->string('timetable_kind')->toString(), array_keys(TimetableSchedulingService::timetableKinds()), true)
+                ? $request->string('timetable_kind')->toString()
+                : 'lesson',
             'timetableDraft' => ($section === 'timetable' && $selectedIntake)
                 ? $this->timetableScheduling->latestTimetable(
                     $program->id,
                     $selectedIntake->id,
-                    $request->integer('teaching_period') ?: 1
+                    $request->integer('teaching_period') ?: 1,
+                    in_array($request->string('timetable_kind')->toString(), array_keys(TimetableSchedulingService::timetableKinds()), true)
+                        ? $request->string('timetable_kind')->toString()
+                        : 'lesson'
                 )
                 : null,
+            'timetableKinds' => TimetableSchedulingService::timetableKinds(),
             'timetableRooms' => $section === 'timetable'
                 ? Room::query()->with('campus')->where('is_active', 1)->orderBy('room_code')->get()
                 : collect(),
@@ -294,6 +303,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'periods.*.block_id' => ['nullable', 'exists:nursing_blocks,id'],
             'periods.*.start_date' => ['nullable', 'date'],
             'periods.*.end_date' => ['nullable', 'date'],
+            'periods.*.learning_start_date' => ['nullable', 'date'],
+            'periods.*.learning_end_date' => ['nullable', 'date'],
+            'periods.*.exam_start_date' => ['nullable', 'date'],
+            'periods.*.exam_end_date' => ['nullable', 'date'],
         ]);
 
         $this->versions->syncPeriodDates(
@@ -349,6 +362,12 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         abort_unless((int) $version->program_id === (int) $program->id, 404);
 
         $teachingPeriod = $request->integer('teaching_period') ?: 1;
+        $timetableKind = $request->string('timetable_kind')->toString() ?: 'lesson';
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:200'],
+            'timetable_kind' => ['nullable', 'in:'.implode(',', array_keys(TimetableSchedulingService::timetableKinds()))],
+        ]);
 
         $this->timetableScheduling->generate(
             $request->user(),
@@ -356,6 +375,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $program,
             $version,
             $teachingPeriod,
+            $validated['timetable_kind'] ?? $timetableKind,
+            $validated['title'] ?? null,
             $request
         );
 
@@ -367,8 +388,9 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'intake' => $version->id,
                 'section' => 'timetable',
                 'teaching_period' => $teachingPeriod,
+                'timetable_kind' => $validated['timetable_kind'] ?? $timetableKind,
             ]))
-            ->with('status', 'Timetable draft generated. Review conflicts, add exams if needed, then publish.');
+            ->with('status', 'Timetable draft generated. Review conflicts, then publish.');
     }
 
     public function addTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
@@ -393,6 +415,50 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $this->timetableScheduling->addSession($request->user(), $timetable, $validated, $request);
 
         return back()->with('status', 'Session added to timetable draft.');
+    }
+
+    public function moveTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable, ProgramTimetableSession $session): JsonResponse|RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+        abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $validated = $request->validate([
+            'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
+            'segment_id' => ['required', 'integer', 'exists:program_timetable_segments,id'],
+            'swap_session_id' => ['nullable', 'integer', 'exists:program_timetable_sessions,id'],
+        ]);
+
+        $result = $this->timetableScheduling->moveSession(
+            $request->user(),
+            $timetable,
+            $session,
+            (int) $validated['day_of_week'],
+            (int) $validated['segment_id'],
+            isset($validated['swap_session_id']) ? (int) $validated['swap_session_id'] : null,
+            $request
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Session moved.',
+                'session' => [
+                    'id' => $result['session']->id,
+                    'day_of_week' => $result['session']->day_of_week,
+                    'segment_id' => $result['session']->segment_id,
+                    'title' => $result['session']->displayTitle(),
+                ],
+                'swap_session' => $result['swap_session'] ? [
+                    'id' => $result['swap_session']->id,
+                    'day_of_week' => $result['swap_session']->day_of_week,
+                    'segment_id' => $result['swap_session']->segment_id,
+                    'title' => $result['swap_session']->displayTitle(),
+                ] : null,
+            ]);
+        }
+
+        return back()->with('status', 'Session moved.');
     }
 
     public function publishTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse

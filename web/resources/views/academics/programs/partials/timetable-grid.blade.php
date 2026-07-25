@@ -1,5 +1,7 @@
 @php
     $activeDayList = $activeDays ?? range(1, 5);
+    $editable = $editable ?? false;
+    $moveSessionUrl = $moveSessionUrl ?? null;
     $rows = collect($segments ?? [])->filter(fn ($segment) => $segment->segment_type !== 'break');
     if ($rows->isEmpty()) {
         $rows = collect($sessions ?? [])->map(fn ($session) => (object) [
@@ -20,7 +22,19 @@
     ];
 @endphp
 
-<div class="tich-timetable-grid-wrap tich-mt-4" style="overflow-x:auto;">
+<div
+    class="tich-timetable-grid-wrap tich-mt-4"
+    style="overflow-x:auto;"
+    @if ($editable && $moveSessionUrl)
+        data-timetable-editable="1"
+        data-move-url="{{ $moveSessionUrl }}"
+    @endif
+>
+    @if ($editable)
+        <p class="tich-caption tich-mb-3">Drag sessions to another day or time slot. Drop onto another session to swap.</p>
+        <div class="tich-timetable-drag-status" hidden role="status"></div>
+    @endif
+
     <table class="tich-timetable-grid">
         <thead>
             <tr>
@@ -50,9 +64,24 @@
                                 $key = $dayNum.'|'.substr((string) $segment->start_time, 0, 5);
                                 $cellSessions = $sessionsByDayAndTime->get($key, collect());
                             @endphp
-                            <td class="tich-timetable-grid__cell">
+                            <td
+                                class="tich-timetable-grid__cell @if ($editable) tich-timetable-grid__dropzone @endif"
+                                @if ($editable)
+                                    data-drop-day="{{ $dayNum }}"
+                                    data-segment-id="{{ $segment->id }}"
+                                @endif
+                            >
                                 @forelse ($cellSessions as $session)
-                                    <div class="tich-timetable-session {{ $typeClasses[$session->session_type] ?? 'is-other' }}">
+                                    <div
+                                        class="tich-timetable-session {{ $typeClasses[$session->session_type] ?? 'is-other' }} @if ($editable) is-draggable @endif"
+                                        @if ($editable)
+                                            draggable="true"
+                                            data-session-id="{{ $session->id }}"
+                                        @endif
+                                    >
+                                        @if ($editable)
+                                            <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
+                                        @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
@@ -65,7 +94,7 @@
                                         <span class="tich-caption">{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
                                     </div>
                                 @empty
-                                    <span class="tich-caption">—</span>
+                                    <span class="tich-timetable-grid__empty">—</span>
                                 @endforelse
                             </td>
                         @endforeach

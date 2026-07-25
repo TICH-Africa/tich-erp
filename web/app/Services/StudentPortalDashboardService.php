@@ -371,34 +371,47 @@ class StudentPortalDashboardService
         $curriculum = $academics['curriculum'] ?? null;
         $period = $academics['current_period'] ?? null;
         $teachingPeriod = $period?->semester ?? 1;
+        $canViewProvisional = $student->portal_activated_at || $student->enrollment_status === 'active';
 
-        $published = ($curriculum && $student->program_id)
-            ? $this->timetableScheduling->publishedTimetable(
-                (int) $student->program_id,
-                $curriculum->id,
-                (int) $teachingPeriod
-            )
-            : null;
+        $timetables = collect();
 
-        if (! $published && $curriculum && $student->program_id && ($student->portal_activated_at || $student->enrollment_status === 'active')) {
-            $published = $this->timetableScheduling->latestTimetable(
-                (int) $student->program_id,
-                $curriculum->id,
-                (int) $teachingPeriod
-            );
+        if ($curriculum && $student->program_id) {
+            foreach (array_keys(TimetableSchedulingService::timetableKinds()) as $kind) {
+                $published = $this->timetableScheduling->publishedTimetable(
+                    (int) $student->program_id,
+                    $curriculum->id,
+                    (int) $teachingPeriod,
+                    $kind
+                );
+
+                if (! $published && $canViewProvisional) {
+                    $published = $this->timetableScheduling->latestTimetable(
+                        (int) $student->program_id,
+                        $curriculum->id,
+                        (int) $teachingPeriod,
+                        $kind
+                    );
+                }
+
+                if ($published) {
+                    $timetables->push($published);
+                }
+            }
         }
 
-        $template = $published?->template?->load(['segments', 'days']);
+        $primary = $timetables->firstWhere('timetable_kind', 'lesson') ?? $timetables->first();
+        $template = $primary?->template?->load(['segments', 'days']);
 
         return [
-            'timetable' => $published,
-            'sessions' => $published?->sessions ?? collect(),
+            'timetables' => $timetables,
+            'timetable' => $primary,
+            'sessions' => $primary?->sessions ?? collect(),
             'template' => $template,
             'day_labels' => TimetableTemplateService::dayLabels(),
             'segment_types' => TimetableTemplateService::segmentTypes(),
             'active_days' => $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5],
             'teaching_period' => $teachingPeriod,
-            'is_provisional' => $published && ! $published->isPublished(),
+            'is_provisional' => $primary && ! $primary->isPublished(),
         ];
     }
 }

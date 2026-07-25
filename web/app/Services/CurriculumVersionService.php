@@ -350,16 +350,20 @@ class CurriculumVersionService
             $blockId = isset($row['block_id']) && $row['block_id'] !== '' ? (int) $row['block_id'] : null;
             $startDate = $row['start_date'] ?? null;
             $endDate = $row['end_date'] ?? null;
+            $learningStart = $row['learning_start_date'] ?? null;
+            $learningEnd = $row['learning_end_date'] ?? null;
+            $examStart = $row['exam_start_date'] ?? null;
+            $examEnd = $row['exam_end_date'] ?? null;
 
             if ($semester < 1) {
                 continue;
             }
 
-            if ($startDate && $endDate && $startDate > $endDate) {
-                throw ValidationException::withMessages([
-                    "periods.{$semester}.end_date" => 'End date must be on or after the start date.',
-                ]);
-            }
+            $this->validatePeriodDateRange($startDate, $endDate, "periods.{$semester}.end_date", 'End date must be on or after the start date.');
+            $this->validatePeriodDateRange($learningStart, $learningEnd, "periods.{$semester}.learning_end_date", 'Learning end date must be on or after the learning start date.');
+            $this->validatePeriodDateRange($examStart, $examEnd, "periods.{$semester}.exam_end_date", 'Exam end date must be on or after the exam start date.');
+            $this->validateNestedPeriodDates($startDate, $endDate, $learningStart, $learningEnd, "periods.{$semester}.learning_start_date", 'Learning dates must fall within the semester dates.');
+            $this->validateNestedPeriodDates($startDate, $endDate, $examStart, $examEnd, "periods.{$semester}.exam_start_date", 'Exam dates must fall within the semester dates.');
 
             CurriculumVersionPeriod::query()->updateOrCreate(
                 [
@@ -370,6 +374,10 @@ class CurriculumVersionService
                 [
                     'start_date' => $startDate ?: null,
                     'end_date' => $endDate ?: null,
+                    'learning_start_date' => $learningStart ?: null,
+                    'learning_end_date' => $learningEnd ?: null,
+                    'exam_start_date' => $examStart ?: null,
+                    'exam_end_date' => $examEnd ?: null,
                 ]
             );
         }
@@ -659,5 +667,31 @@ class CurriculumVersionService
         }
 
         return $intakes->firstWhere('status', 'draft') ?? $intakes->first();
+    }
+
+    private function validatePeriodDateRange(?string $start, ?string $end, string $field, string $message): void
+    {
+        if ($start && $end && $start > $end) {
+            throw ValidationException::withMessages([$field => $message]);
+        }
+    }
+
+    private function validateNestedPeriodDates(
+        ?string $outerStart,
+        ?string $outerEnd,
+        ?string $innerStart,
+        ?string $innerEnd,
+        string $field,
+        string $message
+    ): void {
+        if (! $outerStart || ! $outerEnd) {
+            return;
+        }
+
+        foreach ([$innerStart, $innerEnd] as $date) {
+            if ($date && ($date < $outerStart || $date > $outerEnd)) {
+                throw ValidationException::withMessages([$field => $message]);
+            }
+        }
     }
 }

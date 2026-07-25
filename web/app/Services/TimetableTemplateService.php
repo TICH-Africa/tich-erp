@@ -175,7 +175,6 @@ class TimetableTemplateService
             }
 
             $defaults = [
-                ['Lessons start', '08:00', '08:00', 'other'],
                 ['Lesson 1', '08:00', '10:00', 'lesson'],
                 ['Lesson 2', '10:00', '12:00', 'lesson'],
                 ['Lunch break', '12:00', '14:00', 'break'],

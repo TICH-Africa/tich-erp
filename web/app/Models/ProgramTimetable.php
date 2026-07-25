@@ -13,9 +13,37 @@ class ProgramTimetable extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'program_id', 'curriculum_version_id', 'teaching_period', 'template_id', 'campus_id',
-        'status', 'generation_notes', 'published_at', 'published_by', 'created_at', 'updated_at',
+        'program_id', 'curriculum_version_id', 'teaching_period', 'title', 'timetable_kind',
+        'template_id', 'campus_id', 'status', 'generation_notes', 'published_at', 'published_by',
+        'created_at', 'updated_at',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function kindLabels(): array
+    {
+        return [
+            'lesson' => 'Lesson timetable',
+            'exam' => 'Exam timetable',
+            'supplementary' => 'Supplementary exam timetable',
+            'special_exam' => 'Special exam timetable',
+        ];
+    }
+
+    public function kindLabel(): string
+    {
+        return self::kindLabels()[$this->timetable_kind] ?? ucfirst(str_replace('_', ' ', (string) $this->timetable_kind));
+    }
+
+    public function displayTitle(): string
+    {
+        if ($this->title) {
+            return $this->title;
+        }
+
+        return $this->kindLabel().' — Semester '.$this->teaching_period;
+    }
 
     protected $casts = [
         'published_at' => 'datetime',
