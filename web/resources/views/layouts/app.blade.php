@@ -15,7 +15,21 @@
         @yield('content')
     </main>
 
-    @include('partials.navigation.footer')
+    @php
+        $hideAppFooter = request()->routeIs([
+            'dashboard',
+            'admin.*',
+            'departments.show',
+            'departments.academics.*',
+            'sis.*',
+            'admissions.*',
+            'portal.*',
+        ]);
+    @endphp
+
+    @unless ($hideAppFooter)
+        @include('partials.navigation.footer')
+    @endunless
 
     <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
 </body>
