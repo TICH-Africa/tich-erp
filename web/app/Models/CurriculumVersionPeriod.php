@@ -63,4 +63,14 @@ class CurriculumVersionPeriod extends Model
 
         return $this->start_date?->format('d M Y') ?? $this->end_date?->format('d M Y');
     }
+
+    public function effectiveLearningStart(): ?\Illuminate\Support\Carbon
+    {
+        return $this->learning_start_date ?? $this->start_date;
+    }
+
+    public function effectiveExamEnd(): ?\Illuminate\Support\Carbon
+    {
+        return $this->exam_end_date ?? $this->end_date;
+    }
 }

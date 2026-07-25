@@ -27,7 +27,7 @@
     @endphp
 
     <div class="tich-section__intro tich-mb-6" style="text-align:left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Timetable — {{ $selectedIntake->intakeLabel() }}</h1>
+        <h1 class="tich-h1" style="font-size: 2rem;">Timetable - {{ $selectedIntake->intakeLabel() }}</h1>
         <p class="tich-text">Configure the daily bell schedule, generate separate lesson and exam timetables, and publish for students.</p>
     </div>
 
@@ -181,13 +181,13 @@
         @if ($semesterPeriod?->scheduleLabel())
             <div class="tich-inset-panel tich-mt-4">
                 <p class="tich-text" style="margin:0 0 0.35rem;"><strong>Semester {{ $timetableTeachingPeriod }}</strong> · {{ $semesterPeriod->scheduleLabel() }}</p>
-                @if ($semesterPeriod->learning_start_date || $semesterPeriod->learning_end_date)
-                    <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->learning_start_date?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '—' }}</p>
+                @if ($semesterPeriod->effectiveLearningStart() || $semesterPeriod->learning_end_date)
+                    <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->effectiveLearningStart()?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '—' }}</p>
                 @endif
-                @if ($semesterPeriod->exam_start_date || $semesterPeriod->exam_end_date)
-                    <p class="tich-caption" style="margin:0;">Exams: {{ $semesterPeriod->exam_start_date?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->exam_end_date?->format('d M Y') ?? '—' }}</p>
+                @if ($semesterPeriod->exam_start_date || $semesterPeriod->effectiveExamEnd())
+                    <p class="tich-caption" style="margin:0;">Exams: {{ $semesterPeriod->exam_start_date?->format('d M Y') ?? '—' }} – {{ $semesterPeriod->effectiveExamEnd()?->format('d M Y') ?? '—' }}</p>
                 @endif
-                @if (! $semesterPeriod->learning_start_date && ! $semesterPeriod->exam_start_date)
+                @if (! $semesterPeriod->effectiveLearningStart() && ! $semesterPeriod->exam_start_date)
                     <p class="tich-caption" style="margin:0.35rem 0 0;">Set learning and exam dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $selectedIntake->id, 'section' => 'semesters'])) }}" class="tich-link">Semester units</a> page for more accurate scheduling.</p>
                 @endif
             </div>

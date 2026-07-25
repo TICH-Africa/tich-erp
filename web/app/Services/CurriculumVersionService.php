@@ -359,11 +359,20 @@ class CurriculumVersionService
                 continue;
             }
 
+            if ($startDate && ! $learningStart) {
+                $learningStart = $startDate;
+            }
+
+            if ($endDate && ! $examEnd) {
+                $examEnd = $endDate;
+            }
+
             $this->validatePeriodDateRange($startDate, $endDate, "periods.{$semester}.end_date", 'End date must be on or after the start date.');
             $this->validatePeriodDateRange($learningStart, $learningEnd, "periods.{$semester}.learning_end_date", 'Learning end date must be on or after the learning start date.');
             $this->validatePeriodDateRange($examStart, $examEnd, "periods.{$semester}.exam_end_date", 'Exam end date must be on or after the exam start date.');
             $this->validateNestedPeriodDates($startDate, $endDate, $learningStart, $learningEnd, "periods.{$semester}.learning_start_date", 'Learning dates must fall within the semester dates.');
             $this->validateNestedPeriodDates($startDate, $endDate, $examStart, $examEnd, "periods.{$semester}.exam_start_date", 'Exam dates must fall within the semester dates.');
+            $this->validateExamStartsAfterLearning($learningEnd, $examStart, $semester);
 
             CurriculumVersionPeriod::query()->updateOrCreate(
                 [
@@ -692,6 +701,15 @@ class CurriculumVersionService
             if ($date && ($date < $outerStart || $date > $outerEnd)) {
                 throw ValidationException::withMessages([$field => $message]);
             }
+        }
+    }
+
+    private function validateExamStartsAfterLearning(?string $learningEnd, ?string $examStart, int $semester): void
+    {
+        if ($learningEnd && $examStart && $examStart < $learningEnd) {
+            throw ValidationException::withMessages([
+                "periods.{$semester}.exam_start_date" => 'Exam start must be on or after the learning end date.',
+            ]);
         }
     }
 }

@@ -94,56 +94,134 @@
             @if ($selectedIntake->status !== 'superseded')
                 <form id="intake-periods-form" method="POST" action="{{ route('departments.academics.programs.intakes.sync-periods', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-inset-panel tich-mt-4">
                     @csrf
-                    <p class="tich-text" style="margin:0 0 1rem;">Set semester, learning, and exam dates for each {{ $program->usesBlocks() ? 'block' : 'semester' }} in this intake. Learning and exam dates must fall within the semester range. Students see these dates in the portal.</p>
+                    <p class="tich-text" style="margin:0 0 1rem;">Set semester, learning, and exam dates for each {{ $program->usesBlocks() ? 'block' : 'semester' }} in this intake. Learning start defaults to the semester start; exam end defaults to the semester end. Exam start must be on or after learning end.</p>
                     @php $periodIndex = 0; @endphp
                     @foreach ($periods as $period)
                         @php
                             $periodKey = $period['semester'].':'.($period['block_id'] ?? '');
                             $periodDate = $periodDates->get($periodKey);
                             $periodIndex++;
+                            $semesterStart = old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d'));
+                            $semesterEnd = old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d'));
+                            $learningStart = old('periods.'.$periodIndex.'.learning_start_date', $periodDate?->learning_start_date?->format('Y-m-d') ?: $semesterStart);
+                            $learningEnd = old('periods.'.$periodIndex.'.learning_end_date', $periodDate?->learning_end_date?->format('Y-m-d'));
+                            $examStart = old('periods.'.$periodIndex.'.exam_start_date', $periodDate?->exam_start_date?->format('Y-m-d'));
+                            $examEnd = old('periods.'.$periodIndex.'.exam_end_date', $periodDate?->exam_end_date?->format('Y-m-d') ?: $semesterEnd);
                         @endphp
                         <input type="hidden" name="periods[{{ $periodIndex }}][semester]" value="{{ $period['semester'] }}">
                         @if ($period['block_id'])
                             <input type="hidden" name="periods[{{ $periodIndex }}][block_id]" value="{{ $period['block_id'] }}">
                         @endif
-                        <div class="tich-period-dates-block">
+                        <div class="tich-period-dates-block" data-period-dates-block>
                             <span class="tich-label">{{ $period['label'] }}</span>
                             <div class="tich-period-dates-grid">
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Semester start</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][start_date]" class="tich-input" data-semester-start value="{{ $semesterStart }}">
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Semester end</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][end_date]" class="tich-input" data-semester-end value="{{ $semesterEnd }}">
                                 </div>
                             </div>
                             <p class="tich-caption tich-mt-2" style="margin-bottom:0.35rem;">Learning period</p>
                             <div class="tich-period-dates-grid">
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Learning start</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][learning_start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.learning_start_date', $periodDate?->learning_start_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][learning_start_date]" class="tich-input" data-learning-start value="{{ $learningStart }}">
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Learning end</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][learning_end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.learning_end_date', $periodDate?->learning_end_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][learning_end_date]" class="tich-input" data-learning-end value="{{ $learningEnd }}">
                                 </div>
                             </div>
                             <p class="tich-caption tich-mt-2" style="margin-bottom:0.35rem;">Exam period</p>
                             <div class="tich-period-dates-grid">
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Exam start</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][exam_start_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.exam_start_date', $periodDate?->exam_start_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][exam_start_date]" class="tich-input" data-exam-start @if ($learningEnd) min="{{ $learningEnd }}" @endif value="{{ $examStart }}">
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-caption">Exam end</label>
-                                    <input type="date" name="periods[{{ $periodIndex }}][exam_end_date]" class="tich-input" value="{{ old('periods.'.$periodIndex.'.exam_end_date', $periodDate?->exam_end_date?->format('Y-m-d')) }}">
+                                    <input type="date" name="periods[{{ $periodIndex }}][exam_end_date]" class="tich-input" data-exam-end value="{{ $examEnd }}">
                                 </div>
                             </div>
                         </div>
                     @endforeach
                     <button type="submit" class="tich-btn tich-btn-secondary">Save semester dates</button>
                 </form>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var form = document.getElementById('intake-periods-form');
+                    if (!form) return;
+
+                    form.querySelectorAll('[data-period-dates-block]').forEach(function (block) {
+                        var semesterStart = block.querySelector('[data-semester-start]');
+                        var semesterEnd = block.querySelector('[data-semester-end]');
+                        var learningStart = block.querySelector('[data-learning-start]');
+                        var learningEnd = block.querySelector('[data-learning-end]');
+                        var examStart = block.querySelector('[data-exam-start]');
+                        var examEnd = block.querySelector('[data-exam-end]');
+
+                        function syncLearningStartDefault() {
+                            if (learningStart && semesterStart && semesterStart.value && !learningStart.value) {
+                                learningStart.value = semesterStart.value;
+                            }
+                        }
+
+                        function syncExamEndDefault() {
+                            if (examEnd && semesterEnd && semesterEnd.value && !examEnd.value) {
+                                examEnd.value = semesterEnd.value;
+                            }
+                        }
+
+                        function syncExamStartMin() {
+                            if (!examStart || !learningEnd) return;
+                            examStart.min = learningEnd.value || '';
+                        }
+
+                        if (semesterStart) {
+                            semesterStart.addEventListener('change', function () {
+                                if (learningStart && (!learningStart.value || learningStart.dataset.autoDefault === '1')) {
+                                    learningStart.value = semesterStart.value;
+                                    learningStart.dataset.autoDefault = '1';
+                                }
+                            });
+                        }
+
+                        if (semesterEnd) {
+                            semesterEnd.addEventListener('change', function () {
+                                if (examEnd && (!examEnd.value || examEnd.dataset.autoDefault === '1')) {
+                                    examEnd.value = semesterEnd.value;
+                                    examEnd.dataset.autoDefault = '1';
+                                }
+                            });
+                        }
+
+                        if (learningStart) {
+                            learningStart.addEventListener('input', function () {
+                                learningStart.dataset.autoDefault = learningStart.value === (semesterStart?.value || '') ? '1' : '0';
+                            });
+                        }
+
+                        if (examEnd) {
+                            examEnd.addEventListener('input', function () {
+                                examEnd.dataset.autoDefault = examEnd.value === (semesterEnd?.value || '') ? '1' : '0';
+                            });
+                        }
+
+                        if (learningEnd) {
+                            learningEnd.addEventListener('change', syncExamStartMin);
+                            learningEnd.addEventListener('input', syncExamStartMin);
+                        }
+
+                        syncLearningStartDefault();
+                        syncExamEndDefault();
+                        syncExamStartMin();
+                    });
+                });
+                </script>
             @endif
         @endcan
 
