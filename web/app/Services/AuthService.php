@@ -157,6 +157,10 @@ class AuthService
             return route('portal.dashboard');
         }
 
+        if (app(StaffPortalService::class)->isTeachingStaff($user)) {
+            return route('staff.dashboard');
+        }
+
         return route('dashboard');
     }
 

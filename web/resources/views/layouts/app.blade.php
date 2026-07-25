@@ -24,6 +24,7 @@
             'sis.*',
             'admissions.*',
             'portal.*',
+            'staff.*',
         ]);
     @endphp
 

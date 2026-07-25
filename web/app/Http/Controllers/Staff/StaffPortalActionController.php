@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\AttendanceSession;
+use App\Models\LessonPlan;
+use App\Models\UnitAllocation;
+use App\Services\StaffPortalService;
+use App\Services\StaffTeachingService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class StaffPortalActionController extends Controller
+{
+    public function __construct(
+        protected StaffPortalService $portalService,
+        protected StaffTeachingService $teaching,
+    ) {}
+
+    public function storeLessonPlan(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'lesson_objectives' => ['required', 'string'],
+            'topics_covered' => ['nullable', 'string'],
+            'planned_date' => ['required', 'date'],
+            'week_number' => ['nullable', 'integer', 'min:1'],
+            'contact_hours' => ['nullable', 'integer', 'min:1'],
+            'teaching_methods' => ['nullable', 'string'],
+            'submit' => ['nullable', 'boolean'],
+        ]);
+
+        $plan = $this->teaching->createLessonPlan($staff, $allocation, $validated);
+
+        if ($request->boolean('submit')) {
+            $this->teaching->submitLessonPlan($plan, $staff);
+        }
+
+        return redirect()->route('staff.dashboard', ['section' => 'lesson-plans'])
+            ->with('status', 'Lesson plan saved.');
+    }
+
+    public function submitLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $this->teaching->submitLessonPlan($plan, $staff);
+
+        return back()->with('status', 'Lesson plan submitted for HOD approval.');
+    }
+
+    public function storeAttendanceSession(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'session_date' => ['required', 'date'],
+            'start_time' => ['nullable'],
+            'end_time' => ['nullable'],
+            'venue' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $session = $this->teaching->createAttendanceSession($staff, $allocation, $validated);
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'attendance',
+            'attendance_session' => $session->id,
+        ])->with('status', 'Attendance session created.');
+    }
+
+    public function saveAttendance(Request $request, AttendanceSession $session): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $present = $request->input('present', []);
+        $this->teaching->saveAttendance($session, $staff, is_array($present) ? $present : []);
+
+        if ($request->boolean('lock')) {
+            $this->teaching->lockAttendanceSession($session, $staff);
+        }
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'attendance',
+            'attendance_session' => $session->id,
+        ])->with('status', $request->boolean('lock') ? 'Attendance saved and locked.' : 'Attendance saved.');
+    }
+
+    public function storeCatScore(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'student_id' => ['required', 'integer'],
+            'assessment_name' => ['required', 'string', 'max:200'],
+            'assessment_type' => ['nullable', 'string', 'max:50'],
+            'max_score' => ['required', 'numeric', 'min:0.01'],
+            'score_obtained' => ['required', 'numeric', 'min:0'],
+            'weight_in_final' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $this->teaching->recordCatScore($staff, $allocation, $validated);
+
+        return redirect()->route('staff.dashboard', ['section' => 'grading'])
+            ->with('status', 'Score recorded.');
+    }
+
+    public function storeContent(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $validated = $request->validate([
+            'unit_id' => ['required', 'integer'],
+            'title' => ['required', 'string', 'max:300'],
+            'caption' => ['nullable', 'string', 'max:500'],
+            'file' => ['required', 'file', 'max:20480'],
+        ]);
+
+        $path = $request->file('file')->store('learning-content', 'public');
+
+        $this->teaching->storeLearningContent($staff, (int) $validated['unit_id'], [
+            'title' => $validated['title'],
+            'caption' => $validated['caption'] ?? null,
+            'file_type' => $request->file('file')->getClientOriginalExtension(),
+        ], $path);
+
+        return redirect()->route('staff.dashboard', ['section' => 'content'])
+            ->with('status', 'Learning material uploaded.');
+    }
+}

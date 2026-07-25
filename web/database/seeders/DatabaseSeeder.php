@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(NavigationSeeder::class);
         $this->call(HomepageContentSeeder::class);
         $this->call(ProgramsSeeder::class);
+        $this->call(LecturerSeeder::class);
 
         $rbac = app(RBACService::class);
 

@@ -28,6 +28,7 @@
                 <a href="{{ route('departments.academics.departments.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.departments.*')])>Learning departments</a>
                 <a href="{{ route('departments.academics.units.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.units.*')])>Unit catalog</a>
                 <a href="{{ route('departments.academics.programs.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.programs.*')])>Programme curriculum</a>
+                <a href="{{ route('departments.academics.workload.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.workload.*')])>Workload allocation</a>
             @endcan
 
             @can('academics.calendar')

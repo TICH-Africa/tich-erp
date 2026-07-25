@@ -80,6 +80,11 @@ class User extends Authenticatable
         return Student::query()->where('user_id', $this->id)->exists();
     }
 
+    public function isTeachingStaff(): bool
+    {
+        return app(\App\Services\StaffPortalService::class)->isTeachingStaff($this);
+    }
+
     public function hasPermission(string $permission): bool
     {
         return app(\App\Services\RBACService::class)->hasPermission($this, $permission);

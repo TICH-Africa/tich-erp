@@ -47,6 +47,15 @@
                     @endunless
                 @endforelse
 
+                @if (auth()->user()->isTeachingStaff())
+                    <article class="tich-card tich-card--highlight">
+                        <p class="tich-caption">Teaching</p>
+                        <h3 class="tich-h3 tich-mt-2">Staff portal</h3>
+                        <p class="tich-text tich-mt-2">Manage units, attendance, assessments, lesson plans, and learning content.</p>
+                        <a href="{{ route('staff.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open staff portal</a>
+                    </article>
+                @endif
+
                 @if (auth()->user()->student_id || auth()->user()->student)
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Student</p>

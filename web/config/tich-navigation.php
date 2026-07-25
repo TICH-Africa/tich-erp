@@ -22,7 +22,7 @@ return [
 
     'footer_quick_links' => [
         ['label' => 'Student Portal', 'url' => 'route:login', 'requires_auth' => false],
-        ['label' => 'Tutor Portal', 'url' => 'route:login', 'requires_auth' => false],
+        ['label' => 'Staff Portal', 'url' => 'route:staff.dashboard', 'requires_auth' => true],
         ['label' => 'Staff ESS', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'SACCO Login', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'Careers', 'url' => '#careers'],

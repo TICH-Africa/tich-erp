@@ -19,6 +19,9 @@ use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardCont
 use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentController;
 use App\Http\Controllers\Academics\ProgramCurriculumController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
+use App\Http\Controllers\Academics\WorkloadController;
+use App\Http\Controllers\Staff\StaffPortalActionController;
+use App\Http\Controllers\Staff\StaffPortalDashboardController;
 use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
 use App\Models\Department;
@@ -156,9 +159,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/units', [AcademicsUnitController::class, 'index'])->name('departments.academics.units.index');
             Route::get('/programs', [ProgramCurriculumController::class, 'index'])->name('departments.academics.programs.index');
             Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
+            Route::get('/workload', [WorkloadController::class, 'index'])->name('departments.academics.workload.index');
         });
 
         Route::middleware('permission:academics.write')->group(function () {
+            Route::post('/workload', [WorkloadController::class, 'store'])->name('departments.academics.workload.store');
+            Route::delete('/workload/{allocation}', [WorkloadController::class, 'destroy'])->name('departments.academics.workload.destroy');
             Route::put('/learning-departments/{learningDepartment}/profile', [AcademicsDepartmentController::class, 'updateProfile'])
                 ->name('departments.academics.departments.update-profile');
             Route::post('/units', [AcademicsUnitController::class, 'store'])->name('departments.academics.units.store');
@@ -207,6 +213,16 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.documents.show');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
             ->name('portal.documents.download');
+    });
+
+    Route::middleware('staff.portal')->prefix('staff')->group(function () {
+        Route::get('/', StaffPortalDashboardController::class)->name('staff.dashboard');
+        Route::post('/lesson-plans', [StaffPortalActionController::class, 'storeLessonPlan'])->name('staff.lesson-plans.store');
+        Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
+        Route::post('/attendance', [StaffPortalActionController::class, 'storeAttendanceSession'])->name('staff.attendance.store');
+        Route::post('/attendance/{session}', [StaffPortalActionController::class, 'saveAttendance'])->name('staff.attendance.save');
+        Route::post('/grading', [StaffPortalActionController::class, 'storeCatScore'])->name('staff.grading.store');
+        Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
     });
 });
 

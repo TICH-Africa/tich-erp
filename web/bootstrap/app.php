@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'student.portal' => \App\Http\Middleware\EnsureStudentPortalAccess::class,
+            'staff.portal' => \App\Http\Middleware\EnsureStaffPortalAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
