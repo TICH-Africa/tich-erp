@@ -104,6 +104,7 @@ class StaffPortalDashboardService
                 's.*',
                 'u.unit_code',
                 'u.unit_name',
+                's.verification_status',
             ])
             ->get();
     }

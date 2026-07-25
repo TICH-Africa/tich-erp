@@ -188,7 +188,7 @@
                             <td>{{ $row->semester_label }}</td>
                             <td>{{ $row->total_present }}/{{ $row->total_sessions }}</td>
                             <td>{{ number_format((float) $row->attendance_percentage, 1) }}%</td>
-                            <td>{{ ucfirst($row->status_flag ?? '-') }}</td>
+                            <td>@include('partials.attendance-flag', ['flag' => $row->status_flag ?? 'neutral'])</td>
                         </tr>
                     @endforeach
                 </tbody>

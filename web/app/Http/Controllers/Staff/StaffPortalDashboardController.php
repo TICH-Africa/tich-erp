@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
+use App\Services\AttendanceVerificationService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
@@ -35,7 +36,7 @@ class StaffPortalDashboardController extends Controller
         $rostersByAllocation = [];
         if ($request->integer('attendance_session')) {
             $attendanceSession = AttendanceSession::query()
-                ->with(['records.student.applicant', 'allocation.unit'])
+                ->with(['records.student.applicant', 'allocation.unit', 'allocation.semester', 'allocation.staff'])
                 ->find($request->integer('attendance_session'));
         }
 
@@ -53,6 +54,7 @@ class StaffPortalDashboardController extends Controller
             'sidebarNavigation' => $this->navigation->sidebarNavigation(),
             'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Staff portal',
             'attendanceSession' => $attendanceSession,
+            'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
             'rostersByAllocation' => $rostersByAllocation,
         ]);
     }

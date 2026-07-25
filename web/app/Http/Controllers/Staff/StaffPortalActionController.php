@@ -81,13 +81,36 @@ class StaffPortalActionController extends Controller
         $this->teaching->saveAttendance($session, $staff, is_array($present) ? $present : []);
 
         if ($request->boolean('lock')) {
+            if (! $session->signed_sheet_image_path) {
+                return redirect()->route('staff.dashboard', [
+                    'section' => 'attendance',
+                    'attendance_session' => $session->id,
+                ])->withErrors(['signed_sheet' => 'Upload a photo of the signed attendance sheet before submitting.']);
+            }
+
             $this->teaching->lockAttendanceSession($session, $staff);
         }
 
         return redirect()->route('staff.dashboard', [
             'section' => 'attendance',
             'attendance_session' => $session->id,
-        ])->with('status', $request->boolean('lock') ? 'Attendance saved and locked.' : 'Attendance saved.');
+        ])->with('status', $request->boolean('lock') ? 'Attendance submitted for HOD/Registrar verification.' : 'Roster saved.');
+    }
+
+    public function uploadAttendanceSheet(Request $request, AttendanceSession $session): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $request->validate([
+            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'attendance',
+            'attendance_session' => $session->id,
+        ])->with('status', 'Signed attendance sheet uploaded.');
     }
 
     public function storeCatScore(Request $request): RedirectResponse

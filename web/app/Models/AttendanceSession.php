@@ -24,14 +24,24 @@ class AttendanceSession extends Model
         'is_mandatory',
         'total_expected_attendees',
         'signed_sheet_image_path',
+        'sheet_image_hash',
         'recorded_by',
         'recorded_at',
         'is_locked',
+        'verification_status',
+        'submitted_at',
+        'hod_verified_by',
+        'hod_verified_at',
+        'registrar_verified_by',
+        'registrar_verified_at',
     ];
 
     protected $casts = [
         'session_date' => 'date',
         'recorded_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'hod_verified_at' => 'datetime',
+        'registrar_verified_at' => 'datetime',
         'is_mandatory' => 'boolean',
         'is_locked' => 'boolean',
     ];

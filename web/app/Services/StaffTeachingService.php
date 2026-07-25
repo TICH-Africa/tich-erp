@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
 
 class StaffTeachingService
 {
+    public function __construct(
+        protected AttendanceVerificationService $attendanceVerification,
+    ) {}
     public function createLessonPlan(Staff $staff, UnitAllocation $allocation, array $data): LessonPlan
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
@@ -88,16 +91,18 @@ class StaffTeachingService
         $present = collect($presentStudentIds)->map(fn ($id) => (int) $id)->all();
 
         foreach ($session->records as $record) {
-            $record->update(['is_present' => in_array((int) $record->student_id, $present, true)]);
+            $record->update([
+                'is_present' => in_array((int) $record->student_id, $present, true),
+                'recorded_by_tutor' => 1,
+            ]);
         }
 
-        $this->recalculateSummaries($session);
+        $this->attendanceVerification->recalculateSummaries($session);
     }
 
     public function lockAttendanceSession(AttendanceSession $session, Staff $staff): void
     {
-        abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
-        $session->update(['is_locked' => 1]);
+        $this->attendanceVerification->submitSession($session, $staff);
     }
 
     public function recordCatScore(Staff $staff, UnitAllocation $allocation, array $data): CatScore
@@ -138,42 +143,8 @@ class StaffTeachingService
         ]);
     }
 
-    private function recalculateSummaries(AttendanceSession $session): void
+    public function uploadSignedSheet(AttendanceSession $session, Staff $staff, \Illuminate\Http\UploadedFile $file): AttendanceSession
     {
-        $allocation = $session->allocation()->with('unit')->first();
-        if (! $allocation) {
-            return;
-        }
-
-        $sessions = AttendanceSession::query()
-            ->where('unit_allocation_id', $allocation->id)
-            ->pluck('id');
-
-        $records = AttendanceRecord::query()
-            ->whereIn('session_id', $sessions)
-            ->get()
-            ->groupBy('student_id');
-
-        foreach ($records as $studentId => $studentRecords) {
-            $total = $studentRecords->count();
-            $present = $studentRecords->where('is_present', true)->count();
-            $percentage = $total > 0 ? round(($present / $total) * 100, 2) : 0;
-            $flag = $percentage >= 90 ? 'green' : ($percentage >= 75 ? 'amber' : 'red');
-
-            DB::table('attendance_summaries')->updateOrInsert(
-                [
-                    'student_id' => $studentId,
-                    'unit_id' => $allocation->unit_id,
-                    'semester_id' => $allocation->semester_id,
-                ],
-                [
-                    'total_sessions' => $total,
-                    'total_present' => $present,
-                    'attendance_percentage' => $percentage,
-                    'status_flag' => $flag,
-                    'last_calculated_at' => now(),
-                ]
-            );
-        }
+        return $this->attendanceVerification->uploadSignedSheet($session, $staff, $file);
     }
 }

@@ -35,7 +35,7 @@
                         <td>{{ trim($alert->student_name) ?: $alert->registration_number }}</td>
                         <td>{{ $alert->unit_code }}</td>
                         <td>{{ number_format((float) $alert->attendance_percentage, 1) }}%</td>
-                        <td>{{ ucfirst($alert->status_flag) }}</td>
+                        <td>@include('partials.attendance-flag', ['flag' => $alert->status_flag])</td>
                     </tr>
                 @endforeach
             </tbody>
