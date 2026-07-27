@@ -26,7 +26,7 @@ class UnitCatalogService
         }
 
         $query = Unit::query()
-            ->with(['department:id,dept_name,dept_code', 'program:program_code,program_name,department_id', 'program.department:id,dept_name'])
+            ->with(['department:id,dept_name,dept_code', 'program:id,program_code,program_name,department_id'])
             ->where(function ($builder) use ($scopeIds) {
                 $builder->whereIn('department_id', $scopeIds)
                     ->orWhereHas('program', fn ($programQuery) => $programQuery->whereIn('department_id', $scopeIds));
@@ -39,25 +39,6 @@ class UnitCatalogService
         }
 
         return $query->get();
-    }
-
-    public function pendingUnitsForApproval(Department $hub): Collection
-    {
-        $scopeIds = $hub->academicsScopeDepartmentIds();
-
-        if ($scopeIds === []) {
-            return collect();
-        }
-
-        return Unit::query()
-            ->where('status', 'pending_registry')
-            ->where(function ($builder) use ($scopeIds) {
-                $builder->whereIn('department_id', $scopeIds)
-                    ->orWhereHas('program', fn ($programQuery) => $programQuery->whereIn('department_id', $scopeIds));
-            })
-            ->with(['department:id,dept_name', 'program:id,program_name,department_id', 'program.department:id,dept_name'])
-            ->orderBy('submitted_at')
-            ->get();
     }
 
     public function create(User $user, Department $hub, array $data, ?Request $request = null): Unit

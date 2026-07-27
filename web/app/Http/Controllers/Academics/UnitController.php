@@ -94,18 +94,6 @@ class UnitController extends DepartmentAcademicsController
         return $this->redirectAfterUnitAction($request, $hub, 'Unit approved and activated.');
     }
 
-    public function pendingRegistry(Request $request, Department $department): View
-    {
-        $hub = $this->authorizeHub($request, $department);
-
-        return view('academics.units.pending-registry', [
-            'department' => $hub,
-            'units' => $this->units->pendingUnitsForApproval($hub),
-            'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
-            'statusLabels' => UnitCatalogService::statusLabels(),
-        ]);
-    }
-
     private function assignToIntakeIfRequested(Request $request, Department $hub, Unit $unit): void
     {
         if (! $request->filled('assign_intake') || ! $request->filled('assign_semester')) {

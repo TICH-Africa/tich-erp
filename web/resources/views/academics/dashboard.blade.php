@@ -9,7 +9,7 @@
         <p class="tich-text">Course length, terms per year, unit catalog, semester/block mapping, and curriculum versioning for all learning departments under this hub.</p>
     </div>
 
-    <div class="tich-grid tich-grid--4 tich-mt-8" style="gap: 1.5rem;">
+    <div class="tich-grid tich-grid--3 tich-mt-8" style="gap: 1.5rem;">
         <article class="tich-card tich-stat">
             <p class="tich-caption">Learning departments</p>
             <p class="tich-stat__value">{{ $stats['departments'] }}</p>
@@ -26,11 +26,6 @@
             <p class="tich-stat__value">{{ $stats['published_versions'] }}</p>
             <p class="tich-text tich-mt-2">{{ $stats['draft_versions'] }} in workflow</p>
         </article>
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Workload</p>
-            <p class="tich-stat__value">{{ $workloadStats['total_weekly_hours'] ?? 0 }} hrs</p>
-            <p class="tich-text tich-mt-2">{{ $workloadStats['over_capacity_count'] ?? 0 }} over capacity</p>
-        </article>
     </div>
 
     <div class="tich-grid tich-grid--2 tich-mt-8" style="gap: 1.5rem; align-items: start;">
@@ -40,7 +35,6 @@
                 <li class="tich-text"><a href="{{ route('departments.academics.departments.index', $hub) }}" class="tich-link">Learning department profiles</a></li>
                 <li class="tich-text tich-mt-2"><a href="{{ route('departments.academics.units.index', $hub) }}" class="tich-link">Manage unit catalog</a></li>
                 <li class="tich-text tich-mt-2"><a href="{{ route('departments.academics.programs.index', $hub) }}" class="tich-link">Programme curriculum builder</a></li>
-                <li class="tich-text tich-mt-2"><a href="{{ route('departments.academics.workload.index', $hub) }}" class="tich-link">Workload allocation</a></li>
                 @can('academics.calendar')
                     <li class="tich-text tich-mt-2"><a href="{{ route('departments.academics.calendar.index', $hub) }}" class="tich-link">Academic calendar</a></li>
                 @endcan

@@ -49,10 +49,6 @@ class DepartmentDashboardService
             return true;
         }
 
-        if ($this->rbacService->hasAnyRole($user, ['Academic Registrar', 'CEO', 'Principal', 'Dean'])) {
-            return true;
-        }
-
         $userDepartmentIds = $this->rbacService->getUserDepartmentIds($user);
 
         if ($userDepartmentIds === []) {

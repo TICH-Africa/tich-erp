@@ -29,7 +29,7 @@ class UnitAllocation extends Model
 
     public function unit(): BelongsTo
     {
-        return $this->belongsTo(Unit::class)->with('program.department');
+        return $this->belongsTo(Unit::class);
     }
 
     public function staff(): BelongsTo
