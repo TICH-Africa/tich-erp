@@ -7,6 +7,7 @@ use App\Services\AcademicsAccessService;
 use App\Services\AcademicsDashboardService;
 use App\Services\AcademicsIntegrationRegistry;
 use App\Services\DepartmentDashboardService;
+use App\Services\WorkloadBalancingService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -14,6 +15,7 @@ class DashboardController extends DepartmentAcademicsController
 {
     public function __construct(
         protected AcademicsDashboardService $dashboard,
+        protected WorkloadBalancingService $workload,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
         protected AcademicsIntegrationRegistry $integrations,
@@ -28,6 +30,7 @@ class DashboardController extends DepartmentAcademicsController
         return view('academics.dashboard', [
             'department' => $hub,
             'stats' => $this->dashboard->stats($request->user(), $hub),
+            'workloadStats' => $this->dashboard->workloadStats($hub),
             'canApproveRegistry' => $this->access->canApproveRegistry($request->user()),
             'canApproveCeo' => $this->access->canApproveCeo($request->user()),
             'integrationHooks' => config('tich-academics.integration_hooks'),

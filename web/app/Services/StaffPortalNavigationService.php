@@ -13,10 +13,9 @@ class StaffPortalNavigationService
     /**
      * @return array<string, string>
      */
-    public function sections(): array
+    public function sections(bool $isHod = false): array
     {
-        return [
-            'overview' => 'Overview',
+        $sections = [
             'units' => 'My units',
             'timetable' => 'Timetable',
             'attendance' => 'Attendance',
@@ -24,29 +23,53 @@ class StaffPortalNavigationService
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
         ];
+
+        if ($isHod) {
+            $sections['hod-dashboard'] = 'HOD Dashboard';
+        } else {
+            $sections['overview'] = 'Overview';
+        }
+
+        return $sections;
     }
 
-    public function resolveSection(Request $request): string
+    public function resolveSection(Request $request, bool $isHod = false, string $default = 'overview'): string
     {
-        $section = $request->string('section')->toString() ?: 'overview';
+        $section = $request->string('section')->toString() ?: $default;
 
-        return array_key_exists($section, $this->sections()) ? $section : 'overview';
+        if ($section === 'hod-dashboard' && ! $isHod) {
+            return $default;
+        }
+
+        return array_key_exists($section, $this->sections($isHod)) ? $section : $default;
     }
 
     /**
      * @return list<array{type: string, label: string, section?: string}>
      */
-    public function sidebarNavigation(): array
+    public function sidebarNavigation(bool $isHod = false): array
     {
-        return [
-            ['type' => 'link', 'label' => 'Overview', 'section' => 'overview'],
-            ['type' => 'heading', 'label' => 'Teaching'],
-            ['type' => 'link', 'label' => 'My units', 'section' => 'units'],
-            ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable'],
-            ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance'],
-            ['type' => 'link', 'label' => 'Performance terminal', 'section' => 'grading'],
-            ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'],
-            ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'],
-        ];
+        $links = [];
+
+        if ($isHod) {
+            $links[] = ['type' => 'link', 'label' => 'HOD Dashboard', 'section' => 'hod-dashboard'];
+            $links[] = ['type' => 'link', 'label' => 'My units', 'section' => 'units'];
+            $links[] = ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable'];
+            $links[] = ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance'];
+            $links[] = ['type' => 'link', 'label' => 'Performance terminal', 'section' => 'grading'];
+            $links[] = ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'];
+            $links[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'];
+        } else {
+            $links[] = ['type' => 'link', 'label' => 'Overview', 'section' => 'overview'];
+            $links[] = ['type' => 'heading', 'label' => 'Teaching'];
+            $links[] = ['type' => 'link', 'label' => 'My units', 'section' => 'units'];
+            $links[] = ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable'];
+            $links[] = ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance'];
+            $links[] = ['type' => 'link', 'label' => 'Performance terminal', 'section' => 'grading'];
+            $links[] = ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'];
+            $links[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'];
+        }
+
+        return $links;
     }
 }

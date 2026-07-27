@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicProgram;
 use App\Models\Campus;
 use App\Models\Department;
 use App\Models\Role;
+use App\Models\Staff;
 use App\Models\User;
 use App\Services\DashboardService;
 use App\Services\RBACService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class UserAccessController extends Controller
@@ -41,6 +42,35 @@ class UserAccessController extends Controller
         });
 
         return view('admin.users.index', compact('users', 'departmentNames', 'moduleLabelsBySlug'));
+    }
+
+    public function staffReport(): View
+    {
+        $learningDepartments = Department::query()
+            ->where('dept_category', 'academic')
+            ->where('is_active', 1)
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name']);
+
+        $staff = Staff::query()
+            ->with([
+                'user.roles' => fn ($q) => $q->withPivot('department_id'),
+                'unitAllocations.unit.program.department',
+            ])
+            ->where('is_teaching_staff', 1)
+            ->where('employment_status', 'active')
+            ->orderBy('surname')
+            ->get();
+
+        return view('admin.staff-report', [
+            'learningDepartments' => $learningDepartments,
+            'staff' => $staff,
+            'programsByDepartment' => AcademicProgram::query()
+                ->with('department')
+                ->where('status', 'active')
+                ->get()
+                ->groupBy(fn ($p) => $p->department->dept_name ?? 'Unknown'),
+        ]);
     }
 
     public function edit(User $user): View

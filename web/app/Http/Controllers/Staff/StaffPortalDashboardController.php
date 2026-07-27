@@ -4,15 +4,17 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
-use App\Models\LessonPlan;
+use App\Models\Department;
 use App\Models\UnitAllocation;
+use App\Services\AcademicsAccessService;
+use App\Services\AcademicsDashboardService;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
+use App\Services\RBACService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -24,6 +26,9 @@ class StaffPortalDashboardController extends Controller
         protected StaffPortalDashboardService $dashboard,
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
+        protected RBACService $rbac,
+        protected AcademicsAccessService $academicsAccess,
+        protected AcademicsDashboardService $academicsService,
     ) {}
 
     public function __invoke(Request $request): View
@@ -31,8 +36,19 @@ class StaffPortalDashboardController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
         abort_if(! $staff, 404);
 
-        $section = $this->navigation->resolveSection($request);
+        $isHod = $this->rbac->hasPermission($request->user(), 'academics.read');
+        $defaultSection = $isHod ? 'hod-dashboard' : 'overview';
+        $section = $this->navigation->resolveSection($request, $isHod, $defaultSection);
         $portalData = $this->dashboard->forStaff($staff);
+
+        $data = [
+            'staff' => $staff,
+            'section' => $section,
+            'sections' => $this->navigation->sections($isHod),
+            'sidebarNavigation' => $this->navigation->sidebarNavigation($isHod),
+            'portalTitle' => ($this->navigation->sections($isHod)[$section] ?? 'Overview').' - Staff portal',
+            'portalData' => $portalData,
+        ];
 
         $attendanceSession = null;
         $rostersByAllocation = [];
@@ -41,6 +57,7 @@ class StaffPortalDashboardController extends Controller
                 ->with(['records.student.applicant', 'allocation.unit', 'allocation.semester', 'allocation.staff'])
                 ->find($request->integer('attendance_session'));
         }
+        $data['attendanceSession'] = $attendanceSession;
 
         $gradingTerminal = null;
         if ($section === 'grading') {
@@ -55,18 +72,20 @@ class StaffPortalDashboardController extends Controller
                 }
             }
         }
+        $data['gradingTerminal'] = $gradingTerminal;
+        $data['attendanceRiskMatrix'] = AttendanceVerificationService::riskMatrix();
+        $data['rostersByAllocation'] = $rostersByAllocation;
 
-        return view('staff.dashboard', [
-            'staff' => $staff,
-            'portalData' => $portalData,
-            'section' => $section,
-            'sections' => $this->navigation->sections(),
-            'sidebarNavigation' => $this->navigation->sidebarNavigation(),
-            'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Staff portal',
-            'attendanceSession' => $attendanceSession,
-            'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
-            'gradingTerminal' => $gradingTerminal,
-            'rostersByAllocation' => $rostersByAllocation,
-        ]);
+        if ($isHod) {
+            $staffDepartment = $staff->department;
+            if ($staffDepartment) {
+                $data['department'] = $staffDepartment;
+                $data['academicsStats'] = $this->academicsService->statsForLearningDepartment($request->user(), $staffDepartment);
+                $data['workloadStats'] = $this->academicsService->workloadStatsForDepartment($staffDepartment->id);
+                $data['learningDepartments'] = collect([$staffDepartment]);
+            }
+        }
+
+        return view('staff.dashboard', $data);
     }
 }

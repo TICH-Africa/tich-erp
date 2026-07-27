@@ -56,11 +56,23 @@
         </article>
         @endcan
 
+        @can('academics.approve')
+        <article class="tich-card tich-card--highlight">
+            <h3 class="tich-h3">Unit registry approval</h3>
+            <p class="tich-text">Review and approve units submitted by HODs for registry verification.</p>
+            @php $academicsHub = \App\Models\Department::findAcademicsHub(); @endphp
+            @if ($academicsHub)
+                <a href="{{ route('departments.academics.units.pending-registry', ['department' => $academicsHub->getRouteKey()]) }}" class="tich-btn tich-btn-primary tich-mt-4">Review pending units</a>
+            @endif
+        </article>
+        @endcan
+
         @can('users.access.manage')
         <article class="tich-card">
             <h3 class="tich-h3">Users &amp; access</h3>
             <p class="tich-text">Assign roles, scope by campus/department, and control dashboard modules.</p>
             <a href="{{ route('admin.users.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Manage users</a>
+            <a href="{{ route('admin.staff-report') }}" class="tich-link tich-mt-2" style="margin-left:0.5rem;">View staff</a>
         </article>
         @endcan
     </div>

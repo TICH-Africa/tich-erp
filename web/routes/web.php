@@ -110,6 +110,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/users', [UserAccessController::class, 'index'])->name('admin.users.index');
             Route::get('/users/{user}/access', [UserAccessController::class, 'edit'])->name('admin.users.edit');
             Route::put('/users/{user}/access', [UserAccessController::class, 'update'])->name('admin.users.update');
+            Route::get('/staff-report', [UserAccessController::class, 'staffReport'])->name('admin.staff-report');
         });
 
         Route::prefix('audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {
@@ -161,6 +162,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::middleware('permission:academics.read')->group(function () {
             Route::get('/departments', [AcademicsDepartmentController::class, 'index'])->name('departments.academics.departments.index');
             Route::get('/units', [AcademicsUnitController::class, 'index'])->name('departments.academics.units.index');
+            Route::get('/units/pending-registry', [AcademicsUnitController::class, 'pendingRegistry'])->name('departments.academics.units.pending-registry');
             Route::get('/programs', [ProgramCurriculumController::class, 'index'])->name('departments.academics.programs.index');
             Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
             Route::get('/workload', [WorkloadController::class, 'index'])->name('departments.academics.workload.index');
@@ -169,6 +171,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/lesson-plans/audit', [LessonPlanController::class, 'audit'])->name('departments.academics.lesson-plans.audit');
             Route::get('/lesson-plans/{plan}', [LessonPlanController::class, 'show'])->name('departments.academics.lesson-plans.show');
             Route::get('/performance', [PerformanceTerminalController::class, 'index'])->name('departments.academics.performance.index');
+            Route::get('/nursing-blocks/{program}', [\App\Http\Controllers\Academics\NursingBlockController::class, 'index'])->name('departments.academics.nursing-blocks.index');
         });
 
         Route::middleware('permission:academics.write')->group(function () {

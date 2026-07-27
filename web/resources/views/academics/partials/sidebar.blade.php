@@ -13,16 +13,40 @@
         'categoryLabel' => fn (\App\Models\Department $dept) => $departmentDashboard->categoryLabel($dept),
     ])
 @else
-    <aside class="tich-admin-sidebar">
-        <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
-        <p class="tich-caption" style="margin: -0.5rem 0 1rem;">Academics &amp; curriculum</p>
+    @php
+        $isRegistrar = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'CEO', 'Principal', 'Dean']);
+    @endphp
+    @if ($isRegistrar)
+        <aside class="tich-admin-sidebar">
+            <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
+            <p class="tich-caption" style="margin: -0.5rem 0 1rem;">Registry approval</p>
 
-        <nav class="tich-admin-sidebar__nav">
-            @php
-                $hub = ['department' => $department->id];
-            @endphp
+            <nav class="tich-admin-sidebar__nav">
+                @php
+                    $hub = ['department' => $department->id];
+                @endphp
 
-            @can('academics.read')
+                <a href="{{ route('departments.academics.units.pending-registry', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.units.pending-registry')])>
+                    Unit registry approval
+                </a>
+                <a href="{{ route('departments.academics.lesson-plans.audit', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.lesson-plans.audit')])>
+                    Lesson plan audit
+                </a>
+                <a href="{{ route('departments.academics.performance.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.performance.*')])>
+                    Performance metrics
+                </a>
+            </nav>
+        </aside>
+    @else
+        <aside class="tich-admin-sidebar">
+            <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
+            <p class="tich-caption" style="margin: -0.5rem 0 1rem;">Academics &amp; curriculum</p>
+
+            <nav class="tich-admin-sidebar__nav">
+                @php
+                    $hub = ['department' => $department->id];
+                @endphp
+
                 <p class="tich-admin-sidebar__section">Curriculum</p>
                 <a href="{{ route('departments.academics.dashboard', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.dashboard')])>Overview</a>
                 <a href="{{ route('departments.academics.departments.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.departments.*')])>Learning departments</a>
@@ -33,14 +57,14 @@
                 <a href="{{ route('departments.academics.lesson-plans.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.lesson-plans.index') || request()->routeIs('departments.academics.lesson-plans.show')])>Lesson plan approval</a>
                 <a href="{{ route('departments.academics.lesson-plans.audit', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.lesson-plans.audit')])>Lesson plan audit</a>
                 <a href="{{ route('departments.academics.performance.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.performance.*')])>Performance terminal</a>
-            @endcan
 
-            @can('academics.calendar')
-                <a href="{{ route('departments.academics.calendar.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.calendar.*')])>Academic calendar</a>
-            @endcan
+                @can('academics.calendar')
+                    <a href="{{ route('departments.academics.calendar.index', $hub) }}" @class(['is-active' => request()->routeIs('departments.academics.calendar.*')])>Academic calendar</a>
+                @endcan
 
-            <p class="tich-admin-sidebar__section">Navigation</p>
-            <a href="{{ route('departments.show', $department) }}">{{ $department->dept_name }} hub</a>
-        </nav>
-    </aside>
+                <p class="tich-admin-sidebar__section">Navigation</p>
+                <a href="{{ route('departments.show', $department) }}">{{ $department->dept_name }} hub</a>
+            </nav>
+        </aside>
+    @endif
 @endif

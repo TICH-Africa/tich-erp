@@ -85,7 +85,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $status = $request->string('status')->toString() ?: null;
         $semesterId = $request->integer('semester') ?: null;
 
-        return view('academics.lesson-plans.audit', [
+        return view('academics.lesson-plans.registrar-audit', [
             'department' => $hub,
             'learningDepartment' => $learningDepartmentId ? Department::query()->find($learningDepartmentId) : null,
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
