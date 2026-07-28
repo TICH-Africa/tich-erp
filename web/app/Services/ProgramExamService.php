@@ -4,19 +4,22 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
+use App\Models\Unit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProgramExamService
 {
     public function __construct(
         protected StudentAcademicRecordService $academicRecords,
+        protected ExamScheduleSyncService $examScheduleSync,
     ) {}
 
     /**
      * @return array<string, mixed>
      */
-    public function hubData(AcademicProgram $program, ?CurriculumVersion $intake, array $periodDates, int $teachingPeriod = 1): array
+    public function hubData(AcademicProgram $program, ?CurriculumVersion $intake, array $periodDates, int $teachingPeriod = 1, bool $syncFromTimetable = false): array
     {
         if (! $intake) {
             return [
@@ -35,10 +38,14 @@ class ProgramExamService
                 'exam_results' => collect(),
                 'eligibility' => [],
                 'at_risk_students' => collect(),
+                'timetable_synced' => 0,
             ];
         }
 
         $teachingPeriod = $this->resolveTeachingPeriod($intake, $teachingPeriod);
+        $timetableSynced = $syncFromTimetable
+            ? $this->examScheduleSync->syncFromExamTimetable($program, $intake, $teachingPeriod)
+            : 0;
         $teachingPeriods = $this->teachingPeriodsForIntake($intake);
         $semesterUnitIds = $this->unitIdsForSemester($intake, $teachingPeriod);
         $students = $this->academicRecords->enrolledForProgram($program, $intake)['matched'];
@@ -66,7 +73,63 @@ class ProgramExamService
             'exam_results' => $this->examResults($semesterUnitIds, $studentIds),
             'eligibility' => $this->eligibilitySummary($semesterUnitIds, $studentIds),
             'at_risk_students' => $this->atRiskStudents($semesterUnitIds, $studentIds),
+            'timetable_synced' => $timetableSynced,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateExamSchedule(int $scheduleId, array $data, array $unitIds): void
+    {
+        $schedule = DB::table('exam_schedules as es')
+            ->where('es.id', $scheduleId)
+            ->whereIn('es.unit_id', $unitIds)
+            ->first();
+
+        if (! $schedule) {
+            throw ValidationException::withMessages([
+                'schedule' => 'Exam schedule not found for this semester.',
+            ]);
+        }
+
+        DB::table('exam_schedules')
+            ->where('id', $scheduleId)
+            ->update([
+                'exam_date' => $data['exam_date'],
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
+                'venue' => $data['venue'],
+                'exam_type' => $data['exam_type'],
+                'invigilator_id' => $data['invigilator_id'] ?? null,
+                'status' => $data['status'],
+            ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateUnitAssessmentWeights(Unit $unit, array $data): Unit
+    {
+        $total = (float) $data['cat_weight']
+            + (float) $data['practical_weight']
+            + (float) $data['attendance_weight']
+            + (float) $data['exam_weight'];
+
+        if (abs($total - 100) > 0.01) {
+            throw ValidationException::withMessages([
+                'weights' => 'Assessment weights must add up to 100%.',
+            ]);
+        }
+
+        $unit->update([
+            'assessment_weight_cat_pct' => $data['cat_weight'],
+            'assessment_weight_practical_pct' => $data['practical_weight'],
+            'assessment_weight_attendance_pct' => $data['attendance_weight'],
+            'assessment_weight_exam_pct' => $data['exam_weight'],
+        ]);
+
+        return $unit->fresh();
     }
 
     public function resolveTeachingPeriod(CurriculumVersion $intake, ?int $requested = null): int

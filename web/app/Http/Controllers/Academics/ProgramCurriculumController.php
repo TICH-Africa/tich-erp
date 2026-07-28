@@ -11,6 +11,7 @@ use App\Models\ProgramTimetable;
 use App\Models\ProgramTimetableSession;
 use App\Models\Room;
 use App\Models\Staff;
+use App\Models\Unit;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
@@ -252,12 +253,16 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                     $this->programExams->resolveTeachingPeriod(
                         $selectedIntake,
                         $request->integer('teaching_period') ?: null
-                    )
+                    ),
+                    $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview') === 'schedule'
                 )
                 : null,
             'examTab' => $section === 'exams'
                 ? $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview')
                 : 'overview',
+            'examStaff' => $section === 'exams'
+                ? Staff::query()->orderBy('surname')->limit(200)->get()
+                : collect(),
         ]);
     }
 
@@ -680,5 +685,77 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $this->versions->approveCeo($request->user(), $hub, $version, $request);
 
         return back()->with('status', 'Curriculum version published.');
+    }
+
+    public function updateExamSchedule(Request $request, Department $department, AcademicProgram $program, int $schedule): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $intakeId = $request->integer('intake');
+        $intake = $intakeId
+            ? CurriculumVersion::query()->where('program_id', $program->id)->findOrFail($intakeId)
+            : null;
+
+        abort_unless($intake, 404);
+
+        $teachingPeriod = $this->programExams->resolveTeachingPeriod(
+            $intake,
+            $request->integer('teaching_period') ?: null
+        );
+
+        $validated = $request->validate([
+            'exam_date' => ['required', 'date'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'venue' => ['required', 'string', 'max:200'],
+            'exam_type' => ['required', 'in:main,supplementary,special,clinical'],
+            'invigilator_id' => ['nullable', 'exists:staff,id'],
+            'status' => ['required', 'in:scheduled,in_progress,completed,cancelled'],
+        ]);
+
+        $unitIds = $this->programExams->unitIdsForSemester($intake, $teachingPeriod);
+        $this->programExams->updateExamSchedule($schedule, $validated, $unitIds);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $intake->id,
+                'section' => 'exams',
+                'exam_tab' => 'schedule',
+                'teaching_period' => $teachingPeriod,
+            ]))
+            ->with('status', 'Exam session updated.');
+    }
+
+    public function updateUnitAssessmentWeights(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'cat_weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'practical_weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'attendance_weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'exam_weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'teaching_period' => ['nullable', 'integer', 'min:1'],
+            'intake' => ['nullable', 'integer'],
+        ]);
+
+        $this->programExams->updateUnitAssessmentWeights($unit, $validated);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => 'exams',
+                'exam_tab' => 'grading',
+                'teaching_period' => $request->integer('teaching_period') ?: null,
+            ]))
+            ->with('status', 'Unit assessment weights updated.');
     }
 }

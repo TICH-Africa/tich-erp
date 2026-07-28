@@ -170,7 +170,7 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">Unit assessment weighting - Semester {{ $examTeachingPeriod }}</h2>
-            <p class="tich-caption">Only units taught in this semester. CAT, practical, attendance, and exam weights drive cumulative score calculation.</p>
+            <p class="tich-caption">Only units taught in this semester. Click Edit to adjust weights in a popup.</p>
             <div style="overflow-x:auto;" class="tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
@@ -181,6 +181,7 @@
                             <th>Practical %</th>
                             <th>Attendance %</th>
                             <th>Exam %</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -192,14 +193,72 @@
                                 <td>{{ $unit->practical_weight }}%</td>
                                 <td>{{ $unit->attendance_weight }}%</td>
                                 <td>{{ $unit->exam_weight }}%</td>
+                                <td>
+                                    @can('academics.write')
+                                        <button
+                                            type="button"
+                                            class="tich-link"
+                                            data-open-modal="unit-assessment-edit-modal"
+                                            data-unit-id="{{ $unit->unit_id }}"
+                                            data-unit-label="{{ $unit->unit_code }} - {{ $unit->unit_name }}"
+                                            data-cat-weight="{{ $unit->cat_weight }}"
+                                            data-practical-weight="{{ $unit->practical_weight }}"
+                                            data-attendance-weight="{{ $unit->attendance_weight }}"
+                                            data-exam-weight="{{ $unit->exam_weight }}"
+                                        >Edit</button>
+                                    @endcan
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
+                            <tr><td colspan="7">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </article>
+
+        @can('academics.write')
+            <div class="tich-modal" id="unit-assessment-edit-modal" hidden aria-hidden="true">
+                <div class="tich-modal__backdrop" data-close-modal="unit-assessment-edit-modal"></div>
+                <div class="tich-modal__dialog">
+                    <header class="tich-modal__header">
+                        <h2 class="tich-h3" style="margin:0;">Edit assessment weights</h2>
+                        <button type="button" class="tich-modal__close" data-close-modal="unit-assessment-edit-modal" aria-label="Close">&times;</button>
+                    </header>
+                    <form method="POST" id="unit-assessment-edit-form" action="#" class="tich-modal__body">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                        <input type="hidden" name="teaching_period" value="{{ $examTeachingPeriod }}">
+                        <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+                        <p class="tich-text" id="unit-assessment-edit-label" style="margin:0 0 1rem;"></p>
+                        <div class="tich-grid tich-grid--2" style="gap:1rem;">
+                            <div class="tich-form-group">
+                                <label class="tich-label">CAT %</label>
+                                <input type="number" name="cat_weight" id="unit-assessment-cat" class="tich-input" min="0" max="100" step="0.01" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Practical %</label>
+                                <input type="number" name="practical_weight" id="unit-assessment-practical" class="tich-input" min="0" max="100" step="0.01" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Attendance %</label>
+                                <input type="number" name="attendance_weight" id="unit-assessment-attendance" class="tich-input" min="0" max="100" step="0.01" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Exam %</label>
+                                <input type="number" name="exam_weight" id="unit-assessment-exam" class="tich-input" min="0" max="100" step="0.01" required>
+                            </div>
+                        </div>
+                        @error('weights')<p class="tich-field-error">{{ $message }}</p>@enderror
+                        <footer class="tich-modal__footer">
+                            <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="unit-assessment-edit-modal">Cancel</button>
+                            <button type="submit" class="tich-btn tich-btn-primary">Save weights</button>
+                        </footer>
+                    </form>
+                </div>
+            </div>
+        @endcan
 
     @elseif ($examTab === 'schedule')
         <article class="tich-card tich-mb-6">
@@ -252,6 +311,9 @@
 
         <article class="tich-card">
             <h3 class="tich-h3">Scheduled sessions</h3>
+            @if (($examHub['timetable_synced'] ?? 0) > 0)
+                <p class="tich-caption tich-mt-2">Synced {{ $examHub['timetable_synced'] }} session(s) from the exam timetable. Unit, semester, date, time, and type were filled automatically.</p>
+            @endif
             <div style="overflow-x:auto;" class="tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
@@ -264,27 +326,120 @@
                             <th>Type</th>
                             <th>Invigilator</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($examHub['schedules'] as $schedule)
                             <tr>
                                 <td>{{ $schedule->unit_code }}</td>
-                                <td>{{ $schedule->semester_label }}</td>
+                                <td>{{ $schedule->semester_label ?? 'Semester '.$examTeachingPeriod }}</td>
                                 <td>{{ \Illuminate\Support\Carbon::parse($schedule->exam_date)->format('d M Y') }}</td>
                                 <td>{{ substr($schedule->start_time, 0, 5) }}-{{ substr($schedule->end_time, 0, 5) }}</td>
                                 <td>{{ $schedule->venue }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $schedule->exam_type)) }}</td>
                                 <td>{{ trim(($schedule->invigilator_first ?? '').' '.($schedule->invigilator_surname ?? '')) ?: '-' }}</td>
                                 <td>{{ ucfirst($schedule->status) }}</td>
+                                <td>
+                                    @can('academics.write')
+                                        <button
+                                            type="button"
+                                            class="tich-link"
+                                            data-open-modal="exam-schedule-edit-modal"
+                                            data-schedule-id="{{ $schedule->id }}"
+                                            data-unit-label="{{ $schedule->unit_code }} - {{ $schedule->unit_name }}"
+                                            data-semester-label="{{ $schedule->semester_label ?? 'Semester '.$examTeachingPeriod }}"
+                                            data-exam-date="{{ \Illuminate\Support\Carbon::parse($schedule->exam_date)->format('Y-m-d') }}"
+                                            data-start-time="{{ substr($schedule->start_time, 0, 5) }}"
+                                            data-end-time="{{ substr($schedule->end_time, 0, 5) }}"
+                                            data-venue="{{ $schedule->venue }}"
+                                            data-exam-type="{{ $schedule->exam_type }}"
+                                            data-invigilator-id="{{ $schedule->invigilator_id ?? '' }}"
+                                            data-status="{{ $schedule->status }}"
+                                        >Edit</button>
+                                    @endcan
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8">No exam sessions scheduled for Semester {{ $examTeachingPeriod }} units yet.</td></tr>
+                            <tr><td colspan="9">No exam sessions scheduled for Semester {{ $examTeachingPeriod }} units yet. <a href="{{ route('departments.academics.programs.curriculum', $timetableExamParams) }}" class="tich-link">Generate the exam timetable</a> to auto-fill this list.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </article>
+
+        @can('academics.write')
+            <div class="tich-modal" id="exam-schedule-edit-modal" hidden aria-hidden="true">
+                <div class="tich-modal__backdrop" data-close-modal="exam-schedule-edit-modal"></div>
+                <div class="tich-modal__dialog">
+                    <header class="tich-modal__header">
+                        <h2 class="tich-h3" style="margin:0;">Edit exam session</h2>
+                        <button type="button" class="tich-modal__close" data-close-modal="exam-schedule-edit-modal" aria-label="Close">&times;</button>
+                    </header>
+                    <form method="POST" id="exam-schedule-edit-form" action="#" class="tich-modal__body">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                        <input type="hidden" name="teaching_period" value="{{ $examTeachingPeriod }}">
+                        <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+                        <dl class="tich-dl tich-mb-4">
+                            <dt>Unit</dt><dd id="exam-schedule-edit-unit"></dd>
+                            <dt>Semester</dt><dd id="exam-schedule-edit-semester"></dd>
+                        </dl>
+                        <div class="tich-grid tich-grid--2" style="gap:1rem;">
+                            <div class="tich-form-group">
+                                <label class="tich-label">Date</label>
+                                <input type="date" name="exam_date" id="exam-schedule-edit-date" class="tich-input" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Type</label>
+                                <select name="exam_type" id="exam-schedule-edit-type" class="tich-input" required>
+                                    <option value="main">Main</option>
+                                    <option value="supplementary">Supplementary</option>
+                                    <option value="special">Special</option>
+                                    <option value="clinical">Clinical</option>
+                                </select>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Start time</label>
+                                <input type="time" name="start_time" id="exam-schedule-edit-start" class="tich-input" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">End time</label>
+                                <input type="time" name="end_time" id="exam-schedule-edit-end" class="tich-input" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Venue</label>
+                                <input type="text" name="venue" id="exam-schedule-edit-venue" class="tich-input" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Invigilator</label>
+                                <select name="invigilator_id" id="exam-schedule-edit-invigilator" class="tich-input">
+                                    <option value="">-</option>
+                                    @foreach ($examStaff ?? [] as $member)
+                                        <option value="{{ $member->id }}">{{ $member->first_name }} {{ $member->surname }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Status</label>
+                                <select name="status" id="exam-schedule-edit-status" class="tich-input" required>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="in_progress">In progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        @error('schedule')<p class="tich-field-error">{{ $message }}</p>@enderror
+                        <footer class="tich-modal__footer">
+                            <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="exam-schedule-edit-modal">Cancel</button>
+                            <button type="submit" class="tich-btn tich-btn-primary">Save session</button>
+                        </footer>
+                    </form>
+                </div>
+            </div>
+        @endcan
 
     @elseif ($examTab === 'papers')
         <article class="tich-card">
@@ -410,5 +565,48 @@
                 </table>
             </div>
         </article>
+    @endif
+
+    @if (in_array($examTab ?? 'overview', ['schedule', 'grading'], true))
+        @include('admin.partials.tich-modal-assets')
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var scheduleForm = document.getElementById('exam-schedule-edit-form');
+            var scheduleBase = @json(route('departments.academics.programs.exam-schedules.update', array_merge($hub, ['program' => $program->id, 'schedule' => '__ID__'])));
+
+            document.querySelectorAll('[data-open-modal="exam-schedule-edit-modal"]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (!scheduleForm) return;
+                    scheduleForm.action = scheduleBase.replace('__ID__', button.getAttribute('data-schedule-id'));
+                    document.getElementById('exam-schedule-edit-unit').textContent = button.getAttribute('data-unit-label') || '';
+                    document.getElementById('exam-schedule-edit-semester').textContent = button.getAttribute('data-semester-label') || '';
+                    document.getElementById('exam-schedule-edit-date').value = button.getAttribute('data-exam-date') || '';
+                    document.getElementById('exam-schedule-edit-start').value = button.getAttribute('data-start-time') || '';
+                    document.getElementById('exam-schedule-edit-end').value = button.getAttribute('data-end-time') || '';
+                    document.getElementById('exam-schedule-edit-venue').value = button.getAttribute('data-venue') || '';
+                    document.getElementById('exam-schedule-edit-type').value = button.getAttribute('data-exam-type') || 'main';
+                    document.getElementById('exam-schedule-edit-status').value = button.getAttribute('data-status') || 'scheduled';
+                    document.getElementById('exam-schedule-edit-invigilator').value = button.getAttribute('data-invigilator-id') || '';
+                    window.tichOpenModal('exam-schedule-edit-modal');
+                });
+            });
+
+            var unitForm = document.getElementById('unit-assessment-edit-form');
+            var unitBase = @json(route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__'])));
+
+            document.querySelectorAll('[data-open-modal="unit-assessment-edit-modal"]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (!unitForm) return;
+                    unitForm.action = unitBase.replace('__ID__', button.getAttribute('data-unit-id'));
+                    document.getElementById('unit-assessment-edit-label').textContent = button.getAttribute('data-unit-label') || '';
+                    document.getElementById('unit-assessment-cat').value = button.getAttribute('data-cat-weight') || '';
+                    document.getElementById('unit-assessment-practical').value = button.getAttribute('data-practical-weight') || '';
+                    document.getElementById('unit-assessment-attendance').value = button.getAttribute('data-attendance-weight') || '';
+                    document.getElementById('unit-assessment-exam').value = button.getAttribute('data-exam-weight') || '';
+                    window.tichOpenModal('unit-assessment-edit-modal');
+                });
+            });
+        });
+        </script>
     @endif
 @endif

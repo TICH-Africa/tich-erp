@@ -197,6 +197,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'])->name('departments.academics.programs.timetable.add-session');
             Route::patch('/programs/{program}/timetables/{timetable}/sessions/{session}/move', [ProgramCurriculumController::class, 'moveTimetableSession'])->name('departments.academics.programs.timetable.move-session');
             Route::post('/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'])->name('departments.academics.programs.timetable.publish');
+            Route::put('/programs/{program}/exam-schedules/{schedule}', [ProgramCurriculumController::class, 'updateExamSchedule'])->name('departments.academics.programs.exam-schedules.update');
+            Route::put('/programs/{program}/units/{unit}/assessment-weights', [ProgramCurriculumController::class, 'updateUnitAssessmentWeights'])->name('departments.academics.programs.units.assessment-weights.update');
             Route::post('/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'])->name('departments.academics.programs.intakes.add-unit');
             Route::post('/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.versions.create');
             Route::post('/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'])->name('departments.academics.versions.submit');
