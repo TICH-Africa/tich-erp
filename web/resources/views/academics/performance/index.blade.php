@@ -13,7 +13,7 @@
 
     <header class="tich-dept-header">
         <h1 class="tich-h1 tich-dept-header__title">Performance mapping terminal</h1>
-        <p class="tich-text">Departmental analytics for HODs and academic leadership — class averages, failing trends, and practical completion across campuses and sub-county hubs.</p>
+        <p class="tich-text">Departmental analytics for HODs and academic leadership - class averages, failing trends, and practical completion across campuses and sub-county hubs.</p>
     </header>
 
     <form method="GET" class="tich-card tich-mt-6" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
@@ -82,7 +82,7 @@
                         <tr>
                             <td>{{ $row->campus_name }}</td>
                             <td>{{ str_replace('_', ' ', $row->campus_type) }}</td>
-                            <td>{{ $row->sub_county ?? $row->county ?? '—' }}</td>
+                            <td>{{ $row->sub_county ?? $row->county ?? '-' }}</td>
                             <td>{{ $row->student_count }}</td>
                             <td>{{ $row->avg_score }}%</td>
                             <td>{{ $row->failing_assessments }}</td>
@@ -131,7 +131,7 @@
     @if ($performance['failing_students']->isNotEmpty())
         <section class="tich-dept-panel tich-mt-8">
             <div class="tich-dept-panel__head">
-                <h2 class="tich-h2">Early intervention — at-risk students</h2>
+                <h2 class="tich-h2">Early intervention - at-risk students</h2>
                 <p class="tich-text">Students below pass mark who may need support before final exams.</p>
             </div>
             <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
@@ -152,7 +152,7 @@
                                 <td>{{ $row->registration_number }} · {{ trim($row->student_name) }}</td>
                                 <td>{{ $row->unit_code }}</td>
                                 <td>{{ $row->campus_name }}</td>
-                                <td>{{ $row->sub_county ?? '—' }}</td>
+                                <td>{{ $row->sub_county ?? '-' }}</td>
                                 <td>{{ number_format((float) $row->final_score, 1) }}%</td>
                                 <td>{{ $row->grade_letter }}</td>
                             </tr>

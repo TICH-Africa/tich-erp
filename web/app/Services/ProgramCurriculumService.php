@@ -207,6 +207,7 @@ class ProgramCurriculumService
             'intakes' => 'Intakes',
             'catalog' => 'Unit catalog',
             'semesters' => 'Semester units',
+            'exams' => 'Exams & grading',
             'applications' => 'Applications',
             'enrolled' => 'Enrolled students',
             'workflow' => 'Intake workflow',
@@ -252,7 +253,7 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $requiresIntake = ['semesters', 'applications', 'enrolled', 'timetable'];
+        $requiresIntake = ['semesters', 'applications', 'enrolled', 'timetable', 'exams'];
         $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');
         $programHasIntakes = CurriculumVersion::query()->where('program_id', $program->id)->exists();

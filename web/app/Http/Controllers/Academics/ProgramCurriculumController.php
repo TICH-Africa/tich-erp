@@ -14,6 +14,7 @@ use App\Models\Staff;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
+use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
 use App\Services\WorkingIntakeService;
@@ -35,6 +36,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected TimetableSchedulingService $timetableScheduling,
         protected StudentAcademicRecordService $studentAcademicRecords,
         protected WorkingIntakeService $workingIntake,
+        protected ProgramExamService $programExams,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -229,6 +231,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'timetableStaff' => $section === 'timetable'
                 ? Staff::query()->orderBy('surname')->limit(200)->get()
                 : collect(),
+            'examHub' => $section === 'exams' && $selectedIntake
+                ? $this->programExams->hubData(
+                    $program,
+                    $selectedIntake,
+                    $periodDates->all(),
+                    $this->programExams->resolveTeachingPeriod(
+                        $selectedIntake,
+                        $request->integer('teaching_period') ?: null
+                    )
+                )
+                : null,
+            'examTab' => $section === 'exams'
+                ? $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview')
+                : 'overview',
         ]);
     }
 

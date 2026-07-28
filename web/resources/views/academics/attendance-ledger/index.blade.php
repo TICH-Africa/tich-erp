@@ -63,7 +63,7 @@
                             @if ($session->signed_sheet_image_path)
                                 <a href="{{ asset('storage/'.$session->signed_sheet_image_path) }}" target="_blank" class="tich-link">View photo</a>
                             @else
-                                —
+                                -
                             @endif
                         </td>
                         <td style="white-space:nowrap;">

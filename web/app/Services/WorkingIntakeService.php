@@ -14,7 +14,7 @@ class WorkingIntakeService
      */
     public static function intakeRequiredSections(): array
     {
-        return ['semesters', 'applications', 'enrolled', 'timetable'];
+        return ['semesters', 'applications', 'enrolled', 'timetable', 'exams'];
     }
 
     public function sessionKey(int $programId): string

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Academic Transcript — {{ $transcript['student']->registration_number }}</title>
+    <title>Academic Transcript - {{ $transcript['student']->registration_number }}</title>
     <link rel="stylesheet" href="{{ asset('css/tich-platform.css') }}">
     <style>
         body { background: #fff; color: #111; font-family: Georgia, 'Times New Roman', serif; margin: 0; }
@@ -47,10 +47,10 @@
         <dl class="tich-transcript__meta">
             <div><dt>Student name</dt><dd>{{ $student->applicant?->fullName() ?? trim($student->registration_number) }}</dd></div>
             <div><dt>Registration number</dt><dd>{{ $student->registration_number }}</dd></div>
-            <div><dt>Programme</dt><dd>{{ $program?->program_name ?? '—' }}</dd></div>
-            <div><dt>Campus</dt><dd>{{ $student->campus?->campus_name ?? '—' }}</dd></div>
+            <div><dt>Programme</dt><dd>{{ $program?->program_name ?? '-' }}</dd></div>
+            <div><dt>Campus</dt><dd>{{ $student->campus?->campus_name ?? '-' }}</dd></div>
             <div><dt>Enrollment status</dt><dd>{{ ucfirst($student->enrollment_status) }}</dd></div>
-            <div><dt>Department</dt><dd>{{ $program?->department?->dept_name ?? '—' }}</dd></div>
+            <div><dt>Department</dt><dd>{{ $program?->department?->dept_name ?? '-' }}</dd></div>
         </dl>
 
         @forelse ($transcript['semester_blocks'] as $block)
@@ -76,7 +76,7 @@
                                 <td>{{ $row->unit_name }}</td>
                                 <td class="num">{{ number_format($row->credit_hours, 1) }}</td>
                                 <td class="num">{{ number_format($row->continuous_score, 1) }}%</td>
-                                <td class="num">{{ $row->exam_score !== null ? number_format($row->exam_score, 1).'%' : '—' }}</td>
+                                <td class="num">{{ $row->exam_score !== null ? number_format($row->exam_score, 1).'%' : '-' }}</td>
                                 <td class="num"><strong>{{ number_format($row->final_score, 1) }}%</strong></td>
                                 <td>{{ $row->grade_letter }}</td>
                                 <td class="num">{{ number_format($row->grade_points, 1) }}</td>

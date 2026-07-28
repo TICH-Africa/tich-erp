@@ -75,13 +75,13 @@
                                             <td>
                                                 @if ($question->question_type === 'true_false')
                                                     <select name="responses[{{ $student->student_id }}][{{ $question->id }}]" class="tich-competency-grid__input">
-                                                        <option value="">—</option>
+                                                        <option value="">-</option>
                                                         <option value="true" @selected(strtolower((string) $value) === 'true')>True</option>
                                                         <option value="false" @selected(strtolower((string) $value) === 'false')>False</option>
                                                     </select>
                                                 @elseif ($question->question_type === 'mcq' && is_array($question->options))
                                                     <select name="responses[{{ $student->student_id }}][{{ $question->id }}]" class="tich-competency-grid__input">
-                                                        <option value="">—</option>
+                                                        <option value="">-</option>
                                                         @foreach ($question->options as $option)
                                                             <option value="{{ $option }}" @selected((string) $value === (string) $option)>{{ $option }}</option>
                                                         @endforeach
@@ -138,7 +138,7 @@
                     <div class="tich-grid tich-grid--3" style="gap:1rem;">
                         <div class="tich-form-group">
                             <label class="tich-label">Assessment name</label>
-                            <input type="text" name="name" class="tich-input" required placeholder="CAT 1 — Objective section">
+                            <input type="text" name="name" class="tich-input" required placeholder="CAT 1 - Objective section">
                         </div>
                         <div class="tich-form-group">
                             <label class="tich-label">Type</label>
@@ -154,7 +154,7 @@
                         </div>
                     </div>
 
-                    <p class="tich-caption tich-mt-4">Questions — separate MCQ options with <code>|</code> (e.g. <code>A|B|C|D</code>)</p>
+                    <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C|D</code>)</p>
                     @for ($i = 0; $i < 5; $i++)
                         <div class="tich-card tich-mt-4" style="padding:1rem; background:var(--tich-neutral-bg, #f8fafc);">
                             <div class="tich-form-group">

@@ -39,27 +39,27 @@
 
         <ol class="tich-attendance-steps tich-mt-6">
             <li @class(['is-done' => $step >= 1, 'is-current' => $step === 1])>
-                <strong>Generate sheet</strong> — Print the session sheet with the tracking ID for physical signatures.
+                <strong>Generate sheet</strong> - Print the session sheet with the tracking ID for physical signatures.
                 <div class="tich-mt-2">
                     <a href="{{ route('staff.attendance.sheet', $attendanceSession) }}" target="_blank" class="tich-btn tich-btn-secondary">Print attendance sheet</a>
                 </div>
             </li>
             <li @class(['is-done' => $step >= 2, 'is-current' => $step === 2])>
-                <strong>Physical collection</strong> — Students sign the printed sheet during class.
+                <strong>Physical collection</strong> - Students sign the printed sheet during class.
             </li>
             <li @class(['is-done' => $step >= 3, 'is-current' => $step === 2 || $step === 3])>
-                <strong>Digital roster matching</strong> — Tick present students to match the physical signatures.
+                <strong>Digital roster matching</strong> - Tick present students to match the physical signatures.
             </li>
             <li @class(['is-done' => $step >= 4, 'is-current' => $step === 4])>
-                <strong>Upload signed sheet</strong> — Capture or upload a photo of the signed paper sheet.
+                <strong>Upload signed sheet</strong> - Capture or upload a photo of the signed paper sheet.
             </li>
             <li @class(['is-done' => $step >= 5, 'is-current' => $step === 5])>
-                <strong>HOD &amp; Registrar verification</strong> — Submitted records enter the secure attendance ledger.
+                <strong>HOD &amp; Registrar verification</strong> - Submitted records enter the secure attendance ledger.
             </li>
         </ol>
 
         @if ($attendanceSession->is_locked)
-            <p class="tich-caption tich-mt-4">Submitted {{ $attendanceSession->submitted_at?->format('d M Y H:i') ?? '—' }}. This session is locked.</p>
+            <p class="tich-caption tich-mt-4">Submitted {{ $attendanceSession->submitted_at?->format('d M Y H:i') ?? '-' }}. This session is locked.</p>
         @endif
 
         <form method="POST" action="{{ route('staff.attendance.save', $attendanceSession) }}" class="tich-mt-6">

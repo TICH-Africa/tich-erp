@@ -71,12 +71,12 @@
                         <td>{{ $plan->plan_number }}</td>
                         <td>{{ $plan->unit_code }}</td>
                         <td>{{ trim($plan->tutor_first_name.' '.$plan->tutor_surname) }}</td>
-                        <td>{{ $plan->semester_label ?? '—' }}</td>
+                        <td>{{ $plan->semester_label ?? '-' }}</td>
                         <td>{{ \Illuminate\Support\Carbon::parse($plan->planned_date)->format('d M Y') }}</td>
-                        <td>{{ \Illuminate\Support\Str::limit($plan->competencies_targeted ?? '—', 40) }}</td>
+                        <td>{{ \Illuminate\Support\Str::limit($plan->competencies_targeted ?? '-', 40) }}</td>
                         <td>{{ $plan->contact_hours }}</td>
                         <td>{{ ucfirst($plan->status) }}</td>
-                        <td>{{ $plan->hod_action_at ? \Illuminate\Support\Carbon::parse($plan->hod_action_at)->format('d M Y') : '—' }}</td>
+                        <td>{{ $plan->hod_action_at ? \Illuminate\Support\Carbon::parse($plan->hod_action_at)->format('d M Y') : '-' }}</td>
                         <td>
                             <a href="{{ route('departments.academics.lesson-plans.show', array_merge($hub, ['plan' => $plan->id])) }}" class="tich-link">View</a>
                         </td>

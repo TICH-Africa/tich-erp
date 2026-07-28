@@ -29,10 +29,10 @@
                     <dt>Week</dt><dd>{{ $plan->week_number }}</dd>
                     <dt>Contact hours</dt><dd>{{ $plan->contact_hours }}</dd>
                     <dt>Lesson objectives</dt><dd style="white-space:pre-wrap;">{{ $plan->lesson_objectives }}</dd>
-                    <dt>Topics covered</dt><dd style="white-space:pre-wrap;">{{ $plan->topics_covered ?: '—' }}</dd>
-                    <dt>Core competencies</dt><dd style="white-space:pre-wrap;">{{ $plan->competencies_targeted ?: '—' }}</dd>
-                    <dt>Teaching methods</dt><dd>{{ $plan->teaching_methods ?: '—' }}</dd>
-                    <dt>Resources required</dt><dd>{{ $plan->resources_required ?: '—' }}</dd>
+                    <dt>Topics covered</dt><dd style="white-space:pre-wrap;">{{ $plan->topics_covered ?: '-' }}</dd>
+                    <dt>Core competencies</dt><dd style="white-space:pre-wrap;">{{ $plan->competencies_targeted ?: '-' }}</dd>
+                    <dt>Teaching methods</dt><dd>{{ $plan->teaching_methods ?: '-' }}</dd>
+                    <dt>Resources required</dt><dd>{{ $plan->resources_required ?: '-' }}</dd>
                     <dt>Status</dt><dd>{{ ucfirst($plan->status) }}</dd>
                     @if ($plan->hod_comments)
                         <dt>HOD comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>

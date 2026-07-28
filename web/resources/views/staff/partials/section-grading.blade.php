@@ -54,7 +54,7 @@
 
         <div class="tich-tabs__panel is-active" data-panel="spreadsheet">
             <article class="tich-card">
-                <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} — data entry grid</h2>
+                <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - data entry grid</h2>
                 <p class="tich-caption">Enter scores out of each column maximum. Save to compile weighted cumulative marks.</p>
 
                 <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4">
@@ -103,7 +103,7 @@
                                                        name="scores[{{ $student->student_id }}][{{ $column['key'] }}]"
                                                        value="{{ $value !== '' ? $value : '' }}"
                                                        class="tich-competency-grid__input"
-                                                       placeholder="—">
+                                                       placeholder="-">
                                             </td>
                                         @endforeach
                                     </tr>
