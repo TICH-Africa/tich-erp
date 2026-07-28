@@ -21,6 +21,8 @@
             'teaching_period' => $examTeachingPeriod,
         ]);
         $semesterUnitCount = ($examHub['units'] ?? collect())->count();
+        $examScheduleUpdateBase = route('departments.academics.programs.exam-schedules.update', array_merge($hub, ['program' => $program->id, 'schedule' => '__ID__']));
+        $unitAssessmentUpdateBase = route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__']));
     @endphp
 
     <div class="tich-section__intro tich-mb-6" style="text-align:left;">
@@ -572,7 +574,7 @@
         <script>
         document.addEventListener('DOMContentLoaded', function () {
             var scheduleForm = document.getElementById('exam-schedule-edit-form');
-            var scheduleBase = @json(route('departments.academics.programs.exam-schedules.update', array_merge($hub, ['program' => $program->id, 'schedule' => '__ID__'])));
+            var scheduleBase = @json($examScheduleUpdateBase);
 
             document.querySelectorAll('[data-open-modal="exam-schedule-edit-modal"]').forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -592,7 +594,7 @@
             });
 
             var unitForm = document.getElementById('unit-assessment-edit-form');
-            var unitBase = @json(route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__'])));
+            var unitBase = @json($unitAssessmentUpdateBase);
 
             document.querySelectorAll('[data-open-modal="unit-assessment-edit-modal"]').forEach(function (button) {
                 button.addEventListener('click', function () {
