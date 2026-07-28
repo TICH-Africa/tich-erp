@@ -144,6 +144,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
     Route::prefix('sis')->middleware(['permission:students.read'])->group(function () {
         Route::get('/students', [\App\Http\Controllers\Sis\StudentController::class, 'index'])->name('sis.students.index');
         Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
+        Route::get('/students/{student}/transcript', [\App\Http\Controllers\Sis\TranscriptController::class, 'show'])->name('sis.students.transcript');
     });
 
     Route::get('/academics', function () {
@@ -241,6 +242,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/attendance/{session}/sheet', [AttendanceSheetController::class, 'show'])->name('staff.attendance.sheet');
         Route::post('/grading', [StaffPortalActionController::class, 'storeCatScore'])->name('staff.grading.store');
         Route::post('/grading/grid', [StaffPortalActionController::class, 'saveGradingGrid'])->name('staff.grading.grid');
+        Route::post('/grading/objective', [StaffPortalActionController::class, 'storeObjectiveAssessment'])->name('staff.grading.objective.store');
+        Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
+        Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
     });
 });

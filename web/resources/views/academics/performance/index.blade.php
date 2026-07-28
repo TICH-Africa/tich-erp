@@ -38,6 +38,7 @@
             </select>
         </div>
         <button type="submit" class="tich-btn tich-btn-secondary">Apply</button>
+        <a href="{{ route('sis.students.index') }}" class="tich-link" style="margin-left:auto;">Student records →</a>
     </form>
 
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">

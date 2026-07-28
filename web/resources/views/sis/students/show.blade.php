@@ -108,8 +108,13 @@
     </article>
 
     <article class="tich-card tich-mt-6" id="academic-record">
-        <h2 class="tich-h3">Academic record</h2>
-        <p class="tich-text tich-mt-2">Registered units, CAT marks, exam results, grades, and attendance for this student.</p>
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:center;">
+            <div>
+                <h2 class="tich-h3">Academic record</h2>
+                <p class="tich-text tich-mt-2">Registered units, CAT marks, exam results, grades, and attendance for this student.</p>
+            </div>
+            <a href="{{ route('sis.students.transcript', $student->id) }}" target="_blank" class="tich-btn tich-btn-secondary">Generate transcript</a>
+        </div>
 
         @include('sis.partials.student-academic-record', [
             'academics' => $academics,

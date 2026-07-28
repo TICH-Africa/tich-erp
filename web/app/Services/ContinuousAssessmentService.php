@@ -263,7 +263,10 @@ class ContinuousAssessmentService
         $catTypes = ['cat', 'theoretical_review', 'assignment'];
         $practicalTypes = ['practical', 'skills_lab', 'field_log', 'project'];
 
-        $catAvg = $this->averagePercentage($scores->whereIn('assessment_type', $catTypes));
+        $catAvg = $this->averagePercentage($scores->filter(
+            fn (CatScore $score) => in_array($score->assessment_type, $catTypes, true)
+                || str_starts_with($score->assessment_type, 'objective_')
+        ));
         $practicalAvg = $this->averagePercentage($scores->whereIn('assessment_type', $practicalTypes));
 
         $continuousWeight = $weights['cat'] + $weights['practical'] + $weights['attendance'];
@@ -300,6 +303,11 @@ class ContinuousAssessmentService
         }
 
         return (float) $scores->avg(fn (CatScore $score) => (float) $score->percentage_score);
+    }
+
+    public function weightForAssessmentType(string $type, ?Unit $unit): float
+    {
+        return $this->defaultWeightForType($type, $unit);
     }
 
     private function defaultWeightForType(string $type, ?Unit $unit): float

@@ -48,6 +48,7 @@
     <div class="tich-tabs tich-mt-6" data-tabs>
         <div class="tich-tabs__nav">
             <button type="button" class="tich-tabs__btn is-active" data-tab="spreadsheet">Competency spreadsheet</button>
+            <button type="button" class="tich-tabs__btn" data-tab="objective">Objective auto-grading</button>
             <button type="button" class="tich-tabs__btn" data-tab="cumulative">Cumulative score sheet</button>
         </div>
 
@@ -119,6 +120,8 @@
                 </form>
             </article>
         </div>
+
+        @include('staff.partials.section-grading-objective')
 
         <div class="tich-tabs__panel" data-panel="cumulative">
             <article class="tich-card">

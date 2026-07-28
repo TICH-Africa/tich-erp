@@ -8,6 +8,7 @@ use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
+use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
@@ -24,6 +25,7 @@ class StaffPortalDashboardController extends Controller
         protected StaffPortalDashboardService $dashboard,
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
+        protected ObjectiveAutoGradingService $objectiveGrading,
     ) {}
 
     public function __invoke(Request $request): View
@@ -43,6 +45,7 @@ class StaffPortalDashboardController extends Controller
         }
 
         $gradingTerminal = null;
+        $objectiveTerminal = null;
         if ($section === 'grading') {
             $allocationId = $request->integer('allocation');
             if ($allocationId) {
@@ -52,6 +55,7 @@ class StaffPortalDashboardController extends Controller
                     ->find($allocationId);
                 if ($allocation) {
                     $gradingTerminal = $this->assessments->terminalData($allocation, $staff);
+                    $objectiveTerminal = $this->objectiveGrading->terminalData($allocation);
                 }
             }
         }
@@ -66,6 +70,7 @@ class StaffPortalDashboardController extends Controller
             'attendanceSession' => $attendanceSession,
             'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
             'gradingTerminal' => $gradingTerminal,
+            'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
         ]);
     }

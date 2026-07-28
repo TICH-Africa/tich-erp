@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
+use App\Models\ObjectiveAssessment;
 use App\Models\UnitAllocation;
 use App\Services\ContinuousAssessmentService;
 use App\Services\LessonPlanApprovalService;
+use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +22,7 @@ class StaffPortalActionController extends Controller
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
         protected LessonPlanApprovalService $lessonPlanApprovals,
+        protected ObjectiveAutoGradingService $objectiveGrading,
     ) {}
 
     public function storeLessonPlan(Request $request): RedirectResponse
@@ -195,6 +198,74 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
         ])->with('status', 'Competency spreadsheet saved. Cumulative scores updated.');
+    }
+
+    public function storeObjectiveAssessment(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'name' => ['required', 'string', 'max:200'],
+            'assessment_type' => ['required', 'string', 'in:mcq,true_false,matching'],
+            'max_score' => ['required', 'numeric', 'min:1'],
+            'questions' => ['required', 'array'],
+            'questions.*.question_text' => ['nullable', 'string'],
+            'questions.*.question_type' => ['nullable', 'string'],
+            'questions.*.options' => ['nullable', 'string'],
+            'questions.*.correct_answer' => ['nullable', 'string'],
+            'questions.*.points' => ['nullable', 'numeric', 'min:0.01'],
+        ]);
+
+        $questions = array_values(array_filter(
+            $validated['questions'],
+            fn ($row) => ! empty(trim((string) ($row['question_text'] ?? '')))
+        ));
+
+        $assessment = $this->objectiveGrading->createAssessment($staff, $allocation, $validated, $questions);
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', 'Objective assessment created. Enter student responses and run auto-grade.');
+    }
+
+    public function saveObjectiveResponses(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+        $assessment = ObjectiveAssessment::query()->findOrFail($request->integer('objective_assessment_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'objective_assessment_id' => ['required', 'integer'],
+            'responses' => ['nullable', 'array'],
+        ]);
+
+        $this->objectiveGrading->saveResponses($assessment, $staff, $validated['responses'] ?? []);
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', 'Student responses saved.');
+    }
+
+    public function runObjectiveAutoGrade(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+        $assessment = ObjectiveAssessment::query()->findOrFail($request->integer('objective_assessment_id'));
+
+        $count = $this->objectiveGrading->runAutoGrade($assessment, $staff, $allocation);
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', "Auto-graded {$count} submission(s). Scores synced to cumulative performance sheet.");
     }
 
     public function storeContent(Request $request): RedirectResponse
