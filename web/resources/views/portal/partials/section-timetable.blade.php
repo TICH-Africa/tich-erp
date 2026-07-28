@@ -19,16 +19,21 @@
         @php
             $template = $timetable->template?->load(['segments', 'days']);
             $activeDays = $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5];
-            $displaySegmentType = match ($timetable->timetable_kind) {
-                'exam' => 'exam',
-                'supplementary', 'special_exam' => 'supplementary',
-                default => 'lesson',
+            $gridSegments = match ($timetable->timetable_kind) {
+                'exam' => $template?->segments?->filter(fn ($segment) => $segment->segment_type === 'exam') ?? collect(),
+                'supplementary', 'special_exam' => $template?->segments?->filter(fn ($segment) => $segment->segment_type === 'supplementary') ?? collect(),
+                default => $template?->segments?->filter(
+                    fn ($segment) => in_array($segment->segment_type, ['lesson', 'break'], true)
+                ) ?? collect(),
             };
-            $gridSegments = $template?->segments?->filter(
-                fn ($segment) => in_array($segment->segment_type, [$displaySegmentType, 'break'], true)
-            ) ?? collect();
-            if ($gridSegments->where('segment_type', $displaySegmentType)->isEmpty()) {
-                $gridSegments = $template?->segments ?? collect();
+            if ($gridSegments->isEmpty() && in_array($timetable->timetable_kind, ['exam', 'supplementary', 'special_exam'], true)) {
+                $gridSegments = collect($timetable->sessions ?? [])->map(fn ($session) => (object) [
+                    'id' => $session->segment_id,
+                    'label' => $session->timeLabel(),
+                    'start_time' => $session->start_time,
+                    'end_time' => $session->end_time,
+                    'segment_type' => $session->session_type,
+                ])->unique(fn ($row) => substr((string) $row->start_time, 0, 5).'-'.substr((string) $row->end_time, 0, 5))->sortBy('start_time')->values();
             }
         @endphp
 

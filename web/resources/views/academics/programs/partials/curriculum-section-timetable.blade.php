@@ -49,16 +49,12 @@
             'supplementary' => 'supplementary',
             default => 'lesson',
         };
-        $gridSegments = $timetableKind === 'supplementary'
-            ? $timetableTemplate->segments->filter(
-                fn ($segment) => in_array($segment->segment_type, ['supplementary', 'break'], true)
-            )
-            : $timetableTemplate->segments->filter(
-                fn ($segment) => in_array($segment->segment_type, [$displaySegmentType, 'break'], true)
-            );
-        if ($gridSegments->whereIn('segment_type', [$displaySegmentType, 'supplementary'])->isEmpty()) {
-            $gridSegments = $slotsForKind;
-        }
+        $gridSegments = match ($timetableKind) {
+            'exam', 'supplementary' => $slotsForKind,
+            default => $timetableTemplate->segments->filter(
+                fn ($segment) => in_array($segment->segment_type, ['lesson', 'break'], true)
+            ),
+        };
         $canEditTimetable = auth()->user()?->can('academics.write') ?? false;
         $timetableEditable = $timetableDraft && $timetableDraft->status === 'draft' && $canEditTimetable;
     @endphp
