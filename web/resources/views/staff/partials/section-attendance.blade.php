@@ -47,13 +47,27 @@
             <li @class(['is-done' => $step >= 2, 'is-current' => $step === 2])>
                 <strong>Physical collection</strong> - Students sign the printed sheet during class.
             </li>
-            <li @class(['is-done' => $step >= 3, 'is-current' => $step === 2 || $step === 3])>
-                <strong>Digital roster matching</strong> - Tick present students to match the physical signatures.
+            <li @class(['is-done' => $step >= 3, 'is-current' => $step === 3])>
+                <strong>Roster verification</strong> - Submit the generated roster for HOD/Registrar verification before marking attendance.
+                @if ($attendanceSession->records->isNotEmpty() && ! $attendanceSession->roster_verified_at)
+                    <div class="tich-mt-2">
+                        <form method="POST" action="{{ route('staff.attendance.submit-roster', $attendanceSession) }}" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="tich-btn tich-btn-primary">Submit roster for verification</button>
+                        </form>
+                    </div>
+                @endif
+                @if ($attendanceSession->roster_verified_at)
+                    <p class="tich-caption tich-mt-2">Roster verified {{ $attendanceSession->roster_verified_at->format('d M Y H:i') }}</p>
+                @endif
             </li>
             <li @class(['is-done' => $step >= 4, 'is-current' => $step === 4])>
-                <strong>Upload signed sheet</strong> - Capture or upload a photo of the signed paper sheet.
+                <strong>Digital roster matching</strong> - Tick present students to match the physical signatures.
             </li>
             <li @class(['is-done' => $step >= 5, 'is-current' => $step === 5])>
+                <strong>Upload signed sheet</strong> - Capture or upload a photo of the signed paper sheet.
+            </li>
+            <li @class(['is-done' => $step >= 6, 'is-current' => $step === 6])>
                 <strong>HOD &amp; Registrar verification</strong> - Submitted records enter the secure attendance ledger.
             </li>
         </ol>

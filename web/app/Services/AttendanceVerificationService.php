@@ -158,6 +158,38 @@ class AttendanceVerificationService
         return $session->fresh();
     }
 
+    public function verifyRoster(AttendanceSession $session, Staff $staff): AttendanceSession
+    {
+        abort_if($session->is_locked, 422, 'This session is locked and cannot be modified.');
+        abort_unless($session->verification_status === 'draft', 422, 'Only draft attendance sessions can have their roster verified.');
+        abort_unless((int) $session->recorded_by !== (int) $staff->id, 403, 'The tutor who recorded this session cannot verify its roster.');
+
+        $session->update([
+            'roster_verified_by' => $staff->id,
+            'roster_verified_at' => now(),
+        ]);
+
+        return $session->fresh();
+    }
+
+    public function examEligibilityCheck(AttendanceSession $session, Staff $staff): AttendanceSession
+    {
+        abort_unless($session->verification_status === 'registrar_verified', 422, 'Only fully verified attendance sessions can be checked for exam eligibility.');
+
+        $blockedStudents = $this->examEligibility->blockedStudentsForSession($session);
+
+        $session->update([
+            'exam_eligibility_checked_by' => $staff->id,
+            'exam_eligibility_checked_at' => now(),
+        ]);
+
+        if ($blockedStudents->isNotEmpty()) {
+            return $session->fresh()->setAttribute('exam_blocked_students', $blockedStudents);
+        }
+
+        return $session->fresh();
+    }
+
     public function recalculateSummaries(AttendanceSession $session): void
     {
         $allocation = $session->allocation()->with(['unit', 'staff'])->first();
@@ -241,6 +273,8 @@ class AttendanceVerificationService
                 'tutor.surname as tutor_surname',
                 'hod.first_name as hod_first_name',
                 'hod.surname as hod_surname',
+                's.roster_verified_at',
+                's.exam_eligibility_checked_at',
             ]);
 
         if ($status) {

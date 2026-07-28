@@ -34,6 +34,10 @@ class AttendanceSession extends Model
         'hod_verified_at',
         'registrar_verified_by',
         'registrar_verified_at',
+        'roster_verified_by',
+        'roster_verified_at',
+        'exam_eligibility_checked_by',
+        'exam_eligibility_checked_at',
     ];
 
     protected $casts = [
@@ -42,6 +46,8 @@ class AttendanceSession extends Model
         'submitted_at' => 'datetime',
         'hod_verified_at' => 'datetime',
         'registrar_verified_at' => 'datetime',
+        'roster_verified_at' => 'datetime',
+        'exam_eligibility_checked_at' => 'datetime',
         'is_mandatory' => 'boolean',
         'is_locked' => 'boolean',
     ];

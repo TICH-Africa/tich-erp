@@ -149,11 +149,12 @@ class ProgramExamService
     public function teachingPeriodsForIntake(CurriculumVersion $intake): Collection
     {
         return $intake->items()
-            ->distinct()
-            ->orderBy('semester')
+            ->get(['semester'])
             ->pluck('semester')
-            ->map(fn ($semester) => (int) $semester)
-            ->values();
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn ($semester) => (int) $semester);
     }
 
     /**

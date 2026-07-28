@@ -133,6 +133,16 @@ class StaffPortalActionController extends Controller
         ])->with('status', $request->boolean('lock') ? 'Attendance submitted for HOD/Registrar verification.' : 'Roster saved.');
     }
 
+    public function submitForRosterVerification(Request $request, AttendanceSession $session): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
+
+        app(AttendanceVerificationService::class)->verifyRoster($session, $staff);
+
+        return back()->with('status', 'Roster submitted for verification.');
+    }
+
     public function uploadAttendanceSheet(Request $request, AttendanceSession $session): RedirectResponse
     {
         $staff = $this->portalService->staffForUser($request->user());

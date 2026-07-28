@@ -64,4 +64,32 @@ class AttendanceLedgerController extends DepartmentAcademicsController
 
         return back()->with('status', 'Attendance session verified by Academic Registrar.');
     }
+
+    public function verifyRoster(Request $request, Department $department, AttendanceSession $session): RedirectResponse
+    {
+        $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']), 403);
+
+        $staff = $this->staffPortal->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $this->verification->verifyRoster($session, $staff);
+
+        return back()->with('status', 'Roster verified. Tutors may now record attendance for this session.');
+    }
+
+    public function examEligibilityCheck(Request $request, Department $department, AttendanceSession $session): RedirectResponse
+    {
+        $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']), 403);
+
+        $staff = $this->staffPortal->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $session = $this->verification->examEligibilityCheck($session, $staff);
+
+        $blockedCount = isset($session->exam_blocked_students) ? $session->exam_blocked_students->count() : 0;
+
+        return back()->with('status', $blockedCount > 0 ? "Exam eligibility check complete. {$blockedCount} student(s) blocked due to attendance." : 'Exam eligibility check complete. All students eligible.');
+    }
 }

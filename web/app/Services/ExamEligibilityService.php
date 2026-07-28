@@ -49,6 +49,36 @@ class ExamEligibilityService
             ->update(['exam_eligibility_blocked' => $examBlocked]);
     }
 
+    /**
+     * @return Collection<int, object{student_id: int, registration_number: string, student_name: string, attendance_percentage: float, status_flag: string}>
+     */
+    public function blockedStudentsForSession(AttendanceSession $session): Collection
+    {
+        $allocation = $session->allocation;
+        if (! $allocation) {
+            return collect();
+        }
+
+        return DB::table('attendance_summaries as a')
+            ->join('students as st', 'st.id', '=', 'a.student_id')
+            ->leftJoin('applicants as ap', 'ap.id', '=', 'st.application_id')
+            ->where('a.unit_id', $allocation->unit_id)
+            ->where('a.semester_id', $allocation->semester_id)
+            ->where(function ($query) {
+                $query->where('a.status_flag', 'red')
+                    ->orWhere('a.attendance_percentage', '<', 90);
+            })
+            ->orderBy('a.attendance_percentage')
+            ->select([
+                'st.id as student_id',
+                'st.registration_number',
+                DB::raw("TRIM(CONCAT(COALESCE(ap.first_name,''), ' ', COALESCE(ap.surname,''))) as student_name"),
+                'a.attendance_percentage',
+                'a.status_flag',
+            ])
+            ->get();
+    }
+
     private function studentFeesCleared(int $studentId, int $semesterId): bool
     {
         $registration = DB::table('student_semester_registrations')

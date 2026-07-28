@@ -96,8 +96,11 @@ class StaffTeachingService
 
         $session->load('records');
         $present = collect($presentStudentIds)->map(fn ($id) => (int) $id)->all();
+        $rosterStudentIds = $session->records->pluck('student_id')->map(fn ($id) => (int) $id)->all();
 
         foreach ($session->records as $record) {
+            abort_if(! in_array((int) $record->student_id, $rosterStudentIds, true), 422, 'Student is not on the approved roster for this session.');
+
             $record->update([
                 'is_present' => in_array((int) $record->student_id, $present, true),
                 'recorded_by_tutor' => 1,
