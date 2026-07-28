@@ -7,10 +7,12 @@ use App\Models\Staff;
 use App\Models\Unit;
 use App\Models\UnitAllocation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ContinuousAssessmentService
 {
+    public function __construct(protected AuditService $auditService) {}
     /**
      * @return list<array{key: string, name: string, type: string, max: float, label: string}>
      */
@@ -154,6 +156,25 @@ class ContinuousAssessmentService
         }
 
         $this->recalculateCumulativeScores($allocation);
+
+        $studentCount = count($gridScores);
+        $cellCount = collect($gridScores)->sum(fn ($cells) => count(array_filter($cells, fn ($v) => $v !== null && $v !== '')));
+
+        $this->auditService->log(
+            'staff.grading.grid_saved',
+            'unit_allocations',
+            $allocation->id,
+            null,
+            [
+                'unit_id' => $allocation->unit_id,
+                'semester_id' => $allocation->semester_id,
+                'students_updated' => $studentCount,
+                'cells_saved' => $cellCount,
+            ],
+            'Continuous assessment grid saved',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
     }
 
     /**

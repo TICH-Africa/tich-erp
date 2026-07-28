@@ -492,7 +492,6 @@ class CurriculumVersionService
 
         if (! $needsCeo) {
             $this->mirrorToProgramTemplate($version);
-            $this->supersedePrevious($version);
         }
 
         $this->auditService->log(
@@ -536,7 +535,6 @@ class CurriculumVersionService
         }
 
         $this->mirrorToProgramTemplate($version);
-        $this->supersedePrevious($version);
 
         $this->auditService->log(
             'academics.curriculum_version.ceo_approved',
@@ -633,15 +631,6 @@ class CurriculumVersionService
                 'is_active' => 1,
             ]);
         }
-    }
-
-    private function supersedePrevious(CurriculumVersion $version): void
-    {
-        CurriculumVersion::query()
-            ->where('program_id', $version->program_id)
-            ->where('id', '!=', $version->id)
-            ->where('status', 'published')
-            ->update(['status' => 'superseded', 'updated_at' => now()]);
     }
 
     public function publishedVersionForProgram(int $programId): ?CurriculumVersion

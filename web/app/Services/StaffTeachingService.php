@@ -8,6 +8,7 @@ use App\Models\CatScore;
 use App\Models\LessonPlan;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,12 +17,13 @@ class StaffTeachingService
     public function __construct(
         protected AttendanceVerificationService $attendanceVerification,
         protected LessonPlanApprovalService $lessonPlanApprovals,
+        protected AuditService $auditService,
     ) {}
     public function createLessonPlan(Staff $staff, UnitAllocation $allocation, array $data): LessonPlan
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
-        return LessonPlan::query()->create([
+        $plan = LessonPlan::query()->create([
             'plan_number' => 'LP-'.now()->format('Ymd').'-'.strtoupper(Str::random(4)),
             'unit_allocation_id' => $allocation->id,
             'prepared_by' => $staff->id,
@@ -36,6 +38,24 @@ class StaffTeachingService
             'status' => $data['status'] ?? 'draft',
             'created_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'staff.lesson_plan.created',
+            'lesson_plans',
+            $plan->id,
+            null,
+            [
+                'plan_number' => $plan->plan_number,
+                'unit_allocation_id' => $allocation->id,
+                'planned_date' => $data['planned_date'],
+                'status' => $plan->status,
+            ],
+            'Lesson plan created',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $plan;
     }
 
     public function submitLessonPlan(LessonPlan $plan, Staff $staff): LessonPlan
@@ -83,6 +103,22 @@ class StaffTeachingService
 
         $session->update(['total_expected_attendees' => $roster->count()]);
 
+        $this->auditService->log(
+            'staff.attendance.session_created',
+            'attendance_sessions',
+            $session->id,
+            null,
+            [
+                'session_number' => $session->session_number,
+                'unit_allocation_id' => $allocation->id,
+                'session_date' => $data['session_date'],
+                'expected_attendees' => $roster->count(),
+            ],
+            'Attendance session created',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
         return $session->fresh(['records']);
     }
 
@@ -108,6 +144,20 @@ class StaffTeachingService
         }
 
         $this->attendanceVerification->recalculateSummaries($session);
+
+        $this->auditService->log(
+            'staff.attendance.saved',
+            'attendance_sessions',
+            $session->id,
+            null,
+            [
+                'present_count' => count($present),
+                'total_records' => $session->records->count(),
+            ],
+            'Attendance marks saved',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
     }
 
     public function lockAttendanceSession(AttendanceSession $session, Staff $staff): void
@@ -138,12 +188,29 @@ class StaffTeachingService
 
         app(ContinuousAssessmentService::class)->recalculateCumulativeScores($allocation);
 
+        $this->auditService->log(
+            'staff.grading.cat_score_recorded',
+            'cat_scores',
+            $score->id,
+            null,
+            [
+                'student_id' => (int) $data['student_id'],
+                'unit_id' => $allocation->unit_id,
+                'assessment_name' => $data['assessment_name'],
+                'score_obtained' => $obtained,
+                'max_score' => $max,
+            ],
+            'CAT score recorded',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
         return $score;
     }
 
     public function storeLearningContent(Staff $staff, int $unitId, array $data, string $storedPath): void
     {
-        DB::table('media_attachments')->insert([
+        $attachmentId = DB::table('media_attachments')->insertGetId([
             'entity_type' => 'unit',
             'entity_id' => $unitId,
             'file_path' => $storedPath,
@@ -155,6 +222,21 @@ class StaffTeachingService
             'uploaded_at' => now(),
             'created_by' => $staff->id,
         ]);
+
+        $this->auditService->log(
+            'staff.learning_content.uploaded',
+            'media_attachments',
+            $attachmentId,
+            null,
+            [
+                'unit_id' => $unitId,
+                'title' => $data['title'],
+                'file_type' => $data['file_type'] ?? 'document',
+            ],
+            'Learning content uploaded',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
     }
 
     public function uploadSignedSheet(AttendanceSession $session, Staff $staff, \Illuminate\Http\UploadedFile $file): AttendanceSession

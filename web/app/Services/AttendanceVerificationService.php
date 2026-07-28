@@ -26,6 +26,7 @@ class AttendanceVerificationService
         protected ExamEligibilityService $examEligibility,
         protected PlatformNotificationService $notifications,
         protected AcademicsIntegrationRegistry $academicsRegistry,
+        protected AuditService $auditService,
     ) {}
 
     /**
@@ -114,6 +115,17 @@ class AttendanceVerificationService
             'sheet_image_hash' => $hash,
         ]);
 
+        $this->auditService->log(
+            'staff.attendance.sheet_uploaded',
+            'attendance_sessions',
+            $session->id,
+            null,
+            ['sheet_image_hash' => $hash],
+            'Signed attendance sheet uploaded',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
+
         return $session->fresh();
     }
 
@@ -129,6 +141,17 @@ class AttendanceVerificationService
             'submitted_at' => now(),
         ]);
 
+        $this->auditService->log(
+            'staff.attendance.submitted',
+            'attendance_sessions',
+            $session->id,
+            ['verification_status' => 'draft', 'is_locked' => 0],
+            ['verification_status' => 'submitted', 'is_locked' => 1],
+            'Attendance session submitted for verification',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
+
         return $session->fresh();
     }
 
@@ -142,6 +165,17 @@ class AttendanceVerificationService
             'hod_verified_at' => now(),
         ]);
 
+        $this->auditService->log(
+            'staff.attendance.hod_verified',
+            'attendance_sessions',
+            $session->id,
+            ['verification_status' => 'submitted'],
+            ['verification_status' => 'hod_verified'],
+            'Attendance verified by HOD',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
+
         return $session->fresh();
     }
 
@@ -154,6 +188,17 @@ class AttendanceVerificationService
             'registrar_verified_by' => $staff->id,
             'registrar_verified_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'staff.attendance.registrar_verified',
+            'attendance_sessions',
+            $session->id,
+            null,
+            ['verification_status' => 'registrar_verified'],
+            'Attendance verified by registrar',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
 
         return $session->fresh();
     }
@@ -169,6 +214,17 @@ class AttendanceVerificationService
             'roster_verified_at' => now(),
         ]);
 
+        $this->auditService->log(
+            'staff.attendance.roster_verified',
+            'attendance_sessions',
+            $session->id,
+            null,
+            ['roster_verified_by' => $staff->id],
+            'Attendance roster verified',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
+
         return $session->fresh();
     }
 
@@ -182,6 +238,19 @@ class AttendanceVerificationService
             'exam_eligibility_checked_by' => $staff->id,
             'exam_eligibility_checked_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'staff.attendance.eligibility_checked',
+            'attendance_sessions',
+            $session->id,
+            null,
+            [
+                'blocked_student_count' => $blockedStudents->count(),
+            ],
+            'Exam eligibility check completed',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
 
         if ($blockedStudents->isNotEmpty()) {
             return $session->fresh()->setAttribute('exam_blocked_students', $blockedStudents);

@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\Student;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class TranscriptService
 {
+    public function __construct(protected AuditService $auditService) {}
     /**
      * @return array<string, mixed>
      */
@@ -19,6 +21,20 @@ class TranscriptService
         $semesterBlocks = $this->groupBySemester($rows);
         $cumulativeGpa = $this->calculateGpa($rows);
         $this->persistGpaSnapshots($student, $semesterBlocks, $cumulativeGpa);
+
+        $this->auditService->log(
+            'sis.transcript.generated',
+            'students',
+            $student->id,
+            null,
+            [
+                'units_completed' => $rows->count(),
+                'cumulative_gpa' => $cumulativeGpa,
+            ],
+            'Student transcript generated',
+            'success',
+            Auth::id(),
+        );
 
         return [
             'student' => $student,

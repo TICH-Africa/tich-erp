@@ -9,11 +9,13 @@ use App\Models\ObjectiveSubmission;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class ObjectiveAutoGradingService
 {
     public function __construct(
         protected ContinuousAssessmentService $assessments,
+        protected AuditService $auditService,
     ) {}
 
     /**
@@ -72,6 +74,22 @@ class ObjectiveAutoGradingService
 
         $this->syncQuestions($assessment, $questions);
 
+        $this->auditService->log(
+            'staff.grading.objective_assessment_created',
+            'objective_assessments',
+            $assessment->id,
+            null,
+            [
+                'name' => $data['name'],
+                'assessment_type' => $data['assessment_type'] ?? 'mcq',
+                'question_count' => count($questions),
+                'unit_allocation_id' => $allocation->id,
+            ],
+            'Objective assessment created',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
         return $assessment->fresh(['questions']);
     }
 
@@ -100,6 +118,17 @@ class ObjectiveAutoGradingService
                 ]
             );
         }
+
+        $this->auditService->log(
+            'staff.grading.objective_responses_saved',
+            'objective_assessments',
+            $assessment->id,
+            null,
+            ['response_count' => count($responsesByStudent)],
+            'Objective assessment responses saved',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
     }
 
     public function runAutoGrade(ObjectiveAssessment $assessment, Staff $staff, UnitAllocation $allocation): int
@@ -152,6 +181,17 @@ class ObjectiveAutoGradingService
         ]);
 
         $this->assessments->recalculateCumulativeScores($allocation);
+
+        $this->auditService->log(
+            'staff.grading.objective_auto_graded',
+            'objective_assessments',
+            $assessment->id,
+            ['status' => 'ready'],
+            ['status' => 'graded', 'students_graded' => $graded],
+            'Objective assessment auto-graded',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
 
         return $graded;
     }

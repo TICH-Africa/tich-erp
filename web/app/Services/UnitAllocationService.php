@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\UnitAllocation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class UnitAllocationService
 {
+    public function __construct(protected AuditService $auditService) {}
     /**
      * @return \Illuminate\Support\Collection<int, UnitAllocation>
      */
@@ -37,6 +39,22 @@ class UnitAllocationService
 
         $this->syncTimetableStaff($allocation);
 
+        $this->auditService->log(
+            'academics.unit_allocation.assigned',
+            'unit_allocations',
+            $allocation->id,
+            null,
+            [
+                'unit_id' => $allocation->unit_id,
+                'staff_id' => $allocation->staff_id,
+                'semester_id' => $allocation->semester_id,
+                'campus_id' => $allocation->campus_id,
+            ],
+            'Lecturer assigned to unit',
+            'success',
+            Auth::id(),
+        );
+
         return $allocation;
     }
 
@@ -53,7 +71,20 @@ class UnitAllocationService
 
     public function remove(UnitAllocation $allocation): void
     {
+        $old = $allocation->only(['unit_id', 'staff_id', 'semester_id', 'is_active']);
+
         $allocation->update(['is_active' => 0]);
+
+        $this->auditService->log(
+            'academics.unit_allocation.removed',
+            'unit_allocations',
+            $allocation->id,
+            $old,
+            ['is_active' => 0],
+            'Unit allocation deactivated',
+            'success',
+            Auth::id(),
+        );
     }
 
     /**

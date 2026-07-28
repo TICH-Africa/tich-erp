@@ -6,6 +6,7 @@ use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
 use App\Models\Unit;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,6 +15,7 @@ class ProgramExamService
     public function __construct(
         protected StudentAcademicRecordService $academicRecords,
         protected ExamScheduleSyncService $examScheduleSync,
+        protected AuditService $auditService,
     ) {}
 
     /**
@@ -93,6 +95,8 @@ class ProgramExamService
             ]);
         }
 
+        $old = (array) $schedule;
+
         DB::table('exam_schedules')
             ->where('id', $scheduleId)
             ->update([
@@ -104,6 +108,24 @@ class ProgramExamService
                 'invigilator_id' => $data['invigilator_id'] ?? null,
                 'status' => $data['status'],
             ]);
+
+        $this->auditService->log(
+            'academics.exam_schedule.updated',
+            'exam_schedules',
+            $scheduleId,
+            [
+                'exam_date' => $old['exam_date'] ?? null,
+                'start_time' => $old['start_time'] ?? null,
+                'end_time' => $old['end_time'] ?? null,
+                'venue' => $old['venue'] ?? null,
+                'exam_type' => $old['exam_type'] ?? null,
+                'status' => $old['status'] ?? null,
+            ],
+            $data,
+            'Exam schedule updated',
+            'success',
+            Auth::id(),
+        );
     }
 
     /**
@@ -122,12 +144,35 @@ class ProgramExamService
             ]);
         }
 
+        $oldWeights = $unit->only([
+            'assessment_weight_cat_pct',
+            'assessment_weight_practical_pct',
+            'assessment_weight_attendance_pct',
+            'assessment_weight_exam_pct',
+        ]);
+
         $unit->update([
             'assessment_weight_cat_pct' => $data['cat_weight'],
             'assessment_weight_practical_pct' => $data['practical_weight'],
             'assessment_weight_attendance_pct' => $data['attendance_weight'],
             'assessment_weight_exam_pct' => $data['exam_weight'],
         ]);
+
+        $this->auditService->log(
+            'academics.unit.assessment_weights_updated',
+            'units',
+            $unit->id,
+            $oldWeights,
+            [
+                'assessment_weight_cat_pct' => $data['cat_weight'],
+                'assessment_weight_practical_pct' => $data['practical_weight'],
+                'assessment_weight_attendance_pct' => $data['attendance_weight'],
+                'assessment_weight_exam_pct' => $data['exam_weight'],
+            ],
+            'Unit assessment weights updated',
+            'success',
+            Auth::id(),
+        );
 
         return $unit->fresh();
     }

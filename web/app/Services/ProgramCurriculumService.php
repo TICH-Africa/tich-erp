@@ -188,10 +188,24 @@ class ProgramCurriculumService
 
     public function updateDepartmentProfile(User $user, Department $department, array $data, ?Request $request = null): Department
     {
+        $old = ['curriculum_profile' => $department->curriculum_profile];
+
         $department->update([
             'curriculum_profile' => $data['curriculum_profile'],
             'updated_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'academics.department.profile_updated',
+            'departments',
+            $department->id,
+            $old,
+            ['curriculum_profile' => $data['curriculum_profile']],
+            'Department curriculum profile updated',
+            'success',
+            $user->id,
+            $request
+        );
 
         return $department->fresh();
     }

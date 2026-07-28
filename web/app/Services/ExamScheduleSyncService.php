@@ -8,12 +8,14 @@ use App\Models\CurriculumVersionPeriod;
 use App\Models\ProgramTimetable;
 use App\Models\Semester;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ExamScheduleSyncService
 {
     public function __construct(
         protected TimetableSchedulingService $timetables,
+        protected AuditService $auditService,
     ) {}
 
     public function syncFromExamTimetable(
@@ -109,6 +111,24 @@ class ExamScheduleSyncService
                     ->delete();
             }
         });
+
+        if ($synced > 0) {
+            $this->auditService->log(
+                'academics.exam_schedule.synced_from_timetable',
+                'program_timetables',
+                $timetable->id,
+                null,
+                [
+                    'program_id' => $program->id,
+                    'curriculum_version_id' => $intake->id,
+                    'teaching_period' => $teachingPeriod,
+                    'schedules_synced' => $synced,
+                ],
+                'Exam schedules synced from timetable',
+                'success',
+                Auth::id(),
+            );
+        }
 
         return $synced;
     }

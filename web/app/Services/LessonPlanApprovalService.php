@@ -17,6 +17,7 @@ class LessonPlanApprovalService
 {
     public function __construct(
         protected PlatformNotificationService $notifications,
+        protected AuditService $auditService,
     ) {}
 
     public function submitForApproval(LessonPlan $plan, Staff $staff): LessonPlan
@@ -24,10 +25,23 @@ class LessonPlanApprovalService
         abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
         abort_unless(in_array($plan->status, ['draft', 'modified', 'rejected'], true), 422, 'This lesson plan cannot be submitted in its current state.');
 
+        $oldStatus = $plan->status;
+
         $plan->update([
             'status' => 'submitted',
             'updated_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'staff.lesson_plan.submitted',
+            'lesson_plans',
+            $plan->id,
+            ['status' => $oldStatus],
+            ['status' => 'submitted'],
+            'Lesson plan submitted for HOD approval',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
 
         $this->notifyHod($plan->fresh(['allocation.unit', 'preparedByStaff']));
 
@@ -51,6 +65,17 @@ class LessonPlanApprovalService
         $this->clearTimetableForPlan($plan->fresh(['allocation']));
         $this->notifyTutor($plan, 'Lesson plan approved', 'Your lesson plan '.$plan->plan_number.' has been approved by the HOD.');
 
+        $this->auditService->log(
+            'staff.lesson_plan.approved',
+            'lesson_plans',
+            $plan->id,
+            ['status' => 'submitted'],
+            ['status' => 'approved', 'hod_comments' => $comments],
+            'Lesson plan approved by HOD',
+            'success',
+            $hod->user_id ?? auth()->id(),
+        );
+
         return $plan->fresh();
     }
 
@@ -70,6 +95,17 @@ class LessonPlanApprovalService
         $this->recordDecision($plan, $hod, 'hod', 'rejected', $comments);
         $this->notifyTutor($plan, 'Lesson plan rejected', 'Your lesson plan '.$plan->plan_number.' was rejected. HOD comments: '.$comments);
 
+        $this->auditService->log(
+            'staff.lesson_plan.rejected',
+            'lesson_plans',
+            $plan->id,
+            ['status' => 'submitted'],
+            ['status' => 'rejected', 'hod_comments' => $comments],
+            'Lesson plan rejected by HOD',
+            'success',
+            $hod->user_id ?? auth()->id(),
+        );
+
         return $plan->fresh();
     }
 
@@ -88,6 +124,17 @@ class LessonPlanApprovalService
 
         $this->recordDecision($plan, $hod, 'hod', 'request_modification', $comments);
         $this->notifyTutor($plan, 'Lesson plan needs revision', 'Your lesson plan '.$plan->plan_number.' requires changes. HOD comments: '.$comments);
+
+        $this->auditService->log(
+            'staff.lesson_plan.modification_requested',
+            'lesson_plans',
+            $plan->id,
+            ['status' => 'submitted'],
+            ['status' => 'modified', 'hod_comments' => $comments],
+            'Lesson plan sent back for modification',
+            'success',
+            $hod->user_id ?? auth()->id(),
+        );
 
         return $plan->fresh();
     }
@@ -113,6 +160,21 @@ class LessonPlanApprovalService
 
         $this->recordDecision($plan, $hod, 'hod', 'request_modification', 'Plan content updated by HOD.');
 
+        $this->auditService->log(
+            'staff.lesson_plan.hod_updated',
+            'lesson_plans',
+            $plan->id,
+            null,
+            [
+                'week_number' => (int) ($data['week_number'] ?? $plan->week_number),
+                'planned_date' => $data['planned_date'],
+                'contact_hours' => (int) ($data['contact_hours'] ?? $plan->contact_hours),
+            ],
+            'Lesson plan content updated by HOD',
+            'success',
+            $hod->user_id ?? auth()->id(),
+        );
+
         return $plan->fresh();
     }
 
@@ -135,6 +197,21 @@ class LessonPlanApprovalService
             'resources_required' => $data['resources_required'] ?? null,
             'updated_at' => now(),
         ]);
+
+        $this->auditService->log(
+            'staff.lesson_plan.updated',
+            'lesson_plans',
+            $plan->id,
+            null,
+            [
+                'week_number' => (int) ($data['week_number'] ?? $plan->week_number),
+                'planned_date' => $data['planned_date'],
+                'status' => $plan->status,
+            ],
+            'Lesson plan updated by tutor',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
 
         return $plan->fresh();
     }

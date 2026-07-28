@@ -559,7 +559,22 @@ class TimetableSchedulingService
 
         }
 
-
+        $this->auditService->log(
+            'academics.timetable.session_added',
+            'program_timetable_sessions',
+            $session->id,
+            null,
+            [
+                'program_timetable_id' => $timetable->id,
+                'unit_id' => $data['unit_id'] ?? null,
+                'day_of_week' => (int) $data['day_of_week'],
+                'session_type' => $data['session_type'] ?? 'lesson',
+            ],
+            'Timetable session added',
+            'success',
+            $user->id,
+            $request
+        );
 
         return $session->load(['unit', 'staff', 'room']);
 
