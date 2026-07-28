@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
+use App\Models\Student;
 use App\Models\Unit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +41,7 @@ class ProgramExamService
                 'exam_results' => collect(),
                 'eligibility' => [],
                 'at_risk_students' => collect(),
+                'eligible_roster' => ['semester_id' => null, 'semester_label' => null, 'eligible' => collect(), 'blocked' => collect(), 'pending' => collect()],
                 'timetable_synced' => 0,
             ];
         }
@@ -59,6 +61,9 @@ class ProgramExamService
             ? collect([$period])
             : collect();
 
+        $semesterUnits = $this->unitsWithAssessment($intake, $teachingPeriod);
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, $teachingPeriod);
+
         return [
             'teaching_period' => $teachingPeriod,
             'teaching_periods' => $teachingPeriods,
@@ -68,13 +73,14 @@ class ProgramExamService
             'students' => $students,
             'summary' => $this->summary($semesterUnitIds, $studentIds),
             'exam_periods' => $examPeriods,
-            'units' => $this->unitsWithAssessment($intake, $teachingPeriod),
+            'units' => $semesterUnits,
             'schedules' => $this->examSchedules($semesterUnitIds),
             'papers' => $this->examinationPapers($semesterUnitIds),
             'grade_rows' => $this->gradeRows($semesterUnitIds, $studentIds),
             'exam_results' => $this->examResults($semesterUnitIds, $studentIds),
             'eligibility' => $this->eligibilitySummary($semesterUnitIds, $studentIds),
             'at_risk_students' => $this->atRiskStudents($semesterUnitIds, $studentIds),
+            'eligible_roster' => $this->semesterEligibleRoster($students, $semesterUnitIds, $semesterUnits, $semesterId),
             'timetable_synced' => $timetableSynced,
         ];
     }
@@ -462,6 +468,170 @@ class ProgramExamService
             ])
             ->limit(25)
             ->get();
+    }
+
+    /**
+     * @param  Collection<int, Student>  $students
+     * @param  list<int>  $unitIds
+     * @param  Collection<int, object>  $units
+     * @return array{semester_id: ?int, semester_label: ?string, eligible: Collection, blocked: Collection, pending: Collection}
+     */
+    private function semesterEligibleRoster(Collection $students, array $unitIds, Collection $units, ?int $semesterId): array
+    {
+        $empty = [
+            'semester_id' => $semesterId,
+            'semester_label' => null,
+            'eligible' => collect(),
+            'blocked' => collect(),
+            'pending' => collect(),
+        ];
+
+        if ($students->isEmpty() || $unitIds === [] || ! $semesterId) {
+            if ($semesterId) {
+                $empty['semester_label'] = DB::table('semesters')->where('id', $semesterId)->value('semester_label');
+            }
+
+            return $empty;
+        }
+
+        $students->loadMissing(['applicant', 'campus']);
+        $studentIds = $students->pluck('id')->all();
+        $semesterLabel = DB::table('semesters')->where('id', $semesterId)->value('semester_label');
+
+        $eligibility = DB::table('exam_eligibility_matrix')
+            ->where('semester_id', $semesterId)
+            ->whereIn('student_id', $studentIds)
+            ->whereIn('unit_id', $unitIds)
+            ->get()
+            ->groupBy('student_id');
+
+        $attendance = DB::table('attendance_summaries')
+            ->where('semester_id', $semesterId)
+            ->whereIn('student_id', $studentIds)
+            ->whereIn('unit_id', $unitIds)
+            ->get()
+            ->keyBy(fn ($row) => "{$row->student_id}:{$row->unit_id}");
+
+        $grades = DB::table('grade_records')
+            ->where('semester_id', $semesterId)
+            ->whereIn('student_id', $studentIds)
+            ->whereIn('unit_id', $unitIds)
+            ->get()
+            ->keyBy(fn ($row) => "{$row->student_id}:{$row->unit_id}");
+
+        $schedules = DB::table('exam_schedules')
+            ->where('semester_id', $semesterId)
+            ->whereIn('unit_id', $unitIds)
+            ->get()
+            ->keyBy('unit_id');
+
+        $eligible = collect();
+        $blocked = collect();
+        $pending = collect();
+
+        foreach ($students as $student) {
+            $unitRows = [];
+            $eligibleCount = 0;
+            $blockedCount = 0;
+            $pendingCount = 0;
+
+            foreach ($units as $unit) {
+                $unitId = (int) $unit->unit_id;
+                $key = "{$student->id}:{$unitId}";
+                $elig = $eligibility->get($student->id)?->firstWhere('unit_id', $unitId);
+                $att = $attendance->get($key);
+                $grade = $grades->get($key);
+                $schedule = $schedules->get($unitId);
+                $isEligible = $elig !== null ? (bool) $elig->eligible_for_exams : null;
+
+                if ($isEligible === true) {
+                    $eligibleCount++;
+                } elseif ($isEligible === false) {
+                    $blockedCount++;
+                } else {
+                    $pendingCount++;
+                }
+
+                $unitRows[] = (object) [
+                    'unit_id' => $unitId,
+                    'unit_code' => $unit->unit_code,
+                    'unit_name' => $unit->unit_name,
+                    'contact_hours' => $unit->contact_hours,
+                    'attendance_percentage' => $elig?->attendance_percentage ?? $att?->attendance_percentage,
+                    'status_flag' => $att?->status_flag,
+                    'fee_cleared' => $elig ? (bool) $elig->fee_clearance_check_passed : ($student->fee_clearance_status === 'cleared'),
+                    'eligible_for_exams' => $isEligible,
+                    'block_reason' => $this->eligibilityBlockReason($elig, $att, $student),
+                    'cumulative_score' => $grade?->final_score,
+                    'grade_letter' => $grade?->grade_letter,
+                    'grade_points' => $grade?->grade_points,
+                    'exam_date' => $schedule?->exam_date,
+                    'start_time' => $schedule?->start_time,
+                    'end_time' => $schedule?->end_time,
+                    'venue' => $schedule?->venue,
+                    'exam_type' => $schedule?->exam_type,
+                ];
+            }
+
+            $row = (object) [
+                'student_id' => $student->id,
+                'registration_number' => $student->registration_number,
+                'student_name' => trim(($student->applicant?->first_name ?? '').' '.($student->applicant?->surname ?? '')),
+                'fee_clearance_status' => $student->fee_clearance_status,
+                'enrollment_status' => $student->enrollment_status,
+                'campus_name' => $student->campus?->campus_name,
+                'cohort_intake' => $student->cohort_intake,
+                'eligible_unit_count' => $eligibleCount,
+                'blocked_unit_count' => $blockedCount,
+                'pending_unit_count' => $pendingCount,
+                'total_units' => count($unitIds),
+                'units' => $unitRows,
+            ];
+
+            if ($eligibleCount > 0) {
+                $eligible->push($row);
+            } elseif ($pendingCount === count($unitIds)) {
+                $pending->push($row);
+            } else {
+                $blocked->push($row);
+            }
+        }
+
+        return [
+            'semester_id' => $semesterId,
+            'semester_label' => $semesterLabel,
+            'eligible' => $eligible->sortBy('registration_number')->values(),
+            'blocked' => $blocked->sortBy('registration_number')->values(),
+            'pending' => $pending->sortBy('registration_number')->values(),
+        ];
+    }
+
+    private function eligibilityBlockReason(?object $eligibility, ?object $attendance, Student $student): ?string
+    {
+        if ($eligibility && $eligibility->eligible_for_exams) {
+            return null;
+        }
+
+        if ($eligibility && ! $eligibility->eligible_for_exams) {
+            if (! $eligibility->attendance_check_passed) {
+                return 'Attendance below programme threshold';
+            }
+            if (! $eligibility->fee_clearance_check_passed) {
+                return 'Fees not cleared';
+            }
+
+            return 'Exam eligibility blocked';
+        }
+
+        if ($attendance?->status_flag === 'red') {
+            return 'Attendance RED flag';
+        }
+
+        if ($student->fee_clearance_status !== 'cleared') {
+            return 'Fees not cleared';
+        }
+
+        return 'Eligibility not calculated yet';
     }
 
     public function resolveTab(string $tab): string

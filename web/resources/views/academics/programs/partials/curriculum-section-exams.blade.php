@@ -478,22 +478,158 @@
         </article>
 
     @elseif ($examTab === 'results')
+        @php
+            $eligibleRoster = $examHub['eligible_roster'] ?? ['eligible' => collect(), 'blocked' => collect(), 'pending' => collect()];
+            $eligibleStudents = $eligibleRoster['eligible'] ?? collect();
+            $blockedStudents = $eligibleRoster['blocked'] ?? collect();
+            $pendingStudents = $eligibleRoster['pending'] ?? collect();
+        @endphp
+
         <div class="tich-grid tich-grid--2 tich-mb-6" style="align-items:start; gap:1.5rem;">
             <article class="tich-card">
-                <h2 class="tich-h3">Exam eligibility</h2>
+                <h2 class="tich-h3">Exam eligibility summary</h2>
                 <dl class="tich-dl tich-mt-4">
-                    <dt>Eligible for exams</dt><dd>{{ $eligibility['eligible'] ?? 0 }}</dd>
-                    <dt>Blocked</dt><dd>{{ $eligibility['blocked'] ?? 0 }}</dd>
+                    <dt>Eligible unit entries</dt><dd>{{ $eligibility['eligible'] ?? 0 }}</dd>
+                    <dt>Blocked unit entries</dt><dd>{{ $eligibility['blocked'] ?? 0 }}</dd>
                     <dt>Pending calculation</dt><dd>{{ $eligibility['pending'] ?? 0 }}</dd>
+                    <dt>Students cleared for exams</dt><dd>{{ $eligibleStudents->count() }}</dd>
                 </dl>
                 <a href="{{ route('departments.academics.attendance-ledger.index', $deptHub) }}" class="tich-link tich-mt-4">Review attendance verification ledger →</a>
             </article>
             <article class="tich-card">
                 <h2 class="tich-h3">Transcripts</h2>
-                <p class="tich-text tich-mt-2">Generate official transcripts from cumulative grade records and exam results.</p>
-                <a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS - generate per student</a>
+                <p class="tich-text tich-mt-2">Generate official transcripts from cumulative grade records and exam results for each eligible student below.</p>
+                <a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS — all students</a>
             </article>
         </div>
+
+        <article class="tich-card tich-mb-6">
+            <h2 class="tich-h3">Exam-eligible students — Semester {{ $examTeachingPeriod }}</h2>
+            <p class="tich-caption">
+                {{ $eligibleRoster['semester_label'] ?? 'Teaching period '.$examTeachingPeriod }} ·
+                Students with at least one unit cleared for exam sitting (attendance, fees, and verification checks).
+            </p>
+
+            @forelse ($eligibleStudents as $studentRow)
+                <div class="tich-inset-panel tich-mt-4">
+                    <div style="display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h3 class="tich-h3" style="font-size:1.1rem;">{{ $studentRow->student_name ?: 'Student' }}</h3>
+                            <p class="tich-caption">{{ $studentRow->registration_number }} · {{ $studentRow->cohort_intake }} · {{ ucfirst($studentRow->enrollment_status) }}</p>
+                            <p class="tich-caption">
+                                Campus: {{ $studentRow->campus_name ?? '—' }} ·
+                                Fees: {{ ucfirst(str_replace('_', ' ', $studentRow->fee_clearance_status)) }} ·
+                                {{ $studentRow->eligible_unit_count }}/{{ $studentRow->total_units }} units eligible
+                            </p>
+                        </div>
+                        <a href="{{ route('sis.students.transcript', $studentRow->student_id) }}" target="_blank" class="tich-btn tich-btn-secondary">Generate transcript</a>
+                    </div>
+
+                    <div style="overflow-x:auto;" class="tich-mt-4">
+                        <table class="tich-admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Unit</th>
+                                    <th>Attendance</th>
+                                    <th>Flag</th>
+                                    <th>Fees</th>
+                                    <th>Exam eligibility</th>
+                                    <th>Cumulative (CA)</th>
+                                    <th>Exam schedule</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($studentRow->units as $unitRow)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $unitRow->unit_code }}</strong>
+                                            <span class="tich-caption" style="display:block;">{{ $unitRow->unit_name }}</span>
+                                        </td>
+                                        <td>{{ $unitRow->attendance_percentage !== null ? number_format((float) $unitRow->attendance_percentage, 1).'%' : '—' }}</td>
+                                        <td>
+                                            @if ($unitRow->status_flag)
+                                                @include('partials.attendance-flag', ['flag' => $unitRow->status_flag])
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td>{{ $unitRow->fee_cleared ? 'Cleared' : 'Pending' }}</td>
+                                        <td>
+                                            @if ($unitRow->eligible_for_exams === true)
+                                                <span class="tich-caption">Eligible</span>
+                                            @elseif ($unitRow->eligible_for_exams === false)
+                                                <span class="tich-caption">{{ $unitRow->block_reason ?? 'Blocked' }}</span>
+                                            @else
+                                                <span class="tich-caption">{{ $unitRow->block_reason ?? 'Pending' }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($unitRow->cumulative_score !== null)
+                                                {{ number_format((float) $unitRow->cumulative_score, 1) }}% ({{ $unitRow->grade_letter ?? '—' }})
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($unitRow->exam_date)
+                                                {{ \Illuminate\Support\Carbon::parse($unitRow->exam_date)->format('d M Y') }}
+                                                {{ substr((string) $unitRow->start_time, 0, 5) }}–{{ substr((string) $unitRow->end_time, 0, 5) }}
+                                                <span class="tich-caption" style="display:block;">{{ $unitRow->venue ?? '—' }}</span>
+                                            @else
+                                                Not scheduled
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @empty
+                <p class="tich-text tich-mt-4">No students are currently cleared for exams in Semester {{ $examTeachingPeriod }}. Ensure attendance is verified and eligibility has been calculated.</p>
+            @endforelse
+        </article>
+
+        @if ($blockedStudents->isNotEmpty())
+            <article class="tich-card tich-mb-6">
+                <h2 class="tich-h3">Blocked from exams</h2>
+                <p class="tich-caption">Students with no eligible units for this semester.</p>
+                <div style="overflow-x:auto;" class="tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Registration</th>
+                                <th>Fees</th>
+                                <th>Units blocked</th>
+                                <th>Primary reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($blockedStudents as $studentRow)
+                                @php
+                                    $firstBlocked = collect($studentRow->units)->first(fn ($u) => $u->eligible_for_exams === false);
+                                @endphp
+                                <tr>
+                                    <td>{{ $studentRow->student_name }}</td>
+                                    <td>{{ $studentRow->registration_number }}</td>
+                                    <td>{{ ucfirst(str_replace('_', ' ', $studentRow->fee_clearance_status)) }}</td>
+                                    <td>{{ $studentRow->blocked_unit_count }}/{{ $studentRow->total_units }}</td>
+                                    <td>{{ $firstBlocked?->block_reason ?? 'Not eligible' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        @endif
+
+        @if ($pendingStudents->isNotEmpty())
+            <article class="tich-card tich-mb-6">
+                <h2 class="tich-h3">Pending eligibility review</h2>
+                <p class="tich-caption">{{ $pendingStudents->count() }} student(s) awaiting attendance verification or eligibility calculation.</p>
+            </article>
+        @endif
 
         <article class="tich-card tich-mb-6">
             <h2 class="tich-h3">Cumulative grade records - Semester {{ $examTeachingPeriod }}</h2>
