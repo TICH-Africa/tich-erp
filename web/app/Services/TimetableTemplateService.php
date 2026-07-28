@@ -46,6 +46,176 @@ class TimetableTemplateService
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function segmentTypesForKind(string $timetableKind): array
+    {
+        return match ($timetableKind) {
+            'exam' => ['exam'],
+            'supplementary' => ['supplementary'],
+            default => ['lesson', 'break'],
+        };
+    }
+
+    /**
+     * @return list<array{label: string, start_time: string, end_time: string, segment_type: string}>
+     */
+    public static function defaultSegmentsForKind(string $timetableKind): array
+    {
+        return match ($timetableKind) {
+            'exam' => [
+                ['label' => 'Exam session 1', 'start_time' => '08:00', 'end_time' => '10:00', 'segment_type' => 'exam'],
+                ['label' => 'Exam session 2', 'start_time' => '11:00', 'end_time' => '13:00', 'segment_type' => 'exam'],
+                ['label' => 'Exam session 3', 'start_time' => '14:00', 'end_time' => '16:00', 'segment_type' => 'exam'],
+            ],
+            'supplementary' => [
+                ['label' => 'Retake session 1', 'start_time' => '08:00', 'end_time' => '10:00', 'segment_type' => 'supplementary'],
+                ['label' => 'Retake session 2', 'start_time' => '11:00', 'end_time' => '13:00', 'segment_type' => 'supplementary'],
+                ['label' => 'Retake session 3', 'start_time' => '14:00', 'end_time' => '16:00', 'segment_type' => 'supplementary'],
+            ],
+            default => [
+                ['label' => 'Lesson 1', 'start_time' => '08:00', 'end_time' => '10:00', 'segment_type' => 'lesson'],
+                ['label' => 'Lesson 2', 'start_time' => '10:00', 'end_time' => '12:00', 'segment_type' => 'lesson'],
+                ['label' => 'Lunch break', 'start_time' => '12:00', 'end_time' => '14:00', 'segment_type' => 'break'],
+                ['label' => 'Lesson 3', 'start_time' => '14:00', 'end_time' => '16:00', 'segment_type' => 'lesson'],
+                ['label' => 'Lesson 4', 'start_time' => '16:00', 'end_time' => '18:00', 'segment_type' => 'lesson'],
+            ],
+        };
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, ProgramTimetableSegment>
+     */
+    public function segmentsForKind(ProgramTimetableTemplate $template, string $timetableKind): \Illuminate\Support\Collection
+    {
+        if ($timetableKind === 'lesson') {
+            return $template->segments
+                ->filter(fn (ProgramTimetableSegment $segment) => $segment->segment_type === 'lesson')
+                ->sortBy('sort_order')
+                ->values();
+        }
+
+        $types = self::segmentTypesForKind($timetableKind);
+
+        return $template->segments
+            ->filter(fn (ProgramTimetableSegment $segment) => in_array($segment->segment_type, $types, true))
+            ->sortBy('sort_order')
+            ->values();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, ProgramTimetableSegment>
+     */
+    public function ensureKindSegments(ProgramTimetableTemplate $template, string $timetableKind): \Illuminate\Support\Collection
+    {
+        if ($timetableKind === 'lesson') {
+            return $this->segmentsForKind($template, $timetableKind);
+        }
+
+        $existing = $this->segmentsForKind($template, $timetableKind);
+        if ($existing->isNotEmpty()) {
+            return $existing;
+        }
+
+        $sortOrder = (int) ($template->segments->max('sort_order') ?? -1) + 1;
+        $created = collect();
+
+        foreach (self::defaultSegmentsForKind($timetableKind) as $row) {
+            $created->push(ProgramTimetableSegment::create([
+                'template_id' => $template->id,
+                'label' => $row['label'],
+                'start_time' => $row['start_time'],
+                'end_time' => $row['end_time'],
+                'segment_type' => $row['segment_type'],
+                'sort_order' => $sortOrder++,
+            ]));
+        }
+
+        $template->unsetRelation('segments');
+        $template->load('segments');
+
+        return $created;
+    }
+
+    public function syncKindSlots(
+        User $user,
+        AcademicProgram $program,
+        string $timetableKind,
+        array $data,
+        ?Request $request = null
+    ): ProgramTimetableTemplate {
+        if (! in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            throw ValidationException::withMessages([
+                'timetable_kind' => 'Invalid timetable slot type.',
+            ]);
+        }
+
+        $template = $this->templateForProgram($program->id);
+        $segmentTypes = self::segmentTypesForKind($timetableKind);
+        $rows = $data['segments'] ?? [];
+
+        DB::transaction(function () use ($template, $segmentTypes, $rows) {
+            ProgramTimetableSegment::query()
+                ->where('template_id', $template->id)
+                ->whereIn('segment_type', $segmentTypes)
+                ->delete();
+
+            $sortOrder = (int) (ProgramTimetableSegment::query()
+                ->where('template_id', $template->id)
+                ->max('sort_order') ?? -1) + 1;
+
+            $created = 0;
+
+            foreach ($rows as $index => $row) {
+                $label = trim((string) ($row['label'] ?? ''));
+                $start = $row['start_time'] ?? null;
+                $end = $row['end_time'] ?? null;
+
+                if ($label === '' || ! $start || ! $end) {
+                    continue;
+                }
+
+                if ($start >= $end) {
+                    throw ValidationException::withMessages([
+                        "segments.{$index}.end_time" => 'End time must be after start time.',
+                    ]);
+                }
+
+                ProgramTimetableSegment::create([
+                    'template_id' => $template->id,
+                    'label' => $label,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'segment_type' => $segmentTypes[0],
+                    'sort_order' => $sortOrder++,
+                ]);
+
+                $created++;
+            }
+
+            if ($created === 0) {
+                throw ValidationException::withMessages([
+                    'segments' => 'Add at least one time slot.',
+                ]);
+            }
+        });
+
+        $this->auditService->log(
+            'academics.timetable_template.slots_updated',
+            'program_timetable_templates',
+            $template->id,
+            null,
+            ['program_id' => $program->id, 'timetable_kind' => $timetableKind],
+            'Timetable slots updated',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $template->fresh(['days', 'segments']);
+    }
+
     public function templateForProgram(int $programId): ProgramTimetableTemplate
     {
         $template = ProgramTimetableTemplate::query()
@@ -99,6 +269,7 @@ class TimetableTemplateService
 
             ProgramTimetableSegment::query()
                 ->where('template_id', $template->id)
+                ->whereIn('segment_type', ['lesson', 'break'])
                 ->delete();
 
             $segments = $data['segments'] ?? [];
@@ -120,7 +291,7 @@ class TimetableTemplateService
                 }
 
                 $type = (string) ($row['segment_type'] ?? 'lesson');
-                if (! array_key_exists($type, self::segmentTypes())) {
+                if (! in_array($type, ['lesson', 'break'], true)) {
                     $type = 'lesson';
                 }
 
@@ -136,7 +307,7 @@ class TimetableTemplateService
 
             if ($sortOrder === 0) {
                 throw ValidationException::withMessages([
-                    'segments' => 'Add at least one time segment.',
+                    'segments' => 'Add at least one lesson or break segment.',
                 ]);
             }
         });

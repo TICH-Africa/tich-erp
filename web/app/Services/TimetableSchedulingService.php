@@ -20,6 +20,8 @@ use App\Models\ProgramTimetable;
 
 use App\Models\ProgramTimetableSegment;
 
+use App\Models\ProgramTimetableTemplate;
+
 use App\Models\ProgramTimetableSession;
 
 use App\Models\User;
@@ -64,6 +66,59 @@ class TimetableSchedulingService
 
 
 
+    /**
+     * @return Collection<string, ProgramTimetable|null>
+     */
+    public function latestTimetablesByKind(
+        int $programId,
+        ?int $curriculumVersionId,
+        int $teachingPeriod
+    ): Collection {
+        $kinds = array_keys(self::timetableKinds());
+
+        $timetables = ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
+            ->where('program_id', $programId)
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('teaching_period', $teachingPeriod)
+            ->whereIn('timetable_kind', array_merge($kinds, ['special_exam']))
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $byKind = $timetables->unique('timetable_kind')->keyBy('timetable_kind');
+
+        return collect($kinds)->mapWithKeys(function (string $kind) use ($byKind) {
+            if ($kind === 'supplementary') {
+                return [$kind => $byKind->get('supplementary') ?? $byKind->get('special_exam')];
+            }
+
+            return [$kind => $byKind->get($kind)];
+        });
+    }
+
+    /**
+     * @return Collection<int, ProgramTimetableSegment>
+     */
+    public function scheduleSegmentsForKind(ProgramTimetableTemplate $template, string $timetableKind): Collection
+    {
+        if (in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            $this->templates->ensureKindSegments($template, $timetableKind);
+            $template->load('segments');
+        }
+
+        return $this->templates->segmentsForKind($template, $timetableKind);
+    }
+
+    public function normalizeTimetableKind(string $kind): string
+    {
+        if ($kind === 'special_exam') {
+            return 'supplementary';
+        }
+
+        return array_key_exists($kind, self::timetableKinds()) ? $kind : 'lesson';
+    }
+
     public function latestTimetable(
 
         int $programId,
@@ -76,7 +131,9 @@ class TimetableSchedulingService
 
     ): ?ProgramTimetable {
 
-        return ProgramTimetable::query()
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        $latest = ProgramTimetable::query()
 
             ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
 
@@ -94,6 +151,19 @@ class TimetableSchedulingService
 
             ->first();
 
+        if ($latest || $timetableKind !== 'supplementary') {
+            return $latest;
+        }
+
+        return ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
+            ->where('program_id', $programId)
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('teaching_period', $teachingPeriod)
+            ->where('timetable_kind', 'special_exam')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
 
@@ -110,7 +180,9 @@ class TimetableSchedulingService
 
     ): ?ProgramTimetable {
 
-        return ProgramTimetable::query()
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        $published = ProgramTimetable::query()
 
             ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
 
@@ -128,6 +200,19 @@ class TimetableSchedulingService
 
             ->first();
 
+        if ($published || $timetableKind !== 'supplementary') {
+            return $published;
+        }
+
+        return ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+            ->where('program_id', $programId)
+            ->where('status', 'published')
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('teaching_period', $teachingPeriod)
+            ->where('timetable_kind', 'special_exam')
+            ->orderByDesc('published_at')
+            ->first();
     }
 
 
@@ -198,7 +283,7 @@ class TimetableSchedulingService
 
         abort_unless((int) $intake->program_id === (int) $program->id, 404);
 
-
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
 
         if (! array_key_exists($timetableKind, self::timetableKinds())) {
 
@@ -220,15 +305,7 @@ class TimetableSchedulingService
 
         $activeDays = collect($template->activeDayNumbers());
 
-        $segmentType = $this->segmentTypeForKind($timetableKind);
-
-        $scheduleSegments = $template->segments->filter(
-
-            fn (ProgramTimetableSegment $segment) => $segment->segment_type === $segmentType
-
-        );
-
-
+        $scheduleSegments = $this->scheduleSegmentsForKind($template, $timetableKind);
 
         if ($activeDays->isEmpty()) {
 
@@ -320,6 +397,10 @@ class TimetableSchedulingService
 
         ) {
 
+            $draftKinds = $timetableKind === 'supplementary'
+                ? ['supplementary', 'special_exam']
+                : [$timetableKind];
+
             ProgramTimetable::query()
 
                 ->where('program_id', $program->id)
@@ -328,7 +409,7 @@ class TimetableSchedulingService
 
                 ->where('teaching_period', $teachingPeriod)
 
-                ->where('timetable_kind', $timetableKind)
+                ->whereIn('timetable_kind', $draftKinds)
 
                 ->where('status', 'draft')
 
@@ -1134,15 +1215,9 @@ class TimetableSchedulingService
     {
 
         return match ($timetableKind) {
-
             'exam' => 'exam',
-
             'supplementary' => 'supplementary',
-
-            'special_exam' => 'special_exam',
-
             default => 'lesson',
-
         };
 
     }

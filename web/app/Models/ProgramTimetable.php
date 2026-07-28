@@ -22,19 +22,26 @@ class ProgramTimetable extends Model
     /**
      * @return array<string, string>
      */
-    public static function kindLabels(): array
+    public static function timetableKinds(): array
     {
         return [
             'lesson' => 'Lesson timetable',
             'exam' => 'Exam timetable',
-            'supplementary' => 'Supplementary exam timetable',
-            'special_exam' => 'Special exam timetable',
+            'supplementary' => 'Supplementary & special exam timetable',
         ];
     }
 
     public function kindLabel(): string
     {
         return self::kindLabels()[$this->timetable_kind] ?? ucfirst(str_replace('_', ' ', (string) $this->timetable_kind));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function kindLabels(): array
+    {
+        return self::timetableKinds();
     }
 
     public function displayTitle(): string

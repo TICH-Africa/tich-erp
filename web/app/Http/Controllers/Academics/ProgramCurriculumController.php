@@ -211,17 +211,30 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'timetableSegmentTypes' => TimetableTemplateService::segmentTypes(),
             'timetableDayLabels' => TimetableTemplateService::dayLabels(),
             'timetableTeachingPeriod' => $request->integer('teaching_period') ?: 1,
-            'timetableKind' => in_array($request->string('timetable_kind')->toString(), array_keys(TimetableSchedulingService::timetableKinds()), true)
-                ? $request->string('timetable_kind')->toString()
+            'timetableKind' => $section === 'timetable'
+                ? $this->timetableScheduling->normalizeTimetableKind(
+                    in_array($request->string('timetable_kind')->toString(), array_merge(array_keys(TimetableSchedulingService::timetableKinds()), ['special_exam']), true)
+                        ? $request->string('timetable_kind')->toString()
+                        : 'lesson'
+                )
                 : 'lesson',
+            'timetableDraftsByKind' => ($section === 'timetable' && $selectedIntake)
+                ? $this->timetableScheduling->latestTimetablesByKind(
+                    $program->id,
+                    $selectedIntake->id,
+                    $request->integer('teaching_period') ?: 1,
+                )
+                : collect(),
             'timetableDraft' => ($section === 'timetable' && $selectedIntake)
                 ? $this->timetableScheduling->latestTimetable(
                     $program->id,
                     $selectedIntake->id,
                     $request->integer('teaching_period') ?: 1,
-                    in_array($request->string('timetable_kind')->toString(), array_keys(TimetableSchedulingService::timetableKinds()), true)
-                        ? $request->string('timetable_kind')->toString()
-                        : 'lesson'
+                    $this->timetableScheduling->normalizeTimetableKind(
+                        in_array($request->string('timetable_kind')->toString(), array_merge(array_keys(TimetableSchedulingService::timetableKinds()), ['special_exam']), true)
+                            ? $request->string('timetable_kind')->toString()
+                            : 'lesson'
+                    )
                 )
                 : null,
             'timetableKinds' => TimetableSchedulingService::timetableKinds(),
@@ -432,8 +445,47 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'intake' => $request->integer('intake') ?: null,
                 'section' => 'timetable',
                 'teaching_period' => $request->integer('teaching_period') ?: null,
+                'timetable_kind' => $request->string('timetable_kind')->toString() ?: 'lesson',
             ]))
             ->with('status', 'Bell schedule saved.');
+    }
+
+    public function syncTimetableKindSlots(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $timetableKind = $this->timetableScheduling->normalizeTimetableKind(
+            $request->string('timetable_kind')->toString()
+        );
+
+        $validated = $request->validate([
+            'timetable_kind' => ['required', 'in:exam,supplementary,special_exam'],
+            'segments' => ['nullable', 'array'],
+            'segments.*.label' => ['nullable', 'string', 'max:120'],
+            'segments.*.start_time' => ['nullable', 'date_format:H:i'],
+            'segments.*.end_time' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $this->timetableTemplates->syncKindSlots(
+            $request->user(),
+            $program,
+            $timetableKind,
+            $validated,
+            $request
+        );
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => 'timetable',
+                'teaching_period' => $request->integer('teaching_period') ?: null,
+                'timetable_kind' => $timetableKind,
+            ]))
+            ->with('status', 'Exam slots saved.');
     }
 
     public function generateTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
@@ -443,7 +495,9 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         abort_unless((int) $version->program_id === (int) $program->id, 404);
 
         $teachingPeriod = $request->integer('teaching_period') ?: 1;
-        $timetableKind = $request->string('timetable_kind')->toString() ?: 'lesson';
+        $timetableKind = $this->timetableScheduling->normalizeTimetableKind(
+            $request->string('timetable_kind')->toString() ?: 'lesson'
+        );
 
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:200'],

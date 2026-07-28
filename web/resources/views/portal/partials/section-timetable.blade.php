@@ -21,8 +21,7 @@
             $activeDays = $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5];
             $displaySegmentType = match ($timetable->timetable_kind) {
                 'exam' => 'exam',
-                'supplementary' => 'supplementary',
-                'special_exam' => 'special_exam',
+                'supplementary', 'special_exam' => 'supplementary',
                 default => 'lesson',
             };
             $gridSegments = $template?->segments?->filter(

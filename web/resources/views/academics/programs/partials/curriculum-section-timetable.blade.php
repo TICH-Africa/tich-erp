@@ -4,23 +4,60 @@
     </article>
 @else
     @php
+        $timetableDraftsByKind = $timetableDraftsByKind ?? collect();
+        $templateService = app(\App\Services\TimetableTemplateService::class);
+        $schedulingService = app(\App\Services\TimetableSchedulingService::class);
+        if (in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            $templateService->ensureKindSegments($timetableTemplate, $timetableKind);
+            $timetableTemplate->load('segments');
+        }
+        $timetableParams = fn (string $kind = null, ?int $period = null) => array_merge($curriculumParams, array_filter([
+            'section' => 'timetable',
+            'teaching_period' => $period ?? $timetableTeachingPeriod,
+            'timetable_kind' => $kind ?? $timetableKind,
+        ]));
+        $slotsForKind = $schedulingService->scheduleSegmentsForKind($timetableTemplate, $timetableKind);
+        $kindSlotRows = $slotsForKind->map(fn ($s) => [
+            'label' => $s->label,
+            'start_time' => substr((string) $s->start_time, 0, 5),
+            'end_time' => substr((string) $s->end_time, 0, 5),
+        ])->all();
+        if ($kindSlotRows === [] && in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            $kindSlotRows = collect(\App\Services\TimetableTemplateService::defaultSegmentsForKind($timetableKind))
+                ->map(fn ($row) => [
+                    'label' => $row['label'],
+                    'start_time' => $row['start_time'],
+                    'end_time' => $row['end_time'],
+                ])->all();
+        }
+        $lessonSegmentRows = $timetableTemplate->segments
+            ->filter(fn ($s) => in_array($s->segment_type, ['lesson', 'break'], true))
+            ->map(fn ($s) => [
+                'label' => $s->label,
+                'start_time' => substr((string) $s->start_time, 0, 5),
+                'end_time' => substr((string) $s->end_time, 0, 5),
+                'segment_type' => $s->segment_type,
+            ])->all();
         $activeDays = $timetableTemplate->days->where('is_active', 1)->pluck('day_of_week')->map(fn ($d) => (int) $d)->all();
         $timetableConflicts = $timetableDraft
-            ? app(\App\Services\TimetableSchedulingService::class)->detectConflicts($timetableDraft->sessions)
+            ? $schedulingService->detectConflicts($timetableDraft->sessions)
             : collect();
         $periodKey = $timetableTeachingPeriod.':';
         $semesterPeriod = $periodDates->get($periodKey);
         $displaySegmentType = match ($timetableKind) {
             'exam' => 'exam',
             'supplementary' => 'supplementary',
-            'special_exam' => 'special_exam',
             default => 'lesson',
         };
-        $gridSegments = $timetableTemplate->segments->filter(
-            fn ($segment) => in_array($segment->segment_type, [$displaySegmentType, 'break'], true)
-        );
-        if ($gridSegments->where('segment_type', $displaySegmentType)->isEmpty()) {
-            $gridSegments = $timetableTemplate->segments;
+        $gridSegments = $timetableKind === 'supplementary'
+            ? $timetableTemplate->segments->filter(
+                fn ($segment) => in_array($segment->segment_type, ['supplementary', 'break'], true)
+            )
+            : $timetableTemplate->segments->filter(
+                fn ($segment) => in_array($segment->segment_type, [$displaySegmentType, 'break'], true)
+            );
+        if ($gridSegments->whereIn('segment_type', [$displaySegmentType, 'supplementary'])->isEmpty()) {
+            $gridSegments = $slotsForKind;
         }
         $canEditTimetable = auth()->user()?->can('academics.write') ?? false;
         $timetableEditable = $timetableDraft && $timetableDraft->status === 'draft' && $canEditTimetable;
@@ -28,12 +65,12 @@
 
     <div class="tich-section__intro tich-mb-6" style="text-align:left;">
         <h1 class="tich-h1" style="font-size: 2rem;">Timetable - {{ $selectedIntake->intakeLabel() }}</h1>
-        <p class="tich-text">Configure the daily bell schedule, generate separate lesson and exam timetables, and publish for students.</p>
+        <p class="tich-text">Configure the lesson bell schedule, then create lesson, exam, and supplementary/special exam timetables independently for each semester.</p>
     </div>
 
     <article class="tich-card tich-mb-8">
-        <h2 class="tich-h3">1. Bell schedule &amp; teaching days</h2>
-        <p class="tich-text tich-mt-2">Define when classes can run. Add lessons, breaks, and exam windows with any start/end times you need.</p>
+        <h2 class="tich-h3">1. Lesson bell schedule &amp; teaching days</h2>
+        <p class="tich-text tich-mt-2">Define when regular classes run. Exam and retake slots are configured separately under each timetable type below.</p>
 
         @can('academics.write')
             <form method="POST" action="{{ route('departments.academics.programs.timetable.sync-template', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
@@ -41,6 +78,7 @@
                 @method('PUT')
                 <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
                 <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
+                <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
 
                 <div class="tich-form-group">
                     <label class="tich-label">Template name</label>
@@ -72,12 +110,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $segmentRows = old('segments', $timetableTemplate->segments->map(fn ($s) => [
-                                'label' => $s->label,
-                                'start_time' => substr((string) $s->start_time, 0, 5),
-                                'end_time' => substr((string) $s->end_time, 0, 5),
-                                'segment_type' => $s->segment_type,
-                            ])->all()); @endphp
+                            @php $segmentRows = old('segments', $lessonSegmentRows); @endphp
                             @foreach ($segmentRows as $index => $segment)
                                 <tr>
                                     <td><input type="text" name="segments[{{ $index }}][label]" class="tich-input" value="{{ $segment['label'] ?? '' }}" placeholder="Lesson 1"></td>
@@ -85,9 +118,8 @@
                                     <td><input type="time" name="segments[{{ $index }}][end_time]" class="tich-input" value="{{ $segment['end_time'] ?? '' }}"></td>
                                     <td>
                                         <select name="segments[{{ $index }}][segment_type]" class="tich-input">
-                                            @foreach ($timetableSegmentTypes as $typeKey => $typeLabel)
-                                                <option value="{{ $typeKey }}" @selected(($segment['segment_type'] ?? 'lesson') === $typeKey)>{{ $typeLabel }}</option>
-                                            @endforeach
+                                            <option value="lesson" @selected(($segment['segment_type'] ?? 'lesson') === 'lesson')>Lesson</option>
+                                            <option value="break" @selected(($segment['segment_type'] ?? '') === 'break')>Break</option>
                                         </select>
                                     </td>
                                     <td><button type="button" class="tich-link tich-remove-segment" style="border:none;background:none;cursor:pointer;">Remove</button></td>
@@ -111,9 +143,8 @@
                     <td><input type="time" name="segments[__INDEX__][end_time]" class="tich-input"></td>
                     <td>
                         <select name="segments[__INDEX__][segment_type]" class="tich-input">
-                            @foreach ($timetableSegmentTypes as $typeKey => $typeLabel)
-                                <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
-                            @endforeach
+                            <option value="lesson">Lesson</option>
+                            <option value="break">Break</option>
                         </select>
                     </td>
                     <td><button type="button" class="tich-link tich-remove-segment" style="border:none;background:none;cursor:pointer;">Remove</button></td>
@@ -145,7 +176,7 @@
             </script>
         @else
             <ul class="tich-semester-list tich-mt-4">
-                @foreach ($timetableTemplate->segments as $segment)
+                @foreach ($timetableTemplate->segments->filter(fn ($s) => in_array($s->segment_type, ['lesson', 'break'], true)) as $segment)
                     <li class="tich-semester-list__item">
                         <span class="tich-semester-list__label">{{ $segment->label }}</span>
                         <span class="tich-semester-list__meta">{{ $segment->timeLabel() }} · {{ $timetableSegmentTypes[$segment->segment_type] ?? $segment->segment_type }}</span>
@@ -156,23 +187,15 @@
     </article>
 
     <article class="tich-card tich-mb-8">
-        <h2 class="tich-h3">2. Generate timetable</h2>
-        <p class="tich-text tich-mt-2">Generate timetables independently by type. Lesson timetables use unit contact hours and learning dates; exam timetables use exam dates and exam slots from the bell schedule.</p>
+        <h2 class="tich-h3">2. Timetables by type</h2>
+        <p class="tich-text tich-mt-2">Create lesson, exam, and supplementary/special exam timetables independently. Each type has its own time slots and can be generated and published separately.</p>
 
-        <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'timetable', 'intake' => $selectedIntake->id])) }}" class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem; max-width:36rem;">
-            <div class="tich-form-group">
+        <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:18rem;">
+            <div class="tich-form-group" style="margin:0;">
                 <label class="tich-label">Teaching period</label>
                 <select name="teaching_period" class="tich-input" onchange="this.form.submit()">
                     @foreach (range(1, $totalTeachingPeriods) as $periodNumber)
                         <option value="{{ $periodNumber }}" @selected($timetableTeachingPeriod === $periodNumber)>Semester {{ $periodNumber }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="tich-form-group">
-                <label class="tich-label">Timetable type</label>
-                <select name="timetable_kind" class="tich-input" onchange="this.form.submit()">
-                    @foreach ($timetableKinds as $kindKey => $kindLabel)
-                        <option value="{{ $kindKey }}" @selected($timetableKind === $kindKey)>{{ $kindLabel }}</option>
                     @endforeach
                 </select>
             </div>
@@ -188,34 +211,136 @@
                     <p class="tich-caption" style="margin:0;">Exams: {{ $semesterPeriod->exam_start_date?->format('d M Y') ?? '-' }} - {{ $semesterPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}</p>
                 @endif
                 @if (! $semesterPeriod->effectiveLearningStart() && ! $semesterPeriod->exam_start_date)
-                    <p class="tich-caption" style="margin:0.35rem 0 0;">Set learning and exam dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $selectedIntake->id, 'section' => 'semesters'])) }}" class="tich-link">Semester units</a> page for more accurate scheduling.</p>
+                    <p class="tich-caption" style="margin:0.35rem 0 0;">Set learning and exam dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'semesters'])) }}" class="tich-link">Semester units</a> page for more accurate scheduling.</p>
                 @endif
             </div>
         @else
-            <p class="tich-caption tich-mt-4">Set semester dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $selectedIntake->id, 'section' => 'semesters'])) }}" class="tich-link">Semester units</a> page before generating timetables.</p>
+            <p class="tich-caption tich-mt-4">Set semester dates on the <a href="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'semesters'])) }}" class="tich-link">Semester units</a> page before generating timetables.</p>
         @endif
 
-        @can('academics.write')
-            <form method="POST" action="{{ route('departments.academics.programs.timetable.generate', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-mt-4">
-                @csrf
-                <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
-                <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
-                <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
-                <div class="tich-form-group" style="max-width:28rem;">
-                    <label class="tich-label">Timetable title</label>
-                    <input type="text" name="title" class="tich-input" value="{{ old('title', $timetableDraft?->title) }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - Semester {{ $timetableTeachingPeriod }}" maxlength="200">
-                </div>
-                <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Generate {{ strtolower($timetableKinds[$timetableKind] ?? 'timetable') }}</button>
-            </form>
-        @endcan
-        @error('timetable')<p class="tich-field-error tich-mt-4">{{ $message }}</p>@enderror
+        <nav class="tich-card tich-mt-6" style="display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.75rem 1rem; box-shadow:none; border:1px solid var(--tich-border);">
+            @foreach ($timetableKinds as $kindKey => $kindLabel)
+                @php
+                    $kindTimetable = $timetableDraftsByKind[$kindKey] ?? null;
+                    $kindStatus = $kindTimetable ? ucfirst($kindTimetable->status) : 'Not created';
+                @endphp
+                <a
+                    href="{{ route('departments.academics.programs.curriculum', $timetableParams($kindKey)) }}"
+                    class="tich-btn {{ $timetableKind === $kindKey ? 'tich-btn-primary' : 'tich-btn-secondary' }}"
+                    style="font-size:0.875rem;"
+                >
+                    {{ $kindLabel }}
+                    <span class="tich-caption" style="display:block; font-size:0.75rem; opacity:0.85;">{{ $kindStatus }}</span>
+                </a>
+            @endforeach
+        </nav>
+
+        <div class="tich-mt-6">
+            <h3 class="tich-h3">{{ $timetableKinds[$timetableKind] ?? 'Timetable' }}</h3>
+            <p class="tich-text tich-mt-2">
+                @if ($timetableKind === 'lesson')
+                    Uses lesson slots from the bell schedule above and unit contact hours across the semester learning period.
+                @elseif ($timetableKind === 'exam')
+                    End-of-semester exams for units taught this semester. Default slots are 8-10, 11-1, and 2-4 - edit below if needed.
+                @else
+                    Combined supplementary and special exam sittings, generated as one timetable. Default slots are 8-10, 11-1, and 2-4 - edit below if needed.
+                @endif
+            </p>
+
+            @if (in_array($timetableKind, ['exam', 'supplementary'], true))
+                @can('academics.write')
+                    <form method="POST" action="{{ route('departments.academics.programs.timetable.sync-kind-slots', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                        <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
+                        <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                        <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+
+                        <div style="overflow-x:auto;">
+                            <table class="tich-admin-table" id="kind-slots-table">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php $slotRows = old('segments', $kindSlotRows); @endphp
+                                    @foreach ($slotRows as $index => $slot)
+                                        <tr>
+                                            <td><input type="text" name="segments[{{ $index }}][label]" class="tich-input" value="{{ $slot['label'] ?? '' }}"></td>
+                                            <td><input type="time" name="segments[{{ $index }}][start_time]" class="tich-input" value="{{ $slot['start_time'] ?? '' }}"></td>
+                                            <td><input type="time" name="segments[{{ $index }}][end_time]" class="tich-input" value="{{ $slot['end_time'] ?? '' }}"></td>
+                                            <td><button type="button" class="tich-link kind-remove-slot" style="border:none;background:none;cursor:pointer;">Remove</button></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @error('segments')<p class="tich-field-error">{{ $message }}</p>@enderror
+
+                        <div class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+                            <button type="button" class="tich-btn tich-btn-secondary" id="kind-add-slot">Add slot</button>
+                            <button type="submit" class="tich-btn tich-btn-secondary">Save slots</button>
+                        </div>
+                    </form>
+
+                    <template id="kind-slot-row-template">
+                        <tr>
+                            <td><input type="text" name="segments[__INDEX__][label]" class="tich-input" placeholder="Exam session"></td>
+                            <td><input type="time" name="segments[__INDEX__][start_time]" class="tich-input"></td>
+                            <td><input type="time" name="segments[__INDEX__][end_time]" class="tich-input"></td>
+                            <td><button type="button" class="tich-link kind-remove-slot" style="border:none;background:none;cursor:pointer;">Remove</button></td>
+                        </tr>
+                    </template>
+
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var tableBody = document.querySelector('#kind-slots-table tbody');
+                        var template = document.getElementById('kind-slot-row-template');
+                        var addBtn = document.getElementById('kind-add-slot');
+                        if (!tableBody || !template || !addBtn) return;
+
+                        addBtn.addEventListener('click', function () {
+                            var index = tableBody.querySelectorAll('tr').length;
+                            tableBody.insertAdjacentHTML('beforeend', template.innerHTML.replace(/__INDEX__/g, String(index)));
+                        });
+
+                        tableBody.addEventListener('click', function (event) {
+                            if (event.target.classList.contains('kind-remove-slot')) {
+                                event.target.closest('tr')?.remove();
+                            }
+                        });
+                    });
+                    </script>
+                @endcan
+            @endif
+
+            @can('academics.write')
+                <form method="POST" action="{{ route('departments.academics.programs.timetable.generate', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-mt-4">
+                    @csrf
+                    <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
+                    <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+                    <div class="tich-form-group" style="max-width:28rem;">
+                        <label class="tich-label">Timetable title</label>
+                        <input type="text" name="title" class="tich-input" value="{{ old('title', $timetableDraft?->title) }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - Semester {{ $timetableTeachingPeriod }}" maxlength="200">
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Generate {{ strtolower($timetableKinds[$timetableKind] ?? 'timetable') }}</button>
+                </form>
+            @endcan
+            @error('timetable')<p class="tich-field-error tich-mt-4">{{ $message }}</p>@enderror
+        </div>
     </article>
 
     @if ($timetableDraft)
         <article class="tich-card tich-mb-8">
             <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
                 <div>
-                    <h2 class="tich-h3">3. Timetable display</h2>
+                    <h2 class="tich-h3">3. {{ $timetableKinds[$timetableKind] ?? 'Timetable' }} display</h2>
                     <p class="tich-text tich-mt-2">
                         <strong>{{ $timetableDraft->displayTitle() }}</strong><br>
                         Semester {{ $timetableDraft->teaching_period }} · {{ ucfirst($timetableDraft->status) }}
@@ -278,8 +403,7 @@
                                         @php
                                             $manualTypes = match ($timetableKind) {
                                                 'exam' => ['exam'],
-                                                'supplementary' => ['supplementary'],
-                                                'special_exam' => ['special_exam'],
+                                                'supplementary' => ['supplementary', 'special_exam'],
                                                 default => ['lesson', 'other'],
                                             };
                                         @endphp
