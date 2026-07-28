@@ -24,6 +24,7 @@
                             <th>Units</th>
                             <th>Status</th>
                             <th>Timeline</th>
+                            <th>Approval</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -31,6 +32,7 @@
                         @foreach ($intakes as $intake)
                             @php
                                 $intakeMappings = $intake->relationLoaded('items') ? $intake->items : collect();
+                                $hasInactiveUnits = $intakeMappings->contains(fn ($map) => ($map->unit?->status ?? '') !== 'active');
                                 $isSelected = $selectedIntake?->id === $intake->id;
                             @endphp
                             <tr @if ($isSelected) style="background:var(--tich-blue-light,#d6e8f5);" @endif>
@@ -55,13 +57,53 @@
                                     @endif
                                 </td>
                                 <td style="white-space:nowrap;">
+                                    @if ($intake->status === 'draft')
+                                        @can('academics.write')
+                                            @if ($intakeMappings->isEmpty())
+                                                <span class="tich-caption">Add units first</span>
+                                            @elseif ($hasInactiveUnits)
+                                                <span class="tich-caption">Approve mapped units</span>
+                                            @else
+                                                <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
+                                                    @csrf
+                                                    <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Submit for approval</button>
+                                                </form>
+                                            @endif
+                                        @else
+                                            <span class="tich-caption">Draft</span>
+                                        @endcan
+                                    @elseif ($intake->status === 'pending_registry')
+                                        @if ($canApproveRegistry)
+                                            <form method="POST" action="{{ route('departments.academics.versions.approve-registry', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Registrar approve</button>
+                                            </form>
+                                        @else
+                                            <span class="tich-caption">Awaiting registrar</span>
+                                        @endif
+                                    @elseif ($intake->status === 'pending_ceo')
+                                        @if ($canApproveCeo)
+                                            <form method="POST" action="{{ route('departments.academics.versions.approve-ceo', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">CEO publish</button>
+                                            </form>
+                                        @else
+                                            <span class="tich-caption">Awaiting CEO</span>
+                                        @endif
+                                    @elseif ($intake->status === 'published')
+                                        <span class="tich-caption">Live</span>
+                                    @elseif ($intake->status === 'superseded')
+                                        <span class="tich-caption">Superseded</span>
+                                    @else
+                                        <span class="tich-caption">{{ ucwords(str_replace('_', ' ', $intake->status)) }}</span>
+                                    @endif
+                                </td>
+                                <td style="white-space:nowrap;">
                                     @unless ($isSelected)
                                         <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $intake->id, 'section' => 'intakes'])) }}" class="tich-link">Set working</a>
                                         ·
                                     @endunless
                                     <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $intake->id, 'section' => 'semesters'])) }}" class="tich-link">Semester units</a>
-                                    ·
-                                    <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'workflow'])) }}" class="tich-link">Workflow</a>
                                 </td>
                             </tr>
                         @endforeach

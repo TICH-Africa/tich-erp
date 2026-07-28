@@ -210,13 +210,16 @@ class ProgramCurriculumService
             'exams' => 'Exams & grading',
             'applications' => 'Applications',
             'enrolled' => 'Enrolled students',
-            'workflow' => 'Intake workflow',
         ];
     }
 
     public function resolveSection(Request $request): string
     {
         $section = $request->string('section')->toString() ?: 'structure';
+
+        if ($section === 'workflow') {
+            $section = 'intakes';
+        }
 
         return array_key_exists($section, self::curriculumSections()) ? $section : 'structure';
     }

@@ -98,7 +98,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $intakes = $this->versions->intakesForProgram($program->id);
         $section = $this->curriculum->resolveSection($request);
 
-        if (in_array($section, ['workflow', 'intakes'], true)) {
+        if ($section === 'intakes') {
             $intakes->load(['items.unit']);
         }
 
