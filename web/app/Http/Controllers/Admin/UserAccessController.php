@@ -12,6 +12,7 @@ use App\Services\RBACService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -79,6 +80,7 @@ class UserAccessController extends Controller
 
         if ($audience === 'staff') {
             $departments = Department::query()
+                ->main()
                 ->where('is_active', 1)
                 ->orderBy('dept_name')
                 ->get(['id', 'dept_name', 'dept_code', 'campus_id', 'dept_category']);
@@ -166,11 +168,11 @@ class UserAccessController extends Controller
             'assignments' => ['required', 'array', 'min:1'],
             'assignments.*.role_id' => ['nullable', 'exists:roles,id'],
             'assignments.*.campus_id' => ['nullable', 'exists:campuses,id'],
-            'assignments.*.department_id' => ['nullable', 'exists:departments,id'],
+            'assignments.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
             'permission_grants' => ['nullable', 'array'],
             'permission_grants.*.permission' => ['nullable', 'string'],
             'permission_grants.*.campus_id' => ['nullable', 'exists:campuses,id'],
-            'permission_grants.*.department_id' => ['nullable', 'exists:departments,id'],
+            'permission_grants.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
         ], route('admin.users.index', ['audience' => 'staff']));
 
         $staffRoleIds = Role::query()->whereNotIn('role_name', self::STUDENT_ROLES)->pluck('id')->all();
@@ -289,5 +291,12 @@ class UserAccessController extends Controller
         }
 
         return $validator->validated();
+    }
+
+    private function mainDepartmentExistsRule(): Rule
+    {
+        return Rule::exists('departments', 'id')->where(
+            fn ($query) => $query->whereNull('parent_dept_id')->where('is_active', 1)
+        );
     }
 }

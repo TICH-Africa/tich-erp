@@ -76,7 +76,7 @@ class LecturerSeeder extends Seeder
         $staff->update(['user_id' => $user->id, 'is_teaching_staff' => 1, 'department_id' => $departmentId]);
         $user->update(['staff_id' => $staff->id]);
 
-        $roleId = Role::query()->where('role_name', 'Lecturer')->value('id');
+        $roleId = Role::query()->where('role_name', 'Lecturer/Tutor')->value('id');
         if ($roleId) {
             app(RBACService::class)->assignRoleToUser($user, $roleId);
         }

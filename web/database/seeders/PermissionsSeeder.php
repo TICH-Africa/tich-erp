@@ -53,10 +53,9 @@ class PermissionsSeeder extends Seeder
             ['role_name' => 'Super Admin', 'display_name' => 'Super Administrator', 'role_category' => 'executive', 'description' => 'Full system access across all campuses', 'is_system_role' => 1],
             ['role_name' => 'CEO', 'display_name' => 'Chief Executive Officer', 'role_category' => 'executive', 'description' => 'Executive oversight and final approvals', 'is_system_role' => 1],
             ['role_name' => 'Academic Registrar', 'display_name' => 'Academic Registrar', 'role_category' => 'executive', 'description' => 'Academic records, admissions, and student lifecycle', 'is_system_role' => 1],
-            ['role_name' => 'Principal', 'display_name' => 'Principal', 'role_category' => 'executive', 'description' => 'Institution head with broad operational access', 'is_system_role' => 1],
             ['role_name' => 'Dean', 'display_name' => 'Dean', 'role_category' => 'academic', 'description' => 'Faculty head with academic oversight', 'is_system_role' => 1],
             ['role_name' => 'HOD', 'display_name' => 'Head of Department', 'role_category' => 'academic', 'description' => 'Departmental academic and staff oversight', 'is_system_role' => 1],
-            ['role_name' => 'Lecturer', 'display_name' => 'Lecturer', 'role_category' => 'teaching', 'description' => 'Teaching staff with academic delivery functions', 'is_system_role' => 1],
+            ['role_name' => 'Lecturer/Tutor', 'display_name' => 'Lecturer/Tutor', 'role_category' => 'teaching', 'description' => 'Teaching staff with academic delivery functions', 'is_system_role' => 1],
             ['role_name' => 'Admissions Officer', 'display_name' => 'Admissions Officer', 'role_category' => 'administrative', 'description' => 'Applicant intake, screening, and onboarding', 'is_system_role' => 1],
             ['role_name' => 'Finance Manager', 'display_name' => 'Finance Manager', 'role_category' => 'administrative', 'description' => 'Financial management and approvals', 'is_system_role' => 1],
             ['role_name' => 'HR Manager', 'display_name' => 'HR Manager', 'role_category' => 'administrative', 'description' => 'Human resources management', 'is_system_role' => 1],
@@ -82,10 +81,9 @@ class PermissionsSeeder extends Seeder
 
         $this->assignRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa'], ['approve', 'view', 'manage', 'audit', 'export']);
         $this->assignRolePermissions('Academic Registrar', ['core', 'admin', 'academics'], ['approve', 'view', 'create', 'edit', 'manage', 'export']);
-        $this->assignRolePermissions('Principal', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa']);
         $this->assignRolePermissions('Dean', ['core', 'academics', 'hr', 'portal'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('HOD', ['core', 'academics', 'hr'], ['view', 'create', 'edit', 'approve', 'manage']);
-        $this->assignRolePermissions('Lecturer', ['academics'], ['view', 'create', 'edit', 'manage']);
+        $this->assignRolePermissions('Lecturer/Tutor', ['academics'], ['view', 'create', 'edit', 'manage']);
         $this->assignRolePermissions('Admissions Officer', ['admin'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Finance Manager', ['core', 'finance'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('HR Manager', ['core', 'hr'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);

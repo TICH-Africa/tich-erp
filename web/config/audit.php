@@ -31,6 +31,9 @@ return [
         // RBAC & security
         'rbac.role.assigned' => ['module' => 'rbac', 'sensitive' => false],
         'rbac.role.revoked' => ['module' => 'rbac', 'sensitive' => false],
+        'rbac.role.created' => ['module' => 'rbac', 'sensitive' => false],
+        'rbac.role.updated' => ['module' => 'rbac', 'sensitive' => false],
+        'rbac.role.deleted' => ['module' => 'rbac', 'sensitive' => false],
         'rbac.permission.assigned' => ['module' => 'rbac', 'sensitive' => false],
         'rbac.permission.revoked' => ['module' => 'rbac', 'sensitive' => false],
         'rbac.role.permissions_synced' => ['module' => 'rbac', 'sensitive' => false],

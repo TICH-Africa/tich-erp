@@ -14,7 +14,7 @@ return [
         'Student' => 20,
         'Alumni' => 25,
         'Staff' => 30,
-        'Lecturer' => 40,
+        'Lecturer/Tutor' => 40,
         'Admissions Officer' => 45,
         'HOD' => 50,
         'QA Officer' => 55,

@@ -18,7 +18,7 @@ class AcademicsAccessService
 
     public function canAccessAll(User $user): bool
     {
-        return $this->rbacService->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Principal', 'Dean']);
+        return $this->rbacService->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean']);
     }
 
     public function canApproveRegistry(User $user): bool

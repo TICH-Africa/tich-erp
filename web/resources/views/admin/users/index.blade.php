@@ -13,27 +13,32 @@
     @endif
 
     <div class="tich-tabs tich-mb-8">
-        <div class="tich-tabs__nav">
-            <a
-                href="{{ route('admin.users.index', ['audience' => 'staff']) }}"
-                class="tich-tabs__btn{{ $audience === 'staff' ? ' is-active' : '' }}"
-            >
-                Employees &amp; staff
-                <span class="tich-caption">({{ $staffCount }})</span>
-            </a>
-            <a
-                href="{{ route('admin.users.index', ['audience' => 'students']) }}"
-                class="tich-tabs__btn{{ $audience === 'students' ? ' is-active' : '' }}"
-            >
-                Students
-                <span class="tich-caption">({{ $studentCount }})</span>
-            </a>
+        <div class="tich-tabs__nav" style="justify-content: space-between; align-items: center;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <a
+                    href="{{ route('admin.users.index', ['audience' => 'staff']) }}"
+                    class="tich-tabs__btn{{ $audience === 'staff' ? ' is-active' : '' }}"
+                >
+                    Employees &amp; staff
+                    <span class="tich-caption">({{ $staffCount }})</span>
+                </a>
+                <a
+                    href="{{ route('admin.users.index', ['audience' => 'students']) }}"
+                    class="tich-tabs__btn{{ $audience === 'students' ? ' is-active' : '' }}"
+                >
+                    Students
+                    <span class="tich-caption">({{ $studentCount }})</span>
+                </a>
+            </div>
+            @if ($audience === 'staff')
+                <a href="{{ route('admin.roles.index') }}" class="tich-btn tich-btn-secondary">Manage roles</a>
+            @endif
         </div>
     </div>
 
     @if ($audience === 'staff')
         <p class="tich-text tich-mb-4">
-            Click the edit icon to assign an employee to a department and add extra module access outside their department.
+            Click the edit icon to assign departments and modules. Each employee can hold <strong>multiple roles</strong> — use “Add another role” in the popup.
         </p>
 
         <div class="tich-card tich-table-panel">
