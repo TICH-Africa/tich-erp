@@ -3032,6 +3032,14 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     font-size: 0.875rem;
 }
 
+a.tich-tabs__btn {
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .tich-tabs__btn.is-active {
     background: var(--tich-blue);
     border-color: var(--tich-blue);

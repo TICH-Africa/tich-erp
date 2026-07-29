@@ -11,7 +11,10 @@ use Illuminate\Support\Collection;
 
 class DepartmentDashboardService
 {
-    public function __construct(protected RBACService $rbacService) {}
+    public function __construct(
+        protected RBACService $rbacService,
+        protected DepartmentModuleService $departmentModuleService,
+    ) {}
 
     public function mainDepartmentsForUser(User $user): Collection
     {
@@ -87,64 +90,31 @@ class DepartmentDashboardService
     }
 
     /**
-     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, coming_soon?: bool}>
+     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, coming_soon?: bool, group?: string}>
      */
     public function modulesForDepartment(User $user, Department $department): array
     {
-        if ($department->isAcademicsHub()) {
-            $hubModules = $this->academicsHubModules($user, $department);
-
-            if ($hubModules !== []) {
-                return $hubModules;
-            }
-        }
-
-        if ($department->children()->active()->exists()) {
+        if ($department->children()->active()->exists() && ! $department->isAcademicsHub()) {
             return [];
         }
 
-        if ($department->isLearningDepartment()) {
-            return $this->learningDepartmentModules($user, $department);
-        }
-
+        $tools = $this->departmentModuleService->dashboardToolsForDepartment($department);
         $modules = [];
 
-        if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
-            if ($department->dept_code === 'ADM') {
-                $modules[] = [
-                    'label' => 'Approval dashboard',
-                    'description' => 'Verify, accept, and reject student onboarding applications.',
-                    'route' => 'admissions.dashboard',
-                    'params' => [],
-                ];
-            } else {
-                $modules[] = [
-                    'label' => 'Application approvals',
-                    'description' => 'Review onboarding applications for this academic department.',
-                    'route' => 'admissions.applications.index',
-                    'params' => ['department' => $department->id, 'status' => 'pending'],
-                ];
-            }
-        }
+        foreach ($tools as $tool) {
+            $permission = $tool['permission'] ?? null;
 
-        foreach ($this->departmentModuleMap() as $deptCode => $module) {
-            if ($department->dept_code !== $deptCode) {
-                continue;
-            }
-
-            if (! $this->rbacService->hasPermission($user, $module['permission'])) {
+            if ($permission && ! $this->rbacService->hasPermission($user, $permission)) {
                 continue;
             }
 
             $modules[] = [
-                'label' => $module['label'],
-                'description' => $module['description'],
-                'route' => $module['route'],
-                'params' => array_merge(
-                    ['department' => $department->id],
-                    $module['params'] ?? []
-                ),
-                'coming_soon' => $module['coming_soon'] ?? false,
+                'label' => $tool['label'],
+                'description' => $tool['description'],
+                'route' => $tool['route'],
+                'params' => $this->resolveToolParams($department, $tool),
+                'coming_soon' => $tool['coming_soon'] ?? false,
+                'group' => $tool['group'] ?? null,
             ];
         }
 
@@ -221,7 +191,6 @@ class DepartmentDashboardService
 
         $modules = $this->modulesForDepartment($user, $department);
 
-        // Hub departments show tools on the overview panel; keep the sidebar to navigation only.
         if ($modules !== [] && $children->isEmpty()) {
             $groupLabels = [
                 'education' => 'Education',
@@ -281,8 +250,6 @@ class DepartmentDashboardService
     }
 
     /**
-     * Sidebar for schools under the Academics hub (e.g. CHS at /departments/14-2).
-     *
      * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, coming_soon?: bool, target_id?: int}>
      */
     private function learningDepartmentSidebarNavigation(User $user, Department $department): array
@@ -298,27 +265,34 @@ class DepartmentDashboardService
             ],
         ];
 
-        $hub = $department->academicsHub();
+        $modules = $this->modulesForDepartment($user, $department);
 
-        if ($hub && $this->rbacService->hasPermission($user, 'academics.read')) {
-            $items[] = ['type' => 'heading', 'label' => 'Education'];
+        if ($modules === []) {
+            return $items;
+        }
 
-            $items[] = [
-                'type' => 'link',
-                'label' => 'Programmes',
-                'route' => 'departments.academics.programs.index',
-                'params' => [
-                    'department' => $hub->id,
-                    'learning_department' => $department->id,
-                ],
-            ];
+        $groupLabels = [
+            'education' => 'Education',
+            'admissions' => 'Admissions',
+            'tools' => 'Tools',
+        ];
 
-            if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
+        $grouped = collect($modules)->groupBy(fn (array $module) => $module['group'] ?? 'tools');
+
+        foreach ($groupLabels as $groupKey => $groupLabel) {
+            if (! $grouped->has($groupKey)) {
+                continue;
+            }
+
+            $items[] = ['type' => 'heading', 'label' => $groupLabel];
+
+            foreach ($grouped->get($groupKey) as $module) {
                 $items[] = [
                     'type' => 'link',
-                    'label' => 'Application approvals',
-                    'route' => 'admissions.applications.index',
-                    'params' => ['department' => $department->id, 'status' => 'pending'],
+                    'label' => $module['label'],
+                    'route' => $module['route'],
+                    'params' => $module['params'] ?? [],
+                    'coming_soon' => $module['coming_soon'] ?? false,
                 ];
             }
         }
@@ -393,8 +367,6 @@ class DepartmentDashboardService
     }
 
     /**
-     * Programmes offered by a learning department (school under Academics).
-     *
      * @return Collection<int, AcademicProgram>
      */
     public function programsForDepartment(Department $department): Collection
@@ -444,134 +416,30 @@ class DepartmentDashboardService
     }
 
     /**
-     * @return array<string, array{permission: string, label: string, description: string, route: string, params?: array<string, mixed>, coming_soon?: bool}>
+     * @param  array<string, mixed>  $tool
+     * @return array<string, mixed>
      */
-    private function departmentModuleMap(): array
+    private function resolveToolParams(Department $department, array $tool): array
     {
-        return [
-            'HR' => [
-                'permission' => 'hr.read',
-                'label' => 'Human resources',
-                'description' => 'Staff contracts, leave, and recruitment.',
-                'route' => 'dashboard',
-                'coming_soon' => true,
-            ],
-            'FIN' => [
-                'permission' => 'finance.read',
-                'label' => 'Finance',
-                'description' => 'Fees, invoices, payroll, and procurement.',
-                'route' => 'dashboard',
-                'coming_soon' => true,
-            ],
-            'PRC' => [
-                'permission' => 'finance.read',
-                'label' => 'Procurement & logistics',
-                'description' => 'Purchasing, inventory, and supplier management.',
-                'route' => 'dashboard',
-                'coming_soon' => true,
-            ],
-            'ACAD' => [
-                'permission' => 'academics.read',
-                'label' => 'Curriculum hub',
-                'description' => 'Course versioning, units, department mapping, and calendar.',
-                'route' => 'departments.academics.dashboard',
-                'params' => [],
-            ],
-            'SIS' => [
-                'permission' => 'students.read',
-                'label' => 'Student Information System',
-                'description' => '360° student biodata and enrolment records.',
-                'route' => 'sis.students.index',
-            ],
-        ];
-    }
-
-    private function shouldOfferAdmissions(Department $department): bool
-    {
-        return $department->dept_code === 'ADM' || $department->dept_category === 'academic';
-    }
-
-    /**
-     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, group?: string, coming_soon?: bool}>
-     */
-    private function learningDepartmentModules(User $user, Department $department): array
-    {
-        $modules = [];
+        $params = $tool['params'] ?? [];
         $hub = $department->academicsHub();
 
-        if ($hub && $this->rbacService->hasPermission($user, 'academics.read')) {
-            $scope = [
-                'department' => $hub->id,
-                'learning_department' => $department->id,
-            ];
-
-            $modules[] = [
-                'label' => 'Programmes',
-                'description' => 'Configure course length, intakes, unit catalog, and semester mapping for programmes in this department.',
-                'route' => 'departments.academics.programs.index',
-                'params' => $scope,
-                'group' => 'education',
-            ];
+        if ($department->isAcademicsHub() || $department->isLearningDepartment()) {
+            $params['department'] = $hub?->id ?? $department->id;
+        } else {
+            $params['department'] = $department->id;
         }
 
-        if ($this->shouldOfferAdmissions($department) && $this->rbacService->hasPermission($user, 'admissions.read')) {
-            $modules[] = [
-                'label' => 'Application approvals',
-                'description' => 'Review onboarding applications for programmes in this department.',
-                'route' => 'admissions.applications.index',
-                'params' => ['department' => $department->id, 'status' => 'pending'],
-                'group' => 'admissions',
-            ];
+        if ($department->isLearningDepartment()) {
+            $params['learning_department'] = $department->id;
+
+            if (($tool['route'] ?? '') === 'admissions.applications.index') {
+                $params['department'] = $department->id;
+                unset($params['learning_department']);
+            }
         }
 
-        return $modules;
-    }
-
-    /**
-     * @return list<array{label: string, description: string, route: string, params: array<string, mixed>, coming_soon?: bool}>
-     */
-    private function academicsHubModules(User $user, Department $department): array
-    {
-        $modules = [];
-        $params = ['department' => $department->id];
-
-        if ($this->rbacService->hasPermission($user, 'academics.read')) {
-            $modules[] = [
-                'label' => 'Curriculum overview',
-                'description' => 'Summary stats and quick links for programmes, units, and versions.',
-                'route' => 'departments.academics.dashboard',
-                'params' => $params,
-            ];
-            $modules[] = [
-                'label' => 'Learning department profiles',
-                'description' => 'Set curriculum profiles for CHS, ICT, Business, and other schools.',
-                'route' => 'departments.academics.departments.index',
-                'params' => $params,
-            ];
-            $modules[] = [
-                'label' => 'Unit catalog',
-                'description' => 'Create and approve units before mapping them to programmes.',
-                'route' => 'departments.academics.units.index',
-                'params' => $params,
-            ];
-            $modules[] = [
-                'label' => 'Programme curriculum',
-                'description' => 'Course length, terms per year, semester/block unit mapping, and versioning.',
-                'route' => 'departments.academics.programs.index',
-                'params' => $params,
-            ];
-        }
-
-        if ($this->rbacService->hasPermission($user, 'academics.calendar')) {
-            $modules[] = [
-                'label' => 'Academic calendar',
-                'description' => 'Configure academic years and intake terms.',
-                'route' => 'departments.academics.calendar.index',
-                'params' => $params,
-            ];
-        }
-
-        return $modules;
+        return $params;
     }
 
     /**

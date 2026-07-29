@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Department extends Model
 {
@@ -47,6 +48,18 @@ class Department extends Model
     public function catalogUnits(): HasMany
     {
         return $this->hasMany(Unit::class, 'department_id');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function assignedModuleKeys(): array
+    {
+        return DB::table('department_modules')
+            ->where('department_id', $this->id)
+            ->orderBy('module_key')
+            ->pluck('module_key')
+            ->all();
     }
 
     public function isLearningDepartment(): bool

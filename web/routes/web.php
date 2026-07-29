@@ -108,7 +108,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
         Route::middleware(['permission:users.access.manage'])->group(function () {
             Route::get('/users', [UserAccessController::class, 'index'])->name('admin.users.index');
-            Route::get('/users/{user}/access', [UserAccessController::class, 'edit'])->name('admin.users.edit');
             Route::put('/users/{user}/access', [UserAccessController::class, 'update'])->name('admin.users.update');
         });
 

@@ -14,6 +14,7 @@
             <h1 class="tich-h1" style="font-size: 2rem;">Departments</h1>
             <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
                 Administrative units sit under department groups. Academic departments (courses/programs) sit under <strong>Academics</strong>.
+                Assign platform modules per department — submodules are inherited automatically.
             </p>
         </div>
         <button type="button" class="tich-btn tich-btn-primary" data-open-modal="department-create-modal">
@@ -36,6 +37,7 @@
                         <th>Code</th>
                         <th>Name</th>
                         <th>Type</th>
+                        <th>Modules</th>
                         <th>Parent</th>
                         <th>Campus</th>
                         <th>Status</th>
@@ -50,9 +52,11 @@
                             :department-groups="$departmentGroups"
                             :parent-departments="$parentDepartments"
                             :dept-categories="$deptCategories"
+                            :module-assignments="$moduleAssignments"
+                            :module-catalog="$moduleCatalog"
                         />
                     @empty
-                        <tr><td colspan="7" class="tich-caption">No departments in this group.</td></tr>
+                        <tr><td colspan="8" class="tich-caption">No departments in this group.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -68,6 +72,7 @@
                         <th>Code</th>
                         <th>Name</th>
                         <th>Type</th>
+                        <th>Modules</th>
                         <th>Parent</th>
                         <th>Campus</th>
                         <th>Status</th>
@@ -82,6 +87,8 @@
                             :department-groups="$departmentGroups"
                             :parent-departments="$parentDepartments"
                             :dept-categories="$deptCategories"
+                            :module-assignments="$moduleAssignments"
+                            :module-catalog="$moduleCatalog"
                         />
                     @endforeach
                 </tbody>
@@ -100,6 +107,7 @@
         'departmentGroups' => $departmentGroups,
         'parentDepartments' => $parentDepartments,
         'deptCategories' => $deptCategories,
+        'moduleCatalog' => $moduleCatalog,
         'open' => $openCreateModal,
     ])
 
@@ -144,6 +152,8 @@
                     'department' => $editDepartment,
                     'fieldIdPrefix' => 'department-edit-',
                     'excludeDepartmentId' => $editDepartment?->id,
+                    'moduleCatalog' => $moduleCatalog,
+                    'assignedModules' => $editDepartment ? ($moduleAssignments[$editDepartment->id] ?? []) : [],
                 ])
                 <footer class="tich-modal__footer">
                     <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="department-edit-modal">Cancel</button>
@@ -176,6 +186,25 @@
             field.value = value ?? '';
         }
 
+        function setModuleCheckboxes(moduleKeys) {
+            var keys = [];
+
+            try {
+                keys = JSON.parse(moduleKeys || '[]');
+            } catch (error) {
+                keys = [];
+            }
+
+            form.querySelectorAll('.tich-dept-module-checkbox').forEach(function (checkbox) {
+                checkbox.checked = keys.indexOf(checkbox.value) !== -1;
+            });
+
+            var categoryField = document.getElementById('department-edit-dept_category');
+            if (categoryField) {
+                categoryField.dispatchEvent(new Event('change'));
+            }
+        }
+
         function fillEditForm(trigger) {
             form.action = trigger.getAttribute('data-update-url') || '#';
             setFieldValue('department-edit-id', trigger.getAttribute('data-department-id'));
@@ -187,6 +216,7 @@
             setFieldValue('department-edit-campus_id', trigger.getAttribute('data-campus-id') || '');
             setFieldValue('department-edit-display_order', trigger.getAttribute('data-display-order') || '0');
             setFieldValue('department-edit-is_active', trigger.getAttribute('data-is-active'));
+            setModuleCheckboxes(trigger.getAttribute('data-module-keys'));
         }
 
         document.querySelectorAll('.department-edit-trigger').forEach(function (trigger) {

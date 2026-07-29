@@ -4,68 +4,99 @@
 
 @section('admin-content')
     <h1 class="tich-h1" style="font-size: 2rem;">Users &amp; access</h1>
-    <p class="tich-text tich-mb-8">Assign roles and permissions per department, with optional campus scope.</p>
+    <p class="tich-text tich-mb-6">
+        Manage employee roles, departments, and module access separately from student portal accounts.
+    </p>
 
-    <div class="tich-card tich-table-panel">
-        <table class="tich-admin-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Type</th>
-                    <th>Roles</th>
-                    <th>Departments</th>
-                    <th>Permissions</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($users as $user)
-                    @php
-                        $roleDepartmentIds = $user->roles
-                            ->pluck('pivot.department_id')
-                            ->filter()
-                            ->unique()
-                            ->values();
+    @if (session('status'))
+        <p class="tich-text tich-mb-4" style="color: var(--tich-green);">{{ session('status') }}</p>
+    @endif
 
-                        $permissionDepartmentIds = $user->permissions
-                            ->pluck('pivot.department_id')
-                            ->filter()
-                            ->unique()
-                            ->values();
+    <div class="tich-tabs tich-mb-8">
+        <div class="tich-tabs__nav">
+            <a
+                href="{{ route('admin.users.index', ['audience' => 'staff']) }}"
+                class="tich-tabs__btn{{ $audience === 'staff' ? ' is-active' : '' }}"
+            >
+                Employees &amp; staff
+                <span class="tich-caption">({{ $staffCount }})</span>
+            </a>
+            <a
+                href="{{ route('admin.users.index', ['audience' => 'students']) }}"
+                class="tich-tabs__btn{{ $audience === 'students' ? ' is-active' : '' }}"
+            >
+                Students
+                <span class="tich-caption">({{ $studentCount }})</span>
+            </a>
+        </div>
+    </div>
 
-                        $departmentIds = $roleDepartmentIds->merge($permissionDepartmentIds)->unique()->values();
-                    @endphp
+    @if ($audience === 'staff')
+        <p class="tich-text tich-mb-4">
+            Click the edit icon to assign an employee to a department and add extra module access outside their department.
+        </p>
+
+        <div class="tich-card tich-table-panel">
+            <table class="tich-admin-table">
+                <thead>
                     <tr>
-                        <td>
-                            <strong>{{ $user->username }}</strong><br>
-                            <span class="tich-caption">{{ $user->email }}</span>
-                        </td>
-                        <td>{{ ucfirst($user->user_type) }}</td>
-                        <td>
-                            @forelse ($user->roles as $role)
-                                {{ $role->role_name }}
-                                @if ($role->pivot->department_id)
-                                    <span class="tich-caption">· {{ $departmentNames[$role->pivot->department_id] ?? 'Dept #'.$role->pivot->department_id }}</span>
+                        <th>Employee</th>
+                        <th>Account type</th>
+                        <th>Roles &amp; departments</th>
+                        <th>Staff department</th>
+                        <th>Extra modules</th>
+                        <th style="width: 4rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($users as $user)
+                        @php
+                            $extraModules = $user->permissions
+                                ->filter(fn ($permission) => $moduleLabelsBySlug->has($permission->slug))
+                                ->values();
+
+                            $assignmentsPayload = $user->roles->map(fn ($role) => [
+                                'role_id' => $role->id,
+                                'department_id' => $role->pivot->department_id ? (int) $role->pivot->department_id : null,
+                                'campus_id' => $role->pivot->campus_id ? (int) $role->pivot->campus_id : null,
+                            ])->values()->all();
+
+                            $grantsPayload = $extraModules->map(function ($permission) use ($slugToPermission) {
+                                return [
+                                    'permission' => $slugToPermission[$permission->slug] ?? $permission->slug,
+                                    'department_id' => $permission->pivot->department_id ? (int) $permission->pivot->department_id : null,
+                                    'campus_id' => $permission->pivot->campus_id ? (int) $permission->pivot->campus_id : null,
+                                ];
+                            })->values()->all();
+                        @endphp
+                        <tr>
+                            <td>
+                                <strong>{{ $user->username }}</strong><br>
+                                <span class="tich-caption">{{ $user->email }}</span>
+                            </td>
+                            <td>{{ ucfirst($user->user_type) }}</td>
+                            <td>
+                                @forelse ($user->roles as $role)
+                                    {{ $role->role_name }}
+                                    @if ($role->pivot->department_id)
+                                        <span class="tich-caption">· {{ $departmentNames[$role->pivot->department_id] ?? 'Dept #'.$role->pivot->department_id }}</span>
+                                    @else
+                                        <span class="tich-caption">· Institution-wide</span>
+                                    @endif
+                                    @if (!$loop->last)<br>@endif
+                                @empty
+                                    <span class="tich-caption">Not assigned</span>
+                                @endforelse
+                            </td>
+                            <td>
+                                @if ($user->staff?->department)
+                                    {{ $user->staff->department->dept_name }}
                                 @else
-                                    <span class="tich-caption">· Institution-wide</span>
+                                    <span class="tich-caption">Not linked</span>
                                 @endif
-                                @if (!$loop->last)<br>@endif
-                            @empty
-                                <span class="tich-caption">No role</span>
-                            @endforelse
-                        </td>
-                        <td>
-                            @forelse ($departmentIds as $departmentId)
-                                {{ $departmentNames[$departmentId] ?? 'Dept #'.$departmentId }}@if (!$loop->last), @endif
-                            @empty
-                                <span class="tich-caption">Institution-wide</span>
-                            @endforelse
-                        </td>
-                        <td>
-                            @php $shownPermission = false; @endphp
-                            @foreach ($user->permissions as $permission)
-                                @if ($moduleLabelsBySlug->has($permission->slug))
-                                    @php $shownPermission = true; @endphp
+                            </td>
+                            <td>
+                                @forelse ($extraModules as $permission)
                                     {{ $moduleLabelsBySlug[$permission->slug] }}
                                     @if ($permission->pivot->department_id)
                                         <span class="tich-caption">· {{ $departmentNames[$permission->pivot->department_id] ?? 'Dept #'.$permission->pivot->department_id }}</span>
@@ -73,19 +104,133 @@
                                         <span class="tich-caption">· Institution-wide</span>
                                     @endif
                                     @if (!$loop->last)<br>@endif
-                                @endif
-                            @endforeach
-                            @unless ($shownPermission)
-                                <span class="tich-caption">From roles only</span>
-                            @endunless
-                        </td>
-                        <td>
-                            <a href="{{ route('admin.users.edit', $user) }}" class="tich-link">Configure access</a>
-                        </td>
+                                @empty
+                                    <span class="tich-caption">None</span>
+                                @endforelse
+                            </td>
+                            <td>
+                                <button
+                                    type="button"
+                                    class="tich-squircle-btn staff-access-trigger"
+                                    title="Assign department &amp; modules"
+                                    aria-label="Assign access for {{ $user->username }}"
+                                    data-open-modal="staff-access-modal"
+                                    data-update-url="{{ route('admin.users.update', $user) }}"
+                                    data-user-id="{{ $user->id }}"
+                                    data-username="{{ $user->username }}"
+                                    data-email="{{ $user->email }}"
+                                    data-assignments="{{ json_encode($assignmentsPayload) }}"
+                                    data-permission-grants="{{ json_encode($grantsPayload) }}"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 20h9"/>
+                                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="tich-table-empty">No staff accounts found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            <div class="tich-mt-4">{{ $users->links() }}</div>
+        </div>
+
+        @include('admin.partials.staff-access-modal', [
+            'roles' => $roles,
+            'roleNamesById' => $roleNamesById,
+            'campuses' => $campuses,
+            'departments' => $departments,
+            'assignableModules' => $assignableModules,
+            'moduleCatalog' => $moduleCatalog,
+            'departmentModuleAssignments' => $departmentModuleAssignments,
+            'departmentPermissionMap' => $departmentPermissionMap,
+            'openUserId' => $openStaffAccessUserId,
+        ])
+
+        @include('admin.partials.tich-modal-assets')
+    @else
+        <p class="tich-text tich-mb-4">
+            Student accounts are created through admissions and enrolment. Full records live in the Student Information System.
+        </p>
+
+        <div class="tich-card tich-table-panel">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Programme</th>
+                        <th>Role</th>
+                        <th>Portal</th>
+                        <th></th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-        <div class="tich-mt-4">{{ $users->links() }}</div>
-    </div>
+                </thead>
+                <tbody>
+                    @forelse ($users as $user)
+                        @php
+                            $primaryRoleId = $user->roles->first()?->id ?? '';
+                        @endphp
+                        <tr>
+                            <td>
+                                <strong>{{ $user->username }}</strong><br>
+                                <span class="tich-caption">{{ $user->email }}</span>
+                            </td>
+                            <td>
+                                @if ($user->student?->program)
+                                    {{ $user->student->program->program_code }} · {{ $user->student->program->program_name }}
+                                @else
+                                    <span class="tich-caption">No enrolment linked</span>
+                                @endif
+                            </td>
+                            <td>
+                                @forelse ($user->roles as $role)
+                                    {{ $role->role_name }}@if (!$loop->last), @endif
+                                @empty
+                                    <span class="tich-caption">Student (default)</span>
+                                @endforelse
+                            </td>
+                            <td>
+                                @if ($user->student_id || $user->student)
+                                    <span class="tich-caption">Active</span>
+                                @else
+                                    <span class="tich-caption">No student record</span>
+                                @endif
+                            </td>
+                            <td>
+                                <button
+                                    type="button"
+                                    class="tich-link student-access-trigger"
+                                    data-open-modal="student-access-modal"
+                                    data-update-url="{{ route('admin.users.update', $user) }}"
+                                    data-username="{{ $user->username }}"
+                                    data-email="{{ $user->email }}"
+                                    data-role-id="{{ $primaryRoleId }}"
+                                >
+                                    Configure role
+                                </button>
+                                @if ($user->student)
+                                    · <a href="{{ route('sis.students.show', $user->student) }}" class="tich-link">SIS record</a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="tich-table-empty">No student accounts found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            <div class="tich-mt-4">{{ $users->links() }}</div>
+        </div>
+
+        @include('admin.partials.student-access-modal', [
+            'studentRoles' => $studentRoles,
+            'openUserId' => $openStudentAccessUserId,
+        ])
+
+        @include('admin.partials.tich-modal-assets')
+    @endif
 @endsection

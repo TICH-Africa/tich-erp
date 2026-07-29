@@ -6,6 +6,8 @@
     'department' => null,
     'fieldIdPrefix' => '',
     'excludeDepartmentId' => null,
+    'moduleCatalog' => [],
+    'assignedModules' => [],
 ])
 
 <div class="tich-form-group">
@@ -91,4 +93,13 @@
         >
         <span class="tich-text">Active</span>
     </label>
+@endif
+
+@if ($moduleCatalog !== [])
+    @include('admin.partials.department-module-fields', [
+        'moduleCatalog' => $moduleCatalog,
+        'assignedModules' => $assignedModules,
+        'fieldIdPrefix' => $fieldIdPrefix,
+        'selectedCategory' => old('dept_category', $department->dept_category ?? ''),
+    ])
 @endif

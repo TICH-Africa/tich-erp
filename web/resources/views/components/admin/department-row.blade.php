@@ -1,4 +1,12 @@
-@props(['department', 'campuses', 'departmentGroups', 'parentDepartments', 'deptCategories', 'depth' => 0])
+@props(['department', 'campuses', 'departmentGroups', 'parentDepartments', 'deptCategories', 'moduleAssignments' => [], 'moduleCatalog' => [], 'depth' => 0])
+
+@php
+    $assignedKeys = $moduleAssignments[$department->id] ?? [];
+    $moduleLabels = collect($moduleCatalog)->keyBy('key');
+    $assignedLabels = collect($assignedKeys)
+        ->map(fn (string $key) => $moduleLabels->get($key)['label'] ?? $key)
+        ->all();
+@endphp
 
 <tr>
     <td style="padding-left: {{ $depth * 1.25 }}rem;">
@@ -9,6 +17,15 @@
     </td>
     <td>{{ $department->dept_name }}</td>
     <td>{{ $deptCategories[$department->dept_category] ?? ucfirst($department->dept_category) }}</td>
+    <td>
+        @if ($assignedLabels !== [])
+            @foreach ($assignedLabels as $label)
+                <span class="tich-caption" style="display: inline-block; margin: 0 0.35rem 0.35rem 0; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--tich-neutral-bg, #f3f4f6);">{{ $label }}</span>
+            @endforeach
+        @else
+            <span class="tich-caption">None assigned</span>
+        @endif
+    </td>
     <td>{{ $department->parent?->dept_name ?? '-' }}</td>
     <td>{{ $department->campus?->campus_name ?? '-' }}</td>
     <td>{{ $department->is_active ? 'Active' : 'Inactive' }}</td>
@@ -29,6 +46,7 @@
             data-campus-id="{{ $department->campus_id }}"
             data-display-order="{{ $department->display_order ?? 0 }}"
             data-is-active="{{ $department->is_active ? '1' : '0' }}"
+            data-module-keys="{{ json_encode($assignedKeys) }}"
         >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 20h9"/>
@@ -45,6 +63,8 @@
         :department-groups="$departmentGroups"
         :parent-departments="$parentDepartments"
         :dept-categories="$deptCategories"
+        :module-assignments="$moduleAssignments"
+        :module-catalog="$moduleCatalog"
         :depth="$depth + 1"
     />
 @endforeach

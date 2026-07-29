@@ -3,6 +3,7 @@
     'departmentGroups',
     'parentDepartments',
     'deptCategories',
+    'moduleCatalog' => [],
     'open' => false,
 ])
 
@@ -40,6 +41,8 @@
                 'departmentGroups' => $departmentGroups,
                 'parentDepartments' => $parentDepartments,
                 'deptCategories' => $deptCategories,
+                'moduleCatalog' => $moduleCatalog,
+                'assignedModules' => old('module_keys', []),
             ])
 
             <footer class="tich-modal__footer">
