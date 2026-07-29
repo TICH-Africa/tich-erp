@@ -239,6 +239,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.timetable.print');
         Route::get('/timetables/{timetable}/pdf', [\App\Http\Controllers\Portal\PortalTimetableController::class, 'pdf'])
             ->name('portal.timetable.pdf');
+        Route::get('/transcript/print', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'print'])
+            ->name('portal.transcript.print');
+        Route::get('/transcript/pdf', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'pdf'])
+            ->name('portal.transcript.pdf');
     });
 
     Route::middleware('staff.portal')->prefix('staff')->group(function () {

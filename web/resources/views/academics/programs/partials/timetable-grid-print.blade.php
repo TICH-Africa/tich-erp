@@ -52,7 +52,7 @@
                                     <span>{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
                                 </div>
                             @empty
-                                <span style="color:#94a3b8;">—</span>
+                                <span style="color:#94a3b8;">-</span>
                             @endforelse
                         </td>
                     @endforeach

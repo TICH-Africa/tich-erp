@@ -688,10 +688,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ),
             'paperOrientation' => 'landscape',
             'metaRows' => [
-                ['label' => 'Programme', 'value' => e($program->program_name ?? '—')],
-                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '—')],
+                ['label' => 'Programme', 'value' => e($program->program_name ?? '-')],
+                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '-')],
                 ['label' => 'Semester', 'value' => e((string) $timetable->teaching_period)],
-                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? '—')],
+                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? '-')],
                 ['label' => 'Status', 'value' => e(ucfirst($timetable->status))],
                 ['label' => 'Timetable', 'value' => e($timetable->displayTitle()), 'full' => true],
             ],

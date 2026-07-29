@@ -46,6 +46,7 @@ return [
         'short_name' => 'TICH in Africa',
         'tagline' => 'Community health education for Africa',
         'copyright' => 'Tropical Institute of Community Health and Development in Africa',
+        'website' => 'tich.africa',
     ],
 
 ];

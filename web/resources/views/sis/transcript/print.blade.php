@@ -29,7 +29,7 @@
                             <td>{{ $row->unit_name }}</td>
                             <td class="num">{{ number_format($row->credit_hours, 1) }}</td>
                             <td class="num">{{ number_format($row->continuous_score, 1) }}%</td>
-                            <td class="num">{{ $row->exam_score !== null ? number_format($row->exam_score, 1).'%' : '—' }}</td>
+                            <td class="num">{{ $row->exam_score !== null ? number_format($row->exam_score, 1).'%' : '-' }}</td>
                             <td class="num"><strong>{{ number_format($row->final_score, 1) }}%</strong></td>
                             <td>{{ $row->grade_letter }}</td>
                             <td class="num">{{ number_format($row->grade_points, 1) }}</td>

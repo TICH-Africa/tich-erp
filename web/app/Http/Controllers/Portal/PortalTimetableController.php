@@ -54,13 +54,7 @@ class PortalTimetableController extends Controller
         $student = $this->portalService->studentForUser($request->user());
         abort_unless($student, 404);
         abort_unless((int) $timetable->program_id === (int) $student->program_id, 404);
-
-        if ($timetable->status !== 'published') {
-            abort_unless(
-                $student->portal_activated_at || $student->enrollment_status === 'active',
-                403,
-            );
-        }
+        abort_unless($timetable->status === 'published', 404);
 
         $payload = $this->timetableScheduling->documentPayload($timetable);
         $program = $payload['program'];
@@ -79,10 +73,10 @@ class PortalTimetableController extends Controller
             'paperOrientation' => 'landscape',
             'metaRows' => [
                 ['label' => 'Student', 'value' => e($student->registration_number)],
-                ['label' => 'Programme', 'value' => e($program->program_name ?? '—')],
-                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '—')],
+                ['label' => 'Programme', 'value' => e($program->program_name ?? '-')],
+                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '-')],
                 ['label' => 'Semester', 'value' => e((string) $timetable->teaching_period)],
-                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? $student->campus?->campus_name ?? '—')],
+                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? $student->campus?->campus_name ?? '-')],
                 ['label' => 'Timetable', 'value' => e($timetable->displayTitle()), 'full' => true],
             ],
             'backUrl' => $includeActions ? route('portal.dashboard', ['section' => 'timetable']) : null,

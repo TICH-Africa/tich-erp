@@ -26,6 +26,7 @@ class StudentPortalDashboardService
             'overview_stats' => $this->overviewStats($student, $biodata, $academics, $finance),
             'academics' => $academics,
             'timetable' => $this->timetable($student, $academics),
+            'transcript' => $this->transcript($student),
             'finance' => $finance,
         ];
     }
@@ -107,7 +108,6 @@ class StudentPortalDashboardService
         $curriculum = $academics['curriculum'] ?? null;
         $period = $academics['current_period'] ?? null;
         $teachingPeriod = $period?->semester ?? 1;
-        $canViewProvisional = $student->portal_activated_at || $student->enrollment_status === 'active';
 
         $timetables = collect();
 
@@ -119,15 +119,6 @@ class StudentPortalDashboardService
                     (int) $teachingPeriod,
                     $kind
                 );
-
-                if (! $published && $canViewProvisional) {
-                    $published = $this->timetableScheduling->latestTimetable(
-                        (int) $student->program_id,
-                        $curriculum->id,
-                        (int) $teachingPeriod,
-                        $kind
-                    );
-                }
 
                 if ($published) {
                     $timetables->push($published);
@@ -147,7 +138,7 @@ class StudentPortalDashboardService
             'segment_types' => TimetableTemplateService::segmentTypes(),
             'active_days' => $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5],
             'teaching_period' => $teachingPeriod,
-            'is_provisional' => $primary && ! $primary->isPublished(),
+            'is_provisional' => false,
         ];
     }
 
@@ -158,5 +149,20 @@ class StudentPortalDashboardService
         }
 
         return in_array($student->enrollment_status, ['active', 'enrolled', 'registered'], true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function transcript(Student $student): array
+    {
+        $unitsCompleted = (int) DB::table('grade_records')
+            ->where('student_id', $student->id)
+            ->count();
+
+        return [
+            'available' => $unitsCompleted > 0,
+            'units_completed' => $unitsCompleted,
+        ];
     }
 }

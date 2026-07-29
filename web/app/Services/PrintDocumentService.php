@@ -24,7 +24,22 @@ class PrintDocumentService
             'tagline' => $site['tagline'] ?? 'Community health education for Africa',
             'address' => $address['display_value'] ?? 'Kisumu, Kenya',
             'copyright' => $site['copyright'] ?? ($site['institution_name'] ?? 'TICH in Africa'),
+            'website' => $site['website'] ?? 'tich.africa',
         ];
+    }
+
+    public function normalizeDocumentText(?string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        return str_replace(['—', '–', '−'], '-', $text);
+    }
+
+    public function normalizeDocumentHtml(string $html): string
+    {
+        return $this->normalizeDocumentText($html);
     }
 
     public function documentRef(string $prefix, string|int ...$parts): string
@@ -58,7 +73,7 @@ class PrintDocumentService
             'forPdf' => true,
         ], $data))->render();
 
-        return Pdf::loadHTML($html)
+        return Pdf::loadHTML($this->normalizeDocumentHtml($html))
             ->setPaper('a4', $orientation)
             ->download($filename);
     }

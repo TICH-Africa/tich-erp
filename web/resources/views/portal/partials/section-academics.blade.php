@@ -197,6 +197,21 @@
     </section>
 @endif
 
+@if (($portalData['transcript']['available'] ?? false))
+    <section class="tich-dept-panel tich-mt-8">
+        <div class="tich-dept-panel__head" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
+            <div>
+                <h2 class="tich-h2 tich-dept-panel__title">Official transcript</h2>
+                <p class="tich-text">Download or print your academic transcript once grades have been recorded and approved.</p>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                <a href="{{ route('portal.transcript.print') }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
+                <a href="{{ route('portal.transcript.pdf') }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+            </div>
+        </div>
+    </section>
+@endif
+
 @if ($otherSemesters->isNotEmpty())
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">

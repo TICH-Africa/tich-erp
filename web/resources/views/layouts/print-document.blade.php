@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $documentTitle ?? 'Official document' }} — {{ $institution['short_name'] ?? 'TICH' }}</title>
+    <title>{{ $documentTitle ?? 'Official document' }} - {{ $institution['short_name'] ?? 'TICH' }}</title>
     @if (empty($forPdf))
         <link rel="stylesheet" href="{{ asset('css/tich-print-documents.css') }}">
     @else
@@ -24,7 +24,7 @@
                 <p>{{ $documentSubtitle }}</p>
             @endif
             @if (! empty($documentRef))
-                <p>Document ref: {{ $documentRef }} · Generated {{ ($generatedAt ?? now())->format('d F Y H:i') }}</p>
+                <p>Document ref: {{ $documentRef }} · Generated {{ ($generatedAt ?? now())->format('d F Y') }}</p>
             @endif
         </div>
 

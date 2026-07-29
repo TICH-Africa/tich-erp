@@ -270,6 +270,12 @@ body {
     color: var(--tich-doc-muted);
 }
 
+.tich-doc-footer__website {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 0.82rem;
+    color: var(--tich-doc-navy);
+}
+
 .tich-doc-footer__signatures {
     display: grid;
     grid-template-columns: 1fr 1fr;
