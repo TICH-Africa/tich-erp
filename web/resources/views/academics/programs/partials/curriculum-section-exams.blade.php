@@ -173,7 +173,7 @@
         <article class="tich-card">
             <h2 class="tich-h3">Unit assessment weighting - Semester {{ $examTeachingPeriod }}</h2>
             <p class="tich-caption">Only units taught in this semester. Click Edit to adjust weights in a popup.</p>
-            <div style="overflow-x:auto;" class="tich-mt-4">
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -316,7 +316,7 @@
             @if (($examHub['timetable_synced'] ?? 0) > 0)
                 <p class="tich-caption tich-mt-2">Synced {{ $examHub['timetable_synced'] }} session(s) from the exam timetable. Unit, semester, date, time, and type were filled automatically.</p>
             @endif
-            <div style="overflow-x:auto;" class="tich-mt-4">
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -447,7 +447,7 @@
         <article class="tich-card">
             <h2 class="tich-h3">Examination papers - Semester {{ $examTeachingPeriod }}</h2>
             <p class="tich-text tich-mt-2">Draft, moderated, and approved exam papers for units taught this semester.</p>
-            <div style="overflow-x:auto;" class="tich-mt-4">
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -525,7 +525,7 @@
                         <a href="{{ route('sis.students.transcript', $studentRow->student_id) }}" target="_blank" class="tich-btn tich-btn-secondary">Generate transcript</a>
                     </div>
 
-                    <div style="overflow-x:auto;" class="tich-mt-4">
+                    <div class="tich-table-wrap tich-mt-4">
                         <table class="tich-admin-table">
                             <thead>
                                 <tr>
@@ -594,7 +594,7 @@
             <article class="tich-card tich-mb-6">
                 <h2 class="tich-h3">Blocked from exams</h2>
                 <p class="tich-caption">Students with no eligible units for this semester.</p>
-                <div style="overflow-x:auto;" class="tich-mt-4">
+                <div class="tich-table-wrap tich-mt-4">
                     <table class="tich-admin-table">
                         <thead>
                             <tr>
@@ -634,7 +634,7 @@
         <article class="tich-card tich-mb-6">
             <h2 class="tich-h3">Cumulative grade records - Semester {{ $examTeachingPeriod }}</h2>
             <p class="tich-caption">Compiled from continuous assessment for units taught this semester.</p>
-            <div style="overflow-x:auto;" class="tich-mt-4">
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -670,7 +670,7 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">Final exam results - Semester {{ $examTeachingPeriod }}</h2>
-            <div style="overflow-x:auto;" class="tich-mt-4">
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>

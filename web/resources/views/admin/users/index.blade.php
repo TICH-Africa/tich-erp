@@ -6,7 +6,7 @@
     <h1 class="tich-h1" style="font-size: 2rem;">Users &amp; access</h1>
     <p class="tich-text tich-mb-8">Assign roles and permissions per department, with optional campus scope.</p>
 
-    <div class="tich-card" style="overflow-x: auto;">
+    <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">
             <thead>
                 <tr>

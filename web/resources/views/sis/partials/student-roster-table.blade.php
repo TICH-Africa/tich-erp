@@ -6,7 +6,7 @@
     $emptyMessage = $emptyMessage ?? 'No students found.';
 @endphp
 
-<div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+<div class="tich-card tich-table-panel tich-mt-4">
     <table class="tich-admin-table">
         <thead>
             <tr>
@@ -47,7 +47,7 @@
             @empty
                 @if ($emptyMessage)
                     <tr>
-                        <td colspan="9" style="padding:2rem;text-align:center;" class="tich-text">{{ $emptyMessage }}</td>
+                        <td colspan="9" class="tich-table-empty">{{ $emptyMessage }}</td>
                     </tr>
                 @endif
             @endforelse

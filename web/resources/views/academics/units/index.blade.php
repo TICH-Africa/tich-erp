@@ -52,7 +52,7 @@
         <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
     </form>
 
-    <div class="tich-card tich-mt-8" style="overflow-x:auto;">
+    <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">
             <thead>
                 <tr>
@@ -97,7 +97,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" style="padding:2rem;text-align:center;" class="tich-text">No units yet.</td></tr>
+                    <tr><td colspan="8" class="tich-table-empty">No units yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

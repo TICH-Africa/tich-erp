@@ -8,7 +8,7 @@
         <p class="tich-text">No units assigned yet. Your HOD will allocate units from the programme unit catalog.</p>
     </article>
 @else
-    <div class="tich-card tich-mt-6" style="overflow-x:auto; padding:0;">
+    <div class="tich-card tich-table-panel tich-mt-6">
         <table class="tich-admin-table">
             <thead>
                 <tr>

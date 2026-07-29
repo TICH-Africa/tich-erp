@@ -138,7 +138,7 @@
                     <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                     <input type="hidden" name="exam_max" value="{{ $examMarksSheet['exam_max'] ?? 100 }}">
 
-                    <div style="overflow-x:auto;">
+                    <div class="tich-table-wrap">
                         <table class="tich-admin-table">
                             <thead>
                                 <tr>
@@ -194,7 +194,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Automated cumulative score sheet</h2>
                 <p class="tich-caption">Weighted from CAT/review/assignment averages, practical/skills lab averages, and attendance participation.</p>
-                <div style="overflow-x:auto;" class="tich-mt-4">
+                <div class="tich-table-wrap tich-mt-4">
                     <table class="tich-admin-table">
                         <thead>
                             <tr>

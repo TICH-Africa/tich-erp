@@ -41,7 +41,8 @@
     <article class="tich-card tich-mt-6" style="border-left:3px solid #dc2626; padding:1rem 1.25rem;">
         <h2 class="tich-h3">Attendance alerts (&lt; 90%)</h2>
         <p class="tich-text">Students at risk of losing exam eligibility.</p>
-        <table class="tich-admin-table tich-mt-4">
+        <div class="tich-table-wrap tich-mt-4">
+        <table class="tich-admin-table">
             <thead><tr><th>Student</th><th>Unit</th><th>Percentage</th><th>Status</th></tr></thead>
             <tbody>
                 @foreach ($portalData['attendance_alerts']->take(10) as $alert)
@@ -54,5 +55,6 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </article>
 @endif

@@ -25,7 +25,7 @@
         <p class="tich-text tich-mb-4" style="color: var(--tich-green);">{{ session('status') }}</p>
     @endif
 
-    <div class="tich-card" style="overflow-x: auto;">
+    <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All departments</h2>
 
         @forelse ($groups as $group)

@@ -14,7 +14,7 @@
                 @endif
             </p>
             @if ($academics['current_period_units']->isNotEmpty())
-                <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+                <div class="tich-card tich-table-panel tich-mt-2">
                     <table class="tich-admin-table">
                         <thead>
                             <tr>
@@ -41,7 +41,7 @@
     @if ($academics['registered_units']->isNotEmpty())
         <section class="tich-mt-6">
             <h3 class="tich-h3">Registered units</h3>
-            <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -69,7 +69,7 @@
     @if ($academics['cat_scores']->isNotEmpty())
         <section class="tich-mt-6">
             <h3 class="tich-h3">CAT and continuous assessment</h3>
-            <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -103,7 +103,7 @@
     @if ($academics['exam_results']->isNotEmpty())
         <section class="tich-mt-6">
             <h3 class="tich-h3">Exam results</h3>
-            <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -145,7 +145,7 @@
     @if ($academics['grades']->isNotEmpty())
         <section class="tich-mt-6">
             <h3 class="tich-h3">Final grades</h3>
-            <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -177,7 +177,7 @@
     @if ($academics['attendance']->isNotEmpty())
         <section class="tich-mt-6">
             <h3 class="tich-h3">Attendance</h3>
-            <div class="tich-card tich-mt-2" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>

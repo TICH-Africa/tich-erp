@@ -73,7 +73,7 @@
         </div>
 
         @if ($academics['current_period_units']->isNotEmpty())
-            <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+            <div class="tich-card tich-table-panel tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -108,7 +108,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">My registered units</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -138,7 +138,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">Grades</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -170,7 +170,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">Attendance</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -264,7 +264,7 @@
 
         @foreach ($otherSemesters as $semesterNumber => $units)
             <div id="semester-{{ $semesterNumber }}" class="tich-semester-units-panel" hidden>
-                <div class="tich-card" style="overflow-x:auto;">
+                <div class="tich-card tich-table-panel">
                     <table class="tich-admin-table">
                         <thead>
                             <tr>

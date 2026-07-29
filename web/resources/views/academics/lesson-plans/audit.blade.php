@@ -49,7 +49,7 @@
         <a href="{{ route('departments.academics.lesson-plans.index', $hub) }}" class="tich-link" style="margin-left:auto;">HOD approval inbox →</a>
     </form>
 
-    <div class="tich-card tich-mt-8" style="overflow-x:auto; padding:0;">
+    <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">
             <thead>
                 <tr>

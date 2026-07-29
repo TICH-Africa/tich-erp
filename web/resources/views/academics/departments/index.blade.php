@@ -8,7 +8,7 @@
         <p class="tich-text">Set curriculum profiles for schools under {{ $department->dept_name }}. Departments are created in platform admin; configure their curriculum track here.</p>
     </div>
 
-    <div class="tich-card tich-mt-8" style="overflow-x: auto;">
+    <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">
             <thead>
                 <tr>

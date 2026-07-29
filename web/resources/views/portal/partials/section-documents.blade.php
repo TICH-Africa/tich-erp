@@ -4,7 +4,7 @@
     <p class="tich-text tich-dept-header__meta">Files submitted with your application.</p>
 </header>
 
-<article class="tich-card tich-mt-8" style="overflow-x: auto;">
+<article class="tich-card tich-table-panel tich-mt-8">
     @if ($biodata['documents']->isEmpty())
         <p class="tich-text">No documents on record yet.</p>
     @else

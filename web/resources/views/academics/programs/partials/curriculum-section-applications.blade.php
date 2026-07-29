@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -63,7 +63,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" style="padding:2rem;text-align:center;" class="tich-text">
+                            <td colspan="7" class="tich-table-empty">
                                 No applications for this intake yet.
                                 @if ($selectedIntake->intake_year && $selectedIntake->intake_month)
                                     <span class="tich-caption">Applications must specify intake {{ $selectedIntake->intakeLabel() }} when applying online.</span>

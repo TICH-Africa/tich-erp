@@ -34,7 +34,7 @@
         <a href="{{ route('admissions.applications.index') }}" class="tich-link">Clear</a>
     </form>
 
-    <div class="tich-card" style="overflow-x: auto;">
+    <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">
             <thead>
                 <tr>

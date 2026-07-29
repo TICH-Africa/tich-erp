@@ -46,7 +46,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">Semester registrations</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>

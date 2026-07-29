@@ -26,7 +26,8 @@
     </div>
 
     @if ($upcomingAttendanceSessions->isNotEmpty())
-        <table class="tich-admin-table tich-mt-4">
+        <div class="tich-table-wrap tich-mt-4">
+        <table class="tich-admin-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -66,6 +67,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     @else
         <p class="tich-text tich-mt-4">No sessions yet. Ensure you have timetable slots assigned, then click refresh above.</p>
     @endif
@@ -132,6 +134,7 @@
 
         <form method="POST" action="{{ route('staff.attendance.save', $attendanceSession) }}" class="tich-mt-6">
             @csrf
+            <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead><tr><th>Present</th><th>Reg. no.</th><th>Student</th><th>Signature line (print)</th></tr></thead>
                 <tbody>
@@ -147,6 +150,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
             @unless ($attendanceSession->is_locked)
                 <div class="tich-mt-4" style="display:flex; gap:1rem; flex-wrap:wrap;">
                     <button type="submit" class="tich-btn tich-btn-secondary">Save marks</button>
@@ -238,7 +242,8 @@
 @if ($portalData['attendance_alerts']->isNotEmpty())
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Unit attendance flags</h2>
-        <table class="tich-admin-table tich-mt-4">
+        <div class="tich-table-wrap tich-mt-4">
+        <table class="tich-admin-table">
             <thead><tr><th>Student</th><th>Unit</th><th>Percentage</th><th>Status</th></tr></thead>
             <tbody>
                 @foreach ($portalData['attendance_alerts'] as $alert)
@@ -251,5 +256,6 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </article>
 @endif

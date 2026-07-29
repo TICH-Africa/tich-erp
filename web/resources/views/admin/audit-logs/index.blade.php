@@ -45,7 +45,7 @@
                 </div>
             </form>
 
-            <div class="tich-card" style="overflow-x: auto;">
+            <div class="tich-card tich-table-panel">
                 <table style="width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 0.8125rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--tich-neutral-border); text-align: left;">

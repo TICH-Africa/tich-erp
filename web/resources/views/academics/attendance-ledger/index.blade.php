@@ -38,7 +38,7 @@
         <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
     </form>
 
-    <div class="tich-card tich-mt-8" style="overflow-x:auto; padding:0;">
+    <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">
             <thead>
                 <tr>

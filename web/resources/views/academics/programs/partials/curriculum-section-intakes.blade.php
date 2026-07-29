@@ -15,7 +15,7 @@
         @if ($intakes->isEmpty())
             <p class="tich-text tich-mt-4">No intakes yet. Create the first intake below.</p>
         @else
-            <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+            <div class="tich-card tich-table-panel tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>

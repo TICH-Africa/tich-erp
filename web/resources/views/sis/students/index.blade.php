@@ -39,7 +39,7 @@
         </div>
     </form>
 
-    <div class="tich-card" style="overflow-x: auto;">
+    <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">
             <thead>
                 <tr>

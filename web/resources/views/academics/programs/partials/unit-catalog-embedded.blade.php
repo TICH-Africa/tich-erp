@@ -37,165 +37,6 @@
     $activeCount = $catalogUnits->where('status', 'active')->count();
 @endphp
 
-<style>
-    .tich-catalog-panel { padding: 0; overflow: hidden; }
-    .tich-catalog-panel__head {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid var(--tich-border);
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: 1rem;
-        align-items: flex-start;
-        background: var(--tich-surface);
-    }
-    .tich-catalog-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 1rem;
-    }
-    .tich-catalog-stat {
-        padding: 0.5rem 0.85rem;
-        border-radius: 999px;
-        border: 1px solid var(--tich-border);
-        background: var(--tich-surface-muted);
-        color: var(--tich-text);
-        font-size: 0.8125rem;
-    }
-    .tich-catalog-stat strong { font-weight: 600; color: var(--tich-text); }
-    .tich-catalog-table-wrap { overflow-x: auto; }
-    .tich-catalog-table tbody tr:nth-child(even) { background: var(--tich-surface-muted); }
-    .tich-catalog-table td { vertical-align: top; color: var(--tich-text); }
-    .tich-catalog-unit-code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--tich-blue);
-    }
-    .tich-catalog-unit-name { font-weight: 500; margin-top: 0.15rem; color: var(--tich-text); }
-    .tich-catalog-hours { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--tich-text); }
-    .tich-catalog-status {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.2rem 0.55rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: capitalize;
-    }
-    .tich-catalog-status--active { background: #d1fae5; color: #065f46; }
-    .tich-catalog-status--draft { background: var(--tich-surface-muted); color: var(--tich-neutral-muted); border: 1px solid var(--tich-border); }
-    .tich-catalog-status--pending_registry { background: #fef3c7; color: #92400e; }
-    .tich-catalog-status--archived { background: #fee2e2; color: #991b1b; }
-    .tich-catalog-schedule-list { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
-    .tich-catalog-schedule-chip {
-        display: inline-flex;
-        flex-direction: column;
-        gap: 0.1rem;
-        padding: 0.45rem 0.65rem;
-        border-radius: 0.5rem;
-        border: 1px solid var(--tich-border);
-        background: var(--tich-surface);
-        min-width: 9rem;
-    }
-    .tich-catalog-schedule-chip__period { font-size: 0.8125rem; font-weight: 600; color: var(--tich-text); }
-    .tich-catalog-schedule-chip__year { font-size: 0.75rem; color: var(--tich-neutral-muted); }
-    .tich-catalog-schedule-chip--muted {
-        border-style: dashed;
-        background: transparent;
-        color: var(--tich-neutral-muted);
-    }
-    .tich-catalog-alloc-list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-    .tich-catalog-alloc-card {
-        padding: 0.65rem 0.75rem;
-        border-radius: 0.5rem;
-        border: 1px solid var(--tich-border);
-        background: var(--tich-surface);
-    }
-    .tich-catalog-alloc-card__name { font-weight: 600; font-size: 0.875rem; color: var(--tich-text); }
-    .tich-catalog-alloc-card__meta { font-size: 0.75rem; color: var(--tich-neutral-muted); margin-top: 0.15rem; }
-    .tich-catalog-alloc-empty { font-size: 0.8125rem; color: var(--tich-neutral-muted); font-style: italic; }
-    .tich-catalog-assign {
-        margin-top: 0.65rem;
-        border: 1px solid var(--tich-border);
-        border-radius: 0.5rem;
-        background: var(--tich-surface-muted);
-        overflow: hidden;
-    }
-    .tich-catalog-assign summary {
-        cursor: pointer;
-        padding: 0.55rem 0.75rem;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--tich-blue);
-        list-style: none;
-    }
-    .tich-catalog-assign summary::-webkit-details-marker { display: none; }
-    .tich-catalog-assign__body {
-        padding: 0.75rem;
-        border-top: 1px solid var(--tich-border);
-        display: grid;
-        gap: 0.65rem;
-        background: var(--tich-surface);
-    }
-    .tich-catalog-actions { display: flex; flex-wrap: wrap; gap: 0.35rem 0.65rem; align-items: center; }
-    .tich-catalog-actions__group { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
-    .tich-catalog-actions__label { font-size: 0.75rem; color: var(--tich-neutral-muted); }
-    .tich-catalog-empty {
-        padding: 3rem 1.5rem;
-        text-align: center;
-        color: var(--tich-text);
-    }
-    .tich-catalog-hint {
-        margin: 0 1.5rem 1rem;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid var(--tich-notice-info-border);
-        background: var(--tich-notice-info-bg);
-        color: var(--tich-text);
-        font-size: 0.875rem;
-    }
-    .tich-catalog-hint--success {
-        border-color: var(--tich-green);
-        background: var(--tich-green-light);
-        color: var(--tich-text);
-    }
-
-    [data-theme="dark"] .tich-catalog-status--active {
-        background: rgba(16, 185, 129, 0.2);
-        color: #6ee7b7;
-    }
-    [data-theme="dark"] .tich-catalog-status--draft {
-        background: var(--tich-neutral);
-        color: var(--tich-neutral-muted);
-        border-color: var(--tich-border);
-    }
-    [data-theme="dark"] .tich-catalog-status--pending_registry {
-        background: rgba(251, 191, 36, 0.2);
-        color: #fcd34d;
-    }
-    [data-theme="dark"] .tich-catalog-status--archived {
-        background: rgba(239, 68, 68, 0.2);
-        color: #fca5a5;
-    }
-    [data-theme="dark"] .tich-catalog-hint--success {
-        border-color: var(--tich-green);
-        background: var(--tich-green-light);
-        color: var(--tich-grey);
-    }
-    [data-theme="dark"] .tich-catalog-unit-code {
-        color: var(--tich-blue);
-    }
-    [data-theme="dark"] .tich-catalog-assign summary {
-        color: var(--tich-blue);
-    }
-    [data-theme="dark"] .tich-catalog-table thead th {
-        color: var(--tich-grey);
-        border-color: var(--tich-border);
-    }
-</style>
-
 <article class="tich-card tich-catalog-panel tich-mt-8">
     <div class="tich-catalog-panel__head">
         <div>
@@ -228,8 +69,8 @@
         </p>
     @endunless
 
-    <div class="tich-catalog-table-wrap">
-        <table class="tich-admin-table tich-catalog-table">
+    <div class="tich-table-wrap">
+        <table class="tich-admin-table">
             <thead>
                 <tr>
                     <th>Unit</th>
@@ -424,7 +265,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $selectedIntake ? 6 : 4 }}" class="tich-catalog-empty">
+                        <td colspan="{{ $selectedIntake ? 6 : 4 }}" class="tich-table-empty">
                             <p class="tich-text">No units yet.</p>
                             @can('academics.write')
                                 <button type="button" class="tich-btn tich-btn-primary tich-mt-4" data-open-modal="unit-create">Add first unit</button>

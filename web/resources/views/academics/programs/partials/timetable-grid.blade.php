@@ -23,8 +23,7 @@
 @endphp
 
 <div
-    class="tich-timetable-grid-wrap tich-mt-4"
-    style="overflow-x:auto;"
+    class="tich-timetable-grid-wrap tich-table-wrap tich-mt-4"
     @if ($editable && $moveSessionUrl)
         data-timetable-editable="1"
         data-move-url="{{ $moveSessionUrl }}"

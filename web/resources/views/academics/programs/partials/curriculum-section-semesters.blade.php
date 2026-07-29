@@ -214,7 +214,7 @@
                         @if ($periodMappings->isEmpty())
                             <p class="tich-caption tich-mb-4">No units assigned yet.</p>
                         @else
-                            <div style="overflow-x:auto;">
+                            <div class="tich-table-wrap">
                                 <table class="tich-admin-table tich-unit-sortable">
                                     <thead>
                                         <tr>

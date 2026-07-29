@@ -34,7 +34,7 @@
             </form>
         </article>
 
-        <div class="tich-card" style="overflow-x: auto;">
+        <div class="tich-card tich-table-panel">
             <h2 class="tich-h3">Existing groups</h2>
             <table class="tich-admin-table tich-mt-4">
                 <thead>

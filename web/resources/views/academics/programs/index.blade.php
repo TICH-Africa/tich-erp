@@ -21,7 +21,7 @@
         </p>
     </div>
 
-    <div class="tich-card tich-mt-8" style="overflow-x:auto;">
+    <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">
             <thead>
                 <tr>
@@ -62,7 +62,7 @@
                         <td><a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'structure'])) }}" class="tich-link">Open builder</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ $canViewApplications ? 8 : 7 }}" style="padding:2rem;text-align:center;" class="tich-text">No programmes{{ ! empty($learningDepartment) ? ' for this department' : ' in this academics hub' }}.</td></tr>
+                    <tr><td colspan="{{ $canViewApplications ? 8 : 7 }}" class="tich-table-empty">No programmes{{ ! empty($learningDepartment) ? ' for this department' : ' in this academics hub' }}.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -64,7 +64,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2">Campus &amp; sub-county hub breakdown</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -100,7 +100,7 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2">Unit class averages</h2>
         </div>
-        <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+        <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -134,7 +134,7 @@
                 <h2 class="tich-h2">Early intervention - at-risk students</h2>
                 <p class="tich-text">Students below pass mark who may need support before final exams.</p>
             </div>
-            <div class="tich-card tich-mt-4" style="overflow-x:auto; padding:0;">
+            <div class="tich-card tich-table-panel tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>

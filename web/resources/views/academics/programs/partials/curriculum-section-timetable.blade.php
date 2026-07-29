@@ -94,7 +94,7 @@
                     @error('days')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </fieldset>
 
-                <div class="tich-mt-6" style="overflow-x:auto;">
+                <div class="tich-table-wrap tich-mt-6">
                     <table class="tich-admin-table" id="timetable-segments-table">
                         <thead>
                             <tr>
@@ -253,7 +253,7 @@
                         <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
                         <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
 
-                        <div style="overflow-x:auto;">
+                        <div class="tich-table-wrap">
                             <table class="tich-admin-table" id="kind-slots-table">
                                 <thead>
                                     <tr>
