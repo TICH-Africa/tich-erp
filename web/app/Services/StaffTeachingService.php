@@ -6,8 +6,10 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\CatScore;
 use App\Models\LessonPlan;
+use App\Models\ProgramTimetableSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -101,7 +103,11 @@ class StaffTeachingService
             ]);
         }
 
-        $session->update(['total_expected_attendees' => $roster->count()]);
+        $session->update([
+            'total_expected_attendees' => $roster->count(),
+            'roster_verified_at' => now(),
+            'roster_verified_by' => $staff->id,
+        ]);
 
         $this->auditService->log(
             'staff.attendance.session_created',
@@ -115,6 +121,77 @@ class StaffTeachingService
                 'expected_attendees' => $roster->count(),
             ],
             'Attendance session created',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $session->fresh(['records']);
+    }
+
+    public function createAttendanceSessionFromTimetable(
+        Staff $staff,
+        UnitAllocation $allocation,
+        ProgramTimetableSession $slot,
+        Carbon $date,
+    ): AttendanceSession {
+        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless((int) $slot->staff_id === (int) $staff->id, 403);
+
+        $slot->loadMissing(['room', 'timetable.program']);
+
+        $programId = $slot->timetable?->program_id;
+        $teachingPeriod = $slot->timetable?->teaching_period;
+
+        $session = AttendanceSession::query()->create([
+            'session_number' => 'ATT-'.$date->format('Ymd').'-'.strtoupper(Str::random(4)),
+            'unit_allocation_id' => $allocation->id,
+            'program_timetable_session_id' => $slot->id,
+            'session_date' => $date->toDateString(),
+            'start_time' => $slot->start_time,
+            'end_time' => $slot->end_time,
+            'venue' => $slot->venue ?? $slot->room?->name,
+            'session_type' => in_array($slot->session_type, ['virtual', 'field_practical', 'clinical'], true)
+                ? $slot->session_type
+                : 'physical',
+            'recorded_by' => $staff->id,
+            'recorded_at' => now(),
+            'verification_status' => 'draft',
+            'roster_verified_at' => now(),
+            'roster_verified_by' => $staff->id,
+        ]);
+
+        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation(
+            $allocation->id,
+            $programId ? (int) $programId : null,
+            $teachingPeriod ? (int) $teachingPeriod : null,
+        );
+
+        foreach ($roster as $student) {
+            AttendanceRecord::query()->create([
+                'session_id' => $session->id,
+                'student_id' => $student->student_id,
+                'is_present' => 0,
+                'recorded_by_tutor' => 1,
+                'created_at' => now(),
+            ]);
+        }
+
+        $session->update(['total_expected_attendees' => $roster->count()]);
+
+        $this->auditService->log(
+            'staff.attendance.session_created',
+            'attendance_sessions',
+            $session->id,
+            null,
+            [
+                'session_number' => $session->session_number,
+                'unit_allocation_id' => $allocation->id,
+                'program_timetable_session_id' => $slot->id,
+                'session_date' => $date->toDateString(),
+                'expected_attendees' => $roster->count(),
+                'source' => 'timetable',
+            ],
+            'Attendance session auto-created from timetable',
             'success',
             $staff->user_id ?? Auth::id(),
         );
@@ -242,5 +319,10 @@ class StaffTeachingService
     public function uploadSignedSheet(AttendanceSession $session, Staff $staff, \Illuminate\Http\UploadedFile $file): AttendanceSession
     {
         return $this->attendanceVerification->uploadSignedSheet($session, $staff, $file);
+    }
+
+    public function uploadClassPhoto(AttendanceSession $session, Staff $staff, \Illuminate\Http\UploadedFile $file): AttendanceSession
+    {
+        return $this->attendanceVerification->uploadClassPhoto($session, $staff, $file);
     }
 }

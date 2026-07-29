@@ -1,36 +1,91 @@
 <header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Attendance verification</h1>
-    <p class="tich-text">Dual-layer verification: print a signed sheet, match the digital roster, upload the signed sheet photo, then submit for HOD and Registrar review.</p>
+    <h1 class="tich-h1 tich-dept-header__title">Class attendance</h1>
+    <p class="tich-text">Sessions are generated from your timetable and semester schedule. Each session includes an auto-built student roster from course enrolment. Print the sign-in sheet, collect signatures, mark attendance online, then upload photos.</p>
 </header>
 
+@if (session('status'))
+    <p class="tich-text tich-mt-4" style="color:var(--tich-success, #15803d);">{{ session('status') }}</p>
+@endif
+
+@if (! empty($attendanceSync) && $attendanceSync['created'] > 0)
+    <article class="tich-card tich-mt-4">
+        <p class="tich-text">{{ $attendanceSync['created'] }} new session(s) were generated from your timetable.</p>
+    </article>
+@endif
+
 <article class="tich-card tich-mt-6">
-    <h2 class="tich-h3">Attendance risk mitigation matrix</h2>
-    <p class="tich-caption">Per-unit participation rates drive exam eligibility flags automatically.</p>
-    @include('staff.partials.attendance-risk-matrix')
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:center;">
+        <div>
+            <h2 class="tich-h3" style="margin:0;">Scheduled sessions</h2>
+            <p class="tich-caption">Auto-created from your lesson timetable. Select a session to take attendance.</p>
+        </div>
+        <form method="POST" action="{{ route('staff.attendance.sync-timetable') }}">
+            @csrf
+            <button type="submit" class="tich-btn tich-btn-secondary">Refresh from timetable</button>
+        </form>
+    </div>
+
+    @if ($upcomingAttendanceSessions->isNotEmpty())
+        <table class="tich-admin-table tich-mt-4">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Unit</th>
+                    <th>Time</th>
+                    <th>Students</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($upcomingAttendanceSessions as $session)
+                    <tr @if ($attendanceSession && $attendanceSession->id === $session->id) style="background:var(--tich-blue-light, #eef6fc);" @endif>
+                        <td>{{ $session->session_date?->format('d M Y') }}</td>
+                        <td>{{ $session->allocation?->unit?->unit_code }}</td>
+                        <td>{{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</td>
+                        <td>{{ $session->total_expected_attendees ?? $session->records_count ?? 0 }}</td>
+                        <td>
+                            @if ($session->is_locked)
+                                <span class="tich-caption">{{ str_replace('_', ' ', $session->verification_status ?? 'submitted') }}</span>
+                            @elseif ($session->signed_sheet_image_path)
+                                <span class="tich-caption">Ready to submit</span>
+                            @elseif ($session->records->where('is_present', true)->isNotEmpty())
+                                <span class="tich-caption">Marked - upload photos</span>
+                            @else
+                                <span class="tich-caption">Pending</span>
+                            @endif
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <a href="{{ route('staff.dashboard', ['section' => 'attendance', 'attendance_session' => $session->id]) }}" class="tich-link">Open</a>
+                            ·
+                            <a href="{{ route('staff.attendance.sheet', $session) }}" target="_blank" class="tich-link">Print</a>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p class="tich-text tich-mt-4">No sessions yet. Ensure you have timetable slots assigned, then click refresh above.</p>
+    @endif
 </article>
 
 @if ($attendanceSession)
-    @php
-        $step = 1;
-        if ($attendanceSession->records->isNotEmpty()) {
-            $step = 2;
-        }
-        if ($attendanceSession->signed_sheet_image_path) {
-            $step = 4;
-        }
-        if ($attendanceSession->is_locked) {
-            $step = 5;
-        }
-    @endphp
-
     <article class="tich-card tich-mt-6">
         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
             <div>
                 <p class="tich-caption">Tracking ID</p>
                 <p class="tich-h3" style="margin:0; color:var(--tich-blue);">{{ $attendanceSession->session_number }}</p>
-                <p class="tich-text tich-mt-2">{{ $attendanceSession->allocation?->unit?->unit_code }} · {{ $attendanceSession->session_date?->format('d M Y') }}</p>
+                <p class="tich-text tich-mt-2">
+                    {{ $attendanceSession->allocation?->unit?->unit_code }} · {{ $attendanceSession->session_date?->format('d M Y') }}
+                    · {{ substr((string) $attendanceSession->start_time, 0, 5) }} - {{ substr((string) $attendanceSession->end_time, 0, 5) }}
+                    @if ($attendanceSession->venue)
+                        · {{ $attendanceSession->venue }}
+                    @endif
+                </p>
+                <p class="tich-caption">{{ $attendanceSession->records->count() }} students on roster (auto-generated from enrolment)</p>
             </div>
-            <div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                <a href="{{ route('staff.attendance.sheet', $attendanceSession) }}" target="_blank" class="tich-btn tich-btn-secondary">Print sign-in sheet</a>
                 <span class="tich-attendance-flag tich-attendance-flag--{{ $attendanceSession->verification_status === 'registrar_verified' ? 'green' : ($attendanceSession->verification_status === 'hod_verified' ? 'amber' : 'neutral') }}">
                     {{ str_replace('_', ' ', ucfirst($attendanceSession->verification_status ?? 'draft')) }}
                 </span>
@@ -38,37 +93,23 @@
         </div>
 
         <ol class="tich-attendance-steps tich-mt-6">
-            <li @class(['is-done' => $step >= 1, 'is-current' => $step === 1])>
-                <strong>Generate sheet</strong> - Print the session sheet with the tracking ID for physical signatures.
-                <div class="tich-mt-2">
-                    <a href="{{ route('staff.attendance.sheet', $attendanceSession) }}" target="_blank" class="tich-btn tich-btn-secondary">Print attendance sheet</a>
-                </div>
+            <li @class(['is-done' => $attendanceStep >= 1, 'is-current' => $attendanceStep === 1])>
+                <strong>Print sign-in sheet</strong> - Hand to students to sign in class.
             </li>
-            <li @class(['is-done' => $step >= 2, 'is-current' => $step === 2])>
-                <strong>Physical collection</strong> - Students sign the printed sheet during class.
+            <li @class(['is-done' => $attendanceStep >= 2, 'is-current' => $attendanceStep === 2])>
+                <strong>Collect signatures</strong> - Physical sign-in during the lesson.
             </li>
-            <li @class(['is-done' => $step >= 3, 'is-current' => $step === 3])>
-                <strong>Roster verification</strong> - Submit the generated roster for HOD/Registrar verification before marking attendance.
-                @if ($attendanceSession->records->isNotEmpty() && ! $attendanceSession->roster_verified_at)
-                    <div class="tich-mt-2">
-                        <form method="POST" action="{{ route('staff.attendance.submit-roster', $attendanceSession) }}" style="display:inline;">
-                            @csrf
-                            <button type="submit" class="tich-btn tich-btn-primary">Submit roster for verification</button>
-                        </form>
-                    </div>
-                @endif
-                @if ($attendanceSession->roster_verified_at)
-                    <p class="tich-caption tich-mt-2">Roster verified {{ $attendanceSession->roster_verified_at->format('d M Y H:i') }}</p>
-                @endif
+            <li @class(['is-done' => $attendanceStep >= 3, 'is-current' => $attendanceStep === 3])>
+                <strong>Mark attendance online</strong> - Tick present students below.
             </li>
-            <li @class(['is-done' => $step >= 4, 'is-current' => $step === 4])>
-                <strong>Digital roster matching</strong> - Tick present students to match the physical signatures.
+            <li @class(['is-done' => $attendanceStep >= 4, 'is-current' => $attendanceStep === 4])>
+                <strong>Upload signed sheet photo</strong> - Camera capture of the signed paper.
             </li>
-            <li @class(['is-done' => $step >= 5, 'is-current' => $step === 5])>
-                <strong>Upload signed sheet</strong> - Capture or upload a photo of the signed paper sheet.
+            <li @class(['is-done' => $attendanceStep >= 5, 'is-current' => $attendanceStep === 5])>
+                <strong>Upload class photo</strong> - Optional photo of students present.
             </li>
-            <li @class(['is-done' => $step >= 6, 'is-current' => $step === 6])>
-                <strong>HOD &amp; Registrar verification</strong> - Submitted records enter the secure attendance ledger.
+            <li @class(['is-done' => $attendanceStep >= 6, 'is-current' => $attendanceStep === 6])>
+                <strong>Submit &amp; lock</strong> - Sends record for HOD/Registrar verification.
             </li>
         </ol>
 
@@ -76,10 +117,18 @@
             <p class="tich-caption tich-mt-4">Submitted {{ $attendanceSession->submitted_at?->format('d M Y H:i') ?? '-' }}. This session is locked.</p>
         @endif
 
+        @if ($errors->any())
+            <p class="tich-text tich-mt-4" style="color:var(--tich-danger, #b91c1c);">{{ $errors->first() }}</p>
+        @endif
+
+        @if ($attendanceSession->records->isEmpty())
+            <p class="tich-text tich-mt-4" style="color:var(--tich-danger, #b91c1c);">No students on the roster. Enrol students in this unit for the current intake/semester, then refresh sessions.</p>
+        @endif
+
         <form method="POST" action="{{ route('staff.attendance.save', $attendanceSession) }}" class="tich-mt-6">
             @csrf
             <table class="tich-admin-table">
-                <thead><tr><th>Present</th><th>Reg. no.</th><th>Student</th></tr></thead>
+                <thead><tr><th>Present</th><th>Reg. no.</th><th>Student</th><th>Signature line (print)</th></tr></thead>
                 <tbody>
                     @foreach ($attendanceSession->records as $record)
                         <tr>
@@ -88,13 +137,14 @@
                             </td>
                             <td>{{ $record->student?->registration_number }}</td>
                             <td>{{ $record->student?->applicant?->fullName() ?? '-' }}</td>
+                            <td class="tich-caption">________________</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
             @unless ($attendanceSession->is_locked)
                 <div class="tich-mt-4" style="display:flex; gap:1rem; flex-wrap:wrap;">
-                    <button type="submit" class="tich-btn tich-btn-secondary">Save roster draft</button>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Save marks</button>
                     <button type="submit" name="lock" value="1" class="tich-btn tich-btn-primary" @disabled(! $attendanceSession->signed_sheet_image_path)>Submit &amp; lock</button>
                 </div>
                 @unless ($attendanceSession->signed_sheet_image_path)
@@ -104,78 +154,81 @@
         </form>
 
         @unless ($attendanceSession->is_locked)
-            <form method="POST" action="{{ route('staff.attendance.sheet.upload', $attendanceSession) }}" enctype="multipart/form-data" class="tich-mt-6" style="border-top:1px solid var(--tich-neutral-border); padding-top:1.25rem;">
-                @csrf
-                <h3 class="tich-h3">Signed sheet photo</h3>
-                <p class="tich-caption">Use your device camera or upload an image. This becomes the unalterable supporting document.</p>
-                <div class="tich-form-group">
-                    <input type="file" name="signed_sheet" class="tich-input" accept="image/*" capture="environment" required>
-                </div>
-                <button type="submit" class="tich-btn tich-btn-primary">Upload signed sheet</button>
-            </form>
-        @endunless
+            <div class="tich-grid tich-grid--2 tich-mt-6" style="gap:1.5rem; align-items:start;">
+                <form method="POST" action="{{ route('staff.attendance.sheet.upload', $attendanceSession) }}" enctype="multipart/form-data" style="border-top:1px solid var(--tich-neutral-border); padding-top:1.25rem;">
+                    @csrf
+                    <h3 class="tich-h3">Signed sheet photo</h3>
+                    <p class="tich-caption">Take a photo of the signed attendance sheet.</p>
+                    <div class="tich-form-group">
+                        <input type="file" name="signed_sheet" class="tich-input" accept="image/*" capture="environment" @if (! $attendanceSession->signed_sheet_image_path) required @endif>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-primary">{{ $attendanceSession->signed_sheet_image_path ? 'Replace' : 'Upload' }}</button>
+                    @if ($attendanceSession->signed_sheet_image_path)
+                        <img src="{{ \Illuminate\Support\Facades\Storage::url($attendanceSession->signed_sheet_image_path) }}" alt="Signed sheet" class="tich-mt-4" style="max-width:100%; border:1px solid var(--tich-neutral-border); border-radius:0.5rem;">
+                    @endif
+                </form>
 
-        @if ($attendanceSession->signed_sheet_image_path)
-            <div class="tich-mt-6">
-                <h3 class="tich-h3">Supporting document</h3>
-                <img src="{{ asset('storage/'.$attendanceSession->signed_sheet_image_path) }}" alt="Signed attendance sheet" style="max-width:100%; border:1px solid var(--tich-neutral-border); border-radius:0.5rem;">
-                @if ($attendanceSession->sheet_image_hash)
-                    <p class="tich-caption tich-mt-2">Integrity hash: {{ $attendanceSession->sheet_image_hash }}</p>
-                @endif
+                <form method="POST" action="{{ route('staff.attendance.class-photo.upload', $attendanceSession) }}" enctype="multipart/form-data" style="border-top:1px solid var(--tich-neutral-border); padding-top:1.25rem;">
+                    @csrf
+                    <h3 class="tich-h3">Class photo</h3>
+                    <p class="tich-caption">Optional photo of students who were present.</p>
+                    <div class="tich-form-group">
+                        <input type="file" name="class_photo" class="tich-input" accept="image/*" capture="environment">
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary">{{ $attendanceSession->class_photo_image_path ? 'Replace' : 'Upload' }}</button>
+                    @if ($attendanceSession->class_photo_image_path)
+                        <img src="{{ \Illuminate\Support\Facades\Storage::url($attendanceSession->class_photo_image_path) }}" alt="Class photo" class="tich-mt-4" style="max-width:100%; border:1px solid var(--tich-neutral-border); border-radius:0.5rem;">
+                    @endif
+                </form>
             </div>
-        @endif
+        @else
+            @if ($attendanceSession->signed_sheet_image_path)
+                <div class="tich-mt-6">
+                    <h3 class="tich-h3">Signed sheet</h3>
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url($attendanceSession->signed_sheet_image_path) }}" alt="Signed sheet" style="max-width:100%; border:1px solid var(--tich-neutral-border); border-radius:0.5rem;">
+                </div>
+            @endif
+            @if ($attendanceSession->class_photo_image_path)
+                <div class="tich-mt-6">
+                    <h3 class="tich-h3">Class photo</h3>
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url($attendanceSession->class_photo_image_path) }}" alt="Class photo" style="max-width:100%; border:1px solid var(--tich-neutral-border); border-radius:0.5rem;">
+                </div>
+            @endif
+        @endunless
     </article>
 @endif
 
-<div class="tich-grid tich-grid--2 tich-mt-8" style="align-items:start; gap:1.5rem;">
-    <article class="tich-card">
-        <h2 class="tich-h3">New session</h2>
-        <p class="tich-caption">Requires an HOD-approved lesson plan for the same unit and date.</p>
-        @if ($errors->has('lesson_plan'))
-            <p class="tich-text" style="color:var(--tich-danger, #b91c1c); margin-top:0.75rem;">{{ $errors->first('lesson_plan') }}</p>
-        @endif
-        @if ($portalData['allocations']->isEmpty())
-            <p class="tich-text tich-mt-4">You need a unit allocation before taking attendance.</p>
-        @else
-            <form method="POST" action="{{ route('staff.attendance.store') }}" class="tich-mt-4">
-                @csrf
-                <div class="tich-form-group">
-                    <label class="tich-label">Unit</label>
-                    <select name="allocation_id" class="tich-input" required>
-                        @foreach ($portalData['allocations'] as $allocation)
-                            <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Date</label>
-                    <input type="date" name="session_date" class="tich-input" value="{{ now()->toDateString() }}" required>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Venue</label>
-                    <input type="text" name="venue" class="tich-input">
-                </div>
-                <button type="submit" class="tich-btn tich-btn-primary">Create session &amp; generate sheet</button>
-            </form>
-        @endif
-    </article>
-
-    <article class="tich-card">
-        <h2 class="tich-h3">Recent sessions</h2>
-        @forelse ($portalData['attendance_sessions']->take(15) as $session)
-            <p class="tich-text tich-mt-2">
-                <a href="{{ route('staff.dashboard', ['section' => 'attendance', 'attendance_session' => $session->id]) }}" class="tich-link">
-                    {{ $session->unit_code }} · {{ \Illuminate\Support\Carbon::parse($session->session_date)->format('d M Y') }}
-                </a>
-                @if ($session->is_locked)
-                    <span class="tich-caption">· {{ str_replace('_', ' ', $session->verification_status ?? 'submitted') }}</span>
-                @endif
-            </p>
-        @empty
-            <p class="tich-text tich-mt-4">No sessions yet.</p>
-        @endforelse
-    </article>
-</div>
+<details class="tich-card tich-mt-8">
+    <summary class="tich-h3" style="cursor:pointer;">Manual session (ad-hoc)</summary>
+    <p class="tich-caption tich-mt-2">For classes outside the timetable. Requires an HOD-approved lesson plan.</p>
+    @if ($errors->has('lesson_plan'))
+        <p class="tich-text" style="color:var(--tich-danger, #b91c1c); margin-top:0.75rem;">{{ $errors->first('lesson_plan') }}</p>
+    @endif
+    @if ($portalData['allocations']->isEmpty())
+        <p class="tich-text tich-mt-4">You need a unit allocation first.</p>
+    @else
+        <form method="POST" action="{{ route('staff.attendance.store') }}" class="tich-mt-4">
+            @csrf
+            <div class="tich-form-group">
+                <label class="tich-label">Unit</label>
+                <select name="allocation_id" class="tich-input" required>
+                    @foreach ($portalData['allocations'] as $allocation)
+                        <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="tich-form-group">
+                <label class="tich-label">Date</label>
+                <input type="date" name="session_date" class="tich-input" value="{{ now()->toDateString() }}" required>
+            </div>
+            <div class="tich-form-group">
+                <label class="tich-label">Venue</label>
+                <input type="text" name="venue" class="tich-input">
+            </div>
+            <button type="submit" class="tich-btn tich-btn-secondary">Create manual session</button>
+        </form>
+    @endif
+</details>
 
 @if ($portalData['attendance_alerts']->isNotEmpty())
     <article class="tich-card tich-mt-8">

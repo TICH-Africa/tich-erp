@@ -26,6 +26,7 @@ use App\Http\Controllers\Academics\WorkloadController;
 use App\Http\Controllers\Staff\AttendanceSheetController;
 use App\Http\Controllers\Staff\StaffPortalActionController;
 use App\Http\Controllers\Staff\StaffPortalDashboardController;
+use App\Http\Controllers\Staff\StaffPortalTimetableController;
 use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
 use App\Models\Department;
@@ -247,13 +248,19 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::middleware('staff.portal')->prefix('staff')->group(function () {
         Route::get('/', StaffPortalDashboardController::class)->name('staff.dashboard');
+        Route::get('/timetables/{timetable}/print', [StaffPortalTimetableController::class, 'print'])
+            ->name('staff.timetable.print');
+        Route::get('/timetables/{timetable}/pdf', [StaffPortalTimetableController::class, 'pdf'])
+            ->name('staff.timetable.pdf');
         Route::post('/lesson-plans', [StaffPortalActionController::class, 'storeLessonPlan'])->name('staff.lesson-plans.store');
         Route::put('/lesson-plans/{plan}', [StaffPortalActionController::class, 'updateLessonPlan'])->name('staff.lesson-plans.update');
         Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
         Route::post('/attendance', [StaffPortalActionController::class, 'storeAttendanceSession'])->name('staff.attendance.store');
+        Route::post('/attendance/sync-timetable', [StaffPortalActionController::class, 'syncAttendanceFromTimetable'])->name('staff.attendance.sync-timetable');
         Route::post('/attendance/{session}/submit-roster', [StaffPortalActionController::class, 'submitForRosterVerification'])->name('staff.attendance.submit-roster');
         Route::post('/attendance/{session}', [StaffPortalActionController::class, 'saveAttendance'])->name('staff.attendance.save');
         Route::post('/attendance/{session}/sheet', [StaffPortalActionController::class, 'uploadAttendanceSheet'])->name('staff.attendance.sheet.upload');
+        Route::post('/attendance/{session}/class-photo', [StaffPortalActionController::class, 'uploadClassPhoto'])->name('staff.attendance.class-photo.upload');
         Route::post('/attendance/{session}/verify-roster', [AttendanceLedgerController::class, 'verifyRoster'])->name('departments.academics.attendance-ledger.verify-roster');
         Route::post('/attendance/{session}/exam-eligibility', [AttendanceLedgerController::class, 'examEligibilityCheck'])->name('departments.academics.attendance-ledger.exam-eligibility');
         Route::get('/attendance/{session}/sheet', [AttendanceSheetController::class, 'show'])->name('staff.attendance.sheet');

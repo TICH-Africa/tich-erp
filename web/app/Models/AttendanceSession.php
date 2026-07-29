@@ -15,6 +15,7 @@ class AttendanceSession extends Model
     protected $fillable = [
         'session_number',
         'unit_allocation_id',
+        'program_timetable_session_id',
         'session_date',
         'start_time',
         'end_time',
@@ -25,6 +26,8 @@ class AttendanceSession extends Model
         'total_expected_attendees',
         'signed_sheet_image_path',
         'sheet_image_hash',
+        'class_photo_image_path',
+        'class_photo_image_hash',
         'recorded_by',
         'recorded_at',
         'is_locked',
@@ -55,6 +58,16 @@ class AttendanceSession extends Model
     public function allocation(): BelongsTo
     {
         return $this->belongsTo(UnitAllocation::class, 'unit_allocation_id');
+    }
+
+    public function timetableSession(): BelongsTo
+    {
+        return $this->belongsTo(ProgramTimetableSession::class, 'program_timetable_session_id');
+    }
+
+    public function isFromTimetable(): bool
+    {
+        return $this->program_timetable_session_id !== null;
     }
 
     public function records(): HasMany

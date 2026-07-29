@@ -7,6 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\ObjectiveAssessment;
 use App\Models\UnitAllocation;
+use App\Services\AttendanceSessionGenerationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\LessonPlanApprovalService;
 use App\Services\ObjectiveAutoGradingService;
@@ -20,6 +21,7 @@ class StaffPortalActionController extends Controller
     public function __construct(
         protected StaffPortalService $portalService,
         protected StaffTeachingService $teaching,
+        protected AttendanceSessionGenerationService $attendanceGeneration,
         protected ContinuousAssessmentService $assessments,
         protected LessonPlanApprovalService $lessonPlanApprovals,
         protected ObjectiveAutoGradingService $objectiveGrading,
@@ -157,6 +159,35 @@ class StaffPortalActionController extends Controller
             'section' => 'attendance',
             'attendance_session' => $session->id,
         ])->with('status', 'Signed attendance sheet uploaded.');
+    }
+
+    public function uploadClassPhoto(Request $request, AttendanceSession $session): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $request->validate([
+            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'attendance',
+            'attendance_session' => $session->id,
+        ])->with('status', 'Class photo uploaded.');
+    }
+
+    public function syncAttendanceFromTimetable(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $result = $this->attendanceGeneration->syncForStaff($staff);
+
+        $message = $result['created'] > 0
+            ? "{$result['created']} attendance session(s) created from your timetable."
+            : 'Attendance sessions are already up to date with your timetable.';
+
+        return redirect()->route('staff.dashboard', ['section' => 'attendance'])
+            ->with('status', $message);
     }
 
     public function storeCatScore(Request $request): RedirectResponse

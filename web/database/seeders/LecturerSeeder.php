@@ -30,7 +30,8 @@ class LecturerSeeder extends Seeder
         }
 
         $campusId = DB::table('campuses')->where('is_active', 1)->value('id');
-        $semesterId = DB::table('semesters')->orderByDesc('id')->value('id');
+        $semesterId = DB::table('semesters')->where('semester_number', 1)->value('id')
+            ?? DB::table('semesters')->orderByDesc('id')->value('id');
         $unitId = Unit::query()->where('department_id', $departmentId)->value('id');
 
         $user = User::query()->firstOrCreate(
@@ -74,7 +75,7 @@ class LecturerSeeder extends Seeder
         }
 
         if ($unitId && $semesterId && $campusId) {
-            UnitAllocation::query()->firstOrCreate(
+            UnitAllocation::query()->updateOrCreate(
                 [
                     'unit_id' => $unitId,
                     'staff_id' => $staff->id,
@@ -92,6 +93,46 @@ class LecturerSeeder extends Seeder
                 ->where('unit_id', $unitId)
                 ->whereNull('staff_id')
                 ->update(['staff_id' => $staff->id]);
+
+            $this->ensureDemoEnrolments((int) $unitId, (int) $semesterId);
+        }
+    }
+
+    private function ensureDemoEnrolments(int $unitId, int $semesterId): void
+    {
+        $programId = DB::table('program_timetables')
+            ->join('program_timetable_sessions', 'program_timetable_sessions.program_timetable_id', '=', 'program_timetables.id')
+            ->where('program_timetable_sessions.unit_id', $unitId)
+            ->value('program_timetables.program_id');
+
+        $studentQuery = DB::table('students')->where('is_active', 1);
+        if ($programId) {
+            $studentQuery->where('program_id', $programId);
+        }
+
+        foreach ($studentQuery->pluck('id') as $studentId) {
+            DB::table('student_semester_registrations')->updateOrInsert(
+                ['student_id' => $studentId, 'semester_id' => $semesterId],
+                [
+                    'registration_date' => now()->toDateString(),
+                    'registration_type' => 'admin',
+                    'unit_count' => 1,
+                    'status' => 'registered',
+                    'is_fee_cleared' => 1,
+                ]
+            );
+
+            $registrationId = DB::table('student_semester_registrations')
+                ->where('student_id', $studentId)
+                ->where('semester_id', $semesterId)
+                ->value('id');
+
+            if ($registrationId) {
+                DB::table('registered_units')->updateOrInsert(
+                    ['semester_registration_id' => $registrationId, 'unit_id' => $unitId],
+                    ['is_additional' => 0, 'created_at' => now()],
+                );
+            }
         }
     }
 }

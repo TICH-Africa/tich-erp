@@ -129,6 +129,33 @@ class AttendanceVerificationService
         return $session->fresh();
     }
 
+    public function uploadClassPhoto(AttendanceSession $session, Staff $staff, UploadedFile $file): AttendanceSession
+    {
+        abort_if($session->is_locked, 422, 'This session is locked and cannot be modified.');
+        abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
+
+        $path = $file->store('attendance-class-photos', 'public');
+        $hash = hash_file('sha256', Storage::disk('public')->path($path));
+
+        $session->update([
+            'class_photo_image_path' => $path,
+            'class_photo_image_hash' => $hash,
+        ]);
+
+        $this->auditService->log(
+            'staff.attendance.class_photo_uploaded',
+            'attendance_sessions',
+            $session->id,
+            null,
+            ['class_photo_image_hash' => $hash],
+            'Class attendance photo uploaded',
+            'success',
+            $staff->user_id ?? auth()->id(),
+        );
+
+        return $session->fresh();
+    }
+
     public function submitSession(AttendanceSession $session, Staff $staff): AttendanceSession
     {
         abort_if($session->is_locked, 422, 'This session is already submitted.');

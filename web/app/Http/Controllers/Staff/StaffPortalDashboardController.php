@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\UnitAllocation;
+use App\Services\AttendanceSessionGenerationService;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\ObjectiveAutoGradingService;
@@ -23,6 +24,7 @@ class StaffPortalDashboardController extends Controller
         protected StaffPortalService $portalService,
         protected StaffPortalNavigationService $navigation,
         protected StaffPortalDashboardService $dashboard,
+        protected AttendanceSessionGenerationService $attendanceGeneration,
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
         protected ObjectiveAutoGradingService $objectiveGrading,
@@ -35,13 +37,49 @@ class StaffPortalDashboardController extends Controller
 
         $section = $this->navigation->resolveSection($request);
         $portalData = $this->dashboard->forStaff($staff);
+        $attendanceSync = null;
+        $upcomingAttendanceSessions = collect();
+        $attendanceStep = 1;
+
+        if ($section === 'attendance') {
+            $attendanceSync = $this->attendanceGeneration->syncForStaff($staff);
+            $portalData = $this->dashboard->forStaff($staff);
+            $upcomingAttendanceSessions = $this->dashboard->upcomingAttendanceSessions($staff);
+        }
 
         $attendanceSession = null;
         $rostersByAllocation = [];
-        if ($request->integer('attendance_session')) {
+        $sessionId = $request->integer('attendance_session');
+
+        if ($section === 'attendance' && ! $sessionId && $upcomingAttendanceSessions->isNotEmpty()) {
+            $sessionId = (int) ($upcomingAttendanceSessions->firstWhere(fn ($s) => $s->session_date?->isToday())
+                ?? $upcomingAttendanceSessions->first())->id;
+        }
+
+        if ($sessionId) {
             $attendanceSession = AttendanceSession::query()
-                ->with(['records.student.applicant', 'allocation.unit', 'allocation.semester', 'allocation.staff'])
-                ->find($request->integer('attendance_session'));
+                ->with(['records.student.applicant', 'allocation.unit', 'allocation.semester', 'allocation.staff', 'timetableSession'])
+                ->whereHas('allocation', fn ($query) => $query->where('staff_id', $staff->id))
+                ->find($sessionId);
+        }
+
+        if ($attendanceSession) {
+            $attendanceStep = 1;
+            if ($attendanceSession->records->isNotEmpty()) {
+                $attendanceStep = 2;
+            }
+            if ($attendanceSession->records->where('is_present', true)->isNotEmpty()) {
+                $attendanceStep = 3;
+            }
+            if ($attendanceSession->signed_sheet_image_path) {
+                $attendanceStep = 4;
+            }
+            if ($attendanceSession->class_photo_image_path) {
+                $attendanceStep = 5;
+            }
+            if ($attendanceSession->is_locked) {
+                $attendanceStep = 6;
+            }
         }
 
         $gradingTerminal = null;
@@ -68,6 +106,9 @@ class StaffPortalDashboardController extends Controller
             'sidebarNavigation' => $this->navigation->sidebarNavigation(),
             'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Staff portal',
             'attendanceSession' => $attendanceSession,
+            'attendanceSync' => $attendanceSync,
+            'attendanceStep' => $attendanceStep,
+            'upcomingAttendanceSessions' => $upcomingAttendanceSessions,
             'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
             'gradingTerminal' => $gradingTerminal,
             'objectiveTerminal' => $objectiveTerminal,

@@ -118,6 +118,8 @@ return [
         'staff.attendance.session_created' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.sheet_uploaded' => ['module' => 'staff', 'sensitive' => false],
+        'staff.attendance.class_photo_uploaded' => ['module' => 'staff', 'sensitive' => false],
+        'staff.attendance.sync_timetable' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.submitted' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.hod_verified' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.registrar_verified' => ['module' => 'staff', 'sensitive' => false],
