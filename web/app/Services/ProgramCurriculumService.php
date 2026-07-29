@@ -29,7 +29,7 @@ class ProgramCurriculumService
         return [
             'modular' => 'Modular (NITA / CDACC competency)',
             'semester' => 'Semester (credit matrix)',
-            'trimester' => 'Trimester (3 terms per year)',
+            'trimester' => 'Semester (3 terms per year)',
             'block' => 'Block (nursing clinical blocks)',
         ];
     }

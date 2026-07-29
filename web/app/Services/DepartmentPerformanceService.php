@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Semester;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -14,9 +15,14 @@ class DepartmentPerformanceService
     {
         $semesterId ??= (int) DB::table('semesters')->orderByDesc('id')->value('id');
 
+        $semesterRow = DB::table('semesters')->where('id', $semesterId)->first(['semester_label', 'semester_number']);
+
         return [
             'semester_id' => $semesterId,
-            'semester_label' => DB::table('semesters')->where('id', $semesterId)->value('semester_label'),
+            'semester_label' => Semester::normalizeLabel(
+                $semesterRow?->semester_label,
+                $semesterRow?->semester_number ? (int) $semesterRow->semester_number : null,
+            ),
             'campus_breakdown' => $this->campusBreakdown($departmentId, $semesterId),
             'unit_breakdown' => $this->unitBreakdown($departmentId, $semesterId),
             'failing_students' => $this->failingStudents($departmentId, $semesterId),

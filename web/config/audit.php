@@ -129,6 +129,7 @@ return [
         // Staff portal — grading & content
         'staff.grading.grid_saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.cat_score_recorded' => ['module' => 'staff', 'sensitive' => false],
+        'staff.grading.exam_marks_saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.objective_assessment_created' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.objective_responses_saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.objective_auto_graded' => ['module' => 'staff', 'sensitive' => false],

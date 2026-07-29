@@ -1,7 +1,7 @@
 <div class="tich-grid tich-grid--2" style="gap:1.5rem; align-items:start;">
     <article class="tich-card">
         <h2 class="tich-h3">Programme structure</h2>
-        <p class="tich-text tich-mt-2">Set course length and how many semesters or trimesters run in each academic year. This defines the teaching periods copied for every intake.</p>
+        <p class="tich-text tich-mt-2">Set course length and how many semesters run in each academic year. This defines the teaching periods copied for every intake.</p>
 
         <form method="POST" action="{{ route('departments.academics.programs.update-format', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
             @csrf
@@ -23,7 +23,7 @@
                 <div class="tich-form-group">
                     <label class="tich-label">Semesters / terms per academic year</label>
                     <input type="number" name="semester_count" class="tich-input" min="1" max="6" value="{{ old('semester_count', $program->semester_count ?: $program->termsPerYear()) }}" required>
-                    <p class="tich-caption tich-mt-2">e.g. 2 for semester, 3 for trimester</p>
+                    <p class="tich-caption tich-mt-2">e.g. 2 or 3 semesters per academic year</p>
                 </div>
                 @if ($program->usesBlocks() || in_array(old('curriculum_format', $program->curriculum_format), ['block'], true))
                     <div class="tich-form-group">

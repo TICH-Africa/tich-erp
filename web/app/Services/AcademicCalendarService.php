@@ -65,7 +65,10 @@ class AcademicCalendarService
         }
 
         $semester->update([
-            'semester_label' => $data['semester_label'],
+            'semester_label' => Semester::normalizeLabel(
+                $data['semester_label'],
+                (int) ($data['semester_number'] ?? $semester->semester_number),
+            ),
             'semester_number' => $data['semester_number'],
             'intake_month' => $data['intake_month'] ?? null,
             'start_date' => $data['start_date'],
@@ -105,7 +108,10 @@ class AcademicCalendarService
 
             Semester::create([
                 'academic_year_id' => $year->id,
-                'semester_label' => $data['term_labels'][$i - 1] ?? "Trimester {$i}",
+                'semester_label' => Semester::normalizeLabel(
+                    $data['term_labels'][$i - 1] ?? "Semester {$i}",
+                    $i,
+                ),
                 'semester_number' => $i,
                 'intake_month' => $intakes[$i - 1] ?? null,
                 'start_date' => $termStart->toDateString(),

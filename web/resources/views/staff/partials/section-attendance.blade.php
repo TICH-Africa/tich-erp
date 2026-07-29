@@ -31,6 +31,7 @@
                 <tr>
                     <th>Date</th>
                     <th>Unit</th>
+                    <th>Intake</th>
                     <th>Time</th>
                     <th>Students</th>
                     <th>Status</th>
@@ -42,6 +43,7 @@
                     <tr @if ($attendanceSession && $attendanceSession->id === $session->id) style="background:var(--tich-blue-light, #eef6fc);" @endif>
                         <td>{{ $session->session_date?->format('d M Y') }}</td>
                         <td>{{ $session->allocation?->unit?->unit_code }}</td>
+                        <td>{{ $session->allocation?->intake_label ?? $session->allocation?->semester?->semester_label ?? '-' }}</td>
                         <td>{{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</td>
                         <td>{{ $session->total_expected_attendees ?? $session->records_count ?? 0 }}</td>
                         <td>
@@ -82,6 +84,9 @@
                         · {{ $attendanceSession->venue }}
                     @endif
                 </p>
+                @if (! empty($attendanceSessionIntake))
+                    <p class="tich-caption" style="color:var(--tich-blue, #1669a6);">Intake: {{ $attendanceSessionIntake }} · {{ $attendanceSession->allocation?->semester?->semester_label }}</p>
+                @endif
                 <p class="tich-caption">{{ $attendanceSession->records->count() }} students on roster (auto-generated from enrolment)</p>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
@@ -213,7 +218,7 @@
                 <label class="tich-label">Unit</label>
                 <select name="allocation_id" class="tich-input" required>
                     @foreach ($portalData['allocations'] as $allocation)
-                        <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}</option>
+                        <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}</option>
                     @endforeach
                 </select>
             </div>

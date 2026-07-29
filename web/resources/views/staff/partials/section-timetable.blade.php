@@ -22,7 +22,12 @@
                 <div>
                     <h2 class="tich-h3">{{ $row['timetable']->displayTitle() }}</h2>
                     <p class="tich-caption tich-mt-2">
-                        {{ $row['timetable']->program?->program_code }} · {{ ucfirst($row['timetable']->status) }}
+                        {{ $row['timetable']->program?->program_code }}
+                        @if ($row['timetable']->curriculumVersion)
+                            · {{ $row['timetable']->curriculumVersion->intakeLabel() }}
+                        @endif
+                        · Semester {{ $row['timetable']->teaching_period }}
+                        · {{ ucfirst($row['timetable']->status) }}
                     </p>
                 </div>
                 @if ($row['timetable']->sessions->isNotEmpty())

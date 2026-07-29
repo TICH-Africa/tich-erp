@@ -17,9 +17,15 @@ class LecturerSeeder extends Seeder
     public function run(): void
     {
         $departmentId = DB::table('departments')
-            ->where('dept_category', 'academic')
-            ->whereNotNull('parent_dept_id')
+            ->where('dept_code', 'CHS')
             ->value('id');
+
+        if (! $departmentId) {
+            $departmentId = DB::table('departments')
+                ->where('dept_category', 'academic')
+                ->whereNotNull('parent_dept_id')
+                ->value('id');
+        }
 
         if (! $departmentId) {
             $departmentId = DB::table('departments')->value('id');
@@ -32,7 +38,8 @@ class LecturerSeeder extends Seeder
         $campusId = DB::table('campuses')->where('is_active', 1)->value('id');
         $semesterId = DB::table('semesters')->where('semester_number', 1)->value('id')
             ?? DB::table('semesters')->orderByDesc('id')->value('id');
-        $unitId = Unit::query()->where('department_id', $departmentId)->value('id');
+        $unitId = Unit::query()->where('unit_code', 'HMDCC-01')->value('id')
+            ?? Unit::query()->where('department_id', $departmentId)->value('id');
 
         $user = User::query()->firstOrCreate(
             ['email' => 'lecturer@tich.ac.ke'],
@@ -66,7 +73,7 @@ class LecturerSeeder extends Seeder
             ]
         );
 
-        $staff->update(['user_id' => $user->id, 'is_teaching_staff' => 1]);
+        $staff->update(['user_id' => $user->id, 'is_teaching_staff' => 1, 'department_id' => $departmentId]);
         $user->update(['staff_id' => $staff->id]);
 
         $roleId = Role::query()->where('role_name', 'Lecturer')->value('id');
@@ -75,19 +82,40 @@ class LecturerSeeder extends Seeder
         }
 
         if ($unitId && $semesterId && $campusId) {
-            UnitAllocation::query()->updateOrCreate(
-                [
+            $existing = UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->where('semester_id', $semesterId)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existing) {
+                UnitAllocation::query()
+                    ->where('staff_id', $staff->id)
+                    ->where('id', '!=', $existing->id)
+                    ->update(['is_active' => 0]);
+
+                $existing->update([
                     'unit_id' => $unitId,
-                    'staff_id' => $staff->id,
-                    'semester_id' => $semesterId,
-                ],
-                [
                     'campus_id' => $campusId,
                     'contact_hours_assigned' => 4,
                     'is_coordinator' => 1,
                     'is_active' => 1,
-                ]
-            );
+                ]);
+            } else {
+                UnitAllocation::query()
+                    ->where('staff_id', $staff->id)
+                    ->update(['is_active' => 0]);
+
+                UnitAllocation::query()->create([
+                    'unit_id' => $unitId,
+                    'staff_id' => $staff->id,
+                    'semester_id' => $semesterId,
+                    'campus_id' => $campusId,
+                    'contact_hours_assigned' => 4,
+                    'is_coordinator' => 1,
+                    'is_active' => 1,
+                ]);
+            }
 
             DB::table('program_timetable_sessions')
                 ->where('unit_id', $unitId)

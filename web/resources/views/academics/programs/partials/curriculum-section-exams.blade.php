@@ -165,7 +165,7 @@
             <h2 class="tich-h3">Continuous assessment &amp; objective auto-grading</h2>
             <p class="tich-text tich-mt-2">Lecturers enter competency spreadsheet marks and run objective auto-grading in the staff portal. Cumulative scores compile automatically into grade records used on transcripts.</p>
             <div class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem;">
-                <a href="{{ route('staff.dashboard', ['section' => 'grading']) }}" class="tich-btn tich-btn-primary">Open staff grading terminal</a>
+                <a href="{{ route('staff.dashboard', ['section' => 'grading']) }}" class="tich-btn tich-btn-primary">Open marks &amp; assessments</a>
                 <a href="{{ route('departments.academics.performance.index', $deptHub) }}" class="tich-btn tich-btn-secondary">HOD performance terminal</a>
             </div>
         </article>

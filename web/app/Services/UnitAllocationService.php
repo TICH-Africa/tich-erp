@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
+use App\Models\CurriculumVersion;
 use App\Models\UnitAllocation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,12 @@ class UnitAllocationService
 
     public function assign(array $data): UnitAllocation
     {
+        UnitAllocation::query()
+            ->where('unit_id', (int) $data['unit_id'])
+            ->where('semester_id', (int) $data['semester_id'])
+            ->where('is_active', 1)
+            ->update(['is_active' => 0]);
+
         $allocation = UnitAllocation::query()->create([
             'unit_id' => (int) $data['unit_id'],
             'staff_id' => (int) $data['staff_id'],
@@ -102,5 +110,46 @@ class UnitAllocationService
             ->selectRaw('s.id, s.first_name, s.surname, s.employee_number, COUNT(*) as unit_count, SUM(ua.contact_hours_assigned) as total_hours')
             ->orderBy('s.surname')
             ->get();
+    }
+
+    /**
+     * Active lecturer allocations for catalog units within an intake's teaching periods.
+     *
+     * @param  list<int>  $unitIds
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Support\Collection<int, UnitAllocation>>
+     */
+    public function forUnitsInIntake(array $unitIds, CurriculumVersion $intake, AcademicProgram $program)
+    {
+        if ($unitIds === []) {
+            return collect();
+        }
+
+        $semesterIds = collect(range(1, $program->totalTeachingPeriods()))
+            ->map(fn (int $period) => app(ExamScheduleSyncService::class)->resolveSemesterId($intake, $period))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($semesterIds === []) {
+            return collect();
+        }
+
+        return UnitAllocation::query()
+            ->with(['staff', 'semester.academicYear', 'campus', 'unit'])
+            ->whereIn('unit_id', $unitIds)
+            ->whereIn('semester_id', $semesterIds)
+            ->where('is_active', 1)
+            ->orderBy('semester_id')
+            ->get()
+            ->groupBy('unit_id');
+    }
+
+    public function assertAllocationInProgramDepartment(UnitAllocation $allocation, AcademicProgram $program): void
+    {
+        abort_unless(
+            (int) $allocation->unit?->department_id === (int) $program->department_id,
+            404,
+        );
     }
 }

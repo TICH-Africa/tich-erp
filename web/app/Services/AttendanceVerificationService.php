@@ -88,9 +88,12 @@ class AttendanceVerificationService
             'allocation.campus',
             'records.student.applicant',
             'recordedByStaff',
+            'timetableSession.timetable.curriculumVersion',
         ]);
 
         $allocation = $session->allocation;
+        $intakeLabel = $session->timetableSession?->timetable?->curriculumVersion?->intakeLabel()
+            ?: app(StaffPortalDashboardService::class)->intakeLabelForSemester($allocation?->semester);
 
         return [
             'session' => $session,
@@ -99,6 +102,7 @@ class AttendanceVerificationService
             'tutor' => $allocation?->staff,
             'records' => $session->records->sortBy(fn ($r) => $r->student?->registration_number),
             'tracking_id' => $session->session_number,
+            'intake_label' => $intakeLabel,
         ];
     }
 

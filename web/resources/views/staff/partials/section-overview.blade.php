@@ -18,10 +18,24 @@
         <p class="tich-stat__value">{{ $portalData['lesson_plans']->count() }}</p>
     </article>
     <article class="tich-card tich-stat">
+        <p class="tich-caption">Marks recorded</p>
+        <p class="tich-stat__value">{{ $portalData['cat_scores']->count() }}</p>
+    </article>
+    <article class="tich-card tich-stat">
         <p class="tich-caption">At-risk attendance</p>
         <p class="tich-stat__value">{{ $portalData['attendance_alerts']->count() }}</p>
     </article>
 </div>
+
+@if ($portalData['allocations']->isNotEmpty())
+    <article class="tich-card tich-mt-6">
+        <h2 class="tich-h3">Quick actions</h2>
+        <p class="tich-text tich-mt-2">
+            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $portalData['allocations']->first()->id]) }}" class="tich-link">Enter CAT &amp; exam marks</a>
+            for {{ $portalData['allocations']->first()->unit?->unit_code }}.
+        </p>
+    </article>
+@endif
 
 @if ($portalData['attendance_alerts']->isNotEmpty())
     <article class="tich-card tich-mt-6" style="border-left:3px solid #dc2626; padding:1rem 1.25rem;">

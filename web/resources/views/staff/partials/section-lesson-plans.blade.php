@@ -15,7 +15,7 @@
                     <label class="tich-label">Unit</label>
                     <select name="allocation_id" class="tich-input" required>
                         @foreach ($portalData['allocations'] as $allocation)
-                            <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}</option>
+                            <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}</option>
                         @endforeach
                     </select>
                 </div>

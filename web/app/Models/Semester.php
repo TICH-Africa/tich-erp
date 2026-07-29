@@ -30,4 +30,34 @@ class Semester extends Model
     {
         return $this->belongsTo(AcademicYear::class, 'academic_year_id');
     }
+
+    public static function normalizeLabel(?string $label, ?int $semesterNumber = null): string
+    {
+        if ($label === null || trim($label) === '') {
+            return $semesterNumber ? "Semester {$semesterNumber}" : 'Semester';
+        }
+
+        $normalized = preg_replace('/\bTrisemesters?\b/i', 'Semester', trim($label));
+        $normalized = preg_replace('/\bTrimesters?\b/i', 'Semester', $normalized);
+
+        return $normalized ?: ($semesterNumber ? "Semester {$semesterNumber}" : 'Semester');
+    }
+
+    public function displayLabel(): string
+    {
+        return self::normalizeLabel($this->semester_label, $this->semester_number);
+    }
+
+    public function getSemesterLabelAttribute(?string $value): string
+    {
+        return self::normalizeLabel($value, $this->attributes['semester_number'] ?? null);
+    }
+
+    public function setSemesterLabelAttribute(?string $value): void
+    {
+        $this->attributes['semester_label'] = self::normalizeLabel(
+            $value,
+            $this->attributes['semester_number'] ?? null,
+        );
+    }
 }

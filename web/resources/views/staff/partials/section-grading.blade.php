@@ -1,7 +1,11 @@
 <header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Continuous Assessment &amp; Performance Mapping</h1>
-    <p class="tich-text">Record CATs, theoretical reviews, assignments, and skills lab marks in a competency spreadsheet. Cumulative scores compile automatically using unit weighting rules.</p>
+    <h1 class="tich-h1 tich-dept-header__title">Marks &amp; assessments</h1>
+    <p class="tich-text">Enter CAT, assignment, practical, and exam marks for students registered in your unit. Marks compile into weighted final grades using the unit assessment profile.</p>
 </header>
+
+@if (session('status'))
+    <p class="tich-text tich-mt-4" style="color:var(--tich-success, #15803d);">{{ session('status') }}</p>
+@endif
 
 <article class="tich-card tich-mt-6">
     <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">
@@ -12,7 +16,7 @@
                 <option value="">Select a unit…</option>
                 @foreach ($portalData['allocations'] as $allocation)
                     <option value="{{ $allocation->id }}" @selected(request('allocation') == $allocation->id)>
-                        {{ $allocation->unit?->unit_code }} · {{ $allocation->semester?->semester_label }}
+                        {{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}
                     </option>
                 @endforeach
             </select>
@@ -47,9 +51,10 @@
 
     <div class="tich-tabs tich-mt-6" data-tabs>
         <div class="tich-tabs__nav">
-            <button type="button" class="tich-tabs__btn is-active" data-tab="spreadsheet">Competency spreadsheet</button>
+            <button type="button" class="tich-tabs__btn is-active" data-tab="spreadsheet">CAT &amp; continuous assessment</button>
+            <button type="button" class="tich-tabs__btn" data-tab="exams">Exam marks</button>
             <button type="button" class="tich-tabs__btn" data-tab="objective">Objective auto-grading</button>
-            <button type="button" class="tich-tabs__btn" data-tab="cumulative">Cumulative score sheet</button>
+            <button type="button" class="tich-tabs__btn" data-tab="cumulative">Final score sheet</button>
         </div>
 
         <div class="tich-tabs__panel is-active" data-panel="spreadsheet">
@@ -123,6 +128,68 @@
 
         @include('staff.partials.section-grading-objective')
 
+        <div class="tich-tabs__panel" data-panel="exams">
+            <article class="tich-card">
+                <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - exam marks</h2>
+                <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from marks you have already entered. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+
+                <form method="POST" action="{{ route('staff.grading.exams') }}" class="tich-mt-4">
+                    @csrf
+                    <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                    <input type="hidden" name="exam_max" value="{{ $examMarksSheet['exam_max'] ?? 100 }}">
+
+                    <div style="overflow-x:auto;">
+                        <table class="tich-admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Reg. no.</th>
+                                    <th>Student</th>
+                                    <th>CAT avg %</th>
+                                    <th>Practical avg %</th>
+                                    <th>Attendance %</th>
+                                    <th>Continuous %</th>
+                                    <th>Exam / {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}</th>
+                                    <th>Final %</th>
+                                    <th>Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($examMarksSheet['rows'] ?? [] as $row)
+                                    <tr>
+                                        <td>{{ $row['registration_number'] }}</td>
+                                        <td>{{ $row['student_name'] }}</td>
+                                        <td>{{ number_format($row['cat_total'], 1) }}</td>
+                                        <td>{{ number_format($row['practical_total'], 1) }}</td>
+                                        <td>{{ number_format($row['attendance_pct'], 1) }}</td>
+                                        <td>{{ number_format($row['continuous_total'], 1) }}</td>
+                                        <td>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   max="{{ $examMarksSheet['exam_max'] ?? 100 }}"
+                                                   name="exam_scores[{{ $row['student_id'] }}]"
+                                                   value="{{ $row['exam_score'] !== null ? $row['exam_score'] : '' }}"
+                                                   class="tich-input"
+                                                   style="width:5rem;"
+                                                   placeholder="-">
+                                        </td>
+                                        <td>{{ $row['final_total'] !== null ? number_format($row['final_total'], 1) : '-' }}</td>
+                                        <td>{{ $row['grade_letter'] ?? '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="9">No students registered for this unit.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (! empty($examMarksSheet['rows']))
+                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save exam marks</button>
+                    @endif
+                </form>
+            </article>
+        </div>
+
         <div class="tich-tabs__panel" data-panel="cumulative">
             <article class="tich-card">
                 <h2 class="tich-h3">Automated cumulative score sheet</h2>
@@ -174,10 +241,10 @@
     </script>
 @elseif ($portalData['allocations']->isEmpty())
     <article class="tich-card tich-mt-6">
-        <p class="tich-text">You need a unit allocation before using the performance terminal.</p>
+        <p class="tich-text">You need a unit allocation before entering marks.</p>
     </article>
 @else
     <article class="tich-card tich-mt-6">
-        <p class="tich-text">Select a unit above to open the competency spreadsheet.</p>
+        <p class="tich-text">Select a unit above to enter CAT and exam marks for enrolled students.</p>
     </article>
 @endif

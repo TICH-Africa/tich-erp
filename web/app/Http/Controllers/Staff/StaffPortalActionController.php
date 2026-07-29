@@ -22,6 +22,7 @@ class StaffPortalActionController extends Controller
         protected StaffPortalService $portalService,
         protected StaffTeachingService $teaching,
         protected AttendanceSessionGenerationService $attendanceGeneration,
+        protected StaffExamMarksService $examMarks,
         protected ContinuousAssessmentService $assessments,
         protected LessonPlanApprovalService $lessonPlanApprovals,
         protected ObjectiveAutoGradingService $objectiveGrading,
@@ -239,6 +240,30 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
         ])->with('status', 'Competency spreadsheet saved. Cumulative scores updated.');
+    }
+
+    public function saveExamMarks(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'exam_max' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'exam_scores' => ['nullable', 'array'],
+        ]);
+
+        $this->examMarks->save(
+            $allocation,
+            $staff,
+            $validated['exam_scores'] ?? [],
+            (float) ($validated['exam_max'] ?? 100),
+        );
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+        ])->with('status', 'Exam marks saved and final grades updated.');
     }
 
     public function storeObjectiveAssessment(Request $request): RedirectResponse

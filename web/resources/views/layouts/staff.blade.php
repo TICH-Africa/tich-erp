@@ -9,6 +9,8 @@
     <div class="tich-admin__main">
         @include('partials.alerts')
 
+        @include('staff.partials.teaching-context')
+
         @yield('staff-content')
     </div>
 </div>

@@ -13,6 +13,11 @@ class UiText
         return str_replace(["\u{2014}", "\u{2013}"], '-', $text);
     }
 
+    public static function termLabel(?string $label, ?int $semesterNumber = null): string
+    {
+        return \App\Models\Semester::normalizeLabel($label, $semesterNumber);
+    }
+
     public static function unitLabel(?string $unitCode, ?string $unitName): string
     {
         $code = trim((string) $unitCode);

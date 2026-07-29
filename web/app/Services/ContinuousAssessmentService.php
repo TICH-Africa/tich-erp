@@ -36,7 +36,12 @@ class ContinuousAssessmentService
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
         $allocation->load(['unit', 'semester.academicYear', 'campus']);
-        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation($allocation->id);
+        $programId = $allocation->unit?->program_id;
+        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation(
+            $allocation->id,
+            $programId ? (int) $programId : null,
+            $allocation->semester?->semester_number,
+        );
         $columns = $this->columnsForAllocation($allocation);
         $scores = $this->scoreMatrix($allocation, $columns);
         $cumulative = $this->cumulativeSheet($allocation);
@@ -182,7 +187,13 @@ class ContinuousAssessmentService
      */
     public function cumulativeSheet(UnitAllocation $allocation): array
     {
-        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation($allocation->id);
+        $allocation->loadMissing(['unit', 'semester']);
+        $programId = $allocation->unit?->program_id;
+        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation(
+            $allocation->id,
+            $programId ? (int) $programId : null,
+            $allocation->semester?->semester_number,
+        );
         $unit = $allocation->unit;
         $weights = $this->weightProfile($unit);
         $rows = [];
@@ -275,8 +286,43 @@ class ContinuousAssessmentService
     }
 
     /**
-     * @param  Collection<int, CatScore>  $scores
-     * @param  array<string, float>  $weights
+     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
+     */
+    public function continuousBreakdown(int $studentId, UnitAllocation $allocation): array
+    {
+        $scores = CatScore::query()
+            ->where('student_id', $studentId)
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->get();
+
+        $attendancePct = (float) (DB::table('attendance_summaries')
+            ->where('student_id', $studentId)
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->value('attendance_percentage') ?? 0);
+
+        return $this->buildWeightedBreakdown($scores, $attendancePct, $this->weightProfile($allocation->unit));
+    }
+
+    public function finalScoreWithExam(float $continuousCumulative, float $examScore, ?Unit $unit): float
+    {
+        $weights = $this->weightProfile($unit);
+        $continuousWeight = $weights['cat'] + $weights['practical'] + $weights['attendance'];
+
+        return round(
+            ($continuousCumulative * $continuousWeight / 100) +
+            ($examScore * $weights['exam'] / 100),
+            2
+        );
+    }
+
+    public function gradeLetterForScore(float $score, float $passMark = 40): string
+    {
+        return $this->gradeLetter($score, $passMark);
+    }
+
+    /**
      * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
      */
     private function buildWeightedBreakdown(Collection $scores, float $attendancePct, array $weights): array

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Academics;
 
 use App\Models\AcademicProgram;
 use App\Models\AcademicYear;
+use App\Models\Campus;
 use App\Models\CurriculumVersion;
 use App\Models\Department;
 use App\Models\NursingBlock;
@@ -12,9 +13,11 @@ use App\Models\ProgramTimetableSession;
 use App\Models\Room;
 use App\Models\Staff;
 use App\Models\Unit;
+use App\Models\UnitAllocation;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
+use App\Services\ExamScheduleSyncService;
 use App\Services\PrintDocumentService;
 use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
@@ -22,6 +25,7 @@ use App\Services\StudentAcademicRecordService;
 use App\Services\WorkingIntakeService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
+use App\Services\UnitAllocationService;
 use App\Services\UnitCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +45,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected WorkingIntakeService $workingIntake,
         protected ProgramExamService $programExams,
         protected PrintDocumentService $printDocuments,
+        protected UnitAllocationService $unitAllocations,
+        protected ExamScheduleSyncService $examScheduleSync,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -106,6 +112,9 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         }
 
         $selectedIntake = $this->workingIntake->resolve($program, $request);
+        if ($selectedIntake) {
+            $selectedIntake->load('academicYear');
+        }
         $intakeSelectionRequired = $this->workingIntake->sectionRequiresIntake($section)
             && $this->workingIntake->programHasIntakes($program->id)
             && ! $selectedIntake;
@@ -265,6 +274,19 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 : 'overview',
             'examStaff' => $section === 'exams'
                 ? Staff::query()->orderBy('surname')->limit(200)->get()
+                : collect(),
+            'catalogAllocations' => ($section === 'catalog' && $selectedIntake)
+                ? $this->unitAllocations->forUnitsInIntake(
+                    $this->unitCatalog->listForHub($hub, (int) $program->department_id)->pluck('id')->all(),
+                    $selectedIntake,
+                    $program,
+                )
+                : collect(),
+            'allocationStaffList' => $section === 'catalog'
+                ? Staff::query()->where('is_teaching_staff', 1)->where('employment_status', 'active')->orderBy('surname')->get()
+                : collect(),
+            'allocationCampuses' => $section === 'catalog'
+                ? Campus::query()->where('is_active', 1)->orderBy('campus_name')->get()
                 : collect(),
         ]);
     }
@@ -845,5 +867,73 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $request->integer('teaching_period') ?: null,
             ]))
             ->with('status', 'Unit assessment weights updated.');
+    }
+
+    public function storeAllocation(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'unit_id' => ['required', 'integer'],
+            'staff_id' => ['required', 'integer'],
+            'teaching_period' => ['required', 'integer', 'min:1'],
+            'campus_id' => ['required', 'integer'],
+            'contact_hours_assigned' => ['nullable', 'integer', 'min:0'],
+            'is_coordinator' => ['nullable', 'boolean'],
+            'learning_department' => ['nullable', 'integer'],
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $unit = $this->access->unitsInScope($hub, $program->department_id)
+            ->firstWhere('id', (int) $validated['unit_id']);
+        abort_unless($unit, 404);
+
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period']);
+        abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
+
+        $this->unitAllocations->assign([
+            'unit_id' => $unit->id,
+            'staff_id' => (int) $validated['staff_id'],
+            'semester_id' => $semesterId,
+            'campus_id' => (int) $validated['campus_id'],
+            'contact_hours_assigned' => (int) ($validated['contact_hours_assigned'] ?? $unit->contact_hours ?? 0),
+            'is_coordinator' => ! empty($validated['is_coordinator']),
+        ]);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $validated['learning_department'] ?? null,
+                'intake' => $intake->id,
+                'section' => 'catalog',
+            ]))
+            ->with('status', 'Lecturer assigned to unit.');
+    }
+
+    public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $allocation): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $this->unitAllocations->assertAllocationInProgramDepartment($allocation, $program);
+        $this->unitAllocations->remove($allocation);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'department' => $hub,
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => 'catalog',
+            ]))
+            ->with('status', 'Lecturer allocation removed.');
     }
 }

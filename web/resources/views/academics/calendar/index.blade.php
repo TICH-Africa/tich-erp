@@ -5,7 +5,7 @@
 
     <div class="tich-section__intro" style="text-align:left;">
         <h1 class="tich-h1" style="font-size: 2rem;">Academic calendar</h1>
-        <p class="tich-text">Configure institution-wide academic years and trimester/semester terms for {{ $department->dept_name }}.</p>
+        <p class="tich-text">Configure institution-wide academic years and semester terms for {{ $department->dept_name }}.</p>
     </div>
 
     <article class="tich-card tich-mt-8">

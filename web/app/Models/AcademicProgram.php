@@ -111,12 +111,7 @@ class AcademicProgram extends Model
         $termsPerYear = $this->termsPerYear();
         $year = (int) ceil($periodNumber / $termsPerYear);
         $termInYear = (($periodNumber - 1) % $termsPerYear) + 1;
-        $termName = match ($this->curriculum_format) {
-            'trimester' => 'Trimester',
-            'semester' => 'Semester',
-            default => 'Term',
-        };
 
-        return "Year {$year} · {$termName} {$termInYear}";
+        return "Year {$year} · Semester {$termInYear}";
     }
 }

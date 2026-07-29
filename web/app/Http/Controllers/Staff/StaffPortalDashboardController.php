@@ -13,6 +13,7 @@ use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
+use App\Services\StaffExamMarksService;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class StaffPortalDashboardController extends Controller
         protected StaffTeachingService $teaching,
         protected ContinuousAssessmentService $assessments,
         protected ObjectiveAutoGradingService $objectiveGrading,
+        protected StaffExamMarksService $examMarks,
     ) {}
 
     public function __invoke(Request $request): View
@@ -58,7 +60,14 @@ class StaffPortalDashboardController extends Controller
 
         if ($sessionId) {
             $attendanceSession = AttendanceSession::query()
-                ->with(['records.student.applicant', 'allocation.unit', 'allocation.semester', 'allocation.staff', 'timetableSession'])
+                ->with([
+                    'records.student.applicant',
+                    'allocation.unit',
+                    'allocation.semester.academicYear',
+                    'allocation.staff',
+                    'timetableSession.timetable.curriculumVersion',
+                    'timetableSession.timetable.program',
+                ])
                 ->whereHas('allocation', fn ($query) => $query->where('staff_id', $staff->id))
                 ->find($sessionId);
         }
@@ -83,6 +92,7 @@ class StaffPortalDashboardController extends Controller
         }
 
         $gradingTerminal = null;
+        $examMarksSheet = null;
         $objectiveTerminal = null;
         if ($section === 'grading') {
             $allocationId = $request->integer('allocation');
@@ -93,6 +103,7 @@ class StaffPortalDashboardController extends Controller
                     ->find($allocationId);
                 if ($allocation) {
                     $gradingTerminal = $this->assessments->terminalData($allocation, $staff);
+                    $examMarksSheet = $this->examMarks->sheet($allocation, $staff);
                     $objectiveTerminal = $this->objectiveGrading->terminalData($allocation);
                 }
             }
@@ -109,8 +120,12 @@ class StaffPortalDashboardController extends Controller
             'attendanceSync' => $attendanceSync,
             'attendanceStep' => $attendanceStep,
             'upcomingAttendanceSessions' => $upcomingAttendanceSessions,
+            'attendanceSessionIntake' => $attendanceSession
+                ? $this->dashboard->intakeLabelForAttendanceSession($attendanceSession)
+                : null,
             'attendanceRiskMatrix' => AttendanceVerificationService::riskMatrix(),
             'gradingTerminal' => $gradingTerminal,
+            'examMarksSheet' => $examMarksSheet,
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
         ]);

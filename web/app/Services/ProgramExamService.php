@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
+use App\Models\Semester;
 use App\Models\Student;
 use App\Models\Unit;
 use Illuminate\Support\Collection;
@@ -488,7 +489,7 @@ class ProgramExamService
 
         if ($students->isEmpty() || $unitIds === [] || ! $semesterId) {
             if ($semesterId) {
-                $empty['semester_label'] = DB::table('semesters')->where('id', $semesterId)->value('semester_label');
+                $empty['semester_label'] = $this->semesterLabelFor($semesterId);
             }
 
             return $empty;
@@ -496,7 +497,7 @@ class ProgramExamService
 
         $students->loadMissing(['applicant', 'campus']);
         $studentIds = $students->pluck('id')->all();
-        $semesterLabel = DB::table('semesters')->where('id', $semesterId)->value('semester_label');
+        $semesterLabel = $this->semesterLabelFor($semesterId);
 
         $eligibility = DB::table('exam_eligibility_matrix')
             ->where('semester_id', $semesterId)
@@ -632,6 +633,17 @@ class ProgramExamService
         }
 
         return 'Eligibility not calculated yet';
+    }
+
+    private function semesterLabelFor(int $semesterId): ?string
+    {
+        $row = DB::table('semesters')->where('id', $semesterId)->first(['semester_label', 'semester_number']);
+
+        if (! $row) {
+            return null;
+        }
+
+        return Semester::normalizeLabel($row->semester_label, (int) $row->semester_number);
     }
 
     public function resolveTab(string $tab): string

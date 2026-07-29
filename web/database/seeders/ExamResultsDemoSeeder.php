@@ -49,6 +49,9 @@ class ExamResultsDemoSeeder extends Seeder
             $this->seedStudentUnits($studentId, (int) $semesterId, $unitIds, $profile);
         }
 
+        $staffId = (int) (DB::table('staff')->where('email', 'lecturer@tich.ac.ke')->value('id') ?? 1);
+        $this->seedAssessmentMarks($demoStudents, $unitIds, (int) $semesterId, $staffId);
+
         $this->command?->info('Exam results demo data seeded for HMD-CC Jan 2026 intake, Semester 1.');
     }
 
@@ -164,6 +167,18 @@ class ExamResultsDemoSeeder extends Seeder
             $grade = (float) ($profile['grades'][$i] ?? 50);
             $gradeLetter = $grade >= 70 ? 'A' : ($grade >= 60 ? 'B' : ($grade >= 50 ? 'C' : ($grade >= 40 ? 'D' : 'F')));
 
+            $registrationId = DB::table('student_semester_registrations')
+                ->where('student_id', $studentId)
+                ->where('semester_id', $semesterId)
+                ->value('id');
+
+            if ($registrationId) {
+                DB::table('registered_units')->updateOrInsert(
+                    ['semester_registration_id' => $registrationId, 'unit_id' => $unitId],
+                    ['is_additional' => 0, 'created_at' => now()],
+                );
+            }
+
             DB::table('attendance_summaries')->updateOrInsert(
                 ['student_id' => $studentId, 'unit_id' => $unitId, 'semester_id' => $semesterId],
                 [
@@ -206,5 +221,88 @@ class ExamResultsDemoSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $profiles
+     * @param  list<int>  $unitIds
+     */
+    private function seedAssessmentMarks(array $profiles, array $unitIds, int $semesterId, int $staffId): void
+    {
+        foreach ($profiles as $profile) {
+            $studentId = DB::table('students')->where('registration_number', $profile['reg'])->value('id');
+            if (! $studentId) {
+                continue;
+            }
+
+            foreach ($unitIds as $i => $unitId) {
+                $finalGrade = (float) ($profile['grades'][$i] ?? 50);
+                $examScore = max(35, min(85, $finalGrade + rand(-5, 5)));
+                $catScore = max(15, min(28, (int) round($examScore * 0.45)));
+                $catPct = round(($catScore / 30) * 100, 2);
+
+                DB::table('cat_scores')->updateOrInsert(
+                    [
+                        'student_id' => $studentId,
+                        'unit_id' => $unitId,
+                        'semester_id' => $semesterId,
+                        'assessment_name' => 'CAT 1',
+                    ],
+                    [
+                        'assessment_type' => 'cat',
+                        'max_score' => 30,
+                        'score_obtained' => $catScore,
+                        'percentage_score' => $catPct,
+                        'weight_in_final' => 0,
+                        'recorded_by' => $staffId,
+                        'recorded_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $examCardId = $this->ensureExamCard((int) $studentId, $semesterId);
+                $gradeLetter = $finalGrade >= 70 ? 'A' : ($finalGrade >= 60 ? 'B' : ($finalGrade >= 50 ? 'C' : ($finalGrade >= 40 ? 'D' : 'F')));
+
+                DB::table('exam_results')->updateOrInsert(
+                    [
+                        'student_id' => $studentId,
+                        'unit_id' => $unitId,
+                        'semester_id' => $semesterId,
+                    ],
+                    [
+                        'exam_card_id' => $examCardId,
+                        'cat_total' => $catPct,
+                        'practical_total' => max(40, $catPct - 5),
+                        'final_exam_score' => $examScore,
+                        'final_total_score' => $finalGrade,
+                        'grade_letter' => $gradeLetter,
+                        'grade_points' => match ($gradeLetter) {
+                            'A' => 4.0, 'B' => 3.0, 'C' => 2.0, 'D' => 1.0, default => 0.0,
+                        },
+                        'entered_by' => $staffId,
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+        }
+    }
+
+    private function ensureExamCard(int $studentId, int $semesterId): int
+    {
+        $existing = DB::table('exam_cards')
+            ->where('student_id', $studentId)
+            ->where('semester_id', $semesterId)
+            ->value('id');
+
+        if ($existing) {
+            return (int) $existing;
+        }
+
+        return (int) DB::table('exam_cards')->insertGetId([
+            'exam_card_number' => 'EC-EXAM-'.strtoupper(Str::random(4)),
+            'student_id' => $studentId,
+            'semester_id' => $semesterId,
+            'issued_at' => now(),
+        ]);
     }
 }

@@ -20,7 +20,7 @@ class StaffPortalNavigationService
             'units' => 'My units',
             'timetable' => 'Timetable',
             'attendance' => 'Attendance',
-            'grading' => 'Performance terminal',
+            'grading' => 'Marks & assessments',
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
         ];
@@ -44,7 +44,7 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'My units', 'section' => 'units'],
             ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable'],
             ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance'],
-            ['type' => 'link', 'label' => 'Performance terminal', 'section' => 'grading'],
+            ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading'],
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'],
         ];

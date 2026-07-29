@@ -22,6 +22,10 @@ class StaffPortalDashboardService
     public function forStaff(Staff $staff): array
     {
         $allocations = $this->allocations($staff);
+        $allocations->each(fn (UnitAllocation $allocation) => $allocation->setAttribute(
+            'intake_label',
+            $this->intakeLabelForSemester($allocation->semester),
+        ));
         $allocationIds = $allocations->pluck('id')->all();
         $unitIds = $allocations->pluck('unit_id')->unique()->all();
         $semesterIds = $allocations->pluck('semester_id')->unique()->all();
@@ -36,6 +40,7 @@ class StaffPortalDashboardService
             'cat_scores' => $this->catScores($staff->id, $unitIds, $semesterIds),
             'learning_content' => $this->learningContent($unitIds),
             'attendance_alerts' => $this->attendanceAlerts($unitIds, $semesterIds),
+            'teaching_context' => $this->teachingContext($staff, $allocations),
             'day_labels' => TimetableTemplateService::dayLabels(),
             'segment_types' => TimetableTemplateService::segmentTypes(),
         ];
@@ -85,6 +90,8 @@ class StaffPortalDashboardService
                 'template.segments',
                 'template.days',
                 'program',
+                'curriculumVersion',
+                'campus',
             ])
             ->whereIn('id', $timetableIds)
             ->orderBy('teaching_period')
@@ -361,12 +368,137 @@ class StaffPortalDashboardService
         }
 
         return \App\Models\AttendanceSession::query()
-            ->with(['allocation.unit', 'allocation.semester', 'timetableSession', 'records'])
+            ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion', 'records'])
             ->withCount('records')
             ->whereIn('unit_allocation_id', $allocationIds)
             ->whereDate('session_date', '>=', now()->subWeek()->toDateString())
             ->orderBy('session_date')
             ->orderBy('start_time')
-            ->get();
+            ->get()
+            ->each(function (\App\Models\AttendanceSession $session) {
+                if (! $session->allocation) {
+                    return;
+                }
+
+                $fromTimetable = $session->timetableSession?->timetable?->curriculumVersion?->intakeLabel();
+                $session->allocation->setAttribute(
+                    'intake_label',
+                    $fromTimetable ?: $this->intakeLabelForSemester($session->allocation->semester),
+                );
+            });
+    }
+
+    /**
+     * @return array{items: list<array<string, mixed>>, primary: ?array<string, mixed>, summary: ?string}
+     */
+    public function teachingContext(Staff $staff, ?Collection $allocations = null): array
+    {
+        $allocations ??= $this->allocations($staff);
+        $items = collect();
+
+        $timetableIds = ProgramTimetableSession::query()
+            ->where('staff_id', $staff->id)
+            ->distinct()
+            ->pluck('program_timetable_id');
+
+        ProgramTimetable::query()
+            ->with(['program', 'curriculumVersion', 'campus'])
+            ->whereIn('id', $timetableIds)
+            ->where('timetable_kind', 'lesson')
+            ->orderBy('teaching_period')
+            ->get()
+            ->each(function (ProgramTimetable $timetable) use ($items) {
+                $items->push([
+                    'key' => 'timetable-'.$timetable->id,
+                    'program_code' => $timetable->program?->program_code,
+                    'program_name' => $timetable->program?->program_name,
+                    'intake_label' => $timetable->curriculumVersion?->intakeLabel(),
+                    'semester_label' => 'Semester '.$timetable->teaching_period,
+                    'teaching_period' => $timetable->teaching_period,
+                    'campus' => $timetable->campus?->campus_name,
+                    'source' => 'timetable',
+                ]);
+            });
+
+        foreach ($allocations as $allocation) {
+            $items->push([
+                'key' => 'allocation-'.$allocation->id,
+                'unit_code' => $allocation->unit?->unit_code,
+                'unit_name' => $allocation->unit?->unit_name,
+                'intake_label' => $this->semesterIntakeLabel($allocation->semester),
+                'semester_label' => $allocation->semester?->semester_label,
+                'teaching_period' => $allocation->semester?->semester_number,
+                'campus' => $allocation->campus?->campus_name,
+                'source' => 'allocation',
+            ]);
+        }
+
+        $unique = $items
+            ->filter(fn (array $item) => $item['intake_label'] || $item['semester_label'] || $item['program_code'] || $item['unit_code'])
+            ->unique(fn (array $item) => implode('|', [
+                $item['program_code'] ?? $item['unit_code'] ?? '',
+                $item['intake_label'] ?? '',
+                $item['semester_label'] ?? '',
+                $item['campus'] ?? '',
+            ]))
+            ->values();
+
+        $primary = $unique->first();
+
+        return [
+            'items' => $unique->all(),
+            'primary' => $primary,
+            'summary' => $primary ? $this->formatTeachingContextLine($primary) : null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function formatTeachingContextLine(array $context): string
+    {
+        $parts = array_filter([
+            $context['program_code'] ?? $context['unit_code'] ?? null,
+            $context['intake_label'] ?? null,
+            $context['semester_label'] ?? null,
+            isset($context['campus']) ? $context['campus'] : null,
+        ]);
+
+        return implode(' · ', $parts);
+    }
+
+    public function intakeLabelForSemester(?Semester $semester): ?string
+    {
+        return $this->semesterIntakeLabel($semester);
+    }
+
+    public function intakeLabelForAttendanceSession(\App\Models\AttendanceSession $session): ?string
+    {
+        $fromTimetable = $session->timetableSession?->timetable?->curriculumVersion?->intakeLabel();
+
+        if ($fromTimetable) {
+            return $fromTimetable;
+        }
+
+        return $this->semesterIntakeLabel($session->allocation?->semester);
+    }
+
+    private function semesterIntakeLabel(?Semester $semester): ?string
+    {
+        if (! $semester) {
+            return null;
+        }
+
+        if ($semester->intake_month) {
+            $month = date('M', mktime(0, 0, 0, (int) $semester->intake_month, 1));
+            $yearLabel = $semester->academicYear?->year_label;
+            if ($yearLabel && preg_match('/(\d{4})/', (string) $yearLabel, $matches)) {
+                return "{$month} {$matches[1]} intake";
+            }
+
+            return "{$month} intake · {$semester->semester_label}";
+        }
+
+        return $semester->semester_label;
     }
 }

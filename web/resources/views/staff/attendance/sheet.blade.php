@@ -34,6 +34,7 @@
         <p><strong>Time:</strong> {{ substr((string) $session->start_time, 0, 5) }} – {{ substr((string) $session->end_time, 0, 5) }}</p>
         <p><strong>Venue:</strong> {{ $session->venue ?? 'TBC' }}</p>
         <p><strong>Tutor:</strong> {{ $tutor?->fullName() }}</p>
+        <p><strong>Intake:</strong> {{ $intake_label ?? '-' }}</p>
         <p><strong>Semester:</strong> {{ $allocation?->semester?->semester_label }}</p>
     </div>
 

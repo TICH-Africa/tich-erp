@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Semester;
 use App\Models\Student;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -98,7 +99,7 @@ class TranscriptService
                     'semester_id' => (int) $row->semester_id,
                     'unit_code' => $row->unit_code,
                     'unit_name' => $row->unit_name,
-                    'semester_label' => $row->semester_label,
+                    'semester_label' => Semester::normalizeLabel($row->semester_label, (int) $row->semester_number),
                     'semester_number' => (int) $row->semester_number,
                     'year_label' => $row->year_label,
                     'credit_hours' => (float) $row->credit_hours,
