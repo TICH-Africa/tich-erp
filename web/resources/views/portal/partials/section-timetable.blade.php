@@ -38,8 +38,18 @@
         @endphp
 
         <article class="tich-card tich-mt-8">
-            <h2 class="tich-h3">{{ $timetable->displayTitle() }}</h2>
-            <p class="tich-caption tich-mt-2">{{ ucfirst($timetable->status) }}</p>
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
+                <div>
+                    <h2 class="tich-h3">{{ $timetable->displayTitle() }}</h2>
+                    <p class="tich-caption tich-mt-2">{{ ucfirst($timetable->status) }}</p>
+                </div>
+                @if ($timetable->sessions->isNotEmpty())
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        <a href="{{ route('portal.timetable.print', $timetable) }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
+                        <a href="{{ route('portal.timetable.pdf', $timetable) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                    </div>
+                @endif
+            </div>
 
             @if ($timetable->sessions->isNotEmpty())
                 @include('academics.programs.partials.timetable-grid', [

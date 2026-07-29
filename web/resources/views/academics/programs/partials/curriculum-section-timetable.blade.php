@@ -345,14 +345,18 @@
                         @endif
                     </p>
                 </div>
-                @if ($timetableDraft->status === 'draft')
-                    @can('academics.write')
-                        <form method="POST" action="{{ route('departments.academics.programs.timetable.publish', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}">
-                            @csrf
-                            <button type="submit" class="tich-btn tich-btn-primary">Publish timetable</button>
-                        </form>
-                    @endcan
-                @endif
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                    @if ($timetableDraft->status === 'draft')
+                        @can('academics.write')
+                            <form method="POST" action="{{ route('departments.academics.programs.timetable.publish', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}">
+                                @csrf
+                                <button type="submit" class="tich-btn tich-btn-primary">Publish timetable</button>
+                            </form>
+                        @endcan
+                    @endif
+                    <a href="{{ route('departments.academics.programs.timetable.print', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
+                    <a href="{{ route('departments.academics.programs.timetable.pdf', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                </div>
             </div>
 
             @if ($timetableConflicts->isNotEmpty())

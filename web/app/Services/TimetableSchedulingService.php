@@ -1293,6 +1293,53 @@ class TimetableSchedulingService
 
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function documentPayload(ProgramTimetable $timetable): array
+    {
+        $timetable->load([
+            'sessions.unit',
+            'sessions.staff',
+            'sessions.room',
+            'template.segments',
+            'template.days',
+            'curriculumVersion',
+            'program.department',
+            'campus',
+        ]);
+
+        $template = $timetable->template;
+        $kind = $this->normalizeTimetableKind((string) $timetable->timetable_kind);
+        $slotsForKind = $template
+            ? $this->scheduleSegmentsForKind($template, $kind)
+            : collect();
+
+        $activeDays = $template
+            ? $template->days->where('is_active', 1)->pluck('day_of_week')->map(fn ($day) => (int) $day)->values()->all()
+            : range(1, 5);
+
+        $gridSegments = match ($kind) {
+            'exam', 'supplementary' => $slotsForKind,
+            default => $template?->segments->filter(
+                fn ($segment) => in_array($segment->segment_type, ['lesson', 'break'], true)
+            ) ?? collect(),
+        };
+
+        return [
+            'timetable' => $timetable,
+            'program' => $timetable->program,
+            'intake' => $timetable->curriculumVersion,
+            'timetableKind' => $kind,
+            'kindLabel' => ProgramTimetable::kindLabels()[$kind] ?? ucfirst($kind),
+            'dayLabels' => TimetableTemplateService::dayLabels(),
+            'segmentTypes' => TimetableTemplateService::segmentTypes(),
+            'activeDays' => $activeDays,
+            'segments' => $gridSegments,
+            'sessions' => $timetable->sessions,
+        ];
+    }
+
 }
 
 

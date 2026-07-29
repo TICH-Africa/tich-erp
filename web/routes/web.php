@@ -145,6 +145,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/students', [\App\Http\Controllers\Sis\StudentController::class, 'index'])->name('sis.students.index');
         Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
         Route::get('/students/{student}/transcript', [\App\Http\Controllers\Sis\TranscriptController::class, 'show'])->name('sis.students.transcript');
+        Route::get('/students/{student}/transcript/pdf', [\App\Http\Controllers\Sis\TranscriptController::class, 'pdf'])->name('sis.students.transcript.pdf');
     });
 
     Route::get('/academics', function () {
@@ -164,6 +165,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/units', [AcademicsUnitController::class, 'index'])->name('departments.academics.units.index');
             Route::get('/programs', [ProgramCurriculumController::class, 'index'])->name('departments.academics.programs.index');
             Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
+            Route::get('/programs/{program}/timetables/{timetable}/print', [ProgramCurriculumController::class, 'printTimetable'])->name('departments.academics.programs.timetable.print');
+            Route::get('/programs/{program}/timetables/{timetable}/pdf', [ProgramCurriculumController::class, 'downloadTimetablePdf'])->name('departments.academics.programs.timetable.pdf');
             Route::get('/workload', [WorkloadController::class, 'index'])->name('departments.academics.workload.index');
             Route::get('/attendance-ledger', [AttendanceLedgerController::class, 'index'])->name('departments.academics.attendance-ledger.index');
             Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->name('departments.academics.lesson-plans.index');
@@ -232,6 +235,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.documents.show');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
             ->name('portal.documents.download');
+        Route::get('/timetables/{timetable}/print', [\App\Http\Controllers\Portal\PortalTimetableController::class, 'print'])
+            ->name('portal.timetable.print');
+        Route::get('/timetables/{timetable}/pdf', [\App\Http\Controllers\Portal\PortalTimetableController::class, 'pdf'])
+            ->name('portal.timetable.pdf');
     });
 
     Route::middleware('staff.portal')->prefix('staff')->group(function () {

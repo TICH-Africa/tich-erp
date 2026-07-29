@@ -15,6 +15,7 @@ use App\Models\Unit;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
+use App\Services\PrintDocumentService;
 use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
@@ -25,6 +26,7 @@ use App\Services\UnitCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class ProgramCurriculumController extends DepartmentAcademicsController
@@ -38,6 +40,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected StudentAcademicRecordService $studentAcademicRecords,
         protected WorkingIntakeService $workingIntake,
         protected ProgramExamService $programExams,
+        protected PrintDocumentService $printDocuments,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -610,6 +613,91 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $this->timetableScheduling->publish($request->user(), $timetable, $request);
 
         return back()->with('status', 'Timetable published. Students can now view it in the portal.');
+    }
+
+    public function printTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): View
+    {
+        return $this->printDocuments->render(
+            'academics.programs.timetable-print',
+            $this->timetablePrintData($request, $department, $program, $timetable),
+        );
+    }
+
+    public function downloadTimetablePdf(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): Response
+    {
+        $data = $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
+        $program = $data['program'];
+
+        return $this->printDocuments->downloadPdf(
+            'academics.programs.timetable-print',
+            $data,
+            sprintf(
+                'timetable-%s-sem%d-%s.pdf',
+                $timetable->timetable_kind,
+                $timetable->teaching_period,
+                \Illuminate\Support\Str::slug($program->program_code ?? (string) $program->id)
+            ),
+            'landscape',
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function timetablePrintData(
+        Request $request,
+        Department $department,
+        AcademicProgram $program,
+        ProgramTimetable $timetable,
+        bool $includeActions = true,
+    ): array {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+
+        $payload = $this->timetableScheduling->documentPayload($timetable);
+        $intake = $payload['intake'];
+        $kindLabel = $payload['kindLabel'];
+
+        $backUrl = route('departments.academics.programs.curriculum', array_filter([
+            'department' => $hub,
+            'program' => $program->id,
+            'learning_department' => $request->integer('learning_department') ?: null,
+            'intake' => $intake?->id,
+            'section' => 'timetable',
+            'teaching_period' => $timetable->teaching_period,
+            'timetable_kind' => $timetable->timetable_kind,
+        ]));
+
+        $routeParams = [
+            'department' => $hub,
+            'program' => $program->id,
+            'timetable' => $timetable->id,
+        ];
+
+        $pdfUrl = route('departments.academics.programs.timetable.pdf', $routeParams);
+
+        return array_merge($payload, [
+            'documentTitle' => $kindLabel,
+            'documentSubtitle' => trim(($program->program_name ?? '').($intake ? ' · '.$intake->intakeLabel() : '')),
+            'documentRef' => $this->printDocuments->documentRef(
+                'TT',
+                $program->program_code ?? $program->id,
+                $timetable->teaching_period,
+                $timetable->timetable_kind,
+            ),
+            'paperOrientation' => 'landscape',
+            'metaRows' => [
+                ['label' => 'Programme', 'value' => e($program->program_name ?? '—')],
+                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '—')],
+                ['label' => 'Semester', 'value' => e((string) $timetable->teaching_period)],
+                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? '—')],
+                ['label' => 'Status', 'value' => e(ucfirst($timetable->status))],
+                ['label' => 'Timetable', 'value' => e($timetable->displayTitle()), 'full' => true],
+            ],
+            'backUrl' => $includeActions ? $backUrl : null,
+            'pdfUrl' => $includeActions ? $pdfUrl : null,
+        ]);
     }
 
     public function addIntakeUnit(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version, int $semester): RedirectResponse
