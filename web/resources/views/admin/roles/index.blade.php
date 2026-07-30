@@ -9,25 +9,20 @@
         $editRole = $openEditRoleId ? $roles->firstWhere('id', $openEditRoleId) : null;
     @endphp
 
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 2rem;">
-        <div>
-            <a href="{{ route('admin.users.index', ['audience' => 'staff']) }}" class="tich-link">&larr; Users &amp; access</a>
-            <h1 class="tich-h1 tich-mt-4" style="font-size: 2rem;">User roles</h1>
-            <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
-                Default system roles are built in. Add custom roles as your organisation grows — employees can hold multiple roles.
-            </p>
-        </div>
-        <button type="button" class="tich-btn tich-btn-primary role-create-trigger" data-open-modal="role-create-modal">
-            Add role
-        </button>
-    </div>
+    <a href="{{ route('admin.users.index', ['audience' => 'staff']) }}" class="tich-link">&larr; Users &amp; access</a>
+    <h1 class="tich-h1 tich-mt-4" style="font-size: 2rem;">User roles &amp; categories</h1>
+    <p class="tich-text tich-mb-6">
+        Default system roles are built in. Add custom roles as your organisation grows — employees can hold multiple roles.
+    </p>
+
+    @include('admin.partials.roles-tabs', [
+        'section' => 'roles',
+        'rolesCount' => $rolesCount,
+        'categoriesCount' => $categoriesCount,
+    ])
 
     @if ($errors->has('role'))
         <p class="tich-text tich-mb-4" style="color: #c0392b;">{{ $errors->first('role') }}</p>
-    @endif
-
-    @if ($errors->has('category'))
-        <p class="tich-text tich-mb-4" style="color: #c0392b;">{{ $errors->first('category') }}</p>
     @endif
 
     <div class="tich-card tich-table-panel">
@@ -144,111 +139,6 @@
             </form>
         </div>
     </div>
-
-    <section class="tich-mt-8">
-        <h2 class="tich-h2" style="font-size: 1.5rem;">Role categories</h2>
-        <p class="tich-text tich-mb-6">
-            Categories group roles for organisation and reporting. Default categories are built in; add custom ones as your institution grows.
-        </p>
-
-        <div class="tich-grid tich-grid--2" style="align-items: start; gap: 2rem;">
-            <article class="tich-card">
-                <h3 class="tich-h3">Add category</h3>
-                <form method="POST" action="{{ route('admin.role-categories.store') }}" class="tich-mt-4">
-                    @csrf
-                    <input type="hidden" name="_form" value="create_category">
-                    <div class="tich-form-group">
-                        <label class="tich-label">Category code</label>
-                        <input type="text" name="category_code" class="tich-input" value="{{ old('_form') === 'create_category' ? old('category_code') : '' }}" required placeholder="e.g. operations" pattern="[a-z][a-z0-9_-]*" title="Lowercase letters, numbers, hyphens, and underscores only">
-                        <p class="tich-caption tich-mt-1">Lowercase identifier used internally. Cannot be changed after creation.</p>
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Display name</label>
-                        <input type="text" name="category_name" class="tich-input" value="{{ old('_form') === 'create_category' ? old('category_name') : '' }}" required placeholder="e.g. Operations">
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Description</label>
-                        <textarea name="description" class="tich-input" rows="2">{{ old('_form') === 'create_category' ? old('description') : '' }}</textarea>
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Display order</label>
-                        <input type="number" name="display_order" class="tich-input" value="{{ old('_form') === 'create_category' ? old('display_order', 0) : 0 }}" min="0">
-                    </div>
-                    <button type="submit" class="tich-btn tich-btn-primary">Create category</button>
-                </form>
-            </article>
-
-            <div class="tich-card tich-table-panel">
-                <h3 class="tich-h3">Existing categories</h3>
-                <table class="tich-admin-table tich-mt-4">
-                    <thead>
-                        <tr>
-                            <th>Order</th>
-                            <th>Code</th>
-                            <th>Name</th>
-                            <th>Roles</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($roleCategories as $categoryItem)
-                            <tr>
-                                <td>{{ $categoryItem->display_order }}</td>
-                                <td><code>{{ $categoryItem->category_code }}</code></td>
-                                <td>{{ $categoryItem->category_name }}</td>
-                                <td>{{ $rolesPerCategory[$categoryItem->category_code] ?? 0 }}</td>
-                                <td>{{ $categoryItem->is_system ? 'System' : 'Custom' }}</td>
-                                <td>{{ $categoryItem->is_active ? 'Active' : 'Inactive' }}</td>
-                                <td>
-                                    <details>
-                                        <summary class="tich-link" style="cursor: pointer;">Edit</summary>
-                                        <form method="POST" action="{{ route('admin.role-categories.update', $categoryItem) }}" class="tich-mt-4" style="min-width: 16rem;">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="_form" value="edit_category">
-                                            <input type="hidden" name="edit_category_id" value="{{ $categoryItem->id }}">
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Code</label>
-                                                <input type="text" class="tich-input" value="{{ $categoryItem->category_code }}" readonly>
-                                            </div>
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Display name</label>
-                                                <input type="text" name="category_name" class="tich-input" value="{{ old('_form') === 'edit_category' && (int) old('edit_category_id') === $categoryItem->id ? old('category_name') : $categoryItem->category_name }}" required>
-                                            </div>
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Description</label>
-                                                <textarea name="description" class="tich-input" rows="2">{{ old('_form') === 'edit_category' && (int) old('edit_category_id') === $categoryItem->id ? old('description') : $categoryItem->description }}</textarea>
-                                            </div>
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Display order</label>
-                                                <input type="number" name="display_order" class="tich-input" value="{{ old('_form') === 'edit_category' && (int) old('edit_category_id') === $categoryItem->id ? old('display_order', 0) : $categoryItem->display_order }}" min="0">
-                                            </div>
-                                            <label style="display: flex; gap: 0.5rem; align-items: center;">
-                                                <input type="checkbox" name="is_active" value="1" @checked(old('_form') === 'edit_category' && (int) old('edit_category_id') === $categoryItem->id ? old('is_active', true) : $categoryItem->is_active)>
-                                                <span class="tich-text">Active</span>
-                                            </label>
-                                            <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save</button>
-                                        </form>
-                                        @unless ($categoryItem->is_system)
-                                            <form method="POST" action="{{ route('admin.role-categories.destroy', $categoryItem) }}" class="tich-mt-4" onsubmit="return confirm('Delete category {{ $categoryItem->category_name }}?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="tich-btn tich-btn-secondary" style="color: #c0392b;">Delete category</button>
-                                            </form>
-                                        @endunless
-                                    </details>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="7">No role categories yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
 
     @include('admin.partials.tich-modal-assets')
 

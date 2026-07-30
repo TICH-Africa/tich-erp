@@ -117,6 +117,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::put('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
             Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
 
+            Route::get('/role-categories', [RoleCategoryController::class, 'index'])->name('admin.role-categories.index');
+            Route::post('/role-categories/reorder', [RoleCategoryController::class, 'reorder'])->name('admin.role-categories.reorder');
             Route::post('/role-categories', [RoleCategoryController::class, 'store'])->name('admin.role-categories.store');
             Route::put('/role-categories/{roleCategory}', [RoleCategoryController::class, 'update'])->name('admin.role-categories.update');
             Route::delete('/role-categories/{roleCategory}', [RoleCategoryController::class, 'destroy'])->name('admin.role-categories.destroy');

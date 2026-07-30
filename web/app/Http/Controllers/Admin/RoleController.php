@@ -24,20 +24,12 @@ class RoleController extends Controller
             ->orderBy('role_name')
             ->get();
 
-        $roleCategories = RoleCategory::query()
-            ->orderBy('display_order')
-            ->orderBy('category_name')
-            ->get();
-
-        $rolesPerCategory = Role::query()
-            ->select('role_category', DB::raw('count(*) as roles_count'))
-            ->groupBy('role_category')
-            ->pluck('roles_count', 'role_category');
-
         $categories = RoleCategory::activeOptions();
         $categoryLabels = RoleCategory::labelMap();
+        $rolesCount = Role::query()->count();
+        $categoriesCount = RoleCategory::query()->count();
 
-        return view('admin.roles.index', compact('roles', 'categories', 'categoryLabels', 'roleCategories', 'rolesPerCategory'));
+        return view('admin.roles.index', compact('roles', 'categories', 'categoryLabels', 'rolesCount', 'categoriesCount'));
     }
 
     public function store(Request $request): RedirectResponse
