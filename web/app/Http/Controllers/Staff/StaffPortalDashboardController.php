@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
+use App\Models\Semester;
+use App\Models\Staff;
 use App\Models\UnitAllocation;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
+use App\Services\DepartmentPerformanceService;
+use App\Services\LessonPlanApprovalService;
 use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
@@ -17,6 +21,8 @@ use App\Services\StaffExamMarksService;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class StaffPortalDashboardController extends Controller
@@ -30,6 +36,8 @@ class StaffPortalDashboardController extends Controller
         protected ContinuousAssessmentService $assessments,
         protected ObjectiveAutoGradingService $objectiveGrading,
         protected StaffExamMarksService $examMarks,
+        protected LessonPlanApprovalService $lessonPlanApprovals,
+        protected DepartmentPerformanceService $performance,
     ) {}
 
     public function __invoke(Request $request): View
@@ -109,6 +117,16 @@ class StaffPortalDashboardController extends Controller
             }
         }
 
+        $hodManagement = null;
+        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin'])) {
+            $hodManagement = [
+                'lesson_plans' => $this-> hodLessonPlans($staff),
+                'allocations' => $this-> hodUnitAllocations($staff),
+                'attendance' => $this-> hodAttendance($staff),
+                'performance' => $this-> hodPerformance($staff),
+            ];
+        }
+
         return view('staff.dashboard', [
             'staff' => $staff,
             'portalData' => $portalData,
@@ -128,6 +146,94 @@ class StaffPortalDashboardController extends Controller
             'examMarksSheet' => $examMarksSheet,
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
+            'hodManagement' => $hodManagement,
         ]);
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function hodLessonPlans(Staff $staff): Collection
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+
+        return DB::table('lesson_plans as lp')
+            ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
+            ->join('units as u', 'u.id', '=', 'ua.unit_id')
+            ->join('staff as st', 'st.id', '=', 'lp.prepared_by')
+            ->where('u.department_id', $departmentId)
+            ->whereIn('lp.status', ['submitted', 'modified'])
+            ->orderByDesc('lp.updated_at')
+            ->select([
+                'lp.id',
+                'lp.status',
+                'lp.planned_date',
+                'lp.contact_hours',
+                'lp.hod_comments',
+                'u.unit_code',
+                'u.unit_name',
+                DB::raw("CONCAT(COALESCE(st.first_name,''), ' ', COALESCE(st.surname,'')) as tutor_name"),
+            ])
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function hodUnitAllocations(Staff $staff): Collection
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+
+        return UnitAllocation::query()
+            ->with(['unit', 'staff'])
+            ->whereHas('unit', fn ($query) => $query->where('department_id', $departmentId))
+            ->where('is_active', 1)
+            ->orderByDesc('semester_id')
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function hodAttendance(Staff $staff): Collection
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+
+        return DB::table('attendance_sessions as s')
+            ->join('unit_allocations as ua', 'ua.id', '=', 's.unit_allocation_id')
+            ->join('units as u', 'u.id', '=', 'ua.unit_id')
+            ->join('staff as tutor', 'tutor.id', '=', 's.recorded_by')
+            ->where('u.department_id', $departmentId)
+            ->where('s.is_locked', 1)
+            ->orderByDesc('s.session_date')
+            ->select([
+                's.id',
+                's.session_number',
+                's.session_date',
+                's.verification_status',
+                's.signed_sheet_image_path',
+                's.hod_verified_at',
+                's.registrar_verified_at',
+                'u.unit_code',
+                'u.unit_name',
+                DB::raw("CONCAT(COALESCE(tutor.first_name,''), ' ', COALESCE(tutor.surname,'')) as tutor_name"),
+            ])
+            ->get();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function hodPerformance(Staff $staff): array
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+        $semesterId = null;
+
+        $semester = Semester::query()->orderByDesc('id')->first();
+        if ($semester) {
+            $semesterId = (int) $semester->id;
+        }
+
+        return app(DepartmentPerformanceService::class)->dashboard($departmentId, $semesterId);
     }
 }

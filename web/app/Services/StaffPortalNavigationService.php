@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ProgramTimetableSession;
 use App\Models\Staff;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +16,7 @@ class StaffPortalNavigationService
      */
     public function sections(): array
     {
-        return [
+        $sections = [
             'overview' => 'Overview',
             'units' => 'My units',
             'timetable' => 'Timetable',
@@ -24,6 +25,12 @@ class StaffPortalNavigationService
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
         ];
+
+        if ($this->userIsHod()) {
+            $sections['hod-management'] = 'HOD management';
+        }
+
+        return $sections;
     }
 
     public function resolveSection(Request $request): string
@@ -38,7 +45,7 @@ class StaffPortalNavigationService
      */
     public function sidebarNavigation(): array
     {
-        return [
+        $items = [
             ['type' => 'link', 'label' => 'Overview', 'section' => 'overview'],
             ['type' => 'heading', 'label' => 'Teaching'],
             ['type' => 'link', 'label' => 'My units', 'section' => 'units'],
@@ -48,5 +55,19 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'],
         ];
+
+        if ($this->userIsHod()) {
+            $items[] = ['type' => 'heading', 'label' => 'Management'];
+            $items[] = ['type' => 'link', 'label' => 'HOD management', 'section' => 'hod-management'];
+        }
+
+        return $items;
+    }
+
+    private function userIsHod(): bool
+    {
+        $user = Auth::user();
+
+        return $user && $user->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']);
     }
 }
