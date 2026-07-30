@@ -21,10 +21,6 @@
         </button>
     </div>
 
-    @if (session('status'))
-        <p class="tich-text tich-mb-4" style="color: var(--tich-green);">{{ session('status') }}</p>
-    @endif
-
     <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All campuses ({{ $campuses->count() }})</h2>
         <table class="tich-admin-table tich-mt-4">

@@ -15,6 +15,11 @@ class Role extends Model
         'is_system_role' => 'boolean',
     ];
 
+    public function roleCategory()
+    {
+        return $this->belongsTo(RoleCategory::class, 'role_category', 'category_code');
+    }
+
     /**
      * Get the users for the role.
      */

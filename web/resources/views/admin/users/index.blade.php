@@ -8,10 +8,6 @@
         Manage employee roles, departments, and module access separately from student portal accounts.
     </p>
 
-    @if (session('status'))
-        <p class="tich-text tich-mb-4" style="color: var(--tich-green);">{{ session('status') }}</p>
-    @endif
-
     <div class="tich-tabs tich-mb-8">
         <div class="tich-tabs__nav" style="justify-content: space-between; align-items: center;">
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">

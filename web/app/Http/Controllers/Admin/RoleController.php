@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Models\RoleCategory;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RoleController extends Controller
@@ -22,15 +24,20 @@ class RoleController extends Controller
             ->orderBy('role_name')
             ->get();
 
-        $categories = [
-            'executive' => 'Executive',
-            'academic' => 'Academic',
-            'teaching' => 'Teaching',
-            'administrative' => 'Administrative',
-            'student' => 'Student',
-        ];
+        $roleCategories = RoleCategory::query()
+            ->orderBy('display_order')
+            ->orderBy('category_name')
+            ->get();
 
-        return view('admin.roles.index', compact('roles', 'categories'));
+        $rolesPerCategory = Role::query()
+            ->select('role_category', DB::raw('count(*) as roles_count'))
+            ->groupBy('role_category')
+            ->pluck('roles_count', 'role_category');
+
+        $categories = RoleCategory::activeOptions();
+        $categoryLabels = RoleCategory::labelMap();
+
+        return view('admin.roles.index', compact('roles', 'categories', 'categoryLabels', 'roleCategories', 'rolesPerCategory'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -38,7 +45,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => ['required', 'string', 'max:100', 'unique:roles,role_name'],
             'display_name' => ['required', 'string', 'max:150'],
-            'role_category' => ['required', 'in:executive,academic,teaching,administrative,student'],
+            'role_category' => ['required', Rule::exists('role_categories', 'category_code')->where('is_active', true)],
             'description' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -67,7 +74,13 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => ['required', 'string', 'max:100', 'unique:roles,role_name,'.$role->id],
             'display_name' => ['required', 'string', 'max:150'],
-            'role_category' => ['required', 'in:executive,academic,teaching,administrative,student'],
+            'role_category' => [
+                'required',
+                Rule::exists('role_categories', 'category_code')->where(function ($query) use ($role) {
+                    $query->where('is_active', true)
+                        ->orWhere('category_code', $role->role_category);
+                }),
+            ],
             'description' => ['nullable', 'string', 'max:500'],
         ]);
 

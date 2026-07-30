@@ -3,10 +3,6 @@
     <p class="tich-text">Sessions are generated from your timetable and semester schedule. Each session includes an auto-built student roster from course enrolment. Print the sign-in sheet, collect signatures, mark attendance online, then upload photos.</p>
 </header>
 
-@if (session('status'))
-    <p class="tich-text tich-mt-4" style="color:var(--tich-success, #15803d);">{{ session('status') }}</p>
-@endif
-
 @if (! empty($attendanceSync) && $attendanceSync['created'] > 0)
     <article class="tich-card tich-mt-4">
         <p class="tich-text">{{ $attendanceSync['created'] }} new session(s) were generated from your timetable.</p>

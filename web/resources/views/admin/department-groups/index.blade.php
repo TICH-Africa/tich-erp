@@ -9,10 +9,6 @@
         Departments are assigned to a group.
     </p>
 
-    @if (session('status'))
-        <p class="tich-text tich-mb-4" style="color: var(--tich-green);">{{ session('status') }}</p>
-    @endif
-
     <div class="tich-grid tich-grid--2" style="align-items: start; gap: 2rem;">
         <article class="tich-card">
             <h2 class="tich-h3">Add department group</h2>

@@ -10,11 +10,6 @@
 <body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
     @include('partials.navigation.header')
 
-    <main>
-        @include('partials.alerts')
-        @yield('content')
-    </main>
-
     @php
         $hideAppFooter = request()->routeIs([
             'dashboard',
@@ -26,7 +21,24 @@
             'portal.*',
             'staff.*',
         ]);
+
+        $hideAppAlerts = request()->routeIs([
+            'admin.*',
+            'departments.show',
+            'departments.academics.*',
+            'sis.*',
+            'admissions.*',
+            'portal.*',
+            'staff.*',
+        ]);
     @endphp
+
+    <main>
+        @unless ($hideAppAlerts)
+            @include('partials.alerts')
+        @endunless
+        @yield('content')
+    </main>
 
     @unless ($hideAppFooter)
         @include('partials.navigation.footer')

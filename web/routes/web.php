@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DepartmentGroupController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\RoleCategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\AuditController;
@@ -115,6 +116,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
             Route::put('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
             Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
+
+            Route::post('/role-categories', [RoleCategoryController::class, 'store'])->name('admin.role-categories.store');
+            Route::put('/role-categories/{roleCategory}', [RoleCategoryController::class, 'update'])->name('admin.role-categories.update');
+            Route::delete('/role-categories/{roleCategory}', [RoleCategoryController::class, 'destroy'])->name('admin.role-categories.destroy');
         });
 
         Route::prefix('audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {

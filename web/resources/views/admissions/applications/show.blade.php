@@ -11,10 +11,6 @@
         <div>@include('admissions.partials.status-badge', ['applicant' => $applicant])</div>
     </div>
 
-    @if (session('status'))
-        <p class="tich-text tich-mt-4" style="color: var(--tich-green);">{{ session('status') }}</p>
-    @endif
-
     @if (session('application_mail_error'))
         <p class="tich-text tich-mt-4" style="color: #c0392b;">
             The applicant notification email could not be sent.

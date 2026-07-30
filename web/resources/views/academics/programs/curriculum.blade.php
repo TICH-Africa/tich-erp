@@ -15,9 +15,6 @@
         ]));
     @endphp
 
-    @if (session('status'))
-        <p class="tich-text tich-mb-4" style="color: var(--tich-success, #15803d);">{{ session('status') }}</p>
-    @endif
     @error('intake')
         <p class="tich-text tich-mb-4" style="color: var(--tich-danger, #b91c1c);">{{ $message }}</p>
     @enderror

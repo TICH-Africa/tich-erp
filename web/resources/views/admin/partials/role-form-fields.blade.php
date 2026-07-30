@@ -2,7 +2,16 @@
     'categories',
     'role' => null,
     'fieldIdPrefix' => '',
+    'formContext' => 'create',
 ])
+
+@php
+    $useOld = old('_form') === $formContext;
+    $roleName = $useOld ? old('role_name', '') : ($role->role_name ?? '');
+    $displayName = $useOld ? old('display_name', '') : ($role->display_name ?? '');
+    $roleCategory = $useOld ? old('role_category', '') : ($role->role_category ?? '');
+    $description = $useOld ? old('description', '') : ($role->description ?? '');
+@endphp
 
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}role_name" @endif>Role name</label>
@@ -11,7 +20,7 @@
         name="role_name"
         @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}role_name" @endif
         class="tich-input"
-        value="{{ old('role_name', $role->role_name ?? '') }}"
+        value="{{ $roleName }}"
         @if ($role?->is_system_role) readonly @endif
         required
     >
@@ -27,7 +36,7 @@
         name="display_name"
         @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}display_name" @endif
         class="tich-input"
-        value="{{ old('display_name', $role->display_name ?? '') }}"
+        value="{{ $displayName }}"
         required
     >
 </div>
@@ -35,8 +44,9 @@
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}role_category" @endif>Category</label>
     <select name="role_category" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}role_category" @endif class="tich-input" required>
+        <option value="">Select category…</option>
         @foreach ($categories as $value => $label)
-            <option value="{{ $value }}" @selected(old('role_category', $role->role_category ?? '') === $value)>{{ $label }}</option>
+            <option value="{{ $value }}" @selected($roleCategory === $value)>{{ $label }}</option>
         @endforeach
     </select>
 </div>
@@ -48,5 +58,5 @@
         @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}description" @endif
         class="tich-input"
         rows="3"
-    >{{ old('description', $role->description ?? '') }}</textarea>
+    >{{ $description }}</textarea>
 </div>

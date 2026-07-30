@@ -3,10 +3,6 @@
     <p class="tich-text">Enter CAT, assignment, practical, and exam marks for students registered in your unit. Marks compile into weighted final grades using the unit assessment profile.</p>
 </header>
 
-@if (session('status'))
-    <p class="tich-text tich-mt-4" style="color:var(--tich-success, #15803d);">{{ session('status') }}</p>
-@endif
-
 <article class="tich-card tich-mt-6">
     <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">
         <input type="hidden" name="section" value="grading">
