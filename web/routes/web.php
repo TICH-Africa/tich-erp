@@ -199,6 +199,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/recruitment/{application}/reject', [\App\Http\Controllers\HR\RecruitmentController::class, 'reject'])->name('hr.recruitment.reject');
             Route::post('/recruitment/{application}/approve', [\App\Http\Controllers\HR\RecruitmentController::class, 'approve'])->name('hr.recruitment.approve');
             Route::post('/recruitment/{application}/send-qualified-email', [\App\Http\Controllers\HR\RecruitmentController::class, 'sendQualifiedEmail'])->name('hr.recruitment.send-qualified-email');
+            Route::get('/payroll/tax', [\App\Http\Controllers\HR\PayrollTaxController::class, 'index'])->name('hr.payroll.tax.index');
+            Route::post('/payroll/tax/calculate', [\App\Http\Controllers\HR\PayrollTaxController::class, 'calculate'])->name('hr.payroll.tax.calculate');
+            Route::get('/payroll/tax/report', [\App\Http\Controllers\HR\PayrollTaxController::class, 'report'])->name('hr.payroll.tax.report');
+            Route::get('/payroll/tax/report/pdf', [\App\Http\Controllers\HR\PayrollTaxController::class, 'reportPdf'])->name('hr.payroll.tax.report.pdf');
+            Route::middleware('permission:hr.manage_contracts')->group(function () {
+                Route::get('/payroll/tax/settings', [\App\Http\Controllers\HR\PayrollTaxController::class, 'settings'])->name('hr.payroll.tax.settings');
+                Route::put('/payroll/tax/settings', [\App\Http\Controllers\HR\PayrollTaxController::class, 'updateSettings'])->name('hr.payroll.tax.settings.update');
+            });
         });
     });
 

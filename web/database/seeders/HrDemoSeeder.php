@@ -41,6 +41,7 @@ class HrDemoSeeder extends Seeder
 
         $hrManagerStaff = $this->ensureHrManager($hrDepartmentId, $campusId);
         $this->ensureDepartmentModules($hrDepartmentId);
+        $this->call(KenyaPayrollTaxSeeder::class);
         $this->seedPensionSchemes();
         $this->seedLeaveTypes();
         $extraStaff = $this->seedStaffMembers($hrDepartmentId, $financeDepartmentId, $academicDepartmentId, $campusId);

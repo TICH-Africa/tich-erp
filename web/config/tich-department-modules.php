@@ -281,6 +281,15 @@ return [
                     'context' => 'operational',
                     'group' => 'hr',
                 ],
+                [
+                    'key' => 'hr.payroll_tax',
+                    'label' => 'Payroll tax (KRA)',
+                    'description' => 'KRA PAYE bands, NSSF/SHA deductions, net-to-gross calculator, and PDF reports.',
+                    'permission' => 'hr.manage_contracts',
+                    'route' => 'hr.payroll.tax.index',
+                    'context' => 'operational',
+                    'group' => 'hr',
+                ],
             ],
         ],
         [

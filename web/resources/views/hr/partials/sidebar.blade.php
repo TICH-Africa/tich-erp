@@ -7,6 +7,7 @@
         <a href="{{ route('hr.contracts.index') }}" class="{{ request()->routeIs('hr.contracts.*') ? 'is-active' : '' }}">Contracts</a>
         <a href="{{ route('hr.vacancies.index') }}" class="{{ request()->routeIs('hr.vacancies.*') ? 'is-active' : '' }}">Vacancies</a>
         <a href="{{ route('hr.recruitment.index') }}" class="{{ request()->routeIs('hr.recruitment.*') ? 'is-active' : '' }}">Recruitment</a>
+        <a href="{{ route('hr.payroll.tax.index') }}" class="{{ request()->routeIs('hr.payroll.tax.*') ? 'is-active' : '' }}">Payroll tax (KRA)</a>
         <a href="{{ route('dashboard') }}">← Back to dashboard</a>
     </nav>
 </aside>
