@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PayrollTaxBand extends Model
 {
@@ -25,6 +26,11 @@ class PayrollTaxBand extends Model
             'is_active' => 'boolean',
             'effective_from' => 'date',
         ];
+    }
+
+    public function deductionRates(): HasMany
+    {
+        return $this->hasMany(PayrollBandDeductionRate::class);
     }
 
     public function scopeActiveOrdered($query)

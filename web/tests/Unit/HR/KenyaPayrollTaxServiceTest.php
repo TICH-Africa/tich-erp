@@ -2,7 +2,8 @@
 
 namespace Tests\Unit\HR;
 
-use App\Models\PayrollStatutoryRate;
+use App\Models\PayrollBandDeductionRate;
+use App\Models\PayrollDeductionType;
 use App\Models\PayrollTaxBand;
 use App\Services\KenyaPayrollTaxService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +17,11 @@ class KenyaPayrollTaxServiceTest extends TestCase
     {
         parent::setUp();
 
-        PayrollTaxBand::query()->create([
+        PayrollBandDeductionRate::query()->delete();
+        PayrollDeductionType::query()->delete();
+        PayrollTaxBand::query()->delete();
+
+        $bandOne = PayrollTaxBand::query()->create([
             'label' => 'First KES 24,000',
             'min_amount' => 0,
             'max_amount' => 24000,
@@ -25,7 +30,7 @@ class KenyaPayrollTaxServiceTest extends TestCase
             'is_active' => 1,
         ]);
 
-        PayrollTaxBand::query()->create([
+        $bandTwo = PayrollTaxBand::query()->create([
             'label' => 'Next KES 41,000',
             'min_amount' => 24000,
             'max_amount' => 65000,
@@ -34,40 +39,51 @@ class KenyaPayrollTaxServiceTest extends TestCase
             'is_active' => 1,
         ]);
 
-        PayrollStatutoryRate::query()->create([
+        PayrollDeductionType::query()->create([
             'code' => 'personal_relief',
             'label' => 'Personal relief',
+            'value_type' => 'global_fixed',
             'fixed_amount' => 2400,
             'display_order' => 1,
             'is_active' => 1,
         ]);
 
-        PayrollStatutoryRate::query()->create([
-            'code' => 'nssf_tier1',
-            'label' => 'NSSF Tier I',
-            'rate_percent' => 6,
+        $nssf = PayrollDeductionType::query()->create([
+            'code' => 'nssf',
+            'label' => 'NSSF',
+            'value_type' => 'band_percent',
             'employer_rate_percent' => 6,
-            'ceiling_amount' => 7000,
+            'reduces_taxable' => 1,
             'display_order' => 2,
             'is_active' => 1,
         ]);
 
-        PayrollStatutoryRate::query()->create([
+        $sha = PayrollDeductionType::query()->create([
             'code' => 'sha',
             'label' => 'SHA',
-            'rate_percent' => 2.75,
+            'value_type' => 'band_percent',
             'display_order' => 3,
             'is_active' => 1,
         ]);
 
-        PayrollStatutoryRate::query()->create([
+        $ahl = PayrollDeductionType::query()->create([
             'code' => 'ahl',
             'label' => 'AHL',
-            'rate_percent' => 1.5,
+            'value_type' => 'band_percent',
             'employer_rate_percent' => 1.5,
             'display_order' => 4,
             'is_active' => 1,
         ]);
+
+        foreach ([$bandOne, $bandTwo] as $band) {
+            foreach ([[$nssf, 6], [$sha, 2.75], [$ahl, 1.5]] as [$type, $rate]) {
+                PayrollBandDeductionRate::query()->create([
+                    'payroll_tax_band_id' => $band->id,
+                    'payroll_deduction_type_id' => $type->id,
+                    'rate_percent' => $rate,
+                ]);
+            }
+        }
     }
 
     public function test_calculate_from_gross_returns_net_and_deductions(): void

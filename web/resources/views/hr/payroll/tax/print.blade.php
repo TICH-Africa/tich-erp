@@ -103,36 +103,38 @@
         </section>
     @endif
 
-    <section class="tich-doc-section">
-        <h2>Configured statutory rates (reference)</h2>
-        <table class="tich-doc-table">
-            <thead>
-                <tr><th>Item</th><th>Employee</th><th>Employer</th><th>Notes</th></tr>
-            </thead>
-            <tbody>
-                @foreach ($breakdown['statutory_rates'] as $rate)
+    @if (! empty($breakdown['bands']))
+        <section class="tich-doc-section">
+            <h2>Configured PAYE bands &amp; deduction rates (reference)</h2>
+            <table class="tich-doc-table">
+                <thead>
                     <tr>
-                        <td>{{ $rate['label'] }}</td>
-                        <td>
-                            @if ($rate['fixed_amount'])
-                                KES {{ number_format($rate['fixed_amount'], 2) }}
-                            @elseif ($rate['rate_percent'])
-                                {{ rtrim(rtrim(number_format($rate['rate_percent'], 4), '0'), '.') }}%
-                            @else
-                                —
+                        <th>Band</th>
+                        <th>PAYE %</th>
+                        @foreach ($breakdown['deduction_types'] ?? [] as $type)
+                            @if (($type['value_type'] ?? '') === 'band_percent')
+                                <th>{{ $type['label'] }} %</th>
                             @endif
-                        </td>
-                        <td>{{ $rate['employer_rate_percent'] ? rtrim(rtrim(number_format($rate['employer_rate_percent'], 4), '0'), '.').'%' : '—' }}</td>
-                        <td class="tich-caption">
-                            @if ($rate['ceiling_amount'])
-                                Ceiling KES {{ number_format($rate['ceiling_amount'], 2) }}
-                            @else
-                                —
-                            @endif
-                        </td>
+                        @endforeach
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    @foreach ($breakdown['bands'] as $band)
+                        <tr>
+                            <td>{{ $band['label'] }}</td>
+                            <td>{{ rtrim(rtrim(number_format($band['rate_percent'], 2), '0'), '.') }}%</td>
+                            @foreach ($breakdown['deduction_types'] ?? [] as $type)
+                                @if (($type['value_type'] ?? '') === 'band_percent')
+                                    <td>
+                                        @php $rate = $band['deductions'][$type['code']] ?? null; @endphp
+                                        {{ $rate !== null ? rtrim(rtrim(number_format($rate, 2), '0'), '.').'%' : '—' }}
+                                    </td>
+                                @endif
+                            @endforeach
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </section>
+    @endif
 @endsection

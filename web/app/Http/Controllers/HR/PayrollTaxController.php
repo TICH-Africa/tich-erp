@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
-use App\Models\PayrollStatutoryRate;
+use App\Models\PayrollBandDeductionRate;
+use App\Models\PayrollDeductionType;
 use App\Models\PayrollTaxBand;
 use App\Models\Staff;
 use App\Services\KenyaPayrollTaxService;
@@ -74,15 +75,32 @@ class PayrollTaxController extends Controller
 
     public function settings(): View
     {
+        $deductionTypes = PayrollDeductionType::query()->orderBy('display_order')->orderBy('label')->get();
+        $bands = PayrollTaxBand::query()
+            ->with(['deductionRates'])
+            ->orderBy('display_order')
+            ->orderBy('min_amount')
+            ->get();
+
         return view('hr.payroll.tax.settings', [
-            'bands' => PayrollTaxBand::query()->orderBy('display_order')->orderBy('min_amount')->get(),
-            'rates' => PayrollStatutoryRate::query()->orderBy('display_order')->orderBy('code')->get(),
+            'bands' => $bands,
+            'deductionTypes' => $deductionTypes,
         ]);
     }
 
     public function updateSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'deduction_types' => 'nullable|array',
+            'deduction_types.*.id' => 'nullable|integer|exists:payroll_deduction_types,id',
+            'deduction_types.*.code' => 'nullable|string|max:50',
+            'deduction_types.*.label' => 'required|string|max:120',
+            'deduction_types.*.value_type' => 'required|in:band_percent,global_fixed',
+            'deduction_types.*.fixed_amount' => 'nullable|numeric|min:0',
+            'deduction_types.*.employer_rate_percent' => 'nullable|numeric|min:0|max:100',
+            'deduction_types.*.reduces_taxable' => 'nullable|boolean',
+            'deduction_types.*.display_order' => 'nullable|integer|min:0',
+            'deduction_types.*.is_active' => 'nullable|boolean',
             'bands' => 'required|array|min:1',
             'bands.*.id' => 'nullable|integer|exists:payroll_tax_bands,id',
             'bands.*.label' => 'required|string|max:120',
@@ -91,54 +109,163 @@ class PayrollTaxController extends Controller
             'bands.*.rate_percent' => 'required|numeric|min:0|max:100',
             'bands.*.display_order' => 'nullable|integer|min:0',
             'bands.*.is_active' => 'nullable|boolean',
-            'rates' => 'required|array|min:1',
-            'rates.*.id' => 'required|integer|exists:payroll_statutory_rates,id',
-            'rates.*.label' => 'required|string|max:120',
-            'rates.*.rate_percent' => 'nullable|numeric|min:0|max:100',
-            'rates.*.employer_rate_percent' => 'nullable|numeric|min:0|max:100',
-            'rates.*.fixed_amount' => 'nullable|numeric|min:0',
-            'rates.*.floor_amount' => 'nullable|numeric|min:0',
-            'rates.*.ceiling_amount' => 'nullable|numeric|min:0',
-            'rates.*.notes' => 'nullable|string|max:500',
-            'rates.*.is_active' => 'nullable|boolean',
+            'bands.*.deductions' => 'nullable|array',
+            'bands.*.deductions.*' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $orderedBands = collect($validated['bands'])
+            ->sortBy(fn ($band, $index) => $band['display_order'] ?? $index)
+            ->values();
+
+        $previousMin = null;
+
+        foreach ($orderedBands as $bandData) {
+            $minAmount = (float) $bandData['min_amount'];
+
+            if ($previousMin !== null && $minAmount < $previousMin) {
+                return redirect()
+                    ->route('hr.payroll.tax.settings')
+                    ->withErrors(['bands' => 'PAYE bands must be ordered from lowest to highest income bracket (min amount).'])
+                    ->withInput();
+            }
+
+            $previousMin = $minAmount;
+        }
+
+        $keptTypeIds = [];
+        $typeIndexToId = [];
+
+        foreach ($validated['deduction_types'] ?? [] as $index => $typeData) {
+            $payload = [
+                'label' => $typeData['label'],
+                'value_type' => $typeData['value_type'],
+                'fixed_amount' => ($typeData['fixed_amount'] ?? null) !== null && $typeData['fixed_amount'] !== ''
+                    ? round((float) $typeData['fixed_amount'], 2)
+                    : null,
+                'employer_rate_percent' => ($typeData['employer_rate_percent'] ?? null) !== null && $typeData['employer_rate_percent'] !== ''
+                    ? round((float) $typeData['employer_rate_percent'], 2)
+                    : null,
+                'reduces_taxable' => ! empty($typeData['reduces_taxable']),
+                'display_order' => $typeData['display_order'] ?? $index,
+                'is_active' => ! empty($typeData['is_active']),
+            ];
+
+            if (! empty($typeData['id'])) {
+                $type = PayrollDeductionType::query()->find($typeData['id']);
+                $payload['code'] = $type?->code ?? Str::slug($typeData['label'], '_');
+                $type?->update($payload);
+                $typeId = (int) $typeData['id'];
+            } else {
+                $code = $typeData['code'] ?? Str::slug($typeData['label'], '_');
+                $typeId = PayrollDeductionType::query()->create([
+                    ...$payload,
+                    'code' => $this->uniqueDeductionCode($code),
+                ])->id;
+            }
+
+            $keptTypeIds[] = $typeId;
+            $typeIndexToId[$index] = $typeId;
+        }
+
+        if ($keptTypeIds !== []) {
+            PayrollDeductionType::query()->whereNotIn('id', $keptTypeIds)->delete();
+        }
+
+        $activeBandPercentTypeIds = PayrollDeductionType::query()
+            ->whereIn('id', $keptTypeIds)
+            ->where('value_type', 'band_percent')
+            ->pluck('id')
+            ->all();
 
         $keptBandIds = [];
 
         foreach ($validated['bands'] as $index => $bandData) {
             $payload = [
                 'label' => $bandData['label'],
-                'min_amount' => $bandData['min_amount'],
-                'max_amount' => $bandData['max_amount'] ?: null,
-                'rate_percent' => $bandData['rate_percent'],
+                'min_amount' => round((float) $bandData['min_amount'], 2),
+                'max_amount' => $bandData['max_amount'] !== null && $bandData['max_amount'] !== ''
+                    ? round((float) $bandData['max_amount'], 2)
+                    : null,
+                'rate_percent' => round((float) $bandData['rate_percent'], 2),
                 'display_order' => $bandData['display_order'] ?? $index,
                 'is_active' => ! empty($bandData['is_active']),
             ];
 
             if (! empty($bandData['id'])) {
                 PayrollTaxBand::query()->whereKey($bandData['id'])->update($payload);
-                $keptBandIds[] = (int) $bandData['id'];
+                $bandId = (int) $bandData['id'];
             } else {
-                $keptBandIds[] = PayrollTaxBand::query()->create($payload)->id;
+                $bandId = PayrollTaxBand::query()->create($payload)->id;
             }
+
+            $keptBandIds[] = $bandId;
+
+            $submittedTypeIds = [];
+
+            foreach ($bandData['deductions'] ?? [] as $key => $rate) {
+                $typeId = $this->resolveDeductionTypeId($key, $typeIndexToId);
+
+                if (! $typeId || ! in_array($typeId, $activeBandPercentTypeIds, true)) {
+                    continue;
+                }
+
+                if ($rate === null || $rate === '') {
+                    continue;
+                }
+
+                $submittedTypeIds[] = $typeId;
+
+                PayrollBandDeductionRate::query()->updateOrCreate(
+                    [
+                        'payroll_tax_band_id' => $bandId,
+                        'payroll_deduction_type_id' => $typeId,
+                    ],
+                    ['rate_percent' => round((float) $rate, 2)]
+                );
+            }
+
+            PayrollBandDeductionRate::query()
+                ->where('payroll_tax_band_id', $bandId)
+                ->whereIn('payroll_deduction_type_id', $activeBandPercentTypeIds)
+                ->whereNotIn('payroll_deduction_type_id', $submittedTypeIds)
+                ->delete();
         }
 
         PayrollTaxBand::query()->whereNotIn('id', $keptBandIds)->delete();
 
-        foreach ($validated['rates'] as $rateData) {
-            PayrollStatutoryRate::query()->whereKey($rateData['id'])->update([
-                'label' => $rateData['label'],
-                'rate_percent' => $rateData['rate_percent'] ?: null,
-                'employer_rate_percent' => $rateData['employer_rate_percent'] ?: null,
-                'fixed_amount' => $rateData['fixed_amount'] ?: null,
-                'floor_amount' => $rateData['floor_amount'] ?: null,
-                'ceiling_amount' => $rateData['ceiling_amount'] ?: null,
-                'notes' => $rateData['notes'] ?? null,
-                'is_active' => ! empty($rateData['is_active']),
-            ]);
+        return redirect()->route('hr.payroll.tax.settings')->with('success', 'KRA tax bands and deductions updated.');
+    }
+
+    /**
+     * @param  array<int, int>  $typeIndexToId
+     */
+    private function resolveDeductionTypeId(string|int $key, array $typeIndexToId): ?int
+    {
+        if (is_numeric($key)) {
+            return (int) $key;
         }
 
-        return redirect()->route('hr.payroll.tax.settings')->with('success', 'KRA tax bands and statutory rates updated.');
+        if (str_starts_with((string) $key, 'new_')) {
+            $index = (int) substr((string) $key, 4);
+
+            return $typeIndexToId[$index] ?? null;
+        }
+
+        return null;
+    }
+
+    private function uniqueDeductionCode(string $base): string
+    {
+        $code = Str::slug($base, '_') ?: 'deduction';
+        $original = $code;
+        $counter = 1;
+
+        while (PayrollDeductionType::query()->where('code', $code)->exists()) {
+            $code = $original.'_'.$counter;
+            $counter++;
+        }
+
+        return $code;
     }
 
     public function report(Request $request): View

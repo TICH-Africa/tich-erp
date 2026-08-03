@@ -3,93 +3,120 @@
 @section('title', 'KRA Tax Settings')
 
 @section('hr-content')
+    @php
+        $settingsPayload = [
+            'deductionTypes' => $deductionTypes->map(fn ($type) => [
+                'id' => $type->id,
+                'label' => $type->label,
+                'value_type' => $type->value_type,
+                'fixed_amount' => $type->fixed_amount,
+                'employer_rate_percent' => $type->employer_rate_percent,
+                'reduces_taxable' => (bool) $type->reduces_taxable,
+                'is_active' => (bool) $type->is_active,
+                'display_order' => $type->display_order,
+            ])->values()->all(),
+            'bands' => $bands->map(function ($band) {
+                $deductions = [];
+
+                foreach ($band->deductionRates as $rate) {
+                    if ($rate->payroll_deduction_type_id) {
+                        $deductions[(string) $rate->payroll_deduction_type_id] = $rate->rate_percent;
+                    }
+                }
+
+                return [
+                    'id' => $band->id,
+                    'label' => $band->label,
+                    'min_amount' => $band->min_amount,
+                    'max_amount' => $band->max_amount,
+                    'rate_percent' => $band->rate_percent,
+                    'is_active' => (bool) $band->is_active,
+                    'display_order' => $band->display_order,
+                    'deductions' => $deductions,
+                ];
+            })->values()->all(),
+        ];
+    @endphp
+
     <div class="tich-mb-8">
         <div class="tich-flex tich-flex--between tich-flex--start">
             <div>
                 <h1 class="tich-h1">KRA tax settings</h1>
-                <p class="tich-text tich-mt-2">Edit monthly PAYE bands and statutory deduction rates (NSSF, SHA/SHIF, housing levy, personal relief).</p>
+                <p class="tich-text tich-mt-2">Manage PAYE bands and tax items (NSSF, SHA/SHIF, housing levy, personal relief, etc.). Use Edit to change values; drag rows to reorder.</p>
             </div>
             <a href="{{ route('hr.payroll.tax.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to calculator</a>
         </div>
     </div>
 
-    <form method="POST" action="{{ route('hr.payroll.tax.settings.update') }}">
+    <style>
+        .tich-tax-sortable tbody tr[data-sortable-item],
+        .tich-tax-sortable tbody tr[data-sortable-band] { cursor: default; }
+        .tich-tax-sortable tbody tr.is-dragging { opacity: 0.45; cursor: grabbing; }
+        .tich-drag-handle {
+            color: var(--tich-muted, #64748b);
+            user-select: none;
+            width: 2rem;
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: grab;
+        }
+        .tich-drag-handle:active { cursor: grabbing; }
+    </style>
+
+    <form method="POST" action="{{ route('hr.payroll.tax.settings.update') }}" id="tax-settings-form">
         @csrf
         @method('PUT')
+        <div id="tax-settings-hidden-fields"></div>
 
-        <div class="tich-card tich-table-panel tich-mb-8">
-            <div class="tich-flex tich-flex--between tich-mb-4">
-                <h2 class="tich-h3">PAYE tax bands (KRA)</h2>
-                <button type="button" class="tich-btn tich-btn-ghost" id="add-band-row">+ Add band</button>
+        <div class="tich-card tich-table-panel tich-mb-6">
+            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 class="tich-h3">Tax items</h2>
+                    <p class="tich-caption tich-mt-2">Statutory deductions and reliefs included in payroll tax calculations.</p>
+                </div>
+                <button type="button" class="tich-btn tich-btn-ghost" id="add-deduction-item-btn">+ Add tax item</button>
             </div>
+
+            <p id="item-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
+
             <div class="tich-table-wrap">
-                <table class="tich-admin-table" id="bands-table">
+                <table class="tich-admin-table tich-tax-sortable">
                     <thead>
                         <tr>
+                            <th style="width: 2.5rem;"></th>
                             <th>Label</th>
-                            <th>Min (KES)</th>
-                            <th>Max (KES)</th>
-                            <th>Rate %</th>
-                            <th>Order</th>
-                            <th>Active</th>
-                            <th></th>
+                            <th>Type</th>
+                            <th>Details</th>
+                            <th>Status</th>
+                            <th style="width: 6rem;"></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach ($bands as $index => $band)
-                            <tr>
-                                <td>
-                                    <input type="hidden" name="bands[{{ $index }}][id]" value="{{ $band->id }}">
-                                    <input type="text" name="bands[{{ $index }}][label]" value="{{ old('bands.'.$index.'.label', $band->label) }}" class="tich-input" required>
-                                </td>
-                                <td><input type="number" name="bands[{{ $index }}][min_amount]" value="{{ old('bands.'.$index.'.min_amount', $band->min_amount) }}" min="0" step="0.01" class="tich-input" required></td>
-                                <td><input type="number" name="bands[{{ $index }}][max_amount]" value="{{ old('bands.'.$index.'.max_amount', $band->max_amount) }}" min="0" step="0.01" class="tich-input" placeholder="No limit"></td>
-                                <td><input type="number" name="bands[{{ $index }}][rate_percent]" value="{{ old('bands.'.$index.'.rate_percent', $band->rate_percent) }}" min="0" max="100" step="0.01" class="tich-input" required></td>
-                                <td><input type="number" name="bands[{{ $index }}][display_order]" value="{{ old('bands.'.$index.'.display_order', $band->display_order) }}" min="0" class="tich-input"></td>
-                                <td><input type="checkbox" name="bands[{{ $index }}][is_active]" value="1" {{ old('bands.'.$index.'.is_active', $band->is_active) ? 'checked' : '' }}></td>
-                                <td><button type="button" class="tich-btn tich-btn-ghost remove-band-row">Remove</button></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
+                    <tbody id="deduction-items-tbody"></tbody>
                 </table>
             </div>
         </div>
 
         <div class="tich-card tich-table-panel tich-mb-8">
-            <h2 class="tich-h3 tich-mb-4">Statutory deductions from salary</h2>
-            <div class="tich-table-wrap">
-                <table class="tich-admin-table">
+            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 class="tich-h3">PAYE tax bands (KRA)</h2>
+                    <p class="tich-caption tich-mt-2">Higher bands must stay after lower bands when reordering.</p>
+                </div>
+                <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
+            </div>
+
+            <p id="band-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
+
+            <div class="tich-table-wrap" style="overflow-x: auto;">
+                <table class="tich-admin-table tich-tax-sortable" id="bands-table">
                     <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Label</th>
-                            <th>Employee rate %</th>
-                            <th>Employer rate %</th>
-                            <th>Fixed (KES)</th>
-                            <th>Floor</th>
-                            <th>Ceiling</th>
-                            <th>Notes</th>
-                            <th>Active</th>
-                        </tr>
+                        <tr id="bands-header-row"></tr>
                     </thead>
-                    <tbody>
-                        @foreach ($rates as $index => $rate)
-                            <tr>
-                                <td class="tich-caption">{{ $rate->code }}</td>
-                                <td>
-                                    <input type="hidden" name="rates[{{ $index }}][id]" value="{{ $rate->id }}">
-                                    <input type="text" name="rates[{{ $index }}][label]" value="{{ old('rates.'.$index.'.label', $rate->label) }}" class="tich-input" required>
-                                </td>
-                                <td><input type="number" name="rates[{{ $index }}][rate_percent]" value="{{ old('rates.'.$index.'.rate_percent', $rate->rate_percent) }}" min="0" max="100" step="0.0001" class="tich-input"></td>
-                                <td><input type="number" name="rates[{{ $index }}][employer_rate_percent]" value="{{ old('rates.'.$index.'.employer_rate_percent', $rate->employer_rate_percent) }}" min="0" max="100" step="0.0001" class="tich-input"></td>
-                                <td><input type="number" name="rates[{{ $index }}][fixed_amount]" value="{{ old('rates.'.$index.'.fixed_amount', $rate->fixed_amount) }}" min="0" step="0.01" class="tich-input"></td>
-                                <td><input type="number" name="rates[{{ $index }}][floor_amount]" value="{{ old('rates.'.$index.'.floor_amount', $rate->floor_amount) }}" min="0" step="0.01" class="tich-input"></td>
-                                <td><input type="number" name="rates[{{ $index }}][ceiling_amount]" value="{{ old('rates.'.$index.'.ceiling_amount', $rate->ceiling_amount) }}" min="0" step="0.01" class="tich-input"></td>
-                                <td><input type="text" name="rates[{{ $index }}][notes]" value="{{ old('rates.'.$index.'.notes', $rate->notes) }}" class="tich-input"></td>
-                                <td><input type="checkbox" name="rates[{{ $index }}][is_active]" value="1" {{ old('rates.'.$index.'.is_active', $rate->is_active) ? 'checked' : '' }}></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
+                    <tbody id="bands-tbody"></tbody>
+                    <tfoot>
+                        <tr id="cumulative-footer-row"></tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -97,31 +124,99 @@
         <button type="submit" class="tich-btn tich-btn-primary">Save tax settings</button>
     </form>
 
-    <script>
-        (function () {
-            const table = document.getElementById('bands-table')?.querySelector('tbody');
-            let nextIndex = {{ $bands->count() }};
+    {{-- Tax item modal --}}
+    <div id="deduction-item-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="tich-modal__backdrop" data-close-modal="deduction-item-modal"></div>
+        <div class="tich-modal__dialog">
+            <header class="tich-modal__header">
+                <h2 class="tich-h3" id="deduction-item-modal-title" style="margin: 0;">Edit tax item</h2>
+                <button type="button" class="tich-modal__close" data-close-modal="deduction-item-modal" aria-label="Close">&times;</button>
+            </header>
+            <div class="tich-modal__body">
+                <div class="tich-form-group">
+                    <label class="tich-label" for="deduction-item-label">Label</label>
+                    <input type="text" id="deduction-item-label" class="tich-input" required placeholder="e.g. NSSF, Personal relief">
+                </div>
+                <div class="tich-form-group">
+                    <label class="tich-label" for="deduction-item-value-type">Calculation type</label>
+                    <select id="deduction-item-value-type" class="tich-input">
+                        <option value="band_percent">Band percentage (rate per PAYE bracket)</option>
+                        <option value="global_fixed">Fixed amount (e.g. personal relief)</option>
+                    </select>
+                </div>
+                <div class="tich-form-group" id="deduction-item-fixed-group" hidden>
+                    <label class="tich-label" for="deduction-item-fixed-amount">Fixed amount (KES)</label>
+                    <input type="number" id="deduction-item-fixed-amount" class="tich-input" min="0" step="0.01" placeholder="2400">
+                </div>
+                <div id="deduction-item-band-fields">
+                    <div class="tich-form-group">
+                        <label class="tich-label" for="deduction-item-employer-rate">Employer rate (%)</label>
+                        <input type="number" id="deduction-item-employer-rate" class="tich-input" min="0" max="100" step="0.01" placeholder="Optional">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">
+                            <input type="checkbox" id="deduction-item-reduces-taxable" value="1"> Reduces taxable income
+                        </label>
+                    </div>
+                </div>
+                <div class="tich-form-group">
+                    <label class="tich-label">
+                        <input type="checkbox" id="deduction-item-active" value="1" checked> Active
+                    </label>
+                </div>
+            </div>
+            <footer class="tich-modal__footer">
+                <button type="button" class="tich-btn tich-btn-ghost" id="deduction-item-delete-btn" style="color: #c0392b; margin-right: auto;">Delete</button>
+                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="deduction-item-modal">Cancel</button>
+                <button type="button" class="tich-btn tich-btn-primary" id="deduction-item-save-btn">Save item</button>
+            </footer>
+        </div>
+    </div>
 
-            document.getElementById('add-band-row')?.addEventListener('click', function () {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input type="text" name="bands[${nextIndex}][label]" class="tich-input" required placeholder="Band label"></td>
-                    <td><input type="number" name="bands[${nextIndex}][min_amount]" min="0" step="0.01" class="tich-input" required></td>
-                    <td><input type="number" name="bands[${nextIndex}][max_amount]" min="0" step="0.01" class="tich-input" placeholder="No limit"></td>
-                    <td><input type="number" name="bands[${nextIndex}][rate_percent]" min="0" max="100" step="0.01" class="tich-input" required></td>
-                    <td><input type="number" name="bands[${nextIndex}][display_order]" value="${nextIndex}" min="0" class="tich-input"></td>
-                    <td><input type="checkbox" name="bands[${nextIndex}][is_active]" value="1" checked></td>
-                    <td><button type="button" class="tich-btn tich-btn-ghost remove-band-row">Remove</button></td>
-                `;
-                table.appendChild(row);
-                nextIndex++;
-            });
+    {{-- PAYE band modal --}}
+    <div id="band-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="tich-modal__backdrop" data-close-modal="band-modal"></div>
+        <div class="tich-modal__dialog tich-modal__dialog--wide">
+            <header class="tich-modal__header">
+                <h2 class="tich-h3" id="band-modal-title" style="margin: 0;">Edit PAYE band</h2>
+                <button type="button" class="tich-modal__close" data-close-modal="band-modal" aria-label="Close">&times;</button>
+            </header>
+            <div class="tich-modal__body">
+                <div class="tich-grid tich-grid--2">
+                    <div class="tich-form-group">
+                        <label class="tich-label" for="band-label">Label</label>
+                        <input type="text" id="band-label" class="tich-input" required placeholder="First KES 24,000">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label" for="band-rate-percent">PAYE rate (%)</label>
+                        <input type="number" id="band-rate-percent" class="tich-input" min="0" max="100" step="0.01" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label" for="band-min-amount">Min amount (KES)</label>
+                        <input type="number" id="band-min-amount" class="tich-input" min="0" step="0.01" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label" for="band-max-amount">Max amount (KES)</label>
+                        <input type="number" id="band-max-amount" class="tich-input" min="0" step="0.01" placeholder="Leave empty for no limit">
+                    </div>
+                </div>
+                <div class="tich-form-group">
+                    <label class="tich-label">
+                        <input type="checkbox" id="band-active" value="1" checked> Active
+                    </label>
+                </div>
+                <h3 class="tich-h4 tich-mt-4 tich-mb-2">Deduction rates for this band</h3>
+                <div class="tich-grid tich-grid--3" id="band-deduction-fields"></div>
+            </div>
+            <footer class="tich-modal__footer">
+                <button type="button" class="tich-btn tich-btn-ghost" id="band-delete-btn" style="color: #c0392b; margin-right: auto;">Delete</button>
+                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="band-modal">Cancel</button>
+                <button type="button" class="tich-btn tich-btn-primary" id="band-save-btn">Save band</button>
+            </footer>
+        </div>
+    </div>
 
-            table?.addEventListener('click', function (event) {
-                if (event.target.classList.contains('remove-band-row')) {
-                    event.target.closest('tr')?.remove();
-                }
-            });
-        })();
-    </script>
+    <script type="application/json" id="payroll-tax-settings-data">@json($settingsPayload)</script>
+    @include('admin.partials.tich-modal-assets')
+    <script src="{{ asset('js/tich-payroll-tax-settings.js') }}" defer></script>
 @endsection
