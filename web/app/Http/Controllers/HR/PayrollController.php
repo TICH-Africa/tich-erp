@@ -15,7 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
-class PayrollTaxController extends Controller
+class PayrollController extends Controller
 {
     public function __construct(
         protected KenyaPayrollTaxService $taxService,
@@ -25,52 +25,71 @@ class PayrollTaxController extends Controller
     public function index(Request $request): View
     {
         $staff = Staff::query()
-            ->where('employment_status', 'active')
+            ->with('department')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = '%'.$request->string('search').'%';
+                $query->where(function ($inner) use ($term) {
+                    $inner->where('first_name', 'like', $term)
+                        ->orWhere('surname', 'like', $term)
+                        ->orWhere('employee_number', 'like', $term)
+                        ->orWhere('organisation_email', 'like', $term);
+                });
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('employment_status', $request->string('status')))
             ->orderBy('surname')
             ->orderBy('first_name')
-            ->get(['id', 'employee_number', 'first_name', 'surname', 'gross_monthly_salary']);
+            ->get();
 
-        $input = [
-            'mode' => old('mode', $request->query('mode', 'net')),
-            'amount' => old('amount', $request->query('amount')),
-            'allowances' => old('allowances', $request->query('allowances', 0)),
-            'other_deductions' => old('other_deductions', $request->query('other_deductions', 0)),
-            'staff_id' => old('staff_id', $request->query('staff_id')),
-            'employee_name' => old('employee_name'),
+        $rows = $staff->map(function (Staff $member) {
+            $gross = (float) $member->gross_monthly_salary;
+
+            if ($gross <= 0) {
+                return [
+                    'staff' => $member,
+                    'breakdown' => null,
+                ];
+            }
+
+            return [
+                'staff' => $member,
+                'breakdown' => $this->taxService->calculateFromGross($gross, [
+                    'employee_name' => $member->fullName(),
+                    'employee_number' => $member->employee_number,
+                ]),
+            ];
+        });
+
+        $totals = [
+            'gross_salary' => 0.0,
+            'paye' => 0.0,
+            'nssf' => 0.0,
+            'sha' => 0.0,
+            'ahl' => 0.0,
+            'total_deductions' => 0.0,
+            'net_salary' => 0.0,
+            'employer_cost' => 0.0,
         ];
 
-        $breakdown = null;
+        foreach ($rows as $row) {
+            if (! $row['breakdown']) {
+                continue;
+            }
 
-        if ($request->filled('amount')) {
-            $breakdown = $this->runCalculation($request->merge($input));
+            $breakdown = $row['breakdown'];
+            $totals['gross_salary'] += $breakdown['gross_salary'];
+            $totals['paye'] += $this->deductionAmount($breakdown, 'paye') ?? 0;
+            $totals['nssf'] += $this->deductionAmount($breakdown, 'nssf') ?? 0;
+            $totals['sha'] += $this->deductionAmount($breakdown, 'sha') ?? 0;
+            $totals['ahl'] += $this->deductionAmount($breakdown, 'ahl') ?? 0;
+            $totals['total_deductions'] += $breakdown['total_deductions'];
+            $totals['net_salary'] += $breakdown['net_salary'];
+            $totals['employer_cost'] += $breakdown['total_employer_cost'];
         }
 
-        return view('hr.payroll.tax.index', [
-            'staff' => $staff,
-            'input' => $input,
-            'breakdown' => $breakdown,
+        return view('hr.payroll.index', [
+            'rows' => $rows,
+            'totals' => $totals,
         ]);
-    }
-
-    public function calculate(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'mode' => 'required|in:gross,net',
-            'amount' => 'required|numeric|min:0',
-            'allowances' => 'nullable|numeric|min:0',
-            'other_deductions' => 'nullable|numeric|min:0',
-            'staff_id' => 'nullable|exists:staff,id',
-            'employee_name' => 'nullable|string|max:255',
-        ]);
-
-        return redirect()->route('hr.payroll.tax.index', array_filter([
-            'mode' => $validated['mode'],
-            'amount' => $validated['amount'],
-            'allowances' => $validated['allowances'] ?? 0,
-            'other_deductions' => $validated['other_deductions'] ?? 0,
-            'staff_id' => $validated['staff_id'] ?? null,
-            'employee_name' => $validated['employee_name'] ?? null,
-        ]));
     }
 
     public function settings(): View
@@ -82,7 +101,7 @@ class PayrollTaxController extends Controller
             ->orderBy('min_amount')
             ->get();
 
-        return view('hr.payroll.tax.settings', [
+        return view('hr.payroll.settings', [
             'bands' => $bands,
             'deductionTypes' => $deductionTypes,
         ]);
@@ -124,7 +143,7 @@ class PayrollTaxController extends Controller
 
             if ($previousMin !== null && $minAmount < $previousMin) {
                 return redirect()
-                    ->route('hr.payroll.tax.settings')
+                    ->route('hr.payroll.settings')
                     ->withErrors(['bands' => 'PAYE bands must be ordered from lowest to highest income bracket (min amount).'])
                     ->withInput();
             }
@@ -233,7 +252,45 @@ class PayrollTaxController extends Controller
 
         PayrollTaxBand::query()->whereNotIn('id', $keptBandIds)->delete();
 
-        return redirect()->route('hr.payroll.tax.settings')->with('success', 'KRA tax bands and deductions updated.');
+        return redirect()->route('hr.payroll.settings')->with('success', 'KRA tax bands and deductions updated.');
+    }
+
+    public function report(Request $request): View
+    {
+        $breakdown = $this->runCalculation($request);
+
+        abort_unless($breakdown, 404);
+
+        return $this->printDocuments->render('hr.payroll.print', $this->documentData($breakdown));
+    }
+
+    public function reportPdf(Request $request): Response
+    {
+        $breakdown = $this->runCalculation($request);
+
+        abort_unless($breakdown, 404);
+
+        $slug = Str::slug($breakdown['employee_name'] ?? 'payroll');
+
+        return $this->printDocuments->downloadPdf(
+            'hr.payroll.print',
+            $this->documentData($breakdown, includeActions: false),
+            'payroll-'.$slug.'.pdf',
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $breakdown
+     */
+    private function deductionAmount(array $breakdown, string $code): ?float
+    {
+        foreach ($breakdown['deductions'] as $row) {
+            if (($row['code'] ?? '') === $code) {
+                return (float) $row['amount'];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -268,35 +325,27 @@ class PayrollTaxController extends Controller
         return $code;
     }
 
-    public function report(Request $request): View
-    {
-        $breakdown = $this->runCalculation($request);
-
-        abort_unless($breakdown, 404);
-
-        return $this->printDocuments->render('hr.payroll.tax.print', $this->documentData($breakdown));
-    }
-
-    public function reportPdf(Request $request): Response
-    {
-        $breakdown = $this->runCalculation($request);
-
-        abort_unless($breakdown, 404);
-
-        $slug = Str::slug($breakdown['employee_name'] ?? 'payroll-tax');
-
-        return $this->printDocuments->downloadPdf(
-            'hr.payroll.tax.print',
-            $this->documentData($breakdown, includeActions: false),
-            'kra-payroll-'.$slug.'.pdf',
-        );
-    }
-
     /**
      * @return array<string, mixed>|null
      */
     private function runCalculation(Request $request): ?array
     {
+        if ($request->filled('staff_id')) {
+            $staff = Staff::query()->find($request->input('staff_id'));
+            $gross = (float) ($request->input('amount') ?: $staff?->gross_monthly_salary);
+
+            if (! $staff || $gross <= 0) {
+                return null;
+            }
+
+            return $this->taxService->calculateFromGross($gross, [
+                'employee_name' => $staff->fullName(),
+                'employee_number' => $staff->employee_number,
+                'allowances' => (float) $request->input('allowances', 0),
+                'other_deductions' => (float) $request->input('other_deductions', 0),
+            ]);
+        }
+
         if (! $request->filled('amount')) {
             return null;
         }
@@ -306,22 +355,19 @@ class PayrollTaxController extends Controller
             'other_deductions' => (float) $request->input('other_deductions', 0),
         ];
 
-        if ($request->filled('staff_id')) {
-            $staff = Staff::query()->find($request->input('staff_id'));
-
-            if ($staff) {
-                $options['employee_name'] = trim($staff->first_name.' '.$staff->surname);
-                $options['employee_number'] = $staff->employee_number;
-            }
-        } elseif ($request->filled('employee_name')) {
+        if ($request->filled('employee_name')) {
             $options['employee_name'] = $request->input('employee_name');
+        }
+
+        if ($request->filled('employee_number')) {
+            $options['employee_number'] = $request->input('employee_number');
         }
 
         $amount = (float) $request->input('amount');
 
-        return $request->input('mode', 'net') === 'gross'
-            ? $this->taxService->calculateFromGross($amount, $options)
-            : $this->taxService->calculateFromNet($amount, $options);
+        return $request->input('mode', 'gross') === 'net'
+            ? $this->taxService->calculateFromNet($amount, $options)
+            : $this->taxService->calculateFromGross($amount, $options);
     }
 
     /**
@@ -331,7 +377,6 @@ class PayrollTaxController extends Controller
     private function documentData(array $breakdown, bool $includeActions = true): array
     {
         $metaRows = [
-            ['label' => 'Calculation mode', 'value' => $breakdown['mode'] === 'net' ? 'Net to gross (reverse)' : 'Gross to net'],
             ['label' => 'Gross salary', 'value' => 'KES '.number_format($breakdown['gross_salary'], 2)],
             ['label' => 'Net salary', 'value' => 'KES '.number_format($breakdown['net_salary'], 2)],
         ];
@@ -345,13 +390,13 @@ class PayrollTaxController extends Controller
         }
 
         return [
-            'documentTitle' => 'KRA Payroll Tax Breakdown',
+            'documentTitle' => 'Payroll Breakdown',
             'documentSubtitle' => 'Monthly statutory deductions and PAYE per configured KRA bands',
-            'documentRef' => $this->printDocuments->documentRef('TAX', $breakdown['employee_number'] ?? 'GENERAL'),
+            'documentRef' => $this->printDocuments->documentRef('PAY', $breakdown['employee_number'] ?? 'GENERAL'),
             'metaRows' => $metaRows,
             'breakdown' => $breakdown,
             'hideActions' => ! $includeActions,
-            'pdfUrl' => route('hr.payroll.tax.report.pdf', request()->query()),
+            'pdfUrl' => route('hr.payroll.report.pdf', request()->query()),
         ];
     }
 }

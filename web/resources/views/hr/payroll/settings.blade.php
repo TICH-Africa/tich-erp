@@ -44,7 +44,7 @@
                 <h1 class="tich-h1">KRA tax settings</h1>
                 <p class="tich-text tich-mt-2">Manage PAYE bands and tax items (NSSF, SHA/SHIF, housing levy, personal relief, etc.). Use Edit to change values; drag rows to reorder.</p>
             </div>
-            <a href="{{ route('hr.payroll.tax.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to calculator</a>
+            <a href="{{ route('hr.payroll.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to payroll</a>
         </div>
     </div>
 
@@ -64,7 +64,7 @@
         .tich-drag-handle:active { cursor: grabbing; }
     </style>
 
-    <form method="POST" action="{{ route('hr.payroll.tax.settings.update') }}" id="tax-settings-form">
+    <form method="POST" action="{{ route('hr.payroll.settings.update') }}" id="tax-settings-form">
         @csrf
         @method('PUT')
         <div id="tax-settings-hidden-fields"></div>
