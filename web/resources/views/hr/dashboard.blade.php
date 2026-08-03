@@ -25,6 +25,13 @@
             <p class="tich-stat__label">Contract Alerts (30 days)</p>
             <p class="tich-stat__value">{{ $contractAlerts['contracts']->count() + $contractAlerts['licenses']->count() + $contractAlerts['certificates']->count() }}</p>
         </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Job applications</p>
+            <p class="tich-stat__value">{{ $applicationCount }}</p>
+            @if ($newApplicationsCount > 0)
+                <p class="tich-caption" style="color: var(--tich-green);">{{ $newApplicationsCount }} new</p>
+            @endif
+        </div>
     </div>
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
@@ -63,6 +70,42 @@
         </article>
     </div>
 
+    <article class="tich-card tich-mb-8">
+        <div class="tich-flex tich-flex--between tich-mb-4">
+            <h3 class="tich-h3">Recent job applications</h3>
+            <a href="{{ route('hr.recruitment.index') }}" class="tich-btn tich-btn-ghost">View all</a>
+        </div>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Applicant</th>
+                        <th>Position</th>
+                        <th>Applied</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($recentApplications as $application)
+                        <tr>
+                            <td>
+                                <strong>{{ $application->full_name }}</strong>
+                                <p class="tich-caption">{{ $application->email }}</p>
+                            </td>
+                            <td>{{ $application->vacancy->job_title ?? '—' }}</td>
+                            <td class="tich-caption">{{ $application->created_at->format('M j, Y') }}</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $application->status)) }}</td>
+                            <td><a href="{{ route('hr.recruitment.show', $application) }}" class="tich-btn tich-btn-ghost">Review</a></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="tich-table-empty">No applications yet. Published vacancies appear on the public Careers page.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </article>
+
     <div class="tich-grid tich-grid--3">
         <a href="{{ route('hr.staff.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
             <h3 class="tich-h3">Staff Directory</h3>
@@ -78,7 +121,11 @@
         </a>
         <a href="{{ route('hr.vacancies.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
             <h3 class="tich-h3">Vacancies</h3>
-            <p class="tich-text tich-mt-2">Manage job openings and recruitment.</p>
+            <p class="tich-text tich-mt-2">Publish job openings to the Careers page.</p>
+        </a>
+        <a href="{{ route('hr.recruitment.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
+            <h3 class="tich-h3">Recruitment</h3>
+            <p class="tich-text tich-mt-2">Review applications submitted from the public Careers page.</p>
         </a>
     </div>
 @endsection

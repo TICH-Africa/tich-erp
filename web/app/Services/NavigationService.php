@@ -143,14 +143,46 @@ class NavigationService
             ->first();
 
         if (! $menu || $menu->items->isEmpty()) {
-            return $this->normalizeFallback($fallback);
+            return $this->ensureCareersLink($location, $this->normalizeFallback($fallback));
         }
 
-        return $menu->items
+        return $this->ensureCareersLink($location, $menu->items
             ->map(fn ($item) => $this->normalizeNavItem($this->mapDbItem($item)))
             ->filter(fn ($item) => $this->itemVisible($item))
             ->values()
-            ->all();
+            ->all());
+    }
+
+    private function ensureCareersLink(string $location, array $items): array
+    {
+        if ($location !== 'header') {
+            return $items;
+        }
+
+        $hasCareers = collect($items)->contains(fn ($item) => ($item['label'] ?? '') === 'Careers');
+
+        if ($hasCareers) {
+            return collect($items)->map(function ($item) {
+                if (($item['label'] ?? '') === 'Careers') {
+                    $item['url_or_route'] = '/careers';
+                    $item['url'] = $this->resolveUrl('/careers');
+                }
+
+                return $item;
+            })->all();
+        }
+
+        $items[] = $this->normalizeNavItem([
+            'label' => 'Careers',
+            'url_or_route' => '/careers',
+            'url' => $this->resolveUrl('/careers'),
+            'target' => 'self',
+            'requires_auth' => false,
+            'allowed_user_types' => null,
+            'children' => [],
+        ]);
+
+        return $items;
     }
 
     private function normalizeNavItem(array $item): array

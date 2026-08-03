@@ -26,6 +26,7 @@ class RecruitmentApplication extends Model
         'postal_address',
         'physical_address',
         'highest_qualification',
+        'qualification_other',
         'institution',
         'year_completed',
         'grade',

@@ -27,35 +27,20 @@
         <article class="tich-card">
             <h3 class="tich-h3">Education & Experience</h3>
             <div class="tich-mt-4">
-                <p><strong>Highest Qualification:</strong> {{ $application->highest_qualification }}</p>
+                <p><strong>Highest Qualification:</strong>
+                    {{ $application->highest_qualification }}
+                    @if ($application->highest_qualification === 'Other' && $application->qualification_other)
+                        ({{ $application->qualification_other }})
+                    @endif
+                </p>
                 <p><strong>Institution:</strong> {{ $application->institution }}</p>
                 <p><strong>Year Completed:</strong> {{ $application->year_completed }}</p>
                 <p><strong>Grade:</strong> {{ $application->grade ?? 'N/A' }}</p>
                 <p><strong>Years of Experience:</strong> {{ $application->years_of_experience }}</p>
                 <p><strong>Current Organization:</strong> {{ $application->current_organization ?? 'N/A' }}</p>
                 <p><strong>Area of Specialization:</strong> {{ $application->area_of_specialization ?? 'N/A' }}</p>
-            </div>
-        </article>
-    </div>
-
-    <div class="tich-grid tich-grid--2 tich-mb-8">
-        <article class="tich-card">
-            <h3 class="tich-h3">Referee 1</h3>
-            <div class="tich-mt-4">
-                <p><strong>Name:</strong> {{ $application->referee1_name ?: 'Not provided' }}</p>
-                <p><strong>Title:</strong> {{ $application->referee1_title ?: 'Not provided' }}</p>
-                <p><strong>Organization:</strong> {{ $application->referee1_organization ?: 'Not provided' }}</p>
-                <p><strong>Contact:</strong> {{ $application->referee1_contact ?: 'Not provided' }}</p>
-            </div>
-        </article>
-
-        <article class="tich-card">
-            <h3 class="tich-h3">Referee 2</h3>
-            <div class="tich-mt-4">
-                <p><strong>Name:</strong> {{ $application->referee2_name ?: 'Not provided' }}</p>
-                <p><strong>Title:</strong> {{ $application->referee2_title ?: 'Not provided' }}</p>
-                <p><strong>Organization:</strong> {{ $application->referee2_organization ?: 'Not provided' }}</p>
-                <p><strong>Contact:</strong> {{ $application->referee2_contact ?: 'Not provided' }}</p>
+                <p><strong>Expected Salary:</strong> {{ $application->expected_salary ?? 'N/A' }}</p>
+                <p><strong>Notice Period:</strong> {{ $application->notice_period ?? 'N/A' }}</p>
             </div>
         </article>
     </div>

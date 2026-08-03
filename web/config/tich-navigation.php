@@ -26,7 +26,7 @@ return [
         ['label' => 'Staff Portal', 'url' => 'route:staff.dashboard', 'requires_auth' => true],
         ['label' => 'Staff ESS', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'SACCO Login', 'url' => 'route:login', 'requires_auth' => false],
-        ['label' => 'Careers', 'url' => '#careers'],
+        ['label' => 'Careers', 'url' => '/careers'],
     ],
 
     'contact' => [

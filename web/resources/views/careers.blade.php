@@ -3,7 +3,7 @@
 @section('title', 'Careers')
 
 @section('content')
-    <section class="tich-section" id="careers">
+    <section class="tich-section tich-careers-page" id="careers">
         <div class="tich-container">
             <div class="tich-mb-8">
                 <h1 class="tich-h1">Join Our Team</h1>
@@ -62,28 +62,56 @@
                     <p class="tich-text tich-text--secondary">No open positions match your criteria. Please check back later.</p>
                 </div>
             @else
-                <div class="tich-grid tich-grid--1">
+                <div class="tich-grid tich-grid--2 tich-careers-grid">
                     @foreach ($vacancies as $vacancy)
-                        <article class="tich-card tich-card--hover">
-                            <div class="tich-flex tich-flex--between tich-flex--start">
+                        <article class="tich-card tich-card--hover tich-careers-card">
+                            <h2 class="tich-h3">
+                                <a href="{{ route('careers.show', $vacancy) }}" class="tich-link">
+                                    {{ $vacancy->job_title }}
+                                </a>
+                            </h2>
+
+                            <div class="tich-careers-card__meta">
+                                <span class="tich-careers-tag">{{ $vacancy->department->dept_name ?? 'General' }}</span>
+                                <span class="tich-careers-tag">{{ ucfirst($vacancy->employment_type) }}</span>
+                                @if ($vacancy->position_grade)
+                                    <span class="tich-careers-tag">{{ $vacancy->position_grade }}</span>
+                                @endif
+                                <span class="tich-careers-tag">{{ $vacancy->slots_available }} opening{{ $vacancy->slots_available > 1 ? 's' : '' }}</span>
+                            </div>
+
+                            @if ($vacancy->job_description)
+                                <p class="tich-careers-card__excerpt">{{ Str::limit(strip_tags($vacancy->job_description), 160) }}</p>
+                            @endif
+
+                            <dl class="tich-careers-card__details">
+                                @if ($vacancy->min_qualification)
+                                    <div>
+                                        <dt>Minimum qualification</dt>
+                                        <dd>{{ $vacancy->min_qualification }}</dd>
+                                    </div>
+                                @endif
+                                @if ($vacancy->salary_scale)
+                                    <div>
+                                        <dt>Salary scale</dt>
+                                        <dd>{{ $vacancy->salary_scale }}</dd>
+                                    </div>
+                                @endif
+                                @if ($vacancy->benefits)
+                                    <div>
+                                        <dt>Benefits</dt>
+                                        <dd>{{ Str::limit($vacancy->benefits, 80) }}</dd>
+                                    </div>
+                                @endif
                                 <div>
-                                    <h2 class="tich-h3">
-                                        <a href="{{ route('careers.show', $vacancy) }}" class="tich-link">
-                                            {{ $vacancy->job_title }}
-                                        </a>
-                                    </h2>
-                                    <p class="tich-text tich-text--secondary tich-mt-2">
-                                        {{ $vacancy->department->dept_name ?? 'General' }}
-                                        &middot;
-                                        {{ ucfirst($vacancy->employment_type) }}
-                                        &middot;
-                                        {{ $vacancy->slots_available }} position{{ $vacancy->slots_available > 1 ? 's' : '' }}
-                                    </p>
-                                    <p class="tich-text tich-mt-2">
-                                        Closes {{ $vacancy->closing_date?->format('M j, Y') ?? 'Open until filled' }}
-                                    </p>
+                                    <dt>Closing date</dt>
+                                    <dd>{{ $vacancy->closing_date?->format('M j, Y') ?? 'Open until filled' }}</dd>
                                 </div>
+                            </dl>
+
+                            <div class="tich-careers-card__actions">
                                 <a href="{{ route('careers.show', $vacancy) }}" class="tich-btn tich-btn-secondary">View details</a>
+                                <a href="{{ route('vacancies.apply.create', $vacancy) }}" class="tich-btn tich-btn-primary">Apply now</a>
                             </div>
                         </article>
                     @endforeach

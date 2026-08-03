@@ -3,14 +3,14 @@
 @section('title', 'Application Submitted')
 
 @section('content')
-<section class="tich-section">
+<section class="tich-section tich-careers-page">
     <div class="tich-container">
-        <div class="tich-card tich-text-center" style="padding: 3rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">✓</div>
+        <div class="tich-card tich-text-center tich-careers-confirmation">
+            <div class="tich-careers-confirmation__icon" aria-hidden="true">✓</div>
             <h1 class="tich-h1">Application Submitted Successfully!</h1>
             <p class="tich-text tich-mt-2">Thank you for applying for the <strong>{{ $application->vacancy->job_title }}</strong> position.</p>
 
-            <div class="tich-card tich-mt-6" style="background: #f3f4f6; text-align: left;">
+            <div class="tich-form-callout tich-form-callout--muted tich-mt-6 tich-careers-confirmation__summary">
                 <p><strong>Application Number:</strong> {{ $application->application_number }}</p>
                 <p><strong>Position:</strong> {{ $application->vacancy->job_title }}</p>
                 <p><strong>Department:</strong> {{ $application->vacancy->department->dept_name ?? 'General' }}</p>

@@ -3,7 +3,7 @@
 @section('title', 'Apply for ' . $vacancy->job_title)
 
 @section('content')
-<section class="tich-section" id="apply-vacancy">
+<section class="tich-section tich-careers-page" id="apply-vacancy">
     <div class="tich-container">
         <div class="tich-mb-8">
             <a href="{{ route('careers.show', $vacancy) }}" class="tich-btn tich-btn-ghost">&larr; Back to vacancy</a>
@@ -14,8 +14,18 @@
         </div>
 
         <article class="tich-card">
-            <form method="POST" action="{{ route('vacancies.apply.store', $vacancy) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('vacancies.apply.store', $vacancy) }}" enctype="multipart/form-data" id="vacancy-application-form">
                 @csrf
+
+                @if ($errors->any())
+                    <div class="tich-alert tich-alert--danger tich-mb-6">
+                        <ul class="tich-text" style="margin: 0; padding-left: 1.25rem;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 <h2 class="tich-h2 tich-mb-4">Personal Information</h2>
                 <div class="tich-grid tich-grid--2 tich-mb-6">
@@ -44,11 +54,9 @@
                         <label for="marital_status" class="tich-label">Marital Status</label>
                         <select id="marital_status" name="marital_status" class="tich-input">
                             <option value="">Select</option>
-                            <option value="Single" {{ old('marital_status') == 'Single' ? 'selected' : '' }}>Single</option>
-                            <option value="Married" {{ old('marital_status') == 'Married' ? 'selected' : '' }}>Married</option>
-                            <option value="Divorced" {{ old('marital_status') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
-                            <option value="Widowed" {{ old('marital_status') == 'Widowed' ? 'selected' : '' }}>Widowed</option>
-                            <option value="Separated" {{ old('marital_status') == 'Separated' ? 'selected' : '' }}>Separated</option>
+                            @foreach (['Single', 'Married', 'Divorced', 'Widowed', 'Separated'] as $status)
+                                <option value="{{ $status }}" {{ old('marital_status') == $status ? 'selected' : '' }}>{{ $status }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
@@ -71,19 +79,18 @@
 
                 <h2 class="tich-h2 tich-mb-4">Education & Qualifications</h2>
                 <div class="tich-grid tich-grid--2 tich-mb-6">
-                    <div>
+                    <div class="tich-grid--2-span-full">
                         <label for="highest_qualification" class="tich-label">Highest Qualification *</label>
                         <select id="highest_qualification" name="highest_qualification" required class="tich-input">
                             <option value="">Select qualification</option>
-                            <option value="KCSE" {{ old('highest_qualification') == 'KCSE' ? 'selected' : '' }}>KCSE</option>
-                            <option value="Diploma" {{ old('highest_qualification') == 'Diploma' ? 'selected' : '' }}>Diploma</option>
-                            <option value="Certificate" {{ old('highest_qualification') == 'Certificate' ? 'selected' : '' }}>Certificate</option>
-                            <option value="Bachelors" {{ old('highest_qualification') == 'Bachelors' ? 'selected' : '' }}>Bachelors Degree</option>
-                            <option value="Masters" {{ old('highest_qualification') == 'Masters' ? 'selected' : '' }}>Masters Degree</option>
-                            <option value="PhD" {{ old('highest_qualification') == 'PhD' ? 'selected' : '' }}>PhD</option>
-                            <option value="Professional" {{ old('highest_qualification') == 'Professional' ? 'selected' : '' }}>Professional Qualification</option>
-                            <option value="Other" {{ old('highest_qualification') == 'Other' ? 'selected' : '' }}>Other</option>
+                            @foreach (['KCSE' => 'KCSE', 'Diploma' => 'Diploma', 'Certificate' => 'Certificate', 'Bachelors' => 'Bachelors Degree', 'Masters' => 'Masters Degree', 'PhD' => 'PhD', 'Professional' => 'Professional Qualification', 'Other' => 'Other'] as $value => $label)
+                                <option value="{{ $value }}" {{ old('highest_qualification') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
                         </select>
+                    </div>
+                    <div id="qualification-other-group" class="tich-grid--2-span-full" hidden>
+                        <label for="qualification_other" class="tich-label">Specify qualification *</label>
+                        <input type="text" id="qualification_other" name="qualification_other" value="{{ old('qualification_other') }}" class="tich-input" placeholder="e.g. Higher Diploma in Community Health">
                     </div>
                     <div>
                         <label for="institution" class="tich-label">Institution *</label>
@@ -134,74 +141,30 @@
                     </div>
                 </div>
 
-                <h2 class="tich-h2 tich-mb-4">Referees</h2>
-                <div class="tich-grid tich-grid--2 tich-mb-6">
-                    <div class="tich-card" style="background: #f9fafb;">
-                        <h3 class="tich-h3 tich-mb-4">Referee 1</h3>
-                        <div class="tich-mb-4">
-                            <label for="referee1_name" class="tich-label">Full Name *</label>
-                            <input type="text" id="referee1_name" name="referee1_name" value="{{ old('referee1_name') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee1_title" class="tich-label">Title/Position *</label>
-                            <input type="text" id="referee1_title" name="referee1_title" value="{{ old('referee1_title') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee1_organization" class="tich-label">Organization *</label>
-                            <input type="text" id="referee1_organization" name="referee1_organization" value="{{ old('referee1_organization') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee1_contact" class="tich-label">Contact (Phone/Email) *</label>
-                            <input type="text" id="referee1_contact" name="referee1_contact" value="{{ old('referee1_contact') }}" required class="tich-input">
-                        </div>
-                    </div>
-                    <div class="tich-card" style="background: #f9fafb;">
-                        <h3 class="tich-h3 tich-mb-4">Referee 2</h3>
-                        <div class="tich-mb-4">
-                            <label for="referee2_name" class="tich-label">Full Name *</label>
-                            <input type="text" id="referee2_name" name="referee2_name" value="{{ old('referee2_name') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee2_title" class="tich-label">Title/Position *</label>
-                            <input type="text" id="referee2_title" name="referee2_title" value="{{ old('referee2_title') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee2_organization" class="tich-label">Organization *</label>
-                            <input type="text" id="referee2_organization" name="referee2_organization" value="{{ old('referee2_organization') }}" required class="tich-input">
-                        </div>
-                        <div class="tich-mb-4">
-                            <label for="referee2_contact" class="tich-label">Contact (Phone/Email) *</label>
-                            <input type="text" id="referee2_contact" name="referee2_contact" value="{{ old('referee2_contact') }}" required class="tich-input">
-                        </div>
-                    </div>
-                </div>
-
                 <h2 class="tich-h2 tich-mb-4">Additional Information</h2>
                 <div class="tich-grid tich-grid--2 tich-mb-6">
                     <div>
-                        <label for="expected_salary" class="tich-label">Expected Salary</label>
-                        <input type="text" id="expected_salary" name="expected_salary" value="{{ old('expected_salary') }}" placeholder="e.g., KES 50,000" class="tich-input">
+                        <label for="expected_salary_min" class="tich-label">Expected salary range (KES) — minimum</label>
+                        <input type="number" id="expected_salary_min" name="expected_salary_min" value="{{ old('expected_salary_min') }}" min="0" step="1000" placeholder="e.g. 50000" class="tich-input">
                     </div>
                     <div>
-                        <label for="notice_period" class="tich-label">Notice Period (weeks)</label>
+                        <label for="expected_salary_max" class="tich-label">Expected salary range (KES) — maximum</label>
+                        <input type="number" id="expected_salary_max" name="expected_salary_max" value="{{ old('expected_salary_max') }}" min="0" step="1000" placeholder="e.g. 80000" class="tich-input">
+                    </div>
+                    <div>
+                        <label for="notice_period" class="tich-label">Notice Period</label>
                         <select id="notice_period" name="notice_period" class="tich-input">
                             <option value="">Select notice period</option>
-                            <option value="1 week" {{ old('notice_period') == '1 week' ? 'selected' : '' }}>1 week</option>
-                            <option value="2 weeks" {{ old('notice_period') == '2 weeks' ? 'selected' : '' }}>2 weeks</option>
-                            <option value="3 weeks" {{ old('notice_period') == '3 weeks' ? 'selected' : '' }}>3 weeks</option>
-                            <option value="4 weeks" {{ old('notice_period') == '4 weeks' ? 'selected' : '' }}>4 weeks</option>
-                            <option value="5 weeks" {{ old('notice_period') == '5 weeks' ? 'selected' : '' }}>5 weeks</option>
-                            <option value="6 weeks" {{ old('notice_period') == '6 weeks' ? 'selected' : '' }}>6 weeks</option>
-                            <option value="8 weeks" {{ old('notice_period') == '8 weeks' ? 'selected' : '' }}>8 weeks</option>
-                            <option value="12 weeks" {{ old('notice_period') == '12 weeks' ? 'selected' : '' }}>12 weeks</option>
-                            <option value="Immediate" {{ old('notice_period') == 'Immediate' ? 'selected' : '' }}>Immediate</option>
+                            @foreach (['1 week', '2 weeks', '3 weeks', '4 weeks', '5 weeks', '6 weeks', '8 weeks', '12 weeks', 'Immediate'] as $period)
+                                <option value="{{ $period }}" {{ old('notice_period') == $period ? 'selected' : '' }}>{{ $period }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
 
-                <div class="tich-card tich-mb-6" style="background: #fef3c7;">
+                <div class="tich-form-callout tich-mb-6">
                     <label class="tich-checkbox">
-                        <input type="checkbox" name="declaration" required {{ old('declaration') ? 'checked' : '' }}>
+                        <input type="checkbox" name="declaration" value="1" required {{ old('declaration') ? 'checked' : '' }}>
                         <span>I declare that the information provided is true and accurate. I understand that any false information may lead to disqualification. *</span>
                     </label>
                 </div>
@@ -214,4 +177,24 @@
         </article>
     </div>
 </section>
+
+<script>
+(function () {
+    var qualificationSelect = document.getElementById('highest_qualification');
+    var otherGroup = document.getElementById('qualification-other-group');
+    var otherInput = document.getElementById('qualification_other');
+
+    function toggleQualificationOther() {
+        var isOther = qualificationSelect.value === 'Other';
+        otherGroup.hidden = !isOther;
+        otherInput.required = isOther;
+        if (!isOther) {
+            otherInput.value = '';
+        }
+    }
+
+    qualificationSelect?.addEventListener('change', toggleQualificationOther);
+    toggleQualificationOther();
+})();
+</script>
 @endsection

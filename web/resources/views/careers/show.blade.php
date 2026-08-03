@@ -3,7 +3,7 @@
 @section('title', $vacancy->job_title . ' - Careers')
 
 @section('content')
-    <section class="tich-section" id="careers">
+    <section class="tich-section tich-careers-page" id="careers">
         <div class="tich-container">
             <a href="{{ route('careers.index') }}" class="tich-btn tich-btn-ghost tich-mb-6">&larr; Back to careers</a>
 

@@ -12,16 +12,27 @@ use Illuminate\Support\Str;
 
 class VacancyApplicationController extends Controller
 {
+    private function findOpenVacancy(int $vacancyId): JobVacancy
+    {
+        return JobVacancy::query()
+            ->where('is_published', 1)
+            ->where(function ($query) {
+                $query->where('is_closed', 0)
+                    ->orWhere('closing_date', '>=', now()->toDateString());
+            })
+            ->findOrFail($vacancyId);
+    }
+
     public function create(int $vacancy): View
     {
-        $vacancy = JobVacancy::findOrFail($vacancy);
+        $vacancy = $this->findOpenVacancy($vacancy);
 
         return view('vacancies.apply', ['vacancy' => $vacancy]);
     }
 
     public function store(Request $request, int $vacancy)
     {
-        $vacancy = JobVacancy::findOrFail($vacancy);
+        $vacancy = $this->findOpenVacancy($vacancy);
 
         $validated = $request->validate([
             'full_name' => 'required|string|max:300',
@@ -34,6 +45,7 @@ class VacancyApplicationController extends Controller
             'postal_address' => 'nullable|string|max:300',
             'physical_address' => 'nullable|string|max:500',
             'highest_qualification' => 'required|string|in:KCSE,Diploma,Certificate,Bachelors,Masters,PhD,Professional,Other',
+            'qualification_other' => 'required_if:highest_qualification,Other|nullable|string|max:200',
             'institution' => 'required|string|max:300',
             'year_completed' => 'required|integer|min:1950|max:' . (date('Y') + 1),
             'grade' => 'nullable|string|max:50',
@@ -44,18 +56,19 @@ class VacancyApplicationController extends Controller
             'cover_letter' => 'nullable|file|max:10240|mimes:pdf,doc,docx',
             'certificates' => 'nullable|array|max:5',
             'certificates.*' => 'file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png',
-            'referee1_name' => 'required|string|max:300',
-            'referee1_title' => 'required|string|max:200',
-            'referee1_organization' => 'required|string|max:300',
-            'referee1_contact' => 'required|string|max:100',
-            'referee2_name' => 'required|string|max:300',
-            'referee2_title' => 'required|string|max:200',
-            'referee2_organization' => 'required|string|max:300',
-            'referee2_contact' => 'required|string|max:100',
-            'expected_salary' => 'nullable|string|max:100',
+            'expected_salary_min' => 'nullable|numeric|min:0|required_with:expected_salary_max',
+            'expected_salary_max' => 'nullable|numeric|min:0|required_with:expected_salary_min|gte:expected_salary_min',
             'notice_period' => 'nullable|string|in:1 week,2 weeks,3 weeks,4 weeks,5 weeks,6 weeks,8 weeks,12 weeks,Immediate',
             'declaration' => 'required|accepted',
         ]);
+
+        $expectedSalary = null;
+
+        if (! empty($validated['expected_salary_min']) || ! empty($validated['expected_salary_max'])) {
+            $min = isset($validated['expected_salary_min']) ? number_format((float) $validated['expected_salary_min'], 0) : '—';
+            $max = isset($validated['expected_salary_max']) ? number_format((float) $validated['expected_salary_max'], 0) : '—';
+            $expectedSalary = "KES {$min} - KES {$max}";
+        }
 
         $applicationNumber = 'APP-' . date('Y') . '-' . str_pad((string) RecruitmentApplication::count() + 1, 5, '0', STR_PAD_LEFT);
 
@@ -86,6 +99,7 @@ class VacancyApplicationController extends Controller
             'postal_address' => $validated['postal_address'],
             'physical_address' => $validated['physical_address'],
             'highest_qualification' => $validated['highest_qualification'],
+            'qualification_other' => $validated['qualification_other'] ?? null,
             'institution' => $validated['institution'],
             'year_completed' => $validated['year_completed'],
             'grade' => $validated['grade'],
@@ -95,15 +109,7 @@ class VacancyApplicationController extends Controller
             'cv_file_path' => $cvPath,
             'cover_letter_file_path' => $coverLetterPath,
             'certificates_file_paths' => $certificatePaths,
-            'referee1_name' => $validated['referee1_name'],
-            'referee1_title' => $validated['referee1_title'],
-            'referee1_organization' => $validated['referee1_organization'],
-            'referee1_contact' => $validated['referee1_contact'],
-            'referee2_name' => $validated['referee2_name'],
-            'referee2_title' => $validated['referee2_title'],
-            'referee2_organization' => $validated['referee2_organization'],
-            'referee2_contact' => $validated['referee2_contact'],
-            'expected_salary' => $validated['expected_salary'],
+            'expected_salary' => $expectedSalary,
             'notice_period' => $validated['notice_period'],
             'status' => 'submitted',
             'shortlist_status' => 'pending',

@@ -3,7 +3,7 @@
 @section('title', 'Track Application')
 
 @section('content')
-<section class="tich-section" id="track-application">
+<section class="tich-section tich-careers-page" id="track-application">
     <div class="tich-container">
         <div class="tich-mb-8">
             <h1 class="tich-h1">Track Your Application</h1>

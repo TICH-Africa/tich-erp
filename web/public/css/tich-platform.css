@@ -3295,3 +3295,150 @@ a.tich-tabs__btn {
 [data-theme="dark"] .tich-competency-grid__fail {
     background: rgba(239, 68, 68, 0.15);
 }
+
+/* ─── Careers & job applications ─────────────────────────────────────── */
+
+.tich-careers-page {
+    background: var(--tich-neutral);
+    min-height: 60vh;
+}
+
+.tich-careers-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.75rem 0 1rem;
+}
+
+.tich-careers-tag {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    background: var(--tich-blue-light);
+    color: var(--tich-blue);
+}
+
+.tich-careers-card__excerpt {
+    color: var(--tich-grey);
+    margin: 0 0 1rem;
+    line-height: 1.65;
+}
+
+.tich-careers-card__details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.75rem 1.25rem;
+    margin: 0;
+}
+
+.tich-careers-card__details dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tich-muted, #64748b);
+    margin-bottom: 0.125rem;
+}
+
+.tich-careers-card__details dd {
+    margin: 0;
+    color: var(--tich-text, inherit);
+    font-size: 0.9375rem;
+}
+
+.tich-careers-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tich-careers-grid {
+    align-items: stretch;
+}
+
+.tich-careers-card__actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.tich-careers-card__actions .tich-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    min-width: 7rem;
+}
+
+.tich-form-callout {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.125rem;
+}
+
+.tich-form-callout--muted {
+    background: var(--tich-neutral);
+    border-color: var(--tich-neutral-border);
+    text-align: left;
+}
+
+.tich-careers-confirmation {
+    padding: 3rem 2rem;
+}
+
+.tich-careers-confirmation__icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--tich-green);
+}
+
+.tich-careers-confirmation__summary p {
+    margin: 0.35rem 0;
+}
+
+[data-theme="dark"] .tich-careers-page {
+    background: var(--tich-neutral);
+}
+
+[data-theme="dark"] .tich-careers-tag {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .tich-careers-card__excerpt,
+[data-theme="dark"] .tich-careers-card__details dt {
+    color: var(--tich-muted, #94a3b8);
+}
+
+[data-theme="dark"] .tich-careers-card__details dd {
+    color: var(--tich-text, #e2e8f0);
+}
+
+[data-theme="dark"] .tich-form-callout {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: var(--tich-text, #e2e8f0);
+}
+
+[data-theme="dark"] .tich-form-callout--muted {
+    background: var(--tich-white);
+    border-color: var(--tich-neutral-border);
+}
+
+[data-theme="dark"] input[type="file"].tich-input {
+    color: var(--tich-text, #e2e8f0);
+}
+
+[data-theme="dark"] input[type="file"].tich-input::file-selector-button {
+    background: var(--tich-surface-muted);
+    color: var(--tich-text, #e2e8f0);
+    border: 1px solid var(--tich-neutral-border);
+}
+
+[data-theme="dark"] .tich-careers-confirmation__icon {
+    color: #86efac;
+}
