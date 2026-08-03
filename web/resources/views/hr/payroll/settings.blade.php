@@ -62,6 +62,16 @@
             cursor: grab;
         }
         .tich-drag-handle:active { cursor: grabbing; }
+        .payroll-settings-tabs__nav {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .payroll-settings-tabs__nav .tich-tabs__btn {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
     </style>
 
     <form method="POST" action="{{ route('hr.payroll.settings.update') }}" id="tax-settings-form">
@@ -69,60 +79,85 @@
         @method('PUT')
         <div id="tax-settings-hidden-fields"></div>
 
-        <div class="tich-card tich-table-panel tich-mb-6">
-            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                    <h2 class="tich-h3">Tax items</h2>
-                    <p class="tich-caption tich-mt-2">Statutory deductions and reliefs included in payroll tax calculations.</p>
+        <div class="tich-tabs tich-mb-6" data-tabs>
+            <div class="tich-tabs__nav payroll-settings-tabs__nav">
+                <button type="button" class="tich-tabs__btn is-active" data-tab="bands">PAYE tax bands (KRA)</button>
+                <button type="button" class="tich-tabs__btn" data-tab="items">Tax items</button>
+            </div>
+
+            <div class="tich-tabs__panel is-active" data-panel="bands">
+                <div class="tich-card tich-table-panel tich-mb-8">
+                    <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <p class="tich-caption">Configure income brackets and PAYE rates. Higher bands must stay after lower bands when reordering.</p>
+                        </div>
+                        <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
+                    </div>
+
+                    <p id="band-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
+
+                    <div class="tich-table-wrap" style="overflow-x: auto;">
+                        <table class="tich-admin-table tich-tax-sortable" id="bands-table">
+                            <thead>
+                                <tr id="bands-header-row"></tr>
+                            </thead>
+                            <tbody id="bands-tbody"></tbody>
+                            <tfoot>
+                                <tr id="cumulative-footer-row"></tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
-                <button type="button" class="tich-btn tich-btn-ghost" id="add-deduction-item-btn">+ Add tax item</button>
             </div>
 
-            <p id="item-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
+            <div class="tich-tabs__panel" data-panel="items">
+                <div class="tich-card tich-table-panel tich-mb-8">
+                    <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <p class="tich-caption">Statutory deductions and reliefs included in payroll tax calculations.</p>
+                        </div>
+                        <button type="button" class="tich-btn tich-btn-ghost" id="add-deduction-item-btn">+ Add tax item</button>
+                    </div>
 
-            <div class="tich-table-wrap">
-                <table class="tich-admin-table tich-tax-sortable">
-                    <thead>
-                        <tr>
-                            <th style="width: 2.5rem;"></th>
-                            <th>Label</th>
-                            <th>Type</th>
-                            <th>Details</th>
-                            <th>Status</th>
-                            <th style="width: 6rem;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="deduction-items-tbody"></tbody>
-                </table>
-            </div>
-        </div>
+                    <p id="item-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
 
-        <div class="tich-card tich-table-panel tich-mb-8">
-            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                    <h2 class="tich-h3">PAYE tax bands (KRA)</h2>
-                    <p class="tich-caption tich-mt-2">Higher bands must stay after lower bands when reordering.</p>
+                    <div class="tich-table-wrap">
+                        <table class="tich-admin-table tich-tax-sortable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 2.5rem;"></th>
+                                    <th>Label</th>
+                                    <th>Type</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                    <th style="width: 6rem;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="deduction-items-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
-            </div>
-
-            <p id="band-order-status" class="tich-caption tich-mb-4" aria-live="polite"></p>
-
-            <div class="tich-table-wrap" style="overflow-x: auto;">
-                <table class="tich-admin-table tich-tax-sortable" id="bands-table">
-                    <thead>
-                        <tr id="bands-header-row"></tr>
-                    </thead>
-                    <tbody id="bands-tbody"></tbody>
-                    <tfoot>
-                        <tr id="cumulative-footer-row"></tr>
-                    </tfoot>
-                </table>
             </div>
         </div>
 
         <button type="submit" class="tich-btn tich-btn-primary">Save tax settings</button>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-tabs]').forEach(function (tabs) {
+                tabs.querySelectorAll('[data-tab]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var name = btn.getAttribute('data-tab');
+                        tabs.querySelectorAll('[data-tab]').forEach(function (b) { b.classList.remove('is-active'); });
+                        tabs.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.remove('is-active'); });
+                        btn.classList.add('is-active');
+                        tabs.querySelector('[data-panel="' + name + '"]').classList.add('is-active');
+                    });
+                });
+            });
+        });
+    </script>
 
     {{-- Tax item modal --}}
     <div id="deduction-item-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
