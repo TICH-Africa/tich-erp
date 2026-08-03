@@ -10,7 +10,10 @@
         <style>@include('partials.print.document-styles-inline')</style>
     @endif
 </head>
-<body @class(['tich-doc--landscape' => ($paperOrientation ?? 'portrait') === 'landscape'])>
+<body @class(array_filter([
+    'tich-doc--landscape' => ($paperOrientation ?? 'portrait') === 'landscape',
+    $bodyClass ?? null,
+]))>
     @if (empty($forPdf) && empty($hideActions))
         @include('partials.print.document-actions')
     @endif

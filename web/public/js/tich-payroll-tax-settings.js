@@ -210,7 +210,7 @@
         bandsTbody.innerHTML = state.bands.map(function (band) {
             var columnCells = columns.map(function (type) {
                 var rate = band.deductions[typeKey(type)];
-                return `<td>${rate == null || rate === '' ? '—' : formatNum(rate)}</td>`;
+                return `<td>${rate == null || rate === '' ? '-' : formatNum(rate)}</td>`;
             }).join('');
 
             return `

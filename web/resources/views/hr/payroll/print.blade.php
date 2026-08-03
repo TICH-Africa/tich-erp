@@ -1,140 +1,132 @@
 @extends('layouts.print-document')
 
 @section('document-content')
-    <section class="tich-doc-section">
-        <h2>Salary summary</h2>
-        <table class="tich-doc-table">
-            <tbody>
-                <tr><th>Basic salary</th><td>KES {{ number_format($breakdown['basic_salary'], 2) }}</td></tr>
-                <tr><th>Allowances</th><td>KES {{ number_format($breakdown['allowances'], 2) }}</td></tr>
-                <tr><th>Gross salary</th><td><strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong></td></tr>
-                <tr><th>Taxable income (PAYE)</th><td>KES {{ number_format($breakdown['taxable_income'], 2) }}</td></tr>
-                <tr><th>Total employee deductions</th><td>KES {{ number_format($breakdown['total_deductions'], 2) }}</td></tr>
-                <tr><th>Net salary</th><td><strong>KES {{ number_format($breakdown['net_salary'], 2) }}</strong></td></tr>
-                <tr><th>Total employer cost</th><td>KES {{ number_format($breakdown['total_employer_cost'], 2) }}</td></tr>
-            </tbody>
-        </table>
-    </section>
+    @php
+        $activeBandLines = collect($breakdown['band_breakdown'] ?? [])->filter(
+            fn ($line) => ($line['tax'] ?? 0) > 0 || ($line['taxable_amount'] ?? 0) > 0
+        );
+    @endphp
 
-    <section class="tich-doc-section">
-        <h2>Employee deductions</h2>
-        <table class="tich-doc-table">
-            <thead>
-                <tr>
-                    <th>Deduction</th>
-                    <th>Base (KES)</th>
-                    <th>Rate / note</th>
-                    <th>Amount (KES)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($breakdown['deductions'] as $row)
-                    <tr>
-                        <td>{{ $row['label'] }}</td>
-                        <td>{{ $row['base'] !== null ? number_format($row['base'], 2) : '—' }}</td>
-                        <td>
-                            @if (($row['code'] ?? '') === 'paye')
-                                KRA bands; relief KES {{ number_format($breakdown['personal_relief'], 2) }}
-                            @elseif ($row['rate'])
-                                {{ rtrim(rtrim(number_format($row['rate'], 2), '0'), '.') }}%
-                            @else
-                                —
-                            @endif
-                        </td>
-                        <td>{{ number_format($row['amount'], 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </section>
+    <div class="tich-payslip">
+        <div class="tich-payslip__employee">
+            <div>
+                <span class="tich-payslip__label">Employee</span>
+                <strong>{{ $breakdown['employee_name'] ?? 'Staff member' }}</strong>
+            </div>
+            <div>
+                <span class="tich-payslip__label">Employee no.</span>
+                <strong>{{ $breakdown['employee_number'] ?? '-' }}</strong>
+            </div>
+            <div>
+                <span class="tich-payslip__label">Pay period</span>
+                <strong>{{ $payPeriod ?? now()->format('F Y') }}</strong>
+            </div>
+        </div>
 
-    <section class="tich-doc-section">
-        <h2>KRA PAYE band breakdown</h2>
-        <table class="tich-doc-table">
-            <thead>
-                <tr>
-                    <th>Band</th>
-                    <th>Taxable amount (KES)</th>
-                    <th>Rate</th>
-                    <th>Tax (KES)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($breakdown['band_breakdown'] as $line)
-                    <tr>
-                        <td>{{ $line['label'] }}</td>
-                        <td>{{ number_format($line['taxable_amount'], 2) }}</td>
-                        <td>{{ rtrim(rtrim(number_format($line['rate_percent'], 2), '0'), '.') }}%</td>
-                        <td>{{ number_format($line['tax'], 2) }}</td>
-                    </tr>
-                @endforeach
-                <tr>
-                    <td colspan="3"><strong>PAYE before personal relief</strong></td>
-                    <td><strong>{{ number_format($breakdown['paye_before_relief'], 2) }}</strong></td>
-                </tr>
-                <tr>
-                    <td colspan="3">Personal relief</td>
-                    <td>- {{ number_format($breakdown['personal_relief'], 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="3"><strong>PAYE payable</strong></td>
-                    <td><strong>{{ number_format($breakdown['paye'], 2) }}</strong></td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-
-    @if (! empty($breakdown['employer_contributions']))
-        <section class="tich-doc-section">
-            <h2>Employer contributions</h2>
-            <table class="tich-doc-table">
-                <thead>
-                    <tr><th>Contribution</th><th>Amount (KES)</th></tr>
-                </thead>
-                <tbody>
-                    @foreach ($breakdown['employer_contributions'] as $row)
+        <div class="tich-payslip__grid">
+            <section class="tich-payslip__panel">
+                <h2 class="tich-payslip__panel-title">Earnings</h2>
+                <table class="tich-payslip__table">
+                    <tbody>
                         <tr>
-                            <td>{{ $row['label'] }}</td>
-                            <td>{{ number_format($row['amount'], 2) }}</td>
+                            <th>Basic salary</th>
+                            <td class="num">KES {{ number_format($breakdown['basic_salary'], 2) }}</td>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </section>
-    @endif
+                        <tr>
+                            <th>Allowances</th>
+                            <td class="num">KES {{ number_format($breakdown['allowances'], 2) }}</td>
+                        </tr>
+                        <tr class="tich-payslip__total-row">
+                            <th>Gross pay</th>
+                            <td class="num"><strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
 
-    @if (! empty($breakdown['bands']))
-        <section class="tich-doc-section">
-            <h2>Configured PAYE bands &amp; deduction rates (reference)</h2>
-            <table class="tich-doc-table">
-                <thead>
-                    <tr>
-                        <th>Band</th>
-                        <th>PAYE %</th>
-                        @foreach ($breakdown['deduction_types'] ?? [] as $type)
-                            @if (($type['value_type'] ?? '') === 'band_percent')
-                                <th>{{ $type['label'] }} %</th>
-                            @endif
+            <section class="tich-payslip__panel">
+                <h2 class="tich-payslip__panel-title">Deductions</h2>
+                <table class="tich-payslip__table">
+                    <tbody>
+                        @foreach ($breakdown['deductions'] as $row)
+                            <tr>
+                                <th>{{ $row['label'] }}</th>
+                                <td class="num">KES {{ number_format($row['amount'], 2) }}</td>
+                            </tr>
                         @endforeach
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($breakdown['bands'] as $band)
-                        <tr>
-                            <td>{{ $band['label'] }}</td>
-                            <td>{{ rtrim(rtrim(number_format($band['rate_percent'], 2), '0'), '.') }}%</td>
-                            @foreach ($breakdown['deduction_types'] ?? [] as $type)
-                                @if (($type['value_type'] ?? '') === 'band_percent')
-                                    <td>
-                                        @php $rate = $band['deductions'][$type['code']] ?? null; @endphp
-                                        {{ $rate !== null ? rtrim(rtrim(number_format($rate, 2), '0'), '.').'%' : '—' }}
-                                    </td>
-                                @endif
-                            @endforeach
+                        <tr class="tich-payslip__total-row">
+                            <th>Total deductions</th>
+                            <td class="num"><strong>KES {{ number_format($breakdown['total_deductions'], 2) }}</strong></td>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </section>
-    @endif
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+        <div class="tich-payslip__net">
+            <span>Net pay</span>
+            <strong>KES {{ number_format($breakdown['net_salary'], 2) }}</strong>
+        </div>
+
+        @if ($activeBandLines->isNotEmpty())
+            <section class="tich-payslip__detail">
+                <h2 class="tich-payslip__detail-title">PAYE band summary</h2>
+                <table class="tich-payslip__table tich-payslip__table--compact">
+                    <thead>
+                        <tr>
+                            <th>Band</th>
+                            <th class="num">Taxable (KES)</th>
+                            <th class="num">Rate</th>
+                            <th class="num">Tax (KES)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($activeBandLines as $line)
+                            <tr>
+                                <td>{{ $line['label'] }}</td>
+                                <td class="num">{{ number_format($line['taxable_amount'], 2) }}</td>
+                                <td class="num">{{ rtrim(rtrim(number_format($line['rate_percent'], 2), '0'), '.') }}%</td>
+                                <td class="num">{{ number_format($line['tax'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                        <tr>
+                            <td colspan="3">PAYE before relief</td>
+                            <td class="num">{{ number_format($breakdown['paye_before_relief'], 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3">Personal relief</td>
+                            <td class="num">- {{ number_format($breakdown['personal_relief'], 2) }}</td>
+                        </tr>
+                        <tr class="tich-payslip__total-row">
+                            <td colspan="3"><strong>PAYE payable</strong></td>
+                            <td class="num"><strong>{{ number_format($breakdown['paye'], 2) }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        @endif
+
+        <div class="tich-payslip__footer-grid">
+            <div class="tich-payslip__stat">
+                <span class="tich-payslip__label">Taxable income</span>
+                <strong>KES {{ number_format($breakdown['taxable_income'], 2) }}</strong>
+            </div>
+            <div class="tich-payslip__stat">
+                <span class="tich-payslip__label">Employer cost</span>
+                <strong>KES {{ number_format($breakdown['total_employer_cost'], 2) }}</strong>
+            </div>
+            @if (! empty($breakdown['employer_contributions']))
+                <div class="tich-payslip__stat tich-payslip__stat--wide">
+                    <span class="tich-payslip__label">Employer contributions</span>
+                    <strong>
+                        @foreach ($breakdown['employer_contributions'] as $row)
+                            {{ $row['label'] }} KES {{ number_format($row['amount'], 2) }}@if (! $loop->last) · @endif
+                        @endforeach
+                    </strong>
+                </div>
+            @endif
+        </div>
+
+        <p class="tich-payslip__note">Computer-generated payslip per configured KRA PAYE bands and statutory rates. Not valid without institution payroll authorisation.</p>
+    </div>
 @endsection

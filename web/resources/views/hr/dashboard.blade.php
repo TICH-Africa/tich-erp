@@ -93,7 +93,7 @@
                                 <strong>{{ $application->full_name }}</strong>
                                 <p class="tich-caption">{{ $application->email }}</p>
                             </td>
-                            <td>{{ $application->vacancy->job_title ?? '—' }}</td>
+                            <td>{{ $application->vacancy->job_title ?? '-' }}</td>
                             <td class="tich-caption">{{ $application->created_at->format('M j, Y') }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $application->status)) }}</td>
                             <td><a href="{{ route('hr.recruitment.show', $application) }}" class="tich-btn tich-btn-ghost">Review</a></td>
@@ -105,6 +105,18 @@
             </table>
         </div>
     </article>
+
+    @if ($defaultApplication)
+        @include('hr.partials.recruitment-document-viewer', [
+            'application' => $defaultApplication,
+            'applications' => $applicationsWithDocuments,
+            'applicationsPayload' => $applicationsPayload,
+            'selectedApplicationId' => $defaultApplication->id,
+            'viewerId' => 'hr-dashboard-doc-viewer',
+            'title' => 'Application documents',
+            'subtitle' => 'Preview CVs and supporting files from recent applications. Open externally for a full-screen view with print and download.',
+        ])
+    @endif
 
     <div class="tich-grid tich-grid--3">
         <a href="{{ route('hr.staff.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">

@@ -336,3 +336,208 @@ body {
         size: A4 landscape;
     }
 }
+
+/* Single-page monthly payslip */
+.tich-payslip-page {
+    font-size: 9.5pt;
+}
+
+.tich-payslip-page .tich-doc-sheet {
+    max-width: 780px;
+    padding: 1.1rem 1.35rem 1rem;
+}
+
+.tich-payslip-page .tich-doc-letterhead {
+    gap: 0.75rem 1rem;
+    padding-bottom: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.tich-payslip-page .tich-doc-letterhead__mark {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+}
+
+.tich-payslip-page .tich-doc-letterhead__name {
+    font-size: 0.88rem;
+}
+
+.tich-payslip-page .tich-doc-letterhead__tagline,
+.tich-payslip-page .tich-doc-letterhead__address {
+    font-size: 0.68rem;
+}
+
+.tich-payslip-page .tich-doc-title-block {
+    margin: 0.5rem 0 0.75rem;
+}
+
+.tich-payslip-page .tich-doc-title-block h1 {
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+}
+
+.tich-payslip-page .tich-doc-title-block p {
+    font-size: 0.78rem;
+    margin-top: 0.25rem;
+}
+
+.tich-payslip-page .tich-doc-footer {
+    margin-top: 0.65rem;
+    padding-top: 0.5rem;
+    font-size: 0.68rem;
+}
+
+.tich-payslip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tich-payslip__employee,
+.tich-payslip__footer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem 1rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--tich-doc-border);
+    background: #f8fafc;
+}
+
+.tich-payslip__footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tich-payslip__stat--wide {
+    grid-column: 1 / -1;
+}
+
+.tich-payslip__label {
+    display: block;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tich-doc-muted);
+    font-family: system-ui, sans-serif;
+    margin-bottom: 0.15rem;
+}
+
+.tich-payslip__employee strong,
+.tich-payslip__stat strong {
+    font-size: 0.82rem;
+    color: var(--tich-doc-navy);
+}
+
+.tich-payslip__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.tich-payslip__panel {
+    border: 1px solid var(--tich-doc-border);
+    background: #fff;
+}
+
+.tich-payslip__panel-title,
+.tich-payslip__detail-title {
+    margin: 0;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: var(--tich-doc-navy);
+    font-family: system-ui, sans-serif;
+}
+
+.tich-payslip__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.tich-payslip__table th,
+.tich-payslip__table td {
+    padding: 0.35rem 0.55rem;
+    border-bottom: 1px solid var(--tich-doc-border);
+    vertical-align: top;
+}
+
+.tich-payslip__table th {
+    font-weight: 600;
+    color: var(--tich-doc-navy-light);
+    text-align: left;
+    width: 58%;
+}
+
+.tich-payslip__table .num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tich-payslip__table--compact th,
+.tich-payslip__table--compact td {
+    font-size: 0.72rem;
+    padding: 0.28rem 0.45rem;
+}
+
+.tich-payslip__table--compact thead th {
+    background: #eef2f7;
+    color: var(--tich-doc-navy);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+}
+
+.tich-payslip__total-row th,
+.tich-payslip__total-row td {
+    background: #f8fafc;
+}
+
+.tich-payslip__net {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 0.85rem;
+    border: 2px solid var(--tich-doc-navy);
+    background: #eef2f7;
+    font-size: 0.95rem;
+}
+
+.tich-payslip__net strong {
+    font-size: 1.15rem;
+    color: var(--tich-doc-navy);
+}
+
+.tich-payslip__detail {
+    border: 1px solid var(--tich-doc-border);
+}
+
+.tich-payslip__note {
+    margin: 0;
+    font-size: 0.68rem;
+    color: var(--tich-doc-muted);
+    text-align: center;
+    font-style: italic;
+}
+
+@media print {
+    .tich-payslip-page .tich-doc-sheet {
+        max-width: none;
+        padding: 0;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+    }
+
+    .tich-payslip-page .tich-payslip,
+    .tich-payslip-page .tich-doc-letterhead,
+    .tich-payslip-page .tich-doc-title-block,
+    .tich-payslip-page .tich-doc-footer {
+        page-break-inside: avoid;
+    }
+
+    .tich-payslip-page {
+        font-size: 9pt;
+    }
+}

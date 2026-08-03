@@ -144,11 +144,11 @@
                 <h2 class="tich-h2 tich-mb-4">Additional Information</h2>
                 <div class="tich-grid tich-grid--2 tich-mb-6">
                     <div>
-                        <label for="expected_salary_min" class="tich-label">Expected salary range (KES) — minimum</label>
+                        <label for="expected_salary_min" class="tich-label">Expected salary range (KES) - minimum</label>
                         <input type="number" id="expected_salary_min" name="expected_salary_min" value="{{ old('expected_salary_min') }}" min="0" step="1000" placeholder="e.g. 50000" class="tich-input">
                     </div>
                     <div>
-                        <label for="expected_salary_max" class="tich-label">Expected salary range (KES) — maximum</label>
+                        <label for="expected_salary_max" class="tich-label">Expected salary range (KES) - maximum</label>
                         <input type="number" id="expected_salary_max" name="expected_salary_max" value="{{ old('expected_salary_max') }}" min="0" step="1000" placeholder="e.g. 80000" class="tich-input">
                     </div>
                     <div>

@@ -38,6 +38,30 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $applicationsWithDocuments = $recentApplications->filter(
+            fn (RecruitmentApplication $application) => $application->uploadedDocuments()->isNotEmpty()
+        );
+
+        $defaultApplication = $applicationsWithDocuments->first();
+
+        $applicationsPayload = $applicationsWithDocuments->map(function (RecruitmentApplication $application) {
+            return [
+                'id' => $application->id,
+                'documents' => $application->uploadedDocuments()->map(function (array $document) use ($application) {
+                    return [
+                        'key' => $document['key'],
+                        'label' => $document['label'],
+                        'filename' => $document['filename'],
+                        'mime_type' => $document['mime_type'],
+                        'is_previewable' => $document['is_previewable'],
+                        'view_url' => route('hr.recruitment.documents.show', [$application, $document['key']]),
+                        'download_url' => route('hr.recruitment.documents.download', [$application, $document['key']]),
+                        'external_url' => route('hr.recruitment.documents.viewer', [$application, $document['key']]),
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
         return view('hr.dashboard', [
             'staffCount' => $staffCount,
             'activeStaffCount' => $activeStaffCount,
@@ -48,6 +72,9 @@ class DashboardController extends Controller
             'applicationCount' => $applicationCount,
             'newApplicationsCount' => $newApplicationsCount,
             'recentApplications' => $recentApplications,
+            'applicationsWithDocuments' => $applicationsWithDocuments,
+            'defaultApplication' => $defaultApplication,
+            'applicationsPayload' => $applicationsPayload,
         ]);
     }
 }

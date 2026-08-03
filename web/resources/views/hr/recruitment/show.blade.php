@@ -45,23 +45,12 @@
         </article>
     </div>
 
-    <div class="tich-card tich-mb-8">
-        <h3 class="tich-h3">Documents</h3>
-        <div class="tich-mt-4">
-            <p><strong>CV/Resume:</strong> <a href="{{ asset('storage/' . $application->cv_file_path) }}" target="_blank">Download CV</a></p>
-            @if ($application->cover_letter_file_path)
-                <p><strong>Cover Letter:</strong> <a href="{{ asset('storage/' . $application->cover_letter_file_path) }}" target="_blank">Download Cover Letter</a></p>
-            @endif
-            @if ($application->certificates_file_paths)
-                <p><strong>Certificates:</strong></p>
-                <ul>
-                    @foreach ($application->certificates_file_paths as $cert)
-                        <li><a href="{{ asset('storage/' . $cert) }}" target="_blank">Download</a></li>
-                    @endforeach
-                </ul>
-            @endif
-        </div>
-    </div>
+    @include('hr.partials.recruitment-document-viewer', [
+        'application' => $application,
+        'viewerId' => 'hr-recruitment-doc-viewer',
+        'title' => 'Documents',
+        'subtitle' => 'CV, cover letter, and certificates. Preview in the dashboard, or open externally for full-screen viewing, printing, and download.',
+    ])
 
     <div class="tich-card">
         <h3 class="tich-h3">Actions</h3>

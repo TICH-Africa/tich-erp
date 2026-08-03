@@ -89,6 +89,7 @@ class PayrollController extends Controller
         return view('hr.payroll.index', [
             'rows' => $rows,
             'totals' => $totals,
+            'payslipPayload' => $this->buildPayslipPayload($rows),
         ]);
     }
 
@@ -376,27 +377,43 @@ class PayrollController extends Controller
      */
     private function documentData(array $breakdown, bool $includeActions = true): array
     {
-        $metaRows = [
-            ['label' => 'Gross salary', 'value' => 'KES '.number_format($breakdown['gross_salary'], 2)],
-            ['label' => 'Net salary', 'value' => 'KES '.number_format($breakdown['net_salary'], 2)],
-        ];
-
-        if (! empty($breakdown['employee_name'])) {
-            array_unshift($metaRows, ['label' => 'Employee', 'value' => $breakdown['employee_name']]);
-        }
-
-        if (! empty($breakdown['employee_number'])) {
-            array_unshift($metaRows, ['label' => 'Employee no.', 'value' => $breakdown['employee_number']]);
-        }
+        $payPeriod = now()->format('F Y');
 
         return [
-            'documentTitle' => 'Payroll Breakdown',
-            'documentSubtitle' => 'Monthly statutory deductions and PAYE per configured KRA bands',
+            'documentTitle' => 'Monthly Payslip',
+            'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$payPeriod,
             'documentRef' => $this->printDocuments->documentRef('PAY', $breakdown['employee_number'] ?? 'GENERAL'),
-            'metaRows' => $metaRows,
+            'metaRows' => [],
             'breakdown' => $breakdown,
+            'payPeriod' => $payPeriod,
             'hideActions' => ! $includeActions,
+            'backUrl' => route('hr.payroll.index'),
             'pdfUrl' => route('hr.payroll.report.pdf', request()->query()),
+            'bodyClass' => 'tich-payslip-page',
         ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, array{staff: Staff, breakdown: array<string, mixed>|null}>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function buildPayslipPayload($rows): array
+    {
+        return $rows
+            ->filter(fn (array $row) => $row['breakdown'] !== null)
+            ->map(function (array $row) {
+                $staff = $row['staff'];
+                $query = ['staff_id' => $staff->id];
+
+                return [
+                    'id' => $staff->id,
+                    'label' => $staff->fullName().' ('.$staff->employee_number.')',
+                    'preview_url' => route('hr.payroll.report', $query),
+                    'download_url' => route('hr.payroll.report.pdf', $query),
+                    'external_url' => route('hr.payroll.report', $query),
+                ];
+            })
+            ->values()
+            ->all();
     }
 }

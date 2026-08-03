@@ -6,7 +6,7 @@ return [
     | Assignable platform modules per department. Selecting a parent module
     | automatically grants all listed children (submodules) for that department.
     |
-    | context: where the tool appears — hub (Academics dept), learning (schools
+    | context: where the tool appears - hub (Academics dept), learning (schools
     | under Academics), operational (admin units), or any.
     */
     'modules' => [

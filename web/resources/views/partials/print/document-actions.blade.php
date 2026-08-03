@@ -5,7 +5,7 @@
         @endif
         <button type="button" class="primary" onclick="window.print()">Print</button>
         @if (! empty($pdfUrl))
-            <a href="{{ $pdfUrl }}" class="primary">Download PDF</a>
+            <a href="{{ $pdfUrl }}" class="primary">Download</a>
         @endif
     </nav>
 @endif

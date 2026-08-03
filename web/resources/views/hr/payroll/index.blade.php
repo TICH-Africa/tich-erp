@@ -23,7 +23,7 @@
         <div class="tich-flex tich-flex--between tich-flex--start">
             <div>
                 <h1 class="tich-h1">Payroll</h1>
-                <p class="tich-text tich-mt-2">Monthly salary breakdown for all staff — gross pay, statutory deductions, and net pay per configured KRA bands.</p>
+                <p class="tich-text tich-mt-2">Monthly salary breakdown for all staff - gross pay, statutory deductions, and net pay per configured KRA bands.</p>
             </div>
             <a href="{{ route('hr.payroll.settings') }}" class="tich-btn tich-btn-secondary">Tax bands &amp; rates</a>
         </div>
@@ -83,8 +83,8 @@
                                 <strong>{{ $member->fullName() }}</strong>
                                 <p class="tich-caption">{{ $member->organisation_email }}</p>
                             </td>
-                            <td>{{ $member->department->dept_name ?? '—' }}</td>
-                            <td>{{ $member->job_title ?: '—' }}</td>
+                            <td>{{ $member->department->dept_name ?? '-' }}</td>
+                            <td>{{ $member->job_title ?: '-' }}</td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $member->employment_status)) }}</td>
                             @if ($breakdown)
                                 <td>{{ number_format($breakdown['gross_salary'], 2) }}</td>
@@ -96,8 +96,14 @@
                                 <td><strong>{{ number_format($breakdown['net_salary'], 2) }}</strong></td>
                                 <td>{{ number_format($breakdown['total_employer_cost'], 2) }}</td>
                                 <td style="white-space: nowrap;">
-                                    <a href="{{ route('hr.payroll.report', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" target="_blank" title="Preview payslip">View</a>
-                                    <a href="{{ route('hr.payroll.report.pdf', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" title="Download PDF">PDF</a>
+                                    <button
+                                        type="button"
+                                        class="tich-btn tich-btn-ghost"
+                                        data-payslip-preview-id="{{ $member->id }}"
+                                        title="Preview payslip"
+                                    >Preview</button>
+                                    <a href="{{ route('hr.payroll.report', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" target="_blank" rel="noopener" title="Open payslip externally">Open</a>
+                                    <a href="{{ route('hr.payroll.report.pdf', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" title="Download payslip">Download</a>
                                 </td>
                             @else
                                 <td colspan="8" class="tich-caption">No gross salary set</td>
@@ -127,4 +133,9 @@
             </table>
         </div>
     </div>
+
+    @include('hr.partials.payroll-payslip-viewer', [
+        'payslipPayload' => $payslipPayload,
+        'viewerId' => 'hr-payroll-payslip-viewer',
+    ])
 @endsection

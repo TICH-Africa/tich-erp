@@ -30,6 +30,7 @@ use App\Http\Controllers\Staff\StaffPortalDashboardController;
 use App\Http\Controllers\Staff\StaffPortalTimetableController;
 use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
+use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
 use App\Models\Department;
 use Illuminate\Support\Facades\Route;
 
@@ -194,6 +195,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/vacancies/{vacancy}/toggle-publish', [\App\Http\Controllers\HR\VacancyController::class, 'togglePublish'])->name('hr.vacancies.toggle-publish');
             Route::get('/recruitment', [\App\Http\Controllers\HR\RecruitmentController::class, 'index'])->name('hr.recruitment.index');
             Route::get('/recruitment/{application}', [\App\Http\Controllers\HR\RecruitmentController::class, 'show'])->name('hr.recruitment.show');
+            Route::get('/recruitment/{application}/documents/{documentKey}', [\App\Http\Controllers\HR\RecruitmentApplicationDocumentController::class, 'show'])
+                ->name('hr.recruitment.documents.show');
+            Route::get('/recruitment/{application}/documents/{documentKey}/download', [\App\Http\Controllers\HR\RecruitmentApplicationDocumentController::class, 'download'])
+                ->name('hr.recruitment.documents.download');
+            Route::get('/recruitment/{application}/documents/{documentKey}/viewer', [\App\Http\Controllers\HR\RecruitmentApplicationDocumentController::class, 'viewer'])
+                ->name('hr.recruitment.documents.viewer');
             Route::put('/recruitment/{application}', [\App\Http\Controllers\HR\RecruitmentController::class, 'update'])->name('hr.recruitment.update');
             Route::post('/recruitment/{application}/shortlist', [\App\Http\Controllers\HR\RecruitmentController::class, 'shortlist'])->name('hr.recruitment.shortlist');
             Route::post('/recruitment/{application}/reject', [\App\Http\Controllers\HR\RecruitmentController::class, 'reject'])->name('hr.recruitment.reject');

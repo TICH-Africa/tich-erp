@@ -65,8 +65,8 @@ class VacancyApplicationController extends Controller
         $expectedSalary = null;
 
         if (! empty($validated['expected_salary_min']) || ! empty($validated['expected_salary_max'])) {
-            $min = isset($validated['expected_salary_min']) ? number_format((float) $validated['expected_salary_min'], 0) : '—';
-            $max = isset($validated['expected_salary_max']) ? number_format((float) $validated['expected_salary_max'], 0) : '—';
+            $min = isset($validated['expected_salary_min']) ? number_format((float) $validated['expected_salary_min'], 0) : '-';
+            $max = isset($validated['expected_salary_max']) ? number_format((float) $validated['expected_salary_max'], 0) : '-';
             $expectedSalary = "KES {$min} - KES {$max}";
         }
 
