@@ -102,17 +102,8 @@
                     <label for="job_title" class="tich-label">Job Title *</label>
                     <input type="text" id="job_title" name="job_title" value="{{ old('job_title', $staff->job_title) }}" required class="tich-input">
                 </div>
-                <div>
-                    <label for="employment_category" class="tich-label">Employment Category *</label>
-                    <select id="employment_category" name="employment_category" required class="tich-input">
-                        <option value="">Select category</option>
-                        <option value="permanent" {{ old('employment_category', $staff->employment_category) == 'permanent' ? 'selected' : '' }}>Permanent</option>
-                        <option value="contract" {{ old('employment_category', $staff->employment_category) == 'contract' ? 'selected' : '' }}>Contract</option>
-                        <option value="intern" {{ old('employment_category', $staff->employment_category) == 'intern' ? 'selected' : '' }}>Intern</option>
-                        <option value="visiting" {{ old('employment_category', $staff->employment_category) == 'visiting' ? 'selected' : '' }}>Visiting</option>
-                        <option value="casual" {{ old('employment_category', $staff->employment_category) == 'casual' ? 'selected' : '' }}>Casual</option>
-                    </select>
-                </div>
+                @include('hr.staff.partials.employment-category-select', ['selected' => old('employment_category', $staff->employment_category)])
+                @include('hr.staff.partials.payroll-scheme-select', ['selected' => old('payroll_scheme', $staff->payroll_scheme ?: $staff->resolvedPayrollScheme())])
                 <div>
                     <label for="employment_start_date" class="tich-label">Start Date *</label>
                     <input type="date" id="employment_start_date" name="employment_start_date" value="{{ old('employment_start_date', $staff->employment_start_date) }}" required class="tich-input">

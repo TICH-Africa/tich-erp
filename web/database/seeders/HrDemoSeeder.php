@@ -42,6 +42,7 @@ class HrDemoSeeder extends Seeder
         $hrManagerStaff = $this->ensureHrManager($hrDepartmentId, $campusId);
         $this->ensureDepartmentModules($hrDepartmentId);
         $this->call(KenyaPayrollTaxSeeder::class);
+        $this->call(ContractorPayrollDemoSeeder::class);
         $this->seedPensionSchemes();
         $this->seedLeaveTypes();
         $extraStaff = $this->seedStaffMembers($hrDepartmentId, $financeDepartmentId, $academicDepartmentId, $campusId);
@@ -102,6 +103,7 @@ class HrDemoSeeder extends Seeder
             'department_id' => $departmentId,
             'primary_email' => $emails['primary_email'],
             'organisation_email' => $emails['organisation_email'],
+            'payroll_scheme' => 'employee',
         ]);
         $user->update(['staff_id' => $staff->id, 'email' => $emails['organisation_email']]);
 
@@ -196,6 +198,7 @@ class HrDemoSeeder extends Seeder
                     'campus_id' => $campusId,
                     'job_title' => $member['job_title'],
                     'employment_category' => $member['employment_category'],
+                    'payroll_scheme' => $member['payroll_scheme'] ?? 'employee',
                     'employment_start_date' => '2023-06-01',
                     'employment_status' => 'active',
                     'gross_monthly_salary' => 65000,

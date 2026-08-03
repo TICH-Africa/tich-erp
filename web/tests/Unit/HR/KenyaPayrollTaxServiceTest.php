@@ -105,4 +105,31 @@ class KenyaPayrollTaxServiceTest extends TestCase
         $this->assertEqualsWithDelta($forward['net_salary'], $reverse['net_salary'], 0.05);
         $this->assertGreaterThan(60000, $reverse['gross_salary']);
     }
+
+    public function test_withholding_payroll_deducts_configured_rate_only(): void
+    {
+        PayrollDeductionType::query()->updateOrCreate(
+            ['code' => 'withholding_tax'],
+            [
+                'label' => 'Withholding tax (WHT)',
+                'value_type' => 'withholding_percent',
+                'fixed_amount' => 5,
+                'display_order' => 99,
+                'is_active' => 1,
+            ]
+        );
+
+        $result = app(KenyaPayrollTaxService::class)->calculateWithholdingFromGross(100000, [
+            'employee_name' => 'Jane Consultant',
+            'employee_number' => 'CON-001',
+        ]);
+
+        $this->assertSame('withholding', $result['payroll_scheme']);
+        $this->assertSame(5000.0, $result['withholding_tax']);
+        $this->assertSame(95000.0, $result['net_salary']);
+        $this->assertSame(5000.0, $result['total_deductions']);
+        $this->assertSame(0.0, $result['paye']);
+        $this->assertCount(1, $result['deductions']);
+        $this->assertSame('withholding_tax', $result['deductions'][0]['code']);
+    }
 }

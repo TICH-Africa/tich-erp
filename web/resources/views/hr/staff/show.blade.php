@@ -30,7 +30,8 @@
                 <p><strong>Campus:</strong> {{ $staff->campus->campus_name ?? '—' }}</p>
                 <p><strong>Job Title:</strong> {{ $staff->job_title }}</p>
                 <p><strong>Grade:</strong> {{ $staff->job_grade ?? '—' }}</p>
-                <p><strong>Category:</strong> {{ ucfirst($staff->employment_category) }}</p>
+                <p><strong>Category:</strong> {{ config('tich-payroll.employment_categories.'.$staff->employment_category, ucfirst(str_replace('_', ' ', $staff->employment_category))) }}</p>
+                <p><strong>Payroll scheme:</strong> {{ $staff->payrollSchemeLabel() }}</p>
                 <p><strong>Start Date:</strong> {{ $staff->employment_start_date?->format('Y-m-d') }}</p>
                 <p><strong>Contract End:</strong> {{ $staff->contract_end_date?->format('Y-m-d') ?? '—' }}</p>
                 <p><strong>Salary Scale:</strong> {{ $staff->salary_scale ?? '—' }}</p>

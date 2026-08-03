@@ -9,11 +9,104 @@ use Illuminate\Support\Collection;
 class KenyaPayrollTaxService
 {
     /**
+     * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string, payroll_scheme?: string}  $options
+     * @return array<string, mixed>
+     */
+    public function calculateForStaff(\App\Models\Staff $staff, ?float $grossOverride = null, array $options = []): array
+    {
+        $gross = $grossOverride ?? (float) $staff->gross_monthly_salary;
+
+        $options = array_merge([
+            'employee_name' => $staff->fullName(),
+            'employee_number' => $staff->employee_number,
+            'payroll_scheme' => $staff->resolvedPayrollScheme(),
+        ], $options);
+
+        if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
+            return $this->calculateWithholdingFromGross($gross, $options);
+        }
+
+        return $this->calculateFromGross($gross, $options);
+    }
+
+    /**
      * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string}  $options
+     * @return array<string, mixed>
+     */
+    public function calculateWithholdingFromGross(float $gross, array $options = []): array
+    {
+        $allowances = max(0, (float) ($options['allowances'] ?? 0));
+        $otherDeductions = max(0, (float) ($options['other_deductions'] ?? 0));
+        $grossTotal = round($gross + $allowances, 2);
+        $rate = $this->withholdingTaxRate();
+        $withholdingTax = round($grossTotal * $rate / 100, 2);
+
+        $employeeDeductions = collect([
+            $this->deductionRow('withholding_tax', 'Withholding tax (WHT)', $withholdingTax, $grossTotal, $rate),
+        ]);
+
+        if ($otherDeductions > 0) {
+            $employeeDeductions->push([
+                'code' => 'other',
+                'label' => 'Other deductions',
+                'amount' => round($otherDeductions, 2),
+                'base' => null,
+                'rate' => null,
+            ]);
+        }
+
+        $totalDeductions = round($employeeDeductions->sum('amount'), 2);
+        $netSalary = round($grossTotal - $totalDeductions, 2);
+
+        return [
+            'mode' => 'withholding',
+            'payroll_scheme' => 'withholding',
+            'employee_name' => $options['employee_name'] ?? null,
+            'employee_number' => $options['employee_number'] ?? null,
+            'basic_salary' => round($gross, 2),
+            'allowances' => $allowances,
+            'gross_salary' => $grossTotal,
+            'taxable_income' => $grossTotal,
+            'withholding_rate' => $rate,
+            'withholding_tax' => $withholdingTax,
+            'paye_before_relief' => 0.0,
+            'personal_relief' => 0.0,
+            'paye' => 0.0,
+            'net_salary' => $netSalary,
+            'total_deductions' => $totalDeductions,
+            'total_employer_cost' => $grossTotal,
+            'deductions' => $employeeDeductions->values()->all(),
+            'employer_contributions' => [],
+            'band_breakdown' => [],
+            'bands' => [],
+            'deduction_types' => [],
+        ];
+    }
+
+    public function withholdingTaxRate(): float
+    {
+        $configured = PayrollDeductionType::query()
+            ->where('code', 'withholding_tax')
+            ->where('is_active', 1)
+            ->value('fixed_amount');
+
+        if ($configured !== null) {
+            return max(0, (float) $configured);
+        }
+
+        return (float) config('tich-payroll.default_withholding_rate', 5);
+    }
+
+    /**
+     * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string, payroll_scheme?: string}  $options
      * @return array<string, mixed>
      */
     public function calculateFromGross(float $gross, array $options = []): array
     {
+        if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
+            return $this->calculateWithholdingFromGross($gross, $options);
+        }
+
         $allowances = max(0, (float) ($options['allowances'] ?? 0));
         $otherDeductions = max(0, (float) ($options['other_deductions'] ?? 0));
         $grossTotal = round($gross + $allowances, 2);
@@ -120,6 +213,7 @@ class KenyaPayrollTaxService
 
         return [
             'mode' => 'gross',
+            'payroll_scheme' => 'employee',
             'employee_name' => $options['employee_name'] ?? null,
             'employee_number' => $options['employee_number'] ?? null,
             'basic_salary' => round($gross, 2),
@@ -152,6 +246,18 @@ class KenyaPayrollTaxService
      */
     public function calculateFromNet(float $targetNet, array $options = []): array
     {
+        if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
+            $rate = $this->withholdingTaxRate();
+            $factor = max(0.01, 1 - ($rate / 100));
+            $gross = round($targetNet / $factor, 2);
+            $result = $this->calculateWithholdingFromGross($gross, $options);
+            $result['mode'] = 'net';
+            $result['target_net'] = round($targetNet, 2);
+            $result['computed_gross'] = $result['basic_salary'];
+
+            return $result;
+        }
+
         $targetNet = max(0, $targetNet);
         $low = $targetNet;
         $high = max($targetNet * 2.5, $targetNet + 50000);

@@ -52,16 +52,14 @@ class PayrollController extends Controller
 
             return [
                 'staff' => $member,
-                'breakdown' => $this->taxService->calculateFromGross($gross, [
-                    'employee_name' => $member->fullName(),
-                    'employee_number' => $member->employee_number,
-                ]),
+                'breakdown' => $this->taxService->calculateForStaff($member, $gross),
             ];
         });
 
         $totals = [
             'gross_salary' => 0.0,
             'paye' => 0.0,
+            'wht' => 0.0,
             'nssf' => 0.0,
             'sha' => 0.0,
             'ahl' => 0.0,
@@ -78,6 +76,7 @@ class PayrollController extends Controller
             $breakdown = $row['breakdown'];
             $totals['gross_salary'] += $breakdown['gross_salary'];
             $totals['paye'] += $this->deductionAmount($breakdown, 'paye') ?? 0;
+            $totals['wht'] += $this->deductionAmount($breakdown, 'withholding_tax') ?? 0;
             $totals['nssf'] += $this->deductionAmount($breakdown, 'nssf') ?? 0;
             $totals['sha'] += $this->deductionAmount($breakdown, 'sha') ?? 0;
             $totals['ahl'] += $this->deductionAmount($breakdown, 'ahl') ?? 0;
@@ -90,6 +89,7 @@ class PayrollController extends Controller
             'rows' => $rows,
             'totals' => $totals,
             'payslipPayload' => $this->buildPayslipPayload($rows),
+            'withholdingRate' => $this->taxService->withholdingTaxRate(),
         ]);
     }
 
@@ -105,17 +105,19 @@ class PayrollController extends Controller
         return view('hr.payroll.settings', [
             'bands' => $bands,
             'deductionTypes' => $deductionTypes,
+            'withholdingRate' => $this->taxService->withholdingTaxRate(),
         ]);
     }
 
     public function updateSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'withholding_tax_rate' => 'nullable|numeric|min:0|max:100',
             'deduction_types' => 'nullable|array',
             'deduction_types.*.id' => 'nullable|integer|exists:payroll_deduction_types,id',
             'deduction_types.*.code' => 'nullable|string|max:50',
             'deduction_types.*.label' => 'required|string|max:120',
-            'deduction_types.*.value_type' => 'required|in:band_percent,global_fixed',
+            'deduction_types.*.value_type' => 'required|in:band_percent,global_fixed,withholding_percent',
             'deduction_types.*.fixed_amount' => 'nullable|numeric|min:0',
             'deduction_types.*.employer_rate_percent' => 'nullable|numeric|min:0|max:100',
             'deduction_types.*.reduces_taxable' => 'nullable|boolean',
@@ -132,6 +134,19 @@ class PayrollController extends Controller
             'bands.*.deductions' => 'nullable|array',
             'bands.*.deductions.*' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        if (array_key_exists('withholding_tax_rate', $validated) && $validated['withholding_tax_rate'] !== null && $validated['withholding_tax_rate'] !== '') {
+            PayrollDeductionType::query()->updateOrCreate(
+                ['code' => 'withholding_tax'],
+                [
+                    'label' => 'Withholding tax (WHT)',
+                    'value_type' => 'withholding_percent',
+                    'fixed_amount' => round((float) $validated['withholding_tax_rate'], 2),
+                    'display_order' => 99,
+                    'is_active' => 1,
+                ]
+            );
+        }
 
         $orderedBands = collect($validated['bands'])
             ->sortBy(fn ($band, $index) => $band['display_order'] ?? $index)
@@ -188,7 +203,10 @@ class PayrollController extends Controller
         }
 
         if ($keptTypeIds !== []) {
-            PayrollDeductionType::query()->whereNotIn('id', $keptTypeIds)->delete();
+            PayrollDeductionType::query()
+                ->whereNotIn('id', $keptTypeIds)
+                ->where('code', '!=', 'withholding_tax')
+                ->delete();
         }
 
         $activeBandPercentTypeIds = PayrollDeductionType::query()
@@ -339,9 +357,7 @@ class PayrollController extends Controller
                 return null;
             }
 
-            return $this->taxService->calculateFromGross($gross, [
-                'employee_name' => $staff->fullName(),
-                'employee_number' => $staff->employee_number,
+            return $this->taxService->calculateForStaff($staff, $gross, [
                 'allowances' => (float) $request->input('allowances', 0),
                 'other_deductions' => (float) $request->input('other_deductions', 0),
             ]);
@@ -364,6 +380,10 @@ class PayrollController extends Controller
             $options['employee_number'] = $request->input('employee_number');
         }
 
+        if ($request->filled('payroll_scheme')) {
+            $options['payroll_scheme'] = $request->input('payroll_scheme');
+        }
+
         $amount = (float) $request->input('amount');
 
         return $request->input('mode', 'gross') === 'net'
@@ -378,10 +398,11 @@ class PayrollController extends Controller
     private function documentData(array $breakdown, bool $includeActions = true): array
     {
         $payPeriod = now()->format('F Y');
+        $isWithholding = ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding';
 
         return [
-            'documentTitle' => 'Monthly Payslip',
-            'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$payPeriod,
+            'documentTitle' => $isWithholding ? 'Consultant Payment Statement' : 'Monthly Payslip',
+            'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$payPeriod.($isWithholding ? ' · Withholding tax only' : ''),
             'documentRef' => $this->printDocuments->documentRef('PAY', $breakdown['employee_number'] ?? 'GENERAL'),
             'metaRows' => [],
             'breakdown' => $breakdown,

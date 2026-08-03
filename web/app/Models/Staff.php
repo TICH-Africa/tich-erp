@@ -43,6 +43,7 @@ class Staff extends Model
         'job_title',
         'job_grade',
         'employment_category',
+        'payroll_scheme',
         'employment_start_date',
         'contract_end_date',
         'is_on_probation',
@@ -289,5 +290,26 @@ class Staff extends Model
     public function scopeOnboarding($query)
     {
         return $query->where('employment_status', 'onboarding');
+    }
+
+    public function usesWithholdingPayroll(): bool
+    {
+        return $this->resolvedPayrollScheme() === 'withholding';
+    }
+
+    public function resolvedPayrollScheme(): string
+    {
+        if ($this->payroll_scheme) {
+            return $this->payroll_scheme;
+        }
+
+        return in_array($this->employment_category, config('tich-payroll.withholding_employment_categories', []), true)
+            ? 'withholding'
+            : 'employee';
+    }
+
+    public function payrollSchemeLabel(): string
+    {
+        return config('tich-payroll.payroll_schemes.'.$this->resolvedPayrollScheme(), ucfirst($this->resolvedPayrollScheme()));
     }
 }

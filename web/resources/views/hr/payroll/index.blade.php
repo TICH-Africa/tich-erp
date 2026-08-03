@@ -23,7 +23,7 @@
         <div class="tich-flex tich-flex--between tich-flex--start">
             <div>
                 <h1 class="tich-h1">Payroll</h1>
-                <p class="tich-text tich-mt-2">Monthly salary breakdown for all staff - gross pay, statutory deductions, and net pay per configured KRA bands.</p>
+                <p class="tich-text tich-mt-2">Monthly salary breakdown for all staff - employees (PAYE and statutory deductions) and consultants or contractors (withholding tax only) on the same list.</p>
             </div>
             <a href="{{ route('hr.payroll.settings') }}" class="tich-btn tich-btn-secondary">Tax bands &amp; rates</a>
         </div>
@@ -60,8 +60,10 @@
                         <th>Department</th>
                         <th>Job title</th>
                         <th>Status</th>
+                        <th>Payroll</th>
                         <th>Gross (KES)</th>
                         <th>PAYE</th>
+                        <th>WHT</th>
                         <th>NSSF</th>
                         <th>SHA/SHIF</th>
                         <th>AHL</th>
@@ -87,11 +89,18 @@
                             <td>{{ $member->job_title ?: '-' }}</td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $member->employment_status)) }}</td>
                             @if ($breakdown)
+                                <td class="tich-caption">
+                                    {{ $member->usesWithholdingPayroll() ? 'Withholding' : 'Employee' }}
+                                    @if ($member->usesWithholdingPayroll())
+                                        <span class="tich-caption">({{ rtrim(rtrim(number_format($withholdingRate, 2), '0'), '.') }}%)</span>
+                                    @endif
+                                </td>
                                 <td>{{ number_format($breakdown['gross_salary'], 2) }}</td>
-                                <td>{{ number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</td>
-                                <td>{{ number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</td>
-                                <td>{{ number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</td>
-                                <td>{{ number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</td>
+                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</td>
+                                <td>{{ $member->usesWithholdingPayroll() ? number_format($deductionAmount($breakdown, 'withholding_tax') ?? 0, 2) : '-' }}</td>
+                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</td>
+                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</td>
+                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</td>
                                 <td>{{ number_format($breakdown['total_deductions'], 2) }}</td>
                                 <td><strong>{{ number_format($breakdown['net_salary'], 2) }}</strong></td>
                                 <td>{{ number_format($breakdown['total_employer_cost'], 2) }}</td>
@@ -106,20 +115,21 @@
                                     <a href="{{ route('hr.payroll.report.pdf', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" title="Download payslip">Download</a>
                                 </td>
                             @else
-                                <td colspan="8" class="tich-caption">No gross salary set</td>
+                                <td colspan="9" class="tich-caption">No gross salary set</td>
                                 <td></td>
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="14" class="tich-table-empty">No staff found.</td></tr>
+                        <tr><td colspan="15" class="tich-table-empty">No staff found.</td></tr>
                     @endforelse
                 </tbody>
                 @if ($rows->contains(fn ($row) => $row['breakdown'] !== null))
                     <tfoot>
                         <tr>
-                            <td colspan="5"><strong>Totals</strong></td>
+                            <td colspan="6"><strong>Totals</strong></td>
                             <td><strong>{{ number_format($totals['gross_salary'], 2) }}</strong></td>
                             <td><strong>{{ number_format($totals['paye'], 2) }}</strong></td>
+                            <td><strong>{{ number_format($totals['wht'], 2) }}</strong></td>
                             <td><strong>{{ number_format($totals['nssf'], 2) }}</strong></td>
                             <td><strong>{{ number_format($totals['sha'], 2) }}</strong></td>
                             <td><strong>{{ number_format($totals['ahl'], 2) }}</strong></td>

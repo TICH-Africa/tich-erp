@@ -48,4 +48,9 @@ class PayrollDeductionType extends Model
     {
         return $this->value_type === 'global_fixed';
     }
+
+    public function isWithholdingPercent(): bool
+    {
+        return $this->value_type === 'withholding_percent';
+    }
 }

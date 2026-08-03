@@ -2,6 +2,7 @@
 
 @section('document-content')
     @php
+        $isWithholding = ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding';
         $activeBandLines = collect($breakdown['band_breakdown'] ?? [])->filter(
             fn ($line) => ($line['tax'] ?? 0) > 0 || ($line['taxable_amount'] ?? 0) > 0
         );
@@ -10,11 +11,11 @@
     <div class="tich-payslip">
         <div class="tich-payslip__employee">
             <div>
-                <span class="tich-payslip__label">Employee</span>
+                <span class="tich-payslip__label">Payee</span>
                 <strong>{{ $breakdown['employee_name'] ?? 'Staff member' }}</strong>
             </div>
             <div>
-                <span class="tich-payslip__label">Employee no.</span>
+                <span class="tich-payslip__label">Reference no.</span>
                 <strong>{{ $breakdown['employee_number'] ?? '-' }}</strong>
             </div>
             <div>
@@ -23,13 +24,30 @@
             </div>
         </div>
 
+        @if ($isWithholding)
+            <div class="tich-payslip__employee">
+                <div>
+                    <span class="tich-payslip__label">Payroll scheme</span>
+                    <strong>Withholding tax only</strong>
+                </div>
+                <div>
+                    <span class="tich-payslip__label">Withholding rate</span>
+                    <strong>{{ rtrim(rtrim(number_format($breakdown['withholding_rate'] ?? 0, 2), '0'), '.') }}%</strong>
+                </div>
+                <div>
+                    <span class="tich-payslip__label">Gross fees</span>
+                    <strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong>
+                </div>
+            </div>
+        @endif
+
         <div class="tich-payslip__grid">
             <section class="tich-payslip__panel">
-                <h2 class="tich-payslip__panel-title">Earnings</h2>
+                <h2 class="tich-payslip__panel-title">{{ $isWithholding ? 'Fees' : 'Earnings' }}</h2>
                 <table class="tich-payslip__table">
                     <tbody>
                         <tr>
-                            <th>Basic salary</th>
+                            <th>{{ $isWithholding ? 'Contract fees' : 'Basic salary' }}</th>
                             <td class="num">KES {{ number_format($breakdown['basic_salary'], 2) }}</td>
                         </tr>
                         <tr>
@@ -37,7 +55,7 @@
                             <td class="num">KES {{ number_format($breakdown['allowances'], 2) }}</td>
                         </tr>
                         <tr class="tich-payslip__total-row">
-                            <th>Gross pay</th>
+                            <th>Gross {{ $isWithholding ? 'fees' : 'pay' }}</th>
                             <td class="num"><strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong></td>
                         </tr>
                     </tbody>
@@ -64,11 +82,11 @@
         </div>
 
         <div class="tich-payslip__net">
-            <span>Net pay</span>
+            <span>Net {{ $isWithholding ? 'payment' : 'pay' }}</span>
             <strong>KES {{ number_format($breakdown['net_salary'], 2) }}</strong>
         </div>
 
-        @if ($activeBandLines->isNotEmpty())
+        @if (! $isWithholding && $activeBandLines->isNotEmpty())
             <section class="tich-payslip__detail">
                 <h2 class="tich-payslip__detail-title">PAYE band summary</h2>
                 <table class="tich-payslip__table tich-payslip__table--compact">
@@ -108,14 +126,14 @@
 
         <div class="tich-payslip__footer-grid">
             <div class="tich-payslip__stat">
-                <span class="tich-payslip__label">Taxable income</span>
+                <span class="tich-payslip__label">{{ $isWithholding ? 'Taxable fees' : 'Taxable income' }}</span>
                 <strong>KES {{ number_format($breakdown['taxable_income'], 2) }}</strong>
             </div>
             <div class="tich-payslip__stat">
-                <span class="tich-payslip__label">Employer cost</span>
+                <span class="tich-payslip__label">{{ $isWithholding ? 'Total payable' : 'Employer cost' }}</span>
                 <strong>KES {{ number_format($breakdown['total_employer_cost'], 2) }}</strong>
             </div>
-            @if (! empty($breakdown['employer_contributions']))
+            @if (! $isWithholding && ! empty($breakdown['employer_contributions']))
                 <div class="tich-payslip__stat tich-payslip__stat--wide">
                     <span class="tich-payslip__label">Employer contributions</span>
                     <strong>
@@ -127,6 +145,13 @@
             @endif
         </div>
 
-        <p class="tich-payslip__note">Computer-generated payslip per configured KRA PAYE bands and statutory rates. Not valid without institution payroll authorisation.</p>
+        <p class="tich-payslip__note">
+            @if ($isWithholding)
+                Computer-generated payment statement for consultant or independent contractor fees at the configured withholding tax rate only.
+            @else
+                Computer-generated payslip per configured KRA PAYE bands and statutory rates.
+            @endif
+            Not valid without institution payroll authorisation.
+        </p>
     </div>
 @endsection

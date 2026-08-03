@@ -5,7 +5,9 @@
 @section('hr-content')
     @php
         $settingsPayload = [
-            'deductionTypes' => $deductionTypes->map(fn ($type) => [
+            'deductionTypes' => $deductionTypes
+                ->reject(fn ($type) => $type->code === 'withholding_tax')
+                ->map(fn ($type) => [
                 'id' => $type->id,
                 'label' => $type->label,
                 'value_type' => $type->value_type,
@@ -42,9 +44,30 @@
         <div class="tich-flex tich-flex--between tich-flex--start">
             <div>
                 <h1 class="tich-h1">KRA tax settings</h1>
-                <p class="tich-text tich-mt-2">Manage PAYE bands and tax items (NSSF, SHA/SHIF, housing levy, personal relief, etc.). Use Edit to change values; drag rows to reorder.</p>
+                <p class="tich-text tich-mt-2">Manage PAYE bands and tax items (NSSF, SHA/SHIF, housing levy, personal relief, etc.). Configure withholding tax for consultants and independent contractors.</p>
             </div>
             <a href="{{ route('hr.payroll.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to payroll</a>
+        </div>
+    </div>
+
+    <div class="tich-card tich-mb-8">
+        <h2 class="tich-h3">Consultants &amp; independent contractors</h2>
+        <p class="tich-caption tich-mt-2">Staff on the withholding payroll scheme are deducted this rate only (no PAYE, NSSF, SHA/SHIF, or AHL). Assign the scheme on the staff profile or choose Consultant / Independent contractor as the employment category.</p>
+        <div class="tich-grid tich-grid--3 tich-mt-4">
+            <div>
+                <label for="withholding_tax_rate" class="tich-label">Withholding tax rate (%)</label>
+                <input
+                    type="number"
+                    id="withholding_tax_rate"
+                    name="withholding_tax_rate"
+                    value="{{ old('withholding_tax_rate', rtrim(rtrim(number_format($withholdingRate, 2), '0'), '.')) }}"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    class="tich-input"
+                    form="tax-settings-form"
+                >
+            </div>
         </div>
     </div>
 
