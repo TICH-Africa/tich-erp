@@ -3,8 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Department;
-use App\Models\User;
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class StaffFactory extends Factory
 {
@@ -23,7 +24,11 @@ class StaffFactory extends Factory
             'passport_number' => fake()->optional()->regexify('[A-Z]{2}\d{7}'),
             'nationality' => 'Kenyan',
             'home_county' => fake()->optional()->city(),
-            'email' => fake()->unique()->safeEmail(),
+            'primary_email' => fake()->unique()->safeEmail(),
+            'organisation_email' => fn (array $attributes) => Staff::organisationEmailFromName(
+                $attributes['first_name'],
+                $attributes['surname']
+            ),
             'phone_number' => fake()->phoneNumber(),
             'alt_phone_number' => fake()->optional()->phoneNumber(),
             'postal_address' => fake()->optional()->streetAddress(),

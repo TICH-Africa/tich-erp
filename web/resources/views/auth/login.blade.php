@@ -37,15 +37,13 @@
                 <label for="password" class="tich-label">Password</label>
                 <a href="{{ route('password.request') }}" class="tich-link" style="font-size: var(--text-body);">Forgot password?</a>
             </div>
-            <input
-                type="password"
+            <x-password-input
                 id="password"
                 name="password"
-                required
-                autocomplete="current-password"
-                class="tich-input @error('password') tich-input--error @enderror"
                 placeholder="Enter your password"
-            >
+                autocomplete="current-password"
+                :has-error="$errors->has('password')"
+            />
             @error('password')
                 <p class="tich-field-error">{{ $message }}</p>
             @enderror

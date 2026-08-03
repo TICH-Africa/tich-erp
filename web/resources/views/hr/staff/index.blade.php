@@ -69,7 +69,10 @@
                             <td>{{ $member->employee_number }}</td>
                             <td>
                                 <strong>{{ $member->fullName() }}</strong>
-                                <p class="tich-caption">{{ $member->email }}</p>
+                                <p class="tich-caption">{{ $member->organisation_email }}</p>
+                                @if ($member->primary_email && $member->primary_email !== $member->organisation_email)
+                                    <p class="tich-caption">Personal: {{ $member->primary_email }}</p>
+                                @endif
                             </td>
                             <td>{{ $member->department->dept_name ?? '—' }}</td>
                             <td>{{ $member->job_title }}</td>

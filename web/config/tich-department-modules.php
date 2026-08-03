@@ -272,6 +272,15 @@ return [
                     'context' => 'operational',
                     'group' => 'hr',
                 ],
+                [
+                    'key' => 'hr.recruitment',
+                    'label' => 'Recruitment',
+                    'description' => 'Review applications, shortlist, and offers.',
+                    'permission' => 'hr.manage_recruitment',
+                    'route' => 'hr.recruitment.index',
+                    'context' => 'operational',
+                    'group' => 'hr',
+                ],
             ],
         ],
         [

@@ -64,8 +64,13 @@
                     <input type="text" id="national_id_number" name="national_id_number" value="{{ old('national_id_number') }}" class="tich-input">
                 </div>
                 <div>
-                    <label for="email" class="tich-label">Email *</label>
-                    <input type="email" id="email" name="email" value="{{ old('email') }}" required class="tich-input">
+                    <label for="primary_email" class="tich-label">Primary email *</label>
+                    <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email') }}" required class="tich-input" placeholder="Personal email address">
+                </div>
+                <div>
+                    <label for="organisation_email" class="tich-label">Organisation email</label>
+                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Auto-generated as firstname.surname@tich.africa">
+                    <p class="tich-caption tich-mt-1">Leave blank to auto-generate an @tich.africa address.</p>
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>

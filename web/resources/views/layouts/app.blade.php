@@ -20,6 +20,7 @@
             'admissions.*',
             'portal.*',
             'staff.*',
+            'hr.*',
         ]);
 
         $hideAppAlerts = request()->routeIs([
@@ -30,6 +31,7 @@
             'admissions.*',
             'portal.*',
             'staff.*',
+            'hr.*',
         ]);
     @endphp
 

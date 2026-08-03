@@ -28,7 +28,7 @@ class StaffMarksDemoSeeder extends Seeder
 
     public function run(): void
     {
-        $staff = Staff::query()->where('email', 'lecturer@tich.ac.ke')->first();
+        $staff = Staff::query()->where('organisation_email', 'james.ochieng@tich.africa')->first();
 
         if (! $staff) {
             $this->command?->warn('Demo lecturer not found — run LecturerSeeder first.');

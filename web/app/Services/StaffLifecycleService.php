@@ -38,6 +38,7 @@ class StaffLifecycleService
 
         return DB::transaction(function () use ($application, $employmentDetails, $convertedBy) {
             $employeeNumber = $this->generateEmployeeNumber();
+            $employmentDetails = $this->normalizeEmploymentEmails($employmentDetails, $application);
 
             $staff = Staff::create(array_merge($employmentDetails, [
                 'employee_number' => $employeeNumber,
@@ -191,7 +192,7 @@ class StaffLifecycleService
 
         $allowedFields = [
             'phone_number', 'alt_phone_number', 'postal_address', 'postal_code', 'physical_address',
-            'home_county', 'email', 'emergency_contact_name', 'emergency_contact_phone',
+            'home_county', 'primary_email', 'emergency_contact_name', 'emergency_contact_phone',
             'emergency_contact_relationship',
         ];
 
@@ -226,7 +227,7 @@ class StaffLifecycleService
 
         $allowedFields = [
             'phone_number', 'alt_phone_number', 'postal_address', 'postal_code', 'physical_address',
-            'home_county', 'email', 'emergency_contact_name', 'emergency_contact_phone',
+            'home_county', 'primary_email', 'emergency_contact_name', 'emergency_contact_phone',
             'emergency_contact_relationship', 'photo_path',
         ];
 
@@ -336,6 +337,27 @@ class StaffLifecycleService
         );
 
         return $allowance;
+    }
+
+    /**
+     * @param  array<string, mixed>  $employmentDetails
+     * @return array<string, mixed>
+     */
+    private function normalizeEmploymentEmails(array $employmentDetails, RecruitmentApplication $application): array
+    {
+        unset($employmentDetails['email']);
+
+        if (empty($employmentDetails['primary_email'])) {
+            $employmentDetails['primary_email'] = $application->email;
+        }
+
+        if (empty($employmentDetails['organisation_email'])) {
+            $firstName = (string) ($employmentDetails['first_name'] ?? $application->first_name ?? 'employee');
+            $surname = (string) ($employmentDetails['surname'] ?? $application->surname ?? 'staff');
+            $employmentDetails['organisation_email'] = Staff::organisationEmailFromName($firstName, $surname);
+        }
+
+        return $employmentDetails;
     }
 
     public function generateEmployeeNumber(): string

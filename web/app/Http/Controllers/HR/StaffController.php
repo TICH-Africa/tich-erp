@@ -29,7 +29,8 @@ class StaffController extends Controller
                         ->orWhere('first_name', 'like', "%{$search}%")
                         ->orWhere('middle_name', 'like', "%{$search}%")
                         ->orWhere('surname', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('primary_email', 'like', "%{$search}%")
+                        ->orWhere('organisation_email', 'like', "%{$search}%")
                         ->orWhere('national_id_number', 'like', "%{$search}%")
                         ->orWhere('kra_pin', 'like', "%{$search}%");
                 });
@@ -95,7 +96,8 @@ class StaffController extends Controller
             'passport_number' => 'nullable|string|max:50|unique:staff,passport_number',
             'nationality' => 'nullable|string|max:100|default:Kenyan',
             'home_county' => 'nullable|string|max:100',
-            'email' => 'required|email|max:255|unique:staff,email',
+            'primary_email' => 'required|email|max:255',
+            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email',
             'phone_number' => 'required|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -140,7 +142,15 @@ class StaffController extends Controller
                 $validated['employee_number'] = $this->lifecycleService->generateEmployeeNumber();
             }
 
+            if (empty($validated['organisation_email'])) {
+                $validated['organisation_email'] = Staff::organisationEmailFromName(
+                    $validated['first_name'],
+                    $validated['surname']
+                );
+            }
+
             $staff = Staff::create($validated);
+            $staff->syncLinkedUserEmail();
 
             $this->auditService->log(
                 'staff.created',
@@ -176,7 +186,8 @@ class StaffController extends Controller
             'passport_number' => 'nullable|string|max:50|unique:staff,passport_number,' . $staff->id,
             'nationality' => 'nullable|string|max:100',
             'home_county' => 'nullable|string|max:100',
-            'email' => 'sometimes|email|max:255|unique:staff,email,' . $staff->id,
+            'primary_email' => 'sometimes|email|max:255',
+            'organisation_email' => 'sometimes|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
             'phone_number' => 'sometimes|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -217,8 +228,9 @@ class StaffController extends Controller
 
         $oldValues = $staff->only(array_keys($validated));
 
-        DB::transaction(function () use ($staff, $validated, $request) {
+        DB::transaction(function () use ($staff, $validated, $request, $oldValues) {
             $staff->update($validated);
+            $staff->syncLinkedUserEmail();
 
             $this->auditService->log(
                 'staff.updated',

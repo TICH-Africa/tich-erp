@@ -68,15 +68,13 @@
 
         <div class="tich-form-group">
             <label for="password" class="tich-label">Password</label>
-            <input
-                type="password"
+            <x-password-input
                 id="password"
                 name="password"
-                required
-                autocomplete="new-password"
-                class="tich-input @error('password') tich-input--error @enderror"
                 placeholder="At least 8 characters"
-            >
+                autocomplete="new-password"
+                :has-error="$errors->has('password')"
+            />
             @error('password')
                 <p class="tich-field-error">{{ $message }}</p>
             @enderror
@@ -84,15 +82,12 @@
 
         <div class="tich-form-group">
             <label for="password_confirmation" class="tich-label">Confirm password</label>
-            <input
-                type="password"
+            <x-password-input
                 id="password_confirmation"
                 name="password_confirmation"
-                required
-                autocomplete="new-password"
-                class="tich-input"
                 placeholder="Repeat your password"
-            >
+                autocomplete="new-password"
+            />
         </div>
 
         <div class="tich-form-group" style="display: flex; align-items: flex-start; gap: 0.5rem;">

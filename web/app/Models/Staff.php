@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Staff extends Model
 {
@@ -26,7 +27,8 @@ class Staff extends Model
         'passport_number',
         'nationality',
         'home_county',
-        'email',
+        'primary_email',
+        'organisation_email',
         'phone_number',
         'alt_phone_number',
         'postal_address',
@@ -208,6 +210,33 @@ class Staff extends Model
     public function fullName(): string
     {
         return trim(implode(' ', array_filter([$this->title, $this->first_name, $this->middle_name, $this->surname])));
+    }
+
+    public static function organisationEmailFromName(string $firstName, string $surname, ?int $ignoreStaffId = null): string
+    {
+        $base = Str::slug(strtolower(trim($firstName).'.'.trim($surname)), '.');
+        $base = preg_replace('/[^a-z0-9.]/', '', $base) ?: 'employee';
+        $email = $base.'@tich.africa';
+        $counter = 1;
+
+        while (static::query()
+            ->when($ignoreStaffId, fn ($query) => $query->where('id', '!=', $ignoreStaffId))
+            ->where('organisation_email', $email)
+            ->exists()) {
+            $email = $base.$counter.'@tich.africa';
+            $counter++;
+        }
+
+        return $email;
+    }
+
+    public function syncLinkedUserEmail(): void
+    {
+        if ($this->user_id && $this->organisation_email) {
+            User::query()
+                ->whereKey($this->user_id)
+                ->update(['email' => $this->organisation_email]);
+        }
     }
 
     public function getTotalMonthlyCompensationAttribute(): float

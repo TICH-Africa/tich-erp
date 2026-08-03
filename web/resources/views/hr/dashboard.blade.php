@@ -32,7 +32,7 @@
             <h3 class="tich-h3">Recent Staff</h3>
             <div class="tich-mt-4">
                 @forelse ($recentStaff as $member)
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--tich-neutral-border);">
+                    <div class="tich-list-row">
                         <div>
                             <strong>{{ $member->fullName() }}</strong>
                             <p class="tich-caption">{{ $member->employee_number }} · {{ ucfirst($member->employment_status) }}</p>
@@ -49,7 +49,7 @@
             <h3 class="tich-h3">Recent Contracts</h3>
             <div class="tich-mt-4">
                 @forelse ($recentContracts as $contract)
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--tich-neutral-border);">
+                    <div class="tich-list-row">
                         <div>
                             <strong>{{ $contract->contract_number }}</strong>
                             <p class="tich-caption">{{ $contract->staff->fullName() ?? 'Unknown' }} · {{ ucfirst($contract->contract_type) }}</p>

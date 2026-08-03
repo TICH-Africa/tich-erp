@@ -13,7 +13,8 @@
             <div class="tich-mt-4">
                 <p><strong>Employee No.:</strong> {{ $staff->employee_number }}</p>
                 <p><strong>Name:</strong> {{ $staff->fullName() }}</p>
-                <p><strong>Email:</strong> {{ $staff->email }}</p>
+                <p><strong>Primary email:</strong> {{ $staff->primary_email }}</p>
+                <p><strong>Organisation email:</strong> {{ $staff->organisation_email }}</p>
                 <p><strong>Phone:</strong> {{ $staff->phone_number }}</p>
                 <p><strong>Gender:</strong> {{ $staff->gender }}</p>
                 <p><strong>DOB:</strong> {{ $staff->date_of_birth?->format('Y-m-d') }}</p>

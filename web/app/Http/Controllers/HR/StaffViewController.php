@@ -22,7 +22,8 @@ class StaffViewController extends Controller
                     ->orWhere('first_name', 'like', "%{$search}%")
                     ->orWhere('middle_name', 'like', "%{$search}%")
                     ->orWhere('surname', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('primary_email', 'like', "%{$search}%")
+                    ->orWhere('organisation_email', 'like', "%{$search}%");
             });
         }
 
@@ -71,7 +72,8 @@ class StaffViewController extends Controller
             'passport_number' => 'nullable|string|max:50|unique:staff,passport_number',
             'nationality' => 'nullable|string|max:100|default:Kenyan',
             'home_county' => 'nullable|string|max:100',
-            'email' => 'required|email|max:255|unique:staff,email',
+            'primary_email' => 'required|email|max:255',
+            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email',
             'phone_number' => 'required|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -106,9 +108,11 @@ class StaffViewController extends Controller
 
         $validated['employment_status'] = 'onboarding';
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
+        $validated = $this->prepareStaffEmails($validated);
 
         DB::transaction(function () use ($validated, $request) {
             $staff = Staff::create($validated);
+            $staff->syncLinkedUserEmail();
 
             StaffOnboarding::create([
                 'staff_id' => $staff->id,
@@ -192,7 +196,8 @@ class StaffViewController extends Controller
             'passport_number' => 'nullable|string|max:50|unique:staff,passport_number,' . $staff->id,
             'nationality' => 'nullable|string|max:100',
             'home_county' => 'nullable|string|max:100',
-            'email' => 'sometimes|email|max:255|unique:staff,email,' . $staff->id,
+            'primary_email' => 'sometimes|email|max:255',
+            'organisation_email' => 'sometimes|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
             'phone_number' => 'sometimes|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -226,9 +231,11 @@ class StaffViewController extends Controller
         ]);
 
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
+        $validated = $this->prepareStaffEmails($validated, $staff);
 
         DB::transaction(function () use ($staff, $validated, $request) {
             $staff->update($validated);
+            $staff->syncLinkedUserEmail();
 
             $this->auditService->log(
                 'staff.updated',
@@ -267,6 +274,19 @@ class StaffViewController extends Controller
         });
 
         return redirect()->route('hr.staff.index')->with('success', 'Staff member deleted successfully.');
+    }
+
+    private function prepareStaffEmails(array $validated, ?Staff $staff = null): array
+    {
+        if (empty($validated['organisation_email'])) {
+            $validated['organisation_email'] = Staff::organisationEmailFromName(
+                $validated['first_name'] ?? $staff?->first_name ?? 'employee',
+                $validated['surname'] ?? $staff?->surname ?? 'staff',
+                $staff?->id
+            );
+        }
+
+        return $validated;
     }
 }
 

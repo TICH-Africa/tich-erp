@@ -42,9 +42,9 @@ class LecturerSeeder extends Seeder
             ?? Unit::query()->where('department_id', $departmentId)->value('id');
 
         $user = User::query()->firstOrCreate(
-            ['email' => 'lecturer@tich.ac.ke'],
+            ['username' => 'lecturer.demo'],
             [
-                'username' => 'lecturer.demo',
+                'email' => 'james.ochieng@tich.africa',
                 'user_type' => 'staff',
                 'password_hash' => Hash::make('Password123!'),
                 'is_active' => 1,
@@ -52,6 +52,7 @@ class LecturerSeeder extends Seeder
                 'mfa_verified' => true,
             ]
         );
+        $user->update(['email' => 'james.ochieng@tich.africa']);
 
         $staff = Staff::query()->firstOrCreate(
             ['employee_number' => 'EMP-LECT-001'],
@@ -61,7 +62,8 @@ class LecturerSeeder extends Seeder
                 'surname' => 'Ochieng',
                 'date_of_birth' => '1985-06-15',
                 'gender' => 'male',
-                'email' => 'lecturer@tich.ac.ke',
+                'primary_email' => 'james.ochieng@gmail.com',
+                'organisation_email' => 'james.ochieng@tich.africa',
                 'phone_number' => '0712345678',
                 'department_id' => $departmentId,
                 'job_title' => 'Senior Lecturer',
@@ -73,8 +75,14 @@ class LecturerSeeder extends Seeder
             ]
         );
 
-        $staff->update(['user_id' => $user->id, 'is_teaching_staff' => 1, 'department_id' => $departmentId]);
-        $user->update(['staff_id' => $staff->id]);
+        $staff->update([
+            'user_id' => $user->id,
+            'is_teaching_staff' => 1,
+            'department_id' => $departmentId,
+            'primary_email' => 'james.ochieng@gmail.com',
+            'organisation_email' => 'james.ochieng@tich.africa',
+        ]);
+        $user->update(['staff_id' => $staff->id, 'email' => 'james.ochieng@tich.africa']);
 
         $roleId = Role::query()->where('role_name', 'Lecturer/Tutor')->value('id');
         if ($roleId) {

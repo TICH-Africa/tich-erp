@@ -1,6 +1,6 @@
-@if (session('status'))
+@if (session('status') || session('success'))
     <div class="tich-alert tich-alert--success" role="alert">
-        {{ session('status') }}
+        {{ session('status') ?? session('success') }}
     </div>
 @endif
 

@@ -49,7 +49,7 @@ class ExamResultsDemoSeeder extends Seeder
             $this->seedStudentUnits($studentId, (int) $semesterId, $unitIds, $profile);
         }
 
-        $staffId = (int) (DB::table('staff')->where('email', 'lecturer@tich.ac.ke')->value('id') ?? 1);
+        $staffId = (int) (DB::table('staff')->where('organisation_email', 'james.ochieng@tich.africa')->value('id') ?? 1);
         $this->seedAssessmentMarks($demoStudents, $unitIds, (int) $semesterId, $staffId);
 
         $this->command?->info('Exam results demo data seeded for HMD-CC Jan 2026 intake, Semester 1.');
