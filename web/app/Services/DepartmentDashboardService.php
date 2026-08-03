@@ -195,6 +195,7 @@ class DepartmentDashboardService
             $groupLabels = [
                 'education' => 'Education',
                 'admissions' => 'Admissions',
+                'hr' => 'Human resources',
                 'tools' => 'Tools',
             ];
 

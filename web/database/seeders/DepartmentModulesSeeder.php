@@ -18,22 +18,21 @@ class DepartmentModulesSeeder extends Seeder
         $service = app(DepartmentModuleService::class);
 
         Department::query()->each(function (Department $department) use ($service) {
-            if ($service->assignedModuleKeys($department) !== []) {
-                return;
-            }
-
             $keys = $service->legacyModulesForDeptCode($department->dept_code);
 
             if ($keys === [] && $department->dept_category === 'academic' && $department->parent_dept_id !== null) {
                 $keys = $service->defaultModulesForCategory('academic');
             }
 
-            if ($keys === [] && $department->dept_category === 'administrative') {
-                $keys = $service->legacyModulesForDeptCode($department->dept_code);
+            if ($keys === []) {
+                return;
             }
 
-            if ($keys !== []) {
-                $service->syncModules($department, $keys);
+            $existing = $service->assignedModuleKeys($department);
+            $merged = array_values(array_unique([...$existing, ...$keys]));
+
+            if ($merged !== $existing) {
+                $service->syncModules($department, $merged);
             }
         });
     }

@@ -33,6 +33,7 @@ class EnsureSystemRolesSeeder extends Seeder
         $this->ensureRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa'], ['approve', 'view', 'manage', 'audit', 'export']);
         $this->ensureRolePermissions('Academic Registrar', ['core', 'admin', 'academics'], ['approve', 'view', 'create', 'edit', 'manage', 'export']);
         $this->ensureRolePermissions('Admissions Officer', ['admin'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
+        $this->ensureRolePermissions('HR Manager', ['core', 'hr'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->ensureRolePermissions('Applicant', ['admin'], ['view', 'create']);
         $this->ensureRolePermissions('Alumni', ['portal'], ['view']);
     }

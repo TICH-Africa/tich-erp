@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\JobVacancy;
 use App\Models\RecruitmentApplication;
 use App\Models\Role;
@@ -9,6 +10,7 @@ use App\Models\Staff;
 use App\Models\StaffContract;
 use App\Models\StaffOnboarding;
 use App\Models\User;
+use App\Services\DepartmentModuleService;
 use App\Services\RBACService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +40,7 @@ class HrDemoSeeder extends Seeder
         }
 
         $hrManagerStaff = $this->ensureHrManager($hrDepartmentId, $campusId);
+        $this->ensureDepartmentModules($hrDepartmentId);
         $this->seedPensionSchemes();
         $this->seedLeaveTypes();
         $extraStaff = $this->seedStaffMembers($hrDepartmentId, $financeDepartmentId, $academicDepartmentId, $campusId);
@@ -107,6 +110,17 @@ class HrDemoSeeder extends Seeder
         }
 
         return $staff;
+    }
+
+    private function ensureDepartmentModules(int $hrDepartmentId): void
+    {
+        $department = Department::query()->find($hrDepartmentId);
+
+        if (! $department) {
+            return;
+        }
+
+        app(DepartmentModuleService::class)->syncModules($department, ['hr']);
     }
 
     private function seedPensionSchemes(): void

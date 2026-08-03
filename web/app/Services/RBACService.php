@@ -37,6 +37,10 @@ class RBACService
             return true;
         }
 
+        if ($this->hasPermissionViaDepartmentModule($user, $permission)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -620,6 +624,32 @@ class RBACService
 
         foreach ($permissions as $permission) {
             if (str_starts_with($permission->slug ?? $permission['slug'], $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasPermissionViaDepartmentModule(User $user, string $permission): bool
+    {
+        $moduleKey = app(DepartmentModuleService::class)->moduleKeyForPermission($permission);
+
+        if (! $moduleKey) {
+            return false;
+        }
+
+        $departmentIds = $this->getUserDepartmentIds($user);
+
+        if ($departmentIds === []) {
+            return false;
+        }
+
+        $assignedByDepartment = app(DepartmentModuleService::class)
+            ->assignedModulesByDepartmentIds($departmentIds);
+
+        foreach ($departmentIds as $departmentId) {
+            if (in_array($moduleKey, $assignedByDepartment[$departmentId] ?? [], true)) {
                 return true;
             }
         }

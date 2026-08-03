@@ -277,6 +277,31 @@ class DepartmentModuleService
         return $this->departmentHasModule($department, $moduleKey);
     }
 
+    public function moduleKeyForPermission(string $permission): ?string
+    {
+        foreach ($this->catalog() as $module) {
+            if (($module['permission'] ?? null) === $permission) {
+                return $module['key'];
+            }
+
+            foreach ($module['children'] ?? [] as $child) {
+                if (($child['permission'] ?? null) === $permission) {
+                    return $module['key'];
+                }
+            }
+        }
+
+        foreach (config('tich-department-modules.dashboard_permission_modules', []) as $permissionKey => $moduleKey) {
+            if ($permissionKey === $permission && is_string($moduleKey)) {
+                return $moduleKey;
+            }
+        }
+
+        $prefix = explode('.', $permission, 2)[0] ?? '';
+
+        return $this->findModule($prefix) ? $prefix : null;
+    }
+
     /**
      * @return array<int, list<string>> department_id => dashboard permission keys
      */
