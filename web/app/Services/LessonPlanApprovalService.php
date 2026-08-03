@@ -30,6 +30,7 @@ class LessonPlanApprovalService
         $plan->update([
             'status' => 'submitted',
             'updated_at' => now(),
+            'registrar_visible' => 1,
         ]);
 
         $this->auditService->log(
@@ -256,7 +257,7 @@ class LessonPlanApprovalService
     {
         $query = $this->basePlanQuery()
             ->where('lp.registrar_visible', 1)
-            ->whereIn('lp.status', ['approved', 'modified', 'rejected'])
+            ->whereIn('lp.status', ['submitted', 'approved', 'modified', 'rejected'])
             ->orderByDesc('lp.hod_action_at')
             ->orderByDesc('lp.planned_date');
 

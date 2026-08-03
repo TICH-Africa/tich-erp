@@ -10,6 +10,7 @@ return [
         ['label' => 'Programs & courses', 'url' => '/programs'],
         ['label' => 'Events', 'url' => '#events'],
         ['label' => 'Blog', 'url' => '#blog'],
+        ['label' => 'Careers', 'url' => '/careers'],
     ],
 
     'footer_primary' => [

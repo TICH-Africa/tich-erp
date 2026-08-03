@@ -40,6 +40,7 @@
             <label class="tich-label">Status</label>
             <select name="status" class="tich-input">
                 <option value="">All recorded</option>
+                <option value="submitted" @selected($selectedStatus === 'submitted')>Submitted</option>
                 <option value="approved" @selected($selectedStatus === 'approved')>Approved</option>
                 <option value="modified" @selected($selectedStatus === 'modified')>Modified</option>
                 <option value="rejected" @selected($selectedStatus === 'rejected')>Rejected</option>
@@ -77,8 +78,18 @@
                         <td>{{ $plan->contact_hours }}</td>
                         <td>{{ ucfirst($plan->status) }}</td>
                         <td>{{ $plan->hod_action_at ? \Illuminate\Support\Carbon::parse($plan->hod_action_at)->format('d M Y') : '-' }}</td>
-                        <td>
+                        <td style="white-space:nowrap;">
                             <a href="{{ route('departments.academics.lesson-plans.show', array_merge($hub, ['plan' => $plan->id])) }}" class="tich-link">View</a>
+                            @if ($canReview && $plan->status === 'submitted')
+                                <form method="POST" action="{{ route('departments.academics.lesson-plans.approve', array_merge($hub, ['plan' => $plan->id])) }}" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="tich-link">Approve</button>
+                                </form>
+                                <form method="POST" action="{{ route('departments.academics.lesson-plans.reject', array_merge($hub, ['plan' => $plan->id])) }}" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="tich-link" style="color:var(--tich-danger, #b91c1c);">Reject</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

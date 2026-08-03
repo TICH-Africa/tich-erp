@@ -10,7 +10,7 @@
     </div>
 @endif
 
-@if ($errors->any())
+@if (isset($errors) && $errors->any())
     <div class="tich-alert tich-alert--error" role="alert">
         <p style="font-weight: 600; margin: 0 0 0.5rem;">Please fix the following:</p>
         <ul style="margin: 0; padding-left: 1.25rem;">

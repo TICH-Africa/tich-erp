@@ -1,0 +1,86 @@
+@extends('layouts.hr')
+
+@section('title', 'Edit Contract')
+
+@section('hr-content')
+    <div class="tich-mb-8">
+        <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-btn tich-btn-ghost">&larr; Back to contract</a>
+    </div>
+
+    <article class="tich-card">
+        <h1 class="tich-h1 tich-mb-6">Edit Contract</h1>
+
+        <form method="POST" action="{{ route('hr.contracts.update', $contract) }}">
+            @csrf
+            @method('PUT')
+
+            <div class="tich-grid tich-grid--2 tich-mb-6">
+                <div>
+                    <label for="contract_type" class="tich-label">Contract Type *</label>
+                    <select id="contract_type" name="contract_type" required class="tich-input">
+                        <option value="">Select type</option>
+                        <option value="permanent" {{ old('contract_type', $contract->contract_type) == 'permanent' ? 'selected' : '' }}>Permanent</option>
+                        <option value="contract" {{ old('contract_type', $contract->contract_type) == 'contract' ? 'selected' : '' }}>Contract</option>
+                        <option value="intern" {{ old('contract_type', $contract->contract_type) == 'intern' ? 'selected' : '' }}>Intern</option>
+                        <option value="visiting" {{ old('contract_type', $contract->contract_type) == 'visiting' ? 'selected' : '' }}>Visiting</option>
+                        <option value="casual" {{ old('contract_type', $contract->contract_type) == 'casual' ? 'selected' : '' }}>Casual</option>
+                        <option value="probation" {{ old('contract_type', $contract->contract_type) == 'probation' ? 'selected' : '' }}>Probation</option>
+                        <option value="consultancy" {{ old('contract_type', $contract->contract_type) == 'consultancy' ? 'selected' : '' }}>Consultancy</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="job_title" class="tich-label">Job Title *</label>
+                    <input type="text" id="job_title" name="job_title" value="{{ old('job_title', $contract->job_title) }}" required class="tich-input">
+                </div>
+                <div>
+                    <label for="department_id" class="tich-label">Department *</label>
+                    <select id="department_id" name="department_id" required class="tich-input">
+                        <option value="">Select department</option>
+                        @foreach ($departments as $department)
+                            <option value="{{ $department->id }}" {{ old('department_id', $contract->department_id) == $department->id ? 'selected' : '' }}>
+                                {{ $department->dept_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="gross_salary" class="tich-label">Gross Salary *</label>
+                    <input type="number" step="0.01" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                </div>
+                <div>
+                    <label for="start_date" class="tich-label">Start Date *</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ old('start_date', $contract->start_date) }}" required class="tich-input">
+                </div>
+                <div>
+                    <label for="end_date" class="tich-label">End Date</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $contract->end_date) }}" class="tich-input">
+                </div>
+                <div>
+                    <label for="probation_end_date" class="tich-label">Probation End Date</label>
+                    <input type="date" id="probation_end_date" name="probation_end_date" value="{{ old('probation_end_date', $contract->probation_end_date) }}" class="tich-input">
+                </div>
+                <div>
+                    <label for="probation_status" class="tich-label">Probation Status</label>
+                    <select id="probation_status" name="probation_status" class="tich-input">
+                        <option value="">Select</option>
+                        <option value="not_applicable" {{ old('probation_status', $contract->probation_status) == 'not_applicable' ? 'selected' : '' }}>Not Applicable</option>
+                        <option value="active" {{ old('probation_status', $contract->probation_status) == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="passed" {{ old('probation_status', $contract->probation_status) == 'passed' ? 'selected' : '' }}>Passed</option>
+                        <option value="failed" {{ old('probation_status', $contract->probation_status) == 'failed' ? 'selected' : '' }}>Failed</option>
+                    </select>
+                </div>
+                <div class="tich-flex--center">
+                    <label class="tich-checkbox">
+                        <input type="checkbox" id="is_renewable" name="is_renewable" value="1" {{ old('is_renewable', $contract->is_renewable) ? 'checked' : '' }}>
+                        <span>Renewable</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="tich-mt-6">
+                <button type="submit" class="tich-btn tich-btn-primary">Update Contract</button>
+                <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-btn tich-btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </article>
+@endsection
