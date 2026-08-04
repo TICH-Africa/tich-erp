@@ -35,10 +35,15 @@
                     <p class="tich-text tich-mt-2">Auto-graded {{ $selected->auto_graded_at?->format('d M Y H:i') }}. Scores synced to cumulative sheet.</p>
                 @endif
 
-                <form method="POST" action="{{ route('staff.grading.objective.responses') }}" class="tich-mt-4">
+                <form method="POST" action="{{ route('staff.grading.objective.responses') }}" class="tich-mt-4" data-autosave="grading-objective-responses">
                     @csrf
                     <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                     <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
+
+                    <div class="tich-form-toolbar tich-mb-4">
+                        <p class="tich-caption">Enter student responses below. They save automatically; you can also use the buttons at the bottom.</p>
+                        <span class="tich-autosave-status" data-autosave-status="grading-objective-responses" data-state="idle" aria-live="polite">Changes save automatically</span>
+                    </div>
 
                     <div class="tich-competency-grid-wrap">
                         <table class="tich-competency-grid">
@@ -117,8 +122,8 @@
                     </form>
                 @endif
 
-                <details class="tich-mt-6">
-                    <summary class="tich-h3" style="cursor:pointer;">Answer key</summary>
+                <details class="tich-grading-details tich-mt-6">
+                    <summary class="tich-h3 tich-grading-details__summary">Answer key</summary>
                     <ol class="tich-mt-4">
                         @foreach ($selected->questions as $question)
                             <li class="tich-text tich-mt-2">
@@ -156,7 +161,7 @@
 
                     <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C|D</code>)</p>
                     @for ($i = 0; $i < 5; $i++)
-                        <div class="tich-card tich-mt-4" style="padding:1rem; background:var(--tich-neutral-bg, #f8fafc);">
+                        <div class="tich-card tich-grading-question-card tich-mt-4">
                             <div class="tich-form-group">
                                 <label class="tich-label">Question {{ $i + 1 }}</label>
                                 <input type="text" name="questions[{{ $i }}][question_text]" class="tich-input" placeholder="Question text (leave blank to skip)">

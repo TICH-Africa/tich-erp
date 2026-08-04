@@ -11,8 +11,10 @@ use App\Services\AttendanceSessionGenerationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\LessonPlanApprovalService;
 use App\Services\ObjectiveAutoGradingService;
+use App\Services\StaffExamMarksService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -214,7 +216,7 @@ class StaffPortalActionController extends Controller
         ])->with('status', 'Score recorded.');
     }
 
-    public function saveGradingGrid(Request $request): RedirectResponse
+    public function saveGradingGrid(Request $request): RedirectResponse|JsonResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
@@ -236,13 +238,10 @@ class StaffPortalActionController extends Controller
             $validated['scores'] ?? [],
         );
 
-        return redirect()->route('staff.dashboard', [
-            'section' => 'grading',
-            'allocation' => $allocation->id,
-        ])->with('status', 'Competency spreadsheet saved. Cumulative scores updated.');
+        return $this->gradingSaveResponse($request, $allocation->id, 'Competency spreadsheet saved. Cumulative scores updated.');
     }
 
-    public function saveExamMarks(Request $request): RedirectResponse
+    public function saveExamMarks(Request $request): RedirectResponse|JsonResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
@@ -260,10 +259,7 @@ class StaffPortalActionController extends Controller
             (float) ($validated['exam_max'] ?? 100),
         );
 
-        return redirect()->route('staff.dashboard', [
-            'section' => 'grading',
-            'allocation' => $allocation->id,
-        ])->with('status', 'Exam marks saved and final grades updated.');
+        return $this->gradingSaveResponse($request, $allocation->id, 'Exam marks saved and final grades updated.');
     }
 
     public function storeObjectiveAssessment(Request $request): RedirectResponse
@@ -298,7 +294,7 @@ class StaffPortalActionController extends Controller
         ])->with('status', 'Objective assessment created. Enter student responses and run auto-grade.');
     }
 
-    public function saveObjectiveResponses(Request $request): RedirectResponse
+    public function saveObjectiveResponses(Request $request): RedirectResponse|JsonResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
@@ -312,11 +308,12 @@ class StaffPortalActionController extends Controller
 
         $this->objectiveGrading->saveResponses($assessment, $staff, $validated['responses'] ?? []);
 
-        return redirect()->route('staff.dashboard', [
-            'section' => 'grading',
-            'allocation' => $allocation->id,
-            'objective_assessment' => $assessment->id,
-        ])->with('status', 'Student responses saved.');
+        return $this->gradingSaveResponse(
+            $request,
+            $allocation->id,
+            'Student responses saved.',
+            ['objective_assessment' => $assessment->id],
+        );
     }
 
     public function runObjectiveAutoGrade(Request $request): RedirectResponse
@@ -355,5 +352,31 @@ class StaffPortalActionController extends Controller
 
         return redirect()->route('staff.dashboard', ['section' => 'content'])
             ->with('status', 'Learning material uploaded.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    private function gradingSaveResponse(Request $request, int $allocationId, string $message, array $query = []): RedirectResponse|JsonResponse
+    {
+        if ($this->isAutosaveRequest($request)) {
+            return response()->json([
+                'ok' => true,
+                'message' => $message,
+                'saved_at' => now()->toIso8601String(),
+            ]);
+        }
+
+        return redirect()->route('staff.dashboard', array_merge([
+            'section' => 'grading',
+            'allocation' => $allocationId,
+        ], $query))->with('status', $message);
+    }
+
+    private function isAutosaveRequest(Request $request): bool
+    {
+        return $request->header('X-Auto-Save') === '1'
+            || $request->expectsJson()
+            || $request->ajax();
     }
 }

@@ -56,9 +56,12 @@
         <div class="tich-tabs__panel is-active" data-panel="spreadsheet">
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - data entry grid</h2>
-                <p class="tich-caption">Enter scores out of each column maximum. Save to compile weighted cumulative marks.</p>
+                <div class="tich-form-toolbar tich-mt-2">
+                    <p class="tich-caption">Enter scores out of each column maximum. Save at the bottom or rely on automatic saving.</p>
+                    <span class="tich-autosave-status" data-autosave-status="grading-grid" data-state="idle" aria-live="polite">Changes save automatically</span>
+                </div>
 
-                <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4">
+                <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4" data-autosave="grading-grid">
                     @csrf
                     <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                     @foreach ($gradingTerminal['columns'] as $index => $column)
@@ -127,9 +130,12 @@
         <div class="tich-tabs__panel" data-panel="exams">
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - exam marks</h2>
-                <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from marks you have already entered. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                <div class="tich-form-toolbar tich-mt-2">
+                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from marks you have already entered. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                    <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
+                </div>
 
-                <form method="POST" action="{{ route('staff.grading.exams') }}" class="tich-mt-4">
+                <form method="POST" action="{{ route('staff.grading.exams') }}" class="tich-mt-4" data-autosave="grading-exams">
                     @csrf
                     <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                     <input type="hidden" name="exam_max" value="{{ $examMarksSheet['exam_max'] ?? 100 }}">
@@ -235,6 +241,8 @@
         });
     });
     </script>
+
+    <script src="{{ asset('js/tich-staff-grading-autosave.js') }}"></script>
 @elseif ($portalData['allocations']->isEmpty())
     <article class="tich-card tich-mt-6">
         <p class="tich-text">You need a unit allocation before entering marks.</p>

@@ -1,5 +1,5 @@
 @if (! empty($portalData['teaching_context']['items']))
-    <article class="tich-card" style="margin-bottom:1.5rem; border-left:4px solid var(--tich-blue, #1669a6); padding:1rem 1.25rem;">
+    <article class="tich-card tich-teaching-context" style="margin-bottom:1.5rem; border-left:4px solid var(--tich-blue, #1669a6); padding:1rem 1.25rem;">
         <p class="tich-caption" style="margin:0 0 0.5rem;">Teaching intake &amp; cohort context</p>
         @if (count($portalData['teaching_context']['items']) === 1)
             <p class="tich-text" style="margin:0;">

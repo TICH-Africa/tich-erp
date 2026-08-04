@@ -3296,6 +3296,221 @@ a.tich-tabs__btn {
     background: rgba(239, 68, 68, 0.15);
 }
 
+/* Staff grading / marks terminal */
+.tich-grading-question-card {
+    padding: 1rem;
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+}
+
+.tich-grading-details {
+    border: 1px solid var(--tich-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    background: var(--tich-surface-muted);
+}
+
+.tich-grading-details__summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.tich-grading-details__summary::-webkit-details-marker {
+    display: none;
+}
+
+.tich-teaching-context {
+    border-left: 4px solid var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-dept-header .tich-text {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-tabs__btn {
+    background: var(--tich-white);
+    border-color: var(--tich-border);
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-tabs__btn:hover {
+    background: var(--tich-surface-muted);
+    border-color: #475569;
+}
+
+[data-theme="dark"] .tich-tabs__btn.is-active {
+    background: var(--tich-blue);
+    border-color: var(--tich-blue);
+    color: #fff;
+}
+
+[data-theme="dark"] .tich-competency-grid-wrap {
+    border-color: var(--tich-border);
+    background: var(--tich-neutral);
+}
+
+[data-theme="dark"] .tich-competency-grid__input {
+    background: var(--tich-neutral);
+    border-color: var(--tich-border);
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-competency-grid__input:focus {
+    border-color: var(--tich-blue);
+    box-shadow: 0 0 0 2px var(--tich-focus-ring);
+    outline: none;
+}
+
+[data-theme="dark"] .tich-competency-grid select.tich-competency-grid__input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.35rem center;
+    padding-right: 1.5rem;
+}
+
+[data-theme="dark"] .tich-competency-grid select.tich-competency-grid__input option {
+    background: var(--tich-white);
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-competency-grid tbody tr:nth-child(even) .tich-competency-grid__sticky {
+    background: var(--tich-surface-muted);
+}
+
+[data-theme="dark"] .tich-competency-grid thead .tich-caption,
+[data-theme="dark"] .tich-competency-grid .tich-competency-grid__sticky .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-grading-question-card {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-grading-details {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-grading-details .tich-text,
+[data-theme="dark"] .tich-grading-details .tich-caption {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-grading-details .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-teaching-context {
+    background: var(--tich-white);
+    border-color: var(--tich-border);
+    border-left-color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-teaching-context .tich-text {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-teaching-context .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-dept-stats .tich-stat__value {
+    color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-card .tich-caption code,
+[data-theme="dark"] .tich-grading-details code {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid var(--tich-border);
+    color: #e2e8f0;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+}
+
+.tich-form-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.tich-form-toolbar .tich-caption {
+    margin: 0;
+    flex: 1 1 16rem;
+}
+
+.tich-autosave-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--tich-border);
+    background: var(--tich-surface-muted);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--tich-neutral-muted);
+    white-space: nowrap;
+}
+
+.tich-autosave-status[data-state="pending"] {
+    color: #92400e;
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.tich-autosave-status[data-state="saving"] {
+    color: var(--tich-blue);
+    background: var(--tich-blue-light);
+    border-color: rgba(22, 105, 166, 0.25);
+}
+
+.tich-autosave-status[data-state="saved"] {
+    color: #065f46;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.tich-autosave-status[data-state="error"] {
+    color: #991b1b;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+[data-theme="dark"] .tich-autosave-status {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-autosave-status[data-state="pending"] {
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .tich-autosave-status[data-state="saving"] {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+[data-theme="dark"] .tich-autosave-status[data-state="saved"] {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+[data-theme="dark"] .tich-autosave-status[data-state="error"] {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
 /* ─── Careers & job applications ─────────────────────────────────────── */
 
 .tich-careers-page {
