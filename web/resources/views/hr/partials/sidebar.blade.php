@@ -7,6 +7,7 @@
         <a href="{{ route('hr.contracts.index') }}" class="{{ request()->routeIs('hr.contracts.*') ? 'is-active' : '' }}">Contracts</a>
         <a href="{{ route('hr.vacancies.index') }}" class="{{ request()->routeIs('hr.vacancies.*') ? 'is-active' : '' }}">Vacancies</a>
         <a href="{{ route('hr.recruitment.index') }}" class="{{ request()->routeIs('hr.recruitment.*') ? 'is-active' : '' }}">Recruitment</a>
+        <a href="{{ route('hr.leave.index') }}" class="{{ request()->routeIs('hr.leave.*') ? 'is-active' : '' }}">Leave requests</a>
         <a href="{{ route('hr.payroll.index') }}" class="{{ request()->routeIs('hr.payroll.*') ? 'is-active' : '' }}">Payroll</a>
         <a href="{{ route('dashboard') }}">← Back to dashboard</a>
     </nav>

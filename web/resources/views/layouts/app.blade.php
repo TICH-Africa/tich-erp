@@ -20,6 +20,7 @@
             'admissions.*',
             'portal.*',
             'staff.*',
+            'employee.*',
             'hr.*',
         ]);
 
@@ -31,6 +32,7 @@
             'admissions.*',
             'portal.*',
             'staff.*',
+            'employee.*',
             'hr.*',
         ]);
     @endphp

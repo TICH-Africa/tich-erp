@@ -14,13 +14,7 @@
             @include('partials.theme-toggle')
 
             @auth
-                @if (auth()->user()->isEnrolledStudent())
-                    <a href="{{ route('portal.dashboard') }}" class="tich-nav__link{{ request()->routeIs('portal.*') ? ' is-active' : '' }}">Student portal</a>
-                @elseif (auth()->user()->isTeachingStaff())
-                    <a href="{{ route('staff.dashboard') }}" class="tich-nav__link{{ request()->routeIs('staff.*') ? ' is-active' : '' }}">Staff portal</a>
-                @else
-                    <a href="{{ route('dashboard') }}" class="tich-nav__link{{ request()->routeIs('dashboard') ? ' is-active' : '' }}">Dashboard</a>
-                @endif
+                @include('partials.navigation.auth-portal-links')
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-ghost">Sign out</button>
@@ -43,6 +37,9 @@
                     <span class="tich-caption">Appearance</span>
                 </div>
                 @auth
+                    @if (auth()->user()->hasEmployeeProfile())
+                        <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">My Employee Portal</a>
+                    @endif
                     @if (auth()->user()->isEnrolledStudent())
                         <a href="{{ route('portal.dashboard') }}" class="tich-btn tich-btn-secondary tich-btn-block">Student portal</a>
                     @elseif (auth()->user()->isTeachingStaff())

@@ -138,6 +138,16 @@ return [
         'staff.grading.objective_responses_saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.objective_auto_graded' => ['module' => 'staff', 'sensitive' => false],
         'staff.learning_content.uploaded' => ['module' => 'staff', 'sensitive' => false],
+
+        // HR — leave & attendance
+        'hr.leave.submitted' => ['module' => 'hr', 'sensitive' => false],
+        'hr.leave.resubmitted' => ['module' => 'hr', 'sensitive' => false],
+        'hr.leave.approved' => ['module' => 'hr', 'sensitive' => false],
+        'hr.leave.rejected' => ['module' => 'hr', 'sensitive' => false],
+        'hr.leave.returned' => ['module' => 'hr', 'sensitive' => false],
+        'hr.leave.cancelled' => ['module' => 'hr', 'sensitive' => false],
+        'hr.attendance.clock_in' => ['module' => 'hr', 'sensitive' => false],
+        'hr.attendance.clock_out' => ['module' => 'hr', 'sensitive' => false],
     ],
 
 ];

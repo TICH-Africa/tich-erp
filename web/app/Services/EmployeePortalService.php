@@ -1,0 +1,197 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Staff;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class EmployeePortalService
+{
+    public function __construct(
+        protected StaffPortalService $staffPortal,
+    ) {}
+
+    public function hasEmployeeProfile(User $user): bool
+    {
+        return $this->staffPortal->staffForUser($user) !== null;
+    }
+
+    public function staffForUser(User $user): ?Staff
+    {
+        return $this->staffPortal->staffForUser($user);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function dashboardData(Staff $staff): array
+    {
+        $staff->load([
+            'department',
+            'campus',
+            'lineManager',
+            'bankAccount',
+            'pensionScheme',
+            'nextOfKin',
+            'activeAllowances',
+            'contracts' => fn ($query) => $query->orderByDesc('start_date'),
+            'documents' => fn ($query) => $query->orderByDesc('created_at'),
+            'qualifications' => fn ($query) => $query->orderByDesc('year_completed'),
+            'professionalLicenses' => fn ($query) => $query->orderByDesc('expiry_date'),
+            'performanceReviews' => fn ($query) => $query->orderByDesc('review_date')->limit(3),
+        ]);
+
+        $currentContract = $staff->contracts->first(fn ($contract) => ! $contract->isExpired());
+
+        return [
+            'staff' => $staff,
+            'currentContract' => $currentContract,
+            'contractSummary' => $this->contractSummary($staff, $currentContract),
+            'compensation' => $this->compensationSummary($staff),
+            'leaveBalances' => $this->leaveBalances($staff),
+            'recentLeaveRequests' => $this->recentLeaveRequests($staff),
+            'employmentDuration' => $this->employmentDurationLabel($staff),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function contractSummary(Staff $staff, ?\App\Models\StaffContract $currentContract): array
+    {
+        $endDate = $currentContract?->end_date ?? $staff->contract_end_date;
+        $startDate = $currentContract?->start_date ?? $staff->employment_start_date;
+
+        $daysRemaining = null;
+        if ($endDate) {
+            $daysRemaining = now()->startOfDay()->diffInDays($endDate, false);
+        }
+
+        $status = 'active';
+        if ($endDate && $daysRemaining !== null && $daysRemaining < 0) {
+            $status = 'expired';
+        } elseif ($endDate && $daysRemaining !== null && $daysRemaining <= 30) {
+            $status = 'expiring_soon';
+        } elseif (! $endDate) {
+            $status = 'open_ended';
+        }
+
+        return [
+            'number' => $currentContract?->contract_number,
+            'type' => $currentContract?->contract_type,
+            'job_title' => $currentContract?->job_title ?? $staff->job_title,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'days_remaining' => $daysRemaining,
+            'status' => $status,
+            'is_signed' => (bool) ($currentContract?->is_signed ?? false),
+            'signed_date' => $currentContract?->signed_date,
+            'probation_end_date' => $staff->probation_end_date ?? $currentContract?->probation_end_date,
+            'is_on_probation' => $staff->isOnProbation(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function compensationSummary(Staff $staff): array
+    {
+        $allowances = $staff->activeAllowances;
+
+        return [
+            'gross_monthly_salary' => (float) $staff->gross_monthly_salary,
+            'allowances_total' => (float) $allowances->sum('amount'),
+            'total_monthly' => (float) $staff->total_monthly_compensation,
+            'salary_scale' => $staff->salary_scale,
+            'payroll_scheme' => $staff->payrollSchemeLabel(),
+            'employment_category' => config(
+                'tich-payroll.employment_categories.'.$staff->employment_category,
+                ucfirst(str_replace('_', ' ', (string) $staff->employment_category))
+            ),
+            'allowances' => $allowances,
+            'masked_account_number' => $this->maskAccountNumber($staff->bankAccount?->account_number),
+        ];
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    public function leaveBalancesFor(Staff $staff): Collection
+    {
+        return $this->leaveBalances($staff);
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function leaveBalances(Staff $staff): Collection
+    {
+        if (! Schema::hasTable('leave_balances') || ! Schema::hasTable('leave_types')) {
+            return collect();
+        }
+
+        return DB::table('leave_balances as lb')
+            ->join('leave_types as lt', 'lt.id', '=', 'lb.leave_type_id')
+            ->where('lb.staff_id', $staff->id)
+            ->where('lb.year', now()->year)
+            ->orderBy('lt.leave_name')
+            ->select([
+                'lt.leave_name as leave_type_name',
+                'lb.entitled_days',
+                'lb.days_taken',
+                'lb.days_pending',
+                'lb.balance_days',
+            ])
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function recentLeaveRequests(Staff $staff): Collection
+    {
+        if (! Schema::hasTable('leave_requests') || ! Schema::hasTable('leave_types')) {
+            return collect();
+        }
+
+        return DB::table('leave_requests as lr')
+            ->join('leave_types as lt', 'lt.id', '=', 'lr.leave_type_id')
+            ->where('lr.staff_id', $staff->id)
+            ->orderByDesc('lr.created_at')
+            ->limit(5)
+            ->select([
+                'lt.leave_name as leave_type_name',
+                'lr.start_date',
+                'lr.end_date',
+                'lr.days_requested',
+                'lr.overall_status',
+            ])
+            ->get();
+    }
+
+    private function employmentDurationLabel(Staff $staff): ?string
+    {
+        if (! $staff->employment_start_date) {
+            return null;
+        }
+
+        return $staff->employment_start_date->diffForHumans(now(), true);
+    }
+
+    public function maskAccountNumber(?string $accountNumber): ?string
+    {
+        if (! $accountNumber) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $accountNumber) ?: $accountNumber;
+        if (strlen($digits) <= 4) {
+            return str_repeat('*', max(0, strlen($digits) - 1)).substr($digits, -1);
+        }
+
+        return str_repeat('*', strlen($digits) - 4).substr($digits, -4);
+    }
+}

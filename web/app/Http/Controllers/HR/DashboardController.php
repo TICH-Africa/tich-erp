@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
+use App\Models\LeaveRequest;
 use App\Models\RecruitmentApplication;
 use App\Models\Staff;
 use App\Models\StaffContract;
@@ -44,6 +45,13 @@ class DashboardController extends Controller
 
         $defaultApplication = $applicationsWithDocuments->first();
 
+        $pendingLeaveCount = LeaveRequest::query()->where('overall_status', 'pending_hr')->count();
+        $recentLeaveRequests = LeaveRequest::query()
+            ->with(['staff', 'leaveType'])
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
         $applicationsPayload = $applicationsWithDocuments->map(function (RecruitmentApplication $application) {
             return [
                 'id' => $application->id,
@@ -75,6 +83,8 @@ class DashboardController extends Controller
             'applicationsWithDocuments' => $applicationsWithDocuments,
             'defaultApplication' => $defaultApplication,
             'applicationsPayload' => $applicationsPayload,
+            'pendingLeaveCount' => $pendingLeaveCount,
+            'recentLeaveRequests' => $recentLeaveRequests,
         ]);
     }
 }

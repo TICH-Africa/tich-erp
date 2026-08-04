@@ -32,7 +32,47 @@
                 <p class="tich-caption" style="color: var(--tich-green);">{{ $newApplicationsCount }} new</p>
             @endif
         </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Leave awaiting HR</p>
+            <p class="tich-stat__value">{{ $pendingLeaveCount }}</p>
+            @if ($pendingLeaveCount > 0)
+                <p class="tich-caption"><a href="{{ route('hr.leave.index', ['status' => 'pending_hr']) }}">Review now</a></p>
+            @endif
+        </div>
     </div>
+
+    @if ($recentLeaveRequests->isNotEmpty())
+        <article class="tich-card tich-mb-8">
+            <div class="tich-flex tich-flex--between tich-mb-4">
+                <h3 class="tich-h3">Recent leave requests</h3>
+                <a href="{{ route('hr.leave.index') }}" class="tich-btn tich-btn-ghost">View all</a>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($recentLeaveRequests as $leaveRequest)
+                            <tr>
+                                <td>{{ $leaveRequest->staff->fullName() }}</td>
+                                <td>{{ $leaveRequest->leaveType?->leave_name }}</td>
+                                <td>{{ $leaveRequest->start_date->format('d M') }} – {{ $leaveRequest->end_date->format('d M Y') }}</td>
+                                <td>{{ $leaveRequest->statusLabel() }}</td>
+                                <td><a href="{{ route('hr.leave.show', $leaveRequest) }}" class="tich-btn tich-btn-ghost">Review</a></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    @endif
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

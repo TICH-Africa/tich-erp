@@ -85,6 +85,11 @@ class User extends Authenticatable
         return app(\App\Services\StaffPortalService::class)->isTeachingStaff($this);
     }
 
+    public function hasEmployeeProfile(): bool
+    {
+        return app(\App\Services\EmployeePortalService::class)->hasEmployeeProfile($this);
+    }
+
     public function hasPermission(string $permission): bool
     {
         return app(\App\Services\RBACService::class)->hasPermission($this, $permission);
