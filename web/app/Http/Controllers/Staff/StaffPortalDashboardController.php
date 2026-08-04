@@ -127,6 +127,20 @@ class StaffPortalDashboardController extends Controller
             ];
         }
 
+        $policies = null;
+        if ($section === 'policies') {
+            $policies = \App\Models\HrPolicy::active()
+                ->orderByDesc('created_at')
+                ->get(['id', 'title', 'category', 'effective_date', 'expiry_date', 'is_active', 'original_filename', 'file_path', 'mime_type']);
+        }
+
+        $staffDocuments = null;
+        if ($section === 'documents') {
+            $staffDocuments = $staff->documents()
+                ->orderByDesc('created_at')
+                ->get(['id', 'document_type', 'document_name', 'original_filename', 'mime_type', 'issue_date', 'expiry_date', 'is_verified', 'created_at']);
+        }
+
         return view('staff.dashboard', [
             'staff' => $staff,
             'portalData' => $portalData,
@@ -147,6 +161,8 @@ class StaffPortalDashboardController extends Controller
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
             'hodManagement' => $hodManagement,
+            'policies' => $policies,
+            'staffDocuments' => $staffDocuments,
         ]);
     }
 

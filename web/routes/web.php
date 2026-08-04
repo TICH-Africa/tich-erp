@@ -32,6 +32,7 @@ use App\Http\Controllers\Staff\StaffPortalTimetableController;
 use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
 use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
+use App\Http\Controllers\HR\EssOnboardingController;
 use App\Models\Department;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,10 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'show'])->name('portal.activate');
     Route::post('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'store'])->name('portal.activate.store');
+
+    Route::get('/onboarding/activate/{token}', [EssOnboardingController::class, 'show'])->name('ess.onboarding.activate');
+    Route::post('/onboarding/activate/{token}/draft', [EssOnboardingController::class, 'saveDraft'])->name('ess.onboarding.draft');
+    Route::post('/onboarding/activate/{token}', [EssOnboardingController::class, 'store'])->name('ess.onboarding.activate.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -176,6 +181,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/onboarding', [\App\Http\Controllers\HR\OnboardingViewController::class, 'index'])->name('hr.onboarding.index');
             Route::get('/onboarding/create', [\App\Http\Controllers\HR\OnboardingViewController::class, 'create'])->name('hr.onboarding.create');
             Route::post('/onboarding', [\App\Http\Controllers\HR\OnboardingViewController::class, 'store'])->name('hr.onboarding.store');
+            Route::get('/onboarding/{onboarding}/review', [\App\Http\Controllers\HR\EssOnboardingController::class, 'review'])->name('hr.onboarding.review');
+            Route::post('/onboarding/{onboarding}/approve', [\App\Http\Controllers\HR\EssOnboardingController::class, 'approve'])->name('hr.onboarding.approve');
+            Route::post('/onboarding/{onboarding}/reject', [\App\Http\Controllers\HR\EssOnboardingController::class, 'reject'])->name('hr.onboarding.reject');
             Route::get('/contracts', [\App\Http\Controllers\HR\ContractViewController::class, 'index'])->name('hr.contracts.index');
             Route::get('/contracts/create', [\App\Http\Controllers\HR\ContractViewController::class, 'create'])->name('hr.contracts.create');
             Route::post('/contracts', [\App\Http\Controllers\HR\ContractViewController::class, 'store'])->name('hr.contracts.store');
@@ -227,6 +235,47 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
                 Route::get('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'settings'])->name('hr.payroll.settings');
                 Route::put('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'updateSettings'])->name('hr.payroll.settings.update');
             });
+            Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
+            Route::get('/policies/create', [\App\Http\Controllers\HR\HrPolicyController::class, 'create'])->name('hr.policies.create');
+            Route::post('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'store'])->name('hr.policies.store');
+            Route::get('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'show'])->name('hr.policies.show');
+            Route::get('/policies/{policy}/edit', [\App\Http\Controllers\HR\HrPolicyController::class, 'edit'])->name('hr.policies.edit');
+            Route::put('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'update'])->name('hr.policies.update');
+            Route::delete('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'destroy'])->name('hr.policies.destroy');
+            Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('hr.policies.download');
+            Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('hr.policies.view');
+            Route::get('/staff/{staff}/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'create'])->name('hr.staff.documents.create');
+            Route::post('/staff/{staff}/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'store'])->name('hr.staff.documents.store');
+            Route::get('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendForm'])->name('hr.staff.documents.send');
+            Route::post('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendToStaff'])->name('hr.staff.documents.send.store');
+            Route::delete('/staff/{staff}/documents/{document}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'destroy'])->name('hr.staff.documents.destroy');
+            Route::get('/staff/{staff}/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'download'])->name('hr.staff.documents.download');
+            Route::get('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'index'])->name('hr.documents.index');
+            Route::get('/documents/staff/{staff}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'show'])->name('hr.documents.show');
+            Route::get('/documents/templates', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'index'])->name('hr.documents.templates.index');
+            Route::get('/documents/templates/create', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'create'])->name('hr.documents.templates.create');
+            Route::post('/documents/templates', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'store'])->name('hr.documents.templates.store');
+            Route::get('/documents/templates/{template}/edit', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'edit'])->name('hr.documents.templates.edit');
+            Route::put('/documents/templates/{template}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'update'])->name('hr.documents.templates.update');
+            Route::delete('/documents/templates/{template}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'destroy'])->name('hr.documents.templates.destroy');
+            Route::get('/documents/templates/{template}/preview', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'preview'])->name('hr.documents.templates.preview');
+            Route::get('/documents/templates/{template}/generate', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'generate'])->name('hr.documents.templates.generate');
+            Route::get('/documents/templates/{template}/download', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'download'])->name('hr.documents.templates.download');
+            Route::get('/training', [\App\Http\Controllers\HR\TrainingController::class, 'index'])->name('hr.training.index');
+            Route::get('/training/create', [\App\Http\Controllers\HR\TrainingController::class, 'create'])->name('hr.training.create');
+            Route::post('/training', [\App\Http\Controllers\HR\TrainingController::class, 'store'])->name('hr.training.store');
+            Route::get('/training/{training}/edit', [\App\Http\Controllers\HR\TrainingController::class, 'edit'])->name('hr.training.edit');
+            Route::put('/training/{training}', [\App\Http\Controllers\HR\TrainingController::class, 'update'])->name('hr.training.update');
+            Route::delete('/training/{training}', [\App\Http\Controllers\HR\TrainingController::class, 'destroy'])->name('hr.training.destroy');
+            Route::get('/offboarding', [\App\Http\Controllers\HR\OffboardingController::class, 'index'])->name('hr.offboarding.index');
+            Route::get('/offboarding/create', [\App\Http\Controllers\HR\OffboardingController::class, 'create'])->name('hr.offboarding.create');
+            Route::post('/offboarding', [\App\Http\Controllers\HR\OffboardingController::class, 'store'])->name('hr.offboarding.store');
+            Route::get('/offboarding/{offboarding}', [\App\Http\Controllers\HR\OffboardingController::class, 'show'])->name('hr.offboarding.show');
+            Route::post('/offboarding/{offboarding}/approve', [\App\Http\Controllers\HR\OffboardingController::class, 'approve'])->name('hr.offboarding.approve');
+            Route::post('/offboarding/{offboarding}/reject', [\App\Http\Controllers\HR\OffboardingController::class, 'reject'])->name('hr.offboarding.reject');
+            Route::post('/offboarding/{offboarding}/start-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'startClearance'])->name('hr.offboarding.start-clearance');
+            Route::post('/offboarding/{offboarding}/complete-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearance'])->name('hr.offboarding.complete-clearance');
+            Route::post('/offboarding/{offboarding}/items/{item}/complete', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearanceItem'])->name('hr.offboarding.complete-item');
         });
     });
 
@@ -373,6 +422,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
+        Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
+        Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('staff.policies.download');
+        Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('staff.policies.view');
     });
 });
 

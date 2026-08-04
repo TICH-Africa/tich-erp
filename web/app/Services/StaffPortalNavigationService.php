@@ -24,6 +24,8 @@ class StaffPortalNavigationService
             'grading' => 'Marks & assessments',
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
+            'documents' => 'My Documents',
+            'policies' => 'HR Policies',
         ];
 
         if ($this->userIsHod()) {
@@ -54,6 +56,8 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading'],
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'],
+            ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents'],
+            ['type' => 'link', 'label' => 'HR Policies', 'section' => 'policies'],
         ];
 
         if ($this->userIsHod()) {

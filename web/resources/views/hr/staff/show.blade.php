@@ -52,6 +52,24 @@
         </article>
     </div>
 
+    @if ($staff->onboarding)
+        <div class="tich-card tich-mb-8">
+            <h3 class="tich-h3">Onboarding</h3>
+            <div class="tich-mt-4">
+                <p><strong>Onboarding No.:</strong> {{ $staff->onboarding->onboarding_number }}</p>
+                <p><strong>Current Step:</strong> {{ ucfirst(str_replace('_', ' ', $staff->onboarding->current_step)) }}</p>
+                <p><strong>Status:</strong>
+                    <span class="tich-badge tich-badge--{{ $staff->onboarding->status === 'completed' ? 'success' : ($staff->onboarding->status === 'rejected' ? 'danger' : ($staff->onboarding->status === 'approved' ? 'success' : 'warning')) }}">
+                        {{ ucfirst($staff->onboarding->status) }}
+                    </span>
+                </p>
+                @if ($staff->onboarding->status === 'pending_hr_review')
+                    <a href="{{ route('hr.onboarding.review', $staff->onboarding) }}" class="tich-btn tich-btn-primary tich-mt-4">Review Biodata</a>
+                @endif
+            </div>
+        </div>
+    @endif
+
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">
             <h3 class="tich-h3">Next of Kin</h3>
@@ -103,15 +121,54 @@
         </article>
 
         <article class="tich-card">
-            <h3 class="tich-h3">Documents</h3>
+            <h3 class="tich-h3">Generate Document</h3>
+            <div class="tich-mt-4">
+                <p class="tich-text tich-text--secondary tich-mb-4">Generate contracts, letters, or clearance documents for this staff member.</p>
+                @php
+                    $templates = \App\Models\StaffDocumentTemplate::where('is_active', 1)->get(['id', 'name', 'type']);
+                @endphp
+                @forelse ($templates as $template)
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--tich-neutral-border);">
+                        <div>
+                            <strong>{{ $template->name }}</strong>
+                            <span class="tich-badge tich-badge--info tich-ml-2">{{ ucfirst(str_replace('_', ' ', $template->type)) }}</span>
+                        </div>
+                        <div class="tich-flex tich-flex--gap">
+                            <a href="{{ route('hr.documents.templates.generate', ['template' => $template, 'staff_id' => $staff->id]) }}" class="tich-btn tich-btn-secondary tich-btn--sm" target="_blank">Generate</a>
+                            <a href="{{ route('hr.staff.documents.send', $staff) }}?template_id={{ $template->id }}" class="tich-btn tich-btn-primary tich-btn--sm">Send</a>
+                        </div>
+                    </div>
+                @empty
+                    <p class="tich-text tich-text--secondary">No document templates available.</p>
+                @endforelse
+            </div>
+        </article>
+
+        <article class="tich-card">
+            <div class="tich-flex tich-flex--between tich-flex--start">
+                <h3 class="tich-h3">Documents</h3>
+                <a href="{{ route('hr.staff.documents.create', $staff) }}" class="tich-btn tich-btn-primary tich-btn--sm">+ Upload</a>
+            </div>
             <div class="tich-mt-4">
                 @forelse ($staff->documents as $doc)
                     <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--tich-neutral-border);">
-                        <strong>{{ $doc->document_name }}</strong>
-                        <span class="tich-badge tich-badge--{{ $doc->is_verified ? 'success' : 'warning' }} tich-ml-2">
-                            {{ $doc->is_verified ? 'Verified' : 'Pending' }}
-                        </span>
-                        <p class="tich-caption tich-mt-1">{{ ucfirst($doc->document_type) }} · Exp: {{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</p>
+                        <div class="tich-flex tich-flex--between tich-flex--start">
+                            <div>
+                                <strong>{{ $doc->document_name }}</strong>
+                                <span class="tich-badge tich-badge--{{ $doc->is_verified ? 'success' : 'warning' }} tich-ml-2">
+                                    {{ $doc->is_verified ? 'Verified' : 'Pending' }}
+                                </span>
+                                <p class="tich-caption tich-mt-1">{{ ucfirst($doc->document_type) }} · Exp: {{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</p>
+                            </div>
+                            <div class="tich-flex tich-flex--gap">
+                                <a href="{{ route('hr.staff.documents.download', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Download</a>
+                                <form method="POST" action="{{ route('hr.staff.documents.destroy', [$staff, $doc]) }}" onsubmit="return confirm('Delete this document?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="tich-btn tich-btn-ghost tich-btn--sm" style="color: #c53030; border-color: #c53030;">Delete</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 @empty
                     <p class="tich-text tich-text--secondary">No documents uploaded.</p>

@@ -61,6 +61,8 @@ class Staff extends Model
         'exit_date',
         'exit_reason',
         'user_id',
+        'onboarding_token',
+        'onboarding_token_expires_at',
         'is_teaching_staff',
         'is_nursing_license_required',
         'line_manager_id',
@@ -84,6 +86,8 @@ class Staff extends Model
         'confirmation_date' => 'date',
         'incremental_date' => 'date',
         'exit_date' => 'date',
+        'onboarding_token_expires_at' => 'datetime',
+        'onboarding_completed_at' => 'datetime',
         'onboarding_completed_at' => 'datetime',
         'gross_monthly_salary' => 'decimal:2',
     ];

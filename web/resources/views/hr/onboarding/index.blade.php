@@ -19,6 +19,7 @@
                         <th>Step</th>
                         <th>Status</th>
                         <th>Started</th>
+                        <th>Documents</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -38,6 +39,11 @@
                                 </span>
                             </td>
                             <td class="tich-caption">{{ $onboarding->created_at?->format('Y-m-d') }}</td>
+                            <td class="tich-caption">
+                                @if ($onboarding->staff)
+                                    {{ $onboarding->staff->documents->count() }} uploaded
+                                @endif
+                            </td>
                             <td>
                                 @if ($onboarding->staff)
                                     <div class="tich-flex tich-flex--gap">
@@ -49,7 +55,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tich-table-empty">No onboarding records found.</td>
+                            <td colspan="8" class="tich-table-empty">No onboarding records found.</td>
                         </tr>
                     @endforelse
                 </tbody>

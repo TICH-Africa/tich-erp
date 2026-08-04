@@ -9,6 +9,11 @@
         <a href="{{ route('hr.recruitment.index') }}" class="{{ request()->routeIs('hr.recruitment.*') ? 'is-active' : '' }}">Recruitment</a>
         <a href="{{ route('hr.leave.index') }}" class="{{ request()->routeIs('hr.leave.*') ? 'is-active' : '' }}">Leave requests</a>
         <a href="{{ route('hr.payroll.index') }}" class="{{ request()->routeIs('hr.payroll.*') ? 'is-active' : '' }}">Payroll</a>
+        <a href="{{ route('hr.policies.index') }}" class="{{ request()->routeIs('hr.policies.*') ? 'is-active' : '' }}">HR Policies</a>
+        <a href="{{ route('hr.documents.index') }}" class="{{ request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*') ? 'is-active' : '' }}">Staff Documents</a>
+        <a href="{{ route('hr.documents.templates.index') }}" class="{{ request()->routeIs('hr.documents.templates.*') ? 'is-active' : '' }}">Document Templates</a>
+        <a href="{{ route('hr.offboarding.index') }}" class="{{ request()->routeIs('hr.offboarding.*') ? 'is-active' : '' }}">Offboarding</a>
+        <a href="{{ route('hr.training.index') }}" class="{{ request()->routeIs('hr.training.*') ? 'is-active' : '' }}">Training</a>
         <a href="{{ route('dashboard') }}">← Back to dashboard</a>
     </nav>
 </aside>

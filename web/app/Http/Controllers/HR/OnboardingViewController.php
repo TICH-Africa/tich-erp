@@ -12,7 +12,7 @@ class OnboardingViewController extends Controller
 {
     public function index(): View
     {
-        $onboardings = StaffOnboarding::with(['staff', 'staff.department', 'staff.campus'])
+        $onboardings = StaffOnboarding::with(['staff', 'staff.department', 'staff.campus', 'staff.documents'])
             ->orderByDesc('created_at')
             ->paginate(25);
 

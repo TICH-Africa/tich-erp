@@ -5,9 +5,15 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\RecruitmentApplication;
 use App\Models\JobVacancy;
+use App\Models\Staff;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use App\Mail\OnboardingInvitationEmail;
 
 class RecruitmentController extends Controller
 {
@@ -129,20 +135,26 @@ class RecruitmentController extends Controller
         }
 
         DB::transaction(function () use ($application, $request) {
-            $employeeNumber = 'EMP/' . date('Y') . '/' . str_pad((string) (\App\Models\Staff::count() + 1), 5, '0', STR_PAD_LEFT);
+            $employeeNumber = 'EMP/' . date('Y') . '/' . str_pad((string) (Staff::count() + 1), 5, '0', STR_PAD_LEFT);
 
-            $staff = \App\Models\Staff::create([
+            $nameParts = $this->splitFullName($application->full_name);
+
+            $token = Str::random(64);
+            $expiresAt = now()->addDays(14);
+
+            $staff = Staff::create([
                 'employee_number' => $employeeNumber,
                 'title' => '',
-                'first_name' => $application->full_name,
-                'middle_name' => '',
-                'surname' => '',
+                'first_name' => $nameParts['first'],
+                'middle_name' => $nameParts['middle'],
+                'surname' => $nameParts['last'],
                 'date_of_birth' => $application->date_of_birth ?? now()->toDateString(),
                 'gender' => $application->gender ?? '',
                 'marital_status' => $application->marital_status,
                 'national_id_number' => $application->id_number,
                 'nationality' => 'Kenyan',
-                'email' => $application->email,
+                'primary_email' => $application->email,
+                'organisation_email' => $this->generateOrganisationEmail($nameParts['first'], $nameParts['last']),
                 'phone_number' => $application->phone_number,
                 'postal_address' => $application->postal_address,
                 'physical_address' => $application->physical_address,
@@ -153,13 +165,26 @@ class RecruitmentController extends Controller
                 'gross_monthly_salary' => 0,
                 'employment_status' => 'onboarding',
                 'is_profile_locked' => 0,
+                'onboarding_token' => $token,
+                'onboarding_token_expires_at' => $expiresAt,
                 'created_by' => $request->user()->id,
             ]);
 
-            \App\Models\StaffOnboarding::create([
+            User::create([
+                'username' => $this->suggestUsername($application->email),
+                'email' => $application->email,
+                'password_hash' => Hash::make(Str::random(16)),
+                'user_type' => 'staff',
+                'staff_id' => $staff->id,
+                'is_active' => 1,
+                'mfa_enabled' => 0,
+                'mfa_verified' => 1,
+            ]);
+
+            StaffOnboarding::create([
                 'staff_id' => $staff->id,
                 'applicant_id' => $application->id,
-                'onboarding_number' => 'ONB-' . strtoupper(\Illuminate\Support\Str::random(8)),
+                'onboarding_number' => 'ONB-' . strtoupper(Str::random(8)),
                 'current_step' => 'biodata',
                 'status' => 'pending_hr_review',
                 'completed_steps' => ['biodata'],
@@ -175,9 +200,42 @@ class RecruitmentController extends Controller
                 'reviewed_at' => now(),
                 'is_viewed' => 1,
             ]);
+
+            try {
+                Mail::to($staff->primary_email)->send(new OnboardingInvitationEmail($staff));
+            } catch (\Throwable $e) {
+                \Log::error('Failed to send onboarding invitation: ' . $e->getMessage());
+            }
         });
 
-        return redirect()->route('hr.recruitment.show', $application)->with('success', 'Offer approved. Applicant converted to staff and added to onboarding.');
+        return redirect()->route('hr.recruitment.show', $application)->with('success', 'Offer approved. Applicant converted to staff and onboarding invitation sent.');
+    }
+
+    private function splitFullName(string $fullName): array
+    {
+        $parts = explode(' ', trim($fullName), 3);
+
+        return [
+            'first' => $parts[0] ?? '',
+            'middle' => $parts[1] ?? '',
+            'last' => $parts[2] ?? '',
+        ];
+    }
+
+    private function generateOrganisationEmail(string $firstName, string $surname): string
+    {
+        $first = strtolower(preg_replace('/[^a-z0-9]/', '', $firstName));
+        $last = strtolower(preg_replace('/[^a-z0-9]/', '', $surname));
+
+        return substr($first, 0, 1) . $last . '@tich.africa';
+    }
+
+    private function suggestUsername(string $email): string
+    {
+        $local = strtolower(strtok($email, '@') ?: 'staff');
+        $local = preg_replace('/[^a-z0-9._-]/', '', $local) ?: 'staff';
+
+        return substr($local, 0, 50);
     }
 
     public function sendQualifiedEmail(Request $request, int $id)
