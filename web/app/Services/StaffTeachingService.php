@@ -25,10 +25,14 @@ class StaffTeachingService
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
+        $sourceType = ($data['source_type'] ?? 'form') === 'upload' ? 'upload' : 'form';
+
         $plan = LessonPlan::query()->create([
             'plan_number' => 'LP-'.now()->format('Ymd').'-'.strtoupper(Str::random(4)),
             'unit_allocation_id' => $allocation->id,
             'prepared_by' => $staff->id,
+            'source_type' => $sourceType,
+            'lesson_title' => $data['lesson_title'] ?? null,
             'lesson_objectives' => $data['lesson_objectives'],
             'topics_covered' => $data['topics_covered'] ?? null,
             'competencies_targeted' => $data['competencies_targeted'] ?? null,
@@ -37,6 +41,10 @@ class StaffTeachingService
             'planned_date' => $data['planned_date'],
             'teaching_methods' => $data['teaching_methods'] ?? null,
             'resources_required' => $data['resources_required'] ?? null,
+            'uploaded_file_path' => $data['uploaded_file_path'] ?? null,
+            'uploaded_file_name' => $data['uploaded_file_name'] ?? null,
+            'form_payload' => $data['form_payload'] ?? null,
+            'tutor_verified_at' => null,
             'status' => $data['status'] ?? 'draft',
             'created_at' => now(),
         ]);
@@ -62,7 +70,37 @@ class StaffTeachingService
 
     public function submitLessonPlan(LessonPlan $plan, Staff $staff): LessonPlan
     {
+        abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
+        abort_unless($plan->isReadyToSubmit(), 422, $plan->isFormBased()
+            ? 'Preview the generated lesson plan and verify it before submitting.'
+            : 'Upload your lesson plan document before submitting.');
+
         return $this->lessonPlanApprovals->submitForApproval($plan, $staff);
+    }
+
+    public function verifyLessonPlan(LessonPlan $plan, Staff $staff): LessonPlan
+    {
+        abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
+        abort_unless($plan->isFormBased(), 422, 'Only system-generated lesson plans require tutor verification.');
+        abort_unless($plan->isEditableByTutor(), 422, 'This lesson plan cannot be verified in its current state.');
+
+        $plan->update([
+            'tutor_verified_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'staff.lesson_plan.verified',
+            'lesson_plans',
+            $plan->id,
+            null,
+            ['tutor_verified_at' => $plan->tutor_verified_at?->toIso8601String()],
+            'Lesson plan verified by tutor before submission',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $plan->fresh();
     }
 
     /**

@@ -45,6 +45,7 @@ class LessonPlanApprovalService
         );
 
         $this->notifyHod($plan->fresh(['allocation.unit', 'preparedByStaff']));
+        $this->notifySubmissionStakeholders($plan->fresh(['allocation.unit', 'preparedByStaff']));
 
         return $plan->fresh();
     }
@@ -188,6 +189,7 @@ class LessonPlanApprovalService
         abort_unless(in_array($plan->status, ['draft', 'modified', 'rejected'], true), 422, 'Approved or submitted lesson plans cannot be edited by the tutor.');
 
         $plan->update([
+            'lesson_title' => $data['lesson_title'] ?? $plan->lesson_title,
             'lesson_objectives' => $data['lesson_objectives'],
             'topics_covered' => $data['topics_covered'] ?? null,
             'competencies_targeted' => $data['competencies_targeted'] ?? null,
@@ -196,6 +198,10 @@ class LessonPlanApprovalService
             'planned_date' => $data['planned_date'],
             'teaching_methods' => $data['teaching_methods'] ?? null,
             'resources_required' => $data['resources_required'] ?? null,
+            'form_payload' => array_key_exists('form_payload', $data) ? $data['form_payload'] : $plan->form_payload,
+            'uploaded_file_path' => $data['uploaded_file_path'] ?? $plan->uploaded_file_path,
+            'uploaded_file_name' => $data['uploaded_file_name'] ?? $plan->uploaded_file_name,
+            'tutor_verified_at' => null,
             'updated_at' => now(),
         ]);
 
@@ -371,13 +377,58 @@ class LessonPlanApprovalService
             return;
         }
 
-        $tutorName = $plan->preparedByStaff?->fullName() ?? 'A tutor';
-        $unitLabel = $unit->unit_code ?? 'unit';
-
-        $this->notifications->notifyUser(
+        $this->notifyStakeholder(
             $hodUserId,
             'Lesson plan awaiting approval',
-            "{$tutorName} submitted lesson plan {$plan->plan_number} for {$unitLabel} on {$plan->planned_date?->format('d M Y')}.",
+            $this->submissionMessage($plan),
+            $plan,
+        );
+    }
+
+    private function notifySubmissionStakeholders(LessonPlan $plan): void
+    {
+        foreach ($this->userIdsForRoles(['Academic Registrar', 'QA Officer']) as $userId) {
+            $this->notifyStakeholder(
+                $userId,
+                'Lesson plan submitted for review',
+                $this->submissionMessage($plan),
+                $plan,
+            );
+        }
+    }
+
+    private function submissionMessage(LessonPlan $plan): string
+    {
+        $tutorName = $plan->preparedByStaff?->fullName() ?? 'A tutor';
+        $unitLabel = $plan->allocation?->unit?->unit_code ?? 'unit';
+        $topic = $plan->lesson_title ?: ($plan->topics_covered ?: 'session');
+        $sourceLabel = $plan->isUploadBased() ? 'uploaded document' : 'system-generated document';
+
+        return "{$tutorName} submitted lesson plan {$plan->plan_number} ({$sourceLabel}) for {$unitLabel} - {$topic} on {$plan->planned_date?->format('d M Y')}.";
+    }
+
+    /**
+     * @param  list<string>  $roleNames
+     * @return list<int>
+     */
+    private function userIdsForRoles(array $roleNames): array
+    {
+        return DB::table('user_roles as ur')
+            ->join('roles as r', 'r.id', '=', 'ur.role_id')
+            ->whereIn('r.role_name', $roleNames)
+            ->pluck('ur.user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function notifyStakeholder(int $userId, string $title, string $body, LessonPlan $plan): void
+    {
+        $this->notifications->notifyUser(
+            $userId,
+            $title,
+            $body,
             'lesson_plan',
             (string) $plan->id,
             'normal',

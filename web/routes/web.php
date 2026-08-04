@@ -25,6 +25,7 @@ use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentCo
 use App\Http\Controllers\Academics\ProgramCurriculumController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use App\Http\Controllers\Staff\AttendanceSheetController;
+use App\Http\Controllers\Staff\StaffLessonPlanDocumentController;
 use App\Http\Controllers\Staff\StaffPortalActionController;
 use App\Http\Controllers\Staff\StaffPortalDashboardController;
 use App\Http\Controllers\Staff\StaffPortalTimetableController;
@@ -314,6 +315,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.transcript.pdf');
     });
 
+    Route::get('/lesson-plans/{plan}/print', [StaffLessonPlanDocumentController::class, 'print'])->name('lesson-plans.print');
+    Route::get('/lesson-plans/{plan}/pdf', [StaffLessonPlanDocumentController::class, 'pdf'])->name('lesson-plans.pdf');
+    Route::get('/lesson-plans/{plan}/upload', [StaffLessonPlanDocumentController::class, 'showUpload'])->name('lesson-plans.upload.show');
+    Route::get('/lesson-plans/{plan}/upload/download', [StaffLessonPlanDocumentController::class, 'downloadUpload'])->name('lesson-plans.upload.download');
+
     Route::middleware('staff.portal')->prefix('staff')->group(function () {
         Route::get('/', StaffPortalDashboardController::class)->name('staff.dashboard');
         Route::get('/timetables/{timetable}/print', [StaffPortalTimetableController::class, 'print'])
@@ -321,8 +327,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/timetables/{timetable}/pdf', [StaffPortalTimetableController::class, 'pdf'])
             ->name('staff.timetable.pdf');
         Route::post('/lesson-plans', [StaffPortalActionController::class, 'storeLessonPlan'])->name('staff.lesson-plans.store');
+        Route::get('/lesson-plans/context', [StaffPortalActionController::class, 'lessonPlanContext'])->name('staff.lesson-plans.context');
         Route::put('/lesson-plans/{plan}', [StaffPortalActionController::class, 'updateLessonPlan'])->name('staff.lesson-plans.update');
         Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
+        Route::post('/lesson-plans/{plan}/verify', [StaffPortalActionController::class, 'verifyLessonPlan'])->name('staff.lesson-plans.verify');
         Route::post('/attendance', [StaffPortalActionController::class, 'storeAttendanceSession'])->name('staff.attendance.store');
         Route::post('/attendance/sync-timetable', [StaffPortalActionController::class, 'syncAttendanceFromTimetable'])->name('staff.attendance.sync-timetable');
         Route::post('/attendance/{session}/submit-roster', [StaffPortalActionController::class, 'submitForRosterVerification'])->name('staff.attendance.submit-roster');

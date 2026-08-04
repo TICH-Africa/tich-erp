@@ -14,6 +14,25 @@
 
     <div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap:1.5rem;">
         <article class="tich-card">
+            <h2 class="tich-h3">Lesson plan document</h2>
+            <p class="tich-caption tich-mt-2">
+                Source: {{ $plan->isUploadBased() ? 'Uploaded document' : 'System-generated CHP template' }}
+                @if ($plan->tutor_verified_at)
+                    · Tutor verified {{ $plan->tutor_verified_at->format('d M Y H:i') }}
+                @endif
+            </p>
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem;">
+                @if ($plan->isFormBased())
+                    <a href="{{ route('lesson-plans.print', $plan->id) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Preview document</a>
+                    <a href="{{ route('lesson-plans.pdf', $plan->id) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                @elseif ($plan->uploaded_file_path)
+                    <a href="{{ route('lesson-plans.upload.show', $plan->id) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Open upload</a>
+                    <a href="{{ route('lesson-plans.upload.download', $plan->id) }}" class="tich-btn tich-btn-secondary">Download upload</a>
+                @endif
+            </div>
+        </article>
+
+        <article class="tich-card">
             <h2 class="tich-h3">Lesson plan content</h2>
 
             @if ($canReview)

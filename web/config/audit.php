@@ -112,6 +112,7 @@ return [
         'staff.lesson_plan.created' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.updated' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.submitted' => ['module' => 'staff', 'sensitive' => false],
+        'staff.lesson_plan.verified' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.approved' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.rejected' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.modification_requested' => ['module' => 'staff', 'sensitive' => false],

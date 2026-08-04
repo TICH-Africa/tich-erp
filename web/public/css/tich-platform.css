@@ -241,6 +241,103 @@ h3.tich-h3 {
     margin-bottom: 1.25rem;
 }
 
+.tich-form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.tich-form-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+    .tich-form-grid--2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tich-lesson-plan-grid-wrap {
+    overflow-x: auto;
+}
+
+.tich-lesson-plan-grid {
+    width: 100%;
+    min-width: 960px;
+    border-collapse: collapse;
+}
+
+.tich-lesson-plan-grid th,
+.tich-lesson-plan-grid td {
+    border: 1px solid var(--tich-neutral-border);
+    padding: 0.5rem;
+    vertical-align: top;
+}
+
+.tich-lesson-plan-grid th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--tich-neutral-surface-alt, #f8fafc);
+}
+
+.tich-lesson-plan-grid__input {
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.5rem 0.625rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    color: var(--tich-grey);
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    resize: vertical;
+}
+
+.tich-lesson-plan-grid__actions {
+    width: 5rem;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .tich-lesson-plan-grid th {
+    background: var(--tich-neutral-surface-alt, #1e293b);
+}
+
+[data-theme="dark"] .tich-lesson-plan-grid__input {
+    background: var(--tich-neutral-surface, #0f172a);
+    color: var(--tich-text, #e2e8f0);
+    border-color: var(--tich-neutral-border, #334155);
+}
+
+.tich-lesson-plan-verify {
+    background: var(--tich-surface-muted, #f8fafc);
+    border-color: var(--tich-primary, #2563eb);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--tich-primary, #2563eb) 35%, transparent);
+}
+
+.tich-lesson-plan-verify .tich-h3,
+.tich-lesson-plan-verify .tich-text {
+    color: var(--tich-grey);
+}
+
+.tich-lesson-plan-verify .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-lesson-plan-verify {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-green);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--tich-green) 45%, transparent);
+}
+
+[data-theme="dark"] .tich-lesson-plan-verify .tich-h3,
+[data-theme="dark"] .tich-lesson-plan-verify .tich-text {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-lesson-plan-verify .tich-caption {
+    color: var(--tich-neutral-muted);
+}
+
 .tich-input,
 .tich-select {
     display: block;

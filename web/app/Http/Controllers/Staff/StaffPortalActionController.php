@@ -10,6 +10,8 @@ use App\Models\UnitAllocation;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\LessonPlanApprovalService;
+use App\Services\LessonPlanContextService;
+use App\Services\LessonPlanDocumentService;
 use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffExamMarksService;
 use App\Services\StaffPortalService;
@@ -27,43 +29,93 @@ class StaffPortalActionController extends Controller
         protected StaffExamMarksService $examMarks,
         protected ContinuousAssessmentService $assessments,
         protected LessonPlanApprovalService $lessonPlanApprovals,
+        protected LessonPlanDocumentService $lessonPlanDocuments,
+        protected LessonPlanContextService $lessonPlanContext,
         protected ObjectiveAutoGradingService $objectiveGrading,
     ) {}
+
+    public function lessonPlanContext(Request $request): JsonResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $allocation = UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->findOrFail($request->integer('allocation_id'));
+
+        $defaults = $this->lessonPlanContext->defaultsForAllocation(
+            $staff,
+            $allocation,
+            $request->string('planned_date')->toString() ?: null,
+        );
+
+        return response()->json(['defaults' => $defaults]);
+    }
 
     public function storeLessonPlan(Request $request): RedirectResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+        $sourceType = $request->input('source_type') === 'upload' ? 'upload' : 'form';
 
-        $validated = $request->validate([
-            'allocation_id' => ['required', 'integer'],
-            'lesson_objectives' => ['required', 'string'],
-            'topics_covered' => ['nullable', 'string'],
-            'competencies_targeted' => ['nullable', 'string'],
-            'planned_date' => ['required', 'date'],
-            'week_number' => ['nullable', 'integer', 'min:1'],
-            'contact_hours' => ['required', 'integer', 'min:1'],
-            'teaching_methods' => ['nullable', 'string', 'max:500'],
-            'resources_required' => ['nullable', 'string', 'max:500'],
-            'submit' => ['nullable', 'boolean'],
-        ]);
+        $validated = $request->validate(array_merge(
+            $this->lessonPlanFieldRules($sourceType, false),
+            $sourceType === 'upload'
+                ? ['document' => ['required', 'file', 'max:'.config('tich-lesson-plans.upload.max_kb', 10240), 'mimes:pdf,doc,docx']]
+                : [],
+        ));
 
-        $plan = $this->teaching->createLessonPlan($staff, $allocation, $validated);
+        $planData = $this->lessonPlanDocuments->mapValidatedPlanData($validated, $sourceType);
 
-        if ($request->boolean('submit')) {
-            $this->teaching->submitLessonPlan($plan, $staff);
+        if ($sourceType === 'form') {
+            abort_if(
+                ($planData['form_payload']['session_rows'] ?? []) === [],
+                422,
+                'Add at least one row to the lesson session plan table.'
+            );
         }
 
-        return redirect()->route('staff.dashboard', ['section' => 'lesson-plans'])
-            ->with('status', 'Lesson plan saved.');
+        if ($sourceType === 'upload') {
+            $upload = $this->lessonPlanDocuments->storeUpload($staff, $request->file('document'));
+            $planData = array_merge($planData, $upload);
+        }
+
+        $plan = $this->teaching->createLessonPlan($staff, $allocation, $planData);
+
+        if ($request->boolean('submit')) {
+            try {
+                $this->teaching->submitLessonPlan($plan, $staff);
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+                return redirect()->route('staff.dashboard', ['section' => 'lesson-plans', 'edit_plan' => $plan->id])
+                    ->withErrors(['lesson_plan' => $exception->getMessage()]);
+            }
+        }
+
+        return redirect()->route('staff.dashboard', ['section' => 'lesson-plans', 'edit_plan' => $plan->id])
+            ->with('status', $request->boolean('submit')
+                ? 'Lesson plan submitted to HOD, Academic Registrar, and QA Officer.'
+                : 'Lesson plan saved as draft.');
     }
 
     public function submitLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
-        $this->teaching->submitLessonPlan($plan, $staff);
 
-        return back()->with('status', 'Lesson plan submitted for HOD approval.');
+        try {
+            $this->teaching->submitLessonPlan($plan, $staff);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            return back()->withErrors(['lesson_plan' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'Lesson plan submitted to HOD, Academic Registrar, and QA Officer.');
+    }
+
+    public function verifyLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $this->teaching->verifyLessonPlan($plan, $staff);
+
+        return back()->with('status', 'Lesson plan verified. You can now submit it for approval.');
     }
 
     public function updateLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
@@ -71,21 +123,74 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
         abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
 
-        $validated = $request->validate([
-            'lesson_objectives' => ['required', 'string'],
-            'topics_covered' => ['nullable', 'string'],
-            'competencies_targeted' => ['nullable', 'string'],
-            'planned_date' => ['required', 'date'],
-            'week_number' => ['nullable', 'integer', 'min:1'],
-            'contact_hours' => ['required', 'integer', 'min:1'],
-            'teaching_methods' => ['nullable', 'string', 'max:500'],
-            'resources_required' => ['nullable', 'string', 'max:500'],
-        ]);
+        $sourceType = $plan->source_type === 'upload' ? 'upload' : 'form';
 
-        $this->teaching->updateLessonPlan($plan, $staff, $validated);
+        $validated = $request->validate(array_merge(
+            $this->lessonPlanFieldRules($sourceType, true),
+            $sourceType === 'upload' && $request->hasFile('document')
+                ? ['document' => ['required', 'file', 'max:'.config('tich-lesson-plans.upload.max_kb', 10240), 'mimes:pdf,doc,docx']]
+                : [],
+        ));
+
+        $planData = $this->lessonPlanDocuments->mapValidatedPlanData($validated, $sourceType);
+
+        if ($sourceType === 'form') {
+            abort_if(
+                ($planData['form_payload']['session_rows'] ?? []) === [],
+                422,
+                'Add at least one row to the lesson session plan table.'
+            );
+        }
+
+        if ($sourceType === 'upload' && $request->hasFile('document')) {
+            $this->lessonPlanDocuments->deleteUpload($plan->uploaded_file_path);
+            $planData = array_merge($planData, $this->lessonPlanDocuments->storeUpload($staff, $request->file('document')));
+        }
+
+        $this->teaching->updateLessonPlan($plan, $staff, $planData);
 
         return redirect()->route('staff.dashboard', ['section' => 'lesson-plans', 'edit_plan' => $plan->id])
             ->with('status', 'Lesson plan updated.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function lessonPlanFieldRules(string $sourceType, bool $updating): array
+    {
+        $rules = [
+            'allocation_id' => $updating ? ['sometimes', 'integer'] : ['required', 'integer'],
+            'lesson_title' => ['required', 'string', 'max:255'],
+            'planned_date' => ['required', 'date'],
+            'week_number' => ['nullable', 'integer', 'min:1'],
+            'contact_hours' => ['required', 'integer', 'min:1'],
+            'topics_covered' => ['nullable', 'string'],
+            'competencies_targeted' => ['nullable', 'string'],
+            'teaching_methods' => ['nullable', 'string', 'max:500'],
+            'resources_required' => ['nullable', 'string', 'max:500'],
+            'submit' => ['nullable', 'boolean'],
+        ];
+
+        if ($sourceType === 'form') {
+            $rules['lesson_objectives'] = ['required', 'string'];
+            $rules['competencies_targeted'] = ['required', 'string'];
+            $rules['resources_required'] = ['required', 'string'];
+            foreach (array_keys(config('tich-lesson-plans.form_fields', [])) as $field) {
+                if (in_array($field, ['assignment', 'references'], true)) {
+                    $rules[$field] = ['nullable', 'string'];
+                } else {
+                    $rules[$field] = ['required', 'string'];
+                }
+            }
+            $rules['session_rows'] = ['required', 'array'];
+            foreach (array_keys(config('tich-lesson-plans.session_row_columns', [])) as $column) {
+                $rules['session_rows.*.'.$column] = ['nullable', 'string', 'max:5000'];
+            }
+        } else {
+            $rules['lesson_objectives'] = ['nullable', 'string'];
+        }
+
+        return $rules;
     }
 
     public function storeAttendanceSession(Request $request): RedirectResponse
