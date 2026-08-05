@@ -1,6 +1,6 @@
 <aside class="tich-admin-sidebar">
     <p class="tich-admin-sidebar__title">Student portal</p>
-    <p class="tich-caption" style="margin: -0.5rem 0 1rem;">
+    <p class="tich-caption">
         {{ $student->registration_number }}<br>
         {{ $biodata['academic']['program'] ?? '-' }}
     </p>
@@ -12,12 +12,25 @@
             @if ($item['type'] === 'heading')
                 <p class="tich-admin-sidebar__section">{{ $item['label'] }}</p>
             @elseif (! empty($item['coming_soon']))
-                <span class="tich-admin-sidebar__disabled">{{ $item['label'] }} <small>(soon)</small></span>
+                <span class="tich-admin-sidebar__disabled">
+                    <span class="tich-admin-sidebar__icon">
+                        @include('partials.navigation.sidebar-icon', ['name' => \App\Support\SidebarIcon::forSection($item['section'] ?? null)])
+                    </span>
+                    <span>{{ $item['label'] }} <small>(soon)</small></span>
+                </span>
             @elseif (! empty($item['section']))
-                <a href="{{ route('portal.dashboard', ['section' => $item['section']]) }}"
-                   @class(['is-active' => $currentSection === $item['section']])>{{ $item['label'] }}</a>
+                @include('partials.navigation.sidebar-link', [
+                    'href' => route('portal.dashboard', ['section' => $item['section']]),
+                    'label' => $item['label'],
+                    'icon' => \App\Support\SidebarIcon::forSection($item['section']),
+                    'active' => $currentSection === $item['section'],
+                ])
             @elseif (! empty($item['route']))
-                <a href="{{ route($item['route'], $item['params'] ?? []) }}">{{ $item['label'] }}</a>
+                @include('partials.navigation.sidebar-link', [
+                    'href' => route($item['route'], $item['params'] ?? []),
+                    'label' => $item['label'],
+                    'icon' => \App\Support\SidebarIcon::forRoute($item['route']),
+                ])
             @endif
         @endforeach
     </nav>

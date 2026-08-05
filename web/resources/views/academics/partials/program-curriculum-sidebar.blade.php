@@ -5,9 +5,9 @@
             : null;
     @endphp
     <p class="tich-admin-sidebar__title">{{ $program->program_name }}</p>
-    <p class="tich-caption" style="margin: -0.5rem 0 1rem;">{{ $program->program_code }} · {{ $program->department?->dept_name }}</p>
+    <p class="tich-caption">{{ $program->program_code }} · {{ $program->department?->dept_name }}</p>
     @if ($sidebarWorkingIntake)
-        <p class="tich-caption" style="margin: -0.35rem 0 1rem; color: var(--tich-blue);">Working intake: {{ $sidebarWorkingIntake->intakeLabel() }}</p>
+        <p class="tich-caption" style="color: var(--tich-blue);">Working intake: {{ $sidebarWorkingIntake->intakeLabel() }}</p>
     @endif
 
     <nav class="tich-admin-sidebar__nav">
@@ -30,9 +30,16 @@
                     } elseif (($item['route'] ?? '') === 'dashboard') {
                         $isActive = request()->routeIs('dashboard');
                     }
+
+                    $icon = $item['icon'] ?? \App\Support\SidebarIcon::forRoute($item['route'] ?? null);
                 @endphp
 
-                <a href="{{ route($item['route'], $item['params'] ?? []) }}" @class(['is-active' => $isActive])>{{ $item['label'] }}</a>
+                @include('partials.navigation.sidebar-link', [
+                    'href' => route($item['route'], $item['params'] ?? []),
+                    'label' => $item['label'],
+                    'icon' => $icon,
+                    'active' => $isActive,
+                ])
             @endif
         @endforeach
     </nav>

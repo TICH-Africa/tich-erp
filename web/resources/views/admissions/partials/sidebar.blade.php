@@ -1,11 +1,11 @@
 <aside class="tich-admin-sidebar">
     <p class="tich-admin-sidebar__title">Approval dashboard</p>
     <nav class="tich-admin-sidebar__nav">
-        <a href="{{ route('admissions.dashboard') }}" class="{{ request()->routeIs('admissions.dashboard') ? 'is-active' : '' }}">Overview</a>
-        <a href="{{ route('admissions.applications.index') }}" class="{{ request()->routeIs('admissions.applications.*') ? 'is-active' : '' }}">All applications</a>
-        <a href="{{ route('admissions.applications.index', ['status' => 'pending']) }}" class="{{ request('status') === 'pending' ? 'is-active' : '' }}">Pending review</a>
+        @include('partials.navigation.sidebar-link', ['href' => route('admissions.dashboard'), 'label' => 'Overview', 'icon' => 'dashboard', 'active' => request()->routeIs('admissions.dashboard')])
+        @include('partials.navigation.sidebar-link', ['href' => route('admissions.applications.index'), 'label' => 'All applications', 'icon' => 'clipboard-list', 'active' => request()->routeIs('admissions.applications.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('admissions.applications.index', ['status' => 'pending']), 'label' => 'Pending review', 'icon' => 'clipboard-check', 'active' => request('status') === 'pending'])
         @can('admin.access')
-            <a href="{{ route('admin.index') }}">Platform admin</a>
+            @include('partials.navigation.sidebar-link', ['href' => route('admin.index'), 'label' => 'Platform admin', 'icon' => 'shield'])
         @endcan
     </nav>
 </aside>

@@ -2,8 +2,10 @@
     <p class="tich-admin-sidebar__title">Student Information System</p>
     <nav class="tich-admin-sidebar__nav">
         @can('students.read')
-            <a href="{{ route('sis.students.index') }}" class="{{ request()->routeIs('sis.students.*') ? 'is-active' : '' }}">Student records</a>
+            @include('partials.navigation.sidebar-link', ['href' => route('sis.students.index'), 'label' => 'Student records', 'icon' => 'graduation-cap', 'active' => request()->routeIs('sis.students.*')])
         @endcan
-        <a href="{{ route('dashboard') }}">← Back to dashboard</a>
     </nav>
+    <div class="tich-admin-sidebar__footer">
+        @include('partials.navigation.sidebar-link', ['href' => route('dashboard'), 'label' => 'Back to dashboard', 'icon' => 'arrow-left', 'muted' => true])
+    </div>
 </aside>

@@ -48,21 +48,21 @@ class StaffPortalNavigationService
     public function sidebarNavigation(): array
     {
         $items = [
-            ['type' => 'link', 'label' => 'Overview', 'section' => 'overview'],
+            ['type' => 'link', 'label' => 'Overview', 'section' => 'overview', 'icon' => 'dashboard'],
             ['type' => 'heading', 'label' => 'Teaching'],
-            ['type' => 'link', 'label' => 'My units', 'section' => 'units'],
-            ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable'],
-            ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance'],
-            ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading'],
-            ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans'],
-            ['type' => 'link', 'label' => 'Learning content', 'section' => 'content'],
-            ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents'],
-            ['type' => 'link', 'label' => 'HR Policies', 'section' => 'policies'],
+            ['type' => 'link', 'label' => 'My units', 'section' => 'units', 'icon' => 'book-open'],
+            ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable', 'icon' => 'calendar'],
+            ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance', 'icon' => 'clipboard-check'],
+            ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'],
+            ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
+            ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
+            ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents', 'icon' => 'folder'],
+            ['type' => 'link', 'label' => 'HR Policies', 'section' => 'policies', 'icon' => 'shield-check'],
         ];
 
         if ($this->userIsHod()) {
             $items[] = ['type' => 'heading', 'label' => 'Management'];
-            $items[] = ['type' => 'link', 'label' => 'HOD management', 'section' => 'hod-management'];
+            $items[] = ['type' => 'link', 'label' => 'HOD management', 'section' => 'hod-management', 'icon' => 'users-cog'];
         }
 
         return $items;

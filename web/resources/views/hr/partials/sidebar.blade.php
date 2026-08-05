@@ -1,19 +1,21 @@
 <aside class="tich-admin-sidebar">
     <p class="tich-admin-sidebar__title">HR Module</p>
     <nav class="tich-admin-sidebar__nav">
-        <a href="{{ route('hr.dashboard') }}" class="{{ request()->routeIs('hr.dashboard') ? 'is-active' : '' }}">Dashboard</a>
-        <a href="{{ route('hr.staff.index') }}" class="{{ request()->routeIs('hr.staff.*') ? 'is-active' : '' }}">Staff Directory</a>
-        <a href="{{ route('hr.onboarding.index') }}" class="{{ request()->routeIs('hr.onboarding.*') ? 'is-active' : '' }}">Onboarding</a>
-        <a href="{{ route('hr.contracts.index') }}" class="{{ request()->routeIs('hr.contracts.*') ? 'is-active' : '' }}">Contracts</a>
-        <a href="{{ route('hr.vacancies.index') }}" class="{{ request()->routeIs('hr.vacancies.*') ? 'is-active' : '' }}">Vacancies</a>
-        <a href="{{ route('hr.recruitment.index') }}" class="{{ request()->routeIs('hr.recruitment.*') ? 'is-active' : '' }}">Recruitment</a>
-        <a href="{{ route('hr.leave.index') }}" class="{{ request()->routeIs('hr.leave.*') ? 'is-active' : '' }}">Leave requests</a>
-        <a href="{{ route('hr.payroll.index') }}" class="{{ request()->routeIs('hr.payroll.*') ? 'is-active' : '' }}">Payroll</a>
-        <a href="{{ route('hr.policies.index') }}" class="{{ request()->routeIs('hr.policies.*') ? 'is-active' : '' }}">HR Policies</a>
-        <a href="{{ route('hr.documents.index') }}" class="{{ request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*') ? 'is-active' : '' }}">Staff Documents</a>
-        <a href="{{ route('hr.documents.templates.index') }}" class="{{ request()->routeIs('hr.documents.templates.*') ? 'is-active' : '' }}">Document Templates</a>
-        <a href="{{ route('hr.offboarding.index') }}" class="{{ request()->routeIs('hr.offboarding.*') ? 'is-active' : '' }}">Offboarding</a>
-        <a href="{{ route('hr.training.index') }}" class="{{ request()->routeIs('hr.training.*') ? 'is-active' : '' }}">Training</a>
-        <a href="{{ route('dashboard') }}">← Back to dashboard</a>
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('hr.dashboard')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.staff.index'), 'label' => 'Staff Directory', 'icon' => 'users', 'active' => request()->routeIs('hr.staff.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.onboarding.index'), 'label' => 'Onboarding', 'icon' => 'user-plus', 'active' => request()->routeIs('hr.onboarding.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.contracts.index'), 'label' => 'Contracts', 'icon' => 'file-text', 'active' => request()->routeIs('hr.contracts.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.vacancies.index'), 'label' => 'Vacancies', 'icon' => 'briefcase', 'active' => request()->routeIs('hr.vacancies.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.recruitment.index'), 'label' => 'Recruitment', 'icon' => 'user-search', 'active' => request()->routeIs('hr.recruitment.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.leave.index'), 'label' => 'Leave requests', 'icon' => 'calendar-off', 'active' => request()->routeIs('hr.leave.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.policies.index'), 'label' => 'HR Policies', 'icon' => 'shield-check', 'active' => request()->routeIs('hr.policies.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.documents.index'), 'label' => 'Staff Documents', 'icon' => 'folder', 'active' => request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.documents.templates.index'), 'label' => 'Document Templates', 'icon' => 'files', 'active' => request()->routeIs('hr.documents.templates.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.offboarding.index'), 'label' => 'Offboarding', 'icon' => 'log-out', 'active' => request()->routeIs('hr.offboarding.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.training.index'), 'label' => 'Training', 'icon' => 'presentation', 'active' => request()->routeIs('hr.training.*')])
     </nav>
+    <div class="tich-admin-sidebar__footer">
+        @include('partials.navigation.sidebar-link', ['href' => route('dashboard'), 'label' => 'Back to dashboard', 'icon' => 'arrow-left', 'muted' => true])
+    </div>
 </aside>
