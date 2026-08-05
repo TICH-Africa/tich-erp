@@ -1,8 +1,4 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">My services</p>
-    <h1 class="tich-h1 tich-dept-header__title">Enrolment</h1>
-    <p class="tich-text tich-dept-header__meta">Campus placement, admission, and clearance details.</p>
-</header>
+<x-page-toolbar title="Enrolment" meta="Campus placement, admission, and clearance" />
 
 <div class="tich-grid tich-grid--2 tich-mt-8" style="gap: 1.5rem; align-items: start;">
     <article class="tich-card">

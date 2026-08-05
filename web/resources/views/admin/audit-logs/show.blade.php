@@ -13,7 +13,7 @@
         <div class="tich-container" style="max-width: 56rem;">
             <a href="{{ route('admin.audit-logs.index') }}" class="tich-link">&larr; Back to audit logs</a>
 
-            <h1 class="tich-h1 tich-mt-4" style="font-size: 2rem;">Audit record #{{ $log->id }}</h1>
+            <x-page-toolbar title="Audit record #{{ $log->id }}" class="tich-mt-4" />
 
             <div class="tich-card tich-mt-6" style="padding: 1.5rem;">
                 <dl style="display: grid; grid-template-columns: 10rem 1fr; gap: 0.75rem 1rem; margin: 0;">

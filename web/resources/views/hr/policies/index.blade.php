@@ -3,15 +3,11 @@
 @section('title', 'HR Policies')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">HR Policies</h1>
-                <p class="tich-text tich-mt-2">Manage and share HR policy documents with staff.</p>
-            </div>
+    <x-page-toolbar title="HR Policies" meta="Policy documents shared with staff">
+        <x-slot:actions>
             <a href="{{ route('hr.policies.create') }}" class="tich-btn tich-btn-primary">+ Upload Policy</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

@@ -532,13 +532,26 @@ class HrDemoSeeder extends Seeder
                 [
                     'staff_id' => $staffMembers[2]->id ?? $staff->id,
                     'leave_type_id' => $sickLeaveId,
-                    'start_date' => now()->subDays(3)->toDateString(),
-                    'end_date' => now()->subDays(1)->toDateString(),
-                    'days_requested' => 3,
+                    'start_date' => now()->subDays(1)->toDateString(),
+                    'end_date' => now()->addDays(2)->toDateString(),
+                    'days_requested' => 4,
                     'reason' => 'Medical rest',
                     'hod_approval_status' => 'approved',
                     'hr_approval_status' => 'approved',
                     'overall_status' => 'approved',
+                ]
+            );
+
+            $onLeaveStaff = $staffMembers[2] ?? $staff;
+
+            DB::table('leave_balances')->updateOrInsert(
+                ['staff_id' => $onLeaveStaff->id, 'leave_type_id' => $sickLeaveId, 'year' => now()->year],
+                [
+                    'entitled_days' => 14,
+                    'days_taken' => 4,
+                    'days_pending' => 0,
+                    'balance_days' => 10,
+                    'last_updated' => now()->toDateString(),
                 ]
             );
         }

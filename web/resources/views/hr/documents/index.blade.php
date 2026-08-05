@@ -3,10 +3,7 @@
 @section('title', 'Staff Documents')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">Staff Documents</h1>
-        <p class="tich-text tich-mt-2">View and manage documents for all staff members.</p>
-    </div>
+    <x-page-toolbar title="Staff Documents" meta="Documents for all staff members" />
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

@@ -6,14 +6,10 @@
         $pay = $compensation;
     @endphp
 
-    <header class="tich-dept-header">
-        <p class="tich-caption">My Employee Portal</p>
-        <h1 class="tich-h1 tich-dept-header__title">{{ $staff->fullName() }}</h1>
-        <p class="tich-text tich-dept-header__meta">
-            {{ $staff->employee_number }} · {{ $staff->job_title ?? 'Employee' }}
-            · {{ $staff->department?->dept_name ?? 'Unassigned department' }}
-        </p>
-    </header>
+    <x-page-toolbar
+        :title="$staff->fullName()"
+        :meta="$staff->employee_number . ' · ' . ($staff->job_title ?? 'Employee') . ' · ' . ($staff->department?->dept_name ?? 'Unassigned department')"
+    />
 
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">
         <article class="tich-card tich-stat">

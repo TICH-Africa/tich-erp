@@ -1,15 +1,11 @@
 @extends('layouts.staff')
 
 @section('staff-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">My Documents</h1>
-                <p class="tich-text tich-mt-2">View and manage your submitted documents.</p>
-            </div>
+    <x-page-toolbar title="My Documents" meta="View and manage your submitted documents">
+        <x-slot:actions>
             <button onclick="document.getElementById('upload-modal').style.display='block'" class="tich-btn tich-btn-primary">+ Upload Document</button>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

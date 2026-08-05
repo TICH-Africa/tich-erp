@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Services\EmployeePortalService;
+use App\Services\HrLeaveOverviewService;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,29 @@ class LeaveRequestController extends Controller
     public function __construct(
         protected LeaveRequestService $leaveRequests,
         protected EmployeePortalService $employeePortal,
+        protected HrLeaveOverviewService $leaveOverview,
     ) {}
+
+    public function overview(Request $request): View
+    {
+        $records = $this->leaveOverview->currentlyOnLeave($request->input('search'));
+
+        return view('hr.leave.overview', [
+            'records' => $records,
+            'onLeaveCount' => $records->count(),
+        ]);
+    }
+
+    public function employees(Request $request): View
+    {
+        $records = $this->leaveOverview->allEmployeesLeaveSummary($request->input('search'));
+
+        return view('hr.leave.employees', [
+            'records' => $records,
+            'onLeaveCount' => $records->where('on_leave', true)->count(),
+            'employeeCount' => $records->count(),
+        ]);
+    }
 
     public function index(Request $request): View
     {

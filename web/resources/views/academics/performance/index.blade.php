@@ -11,35 +11,29 @@
 
     @include('academics.partials.learning-department-context')
 
-    <header class="tich-dept-header">
-        <h1 class="tich-h1 tich-dept-header__title">Performance mapping terminal</h1>
-        <p class="tich-text">Departmental analytics for HODs and academic leadership - class averages, failing trends, and practical completion across campuses and sub-county hubs.</p>
-    </header>
-
-    <form method="GET" class="tich-card tich-mt-6" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        @if (! empty($learningDepartments) && empty($learningDepartment))
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Learning department</label>
-                <select name="learning_department" class="tich-input">
-                    @foreach ($learningDepartments as $dept)
-                        <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
+    <x-page-toolbar title="Performance mapping terminal" meta="Class averages, failing trends, and practical completion">
+        <x-slot:actions>
+            <a href="{{ route('sis.students.index') }}" class="tich-btn tich-btn-ghost">Student records</a>
+        </x-slot:actions>
+        <x-slot:filters>
+            <form method="GET" class="tich-page-toolbar__filters-form">
+                @if (! empty($learningDepartments) && empty($learningDepartment))
+                    <select name="learning_department" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                        @foreach ($learningDepartments as $dept)
+                            <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <select name="semester" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                    @foreach ($semesters as $semester)
+                        <option value="{{ $semester->id }}" @selected($selectedSemesterId == $semester->id || ($performance['semester_id'] ?? null) == $semester->id)>
+                            {{ $semester->semester_label }}
+                        </option>
                     @endforeach
                 </select>
-            </div>
-        @endif
-        <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Semester</label>
-            <select name="semester" class="tich-input">
-                @foreach ($semesters as $semester)
-                    <option value="{{ $semester->id }}" @selected($selectedSemesterId == $semester->id || ($performance['semester_id'] ?? null) == $semester->id)>
-                        {{ $semester->semester_label }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <button type="submit" class="tich-btn tich-btn-secondary">Apply</button>
-        <a href="{{ route('sis.students.index') }}" class="tich-link" style="margin-left:auto;">Student records →</a>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">
         <article class="tich-card tich-stat">

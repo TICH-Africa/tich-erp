@@ -6,11 +6,12 @@
         $unit = $allocation?->unit;
     @endphp
 
-    <header class="tich-dept-header">
-        <p class="tich-caption"><a href="{{ route('departments.academics.lesson-plans.index', $hubParams) }}" class="tich-link">← Lesson plan approval</a></p>
-        <h1 class="tich-h1 tich-dept-header__title">{{ $plan->plan_number }}</h1>
-        <p class="tich-text">{{ $unit?->unit_code }} · {{ $unit?->unit_name }} · {{ $plan->preparedByStaff?->fullName() }}</p>
-    </header>
+    <p class="tich-caption tich-mb-2"><a href="{{ route('departments.academics.lesson-plans.index', $hubParams) }}" class="tich-link">← Lesson plan approval</a></p>
+
+    <x-page-toolbar
+        :title="$plan->plan_number"
+        :meta="($unit?->unit_code ?? '') . ' · ' . ($unit?->unit_name ?? '') . ' · ' . ($plan->preparedByStaff?->fullName() ?? '')"
+    />
 
     <div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap:1.5rem;">
         <article class="tich-card">

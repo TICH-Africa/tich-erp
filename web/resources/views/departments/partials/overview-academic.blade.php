@@ -1,10 +1,7 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">{{ $overviewStats['category'] }}</p>
-    <h1 class="tich-h1 tich-dept-header__title">{{ $department->dept_name }}</h1>
-    <p class="tich-text tich-dept-header__meta">
-        Academic programmes, student applications, and department workflows.
-    </p>
-</header>
+<x-page-toolbar
+    title="{{ $department->dept_name }}"
+    meta="Programmes, applications, and department workflows"
+/>
 
 <div class="tich-grid tich-grid--2 tich-dept-stats">
     <article class="tich-card tich-stat">

@@ -3,13 +3,9 @@
 @section('title', 'Send Document - ' . $staff->fullName())
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.documents.show', $staff) }}" class="tich-btn tich-btn-ghost">&larr; Back to documents</a>
-    </div>
+    <x-page-toolbar :title="'Send Document to ' . $staff->fullName()" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Send Document to {{ $staff->fullName() }}</h1>
-
         <form method="POST" action="{{ route('hr.staff.documents.send.store', $staff) }}">
             @csrf
 

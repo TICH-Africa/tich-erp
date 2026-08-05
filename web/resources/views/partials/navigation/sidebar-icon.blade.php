@@ -60,6 +60,9 @@
     @case('arrow-left')
         <svg width="18" height="18" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         @break
+    @case('chevron-down')
+        <svg width="16" height="16" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        @break
     @case('book-open')
         <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3Z"/></svg>
         @break

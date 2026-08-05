@@ -3,9 +3,7 @@
 @section('title', $policy->title)
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.policies.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to policies</a>
-    </div>
+    <x-page-toolbar :title="$policy->title" />
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

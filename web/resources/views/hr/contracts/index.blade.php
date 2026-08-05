@@ -3,15 +3,11 @@
 @section('title', 'Contracts')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Contracts</h1>
-                <p class="tich-text tich-mt-2">Manage employment contracts, renewals, and expiry alerts.</p>
-            </div>
+    <x-page-toolbar title="Contracts" meta="Employment contracts, renewals, and expiry alerts">
+        <x-slot:actions>
             <a href="{{ route('hr.contracts.create') }}" class="tich-btn tich-btn-primary">+ New Contract</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

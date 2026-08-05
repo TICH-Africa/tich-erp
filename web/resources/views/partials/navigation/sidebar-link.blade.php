@@ -5,10 +5,12 @@
     $active = $active ?? false;
     $muted = $muted ?? false;
     $badge = $badge ?? null;
+    $sub = $sub ?? false;
 @endphp
 
 <a href="{{ $href }}" @class([
     'tich-admin-sidebar__link',
+    'tich-admin-sidebar__link--sub' => $sub,
     'is-active' => $active,
     'is-muted' => $muted,
 ])>

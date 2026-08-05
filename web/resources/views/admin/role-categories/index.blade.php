@@ -10,10 +10,12 @@
     @endphp
 
     <a href="{{ route('admin.users.index', ['audience' => 'staff']) }}" class="tich-link">&larr; Users &amp; access</a>
-    <h1 class="tich-h1 tich-mt-4" style="font-size: 2rem;">User roles &amp; categories</h1>
-    <p class="tich-text tich-mb-6">
-        Categories group roles for organisation and reporting. Drag rows to reorder; default categories are built in and custom ones can be added as your institution grows.
-    </p>
+
+    <x-page-toolbar
+        title="User roles &amp; categories"
+        meta="Group roles for organisation and reporting"
+        class="tich-mt-4"
+    />
 
     @include('admin.partials.roles-tabs', [
         'section' => 'categories',

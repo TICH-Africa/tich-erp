@@ -3,11 +3,10 @@
 @section('academics-content')
     @php($hub = ['department' => $department->id])
 
-    <div class="tich-section__intro" style="text-align: left;">
-        <p class="tich-caption">{{ $department->dept_code }} · Academics hub</p>
-        <h1 class="tich-h1" style="font-size: 2rem;">{{ $department->dept_name }}</h1>
-        <p class="tich-text">Course length, terms per year, unit catalog, semester/block mapping, and curriculum versioning for all learning departments under this hub.</p>
-    </div>
+    <x-page-toolbar
+        :title="$department->dept_name"
+        :meta="$department->dept_code . ' · Academics hub'"
+    />
 
     <div class="tich-grid tich-grid--3 tich-mt-8" style="gap: 1.5rem;">
         <article class="tich-card tich-stat">

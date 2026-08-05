@@ -3,10 +3,7 @@
 @section('title', 'Users & access')
 
 @section('admin-content')
-    <h1 class="tich-h1" style="font-size: 2rem;">Users &amp; access</h1>
-    <p class="tich-text tich-mb-6">
-        Manage employee roles, departments, and module access separately from student portal accounts.
-    </p>
+    <x-page-toolbar title="Users &amp; access" meta="Employee roles, departments, and module access" />
 
     <div class="tich-tabs tich-mb-8">
         <div class="tich-tabs__nav" style="justify-content: space-between; align-items: center;">

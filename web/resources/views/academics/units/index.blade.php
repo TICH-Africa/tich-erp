@@ -10,47 +10,37 @@
 
     @include('academics.partials.learning-department-context')
 
-    <div class="tich-section__intro" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; text-align:left;">
-        <div>
-            <h1 class="tich-h1" style="font-size: 2rem;">Unit catalog</h1>
-            <p class="tich-text">
-                @if (! empty($learningDepartment))
-                    Units for {{ $learningDepartment->dept_name }}.
-                @else
-                    Create units for learning departments under {{ $department->dept_name }} and route drafts through registry verification.
-                @endif
-            </p>
-        </div>
+    <x-page-toolbar
+        title="Unit catalog"
+        :meta="! empty($learningDepartment) ? 'Units for ' . $learningDepartment->dept_name : 'Units for learning departments under ' . $department->dept_name"
+    >
         @can('academics.write')
-            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="unit-create">Add unit</button>
+            <x-slot:actions>
+                <button type="button" class="tich-btn tich-btn-primary" data-open-modal="unit-create">Add unit</button>
+            </x-slot:actions>
         @endcan
-    </div>
-
-    <form method="GET" class="tich-card tich-mt-8" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        @if (empty($learningDepartment))
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Learning department</label>
-                <select name="learning_department" class="tich-input">
+        <x-slot:filters>
+            <form method="GET" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Unit code or name', 'value' => request('search')])
+                @if (empty($learningDepartment))
+                    <select name="learning_department" class="tich-input tich-input--compact">
+                        <option value="">All</option>
+                        @foreach ($learningDepartments as $learningDepartmentOption)
+                            <option value="{{ $learningDepartmentOption->id }}" @selected(($filters['learning_department'] ?? '') == $learningDepartmentOption->id)>{{ $learningDepartmentOption->dept_name }}</option>
+                        @endforeach
+                    </select>
+                @else
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                @endif
+                <select name="status" class="tich-input tich-input--compact">
                     <option value="">All</option>
-                    @foreach ($learningDepartments as $learningDepartmentOption)
-                        <option value="{{ $learningDepartmentOption->id }}" @selected(($filters['learning_department'] ?? '') == $learningDepartmentOption->id)>{{ $learningDepartmentOption->dept_name }}</option>
+                    @foreach ($statusLabels as $key => $label)
+                        <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
-            </div>
-        @else
-            <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
-        @endif
-        <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Status</label>
-            <select name="status" class="tich-input">
-                <option value="">All</option>
-                @foreach ($statusLabels as $key => $label)
-                    <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-        <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

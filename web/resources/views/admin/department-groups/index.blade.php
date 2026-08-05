@@ -3,11 +3,7 @@
 @section('title', 'Department groups')
 
 @section('admin-content')
-    <h1 class="tich-h1" style="font-size: 2rem;">Department groups</h1>
-    <p class="tich-text tich-mb-8">
-        Top-level groupings such as <em>Institutional Development Management</em> and <em>Others</em>.
-        Departments are assigned to a group.
-    </p>
+    <x-page-toolbar title="Department groups" meta="Top-level groupings for departments" />
 
     <div class="tich-grid tich-grid--2" style="align-items: start; gap: 2rem;">
         <article class="tich-card">

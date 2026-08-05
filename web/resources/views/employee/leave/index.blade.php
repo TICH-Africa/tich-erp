@@ -6,18 +6,13 @@
         $openModal = $editing || $errors->any();
     @endphp
 
-    <header class="tich-dept-header">
-        <div class="tich-flex tich-flex--between" style="flex-wrap:wrap; gap:1rem; align-items:flex-start;">
-            <div>
-                <p class="tich-caption">Leave &amp; attendance</p>
-                <h1 class="tich-h1 tich-dept-header__title">My leave</h1>
-                <p class="tich-text tich-dept-header__meta">View balances, track requests, and submit new applications to HR.</p>
-            </div>
+    <x-page-toolbar title="My leave" meta="Balances, requests, and applications">
+        <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="leave-request-modal">
                 + New leave request
             </button>
-        </div>
-    </header>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     @if ($leaveBalances->isNotEmpty())
         <section class="tich-mt-6">

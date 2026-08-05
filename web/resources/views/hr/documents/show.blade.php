@@ -3,19 +3,14 @@
 @section('title', 'Documents - ' . $staff->fullName())
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <a href="{{ route('hr.documents.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to staff documents</a>
-                <h1 class="tich-h1 tich-mt-4">{{ $staff->fullName() }} - Documents</h1>
-                <p class="tich-text tich-mt-2">{{ $staff->employee_number }} · {{ $staff->job_title }} · {{ $staff->department->dept_name ?? '—' }}</p>
-            </div>
+    <x-page-toolbar :title="$staff->fullName() . ' — Documents'" :meta="$staff->employee_number . ' · ' . $staff->job_title . ' · ' . ($staff->department->dept_name ?? '—')">
+        <x-slot:actions>
             <div class="tich-flex tich-flex--gap">
                 <a href="{{ route('hr.staff.documents.create', $staff) }}" class="tich-btn tich-btn-primary">+ Upload Document</a>
                 <a href="{{ route('hr.staff.documents.send', $staff) }}" class="tich-btn tich-btn-secondary">+ Send Document</a>
             </div>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

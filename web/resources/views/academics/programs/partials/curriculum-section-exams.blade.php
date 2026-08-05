@@ -25,34 +25,30 @@
         $unitAssessmentUpdateBase = route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__']));
     @endphp
 
-    <div class="tich-section__intro tich-mb-6" style="text-align:left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Exams &amp; grading - {{ $selectedIntake->intakeLabel() }}</h1>
-        <p class="tich-text">Manage semester exams for the units taught in each teaching period. Select a semester to view its units, schedules, papers, and results.</p>
-    </div>
-
-    <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-card tich-mb-6" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        <div class="tich-form-group" style="margin:0; min-width:12rem;">
-            <label class="tich-label">Semester</label>
-            <select name="teaching_period" class="tich-input" onchange="this.form.submit()">
-                @foreach (range(1, $totalTeachingPeriods) as $periodNumber)
-                    @php
-                        $periodUnitCount = $mappings->where('semester', $periodNumber)->count();
-                    @endphp
-                    <option value="{{ $periodNumber }}" @selected($examTeachingPeriod === $periodNumber)>
-                        Semester {{ $periodNumber }}@if($periodUnitCount > 0) ({{ $periodUnitCount }} {{ str('unit')->plural($periodUnitCount) }})@endif
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        @if ($examPeriod?->scheduleLabel())
-            <div class="tich-caption" style="margin:0;">
-                <strong>Semester {{ $examTeachingPeriod }}</strong> · {{ $examPeriod->scheduleLabel() }}
-                @if ($examPeriod->exam_start_date || $examPeriod->effectiveExamEnd())
-                    · Exams: {{ $examPeriod->exam_start_date?->format('d M Y') ?? '-' }} - {{ $examPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}
+    <x-page-toolbar title="Exams &amp; grading — {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
+        <x-slot:filters>
+            <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-page-toolbar__filters-form">
+                <select name="teaching_period" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                    @foreach (range(1, $totalTeachingPeriods) as $periodNumber)
+                        @php
+                            $periodUnitCount = $mappings->where('semester', $periodNumber)->count();
+                        @endphp
+                        <option value="{{ $periodNumber }}" @selected($examTeachingPeriod === $periodNumber)>
+                            Semester {{ $periodNumber }}@if($periodUnitCount > 0) ({{ $periodUnitCount }} {{ str('unit')->plural($periodUnitCount) }})@endif
+                        </option>
+                    @endforeach
+                </select>
+                @if ($examPeriod?->scheduleLabel())
+                    <span class="tich-page-toolbar__meta">
+                        Semester {{ $examTeachingPeriod }} · {{ $examPeriod->scheduleLabel() }}
+                        @if ($examPeriod->exam_start_date || $examPeriod->effectiveExamEnd())
+                            · Exams: {{ $examPeriod->exam_start_date?->format('d M Y') ?? '-' }} – {{ $examPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}
+                        @endif
+                    </span>
                 @endif
-            </div>
-        @endif
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <nav class="tich-card tich-mb-6" style="display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.75rem 1rem;">
         @foreach ([

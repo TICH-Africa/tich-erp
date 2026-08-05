@@ -3,13 +3,9 @@
 @section('title', 'Edit Template')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.documents.templates.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to templates</a>
-    </div>
+    <x-page-toolbar title="Edit Document Template" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Edit Document Template</h1>
-
         <form method="POST" action="{{ route('hr.documents.templates.update', $template) }}">
             @csrf
             @method('PUT')

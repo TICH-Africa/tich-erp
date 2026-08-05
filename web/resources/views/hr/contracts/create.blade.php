@@ -3,13 +3,9 @@
 @section('title', 'New Contract')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.contracts.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to contracts</a>
-    </div>
+    <x-page-toolbar title="Create New Contract" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Create New Contract</h1>
-
         <form method="POST" action="{{ route('hr.contracts.store') }}">
             @csrf
 

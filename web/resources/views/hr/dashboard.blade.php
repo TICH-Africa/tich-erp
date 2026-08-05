@@ -3,10 +3,7 @@
 @section('title', 'HR Dashboard')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">HR Dashboard</h1>
-        <p class="tich-text tich-mt-2">Staff lifecycle, onboarding, contracts, and recruitment overview.</p>
-    </div>
+    <x-page-toolbar title="HR Dashboard" meta="Staff lifecycle, onboarding, contracts, and recruitment" />
 
     <div class="tich-grid tich-grid--4 tich-mb-8">
         <div class="tich-stat">

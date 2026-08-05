@@ -3,13 +3,9 @@
 @section('title', 'Edit Contract')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-btn tich-btn-ghost">&larr; Back to contract</a>
-    </div>
+    <x-page-toolbar title="Edit Contract" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Edit Contract</h1>
-
         <form method="POST" action="{{ route('hr.contracts.update', $contract) }}">
             @csrf
             @method('PUT')

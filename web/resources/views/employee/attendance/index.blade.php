@@ -6,11 +6,7 @@
         $completed = $todayRecord && $todayRecord->clock_out_time;
     @endphp
 
-    <header class="tich-dept-header">
-        <p class="tich-caption">Leave &amp; attendance</p>
-        <h1 class="tich-h1 tich-dept-header__title">Clock in / out</h1>
-        <p class="tich-text tich-dept-header__meta">Record daily attendance, including off-campus field work.</p>
-    </header>
+    <x-page-toolbar title="Clock in / out" meta="Daily attendance, including off-campus field work" />
 
     @error('attendance')
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>

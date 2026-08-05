@@ -3,15 +3,11 @@
 @section('title', 'Document Templates')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Document Templates</h1>
-                <p class="tich-text tich-mt-2">Manage document templates for contracts, letters, and clearances.</p>
-            </div>
+    <x-page-toolbar title="Document Templates" meta="Templates for contracts, letters, and clearances">
+        <x-slot:actions>
             <a href="{{ route('hr.documents.templates.create') }}" class="tich-btn tich-btn-primary">+ New Template</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-mb-6">
         <div class="tich-grid tich-grid--4">

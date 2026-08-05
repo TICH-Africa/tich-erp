@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Class attendance</h1>
-    <p class="tich-text">Sessions are generated from your timetable and semester schedule. Each session includes an auto-built student roster from course enrolment. Print the sign-in sheet, collect signatures, mark attendance online, then upload photos.</p>
-</header>
+<x-page-toolbar title="Class attendance" meta="Sessions from timetable with rosters and sign-in sheets" />
 
 @if (! empty($attendanceSync) && $attendanceSync['created'] > 0)
     <article class="tich-card tich-mt-4">

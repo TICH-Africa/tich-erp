@@ -220,6 +220,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/recruitment/{application}/reject', [\App\Http\Controllers\HR\RecruitmentController::class, 'reject'])->name('hr.recruitment.reject');
             Route::post('/recruitment/{application}/approve', [\App\Http\Controllers\HR\RecruitmentController::class, 'approve'])->name('hr.recruitment.approve');
             Route::post('/recruitment/{application}/send-qualified-email', [\App\Http\Controllers\HR\RecruitmentController::class, 'sendQualifiedEmail'])->name('hr.recruitment.send-qualified-email');
+            Route::get('/leave/overview', [\App\Http\Controllers\HR\LeaveRequestController::class, 'overview'])->name('hr.leave.overview');
+            Route::get('/leave/employees', [\App\Http\Controllers\HR\LeaveRequestController::class, 'employees'])->name('hr.leave.employees');
             Route::get('/leave', [\App\Http\Controllers\HR\LeaveRequestController::class, 'index'])->name('hr.leave.index');
             Route::get('/leave/{leaveRequest}', [\App\Http\Controllers\HR\LeaveRequestController::class, 'show'])->name('hr.leave.show');
             Route::post('/leave/{leaveRequest}/approve', [\App\Http\Controllers\HR\LeaveRequestController::class, 'approve'])

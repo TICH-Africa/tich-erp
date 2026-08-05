@@ -3,14 +3,10 @@
 @section('title', 'New Template')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.documents.templates.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to templates</a>
-    </div>
+    <x-page-toolbar title="Create Document Template" />
 
     <div class="tich-grid tich-grid--2">
         <article class="tich-card">
-            <h1 class="tich-h1 tich-mb-6">Create Document Template</h1>
-
             <form method="POST" action="{{ route('hr.documents.templates.store') }}">
                 @csrf
 

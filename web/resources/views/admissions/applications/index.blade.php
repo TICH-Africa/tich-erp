@@ -1,38 +1,30 @@
 @extends('layouts.approval')
 
 @section('approval-content')
-    <h1 class="tich-h1" style="font-size: 2rem;">Applications</h1>
-    <p class="tich-text tich-mb-6">
-        Review onboarding submissions and identify the department handling each application.
-    </p>
-
-    <form method="GET" action="{{ route('admissions.applications.index') }}" class="tich-card tich-mb-6" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
-        <div class="tich-form-group" style="margin: 0; min-width: 12rem;">
-            <label class="tich-label">Department</label>
-            <select name="department" class="tich-input">
-                <option value="">All departments</option>
-                @foreach ($departments as $department)
-                    <option value="{{ $department->id }}" @selected($filters['department'] == $department->id)>
-                        {{ $department->dept_name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="tich-form-group" style="margin: 0; min-width: 12rem;">
-            <label class="tich-label">Status</label>
-            <select name="status" class="tich-input">
-                <option value="">All</option>
-                <option value="pending" @selected($filters['status'] === 'pending')>Pending review</option>
-                <option value="admitted" @selected($filters['status'] === 'admitted')>Admitted</option>
-                <option value="rejected" @selected($filters['status'] === 'rejected')>Rejected</option>
-            </select>
-        </div>
-        @if (! empty($filters['program']))
-            <input type="hidden" name="program" value="{{ $filters['program'] }}">
-        @endif
-        <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-        <a href="{{ route('admissions.applications.index') }}" class="tich-link">Clear</a>
-    </form>
+    <x-page-toolbar title="Applications" meta="Review onboarding submissions by department">
+        <x-slot:filters>
+            <form method="GET" action="{{ route('admissions.applications.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Name, email, application no.', 'value' => request('search')])
+                <select name="department" class="tich-input tich-input--compact">
+                    <option value="">All departments</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}" @selected($filters['department'] == $department->id)>
+                            {{ $department->dept_name }}
+                        </option>
+                    @endforeach
+                </select>
+                <select name="status" class="tich-input tich-input--compact">
+                    <option value="">All</option>
+                    <option value="pending" @selected($filters['status'] === 'pending')>Pending review</option>
+                    <option value="admitted" @selected($filters['status'] === 'admitted')>Admitted</option>
+                    <option value="rejected" @selected($filters['status'] === 'rejected')>Rejected</option>
+                </select>
+                @if (! empty($filters['program']))
+                    <input type="hidden" name="program" value="{{ $filters['program'] }}">
+                @endif
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">

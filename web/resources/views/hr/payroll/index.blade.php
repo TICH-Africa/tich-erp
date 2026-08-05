@@ -19,36 +19,22 @@
         };
     @endphp
 
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Payroll</h1>
-                <p class="tich-text tich-mt-2">Monthly salary breakdown for all staff - employees (PAYE and statutory deductions) and consultants or contractors (withholding tax only) on the same list.</p>
-            </div>
+    <x-page-toolbar title="Payroll" meta="Monthly salary breakdown for all staff">
+        <x-slot:actions>
             <a href="{{ route('hr.payroll.settings') }}" class="tich-btn tich-btn-secondary">Tax bands &amp; rates</a>
-        </div>
-    </div>
-
-    <div class="tich-card tich-mb-8">
-        <form method="GET" action="{{ route('hr.payroll.index') }}" class="tich-grid tich-grid--3">
-            <div>
-                <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ request('search') }}" placeholder="Name, employee no, email..." class="tich-input">
-            </div>
-            <div>
-                <label for="status" class="tich-label">Status</label>
-                <select id="status" name="status" class="tich-input">
+        </x-slot:actions>
+        <x-slot:filters>
+            <form method="GET" action="{{ route('hr.payroll.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Name, employee no, email...', 'value' => request('search')])
+                <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>
                     @foreach (['active', 'onboarding', 'on_leave', 'suspended', 'terminated', 'resigned'] as $status)
                         <option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                     @endforeach
                 </select>
-            </div>
-            <div class="tich-flex--end">
-                <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap" style="overflow-x: auto;">

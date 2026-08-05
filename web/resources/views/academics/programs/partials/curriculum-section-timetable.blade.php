@@ -59,10 +59,11 @@
         $timetableEditable = $timetableDraft && $timetableDraft->status === 'draft' && $canEditTimetable;
     @endphp
 
-    <div class="tich-section__intro tich-mb-6" style="text-align:left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Timetable - {{ $selectedIntake->intakeLabel() }}</h1>
-        <p class="tich-text">Configure the lesson bell schedule, then create lesson, exam, and supplementary/special exam timetables independently for each semester.</p>
-    </div>
+    <x-page-toolbar
+        title="Timetable — {{ $selectedIntake->intakeLabel() }}"
+        meta="Lesson bell schedule and semester timetables"
+        class="tich-mb-6"
+    />
 
     <article class="tich-card tich-mb-8">
         <h2 class="tich-h3">1. Lesson bell schedule &amp; teaching days</h2>

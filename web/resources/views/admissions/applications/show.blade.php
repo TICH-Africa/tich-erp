@@ -3,13 +3,15 @@
 @section('approval-content')
     <a href="{{ route('admissions.applications.index') }}" class="tich-link">&larr; All applications</a>
 
-    <div class="tich-mt-4" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; align-items: start;">
-        <div>
-            <h1 class="tich-h1" style="font-size: 2rem;">{{ $applicant->fullName() }}</h1>
-            <p class="tich-text">{{ $applicant->application_number }} · {{ $applicant->email }}</p>
-        </div>
-        <div>@include('admissions.partials.status-badge', ['applicant' => $applicant])</div>
-    </div>
+    <x-page-toolbar
+        :title="$applicant->fullName()"
+        :meta="$applicant->application_number . ' · ' . $applicant->email"
+        class="tich-mt-4"
+    >
+        <x-slot:actions>
+            @include('admissions.partials.status-badge', ['applicant' => $applicant])
+        </x-slot:actions>
+    </x-page-toolbar>
 
     @if (session('application_mail_error'))
         <p class="tich-text tich-mt-4" style="color: #c0392b;">

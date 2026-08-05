@@ -3,13 +3,9 @@
 @section('title', 'New Offboarding')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.offboarding.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to offboarding</a>
-    </div>
+    <x-page-toolbar title="Initiate Offboarding" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Initiate Offboarding</h1>
-
         <form method="POST" action="{{ route('hr.offboarding.store') }}">
             @csrf
 

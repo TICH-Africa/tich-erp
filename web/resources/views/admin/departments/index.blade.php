@@ -9,18 +9,13 @@
         $editDepartment = $openEditDepartmentId ? $allDepartments->firstWhere('id', $openEditDepartmentId) : null;
     @endphp
 
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 2rem;">
-        <div>
-            <h1 class="tich-h1" style="font-size: 2rem;">Departments</h1>
-            <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
-                Administrative units sit under department groups. Academic departments (courses/programs) sit under <strong>Academics</strong>.
-                Assign platform modules per department — submodules are inherited automatically.
-            </p>
-        </div>
-        <button type="button" class="tich-btn tich-btn-primary" data-open-modal="department-create-modal">
-            Add department
-        </button>
-    </div>
+    <x-page-toolbar title="Departments" meta="Administrative units and academic departments">
+        <x-slot:actions>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="department-create-modal">
+                Add department
+            </button>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All departments</h2>

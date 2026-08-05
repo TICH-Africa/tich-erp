@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Marks &amp; assessments</h1>
-    <p class="tich-text">Enter CAT, assignment, practical, and exam marks for students registered in your unit. Marks compile into weighted final grades using the unit assessment profile.</p>
-</header>
+<x-page-toolbar title="Marks &amp; assessments" meta="CAT, assignment, practical, and exam marks" />
 
 <article class="tich-card tich-mt-6">
     <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">

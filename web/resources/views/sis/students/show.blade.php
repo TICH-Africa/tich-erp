@@ -3,15 +3,11 @@
 @section('sis-content')
     <a href="{{ route('sis.students.index') }}" class="tich-link">&larr; Back to student records</a>
 
-    <div class="tich-mt-4 tich-mb-8">
-        <p class="tich-caption">360° student record</p>
-        <h1 class="tich-h1" style="font-size: 2rem;">{{ $biodata['identity']['full_name'] }}</h1>
-        <p class="tich-text tich-mt-2">
-            {{ $student->registration_number }}
-            · {{ $biodata['academic']['program'] ?? '-' }}
-            · {{ ucfirst($student->enrollment_status) }}
-        </p>
-    </div>
+    <x-page-toolbar
+        :title="$biodata['identity']['full_name']"
+        :meta="$student->registration_number . ' · ' . ($biodata['academic']['program'] ?? '-') . ' · ' . ucfirst($student->enrollment_status)"
+        class="tich-mt-4"
+    />
 
     <div class="tich-grid tich-grid--2" style="align-items: start; gap: 1.5rem;">
         <article class="tich-card">

@@ -3,10 +3,7 @@
 @section('academics-content')
     @php($hub = ['department' => $department->id])
 
-    <div class="tich-section__intro" style="text-align: left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Learning departments</h1>
-        <p class="tich-text">Set curriculum profiles for schools under {{ $department->dept_name }}. Departments are created in platform admin; configure their curriculum track here.</p>
-    </div>
+    <x-page-toolbar title="Learning departments" :meta="'Curriculum profiles for schools under ' . $department->dept_name" />
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

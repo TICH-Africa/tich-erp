@@ -1,13 +1,7 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">Teaching</p>
-    <h1 class="tich-h1 tich-dept-header__title">My timetable</h1>
-    <p class="tich-text tich-dept-header__meta">
-        @if ($portalData['timetable']['teaching_period'])
-            Semester {{ $portalData['timetable']['teaching_period'] }}
-        @endif
-        · Sessions where you are assigned as the lecturer
-    </p>
-</header>
+<x-page-toolbar
+    title="My timetable"
+    :meta="($portalData['timetable']['teaching_period'] ? 'Semester ' . $portalData['timetable']['teaching_period'] . ' · ' : '') . 'Assigned lecturer sessions'"
+/>
 
 @if ($portalData['timetable']['is_provisional'])
     <div class="tich-notice tich-notice--info tich-mt-4">

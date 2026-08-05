@@ -3,14 +3,11 @@
 @section('title', $vacancy->job_title . ' - Vacancy')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.vacancies.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to vacancies</a>
-    </div>
+    <x-page-toolbar :title="$vacancy->job_title" :meta="$vacancy->department->dept_name ?? 'General'" />
 
     <article class="tich-card">
         <div class="tich-mb-6">
-            <h1 class="tich-h1">{{ $vacancy->job_title }}</h1>
-            <p class="tich-text tich-text--secondary tich-mt-2">
+            <p class="tich-text tich-text--secondary">
                 {{ $vacancy->department->dept_name ?? 'General' }}
                 &middot;
                 {{ ucfirst($vacancy->employment_type) }}

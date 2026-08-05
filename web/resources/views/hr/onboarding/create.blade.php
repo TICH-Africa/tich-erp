@@ -3,13 +3,9 @@
 @section('title', 'New Onboarding')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.onboarding.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to onboarding</a>
-    </div>
+    <x-page-toolbar title="Create Onboarding Record" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Create Onboarding Record</h1>
-
         <form method="POST" action="{{ route('hr.onboarding.store') }}">
             @csrf
 

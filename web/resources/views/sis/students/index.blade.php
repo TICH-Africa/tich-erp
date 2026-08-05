@@ -1,29 +1,17 @@
 @extends('layouts.sis')
 
 @section('sis-content')
-    <div class="tich-section__intro" style="text-align: left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Student records</h1>
-        <p class="tich-text">Centralized 360° student biodata compiled from admissions and enrollment records.</p>
-    </div>
-
-    <form method="GET" action="{{ route('sis.students.index') }}" class="tich-card tich-mb-8" style="padding: 1.5rem;">
-        <div class="tich-grid tich-grid--3" style="gap: 1rem;">
-            <div class="tich-form-group" style="margin: 0;">
-                <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}" class="tich-input" placeholder="Name, reg no., application no., email">
-            </div>
-            <div class="tich-form-group" style="margin: 0;">
-                <label for="status" class="tich-label">Enrollment status</label>
-                <select id="status" name="status" class="tich-input">
+    <x-page-toolbar title="Student records" meta="360° student biodata from admissions and enrollment">
+        <x-slot:filters>
+            <form method="GET" action="{{ route('sis.students.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Name, reg no., application no., email', 'value' => $filters['search'] ?? ''])
+                <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All</option>
                     @foreach (['pending', 'active', 'deferred', 'suspended', 'withdrawn', 'graduated', 'alumni'] as $status)
                         <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
                     @endforeach
                 </select>
-            </div>
-            <div class="tich-form-group" style="margin: 0;">
-                <label for="program_id" class="tich-label">Programme</label>
-                <select id="program_id" name="program_id" class="tich-input">
+                <select id="program_id" name="program_id" class="tich-input tich-input--compact">
                     <option value="">All programmes</option>
                     @foreach ($programs as $program)
                         <option value="{{ $program->id }}" @selected((string) ($filters['program_id'] ?? '') === (string) $program->id)>
@@ -31,13 +19,9 @@
                         </option>
                     @endforeach
                 </select>
-            </div>
-        </div>
-        <div class="tich-mt-4">
-            <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-            <a href="{{ route('sis.students.index') }}" class="tich-btn tich-btn-secondary">Reset</a>
-        </div>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">

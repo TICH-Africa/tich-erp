@@ -3,25 +3,17 @@
 @section('title', 'Leave requests')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">Leave requests</h1>
-        <p class="tich-text tich-mt-2">
-            Review employee leave applications.
-            @if ($pendingCount > 0)
-                <strong>{{ $pendingCount }} awaiting HR review.</strong>
-            @endif
-        </p>
-    </div>
-
-    <div class="tich-card tich-mb-8">
-        <form method="GET" action="{{ route('hr.leave.index') }}" class="tich-grid tich-grid--3">
-            <div>
-                <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ request('search') }}" placeholder="Name, employee no., leave no." class="tich-input">
-            </div>
-            <div>
-                <label for="status" class="tich-label">Status</label>
-                <select id="status" name="status" class="tich-input">
+    <x-page-toolbar
+        title="Leave requests"
+        :meta="$pendingCount > 0 ? $pendingCount . ' awaiting HR review' : null"
+    >
+        <x-slot:filters>
+            <form method="GET" action="{{ route('hr.leave.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', [
+                    'placeholder' => 'Name, employee no., leave no.',
+                    'value' => request('search'),
+                ])
+                <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>
                     <option value="pending_hr" @selected(request('status') === 'pending_hr')>Awaiting HR</option>
                     <option value="returned" @selected(request('status') === 'returned')>Returned</option>
@@ -29,12 +21,9 @@
                     <option value="rejected" @selected(request('status') === 'rejected')>Rejected</option>
                     <option value="cancelled" @selected(request('status') === 'cancelled')>Cancelled</option>
                 </select>
-            </div>
-            <div class="tich-flex--end">
-                <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

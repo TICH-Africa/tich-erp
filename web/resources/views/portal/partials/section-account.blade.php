@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">Account</p>
-    <h1 class="tich-h1 tich-dept-header__title">Security &amp; account</h1>
-</header>
+<x-page-toolbar title="Security &amp; account" />
 
 <div class="tich-grid tich-grid--2 tich-mt-8" style="gap: 1.5rem; align-items: start;">
     <article class="tich-card">

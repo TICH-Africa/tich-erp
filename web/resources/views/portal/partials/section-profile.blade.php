@@ -1,8 +1,4 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">My services</p>
-    <h1 class="tich-h1 tich-dept-header__title">My profile</h1>
-    <p class="tich-text tich-dept-header__meta">{{ $student->registration_number }} · {{ $biodata['academic']['program'] }}</p>
-</header>
+<x-page-toolbar title="My profile" meta="{{ $student->registration_number }} · {{ $biodata['academic']['program'] }}" />
 
 <div class="tich-grid tich-grid--2 tich-mt-8" style="align-items: start; gap: 1.5rem;">
     <article class="tich-card">

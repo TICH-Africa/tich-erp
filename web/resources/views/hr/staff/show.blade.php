@@ -3,9 +3,7 @@
 @section('title', $staff->fullName() . ' - Staff Profile')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.staff.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to staff</a>
-    </div>
+    <x-page-toolbar :title="$staff->fullName()" :meta="$staff->employee_number" />
 
     <div class="tich-grid tich-grid--3 tich-mb-8">
         <article class="tich-card">

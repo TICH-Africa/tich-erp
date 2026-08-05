@@ -3,20 +3,11 @@
 @section('title', 'Recruitment')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">Recruitment Applications</h1>
-        <p class="tich-text tich-mt-2">Review and manage job applications.</p>
-    </div>
-
-    <div class="tich-card tich-mb-8">
-        <form method="GET" action="{{ route('hr.recruitment.index') }}" class="tich-grid tich-grid--4">
-            <div>
-                <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ request('search') }}" placeholder="Name, email, phone..." class="tich-input">
-            </div>
-            <div>
-                <label for="status" class="tich-label">Status</label>
-                <select id="status" name="status" class="tich-input">
+    <x-page-toolbar title="Recruitment Applications" meta="Review and manage job applications">
+        <x-slot:filters>
+            <form method="GET" action="{{ route('hr.recruitment.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Name, email, phone...', 'value' => request('search')])
+                <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>
                     <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
                     <option value="under_review" {{ request('status') == 'under_review' ? 'selected' : '' }}>Under Review</option>
@@ -24,10 +15,7 @@
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     <option value="offered" {{ request('status') == 'offered' ? 'selected' : '' }}>Offered</option>
                 </select>
-            </div>
-            <div>
-                <label for="vacancy_id" class="tich-label">Vacancy</label>
-                <select id="vacancy_id" name="vacancy_id" class="tich-input">
+                <select id="vacancy_id" name="vacancy_id" class="tich-input tich-input--compact">
                     <option value="">All vacancies</option>
                     @foreach ($vacancies as $vacancy)
                         <option value="{{ $vacancy->id }}" {{ request('vacancy_id') == $vacancy->id ? 'selected' : '' }}>
@@ -35,12 +23,9 @@
                         </option>
                     @endforeach
                 </select>
-            </div>
-            <div class="tich-flex--end">
-                <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

@@ -1,8 +1,4 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">My services</p>
-    <h1 class="tich-h1 tich-dept-header__title">Documents</h1>
-    <p class="tich-text tich-dept-header__meta">Files submitted with your application.</p>
-</header>
+<x-page-toolbar title="Documents" meta="Files submitted with your application" />
 
 <article class="tich-card tich-table-panel tich-mt-8">
     @if ($biodata['documents']->isEmpty())

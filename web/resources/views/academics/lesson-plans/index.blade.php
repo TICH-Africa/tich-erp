@@ -10,32 +10,26 @@
 
     @include('academics.partials.learning-department-context')
 
-    <header class="tich-dept-header">
-        <h1 class="tich-h1 tich-dept-header__title">Lesson plan approval</h1>
-        <p class="tich-text">Review submitted lesson plans from tutors in your department. Approve, request changes, or reject before class sessions begin.</p>
-    </header>
-
-    <form method="GET" class="tich-card tich-mt-6" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        @if (! empty($learningDepartments) && empty($learningDepartment))
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Learning department</label>
-                <select name="learning_department" class="tich-input">
-                    @foreach ($learningDepartments as $dept)
-                        <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
-                    @endforeach
+    <x-page-toolbar title="Lesson plan approval" meta="Review submitted plans from tutors">
+        <x-slot:actions>
+            <a href="{{ route('departments.academics.lesson-plans.audit', $hub) }}" class="tich-btn tich-btn-ghost">Audit repository</a>
+        </x-slot:actions>
+        <x-slot:filters>
+            <form method="GET" class="tich-page-toolbar__filters-form">
+                @if (! empty($learningDepartments) && empty($learningDepartment))
+                    <select name="learning_department" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                        @foreach ($learningDepartments as $dept)
+                            <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <select name="status" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                    <option value="">Awaiting review</option>
+                    <option value="submitted" @selected($selectedStatus === 'submitted')>Submitted</option>
                 </select>
-            </div>
-        @endif
-        <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Status</label>
-            <select name="status" class="tich-input">
-                <option value="">Awaiting review</option>
-                <option value="submitted" @selected($selectedStatus === 'submitted')>Submitted</option>
-            </select>
-        </div>
-        <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
-        <a href="{{ route('departments.academics.lesson-plans.audit', $hub) }}" class="tich-link" style="margin-left:auto;">Curriculum audit repository →</a>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

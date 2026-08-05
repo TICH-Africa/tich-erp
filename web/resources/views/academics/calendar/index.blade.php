@@ -3,10 +3,7 @@
 @section('academics-content')
     @php($hub = ['department' => $department->id])
 
-    <div class="tich-section__intro" style="text-align:left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Academic calendar</h1>
-        <p class="tich-text">Configure institution-wide academic years and semester terms for {{ $department->dept_name }}.</p>
-    </div>
+    <x-page-toolbar title="Academic calendar" :meta="'Academic years and terms for ' . $department->dept_name" />
 
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Create academic year</h2>

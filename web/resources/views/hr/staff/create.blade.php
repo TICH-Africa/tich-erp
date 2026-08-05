@@ -3,13 +3,9 @@
 @section('title', 'Add Staff')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.staff.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to staff</a>
-    </div>
+    <x-page-toolbar title="Add New Staff Member" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Add New Staff Member</h1>
-
         <form method="POST" action="{{ route('hr.staff.store') }}">
             @csrf
 

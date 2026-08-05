@@ -1,10 +1,6 @@
 @php($finance = $portalData['finance'])
 
-<header class="tich-dept-header">
-    <p class="tich-caption">Learning</p>
-    <h1 class="tich-h1 tich-dept-header__title">Finance</h1>
-    <p class="tich-text tich-dept-header__meta">Fee accounts, invoices, and payments.</p>
-</header>
+<x-page-toolbar title="Finance" meta="Fee accounts, invoices, and payments" />
 
 <div class="tich-grid tich-grid--3 tich-dept-stats tich-mt-8">
     <article class="tich-card tich-stat">

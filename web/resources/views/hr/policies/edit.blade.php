@@ -3,13 +3,9 @@
 @section('title', 'Edit Policy')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.policies.show', $policy) }}" class="tich-btn tich-btn-ghost">&larr; Back to policy</a>
-    </div>
+    <x-page-toolbar title="Edit HR Policy" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Edit HR Policy</h1>
-
         <form method="POST" action="{{ route('hr.policies.update', $policy) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')

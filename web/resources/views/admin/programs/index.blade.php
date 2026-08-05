@@ -9,18 +9,13 @@
         $editProgram = $openEditProgramId ? $programs->firstWhere('id', $openEditProgramId) : null;
     @endphp
 
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 2rem;">
-        <div>
-            <h1 class="tich-h1" style="font-size: 2rem;">Programmes &amp; courses</h1>
-            <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
-                Courses and programmes offered under academic departments (children of Academics).
-                Active programmes appear on the public <a href="{{ route('programs.index') }}" class="tich-link">Programs &amp; courses</a> page.
-            </p>
-        </div>
-        <button type="button" class="tich-btn tich-btn-primary" data-open-modal="program-create-modal">
-            Add programme
-        </button>
-    </div>
+    <x-page-toolbar title="Programmes &amp; courses" meta="Courses offered under academic departments">
+        <x-slot:actions>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="program-create-modal">
+                Add programme
+            </button>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All programmes ({{ $programs->count() }})</h2>

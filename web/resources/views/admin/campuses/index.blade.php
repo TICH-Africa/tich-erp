@@ -9,17 +9,13 @@
         $editCampus = $openEditCampusId ? $campuses->firstWhere('id', $openEditCampusId) : null;
     @endphp
 
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 2rem;">
-        <div>
-            <h1 class="tich-h1" style="font-size: 2rem;">Campuses</h1>
-            <p class="tich-text tich-mt-2" style="margin-bottom: 0;">
-                Multi-campus structure for TICH main campus, community colleges, and sub-county hubs.
-            </p>
-        </div>
-        <button type="button" class="tich-btn tich-btn-primary" data-open-modal="campus-create-modal">
-            Add campus
-        </button>
-    </div>
+    <x-page-toolbar title="Campuses" meta="Multi-campus structure for TICH hubs">
+        <x-slot:actions>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="campus-create-modal">
+                Add campus
+            </button>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All campuses ({{ $campuses->count() }})</h2>

@@ -3,15 +3,11 @@
 @section('title', 'Vacancies')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Vacancies</h1>
-                <p class="tich-text tich-mt-2">Manage job openings. Published vacancies appear on the public careers page.</p>
-            </div>
+    <x-page-toolbar title="Vacancies" meta="Job openings published on the public careers page">
+        <x-slot:actions>
             <a href="{{ route('hr.vacancies.create') }}" class="tich-btn tich-btn-primary">+ New Vacancy</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

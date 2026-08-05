@@ -10,16 +10,10 @@
 
     @include('academics.partials.learning-department-context')
 
-    <div class="tich-section__intro" style="text-align:left;">
-        <h1 class="tich-h1" style="font-size: 2rem;">Programme curriculum</h1>
-        <p class="tich-text">
-            @if (! empty($learningDepartment))
-                Programmes offered by {{ $learningDepartment->dept_name }}.
-            @else
-                Configure course length, terms per academic year, and map units to semesters or nursing blocks for each programme.
-            @endif
-        </p>
-    </div>
+    <x-page-toolbar
+        title="Programme curriculum"
+        :meta="! empty($learningDepartment) ? 'Programmes offered by ' . $learningDepartment->dept_name : 'Course length, terms, and unit mapping'"
+    />
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

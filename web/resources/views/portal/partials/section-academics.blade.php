@@ -25,21 +25,19 @@
     };
 @endphp
 
-<header class="tich-dept-header">
-    <p class="tich-caption">Learning</p>
-    <h1 class="tich-h1 tich-dept-header__title">Academics</h1>
-    <p class="tich-text tich-dept-header__meta">
-        {{ $biodata['academic']['program'] }}
-        @if ($academics['current_period'])
-            · Semester {{ $academics['current_period']->semester }}
-        @elseif ($academics['current_semester'])
-            · Current: {{ $academics['current_semester']->semester_label }}
-        @endif
-        @if ($academics['curriculum'])
-            · Curriculum: {{ $academics['curriculum']->intakeLabel() }}
-        @endif
-    </p>
-</header>
+@php
+    $academicsMeta = $biodata['academic']['program'];
+    if ($academics['current_period']) {
+        $academicsMeta .= ' · Semester '.$academics['current_period']->semester;
+    } elseif ($academics['current_semester']) {
+        $academicsMeta .= ' · '.$academics['current_semester']->semester_label;
+    }
+    if ($academics['curriculum']) {
+        $academicsMeta .= ' · '.$academics['curriculum']->intakeLabel();
+    }
+@endphp
+
+<x-page-toolbar title="Academics" :meta="$academicsMeta" />
 
 @if ($academics['curriculum'] && ! $academics['curriculum_is_published'])
     <div class="tich-notice tich-notice--info tich-mt-4">

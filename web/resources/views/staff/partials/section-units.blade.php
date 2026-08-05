@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">My units</h1>
-    <p class="tich-text">Units assigned to you for the current semester(s).</p>
-</header>
+<x-page-toolbar title="My units" meta="Units assigned for current semester(s)" />
 
 @if ($portalData['allocations']->isEmpty())
     <article class="tich-card tich-mt-6">

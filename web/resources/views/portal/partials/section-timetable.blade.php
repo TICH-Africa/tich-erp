@@ -1,12 +1,6 @@
 @php($timetableData = $portalData['timetable'])
 
-<header class="tich-dept-header">
-    <p class="tich-caption">Learning</p>
-    <h1 class="tich-h1 tich-dept-header__title">Timetable</h1>
-    <p class="tich-text tich-dept-header__meta">
-        Semester {{ $timetableData['teaching_period'] }}
-    </p>
-</header>
+<x-page-toolbar title="Timetable" meta="Semester {{ $timetableData['teaching_period'] }}" />
 
 @if ($timetableData['is_provisional'])
     <div class="tich-notice tich-notice--info tich-mt-4">

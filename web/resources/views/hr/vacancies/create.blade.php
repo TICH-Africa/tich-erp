@@ -3,13 +3,9 @@
 @section('title', 'New Vacancy')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.vacancies.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to vacancies</a>
-    </div>
+    <x-page-toolbar title="Post New Vacancy" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Post New Vacancy</h1>
-
         <form method="POST" action="{{ route('hr.vacancies.store') }}">
             @csrf
 

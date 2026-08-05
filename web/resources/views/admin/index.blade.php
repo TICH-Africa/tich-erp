@@ -3,10 +3,7 @@
 @section('title', 'Platform administration')
 
 @section('admin-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1" style="font-size: 2rem;">Platform administration</h1>
-        <p class="tich-text tich-mt-2">Configure campuses, departments, user roles, and dashboard access across TICH ERP.</p>
-    </div>
+    <x-page-toolbar title="Platform administration" meta="Campuses, departments, roles, and dashboard access" />
 
     <div class="tich-grid tich-grid--4 tich-mb-8">
         <div class="tich-stat"><p class="tich-stat__label">Active campuses</p><p class="tich-stat__value">{{ $stats['campuses'] }}</p></div>

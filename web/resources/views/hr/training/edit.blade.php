@@ -3,13 +3,9 @@
 @section('title', 'Edit Training')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.training.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to training</a>
-    </div>
+    <x-page-toolbar title="Edit Training Record" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Edit Training Record</h1>
-
         <form method="POST" action="{{ route('hr.training.update', $training) }}">
             @csrf
             @method('PUT')

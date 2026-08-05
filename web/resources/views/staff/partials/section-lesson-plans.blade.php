@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Lesson plans</h1>
-    <p class="tich-text">Prepare your CHP lesson plan online or upload your own document. Submitted plans are sent to your HOD, the Academic Registrar, and the QA Officer.</p>
-</header>
+<x-page-toolbar title="Lesson plans" meta="Submit plans to HOD, Registrar, and QA" />
 
 @if ($portalData['allocations']->isEmpty())
     <article class="tich-card tich-mt-6">

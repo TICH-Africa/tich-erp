@@ -3,9 +3,7 @@
 @section('title', 'Offboarding - ' . $offboarding->staff->fullName())
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.offboarding.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to offboarding</a>
-    </div>
+    <x-page-toolbar :title="$offboarding->staff->fullName()" meta="Offboarding record" />
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

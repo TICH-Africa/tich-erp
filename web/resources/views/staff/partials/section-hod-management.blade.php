@@ -1,8 +1,4 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">Staff portal</p>
-    <h1 class="tich-h1 tich-dept-header__title">HOD management</h1>
-    <p class="tich-text">{{ $staff->department?->dept_name }}</p>
-</header>
+<x-page-toolbar title="HOD management" :meta="$staff->department?->dept_name" />
 
 <div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap:1.5rem;">
     <article class="tich-card">

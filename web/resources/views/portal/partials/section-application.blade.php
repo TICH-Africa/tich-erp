@@ -5,11 +5,7 @@
         : null;
 @endphp
 
-<header class="tich-dept-header">
-    <p class="tich-caption">My services</p>
-    <h1 class="tich-h1 tich-dept-header__title">Application</h1>
-    <p class="tich-text tich-dept-header__meta">Your admission application and review trail.</p>
-</header>
+<x-page-toolbar title="Application" meta="Admission application and review trail" />
 
 <article class="tich-card tich-mt-8">
     <dl style="display: grid; grid-template-columns: 11rem 1fr; gap: 0.75rem 1rem; margin: 0;">

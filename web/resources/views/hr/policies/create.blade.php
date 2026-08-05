@@ -3,13 +3,9 @@
 @section('title', 'Upload Policy')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.policies.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to policies</a>
-    </div>
+    <x-page-toolbar title="Upload HR Policy" />
 
     <article class="tich-card">
-        <h1 class="tich-h1 tich-mb-6">Upload HR Policy</h1>
-
         <form method="POST" action="{{ route('hr.policies.store') }}" enctype="multipart/form-data">
             @csrf
 

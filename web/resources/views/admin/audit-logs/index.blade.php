@@ -5,45 +5,28 @@
 @section('content')
     <section class="tich-section">
         <div class="tich-container">
-            <div class="tich-section__intro" style="text-align: left;">
-                <h1 class="tich-h1" style="font-size: 2rem;">Audit logs</h1>
-                <p class="tich-text">Immutable activity trail for authentication, MFA, RBAC, and access control events.</p>
-            </div>
-
-            <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="tich-card tich-mb-8" style="padding: 1.5rem;">
-                <div class="tich-grid tich-grid--4" style="gap: 1rem;">
-                    <div class="tich-form-group">
-                        <label for="action" class="tich-label">Action</label>
-                        <select id="action" name="action" class="tich-input">
+            <x-page-toolbar title="Audit logs" meta="Authentication, MFA, RBAC, and access control events">
+                <x-slot:actions>
+                    <a href="{{ route('admin.audit-logs.verify') }}" class="tich-btn tich-btn-blue">Verify chain</a>
+                </x-slot:actions>
+                <x-slot:filters>
+                    <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="tich-page-toolbar__filters-form">
+                        @include('partials.search-field', ['placeholder' => 'Entity, reason, action', 'value' => $filters['search'] ?? ''])
+                        <select id="action" name="action" class="tich-input tich-input--compact">
                             <option value="">All actions</option>
                             @foreach ($actions as $action)
                                 <option value="{{ $action }}" @selected(($filters['action'] ?? '') === $action)>{{ $action }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="tich-form-group">
-                        <label for="module" class="tich-label">Module</label>
-                        <input type="text" id="module" name="module" value="{{ $filters['module'] ?? '' }}" class="tich-input" placeholder="auth, rbac, audit">
-                    </div>
-                    <div class="tich-form-group">
-                        <label for="status" class="tich-label">Status</label>
-                        <select id="status" name="status" class="tich-input">
+                        <input type="text" id="module" name="module" value="{{ $filters['module'] ?? '' }}" class="tich-input tich-input--compact" placeholder="Module">
+                        <select id="status" name="status" class="tich-input tich-input--compact">
                             <option value="">All</option>
                             <option value="success" @selected(($filters['status'] ?? '') === 'success')>Success</option>
                             <option value="failure" @selected(($filters['status'] ?? '') === 'failure')>Failure</option>
                         </select>
-                    </div>
-                    <div class="tich-form-group">
-                        <label for="search" class="tich-label">Search</label>
-                        <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}" class="tich-input" placeholder="Entity, reason, action">
-                    </div>
-                </div>
-                <div class="tich-flex-wrap tich-mt-4">
-                    <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-                    <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary">Reset</a>
-                    <a href="{{ route('admin.audit-logs.verify') }}" class="tich-btn tich-btn-blue">Verify chain</a>
-                </div>
-            </form>
+                    </form>
+                </x-slot:filters>
+            </x-page-toolbar>
 
             <div class="tich-card tich-table-panel">
                 <table style="width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 0.8125rem;">

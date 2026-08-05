@@ -2057,13 +2057,29 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 }
 
 .tich-admin-sidebar {
+    --sidebar-scale: 0.8;
+    --sidebar-sub-scale: 0.7;
+    --sidebar-font: calc(0.9375rem * var(--sidebar-scale));
+    --sidebar-sub-font: calc(0.9375rem * var(--sidebar-sub-scale));
+    --sidebar-icon: calc(2rem * var(--sidebar-scale));
+    --sidebar-sub-icon: calc(2rem * var(--sidebar-sub-scale));
+    --sidebar-icon-svg: calc(18px * var(--sidebar-scale));
+    --sidebar-sub-icon-svg: calc(18px * var(--sidebar-sub-scale));
+    --sidebar-chevron-svg: calc(16px * var(--sidebar-scale));
+    --sidebar-gap: calc(0.75rem * var(--sidebar-scale));
+    --sidebar-sub-gap: calc(0.75rem * var(--sidebar-sub-scale));
+    --sidebar-pad-y: calc(0.5rem * var(--sidebar-scale));
+    --sidebar-pad-x: calc(0.625rem * var(--sidebar-scale));
+    --sidebar-sub-pad-y: calc(0.5rem * var(--sidebar-sub-scale));
+    --sidebar-sub-pad-x: calc(0.625rem * var(--sidebar-sub-scale));
+
     background: var(--tich-white);
     border: 1px solid var(--tich-neutral-border);
     border-radius: var(--radius-lg);
-    padding: 1rem 0.75rem;
+    padding: calc(1rem * var(--sidebar-scale)) calc(0.75rem * var(--sidebar-scale));
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: calc(0.25rem * var(--sidebar-scale));
 }
 
 @media (min-width: 1024px) {
@@ -2087,21 +2103,22 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
 .tich-admin-sidebar__title {
     font-family: var(--font-ui);
-    font-size: 0.75rem;
+    font-size: calc(0.75rem * var(--sidebar-scale));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--tich-grey);
-    margin: 0 0 0.75rem;
-    padding: 0 0.625rem;
+    margin: 0 0 calc(0.75rem * var(--sidebar-scale));
+    padding: 0 calc(0.625rem * var(--sidebar-scale));
     flex-shrink: 0;
 }
 
 .tich-admin-sidebar > .tich-caption {
     flex-shrink: 0;
-    padding: 0 0.625rem;
-    margin-top: -0.35rem !important;
-    margin-bottom: 0.75rem !important;
+    padding: 0 calc(0.625rem * var(--sidebar-scale));
+    margin-top: calc(-0.35rem * var(--sidebar-scale)) !important;
+    margin-bottom: calc(0.75rem * var(--sidebar-scale)) !important;
+    font-size: calc(0.8125rem * var(--sidebar-scale));
 }
 
 .tich-admin-sidebar__nav {
@@ -2132,13 +2149,13 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-admin-sidebar__link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.625rem;
+    gap: var(--sidebar-gap);
+    padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
     border-radius: var(--radius-md);
     color: var(--tich-grey);
     text-decoration: none;
     font-family: var(--font-ui);
-    font-size: 0.9375rem;
+    font-size: var(--sidebar-font);
     line-height: 1.35;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -2147,10 +2164,10 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: var(--sidebar-icon);
+    height: var(--sidebar-icon);
     flex-shrink: 0;
-    border-radius: 0.5rem;
+    border-radius: calc(0.5rem * var(--sidebar-scale));
     background: var(--tich-surface-muted, rgba(15, 23, 42, 0.05));
     color: var(--tich-grey);
     transition: background-color 0.15s ease, color 0.15s ease;
@@ -2160,6 +2177,17 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+.tich-admin-sidebar__link:not(.tich-admin-sidebar__link--sub) .tich-admin-sidebar__icon-svg svg,
+.tich-admin-sidebar__group-toggle .tich-admin-sidebar__icon > .tich-admin-sidebar__icon-svg svg {
+    width: var(--sidebar-icon-svg);
+    height: var(--sidebar-icon-svg);
+}
+
+.tich-admin-sidebar__chevron .tich-admin-sidebar__icon-svg svg {
+    width: var(--sidebar-chevron-svg);
+    height: var(--sidebar-chevron-svg);
 }
 
 .tich-admin-sidebar__label {
@@ -2173,11 +2201,18 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 }
 
 .tich-admin-sidebar__footer {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
+    margin-top: calc(0.75rem * var(--sidebar-scale));
+    padding-top: calc(0.75rem * var(--sidebar-scale));
     border-top: 1px solid var(--tich-neutral-border);
     display: grid;
-    gap: 0.125rem;
+    gap: calc(0.125rem * var(--sidebar-scale));
+}
+
+.tich-admin-sidebar__link .tich-notification-badge {
+    min-width: calc(1.25rem * var(--sidebar-scale));
+    height: calc(1.25rem * var(--sidebar-scale));
+    padding: 0 calc(0.35rem * var(--sidebar-scale));
+    font-size: calc(0.6875rem * var(--sidebar-scale));
 }
 
 .tich-notification-badge {
@@ -2230,13 +2265,13 @@ a.tich-notification-badge:hover {
 
 .tich-admin-sidebar__section {
     font-family: var(--font-ui);
-    font-size: 0.6875rem;
+    font-size: calc(0.6875rem * var(--sidebar-scale));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--tich-grey);
-    margin: 0.875rem 0 0.375rem;
-    padding: 0 0.625rem;
+    margin: calc(0.875rem * var(--sidebar-scale)) 0 calc(0.375rem * var(--sidebar-scale));
+    padding: 0 calc(0.625rem * var(--sidebar-scale));
 }
 
 .tich-admin-sidebar__section:first-child {
@@ -2246,17 +2281,305 @@ a.tich-notification-badge:hover {
 .tich-admin-sidebar__disabled {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.625rem;
+    gap: var(--sidebar-gap);
+    padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
     border-radius: var(--radius-md);
     color: var(--tich-grey);
     font-family: var(--font-ui);
-    font-size: 0.875rem;
+    font-size: calc(0.875rem * var(--sidebar-scale));
     opacity: 0.65;
 }
 
 .tich-admin-sidebar__disabled small {
+    font-size: calc(0.75rem * var(--sidebar-scale));
+}
+
+.tich-admin-sidebar__group {
+    display: grid;
+    gap: 0.125rem;
+}
+
+.tich-admin-sidebar__group-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--sidebar-gap);
+    width: 100%;
+    padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--tich-grey);
+    font-family: var(--font-ui);
+    font-size: var(--sidebar-font);
+    line-height: 1.35;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tich-admin-sidebar__group-toggle:hover,
+.tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle {
+    background: var(--tich-primary-light, rgba(0, 82, 155, 0.08));
+    color: var(--tich-primary);
+}
+
+.tich-admin-sidebar__group-toggle:hover .tich-admin-sidebar__icon,
+.tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-admin-sidebar__icon {
+    background: rgba(0, 82, 155, 0.12);
+    color: var(--tich-primary);
+}
+
+.tich-admin-sidebar__chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    color: var(--tich-grey);
+    transition: transform 0.15s ease;
+}
+
+.tich-admin-sidebar__group.is-open .tich-admin-sidebar__chevron {
+    transform: rotate(180deg);
+}
+
+.tich-admin-sidebar__subnav {
+    display: grid;
+    gap: calc(0.125rem * var(--sidebar-sub-scale));
+    margin-left: calc(0.35rem * var(--sidebar-sub-scale));
+    padding-left: calc(0.65rem * var(--sidebar-sub-scale));
+    border-left: calc(2px * var(--sidebar-sub-scale)) solid var(--tich-neutral-border);
+}
+
+.tich-admin-sidebar__link--sub {
+    gap: var(--sidebar-sub-gap);
+    padding: var(--sidebar-sub-pad-y) var(--sidebar-sub-pad-x);
+    font-size: var(--sidebar-sub-font);
+}
+
+.tich-admin-sidebar__link--sub .tich-admin-sidebar__icon {
+    width: var(--sidebar-sub-icon);
+    height: var(--sidebar-sub-icon);
+    border-radius: calc(0.5rem * var(--sidebar-sub-scale));
+}
+
+.tich-admin-sidebar__link--sub .tich-admin-sidebar__icon-svg svg {
+    width: var(--sidebar-sub-icon-svg);
+    height: var(--sidebar-sub-icon-svg);
+}
+
+.tich-admin-sidebar__link--sub .tich-notification-badge {
+    min-width: calc(1.25rem * var(--sidebar-sub-scale));
+    height: calc(1.25rem * var(--sidebar-sub-scale));
+    padding: 0 calc(0.35rem * var(--sidebar-sub-scale));
+    font-size: calc(0.6875rem * var(--sidebar-sub-scale));
+}
+
+.tich-leave-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
     font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tich-leave-status--on {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.tich-leave-status--off {
+    background: var(--tich-surface-muted, rgba(15, 23, 42, 0.05));
+    color: var(--tich-grey);
+}
+
+.tich-page-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.tich-page-toolbar:not(:has(.tich-page-toolbar__filters)) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tich-page-toolbar:not(:has(.tich-page-toolbar__actions)) .tich-page-toolbar__filters {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.tich-page-toolbar__main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.75rem;
+    min-width: 0;
+}
+
+.tich-page-toolbar__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--tich-green);
+}
+
+.tich-page-toolbar__meta {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    color: var(--tich-grey);
+}
+
+.tich-page-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+    justify-self: end;
+}
+
+.tich-page-toolbar__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-left: 0;
+    min-width: 0;
+}
+
+.tich-page-toolbar__filters-form {
+    --filter-dropdown-width: 16rem;
+    --filter-search-width: calc(var(--filter-dropdown-width) * 2);
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.tich-page-toolbar__filters-form .tich-search-field {
+    flex: 0 0 auto;
+    width: var(--filter-search-width);
+    min-width: min(100%, var(--filter-search-width));
+    max-width: var(--filter-search-width);
+}
+
+.tich-page-toolbar__filters-form .tich-input--compact,
+.tich-page-toolbar__filters-form select.tich-input--compact {
+    flex: 0 0 auto;
+    width: var(--filter-dropdown-width);
+    min-width: var(--filter-dropdown-width);
+    max-width: var(--filter-dropdown-width);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .tich-page-toolbar__filters-form {
+        flex-wrap: wrap;
+    }
+
+    .tich-page-toolbar__filters-form .tich-search-field {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .tich-page-toolbar__filters-form .tich-input--compact,
+    .tich-page-toolbar__filters-form select.tich-input--compact {
+        flex: 1 1 var(--filter-dropdown-width);
+        width: auto;
+        min-width: min(100%, var(--filter-dropdown-width));
+        max-width: none;
+    }
+}
+
+.tich-search-field {
+    display: inline-flex;
+    align-items: stretch;
+    min-width: min(100%, 18rem);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-white);
+    overflow: hidden;
+}
+
+.tich-search-field:focus-within {
+    border-color: var(--tich-primary);
+    box-shadow: 0 0 0 2px var(--tich-primary-light, rgba(0, 82, 155, 0.12));
+}
+
+.tich-search-field__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    color: var(--tich-text);
+}
+
+.tich-search-field__input:focus {
+    outline: none;
+}
+
+.tich-search-field__btn {
+    border: 0;
+    border-left: 1px solid var(--tich-neutral-border);
+    background: var(--tich-primary);
+    color: #fff;
+    padding: 0 0.875rem;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tich-search-field__btn:hover {
+    background: var(--tich-primary-dark, #004080);
+}
+
+.tich-input--compact {
+    width: auto;
+    min-width: 9rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.tich-btn--compact {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+}
+
+.tich-link--compact {
+    font-size: 0.8125rem;
+}
+
+.tich-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .tich-dept-header {
@@ -2312,6 +2635,96 @@ a.tich-notification-badge:hover {
 
 .tich-admin__main {
     min-width: 0;
+    --content-scale: 0.95;
+}
+
+/* Main dashboard body content — scaled down; small meta text unchanged */
+.tich-admin__main .tich-text {
+    font-size: calc(var(--text-body) * var(--content-scale));
+}
+
+.tich-admin__main .tich-label {
+    font-size: calc(var(--text-body) * var(--content-scale));
+}
+
+.tich-admin__main .tich-h1 {
+    font-size: calc(var(--text-h1) * var(--content-scale));
+}
+
+.tich-admin__main .tich-h2 {
+    font-size: calc(var(--text-h2) * var(--content-scale));
+}
+
+.tich-admin__main .tich-h3 {
+    font-size: calc(var(--text-h3) * var(--content-scale));
+}
+
+.tich-admin__main .tich-page-toolbar__title {
+    font-size: calc(1.375rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-admin-table {
+    font-size: calc(0.9375rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-admin-table tbody td {
+    padding: calc(0.85rem * var(--content-scale)) calc(1rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-btn {
+    font-size: calc(var(--text-body) * var(--content-scale));
+    padding: calc(0.625rem * var(--content-scale)) calc(1.25rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-input:not(.tich-input--compact) {
+    font-size: calc(var(--text-body) * var(--content-scale));
+}
+
+.tich-admin__main .tich-stat__value {
+    font-size: calc(1.125rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-search-field__input {
+    font-size: calc(0.875rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-card {
+    font-size: calc(1rem * var(--content-scale));
+}
+
+/* Preserve compact / meta text (dates, types, steps, categories) */
+.tich-admin__main .tich-caption,
+.tich-admin__main .tich-stat__label,
+.tich-admin__main .tich-admin-table .tich-caption,
+.tich-admin__main .tich-admin-table td .tich-caption {
+    font-size: var(--text-caption);
+}
+
+.tich-admin__main .tich-page-toolbar__meta {
+    font-size: 0.8125rem;
+}
+
+.tich-admin__main .tich-admin-table th {
+    font-size: 0.75rem;
+    padding: calc(0.85rem * var(--content-scale)) calc(1rem * var(--content-scale));
+}
+
+.tich-admin__main .tich-leave-status {
+    font-size: 0.75rem;
+}
+
+.tich-admin__main .tich-input--compact,
+.tich-admin__main .tich-page-toolbar__filters-form .tich-input--compact {
+    font-size: 0.8125rem;
+}
+
+.tich-admin__main .tich-search-field__btn {
+    font-size: 0.8125rem;
+}
+
+.tich-admin__main .tich-btn--compact,
+.tich-admin__main .tich-link--compact {
+    font-size: 0.8125rem;
 }
 
 .tich-admin-table {

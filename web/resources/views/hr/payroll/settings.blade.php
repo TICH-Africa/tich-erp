@@ -40,15 +40,11 @@
         ];
     @endphp
 
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">KRA tax settings</h1>
-                <p class="tich-text tich-mt-2">Manage PAYE bands and tax items (NSSF, SHA/SHIF, housing levy, personal relief, etc.). Configure withholding tax for consultants and independent contractors.</p>
-            </div>
+    <x-page-toolbar title="KRA tax settings" meta="PAYE bands, statutory deductions, and withholding tax">
+        <x-slot:actions>
             <a href="{{ route('hr.payroll.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to payroll</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-mb-8">
         <h2 class="tich-h3">Consultants &amp; independent contractors</h2>

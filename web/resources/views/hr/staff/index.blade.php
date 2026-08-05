@@ -3,25 +3,14 @@
 @section('title', 'Staff Directory')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Staff Directory</h1>
-                <p class="tich-text tich-mt-2">Manage employee master profiles and lifecycle records.</p>
-            </div>
+    <x-page-toolbar title="Staff Directory" meta="Employee profiles and lifecycle records">
+        <x-slot:actions>
             <a href="{{ route('hr.staff.create') }}" class="tich-btn tich-btn-primary">+ Add Staff</a>
-        </div>
-    </div>
-
-    <div class="tich-card tich-mb-8">
-        <form method="GET" action="{{ route('hr.staff.index') }}" class="tich-grid tich-grid--4">
-            <div>
-                <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ request('search') }}" placeholder="Name, employee no, email..." class="tich-input">
-            </div>
-            <div>
-                <label for="status" class="tich-label">Status</label>
-                <select id="status" name="status" class="tich-input">
+        </x-slot:actions>
+        <x-slot:filters>
+            <form method="GET" action="{{ route('hr.staff.index') }}" class="tich-page-toolbar__filters-form">
+                @include('partials.search-field', ['placeholder' => 'Name, employee no, email...', 'value' => request('search')])
+                <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                     <option value="onboarding" {{ request('status') === 'onboarding' ? 'selected' : '' }}>Onboarding</option>
@@ -30,10 +19,7 @@
                     <option value="terminated" {{ request('status') === 'terminated' ? 'selected' : '' }}>Terminated</option>
                     <option value="resigned" {{ request('status') === 'resigned' ? 'selected' : '' }}>Resigned</option>
                 </select>
-            </div>
-            <div>
-                <label for="department_id" class="tich-label">Department</label>
-                <select id="department_id" name="department_id" class="tich-input">
+                <select id="department_id" name="department_id" class="tich-input tich-input--compact">
                     <option value="">All departments</option>
                     @foreach ($departments ?? [] as $department)
                         <option value="{{ $department->id }}" {{ request('department_id') == $department->id ? 'selected' : '' }}>
@@ -41,12 +27,9 @@
                         </option>
                     @endforeach
                 </select>
-            </div>
-            <div class="tich-flex--end">
-                <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

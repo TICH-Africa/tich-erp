@@ -10,33 +10,25 @@
 
     @include('academics.partials.learning-department-context')
 
-    <header class="tich-dept-header">
-        <h1 class="tich-h1 tich-dept-header__title">Attendance verification ledger</h1>
-        <p class="tich-text">Review submitted attendance sessions with signed sheet photos and matched digital rosters.</p>
-    </header>
-
-    <form method="GET" class="tich-card tich-mt-6" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-        @if (! empty($learningDepartments) && empty($learningDepartment))
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Learning department</label>
-                <select name="learning_department" class="tich-input">
-                    @foreach ($learningDepartments as $dept)
-                        <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
-                    @endforeach
+    <x-page-toolbar title="Attendance verification ledger" meta="Submitted sessions with signed sheets and rosters">
+        <x-slot:filters>
+            <form method="GET" class="tich-page-toolbar__filters-form">
+                @if (! empty($learningDepartments) && empty($learningDepartment))
+                    <select name="learning_department" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                        @foreach ($learningDepartments as $dept)
+                            <option value="{{ $dept->id }}" @selected(request('learning_department') == $dept->id)>{{ $dept->dept_name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <select name="status" class="tich-input tich-input--compact" onchange="this.form.submit()">
+                    <option value="">All submitted</option>
+                    <option value="submitted" @selected($selectedStatus === 'submitted')>Awaiting HOD</option>
+                    <option value="hod_verified" @selected($selectedStatus === 'hod_verified')>Awaiting Registrar</option>
+                    <option value="registrar_verified" @selected($selectedStatus === 'registrar_verified')>Fully verified</option>
                 </select>
-            </div>
-        @endif
-        <div class="tich-form-group" style="margin:0;">
-            <label class="tich-label">Verification status</label>
-            <select name="status" class="tich-input">
-                <option value="">All submitted</option>
-                <option value="submitted" @selected($selectedStatus === 'submitted')>Awaiting HOD</option>
-                <option value="hod_verified" @selected($selectedStatus === 'hod_verified')>Awaiting Registrar</option>
-                <option value="registrar_verified" @selected($selectedStatus === 'registrar_verified')>Fully verified</option>
-            </select>
-        </div>
-        <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

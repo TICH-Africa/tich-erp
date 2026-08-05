@@ -7,7 +7,40 @@
         @include('partials.navigation.sidebar-link', ['href' => route('hr.contracts.index'), 'label' => 'Contracts', 'icon' => 'file-text', 'active' => request()->routeIs('hr.contracts.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.vacancies.index'), 'label' => 'Vacancies', 'icon' => 'briefcase', 'active' => request()->routeIs('hr.vacancies.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.recruitment.index'), 'label' => 'Recruitment', 'icon' => 'user-search', 'active' => request()->routeIs('hr.recruitment.*')])
-        @include('partials.navigation.sidebar-link', ['href' => route('hr.leave.index'), 'label' => 'Leave requests', 'icon' => 'calendar-off', 'active' => request()->routeIs('hr.leave.*')])
+
+        @php
+            $leaveRoutesActive = request()->routeIs('hr.leave.*');
+            $pendingLeaveCount = app(\App\Services\LeaveRequestService::class)->pendingHrCount();
+        @endphp
+
+        @include('partials.navigation.sidebar-group', [
+            'label' => 'Leave',
+            'icon' => 'calendar-off',
+            'open' => $leaveRoutesActive,
+            'active' => $leaveRoutesActive,
+            'items' => [
+                [
+                    'href' => route('hr.leave.index'),
+                    'label' => 'Leave requests',
+                    'icon' => 'clipboard-list',
+                    'active' => request()->routeIs('hr.leave.index') || request()->routeIs('hr.leave.show'),
+                    'badge' => $pendingLeaveCount > 0 ? $pendingLeaveCount : null,
+                ],
+                [
+                    'href' => route('hr.leave.overview'),
+                    'label' => 'Leave overview',
+                    'icon' => 'clipboard-check',
+                    'active' => request()->routeIs('hr.leave.overview'),
+                ],
+                [
+                    'href' => route('hr.leave.employees'),
+                    'label' => 'All employees',
+                    'icon' => 'users',
+                    'active' => request()->routeIs('hr.leave.employees'),
+                ],
+            ],
+        ])
+
         @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.policies.index'), 'label' => 'HR Policies', 'icon' => 'shield-check', 'active' => request()->routeIs('hr.policies.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.documents.index'), 'label' => 'Staff Documents', 'icon' => 'folder', 'active' => request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*')])

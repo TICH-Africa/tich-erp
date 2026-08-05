@@ -1,7 +1,4 @@
-<header class="tich-dept-header">
-    <h1 class="tich-h1 tich-dept-header__title">Learning content</h1>
-    <p class="tich-text">Upload notes, slides, and reference materials for your students.</p>
-</header>
+<x-page-toolbar title="Learning content" meta="Notes, slides, and reference materials" />
 
 <div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap:1.5rem;">
     <article class="tich-card">

@@ -3,9 +3,7 @@
 @section('title', 'Application ' . $application->application_number)
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.recruitment.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to applications</a>
-    </div>
+    <x-page-toolbar :title="'Application ' . $application->application_number" />
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

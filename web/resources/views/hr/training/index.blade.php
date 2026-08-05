@@ -3,15 +3,11 @@
 @section('title', 'Training')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Training & Professional Development</h1>
-                <p class="tich-text tich-mt-2">Track staff training, certifications, and professional development.</p>
-            </div>
+    <x-page-toolbar title="Training & Professional Development" meta="Staff training, certifications, and development">
+        <x-slot:actions>
             <a href="{{ route('hr.training.create') }}" class="tich-btn tich-btn-primary">+ Add Training</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

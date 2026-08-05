@@ -3,15 +3,11 @@
 @section('title', 'Offboarding')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <div>
-                <h1 class="tich-h1">Offboarding</h1>
-                <p class="tich-text tich-mt-2">Manage employee separations and exit clearances.</p>
-            </div>
+    <x-page-toolbar title="Offboarding" meta="Employee separations and exit clearances">
+        <x-slot:actions>
             <a href="{{ route('hr.offboarding.create') }}" class="tich-btn tich-btn-primary">+ New Offboarding</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

@@ -1,16 +1,7 @@
-<header class="tich-dept-header">
-    <p class="tich-caption">{{ $overviewStats['category'] }}</p>
-    <h1 class="tich-h1 tich-dept-header__title">{{ $department->dept_name }}</h1>
-    <p class="tich-text tich-dept-header__meta">
-        {{ $department->dept_code }}
-        @if ($department->group)
-            · {{ $department->group->group_name }}
-        @endif
-        @if ($department->campus)
-            · {{ $department->campus->campus_name }}
-        @endif
-    </p>
-</header>
+<x-page-toolbar
+    title="{{ $department->dept_name }}"
+    :meta="$department->dept_code . ($department->group ? ' · ' . $department->group->group_name : '') . ($department->campus ? ' · ' . $department->campus->campus_name : '')"
+/>
 
 <div class="tich-grid tich-grid--3 tich-dept-stats">
     <article class="tich-card tich-stat">

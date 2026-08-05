@@ -1,15 +1,10 @@
 @extends('layouts.approval')
 
 @section('approval-content')
-    <h1 class="tich-h1" style="font-size: 2rem;">Approval dashboard</h1>
-    <p class="tich-text tich-mb-8">
-        Verify and approve student onboarding applications.
-        @if ($canAccessAll)
-            You have institution-wide access across all departments.
-        @else
-            Showing applications for your assigned department(s) only.
-        @endif
-    </p>
+    <x-page-toolbar
+        title="Approval dashboard"
+        :meta="$canAccessAll ? 'Institution-wide access across all departments' : 'Applications for your assigned department(s) only'"
+    />
 
     <div class="tich-grid tich-grid--4 tich-mb-8">
         <div class="tich-stat">

@@ -3,14 +3,7 @@
 @section('title', 'Review Onboarding - ' . $onboarding->staff->fullName())
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.staff.show', $onboarding->staff) }}" class="tich-btn tich-btn-ghost">&larr; Back to staff profile</a>
-    </div>
-
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">Review Onboarding</h1>
-        <p class="tich-text tich-mt-2">Review and approve or reject the staff member's onboarding information.</p>
-    </div>
+    <x-page-toolbar title="Review Onboarding" meta="Approve or reject onboarding information" />
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

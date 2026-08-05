@@ -1,10 +1,7 @@
 @extends('layouts.staff')
 
 @section('staff-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">HR Policies</h1>
-        <p class="tich-text tich-mt-2">View and acknowledge company policies and documents shared by HR.</p>
-    </div>
+    <x-page-toolbar title="HR Policies" meta="Company policies and documents shared by HR" />
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

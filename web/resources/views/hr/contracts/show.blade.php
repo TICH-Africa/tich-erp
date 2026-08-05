@@ -3,9 +3,7 @@
 @section('title', $contract->contract_number . ' - Contract')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <a href="{{ route('hr.contracts.index') }}" class="tich-btn tich-btn-ghost">&larr; Back to contracts</a>
-    </div>
+    <x-page-toolbar :title="$contract->contract_number" />
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">

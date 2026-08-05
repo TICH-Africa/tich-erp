@@ -3,10 +3,7 @@
 @section('title', 'Onboarding')
 
 @section('hr-content')
-    <div class="tich-mb-8">
-        <h1 class="tich-h1">Onboarding</h1>
-        <p class="tich-text tich-mt-2">Track new hire onboarding progress from applicant to active employee.</p>
-    </div>
+    <x-page-toolbar title="Onboarding" meta="New hire progress from applicant to active employee" />
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
