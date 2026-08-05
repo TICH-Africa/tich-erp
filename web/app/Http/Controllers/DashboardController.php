@@ -21,6 +21,7 @@ class DashboardController extends Controller
             'departments' => $departmentDashboard->mainDepartmentsForUser($user),
             'cardDescription' => fn ($department) => $departmentDashboard->cardDescription($department),
             'categoryLabel' => fn ($department) => $departmentDashboard->categoryLabel($department),
+            'entryUrl' => fn ($department) => $departmentDashboard->entryUrlForDepartment($user, $department),
             'isSuperAdmin' => $user->hasRole('Super Admin'),
         ]);
     }

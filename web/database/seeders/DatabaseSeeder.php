@@ -79,18 +79,28 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($users as $data) {
-            $user = User::query()->firstOrCreate(
-                ['email' => $data['email']],
-                [
-                    'username' => $data['username'],
-                    'user_type' => $data['user_type'],
+            $attributes = [
+                'username' => $data['username'],
+                'email' => $data['email'],
+                'user_type' => $data['user_type'],
+                'is_active' => 1,
+                'mfa_enabled' => $data['mfa_enabled'] ?? false,
+                'mfa_method' => $data['mfa_method'] ?? null,
+                'mfa_verified' => $data['mfa_verified'] ?? false,
+            ];
+
+            $user = User::query()
+                ->where('email', $data['email'])
+                ->orWhere('username', $data['username'])
+                ->first();
+
+            if ($user) {
+                $user->update($attributes);
+            } else {
+                $user = User::create(array_merge($attributes, [
                     'password_hash' => Hash::make($data['password']),
-                    'is_active' => 1,
-                    'mfa_enabled' => $data['mfa_enabled'] ?? false,
-                    'mfa_method' => $data['mfa_method'] ?? null,
-                    'mfa_verified' => $data['mfa_verified'] ?? false,
-                ]
-            );
+                ]));
+            }
 
             $roleId = Role::query()->where('role_name', $data['role'])->value('id');
 

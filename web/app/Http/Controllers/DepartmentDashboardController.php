@@ -53,6 +53,7 @@ class DepartmentDashboardController extends Controller
             'cardDescription' => fn (Department $dept) => $departmentDashboard->cardDescription(
                 $dept->loadCount(['children' => fn ($query) => $query->where('is_active', true)])
             ),
+            'entryUrl' => fn (Department $dept) => $departmentDashboard->entryUrlForDepartment($user, $dept),
         ]);
     }
 }

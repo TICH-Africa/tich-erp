@@ -11,6 +11,20 @@ use Illuminate\Support\Collection;
 
 class DepartmentDashboardService
 {
+    /**
+     * Preferred landing routes when opening a department from the main dashboard.
+     *
+     * @var list<string>
+     */
+    private const ENTRY_ROUTE_PRIORITY = [
+        'hr.dashboard',
+        'admissions.dashboard',
+        'sis.students.index',
+        'departments.academics.dashboard',
+        'admissions.applications.index',
+        'departments.academics.programs.index',
+    ];
+
     public function __construct(
         protected RBACService $rbacService,
         protected DepartmentModuleService $departmentModuleService,
@@ -380,6 +394,25 @@ class DepartmentDashboardService
             ->where('department_id', $department->id)
             ->orderBy('program_name')
             ->get();
+    }
+
+    public function entryUrlForDepartment(User $user, Department $department): string
+    {
+        if ($this->accessibleChildDepartments($user, $department)->isNotEmpty()
+            && $this->modulesForDepartment($user, $department) === []) {
+            return route('departments.show', $department);
+        }
+
+        $modules = collect($this->modulesForDepartment($user, $department))
+            ->filter(fn (array $module) => empty($module['coming_soon']))
+            ->sortBy(fn (array $module) => array_search($module['route'], self::ENTRY_ROUTE_PRIORITY, true) ?: 99)
+            ->values();
+
+        foreach ($modules as $module) {
+            return route($module['route'], $module['params'] ?? []);
+        }
+
+        return route('departments.show', $department);
     }
 
     public function cardDescription(Department $department): string

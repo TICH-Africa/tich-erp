@@ -75,10 +75,9 @@ return [
             'key' => 'hr',
             'label' => 'Human resources',
             'description' => 'Staff contracts, leave, and recruitment.',
-            'route' => 'dashboard',
+            'route' => 'hr.dashboard',
             'permission' => 'hr.read',
             'category' => 'hr',
-            'coming_soon' => true,
             'scope' => 'department',
         ],
         [

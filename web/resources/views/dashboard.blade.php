@@ -36,7 +36,7 @@
                         @if ($department->group)
                             <p class="tich-caption tich-mt-2">{{ $department->group->group_name }}</p>
                         @endif
-                        <a href="{{ route('departments.show', $department) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open department</a>
+                        <a href="{{ $entryUrl($department) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open department</a>
                     </article>
                 @empty
                     @unless (auth()->user()->can('admin.access'))
