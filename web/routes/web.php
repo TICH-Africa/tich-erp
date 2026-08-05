@@ -37,6 +37,11 @@ use App\Models\Department;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/about', [HomeController::class, 'about'])->name('about');
+Route::get('/research', [HomeController::class, 'research'])->name('research');
+Route::get('/support', [HomeController::class, 'support'])->name('support');
+Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+Route::get('/events', [HomeController::class, 'events'])->name('events');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 
 /*
@@ -261,6 +266,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/documents/templates/{template}/preview', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'preview'])->name('hr.documents.templates.preview');
             Route::get('/documents/templates/{template}/generate', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'generate'])->name('hr.documents.templates.generate');
             Route::get('/documents/templates/{template}/download', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'download'])->name('hr.documents.templates.download');
+            Route::get('/documents/quick/{type}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'quickDownload'])->name('hr.documents.quick.download');
             Route::get('/training', [\App\Http\Controllers\HR\TrainingController::class, 'index'])->name('hr.training.index');
             Route::get('/training/create', [\App\Http\Controllers\HR\TrainingController::class, 'create'])->name('hr.training.create');
             Route::post('/training', [\App\Http\Controllers\HR\TrainingController::class, 'store'])->name('hr.training.store');

@@ -210,6 +210,28 @@ h3.tich-h3 {
     color: var(--tich-on-brand);
 }
 
+.tich-btn-success {
+    background-color: #059669;
+    color: white;
+    border-color: #059669;
+}
+
+.tich-btn-success:hover {
+    background-color: #047857;
+    border-color: #047857;
+}
+
+.tich-btn-danger {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+}
+
+.tich-btn-danger:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
 .tich-btn-ghost {
     background-color: transparent;
     color: var(--tich-grey);
@@ -1420,6 +1442,12 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     color: var(--tich-on-brand);
     background-color: var(--tich-green);
     border-radius: var(--radius-md);
+}
+
+.tich-brand__logo {
+    height: 2.5rem;
+    width: auto;
+    display: block;
 }
 
 .tich-brand__name {

@@ -1,6 +1,9 @@
 @extends('layouts.print-document')
 
 @section('document-content')
+    @php
+        $sessions = $sessions ?? collect();
+    @endphp
     @if ($sessions->isEmpty())
         <p>No sessions are scheduled on this timetable yet.</p>
     @else

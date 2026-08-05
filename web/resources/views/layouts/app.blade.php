@@ -8,7 +8,18 @@
     @include('partials.head-assets')
 </head>
 <body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
-    @include('partials.navigation.header')
+    <x-ui.header
+        :logoSrc="asset('images/logo.png')"
+        :tagline="$siteMeta['tagline'] ?? 'Community health education for Africa'"
+        :navGroups="[]"
+        :standaloneLinks="collect($headerMenu)->map(function ($item) {
+            return [
+                'label' => $item['label'],
+                'href' => $item['url'] ?? '#',
+                'route' => $item['url_or_route'] ?? null,
+            ];
+        })->values()->all()"
+    />
 
     @php
         $hideAppFooter = request()->routeIs([
@@ -49,5 +60,6 @@
     @endunless
 
     <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
+    @yield('scripts')
 </body>
 </html>
