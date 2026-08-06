@@ -196,11 +196,22 @@ class EssOnboardingController extends Controller
                 'is_profile_locked' => true,
             ]);
 
+            $staff = $onboarding->staff;
+            $previousStatus = $staff->employment_status;
+
             $this->lifecycleService->recordStatusChange(
                 $onboarding->staff_id,
-                'biodata_approved',
-                'Onboarding biodata approved by HR',
-                $request->user()->id
+                'confirmation',
+                $previousStatus,
+                $previousStatus,
+                [
+                    'event' => 'biodata_approved',
+                    'note' => 'Onboarding biodata approved by HR',
+                    'onboarding_id' => $onboarding->id,
+                ],
+                $request->user()->staff_id,
+                null,
+                now()->toDateString()
             );
         });
 
@@ -230,11 +241,22 @@ class EssOnboardingController extends Controller
                 'onboarding_completed_at' => null,
             ]);
 
+            $staff = $onboarding->staff;
+            $previousStatus = $staff->employment_status;
+
             $this->lifecycleService->recordStatusChange(
                 $onboarding->staff_id,
-                'biodata_rejected',
-                'Onboarding biodata rejected: ' . $validated['rejection_reason'],
-                $request->user()->id
+                'other',
+                $previousStatus,
+                $previousStatus,
+                [
+                    'event' => 'biodata_rejected',
+                    'note' => 'Onboarding biodata rejected: '.$validated['rejection_reason'],
+                    'onboarding_id' => $onboarding->id,
+                ],
+                $request->user()->staff_id,
+                null,
+                now()->toDateString()
             );
 
             try {
