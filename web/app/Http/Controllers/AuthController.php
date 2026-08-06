@@ -22,7 +22,7 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'login' => ['required', 'string'],
+            'login' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ]);
 

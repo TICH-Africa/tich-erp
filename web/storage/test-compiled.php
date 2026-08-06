@@ -1,6 +1,4 @@
-@php
-    $timetableData = $portalData['timetable'];
-@endphp
+<?php($timetableData = $portalData['timetable'])
 
 <x-page-toolbar title="Timetable" meta="Semester {{ $timetableData['teaching_period'] }}" />
 
@@ -31,38 +29,38 @@
                     'segment_type' => $session->session_type,
                 ])->unique(fn ($row) => substr((string) $row->start_time, 0, 5).'-'.substr((string) $row->end_time, 0, 5))->sortBy('start_time')->values();
             }
-        @endphp
+        ?>
 
         <article class="tich-card tich-mt-8">
             <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
                 <div>
-                    <h2 class="tich-h3">{{ $timetable->displayTitle() }}</h2>
-                    <p class="tich-caption tich-mt-2">{{ ucfirst($timetable->status) }}</p>
+                    <h2 class="tich-h3"><?php echo e($timetable->displayTitle()); ?></h2>
+                    <p class="tich-caption tich-mt-2"><?php echo e(ucfirst($timetable->status)); ?></p>
                 </div>
-                @if ($timetable->sessions->isNotEmpty())
+                <?php if($timetable->sessions->isNotEmpty()): ?>
                     <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
-                        <a href="{{ route('portal.timetable.print', $timetable) }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
-                        <a href="{{ route('portal.timetable.pdf', $timetable) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                        <a href="<?php echo e(route('portal.timetable.print', $timetable)); ?>" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
+                        <a href="<?php echo e(route('portal.timetable.pdf', $timetable)); ?>" class="tich-btn tich-btn-secondary">Download PDF</a>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
 
-            @if ($timetable->sessions->isNotEmpty())
-                @include('academics.programs.partials.timetable-grid', [
+            <?php if($timetable->sessions->isNotEmpty()): ?>
+                <?php echo $__env->make('academics.programs.partials.timetable-grid', [
                     'sessions' => $timetable->sessions,
                     'dayLabels' => $timetableData['day_labels'],
                     'segmentTypes' => $timetableData['segment_types'],
                     'activeDays' => $activeDays,
                     'segments' => $gridSegments,
-                ])
-            @else
+                ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+            <?php else: ?>
                 <p class="tich-text tich-mt-4">No sessions scheduled yet.</p>
-            @endif
+            <?php endif; ?>
         </article>
-    @endforeach
-@else
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php else: ?>
     <article class="tich-card tich-dept-empty tich-mt-8">
         <h2 class="tich-h3">No timetable published yet</h2>
         <p class="tich-text tich-mt-2">Your weekly schedule will appear here once the academic office publishes the timetable for this semester.</p>
     </article>
-@endif
+<?php endif; ?>

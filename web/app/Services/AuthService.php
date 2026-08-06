@@ -69,7 +69,7 @@ class AuthService
             $user->id,
             null,
             [
-                'username' => $user->username,
+                'email' => $user->email,
                 'user_type' => $user->user_type,
                 'channel' => $this->channel($request),
             ],
@@ -325,7 +325,6 @@ class AuthService
     public function registerUser(array $data, ?Request $request = null): User
     {
         $user = User::create([
-            'username' => $data['username'],
             'email' => $data['email'],
             'user_type' => $data['user_type'],
             'password_hash' => Hash::make($data['password']),
@@ -340,7 +339,6 @@ class AuthService
             $user->id,
             null,
             [
-                'username' => $user->username,
                 'email' => $user->email,
                 'user_type' => $user->user_type,
             ],
@@ -366,7 +364,7 @@ class AuthService
             'token' => $token,
             'user' => [
                 'id' => $user->id,
-                'username' => $user->username,
+                'name' => $user->displayName(),
                 'email' => $user->email,
                 'user_type' => $user->user_type,
             ],
@@ -415,10 +413,7 @@ class AuthService
     {
         $user = User::query()
             ->where('is_active', 1)
-            ->where(function ($query) use ($login) {
-                $query->where('email', $login)
-                    ->orWhere('username', $login);
-            })
+            ->where('email', $login)
             ->first();
 
         if ($user) {

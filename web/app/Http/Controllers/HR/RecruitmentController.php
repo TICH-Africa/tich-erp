@@ -171,7 +171,6 @@ class RecruitmentController extends Controller
             ]);
 
             User::create([
-                'username' => $this->suggestUsername($application->email),
                 'email' => $application->email,
                 'password_hash' => Hash::make(Str::random(16)),
                 'user_type' => 'staff',
@@ -228,14 +227,6 @@ class RecruitmentController extends Controller
         $last = strtolower(preg_replace('/[^a-z0-9]/', '', $surname));
 
         return substr($first, 0, 1) . $last . '@tich.africa';
-    }
-
-    private function suggestUsername(string $email): string
-    {
-        $local = strtolower(strtok($email, '@') ?: 'staff');
-        $local = preg_replace('/[^a-z0-9._-]/', '', $local) ?: 'staff';
-
-        return substr($local, 0, 50);
     }
 
     public function sendQualifiedEmail(Request $request, int $id)

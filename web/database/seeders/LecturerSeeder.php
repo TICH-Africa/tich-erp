@@ -42,7 +42,6 @@ class LecturerSeeder extends Seeder
             ?? Unit::query()->where('department_id', $departmentId)->value('id');
 
         $primaryLecturer = $this->seedLecturer(
-            username: 'lecturer.demo',
             email: 'lecturer@tich.ac.ke',
             loginAliasEmail: 'james.ochieng@tich.africa',
             employeeNumber: 'EMP-LECT-001',
@@ -54,7 +53,6 @@ class LecturerSeeder extends Seeder
         );
 
         $this->seedLecturer(
-            username: 'academic.demo',
             email: 'academic@tich.com',
             employeeNumber: 'EMP-LECT-002',
             firstName: 'Mary',
@@ -71,7 +69,6 @@ class LecturerSeeder extends Seeder
     }
 
     private function seedLecturer(
-        string $username,
         string $email,
         string $employeeNumber,
         string $firstName,
@@ -82,9 +79,8 @@ class LecturerSeeder extends Seeder
         ?string $loginAliasEmail = null,
     ): Staff {
         $user = User::query()->firstOrCreate(
-            ['username' => $username],
+            ['email' => $email],
             [
-                'email' => $email,
                 'user_type' => 'staff',
                 'password_hash' => Hash::make('Password123!'),
                 'is_active' => 1,

@@ -183,7 +183,7 @@ class AuditService
 
     public function query(array $filters = [])
     {
-        $query = AuditLog::query()->with('user:id,username,email,user_type')->orderByDesc('created_at');
+        $query = AuditLog::query()->with('user:id,email,user_type,staff_id,student_id')->orderByDesc('created_at');
 
         if (! empty($filters['action'])) {
             $query->where('action', $filters['action']);

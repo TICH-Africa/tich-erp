@@ -15,17 +15,17 @@
         @include('partials.client-context-fields')
 
         <div class="tich-form-group">
-            <label for="login" class="tich-label">Email or username</label>
+            <label for="login" class="tich-label">Email address</label>
             <input
-                type="text"
+                type="email"
                 id="login"
                 name="login"
                 value="{{ old('login') }}"
                 required
                 autofocus
-                autocomplete="username"
+                autocomplete="email"
                 class="tich-input @error('login') tich-input--error @enderror"
-                placeholder="you@tich.ac.ke or username"
+                placeholder="you@tich.ac.ke"
             >
             @error('login')
                 <p class="tich-field-error">{{ $message }}</p>

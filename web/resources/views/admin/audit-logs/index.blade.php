@@ -51,7 +51,7 @@
                                 <td style="padding: 0.75rem; white-space: nowrap;">{{ $log->created_at?->format('Y-m-d H:i') }}</td>
                                 <td style="padding: 0.75rem;">
                                     @if ($log->user)
-                                        {{ $log->user->username }}
+                                        {{ $log->user->displayName() }}
                                     @else
                                         <span class="tich-caption">System</span>
                                     @endif

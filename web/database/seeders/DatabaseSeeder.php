@@ -32,7 +32,6 @@ class DatabaseSeeder extends Seeder
 
         $users = [
             [
-                'username' => 'superadmin',
                 'email' => 'admin@tich.ac.ke',
                 'user_type' => 'admin',
                 'password' => 'Password123!',
@@ -41,7 +40,6 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
-                'username' => 'admin2',
                 'email' => 'osumbaevans21@gmail.com',
                 'user_type' => 'admin',
                 'password' => 'Password123!',
@@ -50,7 +48,6 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
-                'username' => 'registrar',
                 'email' => 'registrar@tich.ac.ke',
                 'user_type' => 'staff',
                 'password' => 'Password123!',
@@ -60,7 +57,6 @@ class DatabaseSeeder extends Seeder
                 'mfa_verified' => true,
             ],
             [
-                'username' => 'admissions',
                 'email' => 'admissions@tich.ac.ke',
                 'user_type' => 'staff',
                 'password' => 'Password123!',
@@ -69,7 +65,6 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
-                'username' => 'student.demo',
                 'email' => 'student@tich.ac.ke',
                 'user_type' => 'student',
                 'password' => 'Password123!',
@@ -81,7 +76,6 @@ class DatabaseSeeder extends Seeder
 
         foreach ($users as $data) {
             $attributes = [
-                'username' => $data['username'],
                 'email' => $data['email'],
                 'user_type' => $data['user_type'],
                 'is_active' => 1,
@@ -92,7 +86,6 @@ class DatabaseSeeder extends Seeder
 
             $user = User::query()
                 ->where('email', $data['email'])
-                ->orWhere('username', $data['username'])
                 ->first();
 
             if ($user) {

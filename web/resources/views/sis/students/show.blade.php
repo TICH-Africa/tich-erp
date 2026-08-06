@@ -65,8 +65,8 @@
             <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
                 <dt class="tich-caption">Account</dt>
                 <dd>{{ $biodata['portal']['has_account'] ? 'Activated' : 'Not activated' }}</dd>
-                <dt class="tich-caption">Username</dt>
-                <dd>{{ $biodata['portal']['username'] ?? '-' }}</dd>
+                <dt class="tich-caption">Email</dt>
+                <dd>{{ $biodata['portal']['email'] ?? '-' }}</dd>
                 <dt class="tich-caption">Last login</dt>
                 <dd>{{ $biodata['portal']['last_login_at'] ?? '-' }}</dd>
                 <dt class="tich-caption">Invite</dt>

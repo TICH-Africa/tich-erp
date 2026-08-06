@@ -319,7 +319,7 @@
     function openStaffModal(trigger) {
         form.action = trigger.getAttribute('data-update-url') || '#';
         document.getElementById('staff-access-user-id').value = trigger.getAttribute('data-user-id') || '';
-        document.getElementById('staff-access-modal-title').textContent = 'Assign access — ' + (trigger.getAttribute('data-username') || 'Employee');
+        document.getElementById('staff-access-modal-title').textContent = 'Assign access — ' + (trigger.getAttribute('data-display-name') || 'Employee');
         document.getElementById('staff-access-user-meta').textContent = trigger.getAttribute('data-email') || '';
 
         var assignments = [];

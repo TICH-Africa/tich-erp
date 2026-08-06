@@ -6,7 +6,7 @@
     <section class="tich-section">
         <div class="tich-container">
             <div class="tich-mb-8">
-                <h1 class="tich-h1">Welcome, {{ auth()->user()->username }}</h1>
+                <h1 class="tich-h1">Welcome, {{ auth()->user()->displayName() }}</h1>
                 <p class="tich-text tich-mt-2">
                     Signed in as <span class="tich-caption">{{ ucfirst(auth()->user()->user_type) }}</span>
                     @if (auth()->user()->roles->isNotEmpty())

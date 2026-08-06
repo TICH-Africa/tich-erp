@@ -137,7 +137,7 @@ class StudentAcademicRecordService
     public function enrolledForProgram(AcademicProgram $program, ?CurriculumVersion $intake, ?string $status = null): array
     {
         $base = Student::query()
-            ->with(['applicant', 'campus', 'user:id,username,email'])
+            ->with(['applicant', 'campus', 'user:id,email,staff_id,student_id'])
             ->where('program_id', $program->id)
             ->orderBy('registration_number');
 

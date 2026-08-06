@@ -54,8 +54,10 @@
     <article class="tich-card">
         <h2 class="tich-h3">Portal access</h2>
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
-            <dt class="tich-caption">Username</dt>
-            <dd>{{ $biodata['portal']['username'] ?? auth()->user()->username }}</dd>
+            <dt class="tich-caption">Name</dt>
+            <dd>{{ $biodata['portal']['name'] ?? auth()->user()->displayName() }}</dd>
+            <dt class="tich-caption">Email</dt>
+            <dd>{{ $biodata['portal']['email'] ?? auth()->user()->email }}</dd>
             <dt class="tich-caption">Activated</dt>
             <dd>{{ $biodata['enrollment']['portal_activated_at'] ?? '-' }}</dd>
             <dt class="tich-caption">Last login</dt>

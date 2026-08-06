@@ -156,7 +156,7 @@ class JamesOchiengAcademicCycleSeeder extends Seeder
             ->where('employee_number', 'EMP-LECT-001')
             ->orWhere('organisation_email', 'lecturer@tich.ac.ke')
             ->orWhere('primary_email', 'james.ochieng@tich.africa')
-            ->orWhereHas('user', fn ($query) => $query->where('username', 'lecturer.demo'))
+            ->orWhereHas('user', fn ($query) => $query->where('email', 'lecturer@tich.ac.ke'))
             ->first();
     }
 

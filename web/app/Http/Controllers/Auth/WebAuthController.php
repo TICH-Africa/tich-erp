@@ -28,7 +28,7 @@ class WebAuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'login' => ['required', 'string'],
+            'login' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ]);
 
@@ -54,7 +54,6 @@ class WebAuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:100', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'user_type' => ['required', 'in:student,staff,external'],
             'password' => ['required', 'confirmed', Password::min(8)],

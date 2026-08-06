@@ -7,10 +7,10 @@ use App\Models\Staff;
 use App\Models\StaffOnboarding;
 use App\Models\User;
 use App\Services\StaffLifecycleService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Support\Str;
@@ -36,18 +36,15 @@ class EssOnboardingController extends Controller
         if ($staff->onboarding_completed_at && $staff->onboarding->status === 'completed') {
             return redirect()
                 ->route('login')
-                ->with('status', 'Your onboarding is already complete. Sign in with your username and password.');
+                ->with('status', 'Your onboarding is already complete. Sign in with your email and password.');
         }
 
         if ($staff->onboarding_token_expires_at?->isPast()) {
             abort(410, 'This onboarding link has expired. Contact HR for assistance.');
         }
 
-        $suggestedUsername = $this->suggestUsername($staff->primary_email ?? $staff->organisation_email ?? '');
-
         return view('ess.onboarding.activate', [
             'staff' => $staff,
-            'suggestedUsername' => $suggestedUsername,
         ]);
     }
 
@@ -97,7 +94,6 @@ class EssOnboardingController extends Controller
             ->value('id');
 
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:100', Rule::unique('users', 'username')->ignore($existingUserId)],
             'password' => ['required', 'confirmed', PasswordRule::min(8)],
             'first_name' => ['required', 'string', 'max:150'],
             'surname' => ['required', 'string', 'max:150'],
@@ -122,7 +118,6 @@ class EssOnboardingController extends Controller
             $user = User::updateOrCreate(
                 ['id' => $existingUserId],
                 [
-                    'username' => $validated['username'],
                     'email' => $staff->primary_email,
                     'password_hash' => Hash::make($validated['password']),
                     'user_type' => 'staff',
@@ -267,13 +262,5 @@ class EssOnboardingController extends Controller
         });
 
         return redirect()->route('hr.staff.show', $onboarding->staff_id)->with('success', 'Onboarding rejected. Staff member has been notified and can resubmit.');
-    }
-
-    private function suggestUsername(string $email): string
-    {
-        $local = strtolower(strtok($email, '@') ?: 'staff');
-        $local = preg_replace('/[^a-z0-9._-]/', '', $local) ?: 'staff';
-
-        return substr($local, 0, 50);
     }
 }

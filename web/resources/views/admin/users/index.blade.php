@@ -69,7 +69,7 @@
                         @endphp
                         <tr>
                             <td>
-                                <strong>{{ $user->username }}</strong><br>
+                                <strong>{{ $user->displayName() }}</strong><br>
                                 <span class="tich-caption">{{ $user->email }}</span>
                             </td>
                             <td>{{ ucfirst($user->user_type) }}</td>
@@ -111,11 +111,11 @@
                                     type="button"
                                     class="tich-squircle-btn staff-access-trigger"
                                     title="Assign department &amp; modules"
-                                    aria-label="Assign access for {{ $user->username }}"
+                                    aria-label="Assign access for {{ $user->displayName() }}"
                                     data-open-modal="staff-access-modal"
                                     data-update-url="{{ route('admin.users.update', $user) }}"
                                     data-user-id="{{ $user->id }}"
-                                    data-username="{{ $user->username }}"
+                                    data-display-name="{{ $user->displayName() }}"
                                     data-email="{{ $user->email }}"
                                     data-assignments="{{ json_encode($assignmentsPayload) }}"
                                     data-permission-grants="{{ json_encode($grantsPayload) }}"
@@ -173,7 +173,7 @@
                         @endphp
                         <tr>
                             <td>
-                                <strong>{{ $user->username }}</strong><br>
+                                <strong>{{ $user->displayName() }}</strong><br>
                                 <span class="tich-caption">{{ $user->email }}</span>
                             </td>
                             <td>
@@ -203,7 +203,7 @@
                                     class="tich-link student-access-trigger"
                                     data-open-modal="student-access-modal"
                                     data-update-url="{{ route('admin.users.update', $user) }}"
-                                    data-username="{{ $user->username }}"
+                                    data-display-name="{{ $user->displayName() }}"
                                     data-email="{{ $user->email }}"
                                     data-role-id="{{ $primaryRoleId }}"
                                 >

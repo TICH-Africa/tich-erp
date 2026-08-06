@@ -15,24 +15,6 @@
         @include('partials.client-context-fields')
 
         <div class="tich-form-group">
-            <label for="username" class="tich-label">Username</label>
-            <input
-                type="text"
-                id="username"
-                name="username"
-                value="{{ old('username') }}"
-                required
-                autofocus
-                autocomplete="username"
-                class="tich-input @error('username') tich-input--error @enderror"
-                placeholder="Choose a unique username"
-            >
-            @error('username')
-                <p class="tich-field-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="tich-form-group">
             <label for="email" class="tich-label">Email address</label>
             <input
                 type="email"
@@ -40,6 +22,7 @@
                 name="email"
                 value="{{ old('email') }}"
                 required
+                autofocus
                 autocomplete="email"
                 class="tich-input @error('email') tich-input--error @enderror"
                 placeholder="you@example.com"

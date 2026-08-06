@@ -60,7 +60,6 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
 
     if (! $reviewer) {
         $reviewer = new \App\Models\User([
-            'username' => 'reviewer',
             'email' => config('mail.from.address'),
         ]);
         $reviewer->id = 0;

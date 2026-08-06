@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
+use App\Models\Student;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,6 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -17,7 +20,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'username', 'email', 'password_hash', 'user_type',
+        'email', 'password_hash', 'user_type',
         'mfa_enabled', 'mfa_method', 'mfa_secret', 'mfa_secret_temp', 'mfa_verified',
         'mfa_backup_codes', 'mfa_enabled_at', 'mfa_last_verified_at',
         'login_attempts', 'locked_until', 'last_login_at', 'staff_id', 'student_id',
@@ -108,5 +111,40 @@ class User extends Authenticatable
     public function getAuthPassword(): string
     {
         return $this->password_hash;
+    }
+
+    public function displayName(): string
+    {
+        if ($this->relationLoaded('staff') && $this->staff) {
+            $name = trim($this->staff->first_name.' '.$this->staff->surname);
+            if ($name !== '') {
+                return $name;
+            }
+        } elseif ($this->staff_id) {
+            $staff = $this->staff ?? Staff::query()->find($this->staff_id);
+            if ($staff) {
+                $name = trim($staff->first_name.' '.$staff->surname);
+                if ($name !== '') {
+                    return $name;
+                }
+            }
+        }
+
+        if ($this->relationLoaded('student') && $this->student?->applicant) {
+            $name = trim($this->student->applicant->first_name.' '.$this->student->applicant->surname);
+            if ($name !== '') {
+                return $name;
+            }
+        } elseif ($this->student_id) {
+            $student = $this->student ?? Student::query()->with('applicant')->find($this->student_id);
+            if ($student?->applicant) {
+                $name = trim($student->applicant->first_name.' '.$student->applicant->surname);
+                if ($name !== '') {
+                    return $name;
+                }
+            }
+        }
+
+        return Str::before((string) $this->email, '@') ?: (string) $this->email;
     }
 }

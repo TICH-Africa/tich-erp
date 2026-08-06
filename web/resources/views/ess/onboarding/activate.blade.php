@@ -29,23 +29,8 @@
         @include('partials.client-context-fields')
 
         <h3 class="tich-h3 tich-mb-4">Account Setup</h3>
+        <p class="tich-text tich-mb-4">You will sign in using <strong>{{ $staff->primary_email ?? $staff->organisation_email }}</strong>.</p>
         <div class="tich-grid tich-grid--2 tich-mb-6">
-            <div>
-                <label for="username" class="tich-label">Username *</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ old('username', $suggestedUsername) }}"
-                    required
-                    autofocus
-                    autocomplete="username"
-                    class="tich-input @error('username') tich-input--error @enderror"
-                >
-                @error('username')
-                    <p class="tich-field-error">{{ $message }}</p>
-                @enderror
-            </div>
             <div>
                 <label for="password" class="tich-label">Password *</label>
                 <input

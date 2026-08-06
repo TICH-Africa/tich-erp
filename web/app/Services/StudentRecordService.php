@@ -14,7 +14,7 @@ class StudentRecordService
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Student::query()
-            ->with(['applicant', 'program.department', 'campus', 'user:id,username,email'])
+            ->with(['applicant', 'program.department', 'campus', 'user:id,email,staff_id,student_id'])
             ->orderByDesc('created_at');
 
         if (! empty($filters['search'])) {
@@ -49,7 +49,7 @@ class StudentRecordService
                 'applicant.documents',
                 'program.department',
                 'campus',
-                'user:id,username,email,last_login_at,mfa_enabled',
+                'user:id,email,last_login_at,mfa_enabled,staff_id,student_id',
             ])
             ->findOrFail($id);
     }
@@ -118,7 +118,8 @@ class StudentRecordService
             ],
             'portal' => [
                 'has_account' => $student->user_id !== null,
-                'username' => $student->user?->username,
+                'name' => $student->user?->displayName(),
+                'email' => $student->user?->email ?? $applicant?->email,
                 'last_login_at' => $student->user?->last_login_at?->format('Y-m-d H:i'),
                 'invite_pending' => $student->hasActivePortalInvite(),
             ],

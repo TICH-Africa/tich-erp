@@ -63,9 +63,8 @@ class HrDemoSeeder extends Seeder
         $emails = $this->staffEmails('Grace', 'Wanjiku');
 
         $user = User::query()->firstOrCreate(
-            ['username' => 'hr.manager'],
+            ['email' => $emails['organisation_email']],
             [
-                'email' => $emails['organisation_email'],
                 'user_type' => 'staff',
                 'password_hash' => Hash::make('Password123!'),
                 'is_active' => 1,

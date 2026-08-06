@@ -21,7 +21,7 @@
                     <dd>{{ $log->created_at?->format('Y-m-d H:i:s') }}</dd>
 
                     <dt class="tich-caption">User</dt>
-                    <dd>{{ $log->user?->username ?? 'System' }} @if($log->user) ({{ $log->user->email }}) @endif</dd>
+                    <dd>{{ $log->user?->displayName() ?? 'System' }} @if($log->user) ({{ $log->user->email }}) @endif</dd>
 
                     <dt class="tich-caption">Action</dt>
                     <dd>{{ $log->action }}</dd>

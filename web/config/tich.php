@@ -6,6 +6,7 @@ return [
         'max_login_attempts' => 5,
         'lockout_minutes' => 15,
         'mfa_session_minutes' => 30,
+        'mfa_enabled' => (bool) env('MFA_ENABLED', true),
         'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external'],
     ],
 

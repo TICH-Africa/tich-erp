@@ -37,11 +37,12 @@ class UserAccessController extends Controller
                 'permissions' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
                 'staff.department:id,dept_name',
                 'student.program:id,program_code,program_name',
+                'student.applicant:id,first_name,surname',
             ])
             ->where('is_active', 1)
             ->when($audience === 'students', fn ($query) => $query->where('user_type', 'student'))
             ->when($audience === 'staff', fn ($query) => $query->whereIn('user_type', self::STAFF_USER_TYPES))
-            ->orderBy('username')
+            ->orderBy('email')
             ->paginate(20)
             ->withQueryString();
 

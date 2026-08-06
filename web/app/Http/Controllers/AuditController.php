@@ -54,7 +54,7 @@ class AuditController extends Controller
 
     public function show(Request $request, int $id): JsonResponse|View
     {
-        $log = AuditLog::query()->with('user:id,username,email,user_type')->find($id);
+        $log = AuditLog::query()->with('user:id,email,user_type,staff_id,student_id')->find($id);
 
         if (! $log) {
             if ($request->expectsJson()) {

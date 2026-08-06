@@ -19,7 +19,7 @@
                                 New application awaiting review
                             </h1>
                             <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
-                                Hello {{ $reviewer->username }}, a new student application has been submitted and routed to
+                                Hello {{ $reviewer->displayName() }}, a new student application has been submitted and routed to
                                 <strong>{{ $departmentName }}</strong> for academic review.
                             </p>
 

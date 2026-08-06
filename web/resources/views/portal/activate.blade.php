@@ -9,7 +9,7 @@
         <h2 class="tich-h2">Activate your student portal</h2>
         <p class="tich-text tich-mt-2">
             You have been admitted to <strong>{{ $student->program?->program_name ?? 'your programme' }}</strong>.
-            Set a username and password to sign in.
+            Set a password to sign in with your email address.
         </p>
     </div>
 
@@ -27,29 +27,13 @@
         @include('partials.client-context-fields')
 
         <div class="tich-form-group">
-            <label for="username" class="tich-label">Username</label>
-            <input
-                type="text"
-                id="username"
-                name="username"
-                value="{{ old('username', $suggestedUsername) }}"
-                required
-                autofocus
-                autocomplete="username"
-                class="tich-input @error('username') tich-input--error @enderror"
-            >
-            @error('username')
-                <p class="tich-field-error">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="tich-form-group">
             <label for="password" class="tich-label">Password</label>
             <input
                 type="password"
                 id="password"
                 name="password"
                 required
+                autofocus
                 autocomplete="new-password"
                 class="tich-input @error('password') tich-input--error @enderror"
             >

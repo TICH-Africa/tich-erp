@@ -275,6 +275,10 @@ class MFAService
 
     public function isMFARequired(User $user): bool
     {
+        if (! config('tich.auth.mfa_enabled', true)) {
+            return false;
+        }
+
         if ($user->mfa_verified) {
             return false;
         }

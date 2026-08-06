@@ -18,7 +18,7 @@ class StudentPortalService
     ) {}
 
     /**
-     * @param  array{username: string, password: string}  $credentials
+     * @param  array{password: string}  $credentials
      */
     public function activatePortalAccount(Student $student, array $credentials): User
     {
@@ -54,7 +54,6 @@ class StudentPortalService
             if ($existingUser) {
                 $user = $existingUser;
                 $user->update([
-                    'username' => $credentials['username'],
                     'password_hash' => Hash::make($credentials['password']),
                     'user_type' => 'student',
                     'student_id' => $student->id,
@@ -62,7 +61,6 @@ class StudentPortalService
                 ]);
             } else {
                 $user = User::create([
-                    'username' => $credentials['username'],
                     'email' => $student->applicant->email,
                     'password_hash' => Hash::make($credentials['password']),
                     'user_type' => 'student',
