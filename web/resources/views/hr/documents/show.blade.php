@@ -41,20 +41,20 @@
                             <td class="tich-caption">{{ $doc->issue_date?->format('Y-m-d') ?? '—' }}</td>
                             <td class="tich-caption">{{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</td>
                             <td>
-                                <span class="tich-badge tich-badge--{{ $doc->is_verified ? 'success' : 'warning' }}">
-                                    {{ $doc->is_verified ? 'Verified' : 'Pending' }}
+                                <span class="tich-badge tich-badge--{{ $doc->status === 'approved' ? 'success' : ($doc->status === 'rejected' ? 'danger' : 'warning') }}">
+                                    {{ ucfirst($doc->status ?? 'pending') }}
                                 </span>
                             </td>
                             <td class="tich-caption">{{ $doc->created_at?->format('Y-m-d') }}</td>
                             <td>
                                 <div class="tich-flex tich-flex--gap">
-                                    <a href="{{ route('hr.staff.documents.download', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Download</a>
-                                    <form method="POST" action="{{ route('hr.staff.documents.destroy', [$staff, $doc]) }}" onsubmit="return confirm('Delete this document?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="tich-btn tich-btn-ghost tich-btn--sm" style="color: #c53030; border-color: #c53030;">Delete</button>
-                                    </form>
+                                    <a href="{{ route('hr.staff.documents.read', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
                                 </div>
+                                @if ($doc->status === 'rejected')
+                                    <p class="tich-caption tich-mt-1" style="color: var(--tich-danger, #b91c1c);">
+                                        Rejected: {{ $doc->rejection_reason }}
+                                    </p>
+                                @endif
                             </td>
                         </tr>
                     @empty

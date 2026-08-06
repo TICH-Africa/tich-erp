@@ -257,6 +257,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendToStaff'])->name('hr.staff.documents.send.store');
             Route::delete('/staff/{staff}/documents/{document}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'destroy'])->name('hr.staff.documents.destroy');
             Route::get('/staff/{staff}/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'download'])->name('hr.staff.documents.download');
+            Route::get('/staff/{staff}/documents/{document}/read', [\App\Http\Controllers\HR\StaffDocumentController::class, 'read'])->name('hr.staff.documents.read');
+            Route::post('/staff/{staff}/documents/{document}/approve', [\App\Http\Controllers\HR\StaffDocumentController::class, 'approve'])->name('hr.staff.documents.approve');
+            Route::post('/staff/{staff}/documents/{document}/reject', [\App\Http\Controllers\HR\StaffDocumentController::class, 'reject'])->name('hr.staff.documents.reject');
             Route::get('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'index'])->name('hr.documents.index');
             Route::get('/documents/staff/{staff}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'show'])->name('hr.documents.show');
             Route::get('/documents/templates', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'index'])->name('hr.documents.templates.index');
@@ -430,8 +433,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
-        Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
-        Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
+Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
+            Route::get('/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffCreate'])->name('staff.documents.create');
+            Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('staff.policies.download');
         Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('staff.policies.view');
     });
