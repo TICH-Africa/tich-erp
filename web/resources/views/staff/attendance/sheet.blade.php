@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Attendance sheet {{ $tracking_id }}</title>
+    <link rel="stylesheet" href="{{ asset('css/tich-print-documents.css') }}">
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 24px; }
         h1 { font-size: 18px; margin: 0 0 4px; }
@@ -25,6 +26,8 @@
         <button onclick="window.print()">Print sheet</button>
         <button onclick="window.close()">Close</button>
     </div>
+
+    @include('partials.print.document-letterhead', ['institution' => $institution ?? []])
 
     <h1>Class attendance sheet</h1>
     <div class="meta">

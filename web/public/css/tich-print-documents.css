@@ -89,6 +89,15 @@ body {
     letter-spacing: 0.02em;
 }
 
+.tich-doc-letterhead__logo {
+    max-height: 3.25rem;
+    max-width: 8rem;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .tich-doc-letterhead__name {
     margin: 0;
     font-size: 1.05rem;
@@ -357,6 +366,11 @@ body {
     width: 2.5rem;
     height: 2.5rem;
     font-size: 1rem;
+}
+
+.tich-payslip-page .tich-doc-letterhead__logo {
+    max-height: 2.5rem;
+    max-width: 6rem;
 }
 
 .tich-payslip-page .tich-doc-letterhead__name {

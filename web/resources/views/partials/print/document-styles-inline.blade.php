@@ -3,6 +3,8 @@
 body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.5; margin: 0; padding: 0; }
 .tich-doc-sheet { max-width: 800px; margin: 0 auto; padding: 15pt; }
 .tich-doc-letterhead { text-align: center; border-bottom: 3pt solid #1e40af; padding-bottom: 20pt; margin-bottom: 30pt; }
+.tich-doc-letterhead__logo { max-height: 52pt; max-width: 140pt; object-fit: contain; display: block; margin: 0 auto 10pt; }
+.tich-doc-letterhead__mark { display: inline-flex; align-items: center; justify-content: center; width: 42pt; height: 42pt; border-radius: 50%; background: #1e40af; color: #fff; font-weight: bold; font-size: 16pt; margin: 0 auto 10pt; }
 .tich-doc-letterhead__name { margin: 0; font-size: 20pt; font-weight: bold; color: #1e40af; }
 .tich-doc-letterhead__tagline { margin: 4pt 0 0; font-size: 10pt; color: #374151; }
 .tich-doc-title-block { text-align: center; margin-bottom: 30pt; }

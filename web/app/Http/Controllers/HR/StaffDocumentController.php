@@ -135,7 +135,7 @@ $validated = $request->validate([
         $template = StaffDocumentTemplate::findOrFail($request->integer('template_id'));
 
         $content = $this->documentService->populateTemplate($template, $staff);
-        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name));
+        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), true);
 
         $filename = $template->name . ' - ' . $staff->fullName() . '.pdf';
         $path = 'staff/' . $staff->employee_number . '/documents/' . time() . '_' . preg_replace('/[^a-z0-9_-]/i', '_', $filename);
@@ -196,7 +196,7 @@ $validated = $request->validate([
             'staff_marital_status' => $staff->marital_status ?? '',
             'staff_national_id' => $staff->national_id_number ?? '',
             'staff_line_manager' => $staff->lineManager?->fullName() ?? '',
-            'institution_name' => config('app.name', 'TICH ERP'),
+            'institution_name' => app(SiteSettingsService::class)->siteMeta()['institution_name'],
             'current_date' => now()->format('F j, Y'),
             'current_year' => now()->format('Y'),
         ];

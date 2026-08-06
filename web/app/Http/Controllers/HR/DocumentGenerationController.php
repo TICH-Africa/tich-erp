@@ -81,7 +81,7 @@ class DocumentGenerationController extends Controller
         $staff = Staff::findOrFail($request->integer('staff_id'));
 
         $content = $this->documentService->populateTemplate($template, $staff);
-        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name));
+        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), false);
 
         return view('hr.documents.templates.preview', [
             'html' => $html,
@@ -96,8 +96,8 @@ class DocumentGenerationController extends Controller
         $staff = Staff::findOrFail($request->integer('staff_id'));
 
         $content = $this->documentService->populateTemplate($template, $staff);
-        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name));
         $downloadUrl = route('hr.documents.templates.download', ['template' => $template, 'staff_id' => $staff->id]);
+        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), false, $downloadUrl);
 
         return view('hr.documents.templates.print', [
             'html' => $html,
@@ -113,7 +113,7 @@ class DocumentGenerationController extends Controller
         $staff = Staff::findOrFail($request->integer('staff_id'));
 
         $content = $this->documentService->populateTemplate($template, $staff);
-        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name));
+        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), true);
         $filename = $template->name . ' - ' . $staff->fullName() . '.pdf';
 
         $mpdf = new Mpdf([

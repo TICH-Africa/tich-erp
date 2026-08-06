@@ -8,6 +8,10 @@ use Illuminate\Support\Str;
 
 class DocumentGenerationService
 {
+    public function __construct(
+        protected SiteSettingsService $siteSettings,
+    ) {}
+
     public function getAvailableTemplates(): array
     {
         return [
@@ -43,9 +47,14 @@ class DocumentGenerationService
         return $content;
     }
 
-    public function renderDocument(string $content, string $title, string $subtitle = ''): string
-    {
-        return $this->header($title, $subtitle) . $content . $this->footer();
+    public function renderDocument(
+        string $content,
+        string $title,
+        string $subtitle = '',
+        bool $forPdf = false,
+        ?string $downloadUrl = null,
+    ): string {
+        return $this->header($title, $subtitle, $forPdf, $downloadUrl) . $content . $this->footer();
     }
 
     public function buildStaffContext(Staff $staff): array
@@ -77,20 +86,42 @@ class DocumentGenerationService
             'staff_marital_status' => $staff->marital_status ?? '',
             'staff_national_id' => $staff->national_id_number ?? '',
             'staff_line_manager' => $staff->lineManager?->fullName() ?? '',
-            'institution_name' => config('app.name', 'TICH ERP'),
+            'institution_name' => $this->siteSettings->siteMeta()['institution_name'],
             'current_date' => now()->format('F j, Y'),
             'current_year' => now()->format('Y'),
         ];
     }
 
-    private function header(string $title, string $subtitle = ''): string
+    private function header(string $title, string $subtitle = '', bool $forPdf = false, ?string $downloadUrl = null): string
     {
-        return <<<'HTML'
+        $branding = $this->siteSettings->documentBranding($forPdf);
+        $institutionName = htmlspecialchars($branding['name'], ENT_QUOTES, 'UTF-8');
+        $subtitleText = htmlspecialchars($subtitle, ENT_QUOTES, 'UTF-8');
+        $titleText = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $downloadHref = htmlspecialchars($downloadUrl ?? '#', ENT_QUOTES, 'UTF-8');
+
+        if (! empty($branding['logo_src'])) {
+            $logoHtml = '<img src="'.htmlspecialchars($branding['logo_src'], ENT_QUOTES, 'UTF-8').'" alt="'.htmlspecialchars($branding['short_name'], ENT_QUOTES, 'UTF-8').'" class="doc-logo-image">';
+        } else {
+            $logoHtml = '<div class="doc-logo-fallback">'.htmlspecialchars($branding['brand_initial'], ENT_QUOTES, 'UTF-8').'</div>';
+        }
+
+        $toolbar = $forPdf ? '' : <<<HTML
+    <div class="no-print" style="padding: 20px 40px; background: #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <button onclick="window.print()" style="background: #1e40af; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Print / Save as PDF</button>
+            <a href="{$downloadHref}" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; margin-left: 10px; display: inline-block;">Download</a>
+        </div>
+        <button onclick="window.close()" style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Close</button>
+    </div>
+HTML;
+
+        return <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{title}</title>
+    <title>{$titleText}</title>
     <style>
         @page { margin: 2cm; }
         * { box-sizing: border-box; }
@@ -110,12 +141,13 @@ class DocumentGenerationService
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .doc-header {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            background: #1e40af;
             color: white;
             padding: 30px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 24px;
         }
         .doc-header-text h1 {
             margin: 0;
@@ -128,7 +160,18 @@ class DocumentGenerationService
             opacity: 0.9;
             font-size: 14px;
         }
-        .doc-logo {
+        .doc-logo-image {
+            max-width: 80px;
+            max-height: 80px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 8px;
+            display: block;
+        }
+        .doc-logo-fallback {
             width: 80px;
             height: 80px;
             background: white;
@@ -138,8 +181,7 @@ class DocumentGenerationService
             justify-content: center;
             color: #1e40af;
             font-weight: bold;
-            font-size: 12px;
-            text-align: center;
+            font-size: 28px;
         }
         .doc-body {
             padding: 40px;
@@ -217,22 +259,14 @@ class DocumentGenerationService
     </style>
 </head>
 <body>
-    <div class="no-print" style="padding: 20px 40px; background: #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <button onclick="window.print()" style="background: #1e40af; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Print / Save as PDF</button>
-            <a href="{download_url}" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; margin-left: 10px; display: inline-block;">Download</a>
-        </div>
-        <button onclick="window.close()" style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Close</button>
-    </div>
+{$toolbar}
     <div class="doc-container">
         <div class="doc-header">
             <div class="doc-header-text">
-                <h1>{institution_name}</h1>
-                <p>{subtitle}</p>
+                <h1>{$institutionName}</h1>
+                <p>{$subtitleText}</p>
             </div>
-            <div class="doc-logo">
-                LOGO<br>PLACEHOLDER
-            </div>
+            {$logoHtml}
         </div>
         <div class="doc-body">
 HTML;

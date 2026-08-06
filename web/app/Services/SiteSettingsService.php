@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Site\ContactChannel;
 use App\Models\Site\SiteSetting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
@@ -28,7 +29,7 @@ class SiteSettingsService
             return $this->cache;
         }
 
-        if (! $this->tableExists()) {
+        if (! $this->hasTable('site_settings')) {
             return $this->cache = [];
         }
 
@@ -86,6 +87,87 @@ class SiteSettingsService
         ];
     }
 
+    /**
+     * Branding payload for official print/PDF documents.
+     *
+     * @return array<string, mixed>
+     */
+    public function documentBranding(bool $forPdf = false): array
+    {
+        $meta = $this->siteMeta();
+        $defaults = config('tich-navigation.site', []);
+
+        return [
+            'name' => $meta['institution_name'],
+            'short_name' => $meta['short_name'],
+            'tagline' => $meta['tagline'] ?: ($defaults['tagline'] ?? ''),
+            'address' => $this->primaryPhysicalAddress(),
+            'copyright' => $meta['copyright'],
+            'website' => $meta['website'] ?: ($defaults['website'] ?? ''),
+            'logo_src' => $this->documentLogoSrc($forPdf),
+            'logo_url' => $meta['logo_url'],
+            'brand_initial' => strtoupper(substr($meta['brand_name'] ?? $meta['short_name'] ?? 'T', 0, 1)),
+        ];
+    }
+
+    public function logoAbsolutePath(): ?string
+    {
+        $path = $this->get('site.logo_path');
+
+        if (! $path) {
+            return null;
+        }
+
+        $relative = str_starts_with($path, 'storage/')
+            ? substr($path, 8)
+            : ltrim($path, '/');
+
+        if (! $relative || ! Storage::disk('public')->exists($relative)) {
+            return null;
+        }
+
+        return Storage::disk('public')->path($relative);
+    }
+
+    public function documentLogoSrc(bool $forPdf = false): ?string
+    {
+        $absolute = $this->logoAbsolutePath();
+
+        if (! $absolute) {
+            return null;
+        }
+
+        if ($forPdf) {
+            $mime = mime_content_type($absolute) ?: 'image/png';
+            $encoded = base64_encode((string) file_get_contents($absolute));
+
+            return 'data:'.$mime.';base64,'.$encoded;
+        }
+
+        return $this->publicAssetUrl($this->get('site.logo_path'));
+    }
+
+    private function primaryPhysicalAddress(): string
+    {
+        if ($this->hasTable('contact_channels')) {
+            $channel = ContactChannel::query()
+                ->where('is_active', 1)
+                ->where('channel_type', 'physical_address')
+                ->orderByDesc('is_primary')
+                ->orderBy('display_order')
+                ->first();
+
+            if ($channel) {
+                return $channel->display_value ?: $channel->value;
+            }
+        }
+
+        $address = collect(config('tich-navigation.contact', []))
+            ->firstWhere('channel_type', 'physical_address');
+
+        return $address['display_value'] ?? $address['value'] ?? 'Kisumu, Kenya';
+    }
+
     public function storePublicUpload(?UploadedFile $file, string $directory): ?string
     {
         if (! $file) {
@@ -132,10 +214,10 @@ class SiteSettingsService
         $this->cache = null;
     }
 
-    private function tableExists(): bool
+    private function hasTable(string $table): bool
     {
         try {
-            return Schema::hasTable('site_settings');
+            return Schema::hasTable($table);
         } catch (\Throwable) {
             return false;
         }

@@ -10,23 +10,16 @@ use Illuminate\Support\Str;
 
 class PrintDocumentService
 {
+    public function __construct(
+        protected SiteSettingsService $siteSettings,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
-    public function institution(): array
+    public function institution(bool $forPdf = false): array
     {
-        $site = config('tich-navigation.site', []);
-        $address = collect(config('tich-navigation.contact', []))
-            ->firstWhere('channel_type', 'physical_address');
-
-        return [
-            'name' => $site['institution_name'] ?? 'Tropical Institute of Community Health and Development in Africa',
-            'short_name' => $site['short_name'] ?? 'TICH in Africa',
-            'tagline' => $site['tagline'] ?? 'Community health education for Africa',
-            'address' => $address['display_value'] ?? 'Kisumu, Kenya',
-            'copyright' => $site['copyright'] ?? ($site['institution_name'] ?? 'TICH in Africa'),
-            'website' => $site['website'] ?? 'tich.africa',
-        ];
+        return $this->siteSettings->documentBranding($forPdf);
     }
 
     public function normalizeDocumentText(?string $text): string
@@ -58,7 +51,7 @@ class PrintDocumentService
     public function render(string $view, array $data): View
     {
         return view($view, array_merge([
-            'institution' => $this->institution(),
+            'institution' => $this->institution(false),
             'generatedAt' => now(),
         ], $data));
     }
@@ -69,7 +62,7 @@ class PrintDocumentService
     public function downloadPdf(string $view, array $data, string $filename, string $orientation = 'portrait'): StreamedResponse
     {
         $html = view($view, array_merge([
-            'institution' => $this->institution(),
+            'institution' => $this->institution(true),
             'generatedAt' => now(),
             'forPdf' => true,
         ], $data))->render();
