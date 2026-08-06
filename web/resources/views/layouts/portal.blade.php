@@ -8,6 +8,8 @@
         'student' => $student,
         'biodata' => $biodata,
         'sidebarNavigation' => $sidebarNavigation,
+        'section' => $section ?? null,
+        'tab' => $tab ?? null,
     ])
 
     <div class="tich-admin__main">
@@ -16,4 +18,8 @@
         @yield('portal-content')
     </div>
 </div>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('js/tich-sidebar.js') }}" defer></script>
 @endsection

@@ -25,6 +25,29 @@ class StudentPortalNavigationService
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function academicsTabs(): array
+    {
+        return [
+            'units' => 'My Units',
+            'exams' => 'Exams & Grades',
+            'attendance' => 'Attendance',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function timetableTabs(): array
+    {
+        return [
+            'lesson' => 'Lesson Timetable',
+            'exam' => 'Exam Timetable',
+        ];
+    }
+
     public function resolveSection(Request $request): string
     {
         $section = $request->string('section')->toString() ?: 'overview';
@@ -32,8 +55,34 @@ class StudentPortalNavigationService
         return array_key_exists($section, $this->sections()) ? $section : 'overview';
     }
 
+    public function resolveTab(Request $request, string $section): ?string
+    {
+        $tab = $request->string('tab')->toString();
+
+        return match ($section) {
+            'academics' => array_key_exists($tab, $this->academicsTabs()) ? $tab : 'units',
+            'timetable' => array_key_exists($tab, $this->timetableTabs()) ? $tab : 'lesson',
+            default => null,
+        };
+    }
+
+    public function portalTitle(string $section, ?string $tab = null): string
+    {
+        $label = $this->sections()[$section] ?? 'Overview';
+
+        if ($section === 'academics' && $tab) {
+            $label = $this->academicsTabs()[$tab] ?? $label;
+        }
+
+        if ($section === 'timetable' && $tab) {
+            $label = $this->timetableTabs()[$tab] ?? $label;
+        }
+
+        return $label.' - Student portal';
+    }
+
     /**
-     * @return list<array{type: string, label: string, section?: string, route?: string, params?: array<string, mixed>, coming_soon?: bool}>
+     * @return list<array<string, mixed>>
      */
     public function sidebarNavigation(Student $student): array
     {
@@ -65,14 +114,45 @@ class StudentPortalNavigationService
                 'section' => 'documents',
             ],
             [
-                'type' => 'link',
+                'type' => 'group',
                 'label' => 'Academics',
+                'icon' => 'graduation-cap',
                 'section' => 'academics',
+                'items' => [
+                    [
+                        'label' => 'My Units',
+                        'tab' => 'units',
+                        'icon' => 'book-open',
+                    ],
+                    [
+                        'label' => 'Exams & Grades',
+                        'tab' => 'exams',
+                        'icon' => 'award',
+                    ],
+                    [
+                        'label' => 'Attendance',
+                        'tab' => 'attendance',
+                        'icon' => 'clipboard-check',
+                    ],
+                ],
             ],
             [
-                'type' => 'link',
+                'type' => 'group',
                 'label' => 'Timetable',
+                'icon' => 'calendar',
                 'section' => 'timetable',
+                'items' => [
+                    [
+                        'label' => 'Lesson Timetable',
+                        'tab' => 'lesson',
+                        'icon' => 'calendar',
+                    ],
+                    [
+                        'label' => 'Exam Timetable',
+                        'tab' => 'exam',
+                        'icon' => 'file-text',
+                    ],
+                ],
             ],
             [
                 'type' => 'link',
@@ -119,14 +199,14 @@ class StudentPortalNavigationService
                 'group' => 'services',
             ],
             [
-                'label' => 'Timetable',
-                'description' => 'Weekly lesson, exam, and special exam schedule.',
+                'label' => 'Lesson Timetable',
+                'description' => 'Weekly lesson schedule for your registered units.',
                 'section' => 'timetable',
                 'group' => 'learning',
             ],
             [
-                'label' => 'Academics',
-                'description' => 'Unit registration, grades, attendance, and timetables.',
+                'label' => 'My Units',
+                'description' => 'Curriculum units, semester registration, and programme plan.',
                 'section' => 'academics',
                 'group' => 'learning',
             ],

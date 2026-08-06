@@ -6,11 +6,40 @@
     </p>
 
     <nav class="tich-admin-sidebar__nav">
-        @php $currentSection = request()->query('section', 'overview'); @endphp
+        @php
+            $currentSection = $section ?? request()->query('section', 'overview');
+            $currentTab = $tab ?? request()->query('tab');
+        @endphp
 
         @foreach ($sidebarNavigation as $item)
             @if ($item['type'] === 'heading')
                 <p class="tich-admin-sidebar__section">{{ $item['label'] }}</p>
+            @elseif ($item['type'] === 'group')
+                @php
+                    $groupSection = $item['section'] ?? null;
+                    $groupActive = $groupSection && $currentSection === $groupSection;
+                    $groupItems = collect($item['items'] ?? [])->map(function (array $child) use ($groupSection, $currentSection, $currentTab) {
+                        $childTab = $child['tab'] ?? null;
+
+                        return [
+                            'href' => route('portal.dashboard', array_filter([
+                                'section' => $groupSection,
+                                'tab' => $childTab,
+                            ])),
+                            'label' => $child['label'],
+                            'icon' => $child['icon'] ?? 'circle',
+                            'active' => $groupSection && $currentSection === $groupSection && $childTab === ($currentTab ?: ($groupSection === 'academics' ? 'units' : 'lesson')),
+                        ];
+                    })->all();
+                @endphp
+
+                @include('partials.navigation.sidebar-group', [
+                    'label' => $item['label'],
+                    'icon' => $item['icon'] ?? \App\Support\SidebarIcon::forSection($groupSection),
+                    'open' => $groupActive,
+                    'active' => $groupActive,
+                    'items' => $groupItems,
+                ])
             @elseif (! empty($item['coming_soon']))
                 <span class="tich-admin-sidebar__disabled">
                     <span class="tich-admin-sidebar__icon">

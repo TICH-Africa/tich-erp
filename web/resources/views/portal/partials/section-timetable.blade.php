@@ -1,8 +1,22 @@
 @php
     $timetableData = $portalData['timetable'];
+    $timetableTab = $timetableTab ?? 'lesson';
+
+    $tabTitles = [
+        'lesson' => 'Lesson Timetable',
+        'exam' => 'Exam Timetable',
+    ];
+
+    $visibleTimetables = $timetableData['timetables']->filter(function ($timetable) use ($timetableTab) {
+        if ($timetableTab === 'lesson') {
+            return $timetable->timetable_kind === 'lesson';
+        }
+
+        return in_array($timetable->timetable_kind, ['exam', 'supplementary', 'special_exam'], true);
+    })->values();
 @endphp
 
-<x-page-toolbar title="Timetable" meta="Semester {{ $timetableData['teaching_period'] }}" />
+<x-page-toolbar :title="$tabTitles[$timetableTab] ?? 'Timetable'" :meta="'Semester '.$timetableData['teaching_period']" />
 
 @if ($timetableData['is_provisional'])
     <div class="tich-notice tich-notice--info tich-mt-4">
@@ -10,8 +24,8 @@
     </div>
 @endif
 
-@if ($timetableData['timetables']->isNotEmpty())
-    @foreach ($timetableData['timetables'] as $timetable)
+@if ($visibleTimetables->isNotEmpty())
+    @foreach ($visibleTimetables as $timetable)
         @php
             $template = $timetable->template?->load(['segments', 'days']);
             $activeDays = $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5];
@@ -62,7 +76,19 @@
     @endforeach
 @else
     <article class="tich-card tich-dept-empty tich-mt-8">
-        <h2 class="tich-h3">No timetable published yet</h2>
-        <p class="tich-text tich-mt-2">Your weekly schedule will appear here once the academic office publishes the timetable for this semester.</p>
+        <h2 class="tich-h3">
+            @if ($timetableTab === 'exam')
+                No exam timetable published yet
+            @else
+                No lesson timetable published yet
+            @endif
+        </h2>
+        <p class="tich-text tich-mt-2">
+            @if ($timetableTab === 'exam')
+                Your exam schedule will appear here once the academic office publishes it for this semester.
+            @else
+                Your weekly lesson schedule will appear here once the academic office publishes the timetable for this semester.
+            @endif
+        </p>
     </article>
 @endif

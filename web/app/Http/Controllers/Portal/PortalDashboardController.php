@@ -27,6 +27,7 @@ class PortalDashboardController extends Controller
 
         $biodata = $this->studentRecords->biodata360($student);
         $section = $this->navigation->resolveSection($request);
+        $tab = $this->navigation->resolveTab($request, $section);
         $portalData = $this->dashboard->forStudent($student, $biodata);
 
         return view('portal.dashboard', [
@@ -34,10 +35,13 @@ class PortalDashboardController extends Controller
             'biodata' => $biodata,
             'portalData' => $portalData,
             'section' => $section,
+            'tab' => $tab,
+            'academicsTab' => $section === 'academics' ? $tab : null,
+            'timetableTab' => $section === 'timetable' ? $tab : null,
             'sections' => $this->navigation->sections(),
             'sidebarNavigation' => $this->navigation->sidebarNavigation($student),
             'modules' => $this->navigation->modules(),
-            'portalTitle' => ($this->navigation->sections()[$section] ?? 'Overview').' - Student portal',
+            'portalTitle' => $this->navigation->portalTitle($section, $tab),
         ]);
     }
 }
