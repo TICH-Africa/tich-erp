@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use Barryvdh\DomPDF\Facade\Pdf;
+use Mpdf\Mpdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 
 class PrintDocumentService
@@ -65,7 +66,7 @@ class PrintDocumentService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function downloadPdf(string $view, array $data, string $filename, string $orientation = 'portrait'): Response
+    public function downloadPdf(string $view, array $data, string $filename, string $orientation = 'portrait'): StreamedResponse
     {
         $html = view($view, array_merge([
             'institution' => $this->institution(),
@@ -73,8 +74,11 @@ class PrintDocumentService
             'forPdf' => true,
         ], $data))->render();
 
-        return Pdf::loadHTML($this->normalizeDocumentHtml($html))
-            ->setPaper('a4', $orientation)
-            ->download($filename);
+        $mpdf = new Mpdf(['mode' => 'utf-8', 'format' => 'A4']);
+        $mpdf->WriteHTML($this->normalizeDocumentHtml($html));
+
+        return response()->streamDownload(function () use ($mpdf, $filename) {
+            $mpdf->Output($filename, 'D');
+        }, $filename);
     }
 }

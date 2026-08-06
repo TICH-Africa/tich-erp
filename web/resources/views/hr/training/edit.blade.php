@@ -12,15 +12,22 @@
 
             <div class="tich-grid tich-grid--2 tich-mb-6">
                 <div>
-                    <label for="staff_id" class="tich-label">Staff Member *</label>
-                    <select id="staff_id" name="staff_id" required class="tich-input">
-                        <option value="">Select staff</option>
+                    <label for="staff_ids" class="tich-label">Staff Members</label>
+                    <select id="staff_ids" name="staff_ids[]" multiple class="tich-input" style="min-height: 10rem;">
+                        <option value="">— Select staff —</option>
                         @foreach ($staff as $s)
-                            <option value="{{ $s->id }}" {{ old('staff_id', $training->staff_id) == $s->id ? 'selected' : '' }}>
+                            <option value="{{ $s->id }}" {{ old('staff_ids', $training->assigned_staff_ids) && in_array($s->id, old('staff_ids', $training->assigned_staff_ids)) ? 'selected' : '' }}>
                                 {{ $s->fullName() }} ({{ $s->employee_number }})
                             </option>
                         @endforeach
                     </select>
+                    <p class="tich-caption tich-mt-2">Hold Ctrl/Cmd to select multiple staff. Leave empty to assign to all employees.</p>
+                </div>
+                <div>
+                    <label class="tich-checkbox tich-mt-6">
+                        <input type="checkbox" id="assign_all" name="assign_all" value="1" {{ $training->is_assigned_to_all ? 'checked' : '' }}>
+                        <span><strong>Assign to all employees</strong></span>
+                    </label>
                 </div>
                 <div>
                     <label for="activity_type" class="tich-label">Activity Type *</label>

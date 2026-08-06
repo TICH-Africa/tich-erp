@@ -27,8 +27,17 @@
                     @forelse ($trainings as $training)
                         <tr>
                             <td>
-                                <strong>{{ $training->staff->fullName() ?? '—' }}</strong>
-                                <p class="tich-caption">{{ $training->staff->employee_number ?? '' }}</p>
+                                @if ($training->is_assigned_to_all)
+                                    <strong>All Staff</strong>
+                                @else
+                                    @foreach ($training->assigned_staff_ids as $staffId)
+                                        @php $s = \App\Models\Staff::find($staffId); @endphp
+                                        @if ($s)
+                                            <strong>{{ $s->fullName() }}</strong>
+                                            <p class="tich-caption">{{ $s->employee_number }}</p>
+                                        @endif
+                                    @endforeach
+                                @endif
                             </td>
                             <td>
                                 <strong>{{ $training->training_name }}</strong>

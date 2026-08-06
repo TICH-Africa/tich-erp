@@ -50,19 +50,19 @@
         </article>
     </div>
 
-    @if ($staff->onboarding)
+    @if ($staff->latestOnboarding)
         <div class="tich-card tich-mb-8">
             <h3 class="tich-h3">Onboarding</h3>
             <div class="tich-mt-4">
-                <p><strong>Onboarding No.:</strong> {{ $staff->onboarding->onboarding_number }}</p>
-                <p><strong>Current Step:</strong> {{ ucfirst(str_replace('_', ' ', $staff->onboarding->current_step)) }}</p>
+                <p><strong>Onboarding No.:</strong> {{ $staff->latestOnboarding->onboarding_number }}</p>
+                <p><strong>Current Step:</strong> {{ ucfirst(str_replace('_', ' ', $staff->latestOnboarding->current_step)) }}</p>
                 <p><strong>Status:</strong>
-                    <span class="tich-badge tich-badge--{{ $staff->onboarding->status === 'completed' ? 'success' : ($staff->onboarding->status === 'rejected' ? 'danger' : ($staff->onboarding->status === 'approved' ? 'success' : 'warning')) }}">
-                        {{ ucfirst($staff->onboarding->status) }}
+                    <span class="tich-badge tich-badge--{{ $staff->latestOnboarding->status === 'completed' ? 'success' : ($staff->latestOnboarding->status === 'rejected' ? 'danger' : ($staff->latestOnboarding->status === 'approved' ? 'success' : 'warning')) }}">
+                        {{ ucfirst($staff->latestOnboarding->status) }}
                     </span>
                 </p>
-                @if ($staff->onboarding->status === 'pending_hr_review')
-                    <a href="{{ route('hr.onboarding.review', $staff->onboarding) }}" class="tich-btn tich-btn-primary tich-mt-4">Review Biodata</a>
+                @if ($staff->latestOnboarding->status === 'pending_hr_review')
+                    <a href="{{ route('hr.onboarding.review', $staff->latestOnboarding) }}" class="tich-btn tich-btn-primary tich-mt-4">Review Biodata</a>
                 @endif
             </div>
         </div>

@@ -11,7 +11,7 @@ use App\Services\KenyaPayrollTaxService;
 use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -283,7 +283,7 @@ class PayrollController extends Controller
         return $this->printDocuments->render('hr.payroll.print', $this->documentData($breakdown));
     }
 
-    public function reportPdf(Request $request): Response
+    public function reportPdf(Request $request): StreamedResponse
     {
         $breakdown = $this->runCalculation($request);
 

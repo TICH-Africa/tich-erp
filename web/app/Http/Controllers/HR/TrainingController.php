@@ -30,7 +30,9 @@ class TrainingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'staff_id' => 'required|exists:staff,id',
+            'staff_ids' => 'nullable|array',
+            'staff_ids.*' => 'exists:staff,id',
+            'assign_all' => 'boolean',
             'activity_type' => 'required|string|in:training,workshop,conference,seminar,cpd,study_leave,attachment,mentorship',
             'activity_name' => 'required|string|max:300',
             'organizer' => 'nullable|string|max:300',
@@ -47,21 +49,40 @@ class TrainingController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request) {
-            $training = ProfessionalDevelopment::create(array_merge($validated, [
+            $trainingData = array_merge($validated, [
                 'approved_by' => $request->user()->staff_id ?? Staff::first()?->id,
                 'approved_at' => now(),
-            ]));
+            ]);
 
-            $staff = $training->staff;
-            if ($staff && $staff->user_id) {
-                \App\Services\PlatformNotificationService::notifyUser(
-                    $staff->user_id,
-                    'New Training Assigned',
-                    "You have been assigned to '{$training->activity_name}' starting {$training->start_date->format('Y-m-d')}.",
-                    'professional_development',
-                    $training->id,
-                    'normal'
-                );
+            if (!empty($validated['assign_all'])) {
+                unset($trainingData['staff_ids']);
+                unset($trainingData['staff_id']);
+            } elseif (!empty($validated['staff_ids'])) {
+                $trainingData['staff_ids'] = $validated['staff_ids'];
+                unset($trainingData['staff_id']);
+            } else {
+                unset($trainingData['staff_ids']);
+            }
+
+            $training = ProfessionalDevelopment::create($trainingData);
+
+            $assignedStaffIds = $training->assigned_staff_ids;
+            if (empty($assignedStaffIds)) {
+                $assignedStaffIds = Staff::pluck('id')->toArray();
+            }
+
+            foreach ($assignedStaffIds as $staffId) {
+                $staff = Staff::find($staffId);
+                if ($staff && $staff->user_id) {
+                    \App\Services\PlatformNotificationService::notifyUser(
+                        $staff->user_id,
+                        'New Training Assigned',
+                        "You have been assigned to '{$training->activity_name}' starting {$training->start_date->format('Y-m-d')}.",
+                        'professional_development',
+                        $training->id,
+                        'normal'
+                    );
+                }
             }
         });
 
@@ -81,6 +102,9 @@ class TrainingController extends Controller
         $training = ProfessionalDevelopment::findOrFail($id);
 
         $validated = $request->validate([
+            'staff_ids' => 'nullable|array',
+            'staff_ids.*' => 'exists:staff,id',
+            'assign_all' => 'boolean',
             'activity_type' => 'required|string|in:training,workshop,conference,seminar,cpd,study_leave,attachment,mentorship',
             'activity_name' => 'required|string|max:300',
             'organizer' => 'nullable|string|max:300',
@@ -96,7 +120,19 @@ class TrainingController extends Controller
             'is_completed' => 'boolean',
         ]);
 
-        $training->update($validated);
+        $trainingData = $validated;
+
+        if (!empty($validated['assign_all'])) {
+            unset($trainingData['staff_ids']);
+            unset($trainingData['staff_id']);
+        } elseif (!empty($validated['staff_ids'])) {
+            $trainingData['staff_ids'] = $validated['staff_ids'];
+            unset($trainingData['staff_id']);
+        } else {
+            unset($trainingData['staff_ids']);
+        }
+
+        $training->update($trainingData);
 
         return redirect()->route('hr.training.index')->with('success', 'Training record updated successfully.');
     }

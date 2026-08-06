@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ProfessionalDevelopment;
 use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -54,6 +55,7 @@ class EmployeePortalService
             'leaveBalances' => $this->leaveBalances($staff),
             'recentLeaveRequests' => $this->recentLeaveRequests($staff),
             'employmentDuration' => $this->employmentDurationLabel($staff),
+            'trainings' => $this->staffTrainings($staff),
         ];
     }
 
@@ -179,6 +181,28 @@ class EmployeePortalService
         }
 
         return $staff->employment_start_date->diffForHumans(now(), true);
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function staffTrainings(Staff $staff): Collection
+    {
+        if (! Schema::hasTable('professional_development')) {
+            return collect();
+        }
+
+        return ProfessionalDevelopment::where(function ($query) use ($staff) {
+            $query->whereNull('staff_id')
+                ->whereNull('staff_ids');
+        })->orWhere(function ($query) use ($staff) {
+            $query->where('staff_id', $staff->id);
+        })->orWhere(function ($query) use ($staff) {
+            $query->whereJsonContains('staff_ids', $staff->id);
+        })->where('is_completed', false)
+            ->orderByDesc('start_date')
+            ->limit(5)
+            ->get();
     }
 
     public function maskAccountNumber(?string $accountNumber): ?string

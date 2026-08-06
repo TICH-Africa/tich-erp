@@ -13,6 +13,7 @@ class ProfessionalDevelopment extends Model
 
     protected $fillable = [
         'staff_id',
+        'staff_ids',
         'activity_type',
         'activity_name',
         'organizer',
@@ -40,6 +41,7 @@ class ProfessionalDevelopment extends Model
         'cost' => 'decimal:2',
         'is_external' => 'boolean',
         'is_completed' => 'boolean',
+        'staff_ids' => 'array',
     ];
 
     public function staff(): BelongsTo
@@ -50,5 +52,32 @@ class ProfessionalDevelopment extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'approved_by');
+    }
+
+    public function getAssignedStaffIdsAttribute(): array
+    {
+        if ($this->staff_ids) {
+            return $this->staff_ids;
+        }
+
+        if ($this->staff_id) {
+            return [$this->staff_id];
+        }
+
+        return [];
+    }
+
+    public function isAssignedToAll(): bool
+    {
+        return empty($this->staff_ids) && empty($this->staff_id);
+    }
+
+    public function isAssignedToStaff(int $staffId): bool
+    {
+        if ($this->isAssignedToAll()) {
+            return true;
+        }
+
+        return in_array($staffId, $this->assigned_staff_ids);
     }
 }

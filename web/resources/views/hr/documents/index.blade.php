@@ -31,6 +31,20 @@
                                 <span class="tich-badge tich-badge--{{ $member->documents_count > 0 ? 'success' : 'warning' }}">
                                     {{ $member->documents_count }} uploaded
                                 </span>
+                                @php
+                                    $pendingCount = $member->documents->where('status', 'pending')->count();
+                                    $approvedCount = $member->documents->where('status', 'approved')->count();
+                                    $rejectedCount = $member->documents->where('status', 'rejected')->count();
+                                @endphp
+                                @if ($pendingCount > 0)
+                                    <span class="tich-badge tich-badge--warning tich-ml-1">{{ $pendingCount }} pending</span>
+                                @endif
+                                @if ($approvedCount > 0)
+                                    <span class="tich-badge tich-badge--success tich-ml-1">{{ $approvedCount }} approved</span>
+                                @endif
+                                @if ($rejectedCount > 0)
+                                    <span class="tich-badge tich-badge--danger tich-ml-1">{{ $rejectedCount }} rejected</span>
+                                @endif
                             </td>
                             <td>
                                 <a href="{{ route('hr.documents.show', $member) }}" class="tich-btn tich-btn-ghost">View Documents</a>

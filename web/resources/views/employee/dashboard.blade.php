@@ -44,6 +44,7 @@
         <button type="button" class="is-active" data-employee-tab="employment">Employment</button>
         <button type="button" data-employee-tab="contact">Contact</button>
         <button type="button" data-employee-tab="leave">Leave</button>
+        <button type="button" data-employee-tab="training">Training</button>
         <button type="button" data-employee-tab="records">Records</button>
     </nav>
 
@@ -219,6 +220,40 @@
             @empty
                 <p class="tich-text tich-mt-4">No leave requests on file.</p>
             @endforelse
+        </article>
+    </div>
+
+    <div class="tich-employee-panel" data-employee-panel="training" hidden>
+        <article class="tich-card">
+            <h2 class="tich-h3">Assigned Training</h2>
+            @if ($trainings->isEmpty())
+                <p class="tich-text tich-mt-4">No active training assignments.</p>
+            @else
+                <div class="tich-mt-4">
+                    @foreach ($trainings as $training)
+                        <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
+                            <strong>{{ $training->activity_name }}</strong>
+                            <span class="tich-badge tich-badge--info tich-ml-2">{{ ucfirst($training->activity_type) }}</span>
+                            <p class="tich-caption tich-mt-2">
+                                {{ $training->organizer ?? 'Internal' }} · {{ $training->start_date?->format('d M Y') }}
+                                @if ($training->end_date) → {{ $training->end_date->format('d M Y') }}@endif
+                            </p>
+                            <p class="tich-caption">
+                                Hours: {{ $training->hours_or_days ?? 0 }} · CPD Credits: {{ $training->cpd_credits_earned ?? 0 }}
+                                @if ($training->location) · {{ $training->location }}@endif
+                            </p>
+                            <span class="tich-badge tich-badge--{{ $training->is_completed ? 'success' : 'warning' }} tich-mt-2">
+                                {{ $training->is_completed ? 'Completed' : 'In Progress' }}
+                            </span>
+                            @if ($training->is_completed)
+                                <a href="{{ route('staff.documents.create') }}" class="tich-btn tich-btn-primary tich-ml-2" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
+                                    Submit Certification
+                                </a>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </article>
     </div>
 

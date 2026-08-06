@@ -1,6 +1,4 @@
 @php
-    $sectionLabels = \App\Services\ProgramCurriculumService::curriculumSections();
-    $currentSectionLabel = $sectionLabels[$section] ?? ucfirst($section);
     $intakeListParams = array_filter(array_merge($hub, [
         'program' => $program->id,
         'section' => 'intakes',
@@ -10,8 +8,7 @@
 <article class="tich-card">
     <div class="tich-notice tich-notice--warning tich-mb-4">
         <p class="tich-text" style="margin:0;">
-            <strong>Intake required.</strong>
-            {{ $currentSectionLabel }} is tied to a specific intake cohort. Select the intake you are working on before continuing.
+            <strong>Select or create an intake before building a timetable.</strong>
         </p>
     </div>
 
@@ -22,12 +19,21 @@
     @if ($intakes->isEmpty())
         <p class="tich-text tich-mt-4">
             No intakes exist for this programme yet.
-            <a href="{{ route('departments.academics.programs.curriculum', $intakeListParams) }}" class="tich-link">Create an intake</a> first.
         </p>
+        <div class="tich-mt-4">
+            <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'learning_department' => $learningDepartmentId])) }}" class="tich-btn tich-btn-primary tich-ml-2">
+                Create Intake
+            </a>
+            <a href="{{ route('departments.academics.programs.curriculum', $intakeListParams) }}" class="tich-btn tich-btn-ghost tich-ml-2">
+                View All Intakes
+            </a>
+        </div>
     @else
         <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => $section])) }}" class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
             <div class="tich-form-group" style="margin:0; min-width:16rem;">
-                <label for="required-intake-select" class="tich-label">Select working intake</label>
+                <label for="required-intake-select" class="tich-label">
+                    <a href="{{ route('departments.academics.programs.curriculum', $intakeListParams) }}" class="tich-link">Select intake</a>
+                </label>
                 <select
                     id="required-intake-select"
                     name="intake"
