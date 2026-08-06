@@ -18,12 +18,6 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
 use App\Http\Controllers\Academics\AttendanceLedgerController;
 use App\Http\Controllers\Academics\LessonPlanController;
-use App\Http\Controllers\Academics\PerformanceTerminalController;
-use App\Http\Controllers\Academics\CalendarController as AcademicsCalendarController;
-use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardController;
-use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentController;
-use App\Http\Controllers\Academics\ProgramCurriculumController;
-use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use App\Http\Controllers\Staff\AttendanceSheetController;
 use App\Http\Controllers\Staff\StaffLessonPlanDocumentController;
 use App\Http\Controllers\Staff\StaffPortalActionController;
@@ -33,7 +27,6 @@ use App\Http\Controllers\Admissions\ApprovalController;
 use App\Http\Controllers\Admissions\ApplicationDocumentController;
 use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
 use App\Http\Controllers\HR\EssOnboardingController;
-use App\Models\Department;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -165,6 +158,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('admissions.applications.resend-portal-signup');
     });
 
+    Route::redirect('/sis', '/sis/students')
+        ->middleware('permission:students.read')
+        ->name('sis.dashboard');
+
     Route::prefix('sis')->middleware(['permission:students.read'])->group(function () {
         Route::get('/students', [\App\Http\Controllers\Sis\StudentController::class, 'index'])->name('sis.students.index');
         Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
@@ -291,83 +288,20 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         });
     });
 
-    Route::get('/academics', function () {
-        $hub = Department::findAcademicsHub();
-        abort_unless($hub, 404);
+    $registerAcademicsRoutes = require __DIR__.'/includes/academics.php';
 
-        return redirect()->route('departments.academics.dashboard', $hub);
-    })->middleware('permission:academics.read')->name('academics.hub');
-
-    Route::prefix('departments/{department}/academics')->group(function () {
-        Route::get('/', AcademicsDashboardController::class)
-            ->middleware('permission:academics.read')
-            ->name('departments.academics.dashboard');
-
-        Route::middleware('permission:academics.read')->group(function () {
-            Route::get('/departments', [AcademicsDepartmentController::class, 'index'])->name('departments.academics.departments.index');
-            Route::get('/units', [AcademicsUnitController::class, 'index'])->name('departments.academics.units.index');
-            Route::get('/programs', [ProgramCurriculumController::class, 'index'])->name('departments.academics.programs.index');
-            Route::get('/programs/{program}/curriculum', [ProgramCurriculumController::class, 'show'])->name('departments.academics.programs.curriculum');
-            Route::get('/programs/{program}/timetables/{timetable}/print', [ProgramCurriculumController::class, 'printTimetable'])->name('departments.academics.programs.timetable.print');
-            Route::get('/programs/{program}/timetables/{timetable}/pdf', [ProgramCurriculumController::class, 'downloadTimetablePdf'])->name('departments.academics.programs.timetable.pdf');
-            Route::get('/attendance-ledger', [AttendanceLedgerController::class, 'index'])->name('departments.academics.attendance-ledger.index');
-            Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->name('departments.academics.lesson-plans.index');
-            Route::get('/lesson-plans/audit', [LessonPlanController::class, 'audit'])->name('departments.academics.lesson-plans.audit');
-            Route::get('/lesson-plans/{plan}', [LessonPlanController::class, 'show'])->name('departments.academics.lesson-plans.show');
-            Route::get('/performance', [PerformanceTerminalController::class, 'index'])->name('departments.academics.performance.index');
+    Route::prefix('academics')
+        ->middleware('resolve.academics.hub')
+        ->group(function () use ($registerAcademicsRoutes) {
+            $registerAcademicsRoutes(true);
         });
 
-        Route::middleware('permission:academics.write')->group(function () {
-            Route::post('/programs/{program}/allocations', [ProgramCurriculumController::class, 'storeAllocation'])->name('departments.academics.programs.allocations.store');
-            Route::delete('/programs/{program}/allocations/{allocation}', [ProgramCurriculumController::class, 'destroyAllocation'])->name('departments.academics.programs.allocations.destroy');
-            Route::post('/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'])->name('departments.academics.attendance-ledger.verify-hod');
-            Route::post('/attendance-ledger/{session}/verify-registrar', [AttendanceLedgerController::class, 'verifyRegistrar'])->name('departments.academics.attendance-ledger.verify-registrar');
-            Route::put('/lesson-plans/{plan}', [LessonPlanController::class, 'update'])->name('departments.academics.lesson-plans.update');
-            Route::post('/lesson-plans/{plan}/approve', [LessonPlanController::class, 'approve'])->name('departments.academics.lesson-plans.approve');
-            Route::post('/lesson-plans/{plan}/reject', [LessonPlanController::class, 'reject'])->name('departments.academics.lesson-plans.reject');
-            Route::post('/lesson-plans/{plan}/request-modification', [LessonPlanController::class, 'requestModification'])->name('departments.academics.lesson-plans.request-modification');
-            Route::put('/learning-departments/{learningDepartment}/profile', [AcademicsDepartmentController::class, 'updateProfile'])
-                ->name('departments.academics.departments.update-profile');
-            Route::post('/units', [AcademicsUnitController::class, 'store'])->name('departments.academics.units.store');
-            Route::put('/units/{unit}', [AcademicsUnitController::class, 'update'])->name('departments.academics.units.update');
-            Route::post('/units/{unit}/submit', [AcademicsUnitController::class, 'submit'])->name('departments.academics.units.submit');
-            Route::put('/programs/{program}/format', [ProgramCurriculumController::class, 'updateFormat'])->name('departments.academics.programs.update-format');
-            Route::post('/programs/{program}/units', [ProgramCurriculumController::class, 'syncUnits'])->name('departments.academics.programs.sync-units');
-            Route::post('/programs/{program}/intakes', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.intakes.store');
-            Route::post('/programs/{program}/intakes/{version}/units', [ProgramCurriculumController::class, 'syncIntakeUnits'])->name('departments.academics.programs.intakes.sync-units');
-            Route::post('/programs/{program}/intakes/{version}/periods', [ProgramCurriculumController::class, 'syncIntakePeriods'])->name('departments.academics.programs.intakes.sync-periods');
-            Route::put('/programs/{program}/timetable/template', [ProgramCurriculumController::class, 'syncTimetableTemplate'])->name('departments.academics.programs.timetable.sync-template');
-            Route::put('/programs/{program}/timetable/slots', [ProgramCurriculumController::class, 'syncTimetableKindSlots'])->name('departments.academics.programs.timetable.sync-kind-slots');
-            Route::post('/programs/{program}/intakes/{version}/timetable/generate', [ProgramCurriculumController::class, 'generateTimetable'])->name('departments.academics.programs.timetable.generate');
-            Route::post('/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'])->name('departments.academics.programs.timetable.add-session');
-            Route::patch('/programs/{program}/timetables/{timetable}/sessions/{session}/move', [ProgramCurriculumController::class, 'moveTimetableSession'])->name('departments.academics.programs.timetable.move-session');
-            Route::post('/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'])->name('departments.academics.programs.timetable.publish');
-            Route::put('/programs/{program}/exam-schedules/{schedule}', [ProgramCurriculumController::class, 'updateExamSchedule'])->name('departments.academics.programs.exam-schedules.update');
-            Route::put('/programs/{program}/units/{unit}/assessment-weights', [ProgramCurriculumController::class, 'updateUnitAssessmentWeights'])->name('departments.academics.programs.units.assessment-weights.update');
-            Route::post('/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'])->name('departments.academics.programs.intakes.add-unit');
-            Route::post('/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'])->name('departments.academics.programs.versions.create');
-            Route::post('/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'])->name('departments.academics.versions.submit');
-            Route::post('/versions/{version}/reopen', [ProgramCurriculumController::class, 'reopenVersion'])->name('departments.academics.versions.reopen');
+    Route::prefix('departments/{department}/academics')
+        ->where(['department' => '[0-9]+(-[0-9]+)?'])
+        ->middleware('redirect.legacy.academics')
+        ->group(function () use ($registerAcademicsRoutes) {
+            $registerAcademicsRoutes(false);
         });
-
-        Route::post('/units/{unit}/approve', [AcademicsUnitController::class, 'approve'])
-            ->middleware('permission:academics.approve')
-            ->name('departments.academics.units.approve');
-
-        Route::post('/versions/{version}/approve-registry', [ProgramCurriculumController::class, 'approveVersionRegistry'])
-            ->middleware('permission:academics.approve')
-            ->name('departments.academics.versions.approve-registry');
-
-        Route::post('/versions/{version}/approve-ceo', [ProgramCurriculumController::class, 'approveVersionCeo'])
-            ->middleware('permission:academics.approve')
-            ->name('departments.academics.versions.approve-ceo');
-
-        Route::middleware('permission:academics.calendar')->group(function () {
-            Route::get('/calendar', [AcademicsCalendarController::class, 'index'])->name('departments.academics.calendar.index');
-            Route::post('/calendar/years', [AcademicsCalendarController::class, 'storeYear'])->name('departments.academics.calendar.store-year');
-            Route::put('/calendar/semesters/{semester}', [AcademicsCalendarController::class, 'updateSemester'])->name('departments.academics.calendar.update-semester');
-        });
-    });
 
     Route::get('/portal', [\App\Http\Controllers\Portal\PortalDashboardController::class, '__invoke'])
         ->middleware('student.portal')

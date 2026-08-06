@@ -1,7 +1,9 @@
 @extends('layouts.academics')
 
 @section('academics-content')
-    @php($hub = ['department' => $department->id])
+    @php($hub = \App\Support\AcademicsRouteParams::for([
+        'learning_department' => ($learningDepartment ?? null)?->id ?? request()->integer('learning_department') ?: null,
+    ]))
 
     <x-page-toolbar title="Learning departments" :meta="'Curriculum profiles for schools under ' . $department->dept_name" />
 

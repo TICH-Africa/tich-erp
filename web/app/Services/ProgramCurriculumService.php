@@ -249,14 +249,12 @@ class ProgramCurriculumService
         User $user,
     ): array {
         $programParams = array_filter([
-            'department' => $hub->id,
             'program' => $program->id,
             'learning_department' => $learningDepartment?->id,
             'intake' => $selectedIntake?->id,
         ]);
 
         $listParams = array_filter([
-            'department' => $hub->id,
             'learning_department' => $learningDepartment?->id,
         ]);
 

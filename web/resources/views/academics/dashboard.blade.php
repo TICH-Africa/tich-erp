@@ -1,7 +1,9 @@
 @extends('layouts.academics')
 
 @section('academics-content')
-    @php($hub = ['department' => $department->id])
+    @php($hub = \App\Support\AcademicsRouteParams::for([
+        'learning_department' => ($learningDepartment ?? null)?->id ?? request()->integer('learning_department') ?: null,
+    ]))
 
     <x-page-toolbar
         :title="$department->dept_name"

@@ -307,7 +307,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,
@@ -364,7 +363,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $version->id,
@@ -433,7 +431,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $version->id,
@@ -469,7 +466,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,
@@ -507,7 +503,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,
@@ -547,7 +542,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $version->id,
@@ -681,8 +675,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $intake = $payload['intake'];
         $kindLabel = $payload['kindLabel'];
 
-        $backUrl = route('departments.academics.programs.curriculum', array_filter([
-            'department' => $hub,
+        $backUrl = route('departments.academics.programs.curriculum', \App\Support\AcademicsRouteParams::for([
             'program' => $program->id,
             'learning_department' => $request->integer('learning_department') ?: null,
             'intake' => $intake?->id,
@@ -692,7 +685,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         ]));
 
         $routeParams = [
-            'department' => $hub,
             'program' => $program->id,
             'timetable' => $timetable->id,
         ];
@@ -754,7 +746,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $version->id,
@@ -829,7 +820,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $intake->id,
@@ -858,7 +848,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,
@@ -908,7 +897,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $validated['learning_department'] ?? null,
                 'intake' => $intake->id,
@@ -928,7 +916,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,

@@ -61,9 +61,9 @@
         <p class="tich-text tich-mt-2">Quick links to lesson plan approvals, unit allocations, attendance review, and performance.</p>
         <div class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem;">
             <a href="{{ route('staff.dashboard', ['section' => 'hod-management']) }}" class="tich-btn tich-btn-primary">Open HOD management</a>
-            <a href="{{ route('departments.academics.lesson-plans.index', ['department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Lesson plan approval</a>
-            <a href="{{ route('departments.academics.attendance-ledger.index', ['department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Attendance ledger</a>
-            <a href="{{ route('departments.academics.performance.index', ['department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Performance terminal</a>
+            <a href="{{ route('departments.academics.lesson-plans.index', ['learning_department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Lesson plan approval</a>
+            <a href="{{ route('departments.academics.attendance-ledger.index', ['learning_department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Attendance ledger</a>
+            <a href="{{ route('departments.academics.performance.index', ['learning_department' => $staff->department_id]) }}" class="tich-btn tich-btn-secondary">Performance terminal</a>
         </div>
     </article>
 @endif

@@ -23,7 +23,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.lesson-plans.index', ['department' => $staff->department_id]) }}" class="tich-link">Lesson plan approval</a> in Academics to review and approve/reject.</p>
+            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.lesson-plans.index', ['learning_department' => $staff->department_id]) }}" class="tich-link">Lesson plan approval</a> in Academics to review and approve/reject.</p>
         @endif
     </article>
 
@@ -48,7 +48,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.programs.index', ['department' => $staff->department_id]) }}" class="tich-link">Programme curriculum</a> in Academics to manage allocations.</p>
+            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.programs.index', ['learning_department' => $staff->department_id]) }}" class="tich-link">Programme curriculum</a> in Academics to manage allocations.</p>
         @endif
     </article>
 </div>
@@ -84,7 +84,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.attendance-ledger.index', ['department' => $staff->department_id]) }}" class="tich-link">Attendance ledger</a> in Academics to verify.</p>
+            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.attendance-ledger.index', ['learning_department' => $staff->department_id]) }}" class="tich-link">Attendance ledger</a> in Academics to verify.</p>
         @endif
     </article>
 
@@ -99,7 +99,7 @@
                 <p class="tich-text">Registered students: <strong>{{ $hodManagement['performance']['summary']['registered_students'] ?? 0 }}</strong></p>
                 <p class="tich-text">Failing rate: <strong>{{ $hodManagement['performance']['summary']['failing_rate'] ?? 0 }}%</strong></p>
             </div>
-            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.performance.index', ['department' => $staff->department_id]) }}" class="tich-link">Performance terminal</a> in Academics for full analytics.</p>
+            <p class="tich-caption tich-mt-2">Open <a href="{{ route('departments.academics.performance.index', ['learning_department' => $staff->department_id]) }}" class="tich-link">Performance terminal</a> in Academics for full analytics.</p>
         @endif
     </article>
 </div>

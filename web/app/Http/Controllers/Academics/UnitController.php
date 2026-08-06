@@ -33,10 +33,9 @@ class UnitController extends DepartmentAcademicsController
             abort_unless(in_array($learningDepartmentId, $hub->academicsScopeDepartmentIds(), true), 404);
 
             return redirect()
-                ->route('departments.academics.programs.index', [
-                    'department' => $hub,
+                ->route('departments.academics.programs.index', \App\Support\AcademicsRouteParams::for([
                     'learning_department' => $learningDepartmentId,
-                ])
+                ]))
                 ->with('status', 'Open a programme curriculum to create and manage units.');
         }
 
@@ -128,8 +127,7 @@ class UnitController extends DepartmentAcademicsController
     private function redirectAfterUnitAction(Request $request, Department $hub, string $message): RedirectResponse
     {
         if ($request->filled('return_program')) {
-            return redirect()->route('departments.academics.programs.curriculum', array_filter([
-                'department' => $hub,
+            return redirect()->route('departments.academics.programs.curriculum', \App\Support\AcademicsRouteParams::for([
                 'program' => $request->integer('return_program'),
                 'learning_department' => $request->integer('return_learning_department') ?: null,
                 'intake' => $request->integer('return_intake') ?: null,

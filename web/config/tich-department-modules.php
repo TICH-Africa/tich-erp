@@ -49,7 +49,7 @@ return [
                     'label' => 'Student Information System',
                     'description' => '360° student biodata and enrolment records.',
                     'permission' => 'students.read',
-                    'route' => 'sis.students.index',
+                    'route' => 'sis.dashboard',
                     'context' => 'operational',
                 ],
                 [

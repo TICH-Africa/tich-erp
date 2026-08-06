@@ -2,7 +2,9 @@
 
 @section('academics-content')
     @php
-        $hub = ['department' => $department->id];
+        $hub = \App\Support\AcademicsRouteParams::for([
+            'learning_department' => ($learningDepartment ?? null)?->id ?? request()->integer('learning_department') ?: null,
+        ]);
         if (! empty($learningDepartment)) {
             $hub['learning_department'] = $learningDepartment->id;
         }

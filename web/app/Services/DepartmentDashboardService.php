@@ -19,6 +19,7 @@ class DepartmentDashboardService
     private const ENTRY_ROUTE_PRIORITY = [
         'hr.dashboard',
         'admissions.dashboard',
+        'sis.dashboard',
         'sis.students.index',
         'departments.academics.dashboard',
         'admissions.applications.index',
@@ -456,22 +457,27 @@ class DepartmentDashboardService
     private function resolveToolParams(Department $department, array $tool): array
     {
         $params = $tool['params'] ?? [];
-        $hub = $department->academicsHub();
+        $route = (string) ($tool['route'] ?? '');
 
-        if ($department->isAcademicsHub() || $department->isLearningDepartment()) {
-            $params['department'] = $hub?->id ?? $department->id;
-        } else {
-            $params['department'] = $department->id;
+        if (str_starts_with($route, 'departments.academics.')) {
+            if ($department->isLearningDepartment()) {
+                $params['learning_department'] = $department->id;
+            }
+
+            return $params;
         }
 
         if ($department->isLearningDepartment()) {
-            $params['learning_department'] = $department->id;
-
-            if (($tool['route'] ?? '') === 'admissions.applications.index') {
+            if ($route === 'admissions.applications.index') {
                 $params['department'] = $department->id;
-                unset($params['learning_department']);
+            } else {
+                $params['learning_department'] = $department->id;
             }
+
+            return $params;
         }
+
+        $params['department'] = $department->id;
 
         return $params;
     }

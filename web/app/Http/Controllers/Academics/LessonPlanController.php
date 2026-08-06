@@ -136,7 +136,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $this->lessonPlans->approve($plan, $staff, $comments);
 
         return redirect()
-            ->route('departments.academics.lesson-plans.index', ['department' => $hub->id, 'learning_department' => $request->input('learning_department')])
+            ->route('departments.academics.lesson-plans.index', \App\Support\AcademicsRouteParams::fromRequest($request))
             ->with('status', 'Lesson plan approved. Timetable slots for this unit are now cleared.');
     }
 

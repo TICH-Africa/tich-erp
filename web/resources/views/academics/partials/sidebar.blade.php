@@ -19,7 +19,9 @@
 
         <nav class="tich-admin-sidebar__nav">
             @php
-                $hub = ['department' => $department->id];
+                $hub = \App\Support\AcademicsRouteParams::for([
+                    'learning_department' => request()->integer('learning_department') ?: null,
+                ]);
             @endphp
 
             @can('academics.read')

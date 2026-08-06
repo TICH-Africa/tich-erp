@@ -70,7 +70,7 @@
                         <p class="tich-caption">Administration</p>
                         <h3 class="tich-h3 tich-mt-2">Student Information System</h3>
                         <p class="tich-text tich-mt-2">360° student biodata records compiled from admissions and enrolment.</p>
-                        <a href="{{ route('sis.students.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS hub</a>
+                        <a href="{{ route('sis.dashboard') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS hub</a>
                     </article>
                 @endcan
 
