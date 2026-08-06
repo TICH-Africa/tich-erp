@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -294,7 +295,7 @@ class UserAccessController extends Controller
         return $validator->validated();
     }
 
-    private function mainDepartmentExistsRule(): Rule
+    private function mainDepartmentExistsRule(): Exists
     {
         return Rule::exists('departments', 'id')->where(
             fn ($query) => $query->whereNull('parent_dept_id')->where('is_active', 1)
