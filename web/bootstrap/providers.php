@@ -6,4 +6,5 @@ use App\Providers\TichSecurityServiceProvider;
 return [
     AppServiceProvider::class,
     TichSecurityServiceProvider::class,
+    App\Providers\HrSidebarNotificationServiceProvider::class,
 ];

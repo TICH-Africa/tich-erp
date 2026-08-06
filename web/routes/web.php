@@ -174,6 +174,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
 
         Route::middleware('permission:hr.staff.view')->group(function () {
             Route::get('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'index'])->name('hr.staff.index');

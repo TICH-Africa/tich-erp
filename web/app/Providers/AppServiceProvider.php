@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\RBACService;
 use App\View\Composers\PublicLayoutComposer;
+use App\View\Composers\HrSidebarComposer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,5 +27,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('layouts.app', PublicLayoutComposer::class);
+        View::composer(['hr.partials.sidebar', 'layouts.hr'], HrSidebarComposer::class);
     }
 }

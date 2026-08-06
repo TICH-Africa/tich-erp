@@ -4,6 +4,12 @@
     $open = $open ?? false;
     $active = $active ?? false;
     $items = $items ?? [];
+    $badgeKey = $badgeKey ?? null;
+    $groupBadge = $groupBadge ?? null;
+
+    if ($badgeKey && $groupBadge === null && isset($hrSidebarLabels)) {
+        $groupBadge = $hrSidebarLabels[$badgeKey] ?? null;
+    }
 @endphp
 
 <div @class([
@@ -21,6 +27,14 @@
             @include('partials.navigation.sidebar-icon', ['name' => $icon])
         </span>
         <span class="tich-admin-sidebar__label">{{ $label }}</span>
+        @if ($badgeKey)
+            <span
+                class="tich-notification-badge"
+                data-hr-sidebar-badge="{{ $badgeKey }}"
+                aria-live="polite"
+                @if (! $groupBadge) hidden @endif
+            >{{ $groupBadge }}</span>
+        @endif
         <span class="tich-admin-sidebar__chevron" aria-hidden="true">
             @include('partials.navigation.sidebar-icon', ['name' => 'chevron-down'])
         </span>
@@ -33,6 +47,7 @@
                 'label' => $item['label'],
                 'icon' => $item['icon'] ?? 'circle',
                 'active' => $item['active'] ?? false,
+                'badgeKey' => $item['badgeKey'] ?? null,
                 'badge' => $item['badge'] ?? null,
                 'sub' => true,
             ])

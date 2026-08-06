@@ -5,7 +5,12 @@
     $active = $active ?? false;
     $muted = $muted ?? false;
     $badge = $badge ?? null;
+    $badgeKey = $badgeKey ?? null;
     $sub = $sub ?? false;
+
+    if ($badgeKey && $badge === null && isset($hrSidebarLabels)) {
+        $badge = $hrSidebarLabels[$badgeKey] ?? null;
+    }
 @endphp
 
 <a href="{{ $href }}" @class([
@@ -18,7 +23,14 @@
         @include('partials.navigation.sidebar-icon', ['name' => $icon])
     </span>
     <span class="tich-admin-sidebar__label">{{ $label }}</span>
-    @if ($badge)
+    @if ($badgeKey)
+        <span
+            class="tich-notification-badge"
+            data-hr-sidebar-badge="{{ $badgeKey }}"
+            aria-live="polite"
+            @if (! $badge) hidden @endif
+        >{{ $badge }}</span>
+    @elseif ($badge)
         <span class="tich-notification-badge" aria-label="{{ $badge }} pending">{{ $badge }}</span>
     @endif
 </a>

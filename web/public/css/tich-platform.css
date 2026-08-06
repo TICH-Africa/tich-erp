@@ -2733,6 +2733,35 @@ a.tich-notification-badge:hover {
     color: var(--tich-primary);
 }
 
+.tich-admin-sidebar__group-toggle .tich-admin-sidebar__label {
+    flex: 1;
+    min-width: 0;
+}
+
+.tich-admin-sidebar__group-toggle .tich-notification-badge {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.tich-admin-sidebar__group-toggle .tich-admin-sidebar__chevron {
+    flex-shrink: 0;
+}
+
+.tich-admin-sidebar__link .tich-notification-badge,
+.tich-admin-sidebar__group-toggle .tich-notification-badge {
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.tich-admin-sidebar__nav a.is-active .tich-notification-badge,
+.tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-notification-badge {
+    background: #dc2626;
+    color: #fff;
+}
+
 .tich-admin-sidebar__chevron {
     display: inline-flex;
     align-items: center;

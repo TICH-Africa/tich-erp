@@ -1,0 +1,107 @@
+(function () {
+    const sidebar = document.getElementById('hr-admin-sidebar');
+    if (!sidebar) {
+        return;
+    }
+
+    const configEl = document.getElementById('hr-sidebar-realtime-config');
+    if (!configEl) {
+        return;
+    }
+
+    let config;
+    try {
+        config = JSON.parse(configEl.textContent || '{}');
+    } catch {
+        return;
+    }
+
+    const formatCount = (count) => {
+        const value = Number(count) || 0;
+        if (value <= 0) {
+            return null;
+        }
+
+        return value > 99 ? '99+' : String(value);
+    };
+
+    const applyLabels = (labels) => {
+        if (!labels || typeof labels !== 'object') {
+            return;
+        }
+
+        sidebar.querySelectorAll('[data-hr-sidebar-badge]').forEach((badge) => {
+            const key = badge.getAttribute('data-hr-sidebar-badge');
+            const label = labels[key] ?? formatCount(config.initialCounts?.[key]);
+
+            if (!label) {
+                badge.textContent = '';
+                badge.hidden = true;
+                badge.removeAttribute('aria-label');
+                return;
+            }
+
+            badge.textContent = label;
+            badge.hidden = false;
+            badge.setAttribute('aria-label', `${label} items need HR action`);
+        });
+    };
+
+    applyLabels(config.initialLabels || {});
+
+    const poll = async () => {
+        if (!config.pollUrl) {
+            return;
+        }
+
+        try {
+            const response = await fetch(config.pollUrl, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            applyLabels(payload.labels || {});
+        } catch {
+            // Ignore network errors; websocket or next poll will retry.
+        }
+    };
+
+    if (config.pollUrl) {
+        window.setInterval(poll, 60000);
+    }
+
+    if (!config.enabled || typeof window.Pusher === 'undefined' || typeof window.Echo === 'undefined') {
+        return;
+    }
+
+    window.Pusher = window.Pusher;
+
+    const echo = new window.Echo({
+        broadcaster: 'reverb',
+        key: config.key,
+        wsHost: config.host,
+        wsPort: config.port,
+        wssPort: config.port,
+        forceTLS: config.scheme === 'https',
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: config.authEndpoint,
+        auth: {
+            headers: {
+                'X-CSRF-TOKEN': config.csrfToken,
+            },
+        },
+    });
+
+    echo.private('hr.sidebar')
+        .listen('.sidebar.counts.updated', (event) => {
+            applyLabels(event.labels || {});
+        })
+        .error(() => {
+            poll();
+        });
+})();
