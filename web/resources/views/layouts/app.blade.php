@@ -14,6 +14,7 @@
         $hideAppFooter = request()->routeIs([
             'dashboard',
             'admin.*',
+            'site-settings.*',
             'departments.show',
             'departments.academics.*',
             'sis.*',
