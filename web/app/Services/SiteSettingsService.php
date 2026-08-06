@@ -120,7 +120,11 @@ class SiteSettingsService
             return $path;
         }
 
-        return asset(ltrim($path, '/'));
+        $relative = str_starts_with($path, 'storage/')
+            ? substr($path, 8)
+            : ltrim($path, '/');
+
+        return Storage::disk('public')->url($relative);
     }
 
     public function forgetCache(): void

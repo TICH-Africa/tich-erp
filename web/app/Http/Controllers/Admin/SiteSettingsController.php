@@ -8,8 +8,10 @@ use App\Models\Site\ContactChannel;
 use App\Models\Site\SocialLink;
 use App\Services\AuditService;
 use App\Services\SiteSettingsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SiteSettingsController extends Controller
@@ -27,7 +29,7 @@ class SiteSettingsController extends Controller
             'panel' => $panel,
             'siteMeta' => $this->settings->siteMeta(),
             'slides' => CarouselSlide::query()->orderBy('display_order')->orderBy('id')->get(),
-            'contacts' => ContactChannel::query()->orderByDesc('is_primary')->orderBy('display_order')->get(),
+            'contacts' => ContactChannel::query()->orderBy('display_order')->orderBy('id')->get(),
             'socialLinks' => SocialLink::query()->orderBy('display_order')->get(),
             'channelTypes' => ['email', 'phone', 'physical_address', 'fax', 'social_media'],
         ]);
@@ -126,6 +128,7 @@ class SiteSettingsController extends Controller
         $slide = CarouselSlide::create([
             ...$validated,
             'image_path' => $imagePath,
+            'display_order' => (int) CarouselSlide::query()->max('display_order') + 1,
             'is_active' => $request->boolean('is_active', true),
         ]);
 
@@ -182,14 +185,13 @@ class SiteSettingsController extends Controller
             'value' => ['required', 'string', 'max:500'],
             'display_value' => ['nullable', 'string', 'max:500'],
             'is_primary' => ['nullable', 'boolean'],
-            'display_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         ContactChannel::create([
             ...$validated,
             'display_value' => $validated['display_value'] ?: $validated['value'],
             'is_primary' => $request->boolean('is_primary'),
-            'display_order' => $validated['display_order'] ?? 0,
+            'display_order' => (int) ContactChannel::query()->max('display_order') + 1,
             'is_active' => 1,
         ]);
 
@@ -204,7 +206,6 @@ class SiteSettingsController extends Controller
             'value' => ['required', 'string', 'max:500'],
             'display_value' => ['nullable', 'string', 'max:500'],
             'is_primary' => ['nullable', 'boolean'],
-            'display_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -232,13 +233,12 @@ class SiteSettingsController extends Controller
             'display_name' => ['required', 'string', 'max:200'],
             'url' => ['required', 'url', 'max:500'],
             'icon_name' => ['nullable', 'string', 'max:50'],
-            'display_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         SocialLink::create([
             ...$validated,
             'icon_name' => $validated['icon_name'] ?: $validated['platform'],
-            'display_order' => $validated['display_order'] ?? 0,
+            'display_order' => (int) SocialLink::query()->max('display_order') + 1,
             'is_active' => 1,
         ]);
 
@@ -252,7 +252,6 @@ class SiteSettingsController extends Controller
             'display_name' => ['required', 'string', 'max:200'],
             'url' => ['required', 'url', 'max:500'],
             'icon_name' => ['nullable', 'string', 'max:50'],
-            'display_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -272,6 +271,21 @@ class SiteSettingsController extends Controller
         return back()->with('status', 'Social link removed.');
     }
 
+    public function reorderSlides(Request $request): JsonResponse
+    {
+        return $this->reorderByDisplayOrder($request, CarouselSlide::class, 'homepage_carousel_slides', 'Invalid slide order.');
+    }
+
+    public function reorderContacts(Request $request): JsonResponse
+    {
+        return $this->reorderByDisplayOrder($request, ContactChannel::class, 'contact_channels', 'Invalid contact order.');
+    }
+
+    public function reorderSocialLinks(Request $request): JsonResponse
+    {
+        return $this->reorderByDisplayOrder($request, SocialLink::class, 'social_links', 'Invalid social link order.');
+    }
+
     private function resolvePanel(string $panel): string
     {
         return in_array($panel, ['general', 'hero', 'contact', 'social'], true) ? $panel : 'general';
@@ -288,8 +302,32 @@ class SiteSettingsController extends Controller
             'video_url' => ['nullable', 'url', 'max:500'],
             'cta_label' => ['nullable', 'string', 'max:100'],
             'cta_url' => ['nullable', 'string', 'max:500'],
-            'display_order' => ['nullable', 'integer', 'min:0'],
             'image' => [$ignoreId ? 'nullable' : 'nullable', 'image', 'max:5120'],
         ]);
+    }
+
+    /**
+     * @param  class-string<CarouselSlide|ContactChannel|SocialLink>  $modelClass
+     */
+    private function reorderByDisplayOrder(Request $request, string $modelClass, string $table, string $errorMessage): JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'array', 'min:1'],
+            'order.*' => ['integer', "exists:{$table},id"],
+        ]);
+
+        $ids = collect($validated['order'])->unique()->values();
+
+        if ($ids->count() !== $modelClass::query()->count()) {
+            return response()->json(['message' => $errorMessage], 422);
+        }
+
+        DB::transaction(function () use ($ids, $modelClass) {
+            foreach ($ids as $index => $id) {
+                $modelClass::query()->whereKey($id)->update(['display_order' => $index]);
+            }
+        });
+
+        return response()->json(['status' => 'ok']);
     }
 }
