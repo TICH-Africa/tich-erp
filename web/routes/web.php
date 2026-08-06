@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DepartmentGroupController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\RoleCategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserAccessController;
@@ -133,6 +134,23 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/', [AuditController::class, 'index'])->name('admin.audit-logs.index');
             Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
             Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
+        });
+    });
+
+    Route::prefix('site-settings')->middleware(['permission:site_settings.read'])->group(function () {
+        Route::get('/', [SiteSettingsController::class, 'index'])->name('site-settings.index');
+
+        Route::middleware(['permission:site_settings.manage'])->group(function () {
+            Route::put('/general', [SiteSettingsController::class, 'updateGeneral'])->name('site-settings.general.update');
+            Route::post('/hero-slides', [SiteSettingsController::class, 'storeSlide'])->name('site-settings.hero-slides.store');
+            Route::put('/hero-slides/{slide}', [SiteSettingsController::class, 'updateSlide'])->name('site-settings.hero-slides.update');
+            Route::delete('/hero-slides/{slide}', [SiteSettingsController::class, 'destroySlide'])->name('site-settings.hero-slides.destroy');
+            Route::post('/contacts', [SiteSettingsController::class, 'storeContact'])->name('site-settings.contacts.store');
+            Route::put('/contacts/{contact}', [SiteSettingsController::class, 'updateContact'])->name('site-settings.contacts.update');
+            Route::delete('/contacts/{contact}', [SiteSettingsController::class, 'destroyContact'])->name('site-settings.contacts.destroy');
+            Route::post('/social-links', [SiteSettingsController::class, 'storeSocialLink'])->name('site-settings.social-links.store');
+            Route::put('/social-links/{socialLink}', [SiteSettingsController::class, 'updateSocialLink'])->name('site-settings.social-links.update');
+            Route::delete('/social-links/{socialLink}', [SiteSettingsController::class, 'destroySocialLink'])->name('site-settings.social-links.destroy');
         });
     });
 

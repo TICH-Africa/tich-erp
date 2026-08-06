@@ -89,6 +89,15 @@ return [
             'category' => 'security',
             'scope' => 'institution',
         ],
+        [
+            'key' => 'site_settings',
+            'label' => 'Site settings',
+            'description' => 'Public site identity, hero slides, contact details, and social links.',
+            'route' => 'site-settings.index',
+            'permission' => 'site_settings.read',
+            'category' => 'core',
+            'scope' => 'institution',
+        ],
     ],
 
     'permission_aliases' => [

@@ -12,6 +12,7 @@ return [
         'admin.users.index' => 'users',
         'admin.roles.index' => 'shield',
         'admin.audit-logs.index' => 'scroll',
+        'site-settings.index' => 'layers',
         'admissions.dashboard' => 'dashboard',
         'admissions.applications.index' => 'clipboard-list',
         'sis.students.index' => 'graduation-cap',

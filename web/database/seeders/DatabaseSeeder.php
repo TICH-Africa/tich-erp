@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(EnsureSystemRolesSeeder::class);
         $this->call(SyncDefaultRolesSeeder::class);
         $this->call(NavigationSeeder::class);
+        $this->call(SiteSettingsSeeder::class);
         $this->call(HomepageContentSeeder::class);
         $this->call(ProgramsSeeder::class);
         $this->call(DepartmentModulesSeeder::class);

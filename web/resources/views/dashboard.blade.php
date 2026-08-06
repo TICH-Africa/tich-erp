@@ -28,6 +28,15 @@
                     </article>
                 @endcan
 
+                @can('site_settings.read')
+                    <article class="tich-card tich-card--highlight">
+                        <p class="tich-caption">Core</p>
+                        <h3 class="tich-h3 tich-mt-2">Site settings</h3>
+                        <p class="tich-text tich-mt-2">Manage the public site logo, hero slides, contact details, and branding.</p>
+                        <a href="{{ route('site-settings.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open site settings</a>
+                    </article>
+                @endcan
+
                 @forelse ($departments as $department)
                     <article class="tich-card">
                         <p class="tich-caption">{{ $categoryLabel($department) }}</p>

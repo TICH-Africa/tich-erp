@@ -68,6 +68,8 @@ return [
         'hr.manage_qualifications' => 'hr_manage_qualifications_manage',
         'hr.manage_licenses' => 'hr_manage_licenses_manage',
         'hr.manage_policies' => 'hr_manage_policies_manage',
+        'site_settings.read' => 'site_settings_manage_settings_view',
+        'site_settings.manage' => 'site_settings_manage_settings_manage',
     ],
 
     /** Roles that may be assigned without a department (institution-wide). */

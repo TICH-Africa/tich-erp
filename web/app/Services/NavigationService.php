@@ -75,12 +75,7 @@ class NavigationService
 
     public function getSiteMeta(): array
     {
-        return config('tich-navigation.site', [
-            'institution_name' => 'Tropical Institute of Community Health and Development in Africa',
-            'short_name' => 'TICH in Africa',
-            'tagline' => 'Community health education for Africa',
-            'copyright' => 'Tropical Institute of Community Health and Development in Africa',
-        ]);
+        return app(SiteSettingsService::class)->siteMeta();
     }
 
     public function resolveUrl(?string $urlOrRoute): string
