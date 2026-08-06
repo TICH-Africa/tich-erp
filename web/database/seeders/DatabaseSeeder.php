@@ -22,10 +22,11 @@ class DatabaseSeeder extends Seeder
         $this->call(ProgramsSeeder::class);
         $this->call(DepartmentModulesSeeder::class);
         $this->call(HmdCcUnitsSeeder::class);
+        $this->call(AcademicCalendarDemoSeeder::class);
         $this->call(LecturerSeeder::class);
         $this->call(HrDemoSeeder::class);
         $this->call(ExamResultsDemoSeeder::class);
-        $this->call(StaffMarksDemoSeeder::class);
+        $this->call(JamesOchiengAcademicCycleSeeder::class);
 
         $rbac = app(RBACService::class);
 

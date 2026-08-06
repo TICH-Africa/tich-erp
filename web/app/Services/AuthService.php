@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,12 +19,7 @@ class AuthService
 
     public function attemptLogin(string $login, string $password, ?Request $request = null): ?User
     {
-        $loginField = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-
-        $user = User::query()
-            ->where($loginField, $login)
-            ->where('is_active', 1)
-            ->first();
+        $user = $this->resolveUserByLogin($login);
 
         if (! $user || ! Hash::check($password, $user->password_hash)) {
             if ($user) {
@@ -413,6 +409,42 @@ class AuthService
             $user->id,
             $request
         );
+    }
+
+    private function resolveUserByLogin(string $login): ?User
+    {
+        $user = User::query()
+            ->where('is_active', 1)
+            ->where(function ($query) use ($login) {
+                $query->where('email', $login)
+                    ->orWhere('username', $login);
+            })
+            ->first();
+
+        if ($user) {
+            return $user;
+        }
+
+        if (! filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        $staffUserId = Staff::query()
+            ->where(function ($query) use ($login) {
+                $query->where('organisation_email', $login)
+                    ->orWhere('primary_email', $login);
+            })
+            ->whereNotNull('user_id')
+            ->value('user_id');
+
+        if (! $staffUserId) {
+            return null;
+        }
+
+        return User::query()
+            ->where('id', $staffUserId)
+            ->where('is_active', 1)
+            ->first();
     }
 
     private function channel(?Request $request): string

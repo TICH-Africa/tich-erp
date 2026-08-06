@@ -41,10 +41,50 @@ class LecturerSeeder extends Seeder
         $unitId = Unit::query()->where('unit_code', 'HMDCC-01')->value('id')
             ?? Unit::query()->where('department_id', $departmentId)->value('id');
 
+        $primaryLecturer = $this->seedLecturer(
+            username: 'lecturer.demo',
+            email: 'lecturer@tich.ac.ke',
+            loginAliasEmail: 'james.ochieng@tich.africa',
+            employeeNumber: 'EMP-LECT-001',
+            firstName: 'James',
+            surname: 'Ochieng',
+            jobTitle: 'Senior Lecturer',
+            departmentId: $departmentId,
+            campusId: $campusId,
+        );
+
+        $this->seedLecturer(
+            username: 'academic.demo',
+            email: 'academic@tich.com',
+            employeeNumber: 'EMP-LECT-002',
+            firstName: 'Mary',
+            surname: 'Akinyi',
+            jobTitle: 'Lecturer',
+            departmentId: $departmentId,
+            campusId: $campusId,
+        );
+
+        if ($unitId && $semesterId && $campusId) {
+            $this->ensureUnitAllocation($primaryLecturer, (int) $unitId, (int) $semesterId, (int) $campusId);
+            $this->ensureDemoEnrolments((int) $unitId, (int) $semesterId);
+        }
+    }
+
+    private function seedLecturer(
+        string $username,
+        string $email,
+        string $employeeNumber,
+        string $firstName,
+        string $surname,
+        string $jobTitle,
+        int $departmentId,
+        ?int $campusId,
+        ?string $loginAliasEmail = null,
+    ): Staff {
         $user = User::query()->firstOrCreate(
-            ['username' => 'lecturer.demo'],
+            ['username' => $username],
             [
-                'email' => 'james.ochieng@tich.africa',
+                'email' => $email,
                 'user_type' => 'staff',
                 'password_hash' => Hash::make('Password123!'),
                 'is_active' => 1,
@@ -52,21 +92,29 @@ class LecturerSeeder extends Seeder
                 'mfa_verified' => true,
             ]
         );
-        $user->update(['email' => 'james.ochieng@tich.africa']);
+
+        $user->update([
+            'email' => $email,
+            'user_type' => 'staff',
+            'is_active' => 1,
+            'mfa_enabled' => false,
+            'mfa_verified' => true,
+        ]);
 
         $staff = Staff::query()->firstOrCreate(
-            ['employee_number' => 'EMP-LECT-001'],
+            ['employee_number' => $employeeNumber],
             [
                 'title' => 'Mr.',
-                'first_name' => 'James',
-                'surname' => 'Ochieng',
+                'first_name' => $firstName,
+                'surname' => $surname,
                 'date_of_birth' => '1985-06-15',
                 'gender' => 'male',
-                'primary_email' => 'james.ochieng@gmail.com',
-                'organisation_email' => 'james.ochieng@tich.africa',
+                'primary_email' => $loginAliasEmail ?: strtolower($firstName).'.'.strtolower($surname).'@gmail.com',
+                'organisation_email' => $email,
                 'phone_number' => '0712345678',
                 'department_id' => $departmentId,
-                'job_title' => 'Senior Lecturer',
+                'campus_id' => $campusId,
+                'job_title' => $jobTitle,
                 'employment_category' => 'permanent',
                 'employment_start_date' => '2020-01-01',
                 'employment_status' => 'active',
@@ -79,59 +127,63 @@ class LecturerSeeder extends Seeder
             'user_id' => $user->id,
             'is_teaching_staff' => 1,
             'department_id' => $departmentId,
-            'primary_email' => 'james.ochieng@gmail.com',
-            'organisation_email' => 'james.ochieng@tich.africa',
+            'campus_id' => $campusId,
+            'organisation_email' => $email,
+            'primary_email' => $loginAliasEmail ?: $staff->primary_email,
+            'employment_status' => 'active',
         ]);
-        $user->update(['staff_id' => $staff->id, 'email' => 'james.ochieng@tich.africa']);
+
+        $user->update(['staff_id' => $staff->id, 'email' => $email]);
 
         $roleId = Role::query()->where('role_name', 'Lecturer/Tutor')->value('id');
         if ($roleId) {
             app(RBACService::class)->assignRoleToUser($user, $roleId);
         }
 
-        if ($unitId && $semesterId && $campusId) {
-            $existing = UnitAllocation::query()
+        return $staff;
+    }
+
+    private function ensureUnitAllocation(Staff $staff, int $unitId, int $semesterId, int $campusId): void
+    {
+        $existing = UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->where('semester_id', $semesterId)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existing) {
+            UnitAllocation::query()
                 ->where('staff_id', $staff->id)
-                ->where('semester_id', $semesterId)
-                ->orderByDesc('id')
-                ->first();
+                ->where('id', '!=', $existing->id)
+                ->update(['is_active' => 0]);
 
-            if ($existing) {
-                UnitAllocation::query()
-                    ->where('staff_id', $staff->id)
-                    ->where('id', '!=', $existing->id)
-                    ->update(['is_active' => 0]);
+            $existing->update([
+                'unit_id' => $unitId,
+                'campus_id' => $campusId,
+                'contact_hours_assigned' => 4,
+                'is_coordinator' => 1,
+                'is_active' => 1,
+            ]);
+        } else {
+            UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->update(['is_active' => 0]);
 
-                $existing->update([
-                    'unit_id' => $unitId,
-                    'campus_id' => $campusId,
-                    'contact_hours_assigned' => 4,
-                    'is_coordinator' => 1,
-                    'is_active' => 1,
-                ]);
-            } else {
-                UnitAllocation::query()
-                    ->where('staff_id', $staff->id)
-                    ->update(['is_active' => 0]);
-
-                UnitAllocation::query()->create([
-                    'unit_id' => $unitId,
-                    'staff_id' => $staff->id,
-                    'semester_id' => $semesterId,
-                    'campus_id' => $campusId,
-                    'contact_hours_assigned' => 4,
-                    'is_coordinator' => 1,
-                    'is_active' => 1,
-                ]);
-            }
-
-            DB::table('program_timetable_sessions')
-                ->where('unit_id', $unitId)
-                ->whereNull('staff_id')
-                ->update(['staff_id' => $staff->id]);
-
-            $this->ensureDemoEnrolments((int) $unitId, (int) $semesterId);
+            UnitAllocation::query()->create([
+                'unit_id' => $unitId,
+                'staff_id' => $staff->id,
+                'semester_id' => $semesterId,
+                'campus_id' => $campusId,
+                'contact_hours_assigned' => 4,
+                'is_coordinator' => 1,
+                'is_active' => 1,
+            ]);
         }
+
+        DB::table('program_timetable_sessions')
+            ->where('unit_id', $unitId)
+            ->whereNull('staff_id')
+            ->update(['staff_id' => $staff->id]);
     }
 
     private function ensureDemoEnrolments(int $unitId, int $semesterId): void
