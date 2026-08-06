@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
-use App\Models\RecruitmentApplication;
 use App\Models\JobVacancy;
+use App\Models\RecruitmentApplication;
 use App\Models\Staff;
+use App\Models\StaffOnboarding;
 use App\Models\User;
+use App\Services\StaffLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,10 @@ use App\Mail\OnboardingInvitationEmail;
 
 class RecruitmentController extends Controller
 {
+    public function __construct(
+        protected StaffLifecycleService $staffLifecycle,
+    ) {}
+
     public function index(Request $request): View
     {
         $query = RecruitmentApplication::query()
@@ -135,7 +141,7 @@ class RecruitmentController extends Controller
         }
 
         DB::transaction(function () use ($application, $request) {
-            $employeeNumber = 'EMP/' . date('Y') . '/' . str_pad((string) (Staff::count() + 1), 5, '0', STR_PAD_LEFT);
+            $employeeNumber = $this->staffLifecycle->generateEmployeeNumber();
 
             $nameParts = $this->splitFullName($application->full_name);
 
@@ -170,15 +176,19 @@ class RecruitmentController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            User::create([
-                'email' => $application->email,
-                'password_hash' => Hash::make(Str::random(16)),
-                'user_type' => 'staff',
-                'staff_id' => $staff->id,
-                'is_active' => 1,
-                'mfa_enabled' => 0,
-                'mfa_verified' => 1,
-            ]);
+            $user = User::query()->updateOrCreate(
+                ['email' => $application->email],
+                [
+                    'password_hash' => Hash::make(Str::random(16)),
+                    'user_type' => 'staff',
+                    'staff_id' => $staff->id,
+                    'is_active' => 1,
+                    'mfa_enabled' => 0,
+                    'mfa_verified' => 1,
+                ]
+            );
+
+            $staff->update(['user_id' => $user->id]);
 
             StaffOnboarding::create([
                 'staff_id' => $staff->id,
@@ -212,12 +222,27 @@ class RecruitmentController extends Controller
 
     private function splitFullName(string $fullName): array
     {
-        $parts = explode(' ', trim($fullName), 3);
+        $parts = preg_split('/\s+/', trim($fullName), -1, PREG_SPLIT_NO_EMPTY);
+
+        if ($parts === []) {
+            return ['first' => '', 'middle' => '', 'last' => ''];
+        }
+
+        if (count($parts) === 1) {
+            return ['first' => $parts[0], 'middle' => '', 'last' => $parts[0]];
+        }
+
+        if (count($parts) === 2) {
+            return ['first' => $parts[0], 'middle' => '', 'last' => $parts[1]];
+        }
+
+        $first = array_shift($parts);
+        $last = array_pop($parts);
 
         return [
-            'first' => $parts[0] ?? '',
-            'middle' => $parts[1] ?? '',
-            'last' => $parts[2] ?? '',
+            'first' => $first,
+            'middle' => implode(' ', $parts),
+            'last' => $last,
         ];
     }
 

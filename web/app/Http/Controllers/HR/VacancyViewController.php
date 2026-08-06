@@ -47,9 +47,7 @@ class VacancyViewController extends Controller
             'closes_automatically' => 'boolean',
         ]);
 
-        $vacancy = app(\App\Services\StaffLifecycleService::class); // We'll use the VacancyController API logic here
-        // Actually let's just call the VacancyController directly
-        $vacancy = \App\Models\JobVacancy::create(array_merge($validated, [
+        $vacancy = JobVacancy::create(array_merge($validated, [
             'vacancy_number' => 'VAC-' . strtoupper(uniqid()),
             'is_published' => $validated['is_published'] ?? 0,
             'is_closed' => 0,

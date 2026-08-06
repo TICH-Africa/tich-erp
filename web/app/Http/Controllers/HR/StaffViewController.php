@@ -5,12 +5,20 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Staff;
+use App\Models\StaffOnboarding;
+use App\Services\AuditService;
+use App\Services\StaffLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 
 class StaffViewController extends Controller
 {
+    public function __construct(
+        protected AuditService $auditService,
+        protected StaffLifecycleService $staffLifecycle,
+    ) {}
+
     public function index(): View
     {
         $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
@@ -109,6 +117,7 @@ class StaffViewController extends Controller
 
         $validated['employment_status'] = 'onboarding';
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
+        $validated['employee_number'] = $this->staffLifecycle->generateEmployeeNumber();
         $validated = $this->prepareStaffEmails($validated);
 
         DB::transaction(function () use ($validated, $request) {

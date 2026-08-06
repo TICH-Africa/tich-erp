@@ -9,6 +9,7 @@ use App\Services\DocumentGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Mpdf\Mpdf;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class DocumentGenerationController extends Controller
 {
@@ -127,5 +128,24 @@ class DocumentGenerationController extends Controller
 
         $mpdf->WriteHTML($html);
         $mpdf->Output($filename, 'D');
+    }
+
+    public function quickDownload(Request $request, string $type): RedirectResponse
+    {
+        $available = $this->documentService->getAvailableTemplates();
+        abort_unless(array_key_exists($type, $available), 404);
+
+        $staffId = $request->integer('staff_id');
+        abort_unless($staffId, 404, 'Select a staff member to generate this document.');
+
+        $template = StaffDocumentTemplate::query()
+            ->where('type', $type)
+            ->where('is_active', 1)
+            ->firstOrFail();
+
+        return redirect()->route('hr.documents.templates.download', [
+            'template' => $template->id,
+            'staff_id' => $staffId,
+        ]);
     }
 }
