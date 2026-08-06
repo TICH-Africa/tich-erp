@@ -48,6 +48,7 @@
         @include('partials.navigation.footer')
     @endunless
 
+    <script src="{{ asset('js/tich-nav.js') }}" defer></script>
     <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
     @yield('scripts')
 </body>

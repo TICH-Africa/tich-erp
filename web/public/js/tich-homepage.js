@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     initCarousel();
     initHeaderOverHero();
-    initMobileNav();
 });
 
 function initCarousel() {
@@ -78,21 +77,4 @@ function initHeaderOverHero() {
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     update();
-}
-
-function initMobileNav() {
-    const toggle = document.querySelector('[data-nav-toggle]');
-    const drawer = document.querySelector('[data-nav-drawer]');
-    if (!toggle || !drawer) return;
-
-    toggle.addEventListener('click', () => {
-        const isHidden = drawer.hasAttribute('hidden');
-        if (isHidden) {
-            drawer.removeAttribute('hidden');
-            toggle.setAttribute('aria-expanded', 'true');
-        } else {
-            drawer.setAttribute('hidden', 'hidden');
-            toggle.setAttribute('aria-expanded', 'false');
-        }
-    });
 }

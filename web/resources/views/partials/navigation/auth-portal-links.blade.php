@@ -1,10 +1,58 @@
 @if (auth()->user()->hasEmployeeProfile())
-    <a href="{{ route('employee.dashboard') }}" class="tich-nav__link{{ request()->routeIs('employee.*') ? ' is-active' : '' }}">My Employee Portal</a>
+    @unless ($mobile ?? false)
+        <div class="tich-nav__item" data-nav-item>
+    @endunless
+    @include('partials.navigation.nav-link', [
+        'href' => route('employee.dashboard'),
+        'label' => 'My Employee Portal',
+        'icon' => 'user',
+        'active' => request()->routeIs('employee.*'),
+        'mobile' => $mobile ?? false,
+    ])
+    @unless ($mobile ?? false)
+        </div>
+    @endunless
 @endif
 @if (auth()->user()->isEnrolledStudent())
-    <a href="{{ route('portal.dashboard') }}" class="tich-nav__link{{ request()->routeIs('portal.*') ? ' is-active' : '' }}">Student portal</a>
+    @unless ($mobile ?? false)
+        <div class="tich-nav__item" data-nav-item>
+    @endunless
+    @include('partials.navigation.nav-link', [
+        'href' => route('portal.dashboard'),
+        'label' => 'Student portal',
+        'icon' => 'graduation-cap',
+        'active' => request()->routeIs('portal.*'),
+        'mobile' => $mobile ?? false,
+    ])
+    @unless ($mobile ?? false)
+        </div>
+    @endunless
 @elseif (auth()->user()->isTeachingStaff())
-    <a href="{{ route('staff.dashboard') }}" class="tich-nav__link{{ request()->routeIs('staff.*') ? ' is-active' : '' }}">Staff portal</a>
+    @unless ($mobile ?? false)
+        <div class="tich-nav__item" data-nav-item>
+    @endunless
+    @include('partials.navigation.nav-link', [
+        'href' => route('staff.dashboard'),
+        'label' => 'Staff portal',
+        'icon' => 'book-open',
+        'active' => request()->routeIs('staff.*'),
+        'mobile' => $mobile ?? false,
+    ])
+    @unless ($mobile ?? false)
+        </div>
+    @endunless
 @else
-    <a href="{{ route('dashboard') }}" class="tich-nav__link{{ request()->routeIs('dashboard') ? ' is-active' : '' }}">Dashboard</a>
+    @unless ($mobile ?? false)
+        <div class="tich-nav__item" data-nav-item>
+    @endunless
+    @include('partials.navigation.nav-link', [
+        'href' => route('dashboard'),
+        'label' => 'Dashboard',
+        'icon' => 'dashboard',
+        'active' => request()->routeIs('dashboard'),
+        'mobile' => $mobile ?? false,
+    ])
+    @unless ($mobile ?? false)
+        </div>
+    @endunless
 @endif
