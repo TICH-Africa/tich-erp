@@ -7,19 +7,23 @@
         </button>
 
         <nav class="tich-nav tich-nav--desktop" aria-label="Primary navigation">
-            <div class="tich-nav__links" data-nav-links>
-                @foreach ($headerMenu as $item)
-                    <div class="tich-nav__item" data-nav-item>
-                        @include('partials.navigation.menu-item', ['item' => $item])
-                    </div>
-                @endforeach
-
-                @auth
-                    @include('partials.navigation.auth-portal-links')
-                @endauth
+            <div class="tich-nav__primary">
+                <div class="tich-nav__links" data-nav-links>
+                    @foreach ($headerMenu as $item)
+                        <div class="tich-nav__item" data-nav-item data-nav-overflow-item>
+                            @include('partials.navigation.menu-item', ['item' => $item])
+                        </div>
+                    @endforeach
+                </div>
 
                 @include('partials.navigation.nav-more')
             </div>
+
+            @auth
+                <div class="tich-nav__pinned">
+                    @include('partials.navigation.auth-portal-links')
+                </div>
+            @endauth
 
             <div class="tich-nav__actions">
                 @include('partials.theme-toggle')

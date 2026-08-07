@@ -1,6 +1,6 @@
 @if (auth()->user()->hasEmployeeProfile())
     @unless ($mobile ?? false)
-        <div class="tich-nav__item" data-nav-item>
+        <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
         'href' => route('employee.dashboard'),
@@ -15,7 +15,7 @@
 @endif
 @if (auth()->user()->isEnrolledStudent())
     @unless ($mobile ?? false)
-        <div class="tich-nav__item" data-nav-item>
+        <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
         'href' => route('portal.dashboard'),
@@ -29,7 +29,7 @@
     @endunless
 @elseif (auth()->user()->isTeachingStaff())
     @unless ($mobile ?? false)
-        <div class="tich-nav__item" data-nav-item>
+        <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
         'href' => route('staff.dashboard'),
@@ -43,7 +43,7 @@
     @endunless
 @else
     @unless ($mobile ?? false)
-        <div class="tich-nav__item" data-nav-item>
+        <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
         'href' => route('dashboard'),
