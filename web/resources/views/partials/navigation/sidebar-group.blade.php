@@ -6,6 +6,7 @@
     $items = $items ?? [];
     $badgeKey = $badgeKey ?? null;
     $groupBadge = $groupBadge ?? null;
+    $menuLabel = $menuLabel ?? $label;
 
     if ($badgeKey && $groupBadge === null && isset($hrSidebarLabels)) {
         $groupBadge = $hrSidebarLabels[$badgeKey] ?? null;
@@ -27,16 +28,17 @@
             @include('partials.navigation.sidebar-icon', ['name' => $icon])
         </span>
         <span class="tich-admin-sidebar__label">{{ $label }}</span>
-        @if ($badgeKey)
-            <span
-                class="tich-notification-badge"
-                data-hr-sidebar-badge="{{ $badgeKey }}"
-                aria-live="polite"
-                @if (! $groupBadge) hidden @endif
-            >{{ $groupBadge }}</span>
-        @endif
-        <span class="tich-admin-sidebar__chevron" aria-hidden="true">
-            @include('partials.navigation.sidebar-icon', ['name' => 'chevron-down'])
+        <span class="tich-admin-sidebar__meta">
+            @if ($badgeKey)
+                @include('partials.navigation.sidebar-badge', [
+                    'badgeKey' => $badgeKey,
+                    'badge' => $groupBadge,
+                    'menuLabel' => $menuLabel,
+                ])
+            @endif
+            <span class="tich-admin-sidebar__chevron" aria-hidden="true">
+                @include('partials.navigation.sidebar-icon', ['name' => 'chevron-down'])
+            </span>
         </span>
     </button>
 
@@ -49,6 +51,7 @@
                 'active' => $item['active'] ?? false,
                 'badgeKey' => $item['badgeKey'] ?? null,
                 'badge' => $item['badge'] ?? null,
+                'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
                 'sub' => true,
             ])
         @endforeach

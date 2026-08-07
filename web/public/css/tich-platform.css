@@ -2623,6 +2623,8 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     display: flex;
     align-items: center;
     gap: var(--sidebar-gap);
+    width: 100%;
+    box-sizing: border-box;
     padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
     border-radius: var(--radius-md);
     color: var(--tich-grey);
@@ -2666,6 +2668,17 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-admin-sidebar__label {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tich-admin-sidebar__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(0.35rem * var(--sidebar-scale));
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .tich-admin-sidebar__link.is-muted .tich-admin-sidebar__icon {
@@ -2681,11 +2694,23 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     gap: calc(0.125rem * var(--sidebar-scale));
 }
 
-.tich-admin-sidebar__link .tich-notification-badge {
-    min-width: calc(1.25rem * var(--sidebar-scale));
-    height: calc(1.25rem * var(--sidebar-scale));
-    padding: 0 calc(0.35rem * var(--sidebar-scale));
-    font-size: calc(0.6875rem * var(--sidebar-scale));
+.tich-admin-sidebar__link .tich-notification-badge--sidebar,
+.tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
+    --sidebar-badge-bg: rgba(220, 38, 38, 0.16);
+    --sidebar-badge-color: #b91c1c;
+    --sidebar-badge-bg-hover: rgba(220, 38, 38, 0.26);
+    --sidebar-badge-color-hover: #991b1b;
+    min-width: calc(1.5rem * var(--sidebar-scale));
+    height: calc(1.5rem * var(--sidebar-scale));
+    padding: 0 calc(0.5rem * var(--sidebar-scale));
+    font-size: calc(0.75rem * var(--sidebar-scale));
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    background: var(--sidebar-badge-bg);
+    color: var(--sidebar-badge-color);
+    box-shadow: none;
 }
 
 .tich-notification-badge {
@@ -2706,14 +2731,33 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     text-decoration: none;
 }
 
+.tich-notification-badge--sidebar.is-updated {
+    animation: tich-sidebar-badge-pulse 0.45s ease;
+}
+
+@keyframes tich-sidebar-badge-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.14);
+    }
+}
+
 a.tich-notification-badge:hover {
     background: #b91c1c;
     color: #fff;
 }
 
-.tich-admin-sidebar__nav a.is-active .tich-notification-badge {
-    background: #b91c1c;
-    color: #fff;
+.tich-admin-sidebar__nav a.is-active .tich-notification-badge--sidebar,
+.tich-admin-sidebar__link.is-active .tich-notification-badge--sidebar,
+.tich-admin-sidebar__link:hover .tich-notification-badge--sidebar,
+.tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar,
+.tich-admin-sidebar__group-toggle:hover .tich-notification-badge--sidebar {
+    background: var(--sidebar-badge-bg-hover);
+    color: var(--sidebar-badge-color-hover);
 }
 
 .tich-admin-sidebar__nav a:hover,
@@ -2807,35 +2851,14 @@ a.tich-notification-badge:hover {
     min-width: 0;
 }
 
-.tich-admin-sidebar__group-toggle .tich-notification-badge {
-    flex-shrink: 0;
-    margin-left: auto;
-}
-
 .tich-admin-sidebar__group-toggle .tich-admin-sidebar__chevron {
     flex-shrink: 0;
-}
-
-.tich-admin-sidebar__link .tich-notification-badge,
-.tich-admin-sidebar__group-toggle .tich-notification-badge {
-    background: #dc2626;
-    color: #fff;
-    font-weight: 700;
-    letter-spacing: 0;
-    text-transform: none;
-}
-
-.tich-admin-sidebar__nav a.is-active .tich-notification-badge,
-.tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-notification-badge {
-    background: #dc2626;
-    color: #fff;
 }
 
 .tich-admin-sidebar__chevron {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
     color: var(--tich-grey);
     transition: transform 0.15s ease;
 }
@@ -2869,10 +2892,10 @@ a.tich-notification-badge:hover {
     height: var(--sidebar-sub-icon-svg);
 }
 
-.tich-admin-sidebar__link--sub .tich-notification-badge {
-    min-width: calc(1.25rem * var(--sidebar-sub-scale));
-    height: calc(1.25rem * var(--sidebar-sub-scale));
-    padding: 0 calc(0.35rem * var(--sidebar-sub-scale));
+.tich-admin-sidebar__link--sub .tich-notification-badge--sidebar {
+    min-width: calc(1.375rem * var(--sidebar-sub-scale));
+    height: calc(1.375rem * var(--sidebar-sub-scale));
+    padding: 0 calc(0.45rem * var(--sidebar-sub-scale));
     font-size: calc(0.6875rem * var(--sidebar-sub-scale));
 }
 
@@ -4043,6 +4066,22 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] .tich-admin-sidebar__link.is-active .tich-admin-sidebar__icon {
     background: var(--tich-primary);
     color: #fff;
+}
+
+[data-theme="dark"] .tich-admin-sidebar__link .tich-notification-badge--sidebar,
+[data-theme="dark"] .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
+    --sidebar-badge-bg: #dc2626;
+    --sidebar-badge-color: #fff;
+    --sidebar-badge-bg-hover: #ef4444;
+    --sidebar-badge-color-hover: #fff;
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.45);
+}
+
+[data-theme="dark"] .tich-admin-sidebar__link--sub .tich-notification-badge--sidebar {
+    --sidebar-badge-bg: #b91c1c;
+    --sidebar-badge-color: #fff;
+    --sidebar-badge-bg-hover: #dc2626;
+    --sidebar-badge-color-hover: #fff;
 }
 
 [data-theme="dark"] .tich-card--highlight {

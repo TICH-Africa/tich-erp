@@ -19,6 +19,7 @@ class HrSidebarComposer
         $view->with([
             'hrSidebarCounts' => $counts,
             'hrSidebarLabels' => $labels,
+            'hrSidebarMenuLabels' => HrSidebarNotificationService::MENU_KEYS,
         ]);
     }
 }

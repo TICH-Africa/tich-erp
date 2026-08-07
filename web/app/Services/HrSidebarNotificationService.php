@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Events\HrSidebarCountsUpdated;
+use App\Models\Feedback;
+use App\Models\Grievance;
 use App\Models\LeaveRequest;
 use App\Models\OffboardingRequest;
+use App\Models\PolicyAcknowledgement;
 use App\Models\RecruitmentApplication;
 use App\Models\StaffContract;
 use App\Models\StaffDocument;
@@ -29,6 +32,10 @@ class HrSidebarNotificationService
         'offboarding' => 'Offboarding',
         'contracts' => 'Contracts',
         'profile-changes' => 'Profile changes',
+        'policies' => 'HR Policies',
+        'grievances' => 'Grievances',
+        'feedback' => 'Feedback',
+        'employee-relations' => 'Employee Relations',
     ];
 
     public function counts(bool $fresh = false): array
@@ -75,6 +82,9 @@ class HrSidebarNotificationService
             ->where('is_cancelled', false)
             ->count();
 
+        $grievances = $this->openGrievancesCount();
+        $feedback = $this->openFeedbackCount();
+
         return [
             'onboarding' => StaffOnboarding::query()->where('status', 'pending_hr_review')->count(),
             'recruitment' => RecruitmentApplication::query()
@@ -86,7 +96,38 @@ class HrSidebarNotificationService
             'offboarding' => $this->pendingOffboardingCount(),
             'contracts' => $this->contractsNeedingAction(),
             'profile-changes' => $this->pendingProfileChangesCount(),
+            'policies' => $this->pendingPolicyAcknowledgementsCount(),
+            'grievances' => $grievances,
+            'feedback' => $feedback,
+            'employee-relations' => $grievances + $feedback,
         ];
+    }
+
+    private function pendingPolicyAcknowledgementsCount(): int
+    {
+        if (! Schema::hasTable('policy_acknowledgements')) {
+            return 0;
+        }
+
+        return PolicyAcknowledgement::query()->where('is_acknowledged', false)->count();
+    }
+
+    private function openGrievancesCount(): int
+    {
+        if (! Schema::hasTable('grievances')) {
+            return 0;
+        }
+
+        return Grievance::query()->whereIn('status', ['open', 'under_review'])->count();
+    }
+
+    private function openFeedbackCount(): int
+    {
+        if (! Schema::hasTable('feedback')) {
+            return 0;
+        }
+
+        return Feedback::query()->whereIn('status', ['open', 'under_review'])->count();
     }
 
     private function contractsNeedingAction(): int

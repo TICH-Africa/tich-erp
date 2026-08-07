@@ -67,15 +67,12 @@
         ])
 
         @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
-        @php
-            $pendingAcknowledgements = \App\Models\PolicyAcknowledgement::where('is_acknowledged', false)->count();
-        @endphp
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.policies.index'),
             'label' => 'HR Policies',
             'icon' => 'shield-check',
             'active' => request()->routeIs('hr.policies.*'),
-            'badge' => $pendingAcknowledgements > 0 ? $pendingAcknowledgements : null,
+            'badgeKey' => 'policies',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.documents.index'),
@@ -96,8 +93,6 @@
 
         @php
             $erRoutesActive = request()->routeIs('hr.employee-relations.*');
-            $openGrievances = \App\Models\Grievance::whereIn('status', ['open', 'under_review'])->count();
-            $openFeedback = \App\Models\Feedback::whereIn('status', ['open', 'under_review'])->count();
         @endphp
 
         @include('partials.navigation.sidebar-group', [
@@ -105,6 +100,7 @@
             'icon' => 'users',
             'open' => $erRoutesActive,
             'active' => $erRoutesActive,
+            'badgeKey' => 'employee-relations',
             'items' => [
                 [
                     'href' => route('hr.employee-relations.disciplinary.index'),
@@ -117,14 +113,14 @@
                     'label' => 'Grievances',
                     'icon' => 'message-square',
                     'active' => request()->routeIs('hr.employee-relations.grievances.*'),
-                    'badge' => $openGrievances > 0 ? $openGrievances : null,
+                    'badgeKey' => 'grievances',
                 ],
                 [
                     'href' => route('hr.employee-relations.feedback.index'),
                     'label' => 'Feedback',
                     'icon' => 'feedback',
                     'active' => request()->routeIs('hr.employee-relations.feedback.*'),
-                    'badge' => $openFeedback > 0 ? $openFeedback : null,
+                    'badgeKey' => 'feedback',
                 ],
             ],
         ])

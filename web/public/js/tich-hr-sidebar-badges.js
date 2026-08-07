@@ -16,6 +16,8 @@
         return;
     }
 
+    const menuLabels = config.menuLabels || {};
+
     const formatCount = (count) => {
         const value = Number(count) || 0;
         if (value <= 0) {
@@ -25,6 +27,17 @@
         return value > 99 ? '99+' : String(value);
     };
 
+    const badgeLabel = (key, label) => {
+        const itemName = menuLabels[key] || key;
+        return `${label} pending ${itemName}`;
+    };
+
+    const pulseBadge = (badge) => {
+        badge.classList.remove('is-updated');
+        void badge.offsetWidth;
+        badge.classList.add('is-updated');
+    };
+
     const applyLabels = (labels) => {
         if (!labels || typeof labels !== 'object') {
             return;
@@ -32,18 +45,23 @@
 
         sidebar.querySelectorAll('[data-hr-sidebar-badge]').forEach((badge) => {
             const key = badge.getAttribute('data-hr-sidebar-badge');
-            const label = labels[key] ?? formatCount(config.initialCounts?.[key]);
+            const nextLabel = labels[key] ?? formatCount(config.initialCounts?.[key]);
+            const previousLabel = badge.textContent.trim();
 
-            if (!label) {
+            if (!nextLabel) {
                 badge.textContent = '';
                 badge.hidden = true;
                 badge.removeAttribute('aria-label');
                 return;
             }
 
-            badge.textContent = label;
+            badge.textContent = nextLabel;
             badge.hidden = false;
-            badge.setAttribute('aria-label', `${label} items need HR action`);
+            badge.setAttribute('aria-label', badgeLabel(key, nextLabel));
+
+            if (previousLabel && previousLabel !== nextLabel) {
+                pulseBadge(badge);
+            }
         });
     };
 
