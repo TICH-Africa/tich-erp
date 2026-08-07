@@ -3,9 +3,10 @@
     $badge = $badge ?? null;
     $sub = $sub ?? false;
     $menuLabel = $menuLabel ?? null;
+    $sidebarLabels = $sidebarLabels ?? $hrSidebarLabels ?? [];
 
-    if ($badgeKey && $badge === null && isset($hrSidebarLabels)) {
-        $badge = $hrSidebarLabels[$badgeKey] ?? null;
+    if ($badgeKey && $badge === null && isset($sidebarLabels)) {
+        $badge = $sidebarLabels[$badgeKey] ?? null;
     }
 @endphp
 
@@ -17,11 +18,11 @@
             'tich-notification-badge--sub' => $sub,
         ])
         @if ($badgeKey)
-            data-hr-sidebar-badge="{{ $badgeKey }}"
+            data-sidebar-badge="{{ $badgeKey }}"
             aria-live="polite"
         @endif
         @if ($menuLabel)
-            data-hr-sidebar-badge-label="{{ $menuLabel }}"
+            data-sidebar-badge-label="{{ $menuLabel }}"
         @endif
         @if (! $badge) hidden @endif
         @if ($badge && ! $badgeKey)

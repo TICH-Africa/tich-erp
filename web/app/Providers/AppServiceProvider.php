@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use App\Services\RBACService;
-use App\View\Composers\PublicLayoutComposer;
+use App\View\Composers\AcademicsSidebarComposer;
+use App\View\Composers\EmployeeSidebarComposer;
 use App\View\Composers\HrSidebarComposer;
+use App\View\Composers\PublicLayoutComposer;
+use App\View\Composers\StaffSidebarComposer;
+use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -28,5 +32,9 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('layouts.app', PublicLayoutComposer::class);
         View::composer(['hr.partials.sidebar', 'layouts.hr'], HrSidebarComposer::class);
+        View::composer(['employee.partials.sidebar', 'layouts.employee'], EmployeeSidebarComposer::class);
+        View::composer(['staff.partials.sidebar', 'layouts.staff'], StaffSidebarComposer::class);
+        View::composer(['portal.partials.sidebar', 'layouts.portal'], StudentSidebarComposer::class);
+        View::composer(['academics.partials.sidebar', 'layouts.academics'], AcademicsSidebarComposer::class);
     }
 }

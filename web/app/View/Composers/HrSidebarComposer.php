@@ -20,6 +20,13 @@ class HrSidebarComposer
             'hrSidebarCounts' => $counts,
             'hrSidebarLabels' => $labels,
             'hrSidebarMenuLabels' => HrSidebarNotificationService::MENU_KEYS,
+            'sidebarCounts' => $counts,
+            'sidebarLabels' => $labels,
+            'sidebarMenuLabels' => HrSidebarNotificationService::MENU_KEYS,
+            'sidebarId' => 'hr-admin-sidebar',
+            'sidebarPollUrl' => route('hr.sidebar-notifications'),
+            'sidebarBroadcastEnabled' => true,
+            'sidebarBroadcastChannel' => 'hr.sidebar',
         ]);
     }
 }

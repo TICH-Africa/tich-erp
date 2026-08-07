@@ -1,4 +1,8 @@
-<aside class="tich-admin-sidebar">
+@php
+    $staffBadgeKeys = app(\App\Services\Sidebar\StaffSidebarNotificationService::class);
+@endphp
+
+<aside class="tich-admin-sidebar" id="staff-admin-sidebar">
     <p class="tich-admin-sidebar__title">{{ $staff->fullName() }}</p>
     <p class="tich-caption">{{ $staff->job_title ?? 'Teaching staff' }} · {{ $staff->department?->dept_name }}</p>
     @if (! empty($portalData['teaching_context']['summary']))
@@ -15,6 +19,7 @@
                     'label' => $item['label'],
                     'icon' => $item['icon'] ?? \App\Support\SidebarIcon::forSection($item['section'] ?? null),
                     'active' => $section === ($item['section'] ?? ''),
+                    'badgeKey' => $staffBadgeKeys->badgeKeyForSection($item['section'] ?? ''),
                 ])
             @endif
         @endforeach

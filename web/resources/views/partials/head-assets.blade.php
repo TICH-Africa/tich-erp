@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="{{ asset('css/tich-platform.css') }}">
 <script src="{{ asset('js/tich-theme.js') }}" defer></script>
 <script src="{{ asset('js/tich-select.js') }}" defer></script>
+<script src="{{ asset('js/tich-toasts.js') }}" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {

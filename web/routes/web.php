@@ -364,6 +364,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         ->middleware('student.portal')
         ->name('portal.dashboard');
     Route::middleware('student.portal')->prefix('portal')->group(function () {
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Portal\SidebarNotificationController::class)->name('portal.sidebar-notifications');
+
         Route::get('/documents/{document}', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'show'])
             ->name('portal.documents.show');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
@@ -388,6 +390,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         ->name('employee.dashboard');
 
     Route::middleware('employee.portal')->prefix('employee')->group(function () {
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Employee\SidebarNotificationController::class)->name('employee.sidebar-notifications');
+
         Route::get('/profile/edit', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'edit'])->name('employee.profile.edit');
         Route::post('/profile', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'update'])->name('employee.profile.update');
 
@@ -424,6 +428,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
     });
 
     Route::middleware('staff.portal')->prefix('staff')->group(function () {
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Staff\SidebarNotificationController::class)->name('staff.sidebar-notifications');
+
         Route::get('/', StaffPortalDashboardController::class)->name('staff.dashboard');
         Route::get('/timetables/{timetable}/print', [StaffPortalTimetableController::class, 'print'])
             ->name('staff.timetable.print');

@@ -7,6 +7,7 @@ use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentCo
 use App\Http\Controllers\Academics\LessonPlanController;
 use App\Http\Controllers\Academics\PerformanceTerminalController;
 use App\Http\Controllers\Academics\ProgramCurriculumController;
+use App\Http\Controllers\Academics\SidebarNotificationController as AcademicsSidebarNotificationController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,7 @@ return function (bool $named = true): void {
             }
         };
 
+        $register('get', '/sidebar-notifications', AcademicsSidebarNotificationController::class, 'departments.academics.sidebar-notifications');
         $register('get', '/departments', [AcademicsDepartmentController::class, 'index'], 'departments.academics.departments.index');
         $register('get', '/units', [AcademicsUnitController::class, 'index'], 'departments.academics.units.index');
         $register('get', '/programs', [ProgramCurriculumController::class, 'index'], 'departments.academics.programs.index');

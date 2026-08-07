@@ -1,4 +1,8 @@
-<aside class="tich-admin-sidebar">
+@php
+    $studentBadgeKeys = app(\App\Services\Sidebar\StudentSidebarNotificationService::class);
+@endphp
+
+<aside class="tich-admin-sidebar" id="student-admin-sidebar">
     <p class="tich-admin-sidebar__title">Student portal</p>
     <p class="tich-caption">
         {{ $student->registration_number }}<br>
@@ -29,6 +33,7 @@
                             'label' => $child['label'],
                             'icon' => $child['icon'] ?? 'circle',
                             'active' => $groupSection && $currentSection === $groupSection && $childTab === ($currentTab ?: ($groupSection === 'academics' ? 'units' : 'lesson')),
+                            'badgeKey' => $child['badgeKey'] ?? null,
                         ];
                     })->all();
                 @endphp
@@ -53,6 +58,7 @@
                     'label' => $item['label'],
                     'icon' => \App\Support\SidebarIcon::forSection($item['section']),
                     'active' => $currentSection === $item['section'],
+                    'badgeKey' => $studentBadgeKeys->badgeKeyForSection($item['section']),
                 ])
             @elseif (! empty($item['route']))
                 @include('partials.navigation.sidebar-link', [

@@ -22,3 +22,8 @@
     </div>
 </div>
 @endsection
+
+@section('scripts')
+    @parent
+    @include('partials.navigation.sidebar-realtime-config')
+@endsection

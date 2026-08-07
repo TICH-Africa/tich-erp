@@ -7,4 +7,5 @@ return [
     AppServiceProvider::class,
     TichSecurityServiceProvider::class,
     App\Providers\HrSidebarNotificationServiceProvider::class,
+    App\Providers\PortalSidebarNotificationServiceProvider::class,
 ];

@@ -7,9 +7,10 @@
     $badgeKey = $badgeKey ?? null;
     $groupBadge = $groupBadge ?? null;
     $menuLabel = $menuLabel ?? $label;
+    $sidebarLabels = $sidebarLabels ?? $hrSidebarLabels ?? [];
 
-    if ($badgeKey && $groupBadge === null && isset($hrSidebarLabels)) {
-        $groupBadge = $hrSidebarLabels[$badgeKey] ?? null;
+    if ($badgeKey && $groupBadge === null) {
+        $groupBadge = $sidebarLabels[$badgeKey] ?? null;
     }
 @endphp
 
