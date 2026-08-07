@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Models\RecruitmentApplication;
 use App\Models\Staff;
+use App\Models\StaffProfileChangeRequest;
 use App\Services\ContractService;
 use App\Services\HrDashboardStatsService;
 use Illuminate\View\View;
@@ -32,6 +33,17 @@ class DashboardController extends Controller
 
         $pendingLeaveCount = LeaveRequest::query()->where('overall_status', 'pending_hr')->count();
 
+        $pendingProfileChanges = StaffProfileChangeRequest::query()
+            ->with(['staff.department'])
+            ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+
+        $pendingProfileChangeCount = StaffProfileChangeRequest::query()
+            ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+            ->count();
+
         return view('hr.dashboard', [
             'staffCount' => $staffCount,
             'activeStaffCount' => $activeStaffCount,
@@ -40,6 +52,8 @@ class DashboardController extends Controller
             'applicationCount' => $applicationCount,
             'newApplicationsCount' => $newApplicationsCount,
             'pendingLeaveCount' => $pendingLeaveCount,
+            'pendingProfileChangeCount' => $pendingProfileChangeCount,
+            'pendingProfileChanges' => $pendingProfileChanges,
             'chartData' => $this->statsService->chartData(),
         ]);
     }

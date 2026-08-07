@@ -3,7 +3,7 @@
 @section('title', 'Employee Relations - Grievances')
 
 @section('hr-content')
-    <x-page-toolbar title="Grievances" meta="Employee Relations">
+    <x-page-toolbar title="Employee concerns" meta="Issues raised by staff through the employee portal">
         <x-slot:actions>
             <a href="{{ route('hr.employee-relations.grievances.create') }}" class="tich-btn tich-btn-primary">+ New grievance</a>
         </x-slot:actions>
@@ -14,8 +14,10 @@
             <table class="tich-admin-table">
                 <thead>
                     <tr>
+                        <th>Reference</th>
                         <th>Employee</th>
-                        <th>Type</th>
+                        <th>Subject</th>
+                        <th>Category</th>
                         <th>Status</th>
                         <th>Assigned to</th>
                         <th>Created</th>
@@ -25,11 +27,13 @@
                 <tbody>
                     @forelse ($grievances as $grievance)
                         <tr>
+                            <td><strong>{{ $grievance->reference_number ?? '#'.$grievance->id }}</strong></td>
                             <td>
                                 <strong>{{ $grievance->staff->fullName() }}</strong>
                                 <p class="tich-caption">{{ $grievance->staff->employee_number }}</p>
                             </td>
-                            <td class="tich-caption">{{ $grievance->grievance_type ?? '—' }}</td>
+                            <td>{{ $grievance->subject ?? \Illuminate\Support\Str::limit($grievance->description, 50) }}</td>
+                            <td class="tich-caption">{{ $grievance->categoryLabel() }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ match($grievance->status) {
                                     'open' => 'warning',
@@ -49,7 +53,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="tich-table-empty">No grievances found.</td>
+                            <td colspan="8" class="tich-table-empty">No concerns found.</td>
                         </tr>
                     @endforelse
                 </tbody>

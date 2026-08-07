@@ -199,6 +199,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::get('/profile-changes', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'index'])->name('hr.profile-changes.index');
+            Route::get('/profile-changes/{profileChange}', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'show'])->name('hr.profile-changes.show');
+            Route::post('/profile-changes/{profileChange}/approve', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'approve'])->name('hr.profile-changes.approve');
+            Route::post('/profile-changes/{profileChange}/reject', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'reject'])->name('hr.profile-changes.reject');
             Route::get('/staff/{staff}/edit', [\App\Http\Controllers\HR\StaffViewController::class, 'edit'])->name('hr.staff.edit');
             Route::put('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'update'])->name('hr.staff.update');
             Route::delete('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'destroy'])->name('hr.staff.destroy');
@@ -384,6 +388,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         ->name('employee.dashboard');
 
     Route::middleware('employee.portal')->prefix('employee')->group(function () {
+        Route::get('/profile/edit', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'edit'])->name('employee.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'update'])->name('employee.profile.update');
+
         Route::get('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'index'])->name('employee.leave.index');
         Route::post('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'store'])->name('employee.leave.store');
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
@@ -399,11 +406,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('policies.view');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('policies.download');
 
+        Route::get('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'index'])->name('employee.concerns.index');
+        Route::get('/concerns/create', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'create'])->name('employee.concerns.create');
+        Route::post('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'store'])->name('employee.concerns.store');
+        Route::get('/concerns/{grievance}', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'show'])->name('employee.concerns.show');
+
         Route::prefix('relations')->name('employee.relations.')->group(function () {
-            Route::get('/grievances', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievances'])->name('grievances.index');
-            Route::get('/grievances/create', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceCreate'])->name('grievances.create');
-            Route::post('/grievances', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceStore'])->name('grievances.store');
-            Route::get('/grievances/{grievance}', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceShow'])->name('grievances.show');
+            Route::redirect('/grievances', '/employee/concerns');
+            Route::redirect('/grievances/create', '/employee/concerns/create');
+            Route::get('/grievances/{grievance}', fn (\App\Models\Grievance $grievance) => redirect()->route('employee.concerns.show', $grievance))->name('grievances.show');
 
             Route::get('/feedback', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedback'])->name('feedback.index');
             Route::get('/feedback/create', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedbackCreate'])->name('feedback.create');

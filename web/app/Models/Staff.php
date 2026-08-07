@@ -182,6 +182,27 @@ class Staff extends Model
         return $this->hasMany(StaffQualification::class);
     }
 
+    public function profileChangeRequests(): HasMany
+    {
+        return $this->hasMany(StaffProfileChangeRequest::class);
+    }
+
+    public function photoUrl(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo_path);
+    }
+
+    public function initials(): string
+    {
+        $parts = array_filter([$this->first_name, $this->surname]);
+
+        return strtoupper(collect($parts)->map(fn ($part) => mb_substr($part, 0, 1))->join(''));
+    }
+
     public function professionalLicenses(): HasMany
     {
         return $this->hasMany(StaffProfessionalLicense::class);

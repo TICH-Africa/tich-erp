@@ -4,29 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StaffQualification extends Model
 {
+    public $timestamps = false;
+
     protected $table = 'staff_qualifications';
 
     protected $fillable = [
         'staff_id',
         'qualification_type',
-        'institution_name',
-        'field_of_study',
-        'grade',
-        'start_date',
-        'end_date',
-        'certificate_path',
+        'qualification_name',
+        'institution',
+        'country',
+        'year_completed',
+        'grade_or_class',
+        'certificate_number',
+        'document_path',
         'is_verified',
         'verified_by',
         'verified_at',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'year_completed' => 'integer',
         'is_verified' => 'boolean',
         'verified_at' => 'datetime',
     ];

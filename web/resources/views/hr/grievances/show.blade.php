@@ -10,7 +10,7 @@
     <section class="tich-leave-hero tich-mb-8">
         <div>
             <p class="tich-caption">Grievance</p>
-            <h1 class="tich-leave-hero__title">#{{ $grievance->id }}</h1>
+            <h1 class="tich-leave-hero__title">{{ $grievance->reference_number ?? '#'.$grievance->id }}</h1>
             <div class="tich-leave-hero__meta">
                 <span class="tich-badge tich-badge--{{ match($grievance->status) {
                     'open' => 'warning',
@@ -19,9 +19,12 @@
                     'closed' => 'secondary',
                     default => 'secondary',
                 } }}">
-                    {{ ucfirst(str_replace('_', ' ', $grievance->status)) }}
+                    {{ $grievance->statusLabel() }}
                 </span>
-                <span class="tich-caption">Type: {{ $grievance->grievance_type ?? '—' }}</span>
+                <span class="tich-caption">{{ $grievance->categoryLabel() }}</span>
+                @if ($grievance->subject)
+                    <span class="tich-caption">{{ $grievance->subject }}</span>
+                @endif
             </div>
         </div>
         <div class="tich-leave-hero__actions">

@@ -36,7 +36,60 @@
                 <p class="tich-caption"><a href="{{ route('hr.leave.index', ['status' => 'pending_hr']) }}">Review now</a></p>
             @endif
         </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Profile updates pending</p>
+            <p class="tich-stat__value">{{ $pendingProfileChangeCount }}</p>
+            @if ($pendingProfileChangeCount > 0)
+                <p class="tich-caption"><a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}">Review now</a></p>
+            @endif
+        </div>
     </div>
+
+    @if ($pendingProfileChanges->isNotEmpty())
+        <article class="tich-card tich-mb-8" id="profile-changes-inbox">
+            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap:wrap; gap:0.75rem; align-items:flex-start;">
+                <div>
+                    <h2 class="tich-h3" style="margin:0;">Employee profile updates awaiting approval</h2>
+                    <p class="tich-caption tich-mt-2">Review contact, photo, and qualification changes submitted from the employee portal.</p>
+                </div>
+                <a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}" class="tich-btn tich-btn-ghost">View all</a>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Request type</th>
+                            <th>Summary</th>
+                            <th>Submitted</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($pendingProfileChanges as $changeRequest)
+                            @php
+                                $summary = $changeRequest->request_type === 'profile_update'
+                                    ? collect($changeRequest->proposed_changes ?? [])->keys()->map(fn ($f) => ucwords(str_replace('_', ' ', $f)))->take(3)->join(', ')
+                                    : ($changeRequest->proposed_changes['qualification_name'] ?? $changeRequest->proposed_changes['subject'] ?? $changeRequest->typeLabel());
+                            @endphp
+                            <tr>
+                                <td>
+                                    <strong>{{ $changeRequest->staff->fullName() }}</strong>
+                                    <p class="tich-caption">{{ $changeRequest->staff->employee_number }}</p>
+                                </td>
+                                <td>{{ $changeRequest->typeLabel() }}</td>
+                                <td class="tich-caption">{{ $summary ?: '—' }}</td>
+                                <td class="tich-caption">{{ $changeRequest->created_at->format('d M Y H:i') }}</td>
+                                <td>
+                                    <a href="{{ route('hr.profile-changes.show', $changeRequest) }}" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Review &amp; approve</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    @endif
 
     <section class="tich-dashboard-charts tich-mb-8" aria-label="HR statistics charts">
         <article class="tich-card tich-chart-card">
@@ -76,6 +129,13 @@
         <a href="{{ route('hr.staff.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
             <h3 class="tich-h3">Staff Directory</h3>
             <p class="tich-text tich-mt-2">View and manage employee profiles.</p>
+        </a>
+        <a href="{{ route('hr.profile-changes.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
+            <h3 class="tich-h3">Profile changes</h3>
+            <p class="tich-text tich-mt-2">Approve employee contact, photo, and qualification updates.</p>
+            @if ($pendingProfileChangeCount > 0)
+                <p class="tich-caption tich-mt-2" style="color:#b45309;">{{ $pendingProfileChangeCount }} pending</p>
+            @endif
         </a>
         <a href="{{ route('hr.onboarding.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
             <h3 class="tich-h3">Onboarding</h3>

@@ -12,7 +12,9 @@ class Grievance extends Model
     protected $fillable = [
         'staff_id',
         'assigned_to',
+        'reference_number',
         'grievance_type',
+        'subject',
         'description',
         'incident_date',
         'resolution_notes',
@@ -36,5 +38,19 @@ class Grievance extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'assigned_to');
+    }
+
+    public function statusLabel(): string
+    {
+        return ucfirst(str_replace('_', ' ', $this->status));
+    }
+
+    public function categoryLabel(): string
+    {
+        if (! empty($this->metadata['category_label'])) {
+            return $this->metadata['category_label'];
+        }
+
+        return ucfirst(str_replace('_', ' ', (string) ($this->grievance_type ?: 'other')));
     }
 }

@@ -4,6 +4,13 @@
         @include('partials.navigation.sidebar-link', ['href' => route('hr.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('hr.dashboard')])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.staff.index'), 'label' => 'Staff Directory', 'icon' => 'users', 'active' => request()->routeIs('hr.staff.*')])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.profile-changes.index'),
+            'label' => 'Profile changes',
+            'icon' => 'clipboard-check',
+            'active' => request()->routeIs('hr.profile-changes.*'),
+            'badgeKey' => 'profile-changes',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('hr.onboarding.index'),
             'label' => 'Onboarding',
             'icon' => 'user-plus',

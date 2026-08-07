@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Grievance;
 use App\Models\Staff;
 use App\Services\AuditService;
+use App\Services\EmployeeConcernService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class GrievanceController extends Controller
 {
     public function __construct(
         protected AuditService $auditService,
+        protected EmployeeConcernService $concernService,
     ) {}
 
     public function index(Request $request): View
@@ -55,13 +57,18 @@ class GrievanceController extends Controller
             'staff_id' => 'required|exists:staff,id',
             'assigned_to' => 'nullable|exists:staff,id',
             'grievance_type' => 'nullable|string|max:100',
+            'subject' => 'nullable|string|max:300',
             'description' => 'required|string|max:5000',
             'incident_date' => 'nullable|date',
             'resolution_notes' => 'nullable|string|max:5000',
         ]);
 
         $grievance = DB::transaction(function () use ($validated) {
-            return Grievance::create($validated);
+            return Grievance::create([
+                ...$validated,
+                'reference_number' => $this->concernService->generateReferenceNumber(),
+                'status' => 'open',
+            ]);
         });
 
         $this->auditService->log(

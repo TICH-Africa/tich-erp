@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ProfessionalDevelopment;
 use App\Models\Staff;
+use App\Models\StaffProfileChangeRequest;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +57,10 @@ class EmployeePortalService
             'recentLeaveRequests' => $this->recentLeaveRequests($staff),
             'employmentDuration' => $this->employmentDurationLabel($staff),
             'trainings' => $this->staffTrainings($staff),
+            'pendingProfileChanges' => StaffProfileChangeRequest::query()
+                ->where('staff_id', $staff->id)
+                ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+                ->count(),
         ];
     }
 

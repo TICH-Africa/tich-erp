@@ -9,7 +9,46 @@
     <x-page-toolbar
         :title="$staff->fullName()"
         :meta="$staff->employee_number . ' · ' . ($staff->job_title ?? 'Employee') . ' · ' . ($staff->department?->dept_name ?? 'Unassigned department')"
-    />
+    >
+        <x-slot:actions>
+            <a href="{{ route('employee.profile.edit') }}" class="tich-btn tich-btn-primary">Update profile</a>
+        </x-slot:actions>
+    </x-page-toolbar>
+
+    <div class="tich-employee-profile-header tich-mt-6">
+        <div class="tich-employee-profile-header__photo">
+            @if ($staff->photoUrl())
+                <img src="{{ $staff->photoUrl() }}" alt="{{ $staff->fullName() }}">
+            @else
+                <span class="tich-employee-profile-header__initials">{{ $staff->initials() }}</span>
+            @endif
+        </div>
+        <div>
+            <p class="tich-caption">Employee profile</p>
+            <p class="tich-text tich-mt-2">Personal detail changes require HR approval. Use <strong>Update profile</strong> to submit photo, contact, or qualification updates.</p>
+            @if (($pendingProfileChanges ?? 0) > 0)
+                <p class="tich-caption tich-mt-2" style="color:#b45309;">{{ $pendingProfileChanges }} change request(s) awaiting HR review.</p>
+            @endif
+        </div>
+    </div>
+
+    <style>
+        .tich-employee-profile-header { display:flex; gap:1.25rem; align-items:center; flex-wrap:wrap; padding:1.25rem; background:var(--tich-white); border:1px solid var(--tich-neutral-border); border-radius:var(--radius-md); }
+        .tich-employee-profile-header__photo { width:5.5rem; height:5.5rem; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid var(--tich-neutral-border); background:var(--tich-surface-muted, #f1f5f9); display:flex; align-items:center; justify-content:center; }
+        .tich-employee-profile-header__photo img { width:100%; height:100%; object-fit:cover; }
+        .tich-employee-profile-header__initials { font-family:var(--font-heading); font-size:1.25rem; font-weight:700; color:var(--tich-blue); }
+    </style>
+
+    <article class="tich-card tich-mt-6" style="border-left:4px solid #dc2626;">
+        <div class="tich-flex tich-flex--between" style="flex-wrap:wrap; gap:0.75rem; align-items:flex-start;">
+            <div>
+                <p class="tich-caption">Employee support</p>
+                <h2 class="tich-h3 tich-mt-2">Concerns &amp; issues</h2>
+                <p class="tich-text tich-mt-2">Report workplace concerns anytime. HR receives and tracks every submission.</p>
+            </div>
+            <a href="{{ route('employee.concerns.create') }}" class="tich-btn tich-btn-primary">Raise a concern</a>
+        </div>
+    </article>
 
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">
         <article class="tich-card tich-stat">
@@ -117,6 +156,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Personal &amp; contact</h2>
                 <div class="tich-kv-grid tich-mt-4">
+                    <div><span class="tich-kv-grid__label">Marital status</span><span class="tich-kv-grid__value">{{ $staff->marital_status ?? '—' }}</span></div>
                     <div><span class="tich-kv-grid__label">Organisation email</span><span class="tich-kv-grid__value">{{ $staff->organisation_email ?? '—' }}</span></div>
                     <div><span class="tich-kv-grid__label">Personal email</span><span class="tich-kv-grid__value">{{ $staff->primary_email ?? '—' }}</span></div>
                     <div><span class="tich-kv-grid__label">Phone</span><span class="tich-kv-grid__value">{{ $staff->phone_number ?? '—' }}</span></div>
@@ -312,7 +352,7 @@
         @endif
     </div>
 
-    <p class="tich-caption tich-mt-8">This portal shows your own employment records. Contact HR to update personal or payroll details.</p>
+    <p class="tich-caption tich-mt-8">Payroll and employment records are managed by HR. Use <a href="{{ route('employee.profile.edit') }}">Update profile</a> to request changes to contact details, photo, or qualifications.</p>
 
     <script>
         (function () {

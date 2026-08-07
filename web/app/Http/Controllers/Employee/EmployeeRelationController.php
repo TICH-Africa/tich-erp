@@ -53,25 +53,8 @@ class EmployeeRelationController extends Controller
 
     public function grievanceStore(Request $request)
     {
-        $staff = $this->staff($request);
-
-        $validated = $request->validate([
-            'grievance_type' => 'nullable|string|max:100',
-            'description' => 'required|string|max:5000',
-            'incident_date' => 'nullable|date',
-            'resolution_notes' => 'nullable|string|max:5000',
-        ]);
-
-        $grievance = Grievance::create([
-            'staff_id' => $staff->id,
-            'grievance_type' => $validated['grievance_type'],
-            'description' => $validated['description'],
-            'incident_date' => $validated['incident_date'],
-            'resolution_notes' => $validated['resolution_notes'],
-            'status' => 'open',
-        ]);
-
-        return redirect()->route('employee.relations.grievances.index')->with('success', 'Grievance submitted to HR.');
+        return redirect()->route('employee.concerns.create')
+            ->with('info', 'Please use the concerns form to submit issues to HR.');
     }
 
     public function grievanceShow(Request $request, Grievance $grievance): View

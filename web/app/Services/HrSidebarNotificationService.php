@@ -9,6 +9,7 @@ use App\Models\RecruitmentApplication;
 use App\Models\StaffContract;
 use App\Models\StaffDocument;
 use App\Models\StaffOnboarding;
+use App\Models\StaffProfileChangeRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -27,6 +28,7 @@ class HrSidebarNotificationService
         'documents' => 'Staff Documents',
         'offboarding' => 'Offboarding',
         'contracts' => 'Contracts',
+        'profile-changes' => 'Profile changes',
     ];
 
     public function counts(bool $fresh = false): array
@@ -83,6 +85,7 @@ class HrSidebarNotificationService
             'documents' => $this->pendingDocumentsCount(),
             'offboarding' => $this->pendingOffboardingCount(),
             'contracts' => $this->contractsNeedingAction(),
+            'profile-changes' => $this->pendingProfileChangesCount(),
         ];
     }
 
@@ -126,5 +129,16 @@ class HrSidebarNotificationService
         }
 
         return OffboardingRequest::query()->where('status', 'pending')->count();
+    }
+
+    private function pendingProfileChangesCount(): int
+    {
+        if (! Schema::hasTable('staff_profile_change_requests')) {
+            return 0;
+        }
+
+        return StaffProfileChangeRequest::query()
+            ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+            ->count();
     }
 }
