@@ -85,7 +85,7 @@ class ContractorPayrollDemoSeeder extends Seeder
                     'gender' => 'male',
                     'primary_email' => $emails['primary_email'],
                     'organisation_email' => $emails['organisation_email'],
-                    'phone_number' => '07'.fake()->numerify('########'),
+                    'phone_number' => '07' . \Illuminate\Support\Str::random(8),
                     'department_id' => $contractor['department_id'],
                     'campus_id' => $campusId,
                     'job_title' => $contractor['job_title'],

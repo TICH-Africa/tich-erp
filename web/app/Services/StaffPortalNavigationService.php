@@ -24,6 +24,8 @@ class StaffPortalNavigationService
             'grading' => 'Marks & assessments',
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
+            'leave' => 'Leave',
+            'employee-relations' => 'Employee Relations',
             'documents' => 'My Documents',
             'policies' => 'HR Policies',
         ];
@@ -56,6 +58,8 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'],
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
+            ['type' => 'link', 'label' => 'Leave', 'section' => 'leave', 'icon' => 'calendar-off'],
+            ['type' => 'link', 'label' => 'Employee Relations', 'section' => 'employee-relations', 'icon' => 'users'],
             ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents', 'icon' => 'folder'],
             ['type' => 'link', 'label' => 'HR Policies', 'section' => 'policies', 'icon' => 'shield-check'],
         ];

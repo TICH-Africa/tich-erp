@@ -42,7 +42,8 @@
                             <td>
                                 <div class="tich-flex tich-flex--gap">
                                     <a href="{{ route('hr.policies.show', $policy) }}" class="tich-btn tich-btn-ghost">View</a>
-                                    <a href="{{ route('hr.policies.download', $policy) }}" class="tich-btn tich-btn-secondary">Download</a>
+                                    <a href="{{ route('hr.policies.send', $policy) }}" class="tich-btn tich-btn-secondary">Send to staff</a>
+                                    <a href="{{ route('hr.policies.acknowledgements', $policy) }}" class="tich-btn tich-btn-secondary">Acknowledgements</a>
                                 </div>
                             </td>
                         </tr>

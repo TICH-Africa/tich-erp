@@ -72,7 +72,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Compensation</h2>
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">Gross monthly</span><span class="tich-kv-grid__value">KES {{ number_format($pay['gross_monthly_salary'], 2) }}</span></div>
+                    <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value">KES {{ number_format($pay['gross_monthly_salary'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value">KES {{ number_format($pay['allowances_total'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value">KES {{ number_format($pay['total_monthly'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Salary scale</span><span class="tich-kv-grid__value">{{ $staff->salary_scale ?? '—' }}</span></div>

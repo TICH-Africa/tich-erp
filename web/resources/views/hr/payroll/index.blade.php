@@ -47,7 +47,7 @@
                         <th>Job title</th>
                         <th>Status</th>
                         <th>Payroll</th>
-                        <th>Gross (KES)</th>
+                        <th>Consolidated Gross Pay (KES)</th>
                         <th>PAYE</th>
                         <th>WHT</th>
                         <th>NSSF</th>
@@ -101,7 +101,7 @@
                                     <a href="{{ route('hr.payroll.report.pdf', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" title="Download payslip">Download</a>
                                 </td>
                             @else
-                                <td colspan="9" class="tich-caption">No gross salary set</td>
+                                <td colspan="9" class="tich-caption">No consolidated gross pay set</td>
                                 <td></td>
                             @endif
                         </tr>

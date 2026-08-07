@@ -31,13 +31,27 @@ class EmployeeLeaveController extends Controller
             abort_unless($editRequest->isEditableByEmployee(), 403);
         }
 
+        $leaveTypes = $this->leaveRequests->activeLeaveTypes();
+        $staffBalances = $this->employeePortal->leaveBalancesFor($staff);
+
         return view('employee.leave.index', [
             'portalTitle' => 'Leave requests',
             'staff' => $staff,
-            'leaveTypes' => $this->leaveRequests->activeLeaveTypes(),
+            'leaveTypes' => $leaveTypes,
             'leaveRequests' => $this->leaveRequests->requestsForStaff($staff),
-            'leaveBalances' => $this->employeePortal->leaveBalancesFor($staff),
+            'leaveBalances' => $staffBalances,
             'editRequest' => $editRequest,
+            'leaveTypeMap' => $leaveTypes->map(fn ($type) => [
+                'id' => $type->id,
+                'name' => $type->leave_name,
+                'calculation_type' => $type->calculation_type,
+                'accrual_type' => $type->accrual_type,
+                'accrual_rate' => $type->accrual_rate,
+                'notice_period_days' => $type->notice_period_days,
+                'max_consecutive_days' => $type->max_consecutive_days,
+                'requires_certificate' => $type->requires_certificate,
+                'available_balance' => (float) ($staffBalances->firstWhere('leave_type_name', $type->leave_name)?->balance_days ?? 0),
+            ])->all(),
         ]);
     }
 
@@ -49,7 +63,7 @@ class EmployeeLeaveController extends Controller
         try {
             $this->leaveRequests->submit($staff, $data, $request->file('medical_certificate'));
         } catch (\InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['end_date' => $exception->getMessage()]);
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()
@@ -67,7 +81,7 @@ class EmployeeLeaveController extends Controller
         try {
             $this->leaveRequests->updateByEmployee($leaveRequest, $staff, $data, $request->file('medical_certificate'));
         } catch (\InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['end_date' => $exception->getMessage()]);
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()

@@ -105,7 +105,7 @@
                     <input type="date" id="employment_start_date" name="employment_start_date" value="{{ old('employment_start_date', $staff->employment_start_date) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label for="gross_monthly_salary" class="tich-label">Gross Monthly Salary *</label>
+                    <label for="gross_monthly_salary" class="tich-label">Consolidated Gross Pay *</label>
                     <input type="number" step="0.01" id="gross_monthly_salary" name="gross_monthly_salary" value="{{ old('gross_monthly_salary', $staff->gross_monthly_salary) }}" required class="tich-input">
                 </div>
             </div>

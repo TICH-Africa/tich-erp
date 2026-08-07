@@ -35,7 +35,7 @@
                     <strong>{{ rtrim(rtrim(number_format($breakdown['withholding_rate'] ?? 0, 2), '0'), '.') }}%</strong>
                 </div>
                 <div>
-                    <span class="tich-payslip__label">Gross fees</span>
+                     <span class="tich-payslip__label">Consolidated Gross Pay</span>
                     <strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong>
                 </div>
             </div>
@@ -55,7 +55,7 @@
                             <td class="num">KES {{ number_format($breakdown['allowances'], 2) }}</td>
                         </tr>
                         <tr class="tich-payslip__total-row">
-                            <th>Gross {{ $isWithholding ? 'fees' : 'pay' }}</th>
+                            <th>Consolidated Gross Pay</th>
                             <td class="num"><strong>KES {{ number_format($breakdown['gross_salary'], 2) }}</strong></td>
                         </tr>
                     </tbody>

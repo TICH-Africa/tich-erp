@@ -44,11 +44,24 @@
                     <select id="leave_type_id" name="leave_type_id" class="tich-input" required>
                         <option value="">Select leave type</option>
                         @foreach ($leaveTypes as $type)
-                            <option value="{{ $type->id }}" @selected(old('leave_type_id', $editRequest?->leave_type_id) == $type->id)>
+                            <option
+                                value="{{ $type->id }}"
+                                @selected(old('leave_type_id', $editRequest?->leave_type_id) == $type->id)
+                                data-calculation-type="{{ $type->calculation_type }}"
+                                data-accrual-type="{{ $type->accrual_type }}"
+                                data-accrual-rate="{{ $type->accrual_rate }}"
+                                data-notice-period="{{ $type->notice_period_days }}"
+                                data-max-consecutive="{{ $type->max_consecutive_days }}"
+                                data-requires-certificate="{{ $type->requires_certificate }}"
+                            >
                                 {{ $type->leave_name }}
+                                @if ($type->accrual_type === 'monthly')
+                                    (accrues monthly)
+                                @endif
                             </option>
                         @endforeach
                     </select>
+                    <p class="tich-caption tich-mt-1" id="leave-type-hint"></p>
                 </div>
 
                 <div class="tich-grid tich-grid--2">
@@ -61,7 +74,13 @@
                         <label for="end_date" class="tich-label">End date</label>
                         <input type="date" id="end_date" name="end_date" class="tich-input" required
                             value="{{ old('end_date', $editRequest?->end_date?->format('Y-m-d')) }}">
+                        <p class="tich-caption tich-mt-1" id="days-preview"></p>
                     </div>
+                </div>
+
+                <div id="certificate-field">
+                    <label for="medical_certificate" class="tich-label">Medical certificate (if required)</label>
+                    <input type="file" id="medical_certificate" name="medical_certificate" class="tich-input" accept=".pdf,.jpg,.jpeg,.png">
                 </div>
 
                 <div>
@@ -80,12 +99,93 @@
                         Emergency leave
                     </label>
                 </div>
-
-                <div>
-                    <label for="medical_certificate" class="tich-label">Medical certificate (if required)</label>
-                    <input type="file" id="medical_certificate" name="medical_certificate" class="tich-input" accept=".pdf,.jpg,.jpeg,.png">
-                </div>
             </div>
+
+            <script>
+                (function() {
+                    const leaveTypeSelect = document.getElementById('leave_type_id');
+                    const hintEl = document.getElementById('leave-type-hint');
+                    const daysPreview = document.getElementById('days-preview');
+                    const startInput = document.getElementById('start_date');
+                    const endInput = document.getElementById('end_date');
+                    const certificateField = document.getElementById('certificate-field');
+
+                    function updateHint() {
+                        const option = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+                        if (!option || !option.value) {
+                            hintEl.textContent = '';
+                            daysPreview.textContent = '';
+                            certificateField.style.display = 'none';
+                            return;
+                        }
+
+                        const calc = option.dataset.calculationType || 'calendar_days';
+                        const accrual = option.dataset.accrualType || 'none';
+                        const accrualRate = option.dataset.accrualRate;
+                        const notice = option.dataset.noticePeriod;
+                        const maxConsecutive = option.dataset.maxConsecutive;
+                        const requiresCertificate = option.dataset.requiresCertificate === '1';
+
+                        const parts = [];
+                        parts.push(calc === 'working_days' ? 'Counts working days only (excludes weekends/holidays).' : 'Counts calendar days including weekends/holidays.');
+                        if (accrual === 'monthly' && accrualRate) {
+                            parts.push('Accrues at ' + accrualRate + ' days/month.');
+                        }
+                        if (notice && parseInt(notice) > 0) {
+                            parts.push('Notice period: ' + notice + ' days.');
+                        }
+                        if (maxConsecutive && parseInt(maxConsecutive) > 0) {
+                            parts.push('Max consecutive: ' + maxConsecutive + ' days.');
+                        }
+
+                        hintEl.textContent = parts.join(' ');
+
+                        certificateField.style.display = requiresCertificate ? 'block' : 'none';
+                    }
+
+                    function updateDaysPreview() {
+                        if (!startInput.value || !endInput.value) {
+                            daysPreview.textContent = '';
+                            return;
+                        }
+
+                        const start = new Date(startInput.value + 'T00:00:00');
+                        const end = new Date(endInput.value + 'T00:00:00');
+                        if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+                            daysPreview.textContent = '';
+                            return;
+                        }
+
+                        const option = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+                        const calc = option && option.value ? (option.dataset.calculationType || 'calendar_days') : 'calendar_days';
+
+                        let days = 0;
+                        if (calc === 'working_days') {
+                            const holidays = [];
+                            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                                const day = d.getDay();
+                                if (day !== 0 && day !== 6) {
+                                    days++;
+                                }
+                            }
+                        } else {
+                            days = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                        }
+
+                        daysPreview.textContent = 'Requested: ' + days + ' day(s)';
+                    }
+
+                    leaveTypeSelect.addEventListener('change', function() {
+                        updateHint();
+                        updateDaysPreview();
+                    });
+
+                    startInput.addEventListener('change', updateDaysPreview);
+                    endInput.addEventListener('change', updateDaysPreview);
+
+                    updateHint();
+                })();
+            </script>
 
             <footer class="tich-modal__footer">
                 <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="{{ $modalId }}">Cancel</button>

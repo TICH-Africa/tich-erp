@@ -29,6 +29,8 @@
             <div class="tich-mt-4">
                 <a href="{{ route('hr.policies.view', $policy) }}" class="tich-btn tich-btn-primary tich-mb-4" target="_blank">Open Document</a>
                 <a href="{{ route('hr.policies.edit', $policy) }}" class="tich-btn tich-btn-secondary tich-mb-4">Edit & Replace</a>
+                <a href="{{ route('hr.policies.send', $policy) }}" class="tich-btn tich-btn-secondary tich-mb-4">Send to staff</a>
+                <a href="{{ route('hr.policies.acknowledgements', $policy) }}" class="tich-btn tich-btn-secondary tich-mb-4">Acknowledgements</a>
                 <form method="POST" action="{{ route('hr.policies.destroy', $policy) }}" class="tich-mt-4" onsubmit="return confirm('Are you sure you want to delete this policy?')">
                     @csrf
                     @method('DELETE')
@@ -45,6 +47,11 @@
                 <iframe src="{{ route('hr.policies.view', $policy) }}" width="100%" height="600px" style="border: none; display: block;"></iframe>
             @elseif (str_contains($policy->mime_type, 'image'))
                 <img src="{{ route('hr.policies.view', $policy) }}" alt="{{ $policy->title }}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
+            @elseif (str_contains($policy->original_filename, '.doc') || str_contains($policy->original_filename, '.docx'))
+                <div style="padding: 3rem; text-align: center;">
+                    <p class="tich-text tich-text--secondary">Word document preview is only available on a public server.</p>
+                    <a href="{{ route('hr.policies.download', $policy) }}" class="tich-btn tich-btn-primary tich-mt-4" target="_blank">Download to view</a>
+                </div>
             @else
                 <div style="padding: 3rem; text-align: center;">
                     <p class="tich-text tich-text--secondary">Preview not available for this file type.</p>

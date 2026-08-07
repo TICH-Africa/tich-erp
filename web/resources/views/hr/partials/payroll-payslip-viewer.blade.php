@@ -25,7 +25,7 @@
     </div>
 
     @if ($payslips->isEmpty())
-        <p class="tich-caption tich-mt-4">No payslips available. Staff need a gross salary configured to generate payslips.</p>
+        <p class="tich-caption tich-mt-4">No payslips available. Staff need a consolidated gross pay configured to generate payslips.</p>
     @else
         <div class="doc-viewer tich-mt-6" data-payslip-viewer-root>
             <div class="doc-viewer__panel doc-viewer__panel--full">

@@ -146,6 +146,9 @@ class EmployeePortalService
                 'lb.days_taken',
                 'lb.days_pending',
                 'lb.balance_days',
+                'lt.accrual_type',
+                'lt.accrual_rate',
+                'lt.calculation_type',
             ])
             ->get();
     }

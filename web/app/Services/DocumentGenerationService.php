@@ -72,6 +72,7 @@ class DocumentGenerationService
             'staff_employment_start_date' => $staff->employment_start_date?->format('F j, Y') ?? '',
             'staff_contract_end_date' => $staff->contract_end_date?->format('F j, Y') ?? 'Ongoing',
             'staff_gross_monthly_salary' => number_format($staff->gross_monthly_salary, 2),
+            'staff_consolidated_gross_pay' => number_format($staff->gross_monthly_salary, 2),
             'staff_kra_pin' => $staff->kra_pin ?? '',
             'staff_nssf_number' => $staff->nssf_number ?? '',
             'staff_sha_number' => $staff->sha_number ?? '',

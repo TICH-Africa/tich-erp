@@ -14,6 +14,41 @@
         <a href="{{ route('hr.leave.index') }}" class="tich-btn tich-btn-ghost">← Back to leave inbox</a>
     </div>
 
+    <article class="tich-card tich-mb-6" style="background:#f8fafc; border-left:4px solid #2563eb;">
+        <h2 class="tich-h3">Leave policy reference</h2>
+        <p class="tich-text tich-mt-2 tich-text--secondary">Use this when reviewing the request below.</p>
+        <div class="tich-grid tich-grid--2 tich-mt-4">
+            <div>
+                <strong>Annual Leave</strong>
+                <p class="tich-caption tich-mt-1">21 working days per year. Accrues monthly at 1.75 days/month. Counts working days only (Mon–Fri, excludes public holidays). Carry forward max 10 days.</p>
+            </div>
+            <div>
+                <strong>Sick Leave</strong>
+                <p class="tich-caption tich-mt-1">7 calendar days. Full salary. HR approval required. No carry forward.</p>
+            </div>
+            <div>
+                <strong>Maternity Leave</strong>
+                <p class="tich-caption tich-mt-1">90 calendar days. Includes weekends and public holidays. No carry forward.</p>
+            </div>
+            <div>
+                <strong>Paternity Leave</strong>
+                <p class="tich-caption tich-mt-1">14 calendar days. No carry forward.</p>
+            </div>
+            <div>
+                <strong>Adoption Leave</strong>
+                <p class="tich-caption tich-mt-1">30 calendar days. Includes weekends and public holidays. No carry forward.</p>
+            </div>
+            <div>
+                <strong>Compassionate Leave</strong>
+                <p class="tich-caption tich-mt-1">7 calendar days. No carry forward.</p>
+            </div>
+        </div>
+    </article>
+
+    <div class="tich-mb-6">
+        <a href="{{ route('hr.leave.index') }}" class="tich-btn tich-btn-ghost">← Back to leave inbox</a>
+    </div>
+
     <section class="tich-leave-hero tich-mb-8">
         <div>
             <p class="tich-caption">Leave request</p>

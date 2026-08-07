@@ -60,7 +60,16 @@
         ])
 
         @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
-        @include('partials.navigation.sidebar-link', ['href' => route('hr.policies.index'), 'label' => 'HR Policies', 'icon' => 'shield-check', 'active' => request()->routeIs('hr.policies.*')])
+        @php
+            $pendingAcknowledgements = \App\Models\PolicyAcknowledgement::where('is_acknowledged', false)->count();
+        @endphp
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.policies.index'),
+            'label' => 'HR Policies',
+            'icon' => 'shield-check',
+            'active' => request()->routeIs('hr.policies.*'),
+            'badge' => $pendingAcknowledgements > 0 ? $pendingAcknowledgements : null,
+        ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.documents.index'),
             'label' => 'Staff Documents',
@@ -77,6 +86,41 @@
             'badgeKey' => 'offboarding',
         ])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.training.index'), 'label' => 'Training', 'icon' => 'presentation', 'active' => request()->routeIs('hr.training.*')])
+
+        @php
+            $erRoutesActive = request()->routeIs('hr.employee-relations.*');
+            $openGrievances = \App\Models\Grievance::whereIn('status', ['open', 'under_review'])->count();
+            $openFeedback = \App\Models\Feedback::whereIn('status', ['open', 'under_review'])->count();
+        @endphp
+
+        @include('partials.navigation.sidebar-group', [
+            'label' => 'Employee Relations',
+            'icon' => 'users',
+            'open' => $erRoutesActive,
+            'active' => $erRoutesActive,
+            'items' => [
+                [
+                    'href' => route('hr.employee-relations.disciplinary.index'),
+                    'label' => 'Disciplinary',
+                    'icon' => 'alert-triangle',
+                    'active' => request()->routeIs('hr.employee-relations.disciplinary.*'),
+                ],
+                [
+                    'href' => route('hr.employee-relations.grievances.index'),
+                    'label' => 'Grievances',
+                    'icon' => 'message-square',
+                    'active' => request()->routeIs('hr.employee-relations.grievances.*'),
+                    'badge' => $openGrievances > 0 ? $openGrievances : null,
+                ],
+                [
+                    'href' => route('hr.employee-relations.feedback.index'),
+                    'label' => 'Feedback',
+                    'icon' => 'feedback',
+                    'active' => request()->routeIs('hr.employee-relations.feedback.*'),
+                    'badge' => $openFeedback > 0 ? $openFeedback : null,
+                ],
+            ],
+        ])
     </nav>
     <div class="tich-admin-sidebar__footer">
         @include('partials.navigation.sidebar-link', ['href' => route('dashboard'), 'label' => 'Back to dashboard', 'icon' => 'arrow-left', 'muted' => true])

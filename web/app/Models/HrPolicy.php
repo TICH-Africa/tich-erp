@@ -12,6 +12,7 @@ class HrPolicy extends Model
     protected $fillable = [
         'title',
         'slug',
+        'version',
         'description',
         'file_path',
         'original_filename',

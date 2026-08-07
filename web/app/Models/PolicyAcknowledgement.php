@@ -9,7 +9,10 @@ class PolicyAcknowledgement extends Model
 {
     protected $table = 'policy_acknowledgements';
 
+    public $timestamps = false;
+
     protected $fillable = [
+        'policy_id',
         'policy_name',
         'policy_version',
         'policy_file_path',
@@ -18,6 +21,9 @@ class PolicyAcknowledgement extends Model
         'is_acknowledged',
         'acknowledged_at',
         'acknowledgement_method',
+        'acknowledged_by',
+        'employee_number',
+        'signature',
     ];
 
     protected $casts = [
@@ -29,5 +35,10 @@ class PolicyAcknowledgement extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);
+    }
+
+    public function policy(): BelongsTo
+    {
+        return $this->belongsTo(HrPolicy::class, 'policy_id');
     }
 }

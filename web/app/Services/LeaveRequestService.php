@@ -83,7 +83,8 @@ class LeaveRequestService
             throw new \InvalidArgumentException('End date must be on or after the start date.');
         }
 
-        $days = $this->calculateDays($startDate, $endDate);
+        $days = $this->calculateDays($startDate, $endDate, $leaveType);
+        $this->validateMaxDays($leaveType, $days);
         $certificatePath = $this->storeCertificate($certificate);
 
         return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $days, $certificatePath) {
@@ -135,7 +136,8 @@ class LeaveRequestService
             throw new \InvalidArgumentException('End date must be on or after the start date.');
         }
 
-        $days = $this->calculateDays($startDate, $endDate);
+        $days = $this->calculateDays($startDate, $endDate, $leaveType);
+        $this->validateMaxDays($leaveType, $days);
         $certificatePath = $this->storeCertificate($certificate) ?? $leaveRequest->medical_certificate_path;
 
         return DB::transaction(function () use ($leaveRequest, $staff, $data, $leaveType, $startDate, $endDate, $days, $certificatePath, $previousDays, $previousTypeId) {
@@ -214,11 +216,12 @@ class LeaveRequestService
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
             $previousDays = (int) $leaveRequest->days_requested;
             $previousTypeId = (int) $leaveRequest->leave_type_id;
+            $leaveType = $leaveRequest->leaveType()->first() ?? LeaveType::find($previousTypeId);
 
             $startDate = isset($data['start_date']) ? Carbon::parse($data['start_date'])->startOfDay() : $leaveRequest->start_date;
             $endDate = isset($data['end_date']) ? Carbon::parse($data['end_date'])->startOfDay() : $leaveRequest->end_date;
             $days = isset($data['start_date']) || isset($data['end_date'])
-                ? $this->calculateDays($startDate, $endDate)
+                ? $this->calculateDays($startDate, $endDate, $leaveType)
                 : (int) $leaveRequest->days_requested;
 
             $this->adjustBalance($leaveRequest->staff_id, $previousTypeId, $previousDays, 'remove_pending');
@@ -327,9 +330,31 @@ class LeaveRequestService
         });
     }
 
-    public function calculateDays(Carbon $startDate, Carbon $endDate): int
+    public function calculateDays(Carbon $startDate, Carbon $endDate, ?LeaveType $leaveType = null): int
     {
+        if ($leaveType && $leaveType->calculation_type === 'working_days') {
+            return $this->calculateWorkingDays($startDate, $endDate);
+        }
+
         return $startDate->diffInDays($endDate) + 1;
+    }
+
+    private function calculateWorkingDays(Carbon $startDate, Carbon $endDate): int
+    {
+        $days = 0;
+        $holidays = DB::table('public_holidays')
+            ->where('is_active', 1)
+            ->whereBetween('holiday_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->pluck('holiday_date')
+            ->all();
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            if (! in_array($date->format('Y-m-d'), $holidays, true) && ! $date->isWeekend()) {
+                $days++;
+            }
+        }
+
+        return $days;
     }
 
     private function generateLeaveNumber(): string
@@ -509,5 +534,22 @@ class LeaveRequestService
             'days_requested' => (int) $leaveRequest->days_requested,
             'overall_status' => $leaveRequest->overall_status,
         ];
+    }
+
+    public function validateMaxDays(LeaveType $leaveType, int $requestedDays): void
+    {
+        $normalEntitlement = (int) ($leaveType->days_allowed_per_year ?? 0);
+        $carryForward = $leaveType->leave_code === 'ANNUAL' ? (int) ($leaveType->carry_forward_days ?? 0) : 0;
+        $maxAllowed = $normalEntitlement + $carryForward;
+
+        if ($requestedDays > $maxAllowed) {
+            $message = "{$leaveType->leave_name} allows a maximum of {$maxAllowed} days";
+            if ($carryForward > 0) {
+                $message .= " (entitlement {$normalEntitlement} + carry forward {$carryForward})";
+            }
+            $message .= ". You requested {$requestedDays} days.";
+
+            throw new \InvalidArgumentException($message);
+        }
     }
 }

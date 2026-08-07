@@ -33,7 +33,7 @@
                 <div class="tich-grid--span-2">
                     <label for="content" class="tich-label">Template Content (HTML) *</label>
                     <textarea id="content" name="content" rows="20" required class="tich-input" style="font-family: monospace;">{{ old('content', $template->content) }}</textarea>
-                    <p class="tich-caption tich-mt-1">Use @{{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_gross_monthly_salary, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year</p>
+                    <p class="tich-caption tich-mt-1">Use @{{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_consolidated_gross_pay, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year</p>
                 </div>
             </div>
 

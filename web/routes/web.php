@@ -261,15 +261,21 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
                 Route::get('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'settings'])->name('hr.payroll.settings');
                 Route::put('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'updateSettings'])->name('hr.payroll.settings.update');
             });
-            Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
-            Route::get('/policies/create', [\App\Http\Controllers\HR\HrPolicyController::class, 'create'])->name('hr.policies.create');
-            Route::post('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'store'])->name('hr.policies.store');
-            Route::get('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'show'])->name('hr.policies.show');
-            Route::get('/policies/{policy}/edit', [\App\Http\Controllers\HR\HrPolicyController::class, 'edit'])->name('hr.policies.edit');
-            Route::put('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'update'])->name('hr.policies.update');
-            Route::delete('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'destroy'])->name('hr.policies.destroy');
-            Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('hr.policies.download');
-            Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('hr.policies.view');
+        Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
+        Route::get('/policies/create', [\App\Http\Controllers\HR\HrPolicyController::class, 'create'])->name('hr.policies.create');
+        Route::post('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'store'])->name('hr.policies.store');
+        Route::get('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'show'])->name('hr.policies.show');
+        Route::get('/policies/{policy}/edit', [\App\Http\Controllers\HR\HrPolicyController::class, 'edit'])->name('hr.policies.edit');
+        Route::put('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'update'])->name('hr.policies.update');
+        Route::delete('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'destroy'])->name('hr.policies.destroy');
+        Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('hr.policies.download');
+        Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('hr.policies.view');
+        Route::get('/policies/{policy}/send', [\App\Http\Controllers\HR\HrPolicyController::class, 'sendForm'])->name('hr.policies.send');
+        Route::post('/policies/{policy}/send', [\App\Http\Controllers\HR\HrPolicyController::class, 'sendToStaff'])->name('hr.policies.send.store');
+        Route::get('/policies/{policy}/acknowledgements', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgements'])->name('hr.policies.acknowledgements');
+        Route::get('/policies/acknowledgements', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgementsIndex'])->name('hr.policies.acknowledgements.index');
+
+        Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('hr.policies.assigned');
             Route::get('/staff/{staff}/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'create'])->name('hr.staff.documents.create');
             Route::post('/staff/{staff}/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'store'])->name('hr.staff.documents.store');
             Route::get('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendForm'])->name('hr.staff.documents.send');
@@ -306,6 +312,32 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/offboarding/{offboarding}/start-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'startClearance'])->name('hr.offboarding.start-clearance');
             Route::post('/offboarding/{offboarding}/complete-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearance'])->name('hr.offboarding.complete-clearance');
             Route::post('/offboarding/{offboarding}/items/{item}/complete', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearanceItem'])->name('hr.offboarding.complete-item');
+
+            Route::prefix('employee-relations')->name('hr.employee-relations.')->group(function () {
+                Route::get('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'index'])->name('disciplinary.index');
+                Route::get('/disciplinary/create', [\App\Http\Controllers\HR\DisciplinaryController::class, 'create'])->name('disciplinary.create');
+                Route::post('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'store'])->name('disciplinary.store');
+                Route::get('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'show'])->name('disciplinary.show');
+                Route::get('/disciplinary/{disciplinaryCase}/edit', [\App\Http\Controllers\HR\DisciplinaryController::class, 'edit'])->name('disciplinary.edit');
+                Route::put('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'update'])->name('disciplinary.update');
+                Route::delete('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'destroy'])->name('disciplinary.destroy');
+
+                Route::get('/grievances', [\App\Http\Controllers\HR\GrievanceController::class, 'index'])->name('grievances.index');
+                Route::get('/grievances/create', [\App\Http\Controllers\HR\GrievanceController::class, 'create'])->name('grievances.create');
+                Route::post('/grievances', [\App\Http\Controllers\HR\GrievanceController::class, 'store'])->name('grievances.store');
+                Route::get('/grievances/{grievance}', [\App\Http\Controllers\HR\GrievanceController::class, 'show'])->name('grievances.show');
+                Route::get('/grievances/{grievance}/edit', [\App\Http\Controllers\HR\GrievanceController::class, 'edit'])->name('grievances.edit');
+                Route::put('/grievances/{grievance}', [\App\Http\Controllers\HR\GrievanceController::class, 'update'])->name('grievances.update');
+                Route::delete('/grievances/{grievance}', [\App\Http\Controllers\HR\GrievanceController::class, 'destroy'])->name('grievances.destroy');
+
+                Route::get('/feedback', [\App\Http\Controllers\HR\FeedbackController::class, 'index'])->name('feedback.index');
+                Route::get('/feedback/create', [\App\Http\Controllers\HR\FeedbackController::class, 'create'])->name('feedback.create');
+                Route::post('/feedback', [\App\Http\Controllers\HR\FeedbackController::class, 'store'])->name('feedback.store');
+                Route::get('/feedback/{feedback}', [\App\Http\Controllers\HR\FeedbackController::class, 'show'])->name('feedback.show');
+                Route::get('/feedback/{feedback}/edit', [\App\Http\Controllers\HR\FeedbackController::class, 'edit'])->name('feedback.edit');
+                Route::put('/feedback/{feedback}', [\App\Http\Controllers\HR\FeedbackController::class, 'update'])->name('feedback.update');
+                Route::delete('/feedback/{feedback}', [\App\Http\Controllers\HR\FeedbackController::class, 'destroy'])->name('feedback.destroy');
+            });
         });
     });
 
@@ -360,6 +392,24 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/attendance', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'index'])->name('employee.attendance.index');
         Route::post('/attendance/clock-in', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'clockIn'])->name('employee.attendance.clock-in');
         Route::post('/attendance/clock-out', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'clockOut'])->name('employee.attendance.clock-out');
+
+        Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('policies.assigned');
+        Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('policies.acknowledge');
+        Route::post('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledge'])->name('policies.acknowledge.store');
+        Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('policies.view');
+        Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('policies.download');
+
+        Route::prefix('relations')->name('employee.relations.')->group(function () {
+            Route::get('/grievances', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievances'])->name('grievances.index');
+            Route::get('/grievances/create', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceCreate'])->name('grievances.create');
+            Route::post('/grievances', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceStore'])->name('grievances.store');
+            Route::get('/grievances/{grievance}', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'grievanceShow'])->name('grievances.show');
+
+            Route::get('/feedback', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedback'])->name('feedback.index');
+            Route::get('/feedback/create', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedbackCreate'])->name('feedback.create');
+            Route::post('/feedback', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedbackStore'])->name('feedback.store');
+            Route::get('/feedback/{feedback}', [\App\Http\Controllers\Employee\EmployeeRelationController::class, 'feedbackShow'])->name('feedback.show');
+        });
     });
 
     Route::middleware('staff.portal')->prefix('staff')->group(function () {
@@ -394,6 +444,8 @@ Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::cla
             Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('staff.policies.download');
         Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('staff.policies.view');
+        Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('staff.policies.acknowledge');
+        Route::post('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledge'])->name('staff.policies.acknowledge.store');
     });
 });
 

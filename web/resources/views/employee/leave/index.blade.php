@@ -34,7 +34,11 @@
                         <div class="tich-leave-balance-card__meta">
                             <span>{{ (int) $balance->days_taken }} taken</span>
                             <span>{{ (int) $balance->days_pending }} pending</span>
+                            <span>{{ (int) $balance->entitled_days }} entitled</span>
                         </div>
+                        @if ($balance->accrual_type === 'monthly' && $balance->accrual_rate)
+                            <p class="tich-caption tich-mt-2">Monthly accrual: {{ $balance->accrual_rate }} days/month</p>
+                        @endif
                     </article>
                 @endforeach
             </div>
