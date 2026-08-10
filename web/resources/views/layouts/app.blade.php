@@ -15,26 +15,28 @@
             'dashboard',
             'admin.*',
             'site-settings.*',
-            'departments.show',
-            'departments.academics.*',
+            'departments.*',
+            'finance.*',
             'sis.*',
             'admissions.*',
             'portal.*',
             'staff.*',
             'employee.*',
             'hr.*',
+            'finance.*',
         ]);
 
         $hideAppAlerts = request()->routeIs([
             'admin.*',
-            'departments.show',
-            'departments.academics.*',
+            'departments.*',
+            'finance.*',
             'sis.*',
             'admissions.*',
             'portal.*',
             'staff.*',
             'employee.*',
             'hr.*',
+            'finance.*',
         ]);
     @endphp
 

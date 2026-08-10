@@ -78,6 +78,32 @@ class Student extends Model
         return $this->belongsTo(Campus::class, 'enrollment_campus_id');
     }
 
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(StudentAccount::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function financePayments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function displayName(): string
+    {
+        $this->loadMissing('applicant');
+
+        if ($this->applicant) {
+            return trim($this->applicant->first_name.' '.$this->applicant->surname);
+        }
+
+        return $this->registration_number ?? 'Student #'.$this->id;
+    }
+
     public function hasActivePortalInvite(): bool
     {
         if ($this->portal_activated_at !== null || $this->user_id !== null) {
@@ -95,5 +121,15 @@ class Student extends Model
         }
 
         return route('portal.activate', ['token' => $this->portal_invite_token]);
+    }
+
+    public function studentAccounts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Finance\StudentAccount::class);
+    }
+
+    public function fullName(): string
+    {
+        return $this->applicant?->fullName() ?? ($this->user?->name ?? 'N/A');
     }
 }

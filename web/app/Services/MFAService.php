@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Mail\MfaVerificationMail;
 use App\Models\User;
 use App\Support\MailConfig;
+use App\Support\ModuleMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use OTPHP\TOTP;
 use ParagonIE\ConstantTime\Base32;
 use Throwable;
@@ -59,12 +59,12 @@ class MFAService
      */
     private function deliverOtpEmail(User $user, string $otp, ?Request $request = null): array
     {
-        if ($issue = MailConfig::smtpPasswordIssue()) {
+        if ($issue = MailConfig::moduleIssue(ModuleMail::OTP)) {
             return ['sent' => false, 'error' => $issue];
         }
 
         try {
-            Mail::to($user->email)->send(new MfaVerificationMail($otp, 10));
+            ModuleMail::send(ModuleMail::OTP, $user->email, new MfaVerificationMail($otp, 10));
 
             $this->auditService->log(
                 'auth.mfa.otp_sent',
@@ -98,7 +98,7 @@ class MFAService
                 $request
             );
 
-            return ['sent' => false, 'error' => MailConfig::friendlySmtpError($e->getMessage())];
+            return ['sent' => false, 'error' => MailConfig::friendlySmtpError($e->getMessage(), ModuleMail::OTP)];
         }
     }
 

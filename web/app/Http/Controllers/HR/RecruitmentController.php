@@ -11,9 +11,9 @@ use App\Models\User;
 use App\Services\StaffLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Support\ModuleMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\OnboardingInvitationEmail;
 
@@ -211,7 +211,7 @@ class RecruitmentController extends Controller
             ]);
 
             try {
-                Mail::to($staff->primary_email)->send(new OnboardingInvitationEmail($staff));
+                ModuleMail::send(ModuleMail::HR, $staff->primary_email, new OnboardingInvitationEmail($staff));
             } catch (\Throwable $e) {
                 \Log::error('Failed to send onboarding invitation: ' . $e->getMessage());
             }
@@ -259,7 +259,7 @@ class RecruitmentController extends Controller
         $application = RecruitmentApplication::with('vacancy')->findOrFail($id);
 
         try {
-            \Illuminate\Support\Facades\Mail::to($application->email)->send(new \App\Mail\VacancyQualifiedEmail($application, $application->vacancy));
+            ModuleMail::send(ModuleMail::HR, $application->email, new \App\Mail\VacancyQualifiedEmail($application, $application->vacancy));
         } catch (\Exception $e) {
             return redirect()->route('hr.recruitment.show', $application)->with('error', 'Failed to send email: ' . $e->getMessage());
         }

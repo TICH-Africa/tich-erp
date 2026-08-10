@@ -2,7 +2,9 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesModuleEnvelope;
 use App\Models\Applicant;
+use App\Support\ModuleMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -11,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ApplicationShortlistedMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesModuleEnvelope;
 
     public function __construct(
         public Applicant $applicant,
@@ -20,11 +22,14 @@ class ApplicationShortlistedMail extends Mailable
         public string $admissionFeeNotice,
     ) {}
 
+    protected function mailModule(): string
+    {
+        return ModuleMail::ACADEMICS;
+    }
+
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'TICH - Application shortlisted ('.$this->applicant->application_number.')',
-        );
+        return $this->moduleEnvelope('TICH - Application shortlisted ('.$this->applicant->application_number.')');
     }
 
     public function content(): Content

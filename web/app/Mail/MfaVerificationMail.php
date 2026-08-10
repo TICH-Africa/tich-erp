@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesModuleEnvelope;
+use App\Support\ModuleMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -10,18 +12,21 @@ use Illuminate\Queue\SerializesModels;
 
 class MfaVerificationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesModuleEnvelope;
 
     public function __construct(
         public string $otp,
         public int $expiresMinutes = 10,
     ) {}
 
+    protected function mailModule(): string
+    {
+        return ModuleMail::OTP;
+    }
+
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'TICH ERP - Verification Code',
-        );
+        return $this->moduleEnvelope('TICH ERP - Verification Code');
     }
 
     public function content(): Content

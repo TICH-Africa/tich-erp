@@ -41,20 +41,27 @@ return new class extends Migration
             $table->dateTime('created_at')->useCurrent();
         });
 
-Schema::create('fee_structures', function (Blueprint $table) {
+        Schema::create('fee_structures', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('program_id');
             $table->unsignedBigInteger('academic_year_id');
             $table->integer('semester_number');
-            $table->decimal('tuition_fee', 12, 2);
-            $table->decimal('examination_fee', 12, 2)->default(0.00);
+            $table->decimal('application_fee', 12, 2)->default(0.00);
+            $table->decimal('tuition_fee', 12, 2)->default(0.00);
+            $table->decimal('cautions_fee', 12, 2)->default(0.00);
+            $table->decimal('computer_lab_fee', 12, 2)->default(0.00);
+            $table->decimal('accommodation_fee', 12, 2)->default(0.00);
+            $table->decimal('transport_fee', 12, 2)->default(0.00);
+            $table->decimal('partnership_fee', 12, 2)->default(0.00);
+            $table->decimal('id_card_fee', 12, 2)->default(0.00);
+            $table->decimal('student_union_fee', 12, 2)->default(0.00);
+            $table->decimal('quality_assurance_fee', 12, 2)->default(0.00);
+            $table->decimal('emergency_fund_fee', 12, 2)->default(0.00);
             $table->decimal('library_fee', 12, 2)->default(0.00);
-            $table->decimal('activity_fee', 12, 2)->default(0.00);
-            $table->decimal('hostel_fee', 12, 2)->default(0.00);
-            $table->decimal('medical_insurance_fee', 12, 2)->default(0.00);
-            $table->decimal('nursing_clinical_fee', 12, 2)->default(0.00);
+            $table->decimal('indexing_nck_fee', 12, 2)->default(0.00);
+            $table->decimal('examination_fee', 12, 2)->default(0.00);
+            $table->decimal('attachment_fee', 12, 2)->default(0.00);
             $table->decimal('graduation_fee', 12, 2)->default(0.00);
-            $table->decimal('registration_fee', 12, 2)->default(0.00);
             $table->json('other_fees')->nullable();
             $table->decimal('total_semester_fee', 12, 2)->default(0.00);
             $table->tinyInteger('is_approved')->default(0);
@@ -79,6 +86,7 @@ Schema::create('fee_structures', function (Blueprint $table) {
             $table->decimal('scholarship_amount', 12, 2)->default(0.00);
             $table->decimal('helb_amount', 12, 2)->default(0.00);
             $table->decimal('sponsor_amount', 12, 2)->default(0.00);
+            $table->decimal('credit_balance', 12, 2)->default(0.00);
             $table->tinyInteger('is_cleared')->default(0);
             $table->dateTime('cleared_at')->nullable();
             $table->date('last_payment_date')->nullable();
@@ -95,6 +103,7 @@ Schema::create('fee_structures', function (Blueprint $table) {
             $table->unsignedBigInteger('student_account_id');
             $table->unsignedBigInteger('student_id');
             $table->unsignedBigInteger('semester_id')->nullable();
+            $table->unsignedBigInteger('fee_structure_id')->nullable();
             $table->string('invoice_type', 50); // tuition, application, supplementary, graduation, hostel, other
             $table->string('description', 500);
             $table->decimal('amount', 12, 2);
@@ -113,6 +122,7 @@ Schema::create('fee_structures', function (Blueprint $table) {
             $table->foreign('student_account_id')->references('id')->on('student_accounts')->restrictOnDelete();
             $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
             $table->foreign('semester_id')->references('id')->on('semesters')->nullOnDelete();
+            $table->foreign('fee_structure_id')->references('id')->on('fee_structures')->nullOnDelete();
             $table->foreign('waived_by')->references('id')->on('staff')->nullOnDelete();
             $table->index('student_id');
             $table->index('status');
@@ -141,6 +151,124 @@ Schema::create('fee_structures', function (Blueprint $table) {
             $table->foreign('recorded_by')->references('id')->on('staff')->restrictOnDelete();
             $table->index(['student_id', 'payment_date']);
             $table->index('payment_reference');
+        });
+
+        Schema::create('invoice_items', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id');
+            $table->string('fee_item', 100); // application_fee, tuition_fee, etc.
+            $table->string('description', 300);
+            $table->decimal('amount', 12, 2);
+            $table->decimal('scholarship_adjustment', 12, 2)->default(0.00);
+            $table->decimal('bursary_adjustment', 12, 2)->default(0.00);
+            $table->decimal('waiver_adjustment', 12, 2)->default(0.00);
+            $table->decimal('net_amount', 12, 2);
+            $table->dateTime('created_at')->useCurrent();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->restrictOnDelete();
+        });
+
+        Schema::create('payment_allocations', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('payment_id');
+            $table->unsignedBigInteger('invoice_id');
+            $table->decimal('allocated_amount', 12, 2);
+            $table->dateTime('allocated_at')->useCurrent();
+            $table->foreign('payment_id')->references('id')->on('payments')->restrictOnDelete();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->restrictOnDelete();
+        });
+
+        Schema::create('receipts', function (Blueprint $table) {
+            $table->id();
+            $table->string('receipt_number', 50)->unique();
+            $table->unsignedBigInteger('payment_id');
+            $table->unsignedBigInteger('invoice_id');
+            $table->unsignedBigInteger('student_account_id');
+            $table->unsignedBigInteger('student_id');
+            $table->decimal('amount', 12, 2);
+            $table->string('payment_method', 50);
+            $table->string('payment_reference', 100)->nullable();
+            $table->dateTime('issued_at')->useCurrent();
+            $table->unsignedBigInteger('issued_by');
+            $table->foreign('payment_id')->references('id')->on('payments')->restrictOnDelete();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->restrictOnDelete();
+            $table->foreign('student_account_id')->references('id')->on('student_accounts')->restrictOnDelete();
+            $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
+            $table->foreign('issued_by')->references('id')->on('staff')->restrictOnDelete();
+        });
+
+        Schema::create('financial_adjustments', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('student_account_id');
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('invoice_item_id')->nullable();
+            $table->string('adjustment_type', 50); // scholarship, bursary, waiver
+            $table->string('reason', 500);
+            $table->decimal('amount', 12, 2);
+            $table->string('status', 50)->default('pending'); // pending, approved, rejected
+            $table->unsignedBigInteger('requested_by');
+            $table->unsignedBigInteger('approved_by')->nullable();
+            $table->dateTime('approved_at')->nullable();
+            $table->dateTime('created_at')->useCurrent();
+            $table->foreign('student_account_id')->references('id')->on('student_accounts')->restrictOnDelete();
+            $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->nullOnDelete();
+            $table->foreign('invoice_item_id')->references('id')->on('invoice_items')->nullOnDelete();
+            $table->foreign('requested_by')->references('id')->on('staff')->restrictOnDelete();
+            $table->foreign('approved_by')->references('id')->on('staff')->nullOnDelete();
+        });
+
+        Schema::create('installment_plans', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('student_account_id');
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('invoice_id');
+            $table->string('plan_number', 50)->unique();
+            $table->decimal('total_amount', 12, 2);
+            $table->decimal('paid_amount', 12, 2)->default(0.00);
+            $table->decimal('remaining_amount', 12, 2);
+            $table->string('status', 50)->default('active'); // active, completed, defaulted, cancelled
+            $table->dateTime('created_at')->useCurrent();
+            $table->foreign('student_account_id')->references('id')->on('student_accounts')->restrictOnDelete();
+            $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->restrictOnDelete();
+        });
+
+        Schema::create('installment_plan_items', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('installment_plan_id');
+            $table->integer('installment_number');
+            $table->decimal('amount', 12, 2);
+            $table->date('due_date');
+            $table->string('status', 50)->default('pending'); // pending, paid, overdue, waived
+            $table->decimal('paid_amount', 12, 2)->default(0.00);
+            $table->dateTime('paid_at')->nullable();
+            $table->foreign('installment_plan_id')->references('id')->on('installment_plans')->restrictOnDelete();
+        });
+
+        Schema::create('refunds', function (Blueprint $table) {
+            $table->id();
+            $table->string('refund_number', 50)->unique();
+            $table->unsignedBigInteger('payment_id');
+            $table->unsignedBigInteger('invoice_id');
+            $table->unsignedBigInteger('student_account_id');
+            $table->unsignedBigInteger('student_id');
+            $table->decimal('amount', 12, 2);
+            $table->string('reason', 500);
+            $table->string('status', 50)->default('pending'); // pending, approved, rejected, processed
+            $table->unsignedBigInteger('requested_by');
+            $table->unsignedBigInteger('approved_by')->nullable();
+            $table->dateTime('approved_at')->nullable();
+            $table->unsignedBigInteger('processed_by')->nullable();
+            $table->dateTime('processed_at')->nullable();
+            $table->dateTime('created_at')->useCurrent();
+            $table->foreign('payment_id')->references('id')->on('payments')->restrictOnDelete();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->restrictOnDelete();
+            $table->foreign('student_account_id')->references('id')->on('student_accounts')->restrictOnDelete();
+            $table->foreign('student_id')->references('id')->on('students')->restrictOnDelete();
+            $table->foreign('requested_by')->references('id')->on('staff')->restrictOnDelete();
+            $table->foreign('approved_by')->references('id')->on('staff')->nullOnDelete();
+            $table->foreign('processed_by')->references('id')->on('staff')->nullOnDelete();
         });
 
         Schema::create('account_ledger', function (Blueprint $table) {
@@ -492,6 +620,13 @@ Schema::create('fee_structures', function (Blueprint $table) {
 
     public function down(): void
     {
+        Schema::dropIfExists('refunds');
+        Schema::dropIfExists('installment_plan_items');
+        Schema::dropIfExists('installment_plans');
+        Schema::dropIfExists('financial_adjustments');
+        Schema::dropIfExists('receipts');
+        Schema::dropIfExists('payment_allocations');
+        Schema::dropIfExists('invoice_items');
         Schema::dropIfExists('inventory_transactions');
         Schema::dropIfExists('inventory_items');
         Schema::dropIfExists('asset_assignments');

@@ -14,9 +14,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\OnboardingInvitationEmail;
 use App\Mail\OnboardingRejectedEmail;
+use App\Support\ModuleMail;
 use Illuminate\Support\Facades\Log;
 
 class EssOnboardingController extends Controller
@@ -255,7 +254,7 @@ class EssOnboardingController extends Controller
             );
 
             try {
-                Mail::to($onboarding->staff->primary_email)->send(new OnboardingRejectedEmail($onboarding->staff, $validated['rejection_reason']));
+                ModuleMail::send(ModuleMail::HR, $onboarding->staff->primary_email, new OnboardingRejectedEmail($onboarding->staff, $validated['rejection_reason']));
             } catch (\Throwable $e) {
                 Log::error('Failed to send onboarding rejection email: ' . $e->getMessage());
             }

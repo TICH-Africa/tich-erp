@@ -2,8 +2,10 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesModuleEnvelope;
 use App\Models\Applicant;
 use App\Models\User;
+use App\Support\ModuleMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -12,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ApplicationStaffReviewMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesModuleEnvelope;
 
     public function __construct(
         public Applicant $applicant,
@@ -22,11 +24,14 @@ class ApplicationStaffReviewMail extends Mailable
         public string $reviewUrl,
     ) {}
 
+    protected function mailModule(): string
+    {
+        return ModuleMail::NOTIFICATION;
+    }
+
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'TICH - New application for review ('.$this->applicant->application_number.')',
-        );
+        return $this->moduleEnvelope('TICH - New application for review ('.$this->applicant->application_number.')');
     }
 
     public function content(): Content

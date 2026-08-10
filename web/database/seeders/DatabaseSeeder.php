@@ -26,8 +26,11 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicCalendarDemoSeeder::class);
         $this->call(LecturerSeeder::class);
         $this->call(HrDemoSeeder::class);
+        $this->call(FinanceDemoSeeder::class);
+        $this->call(FinanceAccountsDemoSeeder::class);
         $this->call(ExamResultsDemoSeeder::class);
         $this->call(JamesOchiengAcademicCycleSeeder::class);
+        $this->call(FinanceDemoSeeder::class);
 
         $rbac = app(RBACService::class);
 

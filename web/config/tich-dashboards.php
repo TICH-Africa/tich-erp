@@ -65,10 +65,9 @@ return [
             'key' => 'finance',
             'label' => 'Finance',
             'description' => 'Fees, invoices, payroll, and procurement.',
-            'route' => 'dashboard',
+            'route' => 'finance.dashboard',
             'permission' => 'finance.read',
             'category' => 'finance',
-            'coming_soon' => true,
             'scope' => 'department',
         ],
         [

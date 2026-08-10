@@ -1,9 +1,9 @@
 <aside class="tich-admin-sidebar">
     <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
-    <p class="tich-caption">{{ $categoryLabel($department) }} · {{ $department->dept_code }}</p>
+    <p class="tich-caption">{{ ($categoryLabel ?? fn ($dept) => ucfirst($dept->dept_category))($department) }} · {{ $department->dept_code }}</p>
 
     <nav class="tich-admin-sidebar__nav">
-        @foreach ($sidebarNavigation as $item)
+        @foreach ($sidebarNavigation ?? [] as $item)
             @if ($item['type'] === 'heading')
                 <p class="tich-admin-sidebar__section">{{ $item['label'] }}</p>
             @else

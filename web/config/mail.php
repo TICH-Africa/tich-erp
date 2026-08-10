@@ -1,5 +1,28 @@
 <?php
 
+$smtpStream = [
+    'ssl' => [
+        'verify_peer' => env('MAIL_VERIFY_PEER', true),
+        'verify_peer_name' => env('MAIL_VERIFY_PEER', true),
+    ],
+];
+
+$moduleSmtpMailer = static function (?string $username, ?string $password) use ($smtpStream): array {
+    return [
+        'transport' => 'smtp',
+        'scheme' => env('MAIL_SCHEME'),
+        'url' => env('MAIL_URL'),
+        'host' => env('MAIL_HOST', '127.0.0.1'),
+        'port' => env('MAIL_PORT', 2525),
+        'encryption' => env('MAIL_ENCRYPTION'),
+        'username' => $username,
+        'password' => $password,
+        'timeout' => null,
+        'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        'stream' => $smtpStream,
+    ];
+};
+
 return [
 
     /*
@@ -37,24 +60,35 @@ return [
 
     'mailers' => [
 
-        'smtp' => [
-            'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'encryption' => env('MAIL_ENCRYPTION'),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
-            'stream' => [
-                'ssl' => [
-                    'verify_peer' => env('MAIL_VERIFY_PEER', true),
-                    'verify_peer_name' => env('MAIL_VERIFY_PEER', true),
-                ],
-            ],
-        ],
+        'smtp' => $moduleSmtpMailer(
+            env('MAIL_USERNAME', env('MAIL_NOTIFICATION_ADDRESS')),
+            env('MAIL_PASSWORD', env('MAIL_NOTIFICATION_PASSWORD')),
+        ),
+
+        'hr' => $moduleSmtpMailer(
+            env('MAIL_HR_ADDRESS'),
+            env('MAIL_HR_PASSWORD'),
+        ),
+
+        'academics' => $moduleSmtpMailer(
+            env('MAIL_ACADEMICS_ADDRESS'),
+            env('MAIL_ACADEMICS_PASSWORD'),
+        ),
+
+        'finance' => $moduleSmtpMailer(
+            env('MAIL_FINANCE_ADDRESS'),
+            env('MAIL_FINANCE_PASSWORD'),
+        ),
+
+        'otp' => $moduleSmtpMailer(
+            env('MAIL_OTP_ADDRESS'),
+            env('MAIL_OTP_PASSWORD'),
+        ),
+
+        'notification' => $moduleSmtpMailer(
+            env('MAIL_NOTIFICATION_ADDRESS'),
+            env('MAIL_NOTIFICATION_PASSWORD'),
+        ),
 
         'ses' => [
             'transport' => 'ses',
@@ -118,8 +152,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'tichinafricaict@gmail.com'),
-        'name' => env('MAIL_FROM_NAME', 'TICH ERP'),
+        'address' => env('MAIL_FROM_ADDRESS', env('MAIL_NOTIFICATION_ADDRESS', 'notification@tich.africa')),
+        'name' => env('MAIL_FROM_NAME', env('MAIL_NOTIFICATION_NAME', 'TICH ERP')),
     ],
 
 ];

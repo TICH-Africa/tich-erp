@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ModuleMail;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
@@ -7,39 +8,46 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('mail:test {email?}', function (?string $email = null) {
-    $email ??= config('mail.from.address');
+Artisan::command('mail:test {email?} {--module=notification}', function (?string $email = null) {
+    $module = (string) $this->option('module');
+    $email ??= ModuleMail::from($module)['address'];
 
-    if ($issue = \App\Support\MailConfig::smtpPasswordIssue()) {
+    if ($issue = \App\Support\MailConfig::moduleIssue($module)) {
         $this->error($issue);
 
         return 1;
     }
 
-    $this->info("Sending test email to {$email} via ".config('mail.default').'...');
+    $from = \App\Support\ModuleMail::from($module);
+    $this->info("Sending test email to {$email} via ".config('mail.default')." ({$module} / {$from['address']})...");
 
     try {
-        \Illuminate\Support\Facades\Mail::raw(
-            'TICH ERP mail test at '.now()->toDateTimeString(),
-            fn ($message) => $message->to($email)->subject('TICH ERP mail test')
+        \Illuminate\Support\Facades\Mail::mailer(\App\Support\ModuleMail::mailer($module))->raw(
+            'TICH ERP mail test ('.$module.') at '.now()->toDateTimeString(),
+            fn ($message) => $message
+                ->to($email)
+                ->from($from['address'], $from['name'])
+                ->subject('TICH ERP mail test ['.$module.']')
         );
         $this->info('Test email sent successfully.');
 
         return 0;
     } catch (\Throwable $e) {
-        $this->error(\App\Support\MailConfig::friendlySmtpError($e->getMessage()));
+        $this->error(\App\Support\MailConfig::friendlySmtpError($e->getMessage(), $module));
 
         return 1;
     }
-})->purpose('Send a test email using current MAIL_* settings');
+})->purpose('Send a test email using a module mailbox (hr, academics, finance, otp, notification)');
 
 Artisan::command('mail:test-all {email?}', function (?string $email = null) {
     $email ??= config('mail.from.address');
 
-    if ($issue = \App\Support\MailConfig::smtpPasswordIssue()) {
-        $this->error($issue);
+    foreach (['hr', 'academics', 'finance', 'otp', 'notification'] as $module) {
+        if ($issue = \App\Support\MailConfig::moduleIssue($module)) {
+            $this->error("[{$module}] {$issue}");
 
-        return 1;
+            return 1;
+        }
     }
 
     $applicant = \App\Models\Applicant::query()->with(['program.department', 'handlingDepartment'])->first();
@@ -70,22 +78,22 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
     $programName = $applicant->program?->program_name ?? 'Certificate in Community Health Practice';
 
     $messages = [
-        'MFA OTP login code' => new \App\Mail\MfaVerificationMail('123456', 10),
-        'Application submission confirmation' => new \App\Mail\ApplicationSubmittedMail($applicant, $programName, $statusUrl),
-        'Staff review notification' => new \App\Mail\ApplicationStaffReviewMail(
+        'MFA OTP login code' => [ModuleMail::OTP, new \App\Mail\MfaVerificationMail('123456', 10)],
+        'Application submission confirmation' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationSubmittedMail($applicant, $programName, $statusUrl)],
+        'Staff review notification' => [ModuleMail::NOTIFICATION, new \App\Mail\ApplicationStaffReviewMail(
             $applicant,
             $reviewer,
             $programName,
             $applicant->handlingDepartment?->dept_name ?? $applicant->program?->department?->dept_name ?? 'Health and Social Sciences',
             route('admissions.applications.index')
-        ),
-        'Application shortlisted' => new \App\Mail\ApplicationShortlistedMail(
+        )],
+        'Application shortlisted' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationShortlistedMail(
             $applicant,
             $programName,
             $statusUrl,
             config('tich-application.admission_fee_notice', 'Contact the finance office regarding the admission fee.')
-        ),
-        'Application approved' => new \App\Mail\ApplicationStatusUpdatedMail(
+        )],
+        'Application approved' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationStatusUpdatedMail(
             $applicant,
             $programName,
             'Admitted',
@@ -94,8 +102,8 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
             null,
             'Congratulations — your application has been approved.',
             url('/portal/activate/sample-token'),
-        ),
-        'Application rejected' => new \App\Mail\ApplicationStatusUpdatedMail(
+        )],
+        'Application rejected' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationStatusUpdatedMail(
             $applicant,
             $programName,
             'Rejected',
@@ -103,20 +111,20 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
             $statusUrl,
             'Minimum entry requirements not met.',
             null
-        ),
+        )],
     ];
 
     $failed = 0;
 
-    foreach ($messages as $label => $mailable) {
-        $this->line("→ {$label}...");
+    foreach ($messages as $label => [$module, $mailable]) {
+        $this->line("→ {$label} ({$module})...");
 
         try {
-            \Illuminate\Support\Facades\Mail::to($email)->send($mailable);
+            \App\Support\ModuleMail::send($module, $email, $mailable);
             $this->info("  Sent: {$label}");
         } catch (\Throwable $e) {
             $failed++;
-            $this->error('  Failed: '.\App\Support\MailConfig::friendlySmtpError($e->getMessage()));
+            $this->error('  Failed: '.\App\Support\MailConfig::friendlySmtpError($e->getMessage(), $module));
         }
     }
 

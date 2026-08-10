@@ -65,6 +65,7 @@
                         <th>Balance</th>
                         <th>Due</th>
                         <th>Status</th>
+                        <th>Pay</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,6 +78,19 @@
                             <td>KES {{ number_format((float) $invoice->balance, 2) }}</td>
                             <td>{{ $invoice->due_date ? \Illuminate\Support\Carbon::parse($invoice->due_date)->format('d M Y') : '-' }}</td>
                             <td>{{ ucfirst($invoice->status) }}</td>
+                            <td>
+                                @if ((float) $invoice->balance > 0 && in_array($invoice->status, ['issued', 'partial', 'overdue']))
+                                    <form method="post" action="{{ route('portal.invoices.pay', $invoice->id) }}" class="tich-flex" style="gap:0.35rem; flex-wrap:wrap; align-items:center;">
+                                        @csrf
+                                        <input type="hidden" name="amount" value="{{ $invoice->balance }}">
+                                        <input type="hidden" name="payment_method" value="mpesa">
+                                        <input type="text" name="phone_number" class="tich-input tich-input--compact" placeholder="M-Pesa phone" style="max-width:9rem;">
+                                        <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Pay with M-Pesa</button>
+                                    </form>
+                                @else
+                                    —
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\JobVacancy;
 use App\Models\RecruitmentApplication;
+use App\Mail\VacancyApplicationReceived;
+use App\Support\ModuleMail;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
@@ -118,7 +120,7 @@ class VacancyApplicationController extends Controller
 
         // Send email notification
         try {
-            \Illuminate\Support\Facades\Mail::to($application->email)->send(new \App\Mail\VacancyApplicationReceived($application, $vacancy));
+            ModuleMail::send(ModuleMail::HR, $application->email, new VacancyApplicationReceived($application, $vacancy));
         } catch (\Exception $e) {
             // Log error but don't fail the application
             \Log::error('Failed to send application confirmation email: ' . $e->getMessage());
