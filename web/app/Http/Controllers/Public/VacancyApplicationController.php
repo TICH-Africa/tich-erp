@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\JobVacancy;
 use App\Models\RecruitmentApplication;
 use App\Mail\VacancyApplicationReceived;
+use App\Services\StoredFileService;
 use App\Support\ModuleMail;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,6 +15,10 @@ use Illuminate\Support\Str;
 
 class VacancyApplicationController extends Controller
 {
+    public function __construct(
+        protected StoredFileService $files,
+    ) {}
+
     private function findOpenVacancy(int $vacancyId): JobVacancy
     {
         return JobVacancy::query()
@@ -74,17 +79,32 @@ class VacancyApplicationController extends Controller
 
         $applicationNumber = 'APP-' . date('Y') . '-' . str_pad((string) RecruitmentApplication::count() + 1, 5, '0', STR_PAD_LEFT);
 
-        $cvPath = $request->file('cv')->storeAs("applications/{$applicationNumber}", 'cv.' . $request->file('cv')->getClientOriginalExtension(), 'public');
+        $cvPath = $this->files->store(
+            $request->file('cv'),
+            "applications/{$applicationNumber}",
+            'public',
+            'cv.'.$request->file('cv')->getClientOriginalExtension(),
+        );
 
         $coverLetterPath = null;
         if ($request->hasFile('cover_letter')) {
-            $coverLetterPath = $request->file('cover_letter')->storeAs("applications/{$applicationNumber}", 'cover_letter.' . $request->file('cover_letter')->getClientOriginalExtension(), 'public');
+            $coverLetterPath = $this->files->store(
+                $request->file('cover_letter'),
+                "applications/{$applicationNumber}",
+                'public',
+                'cover_letter.'.$request->file('cover_letter')->getClientOriginalExtension(),
+            );
         }
 
         $certificatePaths = [];
         if ($request->hasFile('certificates')) {
             foreach ($request->file('certificates') as $index => $file) {
-                $certificatePaths[] = $file->storeAs("applications/{$applicationNumber}", "certificate_{$index}." . $file->getClientOriginalExtension(), 'public');
+                $certificatePaths[] = $this->files->store(
+                    $file,
+                    "applications/{$applicationNumber}",
+                    'public',
+                    "certificate_{$index}.".$file->getClientOriginalExtension(),
+                );
             }
         }
 

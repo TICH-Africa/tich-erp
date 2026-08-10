@@ -2,11 +2,19 @@
 
 namespace App\Models\Portal;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 
 class ResearchProject extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'research_projects';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'cover_image_path' => 'public',
+    ];
 
     public $timestamps = false;
 

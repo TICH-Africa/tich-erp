@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffQualification extends Model
 {
+    use PrunesStoredFiles;
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'document_path' => 'public',
+    ];
     public $timestamps = false;
 
     protected $table = 'staff_qualifications';

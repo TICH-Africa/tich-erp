@@ -16,6 +16,7 @@ use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffExamMarksService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
+use App\Services\StoredFileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class StaffPortalActionController extends Controller
         protected LessonPlanDocumentService $lessonPlanDocuments,
         protected LessonPlanContextService $lessonPlanContext,
         protected ObjectiveAutoGradingService $objectiveGrading,
+        protected StoredFileService $files,
     ) {}
 
     public function lessonPlanContext(Request $request): JsonResponse
@@ -143,7 +145,6 @@ class StaffPortalActionController extends Controller
         }
 
         if ($sourceType === 'upload' && $request->hasFile('document')) {
-            $this->lessonPlanDocuments->deleteUpload($plan->uploaded_file_path);
             $planData = array_merge($planData, $this->lessonPlanDocuments->storeUpload($staff, $request->file('document')));
         }
 
@@ -447,7 +448,7 @@ class StaffPortalActionController extends Controller
             'file' => ['required', 'file', 'max:20480'],
         ]);
 
-        $path = $request->file('file')->store('learning-content', 'public');
+        $path = $this->files->store($request->file('file'), 'learning-content', 'public');
 
         $this->teaching->storeLearningContent($staff, (int) $validated['unit_id'], [
             'title' => $validated['title'],

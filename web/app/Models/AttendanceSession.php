@@ -2,13 +2,22 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttendanceSession extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'attendance_sessions';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'signed_sheet_image_path' => 'public',
+        'class_photo_image_path' => 'public',
+    ];
 
     public $timestamps = false;
 

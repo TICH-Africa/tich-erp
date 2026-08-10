@@ -2,11 +2,19 @@
 
 namespace App\Models\Portal;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 
 class BlogPost extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'blog_posts';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'featured_image_path' => 'public',
+    ];
 
     public $timestamps = false;
 

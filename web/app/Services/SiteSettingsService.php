@@ -174,39 +174,19 @@ class SiteSettingsService
             return null;
         }
 
-        $stored = $file->store(trim($directory, '/'), 'public');
+        $stored = app(StoredFileService::class)->store($file, $directory, 'public');
 
         return 'storage/'.$stored;
     }
 
     public function deletePublicAsset(?string $path): void
     {
-        if (! $path) {
-            return;
-        }
-
-        $relative = str_starts_with($path, 'storage/') ? substr($path, 8) : ltrim($path, '/');
-
-        if ($relative && Storage::disk('public')->exists($relative)) {
-            Storage::disk('public')->delete($relative);
-        }
+        app(StoredFileService::class)->delete($path, 'public');
     }
 
     public function publicAssetUrl(?string $path): ?string
     {
-        if (! $path) {
-            return null;
-        }
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        $relative = str_starts_with($path, 'storage/')
-            ? substr($path, 8)
-            : ltrim($path, '/');
-
-        return Storage::disk('public')->url($relative);
+        return app(StoredFileService::class)->url($path, 'public');
     }
 
     public function forgetCache(): void

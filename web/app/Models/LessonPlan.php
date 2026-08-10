@@ -2,12 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LessonPlan extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'lesson_plans';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'uploaded_file_path' => 'local',
+    ];
 
     public $timestamps = false;
 

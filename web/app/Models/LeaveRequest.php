@@ -2,12 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeaveRequest extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'leave_requests';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'medical_certificate_path' => 'local',
+    ];
 
     public $timestamps = true;
 

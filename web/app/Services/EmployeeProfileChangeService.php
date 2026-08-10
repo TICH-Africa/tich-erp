@@ -31,6 +31,7 @@ class EmployeeProfileChangeService
     public function __construct(
         protected AuditService $auditService,
         protected PlatformNotificationService $notifications,
+        protected StoredFileService $files,
     ) {}
 
     /**
@@ -162,7 +163,7 @@ class EmployeeProfileChangeService
         ]);
 
         if ($request->request_type === StaffProfileChangeRequest::TYPE_PHOTO && $request->attachment_path) {
-            Storage::disk('public')->delete($request->attachment_path);
+            $this->files->delete($request->attachment_path, 'public');
         }
 
         $this->auditService->log(
@@ -282,15 +283,11 @@ class EmployeeProfileChangeService
             throw new InvalidArgumentException('No photo path on request.');
         }
 
-        $finalPath = "staff/{$staff->employee_number}/photos/profile.jpg";
+        $finalPath = "staff/{$staff->employee_number}/photos/profile.webp";
 
         if ($newPath !== $finalPath && Storage::disk('public')->exists($newPath)) {
             Storage::disk('public')->makeDirectory("staff/{$staff->employee_number}/photos");
             Storage::disk('public')->move($newPath, $finalPath);
-        }
-
-        if ($staff->photo_path && $staff->photo_path !== $finalPath) {
-            Storage::disk('public')->delete($staff->photo_path);
         }
 
         $staff->update(['photo_path' => $finalPath]);
@@ -326,19 +323,18 @@ class EmployeeProfileChangeService
         }
 
         $directory = "staff/{$staff->employee_number}/photos";
-        Storage::disk('public')->makeDirectory($directory);
-        $path = $directory.'/pending_'.time().'.jpg';
-        Storage::disk('public')->put($path, $binary);
+        $path = $directory.'/pending_'.time().'.webp';
 
-        return $path;
+        return $this->files->put($binary, $path, 'public');
     }
 
     private function storeQualificationFile(Staff $staff, UploadedFile $file): string
     {
-        return $file->storeAs(
+        return $this->files->store(
+            $file,
             "staff/{$staff->employee_number}/qualifications",
+            'public',
             time().'_'.$file->getClientOriginalName(),
-            'public'
         );
     }
 

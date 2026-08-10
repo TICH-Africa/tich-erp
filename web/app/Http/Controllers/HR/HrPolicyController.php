@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HrPolicy;
 use App\Models\PolicyAcknowledgement;
 use App\Models\Staff;
+use App\Services\StoredFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -13,6 +14,10 @@ use Illuminate\Support\Str;
 
 class HrPolicyController extends Controller
 {
+    public function __construct(
+        protected StoredFileService $files,
+    ) {}
+
     public function index(): View
     {
         $policies = HrPolicy::with('uploadedBy')
@@ -40,7 +45,7 @@ class HrPolicyController extends Controller
         ]);
 
         $file = $validated['file'];
-        $path = $file->storeAs('hr-policies', time() . '_' . $file->getClientOriginalName(), 'public');
+        $path = $this->files->store($file, 'hr-policies', 'public', time().'_'.$file->getClientOriginalName());
 
         $policy = HrPolicy::create([
             'title' => $validated['title'],
@@ -101,12 +106,8 @@ class HrPolicyController extends Controller
         ];
 
         if ($request->hasFile('file')) {
-            if ($policy->file_path && Storage::disk('public')->exists($policy->file_path)) {
-                Storage::disk('public')->delete($policy->file_path);
-            }
-
             $file = $validated['file'];
-            $path = $file->storeAs('hr-policies', time() . '_' . $file->getClientOriginalName(), 'public');
+            $path = $this->files->store($file, 'hr-policies', 'public', time().'_'.$file->getClientOriginalName());
 
             $updateData['file_path'] = $path;
             $updateData['original_filename'] = $file->getClientOriginalName();
@@ -122,11 +123,6 @@ class HrPolicyController extends Controller
     public function destroy(Request $request, int $id)
     {
         $policy = HrPolicy::findOrFail($id);
-
-        if ($policy->file_path && Storage::disk('public')->exists($policy->file_path)) {
-            Storage::disk('public')->delete($policy->file_path);
-        }
-
         $policy->delete();
 
         return redirect()->route('hr.policies.index')->with('success', 'Policy deleted successfully.');

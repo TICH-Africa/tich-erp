@@ -2,13 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StaffDocument extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'staff_documents';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'file_path' => 'public',
+    ];
 
     protected $fillable = [
         'staff_id',

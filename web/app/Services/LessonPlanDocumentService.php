@@ -14,6 +14,7 @@ class LessonPlanDocumentService
     public function __construct(
         protected PrintDocumentService $printDocuments,
         protected RBACService $rbac,
+        protected StoredFileService $files,
     ) {}
 
     /**
@@ -71,9 +72,7 @@ class LessonPlanDocumentService
 
     public function deleteUpload(?string $path): void
     {
-        if ($path && Storage::disk('local')->exists($path)) {
-            Storage::disk('local')->delete($path);
-        }
+        $this->files->delete($path, 'local');
     }
 
     public function canView(LessonPlan $plan, User $user, ?Staff $staff): bool

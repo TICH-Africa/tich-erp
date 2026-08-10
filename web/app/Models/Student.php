@@ -2,13 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'students';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'photo_path' => 'public',
+    ];
 
     public $timestamps = false;
 

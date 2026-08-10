@@ -27,6 +27,7 @@ class AttendanceVerificationService
         protected PlatformNotificationService $notifications,
         protected AcademicsIntegrationRegistry $academicsRegistry,
         protected AuditService $auditService,
+        protected StoredFileService $files,
     ) {}
 
     /**
@@ -111,7 +112,7 @@ class AttendanceVerificationService
         abort_if($session->is_locked, 422, 'This session is locked and cannot be modified.');
         abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
 
-        $path = $file->store('attendance-sheets', 'public');
+        $path = $this->files->store($file, 'attendance-sheets', 'public');
         $hash = hash_file('sha256', Storage::disk('public')->path($path));
 
         $session->update([
@@ -138,7 +139,7 @@ class AttendanceVerificationService
         abort_if($session->is_locked, 422, 'This session is locked and cannot be modified.');
         abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
 
-        $path = $file->store('attendance-class-photos', 'public');
+        $path = $this->files->store($file, 'attendance-class-photos', 'public');
         $hash = hash_file('sha256', Storage::disk('public')->path($path));
 
         $session->update([
