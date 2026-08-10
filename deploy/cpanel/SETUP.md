@@ -1,167 +1,81 @@
-# TICH ERP on cPanel — same pattern as Leysafaris
+# TICH ERP — cPanel deploy (Option C, no terminal)
 
-Leysafaris layout (working reference):
-
-```text
-/home2/leylasaf/
-├── leysafaris/
-│   └── leysafaris/              ← Laravel root (vendor/, bootstrap/, app/)
-│       └── public/              ← css/, js/, index.php
-└── public_html/                 ← leysafaris domain docroot (or its addon folder)
-    ├── index.php                ← absolute path → .../leysafaris/leysafaris
-    ├── .htaccess                ← rewrite to index.php
-    ├── css  → symlink to .../public/css
-    └── js   → symlink to .../public/js
-```
-
-TICH ERP equivalent (monorepo — Laravel lives in `web/`):
-
-```text
-/home2/leylasaf/
-├── tich-erp/                    ← git clone (this repository)
-│   └── web/                     ← Laravel root (artisan, vendor/, bootstrap/)
-│       └── public/              ← css/, js/, storage/
-└── tich.africa/                 ← addon domain folder (typical cPanel name)
-    └── public_html/             ← https://tich.africa document root
-        ├── index.php            ← absolute path → .../tich-erp/web
-        ├── .htaccess
-        ├── css  → symlink
-        ├── js   → symlink
-        ├── images → symlink
-        └── storage → symlink
-```
-
-If your addon folder is named differently, open **cPanel → Domains → tich.africa → Document Root** and use that path instead of `tich.africa/public_html`.
+Git **Deploy HEAD Commit** runs `.cpanel.yml` on the server. You never need SSH.
 
 ---
 
-## One-time server setup
+## One-time setup (File Manager only)
 
-### 1. Clone repo (if not done)
+### 1. Tell deploy where `public_html` is
 
-```bash
-cd ~
-git clone YOUR_REPO_URL tich-erp
-cd tich-erp/web
-cp .env.example .env
-# Edit .env — set APP_URL, DB_*, APP_KEY, mail, etc.
-php artisan key:generate
-```
+1. **File Manager** → open folder `tich-erp/deploy/cpanel/`
+2. Copy `docroot.txt.example` → rename copy to **`docroot.txt`**
+3. Edit **`docroot.txt`** — **one line only**, full path to your domain folder.
 
-### 2. Install dependencies
+To find the path:
 
-```bash
-cd ~/tich-erp/web
-/usr/local/bin/ea-php82 /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader
-/usr/local/bin/ea-php82 artisan migrate --force
-/usr/local/bin/ea-php82 artisan storage:link
-/usr/local/bin/ea-php82 artisan optimize
-```
+- **cPanel → Domains → tich.africa → Document Root**  
+  Example: `/home2/leylasaf/tich.africa/public_html`
 
-### 3. `public_html/index.php`
+4. Save.
 
-Path: `~/tich.africa/public_html/index.php` (adjust if docroot differs)
+### 2. Custom `index.php` + `.htaccess`
 
-```php
-<?php
-
-use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
-
-define('LARAVEL_START', microtime(true));
-
-$appPath = '/home2/leylasaf/tich-erp/web';
-
-if (file_exists($maintenance = $appPath.'/storage/framework/maintenance.php')) {
-    require $maintenance;
-}
-
-require $appPath.'/vendor/autoload.php';
-
-/** @var Application $app */
-$app = require_once $appPath.'/bootstrap/app.php';
-
-$app->handleRequest(Request::capture());
-```
-
-### 4. `public_html/.htaccess`
-
-```apache
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
-    RewriteEngine On
-
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-    RewriteCond %{HTTP:x-xsrf-token} .
-    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
-
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
-
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>
-```
-
-### 5. Symlink public assets (fixes missing CSS/JS)
-
-```bash
-cd ~/tich.africa/public_html
-
-ln -sfn /home2/leylasaf/tich-erp/web/public/css css
-ln -sfn /home2/leylasaf/tich-erp/web/public/js js
-ln -sfn /home2/leylasaf/tich-erp/web/public/images images
-ln -sfn /home2/leylasaf/tich-erp/web/public/storage storage
-ln -sfn /home2/leylasaf/tich-erp/web/public/favicon.ico favicon.ico
-ln -sfn /home2/leylasaf/tich-erp/web/public/robots.txt robots.txt
-```
-
-### 6. `.env` production values (`~/tich-erp/web/.env`)
-
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://tich.africa
-```
-
-Then:
-
-```bash
-cd ~/tich-erp/web
-/usr/local/bin/ea-php82 artisan config:cache
-/usr/local/bin/ea-php82 artisan route:cache
-/usr/local/bin/ea-php82 artisan view:cache
-```
+Keep these in your domain `public_html` (see `deploy/cpanel/public_html.index.php` and `public_html.htaccess`).
 
 ---
 
-## Git deploy (.cpanel.yml)
+## Every deployment
 
-Repo root `.cpanel.yml` runs composer + artisan in `web/` after each push.  
-Ensure cPanel **Git → Deploy HEAD Commit** uses the repo root (where `.cpanel.yml` lives).
+1. Push code to the branch cPanel tracks.
+2. **cPanel → Git Version Control**
+3. **Update from Remote**
+4. **Deploy HEAD Commit**
+
+Deploy will:
+
+- `composer install`
+- `artisan migrate` / cache
+- **Link css, js, images** into `public_html` (same idea as Leysafaris symlinks)
+
+No manual copying.
 
 ---
 
-## Verify (must not 404)
+## If styling still missing after deploy
+
+1. **File Manager** → `tich-erp/deploy/cpanel/last-asset-sync.log`
+2. Read the last run — it shows detected paths and errors.
+
+Common fixes:
+
+| Log message | Fix |
+|-------------|-----|
+| `Could not find document root` | Fix path in `docroot.txt` |
+| `Missing .../css/tich-platform.css` | Run Deploy again after git pull; confirm repo has `web/public/css/` |
+| `Symlink failed, copying instead` | Normal on some hosts — copy still runs |
+| `SUCCESS: css is available` but site unstyled | Hard refresh browser; check wrong domain docroot in `docroot.txt` |
+
+---
+
+## Verify
 
 - https://tich.africa/css/tich-platform.css
 - https://tich.africa/js/tich-nav.js
-- https://tich.africa/careers
+
+Both must **not** be 404.
 
 ---
 
-## Why you saw broken styling + 404 routes
+## Why the old `.cpanel.yml` failed
 
-| Symptom | Missing piece |
-|---------|----------------|
-| HTML but no CSS/JS | Symlinks (or docroot not pointing at `web/public`) |
-| `/careers` 404 | `.htaccess` rewrite rules in `public_html` |
+cPanel runs **each YAML line in a new shell**. Lines like:
 
-Same fixes applied when Leysafaris was first deployed: **index.php + .htaccess + asset symlinks**.
+```yaml
+- export DOCROOT=...
+- /bin/cp ... $DOCROOT/css/
+```
+
+…left `$DOCROOT` **empty** on the copy step, so css/js never reached `public_html`.
+
+The new setup uses **one bash script** with full paths and a log file.
