@@ -19,7 +19,7 @@ class InvoiceService
     ) {}
 
     /**
-     * @param  array{invoice_type: string, description: string, amount: float, semester_id?: int|null, fee_structure_id?: int|null}  $data
+     * @param  array{invoice_type: string, description: string, amount: float, semester_id?: int|null}  $data
      */
     public function generateForStudent(Student $student, array $data, ?int $recordedByStaffId = null, bool $dispatch = true): Invoice
     {
@@ -54,26 +54,77 @@ class InvoiceService
         });
     }
 
-    public function generateFromFeeStructure(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    /** Semester charges invoice from an approved programme fee structure. */
+    public function generateSemesterInvoice(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null, bool $includeOptional = false): Invoice
     {
         $feeStructure->loadMissing(['program', 'academicYear']);
-        $student->loadMissing('program');
 
-        $lines = $this->itemizedLines($feeStructure);
+        $amount = (float) $feeStructure->total_semester_fee;
+        if ($includeOptional) {
+            $amount += $feeStructure->optionalSemesterTotal();
+        }
+
         $description = sprintf(
-            'Semester %d fees — %s (%s)',
-            $feeStructure->semester_number,
+            "Semester charges — %s (%s)\n%s",
             $feeStructure->program?->program_name ?? 'Programme',
-            $feeStructure->academicYear?->year_label ?? 'Academic year'
+            $feeStructure->academicYear?->year_label ?? 'Academic year',
+            implode('; ', $feeStructure->semesterChargeLines($includeOptional))
         );
 
         return $this->generateForStudent($student, [
             'invoice_type' => 'tuition',
-            'description' => $description."\n".implode('; ', $lines),
-            'amount' => (float) $feeStructure->total_semester_fee,
-            'semester_id' => null,
-            'fee_structure_id' => $feeStructure->id,
+            'description' => $description,
+            'amount' => $amount,
         ], $recordedByStaffId);
+    }
+
+    public function generateApplicationInvoice(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    {
+        $feeStructure->loadMissing(['program', 'academicYear']);
+
+        return $this->generateForStudent($student, [
+            'invoice_type' => 'application',
+            'description' => sprintf(
+                'Application fee — %s (paid once after approval)',
+                $feeStructure->program?->program_name ?? 'Programme'
+            ),
+            'amount' => (float) $feeStructure->application_fee,
+        ], $recordedByStaffId);
+    }
+
+    public function generateQaAnnualInvoice(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    {
+        return $this->generateForStudent($student, [
+            'invoice_type' => 'qa_annual',
+            'description' => 'Quality assurance fee (annual)',
+            'amount' => (float) $feeStructure->qa_annual_fee,
+        ], $recordedByStaffId);
+    }
+
+    public function generateIndexingInvoice(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    {
+        abort_unless($feeStructure->requires_indexing_nck && $feeStructure->indexing_nck_fee, 422, 'Indexing (NCK) is not configured for this programme.');
+
+        return $this->generateForStudent($student, [
+            'invoice_type' => 'indexing_nck',
+            'description' => 'Indexing (NCK) — paid once throughout the programme',
+            'amount' => (float) $feeStructure->indexing_nck_fee,
+        ], $recordedByStaffId);
+    }
+
+    public function generateGraduationInvoice(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    {
+        return $this->generateForStudent($student, [
+            'invoice_type' => 'graduation',
+            'description' => 'Graduation fees (post learning)',
+            'amount' => (float) $feeStructure->graduation_fee,
+        ], $recordedByStaffId);
+    }
+
+    /** @deprecated Use generateSemesterInvoice() */
+    public function generateFromFeeStructure(Student $student, FeeStructure $feeStructure, ?int $recordedByStaffId = null): Invoice
+    {
+        return $this->generateSemesterInvoice($student, $feeStructure, $recordedByStaffId);
     }
 
     public function dispatchToChannels(Invoice $invoice): void
@@ -119,39 +170,5 @@ class InvoiceService
         }
 
         return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function itemizedLines(FeeStructure $feeStructure): array
-    {
-        $lines = [];
-
-        foreach ([
-            'tuition_fee' => 'Tuition',
-            'examination_fee' => 'Examination',
-            'library_fee' => 'Library',
-            'activity_fee' => 'Activity',
-            'hostel_fee' => 'Hostel',
-            'medical_insurance_fee' => 'Medical insurance',
-            'nursing_clinical_fee' => 'Clinical practicum',
-            'graduation_fee' => 'Graduation',
-            'registration_fee' => 'Registration',
-        ] as $field => $label) {
-            $value = (float) $feeStructure->{$field};
-            if ($value > 0) {
-                $lines[] = "{$label}: KES ".number_format($value, 2);
-            }
-        }
-
-        foreach ($feeStructure->other_fees ?? [] as $other) {
-            $amount = (float) ($other['amount'] ?? 0);
-            if ($amount > 0) {
-                $lines[] = ($other['label'] ?? 'Other fee').': KES '.number_format($amount, 2);
-            }
-        }
-
-        return $lines;
     }
 }

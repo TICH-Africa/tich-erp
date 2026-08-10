@@ -16,12 +16,12 @@ return [
     ],
 
     'invoice_types' => [
-        'tuition' => 'Tuition fees',
-        'application' => 'Application fees',
-        'supplementary' => 'Supplementary examination',
+        'application' => 'Application fee',
+        'tuition' => 'Semester charges',
+        'qa_annual' => 'Quality assurance (annual)',
+        'indexing_nck' => 'Indexing (NCK)',
         'graduation' => 'Graduation fees',
-        'registration' => 'Registration fees',
-        'hostel' => 'Hostel fees',
+        'supplementary' => 'Supplementary examination',
         'other' => 'Other fees',
     ],
 
@@ -47,5 +47,11 @@ return [
     ],
 
     'invoice_due_days' => (int) env('FINANCE_INVOICE_DUE_DAYS', 30),
+
+    'fee_defaults' => [
+        'application_fee' => 1000,
+        'qa_annual_fee' => 1000,
+        'graduation_fee' => 4000,
+    ],
 
 ];

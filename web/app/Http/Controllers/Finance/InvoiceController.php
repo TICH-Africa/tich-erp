@@ -50,10 +50,12 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'invoice_type' => 'required|string|in:'.implode(',', array_keys(config('finance.invoice_types'))),
-            'description' => 'required|string|max:500',
-            'amount' => 'required|numeric|min:0.01',
+            'invoice_type' => 'nullable|string|in:'.implode(',', array_keys(config('finance.invoice_types'))),
+            'description' => 'nullable|string|max:500',
+            'amount' => 'nullable|numeric|min:0.01',
             'fee_structure_id' => 'nullable|exists:fee_structures,id',
+            'fee_structure_charge' => 'nullable|string|in:semester,application,qa_annual,indexing_nck,graduation',
+            'include_optional_charges' => 'nullable|boolean',
         ]);
 
         $student = Student::query()->findOrFail($validated['student_id']);
@@ -61,8 +63,23 @@ class InvoiceController extends Controller
 
         if (! empty($validated['fee_structure_id'])) {
             $feeStructure = FeeStructure::query()->findOrFail($validated['fee_structure_id']);
-            $invoice = $this->invoices->generateFromFeeStructure($student, $feeStructure, $staffId);
+            $charge = $validated['fee_structure_charge'] ?? 'semester';
+            $includeOptional = (bool) ($validated['include_optional_charges'] ?? false);
+
+            $invoice = match ($charge) {
+                'application' => $this->invoices->generateApplicationInvoice($student, $feeStructure, $staffId),
+                'qa_annual' => $this->invoices->generateQaAnnualInvoice($student, $feeStructure, $staffId),
+                'indexing_nck' => $this->invoices->generateIndexingInvoice($student, $feeStructure, $staffId),
+                'graduation' => $this->invoices->generateGraduationInvoice($student, $feeStructure, $staffId),
+                default => $this->invoices->generateSemesterInvoice($student, $feeStructure, $staffId, $includeOptional),
+            };
         } else {
+            $request->validate([
+                'invoice_type' => 'required|string|in:'.implode(',', array_keys(config('finance.invoice_types'))),
+                'description' => 'required|string|max:500',
+                'amount' => 'required|numeric|min:0.01',
+            ]);
+
             $invoice = $this->invoices->generateForStudent($student, [
                 'invoice_type' => $validated['invoice_type'],
                 'description' => $validated['description'],

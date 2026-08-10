@@ -13,8 +13,10 @@
                 <tr>
                     <th>Programme</th>
                     <th>Year</th>
-                    <th>Semester</th>
-                    <th>Total</th>
+                    <th>Application</th>
+                    <th>Semester total</th>
+                    <th>QA (annual)</th>
+                    <th>Graduation</th>
                     <th>Approved</th>
                     <th></th>
                 </tr>
@@ -24,8 +26,10 @@
                     <tr>
                         <td>{{ $feeStructure->program?->program_name }}</td>
                         <td>{{ $feeStructure->academicYear?->year_label }}</td>
-                        <td>{{ $feeStructure->semester_number }}</td>
-                        <td>KES {{ number_format((float) $feeStructure->total_semester_fee, 2) }}</td>
+                        <td>KES {{ number_format((float) $feeStructure->application_fee, 0) }}</td>
+                        <td>KES {{ number_format((float) $feeStructure->total_semester_fee, 0) }}</td>
+                        <td>KES {{ number_format((float) $feeStructure->qa_annual_fee, 0) }}</td>
+                        <td>KES {{ number_format((float) $feeStructure->graduation_fee, 0) }}</td>
                         <td>{{ $feeStructure->is_approved ? 'Yes' : 'Pending' }}</td>
                         <td><a href="{{ route('finance.fee-structures.show', $feeStructure) }}">View</a></td>
                     </tr>

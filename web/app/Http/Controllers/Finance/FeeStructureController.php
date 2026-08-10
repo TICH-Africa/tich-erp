@@ -77,21 +77,37 @@ class FeeStructureController extends Controller
      */
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'program_id' => 'required|exists:academic_programs,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'semester_number' => 'required|integer|min:1|max:12',
-            'tuition_fee' => 'required|numeric|min:0',
-            'examination_fee' => 'nullable|numeric|min:0',
-            'library_fee' => 'nullable|numeric|min:0',
-            'activity_fee' => 'nullable|numeric|min:0',
-            'hostel_fee' => 'nullable|numeric|min:0',
-            'medical_insurance_fee' => 'nullable|numeric|min:0',
-            'nursing_clinical_fee' => 'nullable|numeric|min:0',
-            'graduation_fee' => 'nullable|numeric|min:0',
-            'registration_fee' => 'nullable|numeric|min:0',
             'effective_from' => 'required|date',
+            'application_fee' => 'required|numeric|min:0',
+            'tuition_fee' => 'required|numeric|min:0',
+            'caution_fee' => 'nullable|numeric|min:0',
+            'computer_lab_fee' => 'nullable|numeric|min:0',
+            'transport_fee' => 'nullable|numeric|min:0',
+            'accommodation_fee' => 'nullable|numeric|min:0',
+            'partnership_fee' => 'nullable|numeric|min:0',
+            'id_card_fee' => 'nullable|numeric|min:0',
+            'student_union_fee' => 'nullable|numeric|min:0',
+            'emergency_fund_fee' => 'nullable|numeric|min:0',
+            'library_fee' => 'nullable|numeric|min:0',
+            'examination_external_fee' => 'nullable|numeric|min:0',
+            'attachment_fee' => 'nullable|numeric|min:0',
+            'qa_annual_fee' => 'required|numeric|min:0',
+            'indexing_nck_fee' => 'nullable|numeric|min:0',
+            'graduation_fee' => 'required|numeric|min:0',
             'is_active' => 'sometimes|boolean',
         ]);
+
+        $validated['requires_indexing_nck'] = $request->boolean('requires_indexing_nck');
+        $validated['transport_optional'] = true;
+        $validated['accommodation_optional'] = true;
+
+        if (! $validated['requires_indexing_nck']) {
+            $validated['indexing_nck_fee'] = null;
+        }
+
+        return $validated;
     }
 }

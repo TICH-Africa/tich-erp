@@ -27,23 +27,31 @@ class FinanceAccountsDemoSeeder extends Seeder
             return;
         }
 
-        $feeStructure = FeeStructure::query()->firstOrCreate(
+        $feeStructure = FeeStructure::query()->updateOrCreate(
             [
                 'program_id' => $program->id,
                 'academic_year_id' => $year->id,
-                'semester_number' => 1,
             ],
             [
+                'application_fee' => 1000,
                 'tuition_fee' => 45000,
-                'registration_fee' => 3000,
-                'examination_fee' => 2500,
+                'caution_fee' => 5000,
+                'computer_lab_fee' => 2500,
+                'transport_fee' => 1200,
+                'transport_optional' => 1,
+                'accommodation_fee' => 15000,
+                'accommodation_optional' => 1,
+                'partnership_fee' => 1000,
+                'id_card_fee' => 500,
+                'student_union_fee' => 800,
+                'emergency_fund_fee' => 500,
                 'library_fee' => 1500,
-                'activity_fee' => 1000,
-                'hostel_fee' => 0,
-                'medical_insurance_fee' => 2000,
-                'nursing_clinical_fee' => 5000,
-                'graduation_fee' => 0,
-                'total_semester_fee' => 60000,
+                'examination_external_fee' => 3000,
+                'attachment_fee' => 4000,
+                'qa_annual_fee' => 1000,
+                'requires_indexing_nck' => 0,
+                'indexing_nck_fee' => null,
+                'graduation_fee' => 4000,
                 'is_approved' => 1,
                 'approved_by' => $staffId,
                 'approved_at' => now(),
@@ -55,7 +63,7 @@ class FinanceAccountsDemoSeeder extends Seeder
         $feeStructure->save();
 
         if (DB::table('invoices')->where('student_id', $student->id)->doesntExist()) {
-            app(InvoiceService::class)->generateFromFeeStructure($student, $feeStructure, $staffId);
+            app(InvoiceService::class)->generateSemesterInvoice($student, $feeStructure, $staffId);
         }
     }
 

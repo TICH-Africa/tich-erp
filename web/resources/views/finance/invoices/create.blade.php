@@ -24,11 +24,28 @@
                 <option value="">Manual invoice</option>
                 @foreach ($feeStructures as $feeStructure)
                     <option value="{{ $feeStructure->id }}" @selected(old('fee_structure_id') == $feeStructure->id)>
-                        {{ $feeStructure->program?->program_name }} · {{ $feeStructure->academicYear?->year_label }} · Sem {{ $feeStructure->semester_number }} — KES {{ number_format((float) $feeStructure->total_semester_fee, 2) }}
+                        {{ $feeStructure->program?->program_name }} · {{ $feeStructure->academicYear?->year_label }} — Semester KES {{ number_format((float) $feeStructure->total_semester_fee, 2) }}
                     </option>
                 @endforeach
             </select>
         </div>
+        <div class="tich-form-row" id="fee-structure-charge-row" hidden>
+            <label class="tich-label" for="fee_structure_charge">Charge to bill</label>
+            <select id="fee_structure_charge" name="fee_structure_charge" class="tich-input">
+                <option value="semester" @selected(old('fee_structure_charge', 'semester') === 'semester')>Semester charges</option>
+                <option value="application" @selected(old('fee_structure_charge') === 'application')>Application fee (once, after approval)</option>
+                <option value="qa_annual" @selected(old('fee_structure_charge') === 'qa_annual')>Quality assurance (annual)</option>
+                <option value="indexing_nck" @selected(old('fee_structure_charge') === 'indexing_nck')>Indexing (NCK) — once per programme</option>
+                <option value="graduation" @selected(old('fee_structure_charge') === 'graduation')>Graduation fees (post learning)</option>
+            </select>
+        </div>
+        <div class="tich-form-row" id="include-optional-row" hidden>
+            <label class="tich-label">
+                <input type="checkbox" name="include_optional_charges" value="1" @checked(old('include_optional_charges'))>
+                Include optional transport &amp; accommodation on semester invoice
+            </label>
+        </div>
+        <div id="manual-invoice-fields">
         <div class="tich-form-row">
             <label class="tich-label" for="invoice_type">Invoice type</label>
             <select id="invoice_type" name="invoice_type" class="tich-input">
@@ -45,7 +62,28 @@
             <label class="tich-label" for="amount">Amount (KES)</label>
             <input type="number" step="0.01" min="0.01" id="amount" name="amount" class="tich-input" value="{{ old('amount') }}">
         </div>
+        </div>
         <p class="tich-caption">Invoice numbers follow the format [Registration Number] - 001 and are dispatched to the student portal and email automatically.</p>
         <div><button type="submit" class="tich-btn tich-btn-primary">Generate &amp; dispatch</button></div>
     </form>
+    <script>
+        (function () {
+            const feeSelect = document.getElementById('fee_structure_id');
+            const chargeRow = document.getElementById('fee-structure-charge-row');
+            const optionalRow = document.getElementById('include-optional-row');
+            const manualFields = document.getElementById('manual-invoice-fields');
+            const chargeSelect = document.getElementById('fee_structure_charge');
+
+            function sync() {
+                const fromStructure = feeSelect.value !== '';
+                chargeRow.hidden = !fromStructure;
+                manualFields.hidden = fromStructure;
+                optionalRow.hidden = !fromStructure || chargeSelect.value !== 'semester';
+            }
+
+            feeSelect.addEventListener('change', sync);
+            chargeSelect.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 @endsection
