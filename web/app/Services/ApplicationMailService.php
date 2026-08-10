@@ -11,11 +11,11 @@ use App\Models\AuditLog;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\MailConfig;
+use App\Support\ModuleMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -381,7 +381,8 @@ class ApplicationMailService
             'Staff review notification sent',
             $applicant,
             $request,
-            ['reviewer_user_id' => $reviewer->id, 'reviewer_email' => $reviewer->email]
+            ['reviewer_user_id' => $reviewer->id, 'reviewer_email' => $reviewer->email],
+            ModuleMail::NOTIFICATION,
         );
     }
 
@@ -397,9 +398,10 @@ class ApplicationMailService
         Applicant $applicant,
         ?Request $request = null,
         array $auditExtra = [],
+        string $module = ModuleMail::ACADEMICS,
     ): array {
-        $configError = MailConfig::smtpPasswordIssue()
-            ?? ($this->mailIsConfigured() ? null : 'Mail is not configured. Set MAIL_MAILER, MAIL_HOST, MAIL_USERNAME, and MAIL_PASSWORD in .env.');
+        $configError = MailConfig::moduleIssue($module)
+            ?? ($this->mailIsConfigured($module) ? null : ucfirst($module).' mail is not configured. Set MAIL_HOST and MAIL_'.strtoupper($module).'_* in .env.');
 
         if ($configError) {
             Log::warning($configError, [
@@ -411,7 +413,7 @@ class ApplicationMailService
         }
 
         try {
-            Mail::to($email)->send($mailable);
+            ModuleMail::send($module, $email, $mailable);
 
             $this->auditService->log(
                 $auditAction,
@@ -437,7 +439,7 @@ class ApplicationMailService
                 'message' => $e->getMessage(),
             ]);
 
-            $error = MailConfig::friendlySmtpError($e->getMessage());
+            $error = MailConfig::friendlySmtpError($e->getMessage(), $module);
 
             return [
                 'sent' => false,
@@ -446,19 +448,8 @@ class ApplicationMailService
         }
     }
 
-    private function mailIsConfigured(): bool
+    private function mailIsConfigured(string $module = ModuleMail::ACADEMICS): bool
     {
-        if (config('mail.default') === 'log' || config('mail.default') === 'array') {
-            return true;
-        }
-
-        if (config('mail.default') !== 'smtp') {
-            return true;
-        }
-
-        return ! empty(config('mail.mailers.smtp.host'))
-            && ! empty(config('mail.mailers.smtp.username'))
-            && config('mail.mailers.smtp.password') !== null
-            && config('mail.mailers.smtp.password') !== '';
+        return ModuleMail::isConfigured($module);
     }
 }

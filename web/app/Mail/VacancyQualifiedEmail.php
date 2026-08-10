@@ -2,8 +2,10 @@
 
 namespace App\Mail;
 
-use App\Models\RecruitmentApplication;
+use App\Mail\Concerns\UsesModuleEnvelope;
 use App\Models\JobVacancy;
+use App\Models\RecruitmentApplication;
+use App\Support\ModuleMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -12,18 +14,21 @@ use Illuminate\Queue\SerializesModels;
 
 class VacancyQualifiedEmail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesModuleEnvelope;
 
     public function __construct(
         public RecruitmentApplication $application,
         public JobVacancy $vacancy
     ) {}
 
+    protected function mailModule(): string
+    {
+        return ModuleMail::HR;
+    }
+
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'You are Qualified - ' . $this->vacancy->job_title,
-        );
+        return $this->moduleEnvelope('You are Qualified - '.$this->vacancy->job_title);
     }
 
     public function content(): Content
