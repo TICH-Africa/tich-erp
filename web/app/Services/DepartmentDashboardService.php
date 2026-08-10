@@ -18,6 +18,7 @@ class DepartmentDashboardService
      */
     private const ENTRY_ROUTE_PRIORITY = [
         'hr.dashboard',
+        'finance.dashboard',
         'admissions.dashboard',
         'sis.dashboard',
         'sis.students.index',
@@ -210,6 +211,7 @@ class DepartmentDashboardService
             $groupLabels = [
                 'education' => 'Education',
                 'admissions' => 'Admissions',
+                'finance' => 'Finance',
                 'hr' => 'Human resources',
                 'tools' => 'Tools',
             ];
@@ -290,6 +292,7 @@ class DepartmentDashboardService
         $groupLabels = [
             'education' => 'Education',
             'admissions' => 'Admissions',
+            'finance' => 'Finance',
             'tools' => 'Tools',
         ];
 

@@ -174,6 +174,15 @@ return [
             'eligible_categories' => ['administrative'],
             'children' => [
                 [
+                    'key' => 'finance.dashboard',
+                    'label' => 'Finance dashboard',
+                    'description' => 'Fees, invoices, payroll, and procurement overview.',
+                    'permission' => 'finance.read',
+                    'route' => 'finance.dashboard',
+                    'context' => 'operational',
+                    'group' => 'finance',
+                ],
+                [
                     'key' => 'finance.student_accounts',
                     'label' => 'Student accounts',
                     'description' => 'Fee structures and student billing.',

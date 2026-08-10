@@ -23,6 +23,7 @@
             'staff.*',
             'employee.*',
             'hr.*',
+            'finance.*',
         ]);
 
         $hideAppAlerts = request()->routeIs([
@@ -35,6 +36,7 @@
             'staff.*',
             'employee.*',
             'hr.*',
+            'finance.*',
         ]);
     @endphp
 
