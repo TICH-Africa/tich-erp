@@ -192,6 +192,36 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
+
+        Route::get('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'index'])->name('finance.fee-structures.index');
+        Route::middleware('permission:finance.fee_structures.manage')->group(function () {
+            Route::get('/fee-structures/create', [\App\Http\Controllers\Finance\FeeStructureController::class, 'create'])->name('finance.fee-structures.create');
+            Route::post('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'store'])->name('finance.fee-structures.store');
+            Route::get('/fee-structures/{feeStructure}/edit', [\App\Http\Controllers\Finance\FeeStructureController::class, 'edit'])->name('finance.fee-structures.edit');
+            Route::put('/fee-structures/{feeStructure}', [\App\Http\Controllers\Finance\FeeStructureController::class, 'update'])->name('finance.fee-structures.update');
+            Route::post('/fee-structures/{feeStructure}/approve', [\App\Http\Controllers\Finance\FeeStructureController::class, 'approve'])->name('finance.fee-structures.approve');
+        });
+        Route::get('/fee-structures/{feeStructure}', [\App\Http\Controllers\Finance\FeeStructureController::class, 'show'])->name('finance.fee-structures.show');
+
+        Route::get('/student-accounts', [\App\Http\Controllers\Finance\StudentAccountController::class, 'index'])->name('finance.student-accounts.index');
+        Route::get('/student-accounts/{studentAccount}', [\App\Http\Controllers\Finance\StudentAccountController::class, 'show'])->name('finance.student-accounts.show');
+
+        Route::get('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'index'])->name('finance.invoices.index');
+        Route::get('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'show'])->name('finance.invoices.show');
+        Route::middleware('permission:finance.invoices.manage')->group(function () {
+            Route::get('/invoices/create/new', [\App\Http\Controllers\Finance\InvoiceController::class, 'create'])->name('finance.invoices.create');
+            Route::post('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'store'])->name('finance.invoices.store');
+            Route::post('/invoices/{invoice}/resend', [\App\Http\Controllers\Finance\InvoiceController::class, 'resend'])->name('finance.invoices.resend');
+        });
+
+        Route::get('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'index'])->name('finance.payments.index');
+        Route::middleware('permission:finance.payments.manage')->group(function () {
+            Route::get('/payments/create/new', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('finance.payments.create');
+            Route::post('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('finance.payments.store');
+        });
+
+        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
+        Route::get('/reports', [\App\Http\Controllers\Finance\LedgerController::class, 'reports'])->name('finance.reports.index');
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
@@ -382,6 +412,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.transcript.print');
         Route::get('/transcript/pdf', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'pdf'])
             ->name('portal.transcript.pdf');
+        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Portal\FinancePaymentController::class, 'store'])
+            ->name('portal.invoices.pay');
     });
 
     Route::get('/lesson-plans/{plan}/print', [StaffLessonPlanDocumentController::class, 'print'])->name('lesson-plans.print');
