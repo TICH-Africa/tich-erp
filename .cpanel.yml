@@ -1,0 +1,46 @@
+---
+# TICH ERP — cPanel Git deployment (production)
+#
+# Setup (once on the server):
+# 1. cPanel → Git Version Control → clone this repository.
+# 2. Set the domain/subdomain document root to:
+#      <repo>/web/public
+#    Example:
+#      /home/USERNAME/repositories/tich-erp/web/public
+# 3. Create production env (never commit):
+#      cp web/.env.example web/.env
+#      php artisan key:generate
+# 4. Adjust the exported paths below if your home directory or PHP binary differs.
+#
+# Optional: in cPanel → Git Version Control → Manage → Deploy HEAD Commit
+# after each push to the tracked production branch.
+
+deployment:
+  tasks:
+    # ── Paths & binaries (edit USERNAME / PHP version if needed) ─────────────
+    - export REPO_ROOT=$PWD
+    - export APP_DIR=$REPO_ROOT/web
+    - export PHP_BIN=/usr/local/bin/ea-php82
+    - export COMPOSER_BIN=/opt/cpanel/composer/bin/composer
+    - export COMPOSER_ALLOW_SUPERUSER=1
+
+    # ── Maintenance window ───────────────────────────────────────────────────
+    - cd $APP_DIR && $PHP_BIN artisan down --render="errors::503" --retry=120 || true
+
+    # ── PHP dependencies ─────────────────────────────────────────────────────
+    - cd $APP_DIR && $PHP_BIN $COMPOSER_BIN install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+    # ── Front-end build (skip if Node is unavailable; app uses public/ assets) ─
+    - cd $APP_DIR && if command -v npm >/dev/null 2>&1; then npm ci --omit=dev && npm run build; else echo "npm not found — skipping asset build"; fi
+
+    # ── Database & Laravel caches ────────────────────────────────────────────
+    - cd $APP_DIR && $PHP_BIN artisan migrate --force --no-interaction
+    - cd $APP_DIR && $PHP_BIN artisan storage:link --force || true
+    - cd $APP_DIR && $PHP_BIN artisan optimize --no-interaction
+    - cd $APP_DIR && $PHP_BIN artisan view:cache --no-interaction
+
+    # ── Writable directories ───────────────────────────────────────────────────
+    - cd $APP_DIR && /bin/chmod -R ug+rwx storage bootstrap/cache || true
+
+    # ── Bring application back online ──────────────────────────────────────────
+    - cd $APP_DIR && $PHP_BIN artisan up || true
