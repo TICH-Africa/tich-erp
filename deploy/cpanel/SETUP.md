@@ -17,8 +17,8 @@ Each deploy automatically:
 
 | File | Purpose |
 |------|---------|
-| `deploy/cpanel/docroot.txt` | Document root: `/home2/leylasaf/tich.africa/public_html` |
-| `deploy/cpanel/public_html.index.php` | Laravel bootstrap for `public_html` |
+| `deploy/cpanel/docroot.txt` | Document root: `/home3/tichafri/public_html` |
+| `deploy/cpanel/public_html.index.php` | Points Laravel to `/home3/tichafri/tich-erp/web` |
 | `deploy/cpanel/public_html.htaccess` | URL rewriting for Laravel routes |
 | `deploy/cpanel/last-asset-sync.log` | Written on each deploy (check if CSS/JS break) |
 

@@ -5,8 +5,8 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Laravel app root — same idea as leysafaris/leysafaris, but TICH uses the `web/` folder.
-$appPath = '/home2/leylasaf/tich-erp/web';
+// Laravel app root — TICH monorepo uses the `web/` folder inside the git clone.
+$appPath = '/home3/tichafri/tich-erp/web';
 
 if (file_exists($maintenance = $appPath.'/storage/framework/maintenance.php')) {
     require $maintenance;

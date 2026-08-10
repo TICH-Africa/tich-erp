@@ -2,9 +2,9 @@
 # Run once on the server after cloning tich-erp (Leysafaris-style asset symlinks).
 set -euo pipefail
 
-CPANEL_USER="${CPANEL_USER:-leylasaf}"
-APP_PUBLIC="/home2/${CPANEL_USER}/tich-erp/web/public"
-DOCROOT="/home2/${CPANEL_USER}/tich.africa/public_html"
+CPANEL_USER="${CPANEL_USER:-tichafri}"
+APP_PUBLIC="/home3/${CPANEL_USER}/tich-erp/web/public"
+DOCROOT="/home3/${CPANEL_USER}/public_html"
 
 if [[ ! -d "$APP_PUBLIC" ]]; then
   echo "Laravel public not found: $APP_PUBLIC"

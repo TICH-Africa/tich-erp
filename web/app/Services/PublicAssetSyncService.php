@@ -111,12 +111,12 @@ class PublicAssetSyncService
             $log('WARN: Missing '.$configPath.' — create it via File Manager (see deploy/cpanel/docroot.txt.example)');
         }
 
-        $user = get_current_user() ?: 'leylasaf';
+        $user = get_current_user() ?: 'tichafri';
         $candidates = [
-            "/home2/{$user}/tich.africa/public_html",
-            "/home2/{$user}/public_html",
-            "/home3/{$user}/tich.africa/public_html",
             "/home3/{$user}/public_html",
+            "/home3/{$user}/tich.africa/public_html",
+            "/home2/{$user}/public_html",
+            "/home2/{$user}/tich.africa/public_html",
         ];
 
         foreach ($candidates as $candidate) {

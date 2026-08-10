@@ -31,14 +31,14 @@ if [[ -f "$DOCROOT_FILE" ]]; then
 fi
 
 if [[ -z "$DOCROOT" || ! -d "$DOCROOT" ]]; then
-  CPANEL_USER="$(whoami 2>/dev/null || echo leylasaf)"
+  CPANEL_USER="$(whoami 2>/dev/null || echo tichafri)"
   CANDIDATES=(
-    "/home2/${CPANEL_USER}/tich.africa/public_html"
-    "/home2/${CPANEL_USER}/public_html"
-    "/home3/${CPANEL_USER}/tich.africa/public_html"
     "/home3/${CPANEL_USER}/public_html"
-    "/home/${CPANEL_USER}/tich.africa/public_html"
+    "/home3/${CPANEL_USER}/tich.africa/public_html"
+    "/home2/${CPANEL_USER}/public_html"
+    "/home2/${CPANEL_USER}/tich.africa/public_html"
     "/home/${CPANEL_USER}/public_html"
+    "/home/${CPANEL_USER}/tich.africa/public_html"
   )
 
   for candidate in "${CANDIDATES[@]}"; do
@@ -53,7 +53,7 @@ fi
 if [[ -z "$DOCROOT" || ! -d "$DOCROOT" ]]; then
   log "ERROR: Could not find document root."
   log "Create deploy/cpanel/docroot.txt with one line: full path to tich.africa public_html"
-  log "Example: /home2/leylasaf/tich.africa/public_html"
+  log "Example: /home3/tichafri/public_html"
   exit 1
 fi
 
