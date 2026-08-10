@@ -3,10 +3,9 @@
 #
 # Setup (once on the server):
 # 1. cPanel → Git Version Control → clone this repository.
-# 2. Set the domain/subdomain document root to:
-#      <repo>/web/public
-#    Example:
-#      /home/USERNAME/repositories/tich-erp/web/public
+# 2. Leysafaris-style hosting: domain docroot stays at ~/tich.africa/public_html
+#    with index.php → web/ and symlinks for css/js (see deploy/cpanel/SETUP.md).
+#    Laravel app path: /home2/leylasaf/tich-erp/web
 # 3. Create production env (never commit):
 #      cp web/.env.example web/.env
 #      php artisan key:generate
