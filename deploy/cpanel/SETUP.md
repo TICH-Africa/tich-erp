@@ -15,7 +15,15 @@ Each deploy automatically:
 
 ## Paths (committed in git)
 
+cPanel shows **Document Root: `/public_html`** — that is relative to your home folder, i.e. **`/home3/tichafri/public_html`** (same pattern as Leysafaris on `leylasaf`).
+
+| | Leysafaris | TICH |
+|---|------------|------|
+| Document root | `/home2/leylasaf/public_html` | `/home3/tichafri/public_html` |
+| Laravel root | `.../leysafaris/leysafaris` | `.../tich-erp/web` |
+
 | File | Purpose |
+|------|---------|
 |------|---------|
 | `deploy/cpanel/docroot.txt` | Document root: `/home3/tichafri/public_html` |
 | `deploy/cpanel/public_html.index.php` | Points Laravel to `/home3/tichafri/tich-erp/web` |
