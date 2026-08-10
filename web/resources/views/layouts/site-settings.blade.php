@@ -15,5 +15,6 @@
 @endsection
 
 @section('scripts')
+    @parent
     <script src="{{ asset('js/tich-sidebar.js') }}" defer></script>
 @endsection

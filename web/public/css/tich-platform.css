@@ -5504,3 +5504,62 @@ a.tich-tabs__btn {
 [data-theme="dark"] .tich-leave-request-item:hover {
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
+
+/* ─── Lazy loading (YouTube-style progressive media) ───────────────────── */
+
+.tich-lazy-media {
+    background-color: var(--tich-neutral);
+    transition: opacity 0.35s ease, filter 0.35s ease;
+}
+
+.tich-lazy-media.is-loading:not(.is-loaded) {
+    opacity: 0.84;
+    filter: blur(2px);
+    background: linear-gradient(
+        90deg,
+        var(--tich-neutral) 0%,
+        #e8eaec 45%,
+        var(--tich-neutral) 90%
+    );
+    background-size: 220% 100%;
+    animation: tich-lazy-shimmer 1.15s ease-in-out infinite;
+}
+
+.tich-lazy-media.is-loaded {
+    opacity: 1;
+    filter: none;
+    animation: none;
+    background: transparent;
+}
+
+.tich-lazy-media.is-error {
+    opacity: 0.65;
+    filter: none;
+    animation: none;
+}
+
+.tich-lazy-iframe.is-loading {
+    min-height: 12rem;
+    border-radius: var(--radius-md);
+}
+
+@keyframes tich-lazy-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tich-lazy-media.is-loading:not(.is-loaded) {
+        animation: none;
+        filter: none;
+    }
+
+    .tich-lazy-media {
+        transition: none;
+    }
+}
