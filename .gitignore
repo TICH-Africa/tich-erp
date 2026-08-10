@@ -28,6 +28,7 @@ cat > .gitignore << 'EOF'
 /desktop/node_modules/
 
 # General
+/docs/
 .DS_Store
 *.log
 .idea/
