@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProfessionalDevelopment extends Model
 {
+    use PrunesStoredFiles;
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'certificate_path' => 'public',
+    ];
     protected $table = 'professional_development';
 
     public $timestamps = false;

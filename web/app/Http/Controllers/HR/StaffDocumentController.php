@@ -8,6 +8,7 @@ use App\Models\StaffDocument;
 use App\Models\StaffDocumentTemplate;
 use App\Services\DocumentGenerationService;
 use App\Services\StaffLifecycleService;
+use App\Services\StoredFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -20,6 +21,7 @@ class StaffDocumentController extends Controller
         protected StaffLifecycleService $lifecycleService,
         protected DocumentGenerationService $documentService,
         protected \App\Services\PlatformNotificationService $notifications,
+        protected StoredFileService $files,
     ) {}
 
     public function index(): View
@@ -60,7 +62,7 @@ class StaffDocumentController extends Controller
         ]);
 
         $file = $validated['file'];
-        $path = $file->storeAs("staff/{$staff->employee_number}/documents", time() . '_' . $file->getClientOriginalName(), 'public');
+        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
 
         $this->lifecycleService->addDocument($staffId, [
             'document_type' => $validated['document_type'],
@@ -104,7 +106,7 @@ $validated = $request->validate([
         ]);
 
         $file = $request->file('file');
-        $path = $file->storeAs("staff/{$staff->employee_number}/documents", time() . '_' . $file->getClientOriginalName(), 'public');
+        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
 
         $this->lifecycleService->addDocument($staff->id, [
             'document_type' => $validated['document_type'],
@@ -214,10 +216,6 @@ $validated = $request->validate([
     public function destroy(Request $request, int $staffId, int $documentId)
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
-
-        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
-        }
 
         $document->delete();
 

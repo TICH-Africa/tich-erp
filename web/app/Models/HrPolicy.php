@@ -2,12 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HrPolicy extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'hr_policies';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'file_path' => 'public',
+    ];
 
     protected $fillable = [
         'title',

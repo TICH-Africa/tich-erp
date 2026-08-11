@@ -8,6 +8,7 @@ use App\Models\Site\ContactChannel;
 use App\Models\Site\SocialLink;
 use App\Services\AuditService;
 use App\Services\SiteSettingsService;
+use App\Services\StoredFileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class SiteSettingsController extends Controller
     public function __construct(
         protected SiteSettingsService $settings,
         protected AuditService $auditService,
+        protected StoredFileService $files,
     ) {}
 
     public function index(Request $request): View
@@ -82,24 +84,19 @@ class SiteSettingsController extends Controller
         ]);
 
         if ($request->boolean('remove_logo') && $previousLogo) {
-            $this->settings->deletePublicAsset($previousLogo);
+            $this->files->delete($previousLogo, 'public');
             $this->settings->set('site.logo_path', null, $userId, [
                 'group_name' => 'identity',
                 'label' => 'Site logo',
                 'value_type' => 'file_path',
             ]);
         } elseif ($request->hasFile('logo')) {
-            $logoPath = $this->settings->storePublicUpload($request->file('logo'), 'site/logo');
-            if ($logoPath) {
-                if ($previousLogo && $previousLogo !== $logoPath) {
-                    $this->settings->deletePublicAsset($previousLogo);
-                }
-                $this->settings->set('site.logo_path', $logoPath, $userId, [
-                    'group_name' => 'identity',
-                    'label' => 'Site logo',
-                    'value_type' => 'file_path',
-                ]);
-            }
+            $logoPath = $this->files->replace($previousLogo, $request->file('logo'), 'site/logo', 'public', null, true);
+            $this->settings->set('site.logo_path', $logoPath, $userId, [
+                'group_name' => 'identity',
+                'label' => 'Site logo',
+                'value_type' => 'file_path',
+            ]);
         }
 
         $this->auditService->log(
@@ -153,11 +150,7 @@ class SiteSettingsController extends Controller
 
         $imagePath = $slide->image_path;
         if ($request->hasFile('image')) {
-            $newPath = $this->settings->storePublicUpload($request->file('image'), 'site/carousel');
-            if ($newPath) {
-                $this->settings->deletePublicAsset($imagePath);
-                $imagePath = $newPath;
-            }
+            $imagePath = $this->files->replace($slide->image_path, $request->file('image'), 'site/carousel', 'public', null, true);
         }
 
         $slide->update([
@@ -171,7 +164,6 @@ class SiteSettingsController extends Controller
 
     public function destroySlide(Request $request, CarouselSlide $slide): RedirectResponse
     {
-        $this->settings->deletePublicAsset($slide->image_path);
         $slide->delete();
 
         return back()->with('status', 'Hero slide removed.');

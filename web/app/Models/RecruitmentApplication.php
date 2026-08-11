@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,18 @@ use Illuminate\Support\Facades\Storage;
 class RecruitmentApplication extends Model
 {
     use HasFactory;
+    use PrunesStoredFiles;
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'cv_file_path' => 'public',
+        'cover_letter_file_path' => 'public',
+    ];
+
+    /** @var array<string, string> */
+    protected array $storedFileArrays = [
+        'certificates_file_paths' => 'public',
+    ];
 
     protected $table = 'recruitment_applications';
 

@@ -218,10 +218,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::middleware('permission:finance.payments.manage')->group(function () {
             Route::get('/payments/create/new', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('finance.payments.create');
             Route::post('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('finance.payments.store');
+            Route::get('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'edit'])->name('finance.mpesa.settings');
+            Route::put('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'update'])->name('finance.mpesa.settings.update');
+            Route::post('/mpesa/stk/{stkRequest}/reconcile', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'reconcile'])->name('finance.mpesa.stk.reconcile');
         });
 
         Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
         Route::get('/reports', [\App\Http\Controllers\Finance\LedgerController::class, 'reports'])->name('finance.reports.index');
+        Route::get('/reports/view/pdf', [\App\Http\Controllers\Finance\LedgerController::class, 'viewPdf'])->name('finance.reports.view.pdf');
+        Route::get('/reports/view/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'viewExcel'])->name('finance.reports.view.excel');
+        Route::get('/reports/export/pdf', [\App\Http\Controllers\Finance\LedgerController::class, 'exportPdf'])->name('finance.reports.export.pdf');
+        Route::get('/reports/export/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'exportExcel'])->name('finance.reports.export.excel');
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
@@ -480,6 +487,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             ->name('portal.transcript.pdf');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Portal\FinancePaymentController::class, 'store'])
             ->name('portal.invoices.pay');
+        Route::get('/mpesa/stk/{stkRequest}/status', [\App\Http\Controllers\Portal\MpesaPaymentStatusController::class, '__invoke'])
+            ->name('portal.mpesa.stk.status');
     });
 
     Route::get('/lesson-plans/{plan}/print', [StaffLessonPlanDocumentController::class, 'print'])->name('lesson-plans.print');
@@ -584,6 +593,9 @@ Route::prefix('apply')->group(function () {
 
 Route::get('/careers', [\App\Http\Controllers\Public\CareerController::class, 'index'])->name('careers.index');
 Route::get('/careers/{vacancy}', [\App\Http\Controllers\Public\CareerController::class, 'show'])->name('careers.show');
+
+Route::post('/webhooks/mpesa/stk-callback', \App\Http\Controllers\Webhooks\MpesaStkCallbackController::class)
+    ->name('webhooks.mpesa.stk-callback');
 
 Route::prefix('vacancies')->group(function () {
     Route::get('/apply/{vacancy}', [\App\Http\Controllers\Public\VacancyApplicationController::class, 'create'])->name('vacancies.apply.create');

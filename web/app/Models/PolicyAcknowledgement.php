@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PolicyAcknowledgement extends Model
 {
+    use PrunesStoredFiles;
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'policy_file_path' => 'public',
+    ];
     protected $table = 'policy_acknowledgements';
 
     public $timestamps = false;

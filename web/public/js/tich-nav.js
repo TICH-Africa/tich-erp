@@ -4,20 +4,63 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initMobileNav() {
+    const header = document.getElementById('site-header');
     const toggle = document.querySelector('[data-nav-toggle]');
     const drawer = document.querySelector('[data-nav-drawer]');
-    if (!toggle || !drawer) {
+    const backdrop = document.querySelector('[data-nav-drawer-backdrop]');
+
+    if (!header || !toggle || !drawer) {
         return;
     }
 
-    toggle.addEventListener('click', () => {
-        const isHidden = drawer.hasAttribute('hidden');
-        if (isHidden) {
-            drawer.removeAttribute('hidden');
-            toggle.setAttribute('aria-expanded', 'true');
+    const isOpen = () => !drawer.hasAttribute('hidden');
+
+    const openDrawer = () => {
+        drawer.removeAttribute('hidden');
+        header.classList.add('is-nav-open');
+        document.body.classList.add('is-nav-open');
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', 'Close menu');
+    };
+
+    const closeDrawer = () => {
+        drawer.setAttribute('hidden', 'hidden');
+        header.classList.remove('is-nav-open');
+        document.body.classList.remove('is-nav-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Open menu');
+    };
+
+    toggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (isOpen()) {
+            closeDrawer();
         } else {
-            drawer.setAttribute('hidden', 'hidden');
-            toggle.setAttribute('aria-expanded', 'false');
+            openDrawer();
+        }
+    });
+
+    backdrop?.addEventListener('click', closeDrawer);
+
+    drawer.querySelectorAll('a, button[type="submit"]').forEach((element) => {
+        element.addEventListener('click', () => {
+            if (window.innerWidth < 1024) {
+                closeDrawer();
+            }
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isOpen()) {
+            closeDrawer();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024 && isOpen()) {
+            closeDrawer();
         }
     });
 }

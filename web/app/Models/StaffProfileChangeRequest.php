@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffProfileChangeRequest extends Model
 {
+    use PrunesStoredFiles;
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'attachment_path' => 'public',
+    ];
     public const TYPE_PROFILE_UPDATE = 'profile_update';
 
     public const TYPE_PHOTO = 'photo';

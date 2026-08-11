@@ -2,11 +2,19 @@
 
 namespace App\Models\Portal;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 
 class CarouselSlide extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'homepage_carousel_slides';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'image_path' => 'public',
+    ];
 
     protected $fillable = [
         'title', 'subtitle', 'image_path', 'video_url',

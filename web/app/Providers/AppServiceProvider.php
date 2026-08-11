@@ -17,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Support\ImageWebpEncoder::class);
+        $this->app->singleton(\App\Services\StoredFileService::class);
     }
 
     public function boot(): void

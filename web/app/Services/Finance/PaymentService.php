@@ -4,6 +4,7 @@ namespace App\Services\Finance;
 
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Invoice;
+use App\Models\MpesaStkRequest;
 use App\Models\Payment;
 use App\Support\ModuleMail;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ class PaymentService
     public function __construct(
         protected StudentAccountService $accounts,
         protected LedgerService $ledger,
+        protected MpesaSettingsService $mpesaSettings,
+        protected MpesaDarajaService $mpesaDaraja,
     ) {}
 
     /**
@@ -65,20 +68,63 @@ class PaymentService
         });
     }
 
-    public function initiateMpesaPayment(Invoice $invoice, float $amount, string $phoneNumber): array
+    public function initiateMpesaPayment(Invoice $invoice, float $amount, string $phoneNumber, int $studentId): MpesaStkRequest
     {
         abort_unless($invoice->isPayable(), 422, 'This invoice is not open for payment.');
-        abort_unless(config('finance.mpesa.enabled'), 422, 'M-Pesa payments are not enabled yet.');
+        abort_unless($this->mpesaSettings->isEnabled(), 422, 'M-Pesa payments are not enabled. Configure them under Finance → M-Pesa settings.');
 
-        $reference = 'MPESA-'.strtoupper(substr(sha1($invoice->id.now()->timestamp), 0, 12));
+        $payAmount = round(min($amount, (float) $invoice->balance), 2);
+        abort_if($payAmount <= 0, 422, 'Nothing left to pay on this invoice.');
 
-        return [
-            'status' => 'pending',
-            'reference' => $reference,
-            'amount' => round(min($amount, (float) $invoice->balance), 2),
-            'phone' => $phoneNumber,
-            'message' => 'M-Pesa STK push would be initiated here when live credentials are configured.',
-        ];
+        $normalizedPhone = $this->mpesaDaraja->normalizePhone($phoneNumber);
+
+        $recentPending = MpesaStkRequest::query()
+            ->where('invoice_id', $invoice->id)
+            ->where('status', MpesaStkRequest::STATUS_PENDING)
+            ->where('created_at', '>=', now()->subMinutes(3))
+            ->exists();
+
+        abort_if($recentPending, 422, 'An M-Pesa prompt is already pending for this invoice. Check your phone or wait a moment.');
+
+        $accountReference = substr($this->mpesaSettings->accountReferencePrefix().'-'.$invoice->invoice_number, 0, 12);
+        $description = 'TICH '.str_replace('_', ' ', $invoice->invoice_type);
+
+        $stkRequest = MpesaStkRequest::query()->create([
+            'invoice_id' => $invoice->id,
+            'student_id' => $studentId,
+            'amount' => $payAmount,
+            'phone' => $normalizedPhone,
+            'account_reference' => $accountReference,
+            'status' => MpesaStkRequest::STATUS_PENDING,
+        ]);
+
+        try {
+            $response = $this->mpesaDaraja->stkPush(
+                $payAmount,
+                $normalizedPhone,
+                $accountReference,
+                $description,
+            );
+
+            $stkRequest->update([
+                'merchant_request_id' => $response['merchant_request_id'],
+                'checkout_request_id' => $response['checkout_request_id'],
+            ]);
+
+            $invoice->update([
+                'payment_gateway_ref' => $response['checkout_request_id'],
+            ]);
+        } catch (Throwable $e) {
+            $stkRequest->update([
+                'status' => MpesaStkRequest::STATUS_FAILED,
+                'result_desc' => $e->getMessage(),
+                'completed_at' => now(),
+            ]);
+
+            throw $e;
+        }
+
+        return $stkRequest->fresh(['invoice']);
     }
 
     private function sendConfirmation(Payment $payment): void

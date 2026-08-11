@@ -18,6 +18,7 @@ class LeaveRequestService
     public function __construct(
         protected PlatformNotificationService $notifications,
         protected AuditService $auditService,
+        protected StoredFileService $files,
     ) {}
 
     /**
@@ -372,7 +373,7 @@ class LeaveRequestService
             return null;
         }
 
-        return $certificate->store('leave-certificates', 'local');
+        return $this->files->store($certificate, 'leave-certificates', 'local');
     }
 
     private function adjustBalance(int $staffId, int $leaveTypeId, int $days, string $action): void

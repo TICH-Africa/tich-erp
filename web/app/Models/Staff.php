@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,14 @@ use Illuminate\Support\Str;
 class Staff extends Model
 {
     use HasFactory;
+    use PrunesStoredFiles;
+
     protected $table = 'staff';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'photo_path' => 'public',
+    ];
 
     protected $fillable = [
         'employee_number',

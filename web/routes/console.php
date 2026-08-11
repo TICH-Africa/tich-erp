@@ -3,6 +3,7 @@
 use App\Support\ModuleMail;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -157,3 +158,5 @@ Artisan::command('sis:backfill-admitted', function () {
 
     return 0;
 })->purpose('Create student records and portal invites for already-admitted applicants');
+
+Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();

@@ -7,6 +7,7 @@ use App\Models\Staff;
 use App\Models\StaffDocument;
 use App\Services\AuditService;
 use App\Services\StaffLifecycleService;
+use App\Services\StoredFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,7 @@ class DocumentController extends Controller
     public function __construct(
         protected StaffLifecycleService $lifecycleService,
         protected AuditService $auditService,
+        protected StoredFileService $files,
     ) {}
 
     public function index(Request $request, int $staffId)
@@ -62,7 +64,7 @@ class DocumentController extends Controller
         ]);
 
         $file = $validated['file'];
-        $path = $file->storeAs("staff/{$staff->employee_number}/documents", time() . '_' . $file->getClientOriginalName(), 'public');
+        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
 
         $document = $this->lifecycleService->addDocument($staffId, [
             'document_type' => $validated['document_type'],
@@ -114,10 +116,6 @@ class DocumentController extends Controller
     public function destroy(Request $request, int $staffId, int $id)
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($id);
-
-        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
-        }
 
         $this->auditService->log(
             'staff.document.deleted',

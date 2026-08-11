@@ -1,0 +1,16 @@
+---
+# TICH ERP — cPanel Git deployment (production)
+# Push → cPanel Git Version Control → Update from Remote → Deploy HEAD Commit
+# Paths live in deploy/cpanel/docroot.txt (committed). Log: deploy/cpanel/last-asset-sync.log
+
+deployment:
+  tasks:
+    - cd web && /usr/local/bin/ea-php82 /opt/cpanel/composer/bin/composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+    - cd web && /usr/local/bin/ea-php82 artisan down --render="errors::503" --retry=120 || true
+    - cd web && /usr/local/bin/ea-php82 artisan migrate --force --no-interaction
+    - cd web && /usr/local/bin/ea-php82 artisan storage:link --force || true
+    - DOCROOT=$(tr -d '\r\n' < deploy/cpanel/docroot.txt | xargs) && /bin/cp -f deploy/cpanel/public_html.index.php "$DOCROOT/index.php" && /bin/cp -f deploy/cpanel/public_html.htaccess "$DOCROOT/.htaccess" && /bin/bash deploy/cpanel/sync-public-assets.sh
+    - cd web && /usr/local/bin/ea-php82 artisan optimize --no-interaction
+    - cd web && /usr/local/bin/ea-php82 artisan view:cache --no-interaction
+    - cd web && /bin/chmod -R ug+rwx storage bootstrap/cache || true
+    - cd web && /usr/local/bin/ea-php82 artisan up || true

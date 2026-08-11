@@ -2,6 +2,18 @@
 
 <x-page-toolbar title="Finance" meta="Fee accounts, invoices, and payments" />
 
+@if (session('mpesa_stk_request_id'))
+    <div
+        id="mpesa-payment-banner"
+        class="tich-card tich-mt-4"
+        data-status-url="{{ route('portal.mpesa.stk.status', session('mpesa_stk_request_id')) }}"
+        role="status"
+        style="border-left: 4px solid var(--tich-primary, #0d6efd); padding: 1rem;"
+    >
+        M-Pesa prompt sent. Check your phone and enter your PIN…
+    </div>
+@endif
+
 <div class="tich-grid tich-grid--3 tich-dept-stats tich-mt-8">
     <article class="tich-card tich-stat">
         <p class="tich-caption">Outstanding balance</p>
@@ -84,7 +96,17 @@
                                         @csrf
                                         <input type="hidden" name="amount" value="{{ $invoice->balance }}">
                                         <input type="hidden" name="payment_method" value="mpesa">
-                                        <input type="text" name="phone_number" class="tich-input tich-input--compact" placeholder="M-Pesa phone" style="max-width:9rem;">
+                                        <input
+                                            type="tel"
+                                            name="phone_number"
+                                            class="tich-input tich-input--compact"
+                                            placeholder="07XXXXXXXX"
+                                            inputmode="tel"
+                                            pattern="^(?:\+?254|0)?[17]\d{8}$"
+                                            title="Kenyan mobile number"
+                                            required
+                                            style="max-width:9rem;"
+                                        >
                                         <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Pay with M-Pesa</button>
                                     </form>
                                 @else
@@ -138,4 +160,8 @@
             Invoices and receipts will appear here when the finance office posts them to your account.
         </p>
     </article>
+@endif
+
+@if (session('mpesa_stk_request_id'))
+    <script src="{{ asset('js/tich-mpesa-payment.js') }}" defer></script>
 @endif

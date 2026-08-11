@@ -18,6 +18,7 @@ class ApplicationService
         protected ProgramsService $programsService,
         protected AuditService $auditService,
         protected ApplicationMailService $mailService,
+        protected StoredFileService $files,
     ) {}
 
     public function draft(): array
@@ -293,10 +294,11 @@ class ApplicationService
         foreach (array_keys(config('tich-application.document_types', [])) as $type) {
             if ($request->hasFile("documents.{$type}")) {
                 $file = $request->file("documents.{$type}");
+                $storedPath = $this->files->store($file, 'applications/pending', 'local');
                 $existing[$type] = [
-                    'temp_path' => $file->store('applications/pending', 'local'),
+                    'temp_path' => $storedPath,
                     'original_filename' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
+                    'mime_type' => $this->storedMimeType($storedPath, $file->getMimeType()),
                 ];
             }
         }
@@ -337,17 +339,14 @@ class ApplicationService
 
             $filename = basename($meta['temp_path']);
             $destination = "applications/{$applicant->id}/{$filename}";
-
-            if (Storage::disk('local')->exists($meta['temp_path'])) {
-                Storage::disk('local')->move($meta['temp_path'], $destination);
-            }
+            $destination = $this->files->move($meta['temp_path'], $destination, 'local');
 
             ApplicationDocument::create([
                 'applicant_id' => $applicant->id,
                 'document_type' => $type,
                 'file_path' => $destination,
                 'original_filename' => $meta['original_filename'] ?? $filename,
-                'mime_type' => $meta['mime_type'] ?? 'application/octet-stream',
+                'mime_type' => $this->storedMimeType($destination, $meta['mime_type'] ?? 'application/octet-stream'),
             ]);
         }
     }
@@ -462,5 +461,14 @@ class ApplicationService
         $specific = config("tich-application.document_upload_rules.{$type}", []);
 
         return array_merge($defaults, $specific);
+    }
+
+    private function storedMimeType(string $path, ?string $fallback = null): string
+    {
+        if (str_ends_with(strtolower($path), '.webp')) {
+            return 'image/webp';
+        }
+
+        return $fallback ?: 'application/octet-stream';
     }
 }

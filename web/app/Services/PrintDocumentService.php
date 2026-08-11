@@ -61,17 +61,44 @@ class PrintDocumentService
      */
     public function downloadPdf(string $view, array $data, string $filename, string $orientation = 'portrait'): StreamedResponse
     {
+        $mpdf = $this->makePdf($view, $data, $orientation);
+
+        return response()->streamDownload(function () use ($mpdf, $filename) {
+            $mpdf->Output($filename, 'D');
+        }, $filename);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function inlinePdf(string $view, array $data, string $filename, string $orientation = 'portrait'): Response
+    {
+        $mpdf = $this->makePdf($view, $data, $orientation);
+
+        return response($mpdf->Output('', 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function makePdf(string $view, array $data, string $orientation = 'portrait'): Mpdf
+    {
         $html = view($view, array_merge([
             'institution' => $this->institution(true),
             'generatedAt' => now(),
             'forPdf' => true,
         ], $data))->render();
 
-        $mpdf = new Mpdf(['mode' => 'utf-8', 'format' => 'A4']);
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'orientation' => $orientation === 'landscape' ? 'L' : 'P',
+        ]);
         $mpdf->WriteHTML($this->normalizeDocumentHtml($html));
 
-        return response()->streamDownload(function () use ($mpdf, $filename) {
-            $mpdf->Output($filename, 'D');
-        }, $filename);
+        return $mpdf;
     }
 }
