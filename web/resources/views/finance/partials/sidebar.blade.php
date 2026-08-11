@@ -6,6 +6,9 @@
         @include('partials.navigation.sidebar-link', ['href' => route('finance.student-accounts.index'), 'label' => 'Student accounts', 'icon' => 'users', 'active' => request()->routeIs('finance.student-accounts.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('finance.invoices.index'), 'label' => 'Invoices', 'icon' => 'file-text', 'active' => request()->routeIs('finance.invoices.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('finance.payments.index'), 'label' => 'Payments', 'icon' => 'wallet', 'active' => request()->routeIs('finance.payments.*')])
+        @can('finance.payments.manage')
+            @include('partials.navigation.sidebar-link', ['href' => route('finance.mpesa.settings'), 'label' => 'M-Pesa settings', 'icon' => 'smartphone', 'active' => request()->routeIs('finance.mpesa.*')])
+        @endcan
         @include('partials.navigation.sidebar-link', ['href' => route('finance.ledger.index'), 'label' => 'General ledger', 'icon' => 'book-open', 'active' => request()->routeIs('finance.ledger.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('finance.reports.index'), 'label' => 'Reports', 'icon' => 'bar-chart', 'active' => request()->routeIs('finance.reports.*')])
     </nav>

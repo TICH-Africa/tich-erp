@@ -39,11 +39,14 @@ return [
 
     'mpesa' => [
         'enabled' => (bool) env('MPESA_ENABLED', false),
+        'environment' => env('MPESA_ENVIRONMENT', 'sandbox'),
         'shortcode' => env('MPESA_SHORTCODE'),
         'passkey' => env('MPESA_PASSKEY'),
         'consumer_key' => env('MPESA_CONSUMER_KEY'),
         'consumer_secret' => env('MPESA_CONSUMER_SECRET'),
         'callback_url' => env('MPESA_CALLBACK_URL'),
+        'transaction_type' => env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
+        'account_reference_prefix' => env('MPESA_ACCOUNT_REFERENCE_PREFIX', 'TICH'),
     ],
 
     'invoice_due_days' => (int) env('FINANCE_INVOICE_DUE_DAYS', 30),

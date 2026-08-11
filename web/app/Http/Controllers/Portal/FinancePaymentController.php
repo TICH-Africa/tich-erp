@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\PaymentService;
 use App\Services\StudentPortalService;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ class FinancePaymentController extends Controller
     public function __construct(
         protected StudentPortalService $studentPortal,
         protected PaymentService $payments,
+        protected MpesaSettingsService $mpesaSettings,
     ) {}
 
     public function store(Request $request, Invoice $invoice): RedirectResponse
@@ -31,23 +33,34 @@ class FinancePaymentController extends Controller
 
         $staffId = (int) (\App\Models\Staff::query()->value('id') ?? 1);
 
-        if ($validated['payment_method'] === 'mpesa' && ! config('finance.mpesa.enabled')) {
-            $this->payments->recordPayment($invoice, [
-                'amount' => (float) $validated['amount'],
-                'payment_method' => 'mpesa',
-                'payment_reference' => $validated['payment_reference'] ?? 'SIM-MPESA',
-                'transaction_channel_ref' => 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10)),
-            ], $staffId);
-
-            return redirect()->route('portal.dashboard', ['section' => 'finance'])
-                ->with('success', 'Payment recorded successfully. Your balance has been updated.');
-        }
-
         if ($validated['payment_method'] === 'mpesa') {
-            $this->payments->initiateMpesaPayment($invoice, (float) $validated['amount'], $validated['phone_number']);
+            if (! $this->mpesaSettings->isEnabled()) {
+                $this->payments->recordPayment($invoice, [
+                    'amount' => (float) $validated['amount'],
+                    'payment_method' => 'mpesa',
+                    'payment_reference' => $validated['payment_reference'] ?? 'SIM-MPESA',
+                    'transaction_channel_ref' => 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10)),
+                ], $staffId);
+
+                return redirect()->route('portal.dashboard', ['section' => 'finance'])
+                    ->with('success', 'Payment recorded successfully. Your balance has been updated.');
+            }
+
+            try {
+                $stkRequest = $this->payments->initiateMpesaPayment(
+                    $invoice,
+                    (float) $validated['amount'],
+                    (string) $validated['phone_number'],
+                    (int) $student->id,
+                );
+            } catch (\Throwable $e) {
+                return redirect()->route('portal.dashboard', ['section' => 'finance'])
+                    ->withErrors(['mpesa' => $e->getMessage()]);
+            }
 
             return redirect()->route('portal.dashboard', ['section' => 'finance'])
-                ->with('status', 'M-Pesa payment initiated. You will receive a confirmation once cleared.');
+                ->with('mpesa_stk_request_id', $stkRequest->id)
+                ->with('status', 'M-Pesa prompt sent to '.$stkRequest->phone.'. Enter your PIN on your phone to complete payment.');
         }
 
         $this->payments->recordPayment($invoice, [
