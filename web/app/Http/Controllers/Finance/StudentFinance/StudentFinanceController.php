@@ -49,7 +49,9 @@ class StudentFinanceController extends Controller
         if (Schema::hasTable('student_accounts')) {
             $stats['total_accounts'] = StudentAccount::count();
             $stats['outstanding_balance'] = StudentAccount::sum('outstanding_balance');
-            $stats['credit_balances'] = StudentAccount::where('credit_balance', '>', 0)->count();
+            if (Schema::hasColumn('student_accounts', 'credit_balance')) {
+                $stats['credit_balances'] = StudentAccount::where('credit_balance', '>', 0)->count();
+            }
         }
 
         if (Schema::hasTable('invoices')) {
@@ -242,19 +244,7 @@ class StudentFinanceController extends Controller
                 'installmentPlans' => collect([]),
             ];
         } else {
-            $account = StudentAccount::with([
-                'student',
-                'academicYear',
-                'invoices.items',
-                'invoices.semester',
-                'payments',
-                'payments.receipt',
-                'receipts',
-                'adjustments.requestedBy',
-                'installmentPlans.items',
-                'refunds',
-                'milestones',
-            ])->findOrFail($id);
+            $account = StudentAccount::with($this->studentAccountRelations())->findOrFail($id);
 
             $account = $this->financeService->recalculateAccount($account);
         }
@@ -431,8 +421,13 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
+            $invoiceRelations = ['student', 'studentAccount'];
+            if (Schema::hasTable('invoice_items')) {
+                $invoiceRelations[] = 'items';
+            }
+
             $invoices = Invoice::query()
-                ->with(['student', 'studentAccount', 'items'])
+                ->with($invoiceRelations)
                 ->orderByDesc('issue_date')
                 ->paginate(20);
         }
@@ -544,7 +539,15 @@ class StudentFinanceController extends Controller
                 ]),
             ];
         } else {
-            $invoice = Invoice::with(['student', 'studentAccount', 'items', 'payments', 'receipts'])->findOrFail($id);
+            $invoiceRelations = ['student', 'studentAccount', 'payments'];
+            if (Schema::hasTable('invoice_items')) {
+                $invoiceRelations[] = 'items';
+            }
+            if (Schema::hasTable('receipts')) {
+                $invoiceRelations[] = 'receipts';
+            }
+
+            $invoice = Invoice::with($invoiceRelations)->findOrFail($id);
         }
 
         return $this->view($request, 'finance.student-finance.invoices.show', $department, [
@@ -1148,7 +1151,9 @@ class StudentFinanceController extends Controller
 
             $clearedCount = StudentAccount::where('is_cleared', 1)->count();
             $notClearedCount = StudentAccount::where('is_cleared', 0)->count();
-            $creditCount = StudentAccount::where('credit_balance', '>', 0)->count();
+            $creditCount = Schema::hasColumn('student_accounts', 'credit_balance')
+                ? StudentAccount::where('credit_balance', '>', 0)->count()
+                : 0;
         }
 
         return $this->view($request, 'finance.student-finance.clearance.index', $department, [
@@ -1403,5 +1408,48 @@ class StudentFinanceController extends Controller
         return $this->view($request, 'finance.student-finance.milestones.show', $department, [
             'milestone' => $milestone,
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function studentAccountRelations(): array
+    {
+        $relations = [
+            'student',
+            'academicYear',
+            'invoices.semester',
+            'payments',
+        ];
+
+        if (Schema::hasTable('invoice_items')) {
+            $relations[] = 'invoices.items';
+        }
+
+        if (Schema::hasTable('receipts')) {
+            $relations[] = 'payments.receipt';
+            $relations[] = 'receipts';
+        }
+
+        if (Schema::hasTable('financial_adjustments')) {
+            $relations[] = 'adjustments.requestedBy';
+        }
+
+        if (Schema::hasTable('installment_plans')) {
+            $relations[] = 'installmentPlans';
+            if (Schema::hasTable('installment_plan_items')) {
+                $relations[] = 'installmentPlans.items';
+            }
+        }
+
+        if (Schema::hasTable('refunds')) {
+            $relations[] = 'refunds';
+        }
+
+        if (Schema::hasTable('payment_milestones')) {
+            $relations[] = 'milestones';
+        }
+
+        return $relations;
     }
 }
