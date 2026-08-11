@@ -2517,10 +2517,13 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     gap: 0.25rem;
     width: 2.5rem;
     height: 2.5rem;
+    flex-shrink: 0;
+    margin-left: auto;
     border: 1px solid var(--tich-neutral-border);
     border-radius: var(--radius-md);
     background: var(--tich-white);
     cursor: pointer;
+    z-index: 102;
 }
 
 .tich-nav-toggle span {
@@ -2528,6 +2531,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     height: 2px;
     margin: 0 0.5rem;
     background: var(--tich-grey);
+    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .tich-nav--desktop {
@@ -2539,6 +2543,14 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     background: var(--tich-white);
     padding: 0.75rem 0 1rem;
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.tich-nav-drawer__panel {
+    width: 100%;
+}
+
+.tich-nav-drawer__backdrop {
+    display: none;
 }
 
 .tich-nav-drawer__inner {
@@ -2568,6 +2580,104 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--tich-neutral-border);
+}
+
+@media (max-width: 1023px) {
+    .tich-brand {
+        min-width: 0;
+        flex: 1 1 auto;
+        max-width: calc(100% - 3.5rem);
+    }
+
+    .tich-brand__name,
+    .tich-brand__tagline {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .tich-header.is-nav-open {
+        position: fixed;
+        inset: 0 0 auto 0;
+        z-index: 100;
+        background: var(--tich-white);
+        border-bottom-color: var(--tich-neutral-border);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    body.page-home .tich-header--over-hero.is-nav-open {
+        position: fixed;
+        background: var(--tich-white);
+    }
+
+    body.page-home .tich-header--over-hero.is-nav-open .tich-brand__name,
+    body.page-home .tich-header--over-hero.is-nav-open .tich-brand__tagline {
+        color: var(--tich-grey);
+    }
+
+    body.page-home .tich-header--over-hero.is-nav-open .tich-brand--light .tich-brand__name,
+    body.page-home .tich-header--over-hero.is-nav-open .tich-brand--light .tich-brand__tagline {
+        color: var(--tich-grey);
+    }
+
+    body.page-home .tich-header--over-hero.is-nav-open .tich-nav-toggle {
+        border-color: var(--tich-neutral-border);
+        background: var(--tich-white);
+    }
+
+    body.page-home .tich-header--over-hero.is-nav-open .tich-nav-toggle span {
+        background: var(--tich-grey);
+    }
+
+    .tich-nav-drawer {
+        position: fixed;
+        inset: var(--tich-header-height) 0 0 0;
+        z-index: 99;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        overflow: hidden;
+    }
+
+    .tich-nav-drawer[hidden] {
+        display: none !important;
+    }
+
+    .tich-nav-drawer__backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+    }
+
+    .tich-nav-drawer__panel {
+        position: relative;
+        z-index: 1;
+        max-height: 100%;
+        overflow-y: auto;
+        background: var(--tich-white);
+        border-top: 1px solid var(--tich-neutral-border);
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+        padding: 0.75rem 0 1rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.is-nav-open {
+        overflow: hidden;
+    }
+
+    .tich-header.is-nav-open .tich-nav-toggle span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+    }
+
+    .tich-header.is-nav-open .tich-nav-toggle span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .tich-header.is-nav-open .tich-nav-toggle span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+    }
 }
 
 @media (min-width: 1024px) {
@@ -4132,6 +4242,14 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] .tich-nav-drawer {
     background: var(--tich-white);
     border-top-color: var(--tich-neutral-border);
+}
+
+[data-theme="dark"] .tich-nav-drawer__backdrop {
+    background: rgba(0, 0, 0, 0.62);
+}
+
+[data-theme="dark"] .tich-header.is-nav-open {
+    background: var(--tich-white);
 }
 
 [data-theme="dark"] .tich-nav-drawer__link {

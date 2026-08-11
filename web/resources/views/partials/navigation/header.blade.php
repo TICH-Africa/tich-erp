@@ -57,32 +57,35 @@
     </div>
 
     <div class="tich-nav-drawer" data-nav-drawer hidden>
-        <nav class="tich-container tich-nav-drawer__inner" aria-label="Mobile navigation">
-            @foreach ($headerMenu as $item)
-                @include('partials.navigation.menu-item', ['item' => $item, 'mobile' => true])
-            @endforeach
+        <div class="tich-nav-drawer__backdrop" data-nav-drawer-backdrop aria-hidden="true"></div>
+        <div class="tich-nav-drawer__panel">
+            <nav class="tich-container tich-nav-drawer__inner" aria-label="Mobile navigation">
+                @foreach ($headerMenu as $item)
+                    @include('partials.navigation.menu-item', ['item' => $item, 'mobile' => true])
+                @endforeach
 
-            @auth
-                @include('partials.navigation.auth-portal-links', ['mobile' => true])
-            @endauth
-
-            <div class="tich-nav-drawer__actions">
-                <div class="tich-nav-drawer__theme">
-                    @include('partials.theme-toggle')
-                    <span class="tich-caption">Appearance</span>
-                </div>
                 @auth
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="tich-btn tich-btn-ghost tich-btn-block">
-                            Sign out
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" class="tich-btn tich-btn-blue tich-btn-block">Sign in</a>
-                    <a href="{{ route('register') }}" class="tich-btn tich-btn-primary tich-btn-block">Apply / Register</a>
+                    @include('partials.navigation.auth-portal-links', ['mobile' => true])
                 @endauth
-            </div>
-        </nav>
+
+                <div class="tich-nav-drawer__actions">
+                    <div class="tich-nav-drawer__theme">
+                        @include('partials.theme-toggle')
+                        <span class="tich-caption">Appearance</span>
+                    </div>
+                    @auth
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="tich-btn tich-btn-ghost tich-btn-block">
+                                Sign out
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="tich-btn tich-btn-blue tich-btn-block">Sign in</a>
+                        <a href="{{ route('register') }}" class="tich-btn tich-btn-primary tich-btn-block">Apply / Register</a>
+                    @endauth
+                </div>
+            </nav>
+        </div>
     </div>
 </header>
