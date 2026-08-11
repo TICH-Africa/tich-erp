@@ -19,6 +19,10 @@ class DepartmentDashboardService
     private const ENTRY_ROUTE_PRIORITY = [
         'hr.dashboard',
         'finance.dashboard',
+        'administration.dashboard',
+        'qa.dashboard',
+        'procurement.dashboard',
+        'research.dashboard',
         'admissions.dashboard',
         'sis.dashboard',
         'sis.students.index',

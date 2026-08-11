@@ -75,6 +75,10 @@ return [
         'finance.ledger.view' => 'finance_manage_chart_of_accounts_view',
         'site_settings.read' => 'site_settings_manage_settings_view',
         'site_settings.manage' => 'site_settings_manage_settings_manage',
+        'qa.read' => 'qa_manage_plans_view',
+        'administration.read' => 'administration_manage_registry_view',
+        'procurement.read' => 'procurement_manage_suppliers_view',
+        'research.read' => 'research_manage_projects_view',
     ],
 
     /** Roles that may be assigned without a department (institution-wide). */

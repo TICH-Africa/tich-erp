@@ -235,6 +235,22 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/reports/export/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'exportExcel'])->name('finance.reports.export.excel');
     });
 
+    Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Administration\DashboardController::class, '__invoke'])->name('administration.dashboard');
+    });
+
+    Route::prefix('qa')->middleware(['permission:qa.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Qa\DashboardController::class, '__invoke'])->name('qa.dashboard');
+    });
+
+    Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Procurement\DashboardController::class, '__invoke'])->name('procurement.dashboard');
+    });
+
+    Route::prefix('research')->middleware(['permission:research.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+    });
+
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
