@@ -17,6 +17,7 @@ class EnsureExtendedModulePermissionsSeeder extends Seeder
             'administration' => ['manage_registry', 'manage_facilities', 'manage_general_services'],
             'procurement' => ['manage_suppliers', 'manage_purchase_orders', 'manage_tenders', 'manage_inventory'],
             'research' => ['manage_projects', 'manage_grants', 'manage_publications', 'manage_ethics'],
+            'ict' => ['manage_helpdesk', 'manage_assets', 'manage_infrastructure', 'manage_systems'],
         ];
 
         $categories = ['view', 'create', 'edit', 'delete', 'approve', 'reject', 'export', 'import', 'manage', 'audit'];
@@ -47,6 +48,7 @@ class EnsureExtendedModulePermissionsSeeder extends Seeder
             ['role_name' => 'Administration Manager', 'display_name' => 'Administration Manager', 'role_category' => 'administrative', 'description' => 'General administration and registry services', 'is_system_role' => 1],
             ['role_name' => 'Procurement Manager', 'display_name' => 'Procurement Manager', 'role_category' => 'administrative', 'description' => 'Procurement, suppliers, and logistics', 'is_system_role' => 1],
             ['role_name' => 'Research Manager', 'display_name' => 'Research Manager', 'role_category' => 'administrative', 'description' => 'Research projects, grants, and publications', 'is_system_role' => 1],
+            ['role_name' => 'ICT Manager', 'display_name' => 'ICT Manager', 'role_category' => 'administrative', 'description' => 'Information systems, infrastructure, and IT support', 'is_system_role' => 1],
         ];
 
         foreach ($roles as $role) {
@@ -58,10 +60,11 @@ class EnsureExtendedModulePermissionsSeeder extends Seeder
         $this->assignRolePermissions('Administration Manager', ['core', 'administration'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Procurement Manager', ['core', 'procurement'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Research Manager', ['core', 'research', 'portal'], ['view', 'create', 'edit', 'manage', 'export']);
+        $this->assignRolePermissions('ICT Manager', ['core', 'ict'], ['view', 'create', 'edit', 'manage', 'export']);
 
         $ceoId = DB::table('roles')->where('role_name', 'CEO')->value('id');
         if ($ceoId) {
-            foreach (['administration', 'procurement', 'research'] as $module) {
+            foreach (['administration', 'procurement', 'research', 'ict'] as $module) {
                 $permissionIds = DB::table('permissions')->where('module', $module)->pluck('id');
                 foreach ($permissionIds as $permissionId) {
                     $exists = DB::table('role_permissions')

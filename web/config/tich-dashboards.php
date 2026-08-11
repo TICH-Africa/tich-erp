@@ -116,6 +116,15 @@ return [
             'scope' => 'department',
         ],
         [
+            'key' => 'ict',
+            'label' => 'Information & communication technology',
+            'description' => 'Help desk, IT assets, infrastructure, and systems.',
+            'route' => 'ict.dashboard',
+            'permission' => 'ict.read',
+            'category' => 'ict',
+            'scope' => 'department',
+        ],
+        [
             'key' => 'audit',
             'label' => 'Audit logs',
             'description' => 'Security and compliance activity trail.',
@@ -143,6 +152,7 @@ return [
         'administration.read' => 'administration_manage_registry_view',
         'procurement.read' => 'procurement_manage_suppliers_view',
         'research.read' => 'research_manage_projects_view',
+        'ict.read' => 'ict_manage_helpdesk_view',
     ],
 
 ];

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
         $this->call(QaDemoSeeder::class);
         $this->call(ProcurementDemoSeeder::class);
         $this->call(ResearchDemoSeeder::class);
+        $this->call(IctDemoSeeder::class);
         $this->call(FinanceAccountsDemoSeeder::class);
         $this->call(ExamResultsDemoSeeder::class);
         $this->call(JamesOchiengAcademicCycleSeeder::class);
@@ -118,5 +119,7 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+
+        $this->call(EnsureSuperAdminSeeder::class);
     }
 }

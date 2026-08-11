@@ -192,6 +192,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Finance\SidebarNotificationController::class)->name('finance.sidebar-notifications');
         Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
@@ -249,6 +250,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('research')->middleware(['permission:research.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+    });
+
+    Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {

@@ -22,6 +22,7 @@ class AcademicsSidebarNotificationService
 
     /** @var array<string, string> */
     public const MENU_KEYS = [
+        'curriculum' => 'Curriculum',
         'units.pending-registry' => 'Unit catalog',
         'curriculum.workflow' => 'Programme curriculum',
         'lesson-plans.review' => 'Lesson plan approval',
@@ -116,15 +117,25 @@ class AcademicsSidebarNotificationService
     {
         $departmentIds = $this->access->scopeDepartmentIds($hub);
 
-        $lessonPlanCount = 0;
+        $lessonPlanReview = 0;
+        $lessonPlanIncomplete = 0;
         foreach ($departmentIds as $departmentId) {
-            $lessonPlanCount += (int) DB::table('lesson_plans as lp')
+            $lessonPlanReview += (int) DB::table('lesson_plans as lp')
                 ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
                 ->join('units as u', 'u.id', '=', 'ua.unit_id')
                 ->where('u.department_id', $departmentId)
                 ->whereIn('lp.status', ['submitted', 'modified'])
                 ->count();
+
+            $lessonPlanIncomplete += (int) DB::table('lesson_plans as lp')
+                ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
+                ->join('units as u', 'u.id', '=', 'ua.unit_id')
+                ->where('u.department_id', $departmentId)
+                ->whereIn('lp.status', ['draft', 'rejected'])
+                ->count();
         }
+
+        $lessonPlanCount = $lessonPlanReview + $lessonPlanIncomplete;
 
         $attendanceHod = AttendanceSession::query()
             ->whereHas('allocation.unit', fn ($query) => $query->whereIn('department_id', $departmentIds))
@@ -136,18 +147,56 @@ class AcademicsSidebarNotificationService
             ->where('verification_status', 'hod_verified')
             ->count();
 
+        $attendanceIncomplete = AttendanceSession::query()
+            ->whereHas('allocation.unit', fn ($query) => $query->whereIn('department_id', $departmentIds))
+            ->where('verification_status', 'draft')
+            ->where(function ($query) {
+                $query->whereNotNull('recorded_at')
+                    ->orWhereHas('records');
+            })
+            ->count();
+
+        $unitsPending = Unit::query()
+            ->whereIn('department_id', $departmentIds)
+            ->whereIn('status', ['draft', 'pending_registry'])
+            ->count();
+
+        $curriculumWorkflow = CurriculumVersion::query()
+            ->whereHas('program', fn ($query) => $query->whereIn('department_id', $departmentIds))
+            ->whereIn('status', ['draft', 'pending_registry', 'pending_ceo'])
+            ->count();
+
+        $attendanceForUser = $this->attendanceCountForCurrentUser(
+            $attendanceHod,
+            $attendanceRegistrar,
+            $attendanceIncomplete,
+        );
+
         return [
-            'units.pending-registry' => Unit::query()
-                ->whereIn('department_id', $departmentIds)
-                ->where('status', 'pending_registry')
-                ->count(),
-            'curriculum.workflow' => CurriculumVersion::query()
-                ->whereHas('program', fn ($query) => $query->whereIn('department_id', $departmentIds))
-                ->whereIn('status', ['draft', 'pending_registry', 'pending_ceo'])
-                ->count(),
+            'units.pending-registry' => $unitsPending,
+            'curriculum.workflow' => $curriculumWorkflow,
             'lesson-plans.review' => $lessonPlanCount,
-            'attendance-ledger.hod' => $attendanceHod,
-            'attendance-ledger.registrar' => $attendanceRegistrar,
+            'attendance-ledger.hod' => $attendanceHod + $attendanceIncomplete,
+            'attendance-ledger.registrar' => $attendanceRegistrar + $attendanceIncomplete,
+            'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount + $attendanceForUser,
         ];
+    }
+
+    private function attendanceCountForCurrentUser(int $hodCount, int $registrarCount, int $incompleteCount): int
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return 0;
+        }
+
+        if ($user->hasAnyRole(['Academic Registrar', 'Super Admin'])) {
+            return $registrarCount + $incompleteCount;
+        }
+
+        if ($user->hasAnyRole(['HOD', 'Dean', 'Super Admin'])) {
+            return $hodCount + $incompleteCount;
+        }
+
+        return $incompleteCount;
     }
 }

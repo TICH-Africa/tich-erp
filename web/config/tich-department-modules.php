@@ -436,6 +436,24 @@ return [
                 ],
             ],
         ],
+        [
+            'key' => 'ict',
+            'label' => 'Information & communication technology',
+            'description' => 'Help desk, IT assets, infrastructure, and system administration.',
+            'permission' => 'ict.read',
+            'eligible_categories' => ['administrative', 'support'],
+            'children' => [
+                [
+                    'key' => 'ict.dashboard',
+                    'label' => 'ICT dashboard',
+                    'description' => 'Systems, infrastructure, and support overview.',
+                    'permission' => 'ict.read',
+                    'route' => 'ict.dashboard',
+                    'context' => 'operational',
+                    'group' => 'ict',
+                ],
+            ],
+        ],
     ],
 
     /** Default top-level modules when creating departments by category. */
@@ -455,7 +473,7 @@ return [
         'ADM' => ['administration'],
         'SIS' => ['students'],
         'RES' => ['research'],
-        'ICTO' => ['portal'],
+        'ICTO' => ['ict'],
         'MKT' => ['portal'],
     ],
 
@@ -470,6 +488,7 @@ return [
         'administration.read' => 'administration',
         'procurement.read' => 'procurement',
         'research.read' => 'research',
+        'ict.read' => 'ict',
         'dashboard.access' => 'portal',
         'audit_logs.read' => null,
         'admin.access' => null,

@@ -47,6 +47,7 @@ class FinanceNavigationService
                 'icon' => 'users',
                 'open' => request()->routeIs('finance.student-finance.*') || request()->routeIs('finance.student-accounts.*', 'finance.fee-structures.*', 'finance.invoices.*', 'finance.payments.*'),
                 'active' => request()->routeIs('finance.student-finance.*') || request()->routeIs('finance.student-accounts.*', 'finance.fee-structures.*', 'finance.invoices.*', 'finance.payments.*'),
+                'badgeKey' => 'student-finance',
                 'items' => $studentItems,
             ];
         }
@@ -56,6 +57,7 @@ class FinanceNavigationService
             'icon' => 'book-open',
             'open' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.gl.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
             'active' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.gl.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
+            'badgeKey' => 'finance-records',
             'items' => $this->financeRecordsItems($dept),
         ];
 
@@ -65,6 +67,7 @@ class FinanceNavigationService
                 'icon' => 'briefcase',
                 'open' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*', 'hr.payroll.*'),
                 'active' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*', 'hr.payroll.*'),
+                'badgeKey' => 'employee-finance',
                 'items' => $this->employeeFinanceItems($dept),
             ];
         }
@@ -85,13 +88,13 @@ class FinanceNavigationService
         return [
             $this->item('Overview', 'layout-grid', route('finance.student-finance.index', $dept), request()->routeIs('finance.student-finance.index')),
             $this->item('Student accounts', 'users', route('finance.student-finance.accounts.index', $dept), request()->routeIs('finance.student-finance.accounts.*')),
-            $this->item('Fee structures', 'layers', route('finance.student-finance.fee-structures.index', $dept), request()->routeIs('finance.student-finance.fee-structures.*')),
-            $this->item('Invoices', 'file-text', route('finance.student-finance.invoices.index', $dept), request()->routeIs('finance.student-finance.invoices.*')),
-            $this->item('Payments', 'wallet', route('finance.student-finance.payments.index', $dept), request()->routeIs('finance.student-finance.payments.*')),
-            $this->item('Receipts', 'receipt', route('finance.student-finance.receipts.index', $dept), request()->routeIs('finance.student-finance.receipts.*')),
-            $this->item('Adjustments', 'percent', route('finance.student-finance.adjustments.index', $dept), request()->routeIs('finance.student-finance.adjustments.*')),
-            $this->item('Installment plans', 'calendar', route('finance.student-finance.installment-plans.index', $dept), request()->routeIs('finance.student-finance.installment-plans.*')),
-            $this->item('Refunds', 'refresh-cw', route('finance.student-finance.refunds.index', $dept), request()->routeIs('finance.student-finance.refunds.*')),
+            $this->item('Fee structures', 'layers', route('finance.student-finance.fee-structures.index', $dept), request()->routeIs('finance.student-finance.fee-structures.*'), 'student-finance.fee-structures'),
+            $this->item('Invoices', 'file-text', route('finance.student-finance.invoices.index', $dept), request()->routeIs('finance.student-finance.invoices.*'), 'student-finance.invoices'),
+            $this->item('Payments', 'wallet', route('finance.student-finance.payments.index', $dept), request()->routeIs('finance.student-finance.payments.*'), 'student-finance.payments'),
+            $this->item('Receipts', 'receipt', route('finance.student-finance.receipts.index', $dept), request()->routeIs('finance.student-finance.receipts.*'), null),
+            $this->item('Adjustments', 'percent', route('finance.student-finance.adjustments.index', $dept), request()->routeIs('finance.student-finance.adjustments.*'), 'student-finance.adjustments'),
+            $this->item('Installment plans', 'calendar', route('finance.student-finance.installment-plans.index', $dept), request()->routeIs('finance.student-finance.installment-plans.*'), 'student-finance.installments'),
+            $this->item('Refunds', 'refresh-cw', route('finance.student-finance.refunds.index', $dept), request()->routeIs('finance.student-finance.refunds.*'), 'student-finance.refunds'),
             $this->item('Clearance', 'check-circle', route('finance.student-finance.clearance.index', $dept), request()->routeIs('finance.student-finance.clearance.*')),
             $this->item('Milestones', 'flag', route('finance.student-finance.milestones.index', $dept), request()->routeIs('finance.student-finance.milestones.*')),
         ];
@@ -110,16 +113,16 @@ class FinanceNavigationService
         ];
 
         if ($dept !== []) {
-            $items[] = $this->item('Accounts receivable', 'trending-up', route('finance.ar.index', $dept), request()->routeIs('finance.ar.*'));
+            $items[] = $this->item('Accounts receivable', 'trending-up', route('finance.ar.index', $dept), request()->routeIs('finance.ar.*'), 'ar.overdue');
             $items[] = $this->item('Credit memos', 'file-minus', route('finance.ar.credit-memos.index', $dept), request()->routeIs('finance.ar.credit-memos.*'));
-            $items[] = $this->item('Accounts payable', 'trending-down', route('finance.ap.index', $dept), request()->routeIs('finance.ap.*'));
+            $items[] = $this->item('Accounts payable', 'trending-down', route('finance.ap.index', $dept), request()->routeIs('finance.ap.*'), 'ap.pending');
             $items[] = $this->item('Chart of accounts / GL', 'grid', route('finance.gl.index', $dept), request()->routeIs('finance.gl.*'));
             $items[] = $this->item('Budgeting', 'pie-chart', route('finance.budgeting.index', $dept), request()->routeIs('finance.budgeting.*'));
             $items[] = $this->item('Projects & donors', 'globe', route('finance.projects-donors.index', $dept), request()->routeIs('finance.projects-donors.*'));
         }
 
         if (Auth::user()?->can('finance.payments.manage')) {
-            $items[] = $this->item('M-Pesa / treasury', 'smartphone', route('finance.mpesa.settings'), request()->routeIs('finance.mpesa.*'));
+            $items[] = $this->item('M-Pesa / treasury', 'smartphone', route('finance.mpesa.settings'), request()->routeIs('finance.mpesa.*'), 'finance.mpesa');
         }
 
         return $items;
@@ -137,7 +140,7 @@ class FinanceNavigationService
 
         if (Auth::user()?->can('hr.staff.view')) {
             $items[] = $this->item('Payroll preview', 'wallet', route('hr.payroll.index'), request()->routeIs('hr.payroll.index'));
-            $items[] = $this->item('Payroll runs', 'calendar', route('hr.payroll.runs.index'), request()->routeIs('hr.payroll.runs.*'));
+            $items[] = $this->item('Payroll runs', 'calendar', route('hr.payroll.runs.index'), request()->routeIs('hr.payroll.runs.*'), 'payroll-runs');
             $items[] = $this->item('Payslip calculator', 'bar-chart', route('hr.payroll.report'), request()->routeIs('hr.payroll.report', 'hr.payroll.report.pdf'));
         }
 
@@ -146,7 +149,7 @@ class FinanceNavigationService
         }
 
         if ($dept !== []) {
-            $items[] = $this->item('Payroll → GL integration', 'link', route('finance.payroll-integration.index', $dept), request()->routeIs('finance.payroll-integration.*'));
+            $items[] = $this->item('Payroll → GL integration', 'link', route('finance.payroll-integration.index', $dept), request()->routeIs('finance.payroll-integration.*'), 'payroll-integration');
         }
 
         return $items;
@@ -155,13 +158,14 @@ class FinanceNavigationService
     /**
      * @return array<string, mixed>
      */
-    private function item(string $label, string $icon, string $href, bool $active): array
+    private function item(string $label, string $icon, string $href, bool $active, ?string $badgeKey = null): array
     {
         return [
             'label' => $label,
             'icon' => $icon,
             'href' => $href,
             'active' => $active,
+            'badgeKey' => $badgeKey,
         ];
     }
 

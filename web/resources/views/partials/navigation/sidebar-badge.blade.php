@@ -3,7 +3,7 @@
     $badge = $badge ?? null;
     $sub = $sub ?? false;
     $menuLabel = $menuLabel ?? null;
-    $sidebarLabels = $sidebarLabels ?? $hrSidebarLabels ?? [];
+    $sidebarLabels = $sidebarLabels ?? $financeSidebarLabels ?? $hrSidebarLabels ?? [];
 
     if ($badgeKey && $badge === null && isset($sidebarLabels)) {
         $badge = $sidebarLabels[$badgeKey] ?? null;

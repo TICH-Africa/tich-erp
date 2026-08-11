@@ -79,6 +79,7 @@ return [
         'administration.read' => 'administration_manage_registry_view',
         'procurement.read' => 'procurement_manage_suppliers_view',
         'research.read' => 'research_manage_projects_view',
+        'ict.read' => 'ict_manage_helpdesk_view',
     ],
 
     /** Roles that may be assigned without a department (institution-wide). */

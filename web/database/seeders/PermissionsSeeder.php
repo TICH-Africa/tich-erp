@@ -24,6 +24,7 @@ class PermissionsSeeder extends Seeder
             'administration' => ['manage_registry', 'manage_facilities', 'manage_general_services'],
             'procurement' => ['manage_suppliers', 'manage_purchase_orders', 'manage_tenders', 'manage_inventory'],
             'research' => ['manage_projects', 'manage_grants', 'manage_publications', 'manage_ethics'],
+            'ict' => ['manage_helpdesk', 'manage_assets', 'manage_infrastructure', 'manage_systems'],
             'notifications' => ['manage_templates', 'send_notifications', 'manage_chatbot'],
             'donations' => ['manage_campaigns', 'manage_donations'],
             'newsletter' => ['manage_subscribers', 'manage_campaigns', 'send_newsletters'],
@@ -66,6 +67,7 @@ class PermissionsSeeder extends Seeder
             ['role_name' => 'Administration Manager', 'display_name' => 'Administration Manager', 'role_category' => 'administrative', 'description' => 'General administration and registry services', 'is_system_role' => 1],
             ['role_name' => 'Procurement Manager', 'display_name' => 'Procurement Manager', 'role_category' => 'administrative', 'description' => 'Procurement, suppliers, and logistics', 'is_system_role' => 1],
             ['role_name' => 'Research Manager', 'display_name' => 'Research Manager', 'role_category' => 'administrative', 'description' => 'Research projects, grants, and publications', 'is_system_role' => 1],
+            ['role_name' => 'ICT Manager', 'display_name' => 'ICT Manager', 'role_category' => 'administrative', 'description' => 'Information systems, infrastructure, and IT support', 'is_system_role' => 1],
             ['role_name' => 'Staff', 'display_name' => 'General Staff', 'role_category' => 'administrative', 'description' => 'General institutional staff access', 'is_system_role' => 1],
             ['role_name' => 'Student', 'display_name' => 'Student', 'role_category' => 'student', 'description' => 'Student portal and academic self-service', 'is_system_role' => 1],
             ['role_name' => 'Applicant', 'display_name' => 'Applicant', 'role_category' => 'student', 'description' => 'Pre-admission applicant portal access', 'is_system_role' => 1],
@@ -85,7 +87,7 @@ class PermissionsSeeder extends Seeder
             ]);
         }
 
-        $this->assignRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa', 'administration', 'procurement', 'research'], ['approve', 'view', 'manage', 'audit', 'export']);
+        $this->assignRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa', 'administration', 'procurement', 'research', 'ict'], ['approve', 'view', 'manage', 'audit', 'export']);
         $this->assignRolePermissions('Academic Registrar', ['core', 'admin', 'academics'], ['approve', 'view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Dean', ['core', 'academics', 'hr', 'portal'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('HOD', ['core', 'academics', 'hr'], ['view', 'create', 'edit', 'approve', 'manage']);
@@ -97,6 +99,7 @@ class PermissionsSeeder extends Seeder
         $this->assignRolePermissions('Administration Manager', ['core', 'administration'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Procurement Manager', ['core', 'procurement'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Research Manager', ['core', 'research', 'portal'], ['view', 'create', 'edit', 'manage', 'export']);
+        $this->assignRolePermissions('ICT Manager', ['core', 'ict'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Student', ['academics', 'finance', 'portal'], ['view']);
         $this->assignRolePermissions('Applicant', ['admin'], ['view', 'create']);
         $this->assignRolePermissions('Alumni', ['portal'], ['view']);
