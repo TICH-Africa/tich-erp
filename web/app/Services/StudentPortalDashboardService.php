@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\MpesaStkRequest;
 use App\Models\Student;
+use App\Services\Finance\MpesaSettingsService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StudentPortalDashboardService
@@ -10,6 +13,7 @@ class StudentPortalDashboardService
     public function __construct(
         protected StudentAcademicRecordService $academicRecords,
         protected TimetableSchedulingService $timetableScheduling,
+        protected MpesaSettingsService $mpesaSettings,
     ) {}
 
     /**
@@ -56,6 +60,8 @@ class StudentPortalDashboardService
      */
     private function finance(Student $student): array
     {
+        $student->loadMissing('applicant');
+
         $accounts = DB::table('student_accounts as sa')
             ->join('academic_years as ay', 'ay.id', '=', 'sa.academic_year_id')
             ->where('sa.student_id', $student->id)
@@ -78,6 +84,20 @@ class StudentPortalDashboardService
             ->limit(50)
             ->get();
 
+        $payableInvoices = $invoices->filter(function ($invoice) {
+            return (float) $invoice->balance > 0
+                && in_array($invoice->status, ['issued', 'partial', 'overdue'], true);
+        })->values();
+
+        $pendingStkRequests = MpesaStkRequest::query()
+            ->with('invoice:id,invoice_number,invoice_type')
+            ->where('student_id', $student->id)
+            ->where('status', MpesaStkRequest::STATUS_PENDING)
+            ->where('created_at', '>=', now()->subMinutes(15))
+            ->orderByDesc('created_at')
+            ->get();
+
+        $currentAccount = $accounts->first();
         $accountBalance = (float) $accounts->sum('outstanding_balance');
         $invoiceBalance = (float) $invoices->sum('balance');
         $studentBalance = (float) ($student->overall_balance ?? 0);
@@ -86,6 +106,12 @@ class StudentPortalDashboardService
             'accounts' => $accounts,
             'invoices' => $invoices,
             'payments' => $payments,
+            'payable_invoices' => $payableInvoices,
+            'pending_stk_requests' => $pendingStkRequests,
+            'statement' => $this->buildFinanceStatement($invoices, $payments),
+            'credits' => $this->accountCredits($currentAccount),
+            'default_phone' => (string) ($student->applicant?->phone_number ?? ''),
+            'mpesa_enabled' => $this->mpesaSettings->isEnabled(),
             'summary' => [
                 'outstanding_balance' => $accountBalance > 0 ? $accountBalance : ($invoiceBalance > 0 ? $invoiceBalance : $studentBalance),
                 'total_paid' => (float) ($accounts->sum('total_paid') > 0
@@ -95,7 +121,86 @@ class StudentPortalDashboardService
                 'fee_clearance_status' => $student->fee_clearance_status ?? 'pending',
                 'is_cleared' => $accounts->contains(fn ($account) => (bool) $account->is_cleared)
                     || ($student->fee_clearance_status === 'cleared'),
+                'payable_invoice_count' => $payableInvoices->count(),
             ],
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, object>  $invoices
+     * @param  \Illuminate\Support\Collection<int, object>  $payments
+     * @return list<array<string, mixed>>
+     */
+    private function buildFinanceStatement(Collection $invoices, Collection $payments): array
+    {
+        $entries = collect();
+
+        foreach ($invoices as $invoice) {
+            $entries->push([
+                'date' => $invoice->issue_date,
+                'sort_at' => strtotime((string) ($invoice->issue_date ?? $invoice->created_at ?? now())).'-0',
+                'type' => 'invoice',
+                'reference' => $invoice->invoice_number,
+                'description' => $invoice->description ?: ucwords(str_replace('_', ' ', (string) $invoice->invoice_type)),
+                'debit' => (float) $invoice->amount,
+                'credit' => 0.0,
+            ]);
+        }
+
+        foreach ($payments as $payment) {
+            $entries->push([
+                'date' => $payment->payment_date,
+                'sort_at' => strtotime((string) ($payment->payment_date ?? $payment->created_at ?? now())).'-1',
+                'type' => 'payment',
+                'reference' => $payment->payment_number,
+                'description' => 'Payment · '.ucwords(str_replace('_', ' ', (string) $payment->payment_method)),
+                'debit' => 0.0,
+                'credit' => (float) $payment->amount,
+            ]);
+        }
+
+        $running = 0.0;
+
+        return $entries
+            ->sortBy('sort_at')
+            ->values()
+            ->map(function (array $entry) use (&$running) {
+                $running = round($running + $entry['debit'] - $entry['credit'], 2);
+                $entry['running_balance'] = $running;
+
+                return $entry;
+            })
+            ->reverse()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function accountCredits(?object $account): array
+    {
+        if (! $account) {
+            return [
+                'scholarship' => 0.0,
+                'helb' => 0.0,
+                'sponsor' => 0.0,
+                'work_study' => 0.0,
+                'total' => 0.0,
+            ];
+        }
+
+        $scholarship = (float) ($account->scholarship_amount ?? 0);
+        $helb = (float) ($account->helb_amount ?? 0);
+        $sponsor = (float) ($account->sponsor_amount ?? 0);
+        $workStudy = (float) ($account->work_study_credit ?? 0);
+
+        return [
+            'scholarship' => $scholarship,
+            'helb' => $helb,
+            'sponsor' => $sponsor,
+            'work_study' => $workStudy,
+            'total' => round($scholarship + $helb + $sponsor + $workStudy, 2),
         ];
     }
 

@@ -25,7 +25,7 @@ class FinancePaymentController extends Controller
         abort_unless($invoice->isPayable(), 422, 'This invoice cannot be paid.');
 
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|min:0.01|max:'.((float) $invoice->balance),
             'payment_method' => 'required|string|in:mpesa,bank_transfer,card',
             'phone_number' => 'required_if:payment_method,mpesa|nullable|string|max:20',
             'payment_reference' => 'nullable|string|max:100',
@@ -35,6 +35,11 @@ class FinancePaymentController extends Controller
 
         if ($validated['payment_method'] === 'mpesa') {
             if (! $this->mpesaSettings->isEnabled()) {
+                if (! app()->environment('local')) {
+                    return redirect()->route('portal.dashboard', ['section' => 'finance'])
+                        ->withErrors(['mpesa' => 'M-Pesa payments are not available right now. Please contact the finance office.']);
+                }
+
                 $this->payments->recordPayment($invoice, [
                     'amount' => (float) $validated['amount'],
                     'payment_method' => 'mpesa',
