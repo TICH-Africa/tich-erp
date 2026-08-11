@@ -212,7 +212,7 @@ class StudentPortalNavigationService
             ],
             [
                 'label' => 'Finance',
-                'description' => 'Fee balance, invoices, and payment history.',
+                'description' => 'Fee balance, invoices, payment history, and M-Pesa self-pay.',
                 'section' => 'finance',
                 'group' => 'learning',
             ],

@@ -67,6 +67,9 @@
                 Clearance: {{ $stats['fee_clearance'] }}
             </p>
             <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View finance</a>
+            @if ($stats['outstanding_balance'] > 0)
+                <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}#pay-with-mpesa" class="tich-link tich-mt-2" style="display:inline-block;">Pay with M-Pesa</a>
+            @endif
         </article>
     </div>
 </section>
