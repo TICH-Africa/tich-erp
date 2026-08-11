@@ -15,6 +15,8 @@
 
     <x-page-toolbar title="Financial reports" meta="Compliance-ready statements and live treasury dashboards">
         <x-slot:actions>
+            <a href="{{ route('finance.reports.view.pdf', ['report' => $report]) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">View PDF</a>
+            <a href="{{ route('finance.reports.view.excel', ['report' => $report]) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">View XLS</a>
             <a href="{{ route('finance.reports.export.pdf', ['report' => $report]) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
             <a href="{{ route('finance.reports.export.excel', ['report' => $report]) }}" class="tich-btn tich-btn-secondary">Download Excel</a>
         </x-slot:actions>
