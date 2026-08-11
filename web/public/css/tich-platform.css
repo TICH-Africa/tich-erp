@@ -3528,6 +3528,34 @@ a.tich-notification-badge:hover {
     border-bottom: none;
 }
 
+.tich-fin-report-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.tich-fin-report-table tfoot th,
+.tich-fin-report-table tfoot td {
+    background: color-mix(in srgb, var(--tich-blue) 8%, var(--tich-surface));
+    border-top: 2px solid var(--tich-neutral-border);
+}
+
+.tich-fin-report-table__section td {
+    background: color-mix(in srgb, var(--tich-blue) 5%, var(--tich-surface));
+    font-weight: 600;
+}
+
+.tich-fin-report-table__subtotal td,
+.tich-fin-report-table__subtotal th {
+    background: var(--tich-surface-muted);
+    font-weight: 600;
+}
+
+.tich-fin-report-table__total th,
+.tich-fin-report-table__total td {
+    font-weight: 700;
+}
+
 .tich-admin-table .tich-table-empty,
 .tich-admin-table td.tich-table-empty {
     padding: 2.5rem 1.5rem;

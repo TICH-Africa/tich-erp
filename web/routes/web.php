@@ -225,6 +225,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
         Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
         Route::get('/reports', [\App\Http\Controllers\Finance\LedgerController::class, 'reports'])->name('finance.reports.index');
+        Route::get('/reports/export/pdf', [\App\Http\Controllers\Finance\LedgerController::class, 'exportPdf'])->name('finance.reports.export.pdf');
+        Route::get('/reports/export/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'exportExcel'])->name('finance.reports.export.excel');
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {

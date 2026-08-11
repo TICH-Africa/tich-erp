@@ -15,6 +15,8 @@ body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-heigh
 .tich-doc-table { width: 100%; border-collapse: collapse; margin-top: 12pt; }
 .tich-doc-table th, .tich-doc-table td { border: 1pt solid #000; padding: 8pt; text-align: left; }
 .tich-doc-table th { background: #f0f4f8; font-weight: bold; }
+.tich-doc-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tich-doc-table tfoot th, .tich-doc-table tfoot td { background: #eef2f7; font-weight: bold; }
 .tich-doc-session { margin-bottom: 8pt; }
 .tich-doc-session strong { display: block; margin-bottom: 4pt; }
 .tich-doc-timetable-grid table { width: 100%; border-collapse: collapse; }
