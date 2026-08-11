@@ -21,6 +21,7 @@
 
     <x-page-toolbar title="Payroll" meta="Monthly salary breakdown for all staff">
         <x-slot:actions>
+            <a href="{{ route('hr.payroll.runs.index') }}" class="tich-btn tich-btn-primary">Payroll runs</a>
             <a href="{{ route('hr.payroll.settings') }}" class="tich-btn tich-btn-secondary">Tax bands &amp; rates</a>
         </x-slot:actions>
         <x-slot:filters>

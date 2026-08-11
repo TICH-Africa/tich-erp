@@ -136,8 +136,9 @@ class FinanceNavigationService
         ];
 
         if (Auth::user()?->can('hr.staff.view')) {
-            $items[] = $this->item('Payroll runs', 'wallet', route('hr.payroll.index'), request()->routeIs('hr.payroll.index'));
-            $items[] = $this->item('Payroll reports', 'bar-chart', route('hr.payroll.report'), request()->routeIs('hr.payroll.report', 'hr.payroll.report.pdf'));
+            $items[] = $this->item('Payroll preview', 'wallet', route('hr.payroll.index'), request()->routeIs('hr.payroll.index'));
+            $items[] = $this->item('Payroll runs', 'calendar', route('hr.payroll.runs.index'), request()->routeIs('hr.payroll.runs.*'));
+            $items[] = $this->item('Payslip calculator', 'bar-chart', route('hr.payroll.report'), request()->routeIs('hr.payroll.report', 'hr.payroll.report.pdf'));
         }
 
         if (Auth::user()?->can('hr.manage_contracts')) {

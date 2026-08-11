@@ -13,6 +13,13 @@ return [
         'other_fee_revenue' => '4090',
         'cash_mpesa' => '1010',
         'cash_bank' => '1020',
+        'salaries_expense' => env('FINANCE_SALARIES_EXPENSE_ACCOUNT', '5000'),
+        'employer_statutory_expense' => env('FINANCE_EMPLOYER_STATUTORY_ACCOUNT', '5010'),
+        'salaries_payable' => env('FINANCE_SALARIES_PAYABLE_ACCOUNT', '2000'),
+        'paye_payable' => env('FINANCE_PAYE_PAYABLE_ACCOUNT', '2100'),
+        'nssf_payable' => env('FINANCE_NSSF_PAYABLE_ACCOUNT', '2110'),
+        'sha_payable' => env('FINANCE_SHA_PAYABLE_ACCOUNT', '2120'),
+        'ahl_payable' => env('FINANCE_AHL_PAYABLE_ACCOUNT', '2130'),
     ],
 
     'invoice_types' => [

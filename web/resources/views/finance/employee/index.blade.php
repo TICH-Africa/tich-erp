@@ -12,14 +12,14 @@
 
     <div class="tich-grid tich-grid--3 tich-mt-8">
         @can('hr.staff.view')
-            <a href="{{ route('hr.payroll.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <a href="{{ route('hr.payroll.runs.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
                 <h3 class="tich-h4">Payroll runs</h3>
-                <p class="tich-caption tich-mt-2">Process monthly payroll, payslips, and staff disbursements.</p>
+                <p class="tich-caption tich-mt-2">Create monthly batches, approve, generate payslips, and export KRA/NSSF/SHA filings.</p>
             </a>
 
-            <a href="{{ route('hr.payroll.report') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                <h3 class="tich-h4">Payroll reports</h3>
-                <p class="tich-caption tich-mt-2">Payroll summaries, statutory totals, and downloadable PDF reports.</p>
+            <a href="{{ route('hr.payroll.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                <h3 class="tich-h4">Live payroll preview</h3>
+                <p class="tich-caption tich-mt-2">Current-month salary breakdown and payslip preview from staff records.</p>
             </a>
         @endcan
 

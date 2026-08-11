@@ -84,6 +84,85 @@ class LedgerService
         );
     }
 
+    public function postPayrollRun(\App\Models\PayrollRun $run, ?int $recordedByStaffId = null): void
+    {
+        $reference = $run->run_number;
+        $period = $run->periodLabel();
+
+        if ((float) $run->total_gross > 0) {
+            $this->postEntry(
+                'payroll_disbursement',
+                config('finance.accounts.salaries_expense'),
+                config('finance.accounts.salaries_payable'),
+                (float) $run->total_gross,
+                "Payroll gross — {$period}",
+                'payroll',
+                'payroll_runs',
+                $reference,
+                $recordedByStaffId,
+            );
+        }
+
+        $employerStatutory = max(0, round((float) $run->total_employer_cost - (float) $run->total_gross, 2));
+
+        if ($employerStatutory > 0) {
+            $this->postEntry(
+                'payroll_disbursement',
+                config('finance.accounts.employer_statutory_expense'),
+                config('finance.accounts.salaries_payable'),
+                $employerStatutory,
+                "Employer statutory — {$period}",
+                'payroll',
+                'payroll_runs',
+                $reference,
+                $recordedByStaffId,
+            );
+        }
+
+        $statutoryCredits = [
+            'paye' => (float) $run->total_paye,
+            'nssf' => (float) $run->total_nssf,
+            'sha' => (float) $run->total_sha,
+            'ahl' => (float) $run->total_ahl,
+        ];
+
+        foreach ($statutoryCredits as $type => $amount) {
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $payableAccount = config('finance.accounts.'.$type.'_payable');
+
+            $this->postEntry(
+                'statutory_remittance',
+                config('finance.accounts.salaries_payable'),
+                $payableAccount,
+                $amount,
+                strtoupper($type)." remittance — {$period}",
+                'payroll',
+                'payroll_runs',
+                $reference,
+                $recordedByStaffId,
+            );
+        }
+
+        $netPay = (float) $run->total_net;
+
+        if ($netPay > 0) {
+            $this->postEntry(
+                'payroll_disbursement',
+                config('finance.accounts.salaries_payable'),
+                config('finance.accounts.cash_bank'),
+                $netPay,
+                "Net salaries disbursed — {$period}",
+                'payroll',
+                'payroll_runs',
+                $reference,
+                $recordedByStaffId,
+            );
+        }
+    }
+
     /**
      * @return Collection<int, AccountLedger>
      */

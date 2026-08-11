@@ -304,6 +304,16 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/payroll', [\App\Http\Controllers\HR\PayrollController::class, 'index'])->name('hr.payroll.index');
             Route::get('/payroll/report', [\App\Http\Controllers\HR\PayrollController::class, 'report'])->name('hr.payroll.report');
             Route::get('/payroll/report/pdf', [\App\Http\Controllers\HR\PayrollController::class, 'reportPdf'])->name('hr.payroll.report.pdf');
+            Route::get('/payroll/runs', [\App\Http\Controllers\HR\PayrollRunController::class, 'index'])->name('hr.payroll.runs.index');
+            Route::get('/payroll/runs/create', [\App\Http\Controllers\HR\PayrollRunController::class, 'create'])->name('hr.payroll.runs.create');
+            Route::post('/payroll/runs', [\App\Http\Controllers\HR\PayrollRunController::class, 'store'])->name('hr.payroll.runs.store');
+            Route::get('/payroll/runs/{payrollRun}', [\App\Http\Controllers\HR\PayrollRunController::class, 'show'])->name('hr.payroll.runs.show');
+            Route::post('/payroll/runs/{payrollRun}/recalculate', [\App\Http\Controllers\HR\PayrollRunController::class, 'recalculate'])->name('hr.payroll.runs.recalculate');
+            Route::post('/payroll/runs/{payrollRun}/approve', [\App\Http\Controllers\HR\PayrollRunController::class, 'approve'])->middleware('permission:hr.manage_contracts')->name('hr.payroll.runs.approve');
+            Route::post('/payroll/runs/{payrollRun}/cancel', [\App\Http\Controllers\HR\PayrollRunController::class, 'cancel'])->name('hr.payroll.runs.cancel');
+            Route::get('/payroll/runs/{payrollRun}/statutory/{agency}', [\App\Http\Controllers\HR\PayrollRunController::class, 'exportStatutory'])->name('hr.payroll.runs.statutory.export');
+            Route::get('/payroll/items/{payrollItem}/payslip', [\App\Http\Controllers\HR\PayrollRunController::class, 'itemPayslip'])->name('hr.payroll.runs.item.payslip');
+            Route::get('/payroll/items/{payrollItem}/payslip/pdf', [\App\Http\Controllers\HR\PayrollRunController::class, 'itemPayslipPdf'])->name('hr.payroll.runs.item.payslip.pdf');
             Route::redirect('payroll/tax', 'payroll');
             Route::redirect('payroll/tax/settings', 'payroll/settings');
             Route::middleware('permission:hr.manage_contracts')->group(function () {
@@ -458,10 +468,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsStore'])->name('projects-donors.store');
             Route::get('/projects-donors/{projectDonor}', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsShow'])->name('projects-donors.show');
 
-            Route::get('/payroll-integration', [\App\Http\Controllers\Finance\FinanceController::class, 'payrollIntegrationIndex'])->name('payroll-integration.index');
-            Route::get('/payroll-integration/sync', [\App\Http\Controllers\Finance\FinanceController::class, 'payrollIntegrationSync'])->name('payroll-integration.sync');
-            Route::post('/payroll-integration', [\App\Http\Controllers\Finance\FinanceController::class, 'payrollIntegrationStore'])->name('payroll-integration.store');
-            Route::get('/payroll-integration/{payrollIntegration}', [\App\Http\Controllers\Finance\FinanceController::class, 'payrollIntegrationShow'])->name('payroll-integration.show');
+            Route::get('/payroll-integration', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'index'])->name('payroll-integration.index');
+            Route::get('/payroll-integration/{payrollRun}', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'show'])->name('payroll-integration.show');
+            Route::post('/payroll-integration/{payrollRun}/post', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'post'])->name('payroll-integration.post');
         });
 
     $registerAcademicsRoutes = require __DIR__.'/includes/academics.php';

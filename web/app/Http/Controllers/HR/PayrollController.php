@@ -25,7 +25,7 @@ class PayrollController extends Controller
     public function index(Request $request): View
     {
         $staff = Staff::query()
-            ->with('department')
+            ->with(['department', 'activeAllowances'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $query->where(function ($inner) use ($term) {
@@ -41,9 +41,10 @@ class PayrollController extends Controller
             ->get();
 
         $rows = $staff->map(function (Staff $member) {
-            $gross = (float) $member->gross_monthly_salary;
+            $basic = (float) $member->gross_monthly_salary;
+            $allowances = (float) $member->activeAllowances->sum('amount');
 
-            if ($gross <= 0) {
+            if ($basic <= 0 && $allowances <= 0) {
                 return [
                     'staff' => $member,
                     'breakdown' => null,
@@ -52,7 +53,9 @@ class PayrollController extends Controller
 
             return [
                 'staff' => $member,
-                'breakdown' => $this->taxService->calculateForStaff($member, $gross),
+                'breakdown' => $this->taxService->calculateForStaff($member, $basic, [
+                    'allowances' => $allowances,
+                ]),
             ];
         });
 
@@ -350,17 +353,25 @@ class PayrollController extends Controller
     private function runCalculation(Request $request): ?array
     {
         if ($request->filled('staff_id')) {
-            $staff = Staff::query()->find($request->input('staff_id'));
-            $gross = (float) ($request->input('amount') ?: $staff?->gross_monthly_salary);
+            $staff = Staff::query()->with('activeAllowances')->find($request->input('staff_id'));
+            $basic = (float) ($request->input('amount') ?: $staff?->gross_monthly_salary);
+            $allowances = (float) ($request->input('allowances') ?: $staff?->activeAllowances->sum('amount'));
 
-            if (! $staff || $gross <= 0) {
+            if (! $staff || ($basic <= 0 && $allowances <= 0)) {
                 return null;
             }
 
-            return $this->taxService->calculateForStaff($staff, $gross, [
-                'allowances' => (float) $request->input('allowances', 0),
+            return $this->taxService->calculateForStaff($staff, $basic, [
+                'allowances' => $allowances,
                 'other_deductions' => (float) $request->input('other_deductions', 0),
             ]);
+        }
+
+        if ($request->filled('payroll_item_id')) {
+            $item = \App\Models\PayrollItem::query()->find($request->input('payroll_item_id'));
+            $snapshot = $item?->calculation_snapshot;
+
+            return is_array($snapshot) && $snapshot !== [] ? $snapshot : null;
         }
 
         if (! $request->filled('amount')) {
