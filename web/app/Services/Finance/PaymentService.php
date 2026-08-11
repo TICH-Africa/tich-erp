@@ -18,6 +18,7 @@ class PaymentService
         protected LedgerService $ledger,
         protected MpesaSettingsService $mpesaSettings,
         protected MpesaDarajaService $mpesaDaraja,
+        protected FinanceAuditService $audit,
     ) {}
 
     /**
@@ -64,6 +65,13 @@ class PaymentService
             if ($sendConfirmation) {
                 $this->sendConfirmation($payment->fresh(['invoice', 'student.applicant', 'student.user']));
             }
+
+            $this->audit->log('finance.payment.recorded', 'payments', $payment->id, null, [
+                'payment_number' => $payment->payment_number,
+                'invoice_id' => $invoice->id,
+                'amount' => $amount,
+                'payment_method' => $payment->payment_method,
+            ]);
 
             return $payment;
         });

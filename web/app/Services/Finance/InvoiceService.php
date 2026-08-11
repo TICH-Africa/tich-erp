@@ -16,6 +16,7 @@ class InvoiceService
     public function __construct(
         protected StudentAccountService $accounts,
         protected LedgerService $ledger,
+        protected FinanceAuditService $audit,
     ) {}
 
     /**
@@ -53,6 +54,13 @@ class InvoiceService
             if ($dispatch) {
                 $this->dispatchToChannels($invoice);
             }
+
+            $this->audit->log('finance.invoice.raised', 'invoices', $invoice->id, null, [
+                'invoice_number' => $invoice->invoice_number,
+                'student_id' => $invoice->student_id,
+                'amount' => $amount,
+                'invoice_type' => $invoice->invoice_type,
+            ]);
 
             return $invoice->fresh(['student.applicant', 'student.program']);
         });

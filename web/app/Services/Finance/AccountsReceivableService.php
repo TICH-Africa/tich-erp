@@ -17,6 +17,7 @@ class AccountsReceivableService
 
     public function __construct(
         protected FinanceSmsService $sms,
+        protected FinanceAuditService $audit,
     ) {}
 
     /**
@@ -193,6 +194,13 @@ class AccountsReceivableService
             $invoice->update([
                 'last_reminder_sent_at' => now(),
                 'reminder_count' => (int) $invoice->reminder_count + 1,
+            ]);
+
+            $this->audit->log('finance.ar.reminder_sent', 'invoices', $invoice->id, null, [
+                'invoice_number' => $invoice->invoice_number,
+                'balance' => (float) $invoice->balance,
+                'email_sent' => $emailSent,
+                'sms_sent' => $smsSent,
             ]);
 
             return true;

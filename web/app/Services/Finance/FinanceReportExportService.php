@@ -62,6 +62,10 @@ class FinanceReportExportService
             'income_statement' => $this->incomeStatementRows($data),
             'cashflow' => $this->cashflowRows($data),
             'general_ledger' => $this->generalLedgerRows($data),
+            'ar_aging' => $this->arAgingRows($data),
+            'ap_aging' => $this->apAgingRows($data),
+            'payroll_summary' => $this->payrollSummaryRows($data),
+            'finance_audit' => $this->financeAuditRows($data),
             default => $this->trialBalanceRows($data),
         };
     }
@@ -202,6 +206,113 @@ class FinanceReportExportService
                 $row['amount'],
                 $row['narration'],
                 $row['reference_id'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<list<string|float|int|null>>
+     */
+    private function arAgingRows(array $data): array
+    {
+        $rows = [
+            ['Accounts Receivable Ageing', 'As at '.$data['as_at']],
+            ['Total outstanding', $data['total_outstanding'], 'Invoices', $data['invoice_count']],
+            [],
+            ['Bucket', 'Invoices', 'Outstanding (KES)'],
+        ];
+
+        foreach ($data['buckets'] as $bucket) {
+            $rows[] = [$bucket['label'], $bucket['count'], $bucket['total']];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Invoice', 'Student', 'Registration', 'Due', 'Days', 'Bucket', 'Balance (KES)', 'Status'];
+
+        foreach ($data['rows'] as $row) {
+            $rows[] = [
+                $row['invoice_number'],
+                $row['student_name'],
+                $row['registration_number'],
+                $row['due_date'],
+                $row['days_past_due'],
+                $row['bucket_label'],
+                $row['balance'],
+                $row['status'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<list<string|float|int|null>>
+     */
+    private function apAgingRows(array $data): array
+    {
+        return [
+            ['Accounts Payable Ageing', 'As at '.$data['as_at']],
+            [],
+            [$data['empty_message'] ?? 'No AP data available.'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<list<string|float|int|null>>
+     */
+    private function payrollSummaryRows(array $data): array
+    {
+        $rows = [
+            ['Institutional Payroll Summary', $data['period_label']],
+            [],
+            ['Run', 'Period', 'Status', 'Staff', 'Gross', 'Net', 'PAYE', 'Posted'],
+        ];
+
+        foreach ($data['rows'] as $row) {
+            $rows[] = [
+                $row['run_number'],
+                $row['period'],
+                $row['status'],
+                $row['staff_count'],
+                $row['total_gross'],
+                $row['total_net'],
+                $row['total_paye'],
+                $row['posted_at'],
+            ];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Totals', '', '', $data['totals']['staff'] ?? 0, $data['totals']['gross'] ?? 0, $data['totals']['net'] ?? 0, $data['totals']['paye'] ?? 0, ''];
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<list<string|float|int|null>>
+     */
+    private function financeAuditRows(array $data): array
+    {
+        $rows = [
+            ['Finance Audit Trail', $data['period_label']],
+            [],
+            ['Timestamp', 'Action', 'Entity', 'Entity ID', 'User', 'Status', 'Reason'],
+        ];
+
+        foreach ($data['rows'] as $row) {
+            $rows[] = [
+                $row['created_at'],
+                $row['action'],
+                $row['entity_type'],
+                $row['entity_id'],
+                $row['user_email'],
+                $row['status'],
+                $row['reason'],
             ];
         }
 

@@ -16,6 +16,7 @@ class PayrollRunService
     public function __construct(
         protected KenyaPayrollTaxService $taxService,
         protected LedgerService $ledger,
+        protected FinanceAuditService $audit,
     ) {}
 
     public function createRun(int $year, int $month, ?int $createdByStaffId = null, ?string $notes = null): PayrollRun
@@ -39,7 +40,16 @@ class PayrollRunService
 
             $this->populateRun($run);
 
-            return $run->fresh(['items.staff.department', 'items.statutoryDeductions', 'creator']);
+            $fresh = $run->fresh(['items.staff.department', 'items.statutoryDeductions', 'creator']);
+
+            $this->audit->log('finance.payroll_run.created', 'payroll_runs', $fresh->id, null, [
+                'run_number' => $fresh->run_number,
+                'period' => $fresh->periodLabel(),
+                'staff_count' => $fresh->staff_count,
+                'total_net' => (float) $fresh->total_net,
+            ]);
+
+            return $fresh;
         });
     }
 
@@ -117,7 +127,14 @@ class PayrollRunService
                 'approved_at' => $now,
             ]);
 
-            return $run->fresh(['items.staff', 'approver']);
+            $fresh = $run->fresh(['items.staff', 'approver']);
+
+            $this->audit->log('finance.payroll_run.approved', 'payroll_runs', $fresh->id, null, [
+                'run_number' => $fresh->run_number,
+                'total_net' => (float) $fresh->total_net,
+            ]);
+
+            return $fresh;
         });
     }
 
@@ -144,7 +161,16 @@ class PayrollRunService
                 'gl_reference' => $run->run_number,
             ]);
 
-            return $run->fresh(['poster']);
+            $fresh = $run->fresh(['poster']);
+
+            $this->audit->log('finance.payroll_run.posted_gl', 'payroll_runs', $fresh->id, null, [
+                'run_number' => $fresh->run_number,
+                'gl_reference' => $fresh->gl_reference,
+                'total_gross' => (float) $fresh->total_gross,
+                'total_net' => (float) $fresh->total_net,
+            ]);
+
+            return $fresh;
         });
     }
 

@@ -20,6 +20,10 @@ class LedgerController extends Controller
         'income_statement',
         'cashflow',
         'general_ledger',
+        'ar_aging',
+        'ap_aging',
+        'payroll_summary',
+        'finance_audit',
     ];
 
     public function __construct(
@@ -27,6 +31,7 @@ class LedgerController extends Controller
         protected FinanceReportService $reports,
         protected FinanceReportExportService $exports,
         protected PrintDocumentService $printDocuments,
+        protected \App\Services\Finance\FinanceAuditService $financeAudit,
     ) {}
 
     public function index(): View
@@ -41,21 +46,24 @@ class LedgerController extends Controller
     public function reports(Request $request): View
     {
         $report = $this->resolveReport($request);
+        $filters = $this->reportFilters($request);
 
         return view('finance.ledger.reports', [
             'report' => $report,
-            'reportData' => $this->reports->build($report),
+            'reportData' => $this->reports->build($report, $filters),
             'reportTitle' => $this->reports->title($report),
+            'filters' => $filters,
         ]);
     }
 
     public function viewPdf(Request $request): Response
     {
         $report = $this->resolveReport($request);
+        $filters = $this->reportFilters($request);
 
         return $this->printDocuments->inlinePdf(
             'finance.reports.print',
-            $this->printPayload($report),
+            $this->printPayload($report, $filters),
             str_replace('_', '-', $report).'-'.now()->format('Ymd').'.pdf',
         );
     }
@@ -63,10 +71,16 @@ class LedgerController extends Controller
     public function exportPdf(Request $request): StreamedResponse
     {
         $report = $this->resolveReport($request);
+        $filters = $this->reportFilters($request);
+
+        $this->financeAudit->log('finance.report.exported', 'financial_reports', $report, null, [
+            'format' => 'pdf',
+            'report' => $report,
+        ]);
 
         return $this->printDocuments->downloadPdf(
             'finance.reports.print',
-            $this->printPayload($report),
+            $this->printPayload($report, $filters),
             str_replace('_', '-', $report).'-'.now()->format('Ymd').'.pdf',
         );
     }
@@ -74,7 +88,8 @@ class LedgerController extends Controller
     public function viewExcel(Request $request): View
     {
         $report = $this->resolveReport($request);
-        $reportData = $this->reports->build($report);
+        $filters = $this->reportFilters($request);
+        $reportData = $this->reports->build($report, $filters);
 
         return $this->printDocuments->render('finance.reports.spreadsheet', [
             'report' => $report,
@@ -93,8 +108,15 @@ class LedgerController extends Controller
     public function exportExcel(Request $request): StreamedResponse
     {
         $report = $this->resolveReport($request);
+        $filters = $this->reportFilters($request);
+        $data = $this->reports->build($report, $filters);
 
-        return $this->exports->downloadExcel($report, $this->reports->build($report));
+        $this->financeAudit->log('finance.report.exported', 'financial_reports', $report, null, [
+            'format' => 'csv',
+            'report' => $report,
+        ]);
+
+        return $this->exports->downloadExcel($report, $data);
     }
 
     private function resolveReport(Request $request): string
@@ -107,11 +129,12 @@ class LedgerController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    private function printPayload(string $report): array
+    private function printPayload(string $report, array $filters = []): array
     {
-        $reportData = $this->reports->build($report);
+        $reportData = $this->reports->build($report, $filters);
 
         return [
             'report' => $report,
@@ -131,5 +154,18 @@ class LedgerController extends Controller
     {
         return $reportData['period_label']
             ?? ('As at '.($reportData['as_at'] ?? now()->format('d M Y')));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reportFilters(Request $request): array
+    {
+        return array_filter([
+            'search' => $request->string('search')->toString() ?: null,
+            'action' => $request->string('action')->toString() ?: null,
+            'from' => $request->string('from')->toString() ?: null,
+            'to' => $request->string('to')->toString() ?: null,
+        ]);
     }
 }

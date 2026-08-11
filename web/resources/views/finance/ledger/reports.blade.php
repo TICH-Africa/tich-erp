@@ -10,6 +10,10 @@
             'income_statement' => 'Profit & loss',
             'cashflow' => 'Cashflow',
             'general_ledger' => 'General ledger',
+            'ar_aging' => 'AR ageing',
+            'ap_aging' => 'AP ageing',
+            'payroll_summary' => 'Payroll summary',
+            'finance_audit' => 'Finance audit',
         ];
     @endphp
 
@@ -48,4 +52,8 @@
     @includeWhen($report === 'income_statement', 'finance.reports.partials.income-statement', ['data' => $reportData])
     @includeWhen($report === 'cashflow', 'finance.reports.partials.cashflow', ['data' => $reportData])
     @includeWhen($report === 'general_ledger', 'finance.reports.partials.general-ledger', ['data' => $reportData])
+    @includeWhen($report === 'ar_aging', 'finance.reports.partials.ar-aging', ['data' => $reportData])
+    @includeWhen($report === 'ap_aging', 'finance.reports.partials.ap-aging', ['data' => $reportData])
+    @includeWhen($report === 'payroll_summary', 'finance.reports.partials.payroll-summary', ['data' => $reportData])
+    @includeWhen($report === 'finance_audit', 'finance.reports.partials.finance-audit', ['data' => $reportData, 'filters' => $filters ?? []])
 @endsection

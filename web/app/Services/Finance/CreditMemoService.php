@@ -11,6 +11,7 @@ class CreditMemoService
     public function __construct(
         protected LedgerService $ledger,
         protected StudentAccountService $accounts,
+        protected FinanceAuditService $audit,
     ) {}
 
     public function issue(Invoice $invoice, float $amount, string $reason, int $issuedByStaffId): CreditMemo
@@ -42,6 +43,13 @@ class CreditMemoService
 
             $this->ledger->postCreditMemo($creditAmount, $memo->credit_memo_number, $issuedByStaffId);
             $this->accounts->recalculate($invoice->studentAccount);
+
+            $this->audit->log('finance.credit_memo.issued', 'credit_memos', $memo->id, null, [
+                'credit_memo_number' => $memo->credit_memo_number,
+                'invoice_id' => $invoice->id,
+                'amount' => $creditAmount,
+                'reason' => $reason,
+            ]);
 
             return $memo->fresh(['invoice', 'student.applicant', 'issuer']);
         });

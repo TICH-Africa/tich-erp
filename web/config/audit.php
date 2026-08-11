@@ -148,6 +148,16 @@ return [
         'hr.leave.cancelled' => ['module' => 'hr', 'sensitive' => false],
         'hr.attendance.clock_in' => ['module' => 'hr', 'sensitive' => false],
         'hr.attendance.clock_out' => ['module' => 'hr', 'sensitive' => false],
+
+        // Finance
+        'finance.invoice.raised' => ['module' => 'finance', 'sensitive' => false],
+        'finance.payment.recorded' => ['module' => 'finance', 'sensitive' => false],
+        'finance.credit_memo.issued' => ['module' => 'finance', 'sensitive' => false],
+        'finance.payroll_run.created' => ['module' => 'finance', 'sensitive' => false],
+        'finance.payroll_run.approved' => ['module' => 'finance', 'sensitive' => false],
+        'finance.payroll_run.posted_gl' => ['module' => 'finance', 'sensitive' => false],
+        'finance.ar.reminder_sent' => ['module' => 'finance', 'sensitive' => false],
+        'finance.report.exported' => ['module' => 'finance', 'sensitive' => false],
     ],
 
 ];
