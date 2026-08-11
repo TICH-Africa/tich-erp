@@ -41,6 +41,7 @@ class PaymentService
                 'payment_method' => $data['payment_method'],
                 'payment_reference' => $data['payment_reference'] ?? null,
                 'transaction_channel_ref' => $data['transaction_channel_ref'] ?? null,
+                'status' => 'SUCCESS',
                 'is_reconciled' => 1,
                 'reconciled_by' => $recordedByStaffId,
                 'reconciled_at' => now(),

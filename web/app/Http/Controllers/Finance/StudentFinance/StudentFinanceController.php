@@ -12,7 +12,9 @@ use App\Models\Finance\Payment;
 use App\Models\Finance\Receipt;
 use App\Models\Finance\Refund;
 use App\Models\Finance\StudentAccount;
+use App\Models\Student;
 use App\Services\DepartmentDashboardService;
+use App\Services\Finance\InvoiceService;
 use App\Services\Finance\StudentFinanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -22,7 +24,8 @@ class StudentFinanceController extends Controller
 {
     public function __construct(
         protected DepartmentDashboardService $departmentDashboard,
-        protected StudentFinanceService $financeService
+        protected StudentFinanceService $financeService,
+        protected InvoiceService $invoiceService,
     ) {
     }
 
@@ -439,7 +442,21 @@ class StudentFinanceController extends Controller
 
     public function invoiceCreate(Request $request, Department $department): View
     {
-        return $this->view($request, 'finance.student-finance.invoices.create', $department);
+        $students = Student::query()
+            ->select('id', 'registration_number', 'application_id')
+            ->with(['applicant:id,first_name,surname'])
+            ->orderByDesc('id')
+            ->get();
+
+        $feeStructures = FeeStructure::query()
+            ->with(['program:id,program_name', 'academicYear:id,year_label'])
+            ->orderByDesc('id')
+            ->get();
+
+        return $this->view($request, 'finance.student-finance.invoices.create', $department, [
+            'students' => $students,
+            'feeStructures' => $feeStructures,
+        ]);
     }
 
     public function invoiceStore(Request $request, Department $department)
@@ -450,40 +467,37 @@ class StudentFinanceController extends Controller
             'invoice_type' => 'required|string|in:tuition,application,supplementary,graduation,hostel,other',
             'description' => 'required|string|max:500',
             'due_date' => 'required|date',
+            'amount' => 'nullable|numeric|min:0.01',
         ]);
 
-        $student = \App\Models\Student::findOrFail($validated['student_id']);
-        $account = StudentAccount::firstOrCreate(
-            ['student_id' => $student->id],
-            ['total_chargeable' => 0, 'total_paid' => 0, 'outstanding_balance' => 0]
-        );
+        $student = Student::findOrFail($validated['student_id']);
+        $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
 
-        $invoiceNumber = $student->registration_number . '-' . str_pad(Invoice::where('student_id', $student->id)->count() + 1, 3, '0', STR_PAD_LEFT);
-        $amount = 0;
+        $invoiceTypeMap = [
+            'hostel' => 'other',
+        ];
+        $invoiceType = $invoiceTypeMap[$validated['invoice_type']] ?? $validated['invoice_type'];
 
-        if ($validated['fee_structure_id']) {
+        if (! empty($validated['fee_structure_id'])) {
             $structure = FeeStructure::findOrFail($validated['fee_structure_id']);
-            $amount = $structure->total_semester_fee;
+            $invoice = $this->invoiceService->generateSemesterInvoice($student, $structure, $staffId);
+            $invoice->update([
+                'due_date' => $validated['due_date'],
+                'fee_structure_id' => $structure->id,
+            ]);
+        } else {
+            $amount = (float) ($validated['amount'] ?? 0);
+            abort_if($amount <= 0, 422, 'Amount is required when no fee structure is selected.');
+
+            $invoice = $this->invoiceService->generateForStudent($student, [
+                'invoice_type' => $invoiceType,
+                'description' => $validated['description'],
+                'amount' => $amount,
+                'due_date' => $validated['due_date'],
+            ], $staffId);
         }
 
-        $invoice = Invoice::create([
-            'invoice_number' => $invoiceNumber,
-            'student_account_id' => $account->id,
-            'student_id' => $student->id,
-            'fee_structure_id' => $validated['fee_structure_id'] ?? null,
-            'invoice_type' => $validated['invoice_type'],
-            'description' => $validated['description'],
-            'amount' => $amount,
-            'amount_paid' => 0,
-            'balance' => $amount,
-            'issue_date' => now(),
-            'due_date' => $validated['due_date'],
-            'status' => 'issued',
-        ]);
-
-        $this->financeService->recalculateAccount($account);
-
-        return redirect()->route('finance.student-finance.invoices.index', ['department' => $department->id])->with('success', 'Invoice created successfully.');
+        return redirect()->route('finance.student-finance.invoices.index', ['department' => $department->id])->with('success', 'Invoice created and posted to the ledger.');
     }
 
     public function invoiceShow(Request $request, Department $department, int $id): View

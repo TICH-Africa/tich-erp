@@ -69,6 +69,21 @@ class LedgerService
         );
     }
 
+    public function postCreditMemo(float $amount, string $creditMemoNumber, ?int $recordedByStaffId = null): AccountLedger
+    {
+        return $this->postEntry(
+            'credit_memo',
+            $this->revenueAccountForInvoice($creditMemoNumber),
+            config('finance.accounts.accounts_receivable'),
+            $amount,
+            "Credit memo: {$creditMemoNumber}",
+            'student_fees',
+            'credit_memos',
+            $creditMemoNumber,
+            $recordedByStaffId,
+        );
+    }
+
     /**
      * @return Collection<int, AccountLedger>
      */

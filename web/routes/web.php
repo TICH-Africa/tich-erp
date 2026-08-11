@@ -195,6 +195,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
+        Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'indexGlobal'])->name('finance.ar.hub');
 
         Route::get('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'index'])->name('finance.fee-structures.index');
         Route::middleware('permission:finance.fee_structures.manage')->group(function () {
@@ -427,10 +428,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/student-finance/milestones', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestones'])->name('student-finance.milestones.index');
             Route::get('/student-finance/milestones/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestoneShow'])->name('student-finance.milestones.show');
 
-            Route::get('/ar', [\App\Http\Controllers\Finance\FinanceController::class, 'arIndex'])->name('ar.index');
-            Route::get('/ar/create', [\App\Http\Controllers\Finance\FinanceController::class, 'arCreate'])->name('ar.create');
-            Route::post('/ar', [\App\Http\Controllers\Finance\FinanceController::class, 'arStore'])->name('ar.store');
-            Route::get('/ar/{ar}', [\App\Http\Controllers\Finance\FinanceController::class, 'arShow'])->name('ar.show');
+            Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'index'])->name('ar.index');
+            Route::get('/ar/aging/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportAgingPdf'])->name('ar.aging.export.pdf');
+            Route::post('/ar/remind-bulk', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendBulkReminders'])->name('ar.remind.bulk');
+            Route::post('/ar/invoices/{invoice}/remind', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendReminder'])->name('ar.invoices.remind');
+            Route::post('/ar/statements/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportStatementsPdf'])->name('ar.statements.export.pdf');
+            Route::get('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemosIndex'])->name('ar.credit-memos.index');
+            Route::get('/ar/credit-memos/create', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoCreate'])->name('ar.credit-memos.create');
+            Route::post('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoStore'])->name('ar.credit-memos.store');
+            Route::get('/ar/credit-memos/{creditMemo}', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoShow'])->name('ar.credit-memos.show');
 
             Route::get('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apIndex'])->name('ap.index');
             Route::get('/ap/create', [\App\Http\Controllers\Finance\FinanceController::class, 'apCreate'])->name('ap.create');

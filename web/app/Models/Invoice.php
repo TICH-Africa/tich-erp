@@ -24,6 +24,8 @@ class Invoice extends Model
         'payment_gateway_ref',
         'is_sent_to_portal',
         'sent_at',
+        'last_reminder_sent_at',
+        'reminder_count',
         'waiver_reason',
         'waived_by',
     ];
@@ -36,6 +38,7 @@ class Invoice extends Model
         'due_date' => 'date',
         'is_sent_to_portal' => 'boolean',
         'sent_at' => 'datetime',
+        'last_reminder_sent_at' => 'datetime',
     ];
 
     public function studentAccount(): BelongsTo
@@ -56,6 +59,11 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function creditMemos(): HasMany
+    {
+        return $this->hasMany(CreditMemo::class);
     }
 
     public function isPayable(): bool

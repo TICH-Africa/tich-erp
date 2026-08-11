@@ -160,3 +160,5 @@ Artisan::command('sis:backfill-admitted', function () {
 })->purpose('Create student records and portal invites for already-admitted applicants');
 
 Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
+Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');
+Schedule::command('finance:send-invoice-reminders')->dailyAt('09:00');

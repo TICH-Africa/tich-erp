@@ -111,6 +111,7 @@ class FinanceNavigationService
 
         if ($dept !== []) {
             $items[] = $this->item('Accounts receivable', 'trending-up', route('finance.ar.index', $dept), request()->routeIs('finance.ar.*'));
+            $items[] = $this->item('Credit memos', 'file-minus', route('finance.ar.credit-memos.index', $dept), request()->routeIs('finance.ar.credit-memos.*'));
             $items[] = $this->item('Accounts payable', 'trending-down', route('finance.ap.index', $dept), request()->routeIs('finance.ap.*'));
             $items[] = $this->item('Chart of accounts / GL', 'grid', route('finance.gl.index', $dept), request()->routeIs('finance.gl.*'));
             $items[] = $this->item('Budgeting', 'pie-chart', route('finance.budgeting.index', $dept), request()->routeIs('finance.budgeting.*'));

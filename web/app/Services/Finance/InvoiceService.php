@@ -28,6 +28,10 @@ class InvoiceService
             $account = $this->accounts->ensureAccount($student);
 
             $amount = round((float) $data['amount'], 2);
+            $dueDate = isset($data['due_date'])
+                ? \Illuminate\Support\Carbon::parse($data['due_date'])->toDateString()
+                : now()->addDays(config('finance.invoice_due_days', 30))->toDateString();
+
             $invoice = Invoice::query()->create([
                 'invoice_number' => $this->nextInvoiceNumber($student),
                 'student_account_id' => $account->id,
@@ -39,7 +43,7 @@ class InvoiceService
                 'amount_paid' => 0,
                 'balance' => $amount,
                 'issue_date' => now()->toDateString(),
-                'due_date' => now()->addDays(config('finance.invoice_due_days', 30))->toDateString(),
+                'due_date' => $dueDate,
                 'status' => 'issued',
             ]);
 

@@ -51,6 +51,15 @@ return [
 
     'invoice_due_days' => (int) env('FINANCE_INVOICE_DUE_DAYS', 30),
 
+    'ar' => [
+        'reminder_interval_days' => (int) env('FINANCE_AR_REMINDER_INTERVAL_DAYS', 7),
+        'reminder_days_before_due' => (int) env('FINANCE_AR_REMINDER_BEFORE_DUE_DAYS', 3),
+        'sms_enabled' => (bool) env('FINANCE_SMS_ENABLED', false),
+        'sms_api_url' => env('FINANCE_SMS_API_URL'),
+        'sms_api_token' => env('FINANCE_SMS_API_TOKEN'),
+        'sms_sender' => env('FINANCE_SMS_SENDER', 'TICH'),
+    ],
+
     'fee_defaults' => [
         'application_fee' => 1000,
         'qa_annual_fee' => 1000,
