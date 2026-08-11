@@ -74,11 +74,22 @@
         </article>
     </div>
 
-    <div class="tich-grid tich-grid--3">
-        <a href="{{ route('finance.fee-structures.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Fee structures</h3>
-            <p class="tich-text tich-mt-2">Configure programme, year, and semester fee schedules.</p>
+    <div class="tich-grid tich-grid--3 tich-mb-8">
+        <a href="{{ route('finance.student-finance.hub') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <h3 class="tich-h3">Student Finance</h3>
+            <p class="tich-text tich-mt-2">Accounts, fee structures, invoices, payments, receipts, adjustments, refunds, and clearance.</p>
         </a>
+        <a href="{{ route('finance.records.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <h3 class="tich-h3">Finance Records</h3>
+            <p class="tich-text tich-mt-2">General ledger, financial reports, AR/AP, budgeting, projects, and treasury.</p>
+        </a>
+        <a href="{{ route('finance.employee.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <h3 class="tich-h3">Employee Finance</h3>
+            <p class="tich-text tich-mt-2">Payroll runs, statutory settings, payroll reports, and GL integration.</p>
+        </a>
+    </div>
+
+    <div class="tich-grid tich-grid--3">
         <a href="{{ route('finance.invoices.create') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h3">Generate invoice</h3>
             <p class="tich-text tich-mt-2">Bill tuition, application, exam, or graduation fees.</p>
@@ -87,5 +98,11 @@
             <h3 class="tich-h3">Financial reports</h3>
             <p class="tich-text tich-mt-2">Trial balance, balance sheet, P&amp;L, and cashflow.</p>
         </a>
+        @can('finance.payments.manage')
+            <a href="{{ route('finance.mpesa.settings') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                <h3 class="tich-h3">M-Pesa settings</h3>
+                <p class="tich-text tich-mt-2">Configure Daraja STK push for student self-pay.</p>
+            </a>
+        @endcan
     </div>
 @endsection

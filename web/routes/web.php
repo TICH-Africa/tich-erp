@@ -192,6 +192,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
+        Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
+        Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
+        Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
 
         Route::get('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'index'])->name('finance.fee-structures.index');
         Route::middleware('permission:finance.fee_structures.manage')->group(function () {

@@ -67,6 +67,9 @@
         ])
 
         @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
+        @can('finance.read')
+            @include('partials.navigation.sidebar-link', ['href' => route('finance.employee.index'), 'label' => 'Finance: Employee', 'icon' => 'briefcase', 'active' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*'), 'muted' => true])
+        @endcan
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.policies.index'),
             'label' => 'HR Policies',
