@@ -110,7 +110,7 @@ class DepartmentDashboardService
      */
     public function modulesForDepartment(User $user, Department $department): array
     {
-        if ($department->children()->active()->exists() && ! $department->isAcademicsHub()) {
+        if ($department->children()->active()->exists() && ! $department->isAcademicsHub() && $department->dept_code !== 'FIN') {
             return [];
         }
 
@@ -142,7 +142,7 @@ class DepartmentDashboardService
      */
     public function dashboardViewType(User $user, Department $department): string
     {
-        if ($this->accessibleChildDepartments($user, $department)->isNotEmpty()) {
+        if ($this->accessibleChildDepartments($user, $department)->isNotEmpty() && $department->dept_code !== 'FIN') {
             return 'hub';
         }
 
@@ -207,7 +207,7 @@ class DepartmentDashboardService
 
         $modules = $this->modulesForDepartment($user, $department);
 
-        if ($modules !== [] && $children->isEmpty()) {
+        if ($modules !== [] && ($children->isEmpty() || $department->dept_code === 'FIN')) {
             $groupLabels = [
                 'education' => 'Education',
                 'admissions' => 'Admissions',

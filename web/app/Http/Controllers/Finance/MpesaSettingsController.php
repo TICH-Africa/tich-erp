@@ -20,14 +20,19 @@ class MpesaSettingsController extends Controller
     {
         $settings = $this->settings->settings();
 
-        return view('finance.mpesa.settings', [
-            'settings' => $settings,
-            'callbackUrl' => $this->settings->callbackUrl(),
-            'recentRequests' => MpesaStkRequest::query()
+        $recentRequests = collect();
+        if (\Illuminate\Support\Facades\Schema::hasTable((new \App\Models\MpesaStkRequest)->getTable())) {
+            $recentRequests = MpesaStkRequest::query()
                 ->with(['invoice', 'student.applicant'])
                 ->latest('id')
                 ->limit(20)
-                ->get(),
+                ->get();
+        }
+
+        return view('finance.mpesa.settings', [
+            'settings' => $settings,
+            'callbackUrl' => $this->settings->callbackUrl(),
+            'recentRequests' => $recentRequests,
         ]);
     }
 

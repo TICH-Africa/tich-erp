@@ -33,6 +33,15 @@ class FinanceMpesaSetting extends Model
 
     public static function current(): self
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable((new static)->getTable())) {
+            return new static([
+                'is_enabled' => false,
+                'environment' => 'sandbox',
+                'transaction_type' => 'CustomerPayBillOnline',
+                'account_reference_prefix' => 'TICH',
+            ]);
+        }
+
         return static::query()->firstOrCreate([], [
             'is_enabled' => false,
             'environment' => 'sandbox',
