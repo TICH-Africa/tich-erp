@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ServesAccessManagementPages;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RoleCategory;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 
 class RoleCategoryController extends Controller
 {
+    use ServesAccessManagementPages;
+
     public function __construct(protected AuditService $auditService) {}
 
     public function index(): View
@@ -31,7 +34,9 @@ class RoleCategoryController extends Controller
         $rolesCount = Role::query()->count();
         $categoriesCount = RoleCategory::query()->count();
 
-        return view('admin.role-categories.index', compact('roleCategories', 'rolesPerCategory', 'rolesCount', 'categoriesCount'));
+        return view($this->accessContext()->prefix.'.role-categories.index', compact('roleCategories', 'rolesPerCategory', 'rolesCount', 'categoriesCount') + [
+            'access' => $this->accessContext(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse

@@ -260,6 +260,22 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
+
+        Route::middleware(['permission:users.access.manage'])->group(function () {
+            Route::get('/users', [\App\Http\Controllers\Ict\UserAccessController::class, 'index'])->name('ict.users.index');
+            Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');
+
+            Route::get('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'index'])->name('ict.roles.index');
+            Route::post('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'store'])->name('ict.roles.store');
+            Route::put('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'update'])->name('ict.roles.update');
+            Route::delete('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'destroy'])->name('ict.roles.destroy');
+
+            Route::get('/role-categories', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'index'])->name('ict.role-categories.index');
+            Route::post('/role-categories/reorder', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'reorder'])->name('ict.role-categories.reorder');
+            Route::post('/role-categories', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'store'])->name('ict.role-categories.store');
+            Route::put('/role-categories/{roleCategory}', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'update'])->name('ict.role-categories.update');
+            Route::delete('/role-categories/{roleCategory}', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'destroy'])->name('ict.role-categories.destroy');
+        });
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {

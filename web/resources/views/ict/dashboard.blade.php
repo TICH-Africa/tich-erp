@@ -7,6 +7,12 @@
 
     <article class="tich-card tich-mt-8">
         <p class="tich-text">Manage ERP access, infrastructure, and support from this module. Use registration invites to onboard staff who do not yet have portal accounts.</p>
-        <p class="tich-caption tich-mt-2"><a href="{{ route('ict.registration-invites.index') }}">Open ERP registration invites</a></p>
+        <ul class="tich-text tich-mt-4">
+            <li><a href="{{ route('ict.registration-invites.index') }}">ERP registration invites</a></li>
+            @can('users.access.manage')
+                <li><a href="{{ route('ict.users.index') }}">Users &amp; access</a></li>
+                <li><a href="{{ route('ict.roles.index') }}">User roles</a></li>
+            @endcan
+        </ul>
     </article>
 @endsection

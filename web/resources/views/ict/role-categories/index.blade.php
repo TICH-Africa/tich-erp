@@ -1,7 +1,7 @@
-@extends('layouts.admin')
+@extends('layouts.ict')
 
 @section('title', 'Role categories')
 
-@section('admin-content')
+@section('ict-content')
     @include('partials.access-management.role-categories-index')
 @endsection

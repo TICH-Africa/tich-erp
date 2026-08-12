@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ServesAccessManagementPages;
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\Department;
@@ -19,6 +20,8 @@ use Illuminate\View\View;
 
 class UserAccessController extends Controller
 {
+    use ServesAccessManagementPages;
+
     private const STUDENT_ROLES = ['Student', 'Applicant', 'Alumni'];
 
     private const STAFF_USER_TYPES = ['staff', 'admin', 'external'];
@@ -110,7 +113,9 @@ class UserAccessController extends Controller
             $viewData['studentRoles'] = Role::query()->whereIn('role_name', self::STUDENT_ROLES)->orderBy('role_name')->get();
         }
 
-        return view('admin.users.index', $viewData);
+        return view($this->accessContext()->prefix.'.users.index', array_merge($viewData, [
+            'access' => $this->accessContext(),
+        ]));
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -133,7 +138,7 @@ class UserAccessController extends Controller
             'assignments.*.role_id' => ['nullable', 'exists:roles,id'],
             'assignments.*.campus_id' => ['nullable', 'exists:campuses,id'],
             'assignments.*.department_id' => ['nullable', 'exists:departments,id'],
-        ], route('admin.users.index', ['audience' => 'students']));
+        ], $this->accessContext()->route('users.index', ['audience' => 'students']));
 
         $studentRoleIds = Role::query()->whereIn('role_name', self::STUDENT_ROLES)->pluck('id')->all();
 
@@ -150,7 +155,7 @@ class UserAccessController extends Controller
 
         if ($assignments === []) {
             return redirect()
-                ->route('admin.users.index', ['audience' => 'students'])
+                ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'students'])
                 ->withInput()
                 ->withErrors(['assignments' => 'Assign at least one student role.']);
         }
@@ -158,7 +163,7 @@ class UserAccessController extends Controller
         $this->rbacService->syncUserAccess($user, $assignments, [], $request->user()->id);
 
         return redirect()
-            ->route('admin.users.index', ['audience' => 'students'])
+            ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'students'])
             ->with('status', 'Student access updated successfully.');
     }
 
@@ -175,7 +180,7 @@ class UserAccessController extends Controller
             'permission_grants.*.permission' => ['nullable', 'string'],
             'permission_grants.*.campus_id' => ['nullable', 'exists:campuses,id'],
             'permission_grants.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
-        ], route('admin.users.index', ['audience' => 'staff']));
+        ], $this->accessContext()->route('users.index', ['audience' => 'staff']));
 
         $staffRoleIds = Role::query()->whereNotIn('role_name', self::STUDENT_ROLES)->pluck('id')->all();
         $roleNamesById = Role::query()->pluck('role_name', 'id');
@@ -193,7 +198,7 @@ class UserAccessController extends Controller
 
         if ($assignments === []) {
             return redirect()
-                ->route('admin.users.index', ['audience' => 'staff'])
+                ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
                 ->withInput()
                 ->withErrors(['assignments' => 'Select a role and department for this employee.']);
         }
@@ -203,7 +208,7 @@ class UserAccessController extends Controller
 
             if ($roleName && ! $this->rbacService->roleAllowsInstitutionWideAssignment($roleName) && empty($assignment['department_id'])) {
                 return redirect()
-                    ->route('admin.users.index', ['audience' => 'staff'])
+                    ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
                     ->withInput()
                     ->withErrors([
                         "assignments.{$index}.department_id" => "Select a department for the {$roleName} role.",
@@ -229,7 +234,7 @@ class UserAccessController extends Controller
         foreach ($permissionGrants as $index => $grant) {
             if ($this->rbacService->permissionRequiresDepartment($grant['permission']) && empty($grant['department_id'])) {
                 return redirect()
-                    ->route('admin.users.index', ['audience' => 'staff'])
+                    ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
                     ->withInput()
                     ->withErrors([
                         "permission_grants.{$index}.department_id" => 'Select which department this module access applies to.',
@@ -241,7 +246,7 @@ class UserAccessController extends Controller
 
                 if ($department && ! $this->departmentModuleService->departmentSupportsDashboardPermission($department, $grant['permission'])) {
                     return redirect()
-                        ->route('admin.users.index', ['audience' => 'staff'])
+                        ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
                         ->withInput()
                         ->withErrors([
                             "permission_grants.{$index}.permission" => 'This module is not enabled for the selected department. Enable it under Admin → Departments first.',
@@ -258,7 +263,7 @@ class UserAccessController extends Controller
         );
 
         return redirect()
-            ->route('admin.users.index', ['audience' => 'staff'])
+                    ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
             ->with('status', 'Employee access saved successfully.');
     }
 

@@ -1,7 +1,7 @@
-@extends('layouts.admin')
+@extends('layouts.ict')
 
 @section('title', 'Users & access')
 
-@section('admin-content')
+@section('ict-content')
     @include('partials.access-management.users-index')
 @endsection

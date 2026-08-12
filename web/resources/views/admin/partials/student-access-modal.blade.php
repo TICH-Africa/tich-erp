@@ -1,4 +1,5 @@
 @props([
+    'access',
     'studentRoles',
     'openUserId' => null,
 ])
@@ -21,7 +22,7 @@
         <form
             id="student-access-form"
             method="POST"
-            action="{{ $openUserId ? route('admin.users.update', $openUserId) : '#' }}"
+            action="{{ $openUserId ? $access->route('users.update', $openUserId) : '#' }}"
             class="tich-modal__body"
         >
             @csrf
