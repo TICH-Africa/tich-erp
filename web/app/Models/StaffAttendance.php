@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\StaffClockInLocationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,6 +24,10 @@ class StaffAttendance extends Model
         'is_off_campus',
         'field_project_name',
         'location_lat_long',
+        'clock_in_latitude',
+        'clock_in_longitude',
+        'clock_in_accuracy_m',
+        'location_verification_status',
         'notes',
         'recorded_by',
     ];
@@ -32,6 +37,9 @@ class StaffAttendance extends Model
         'work_hours' => 'decimal:2',
         'is_present' => 'boolean',
         'is_leave_day' => 'boolean',
+        'clock_in_accuracy_m' => 'decimal:2',
+        'clock_in_latitude' => 'decimal:7',
+        'clock_in_longitude' => 'decimal:7',
         'is_off_campus' => 'boolean',
     ];
 
@@ -48,5 +56,42 @@ class StaffAttendance extends Model
     public function recordedByStaff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'recorded_by');
+    }
+
+    public function clockInLocationLabel(): string
+    {
+        if ($this->needsClockInLocationVerification()) {
+            return 'Not verified - clock in again with GPS';
+        }
+
+        return app(StaffClockInLocationService::class)->statusLabel($this->location_verification_status);
+    }
+
+    public function hasVerifiedClockInLocation(): bool
+    {
+        return in_array($this->location_verification_status, ['on_campus', 'off_campus', 'outside_geofence'], true)
+            && $this->clock_in_latitude !== null
+            && $this->clock_in_longitude !== null;
+    }
+
+    public function needsClockInLocationVerification(): bool
+    {
+        if (! $this->clock_in_time || $this->clock_out_time) {
+            return false;
+        }
+
+        if (! config('hr-attendance.require_location', true)) {
+            return false;
+        }
+
+        return ! $this->hasVerifiedClockInLocation();
+    }
+
+    public function clockInMapsUrl(): ?string
+    {
+        return app(StaffClockInLocationService::class)->mapsUrl(
+            $this->clock_in_latitude !== null ? (float) $this->clock_in_latitude : null,
+            $this->clock_in_longitude !== null ? (float) $this->clock_in_longitude : null,
+        );
     }
 }
