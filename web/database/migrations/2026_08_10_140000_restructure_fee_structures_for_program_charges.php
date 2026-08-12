@@ -10,10 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('fee_structures', function (Blueprint $table) {
-            if (Schema::hasIndex('fee_structures', 'fee_structures_program_id_index')) {
-                $table->dropIndex('fee_structures_program_id_index');
+            if (! Schema::hasIndex('fee_structures', 'fee_structures_program_id_index')) {
+                $table->index('program_id', 'fee_structures_program_id_index');
             }
-            $table->index('program_id', 'fee_structures_program_id_index');
         });
 
         Schema::table('fee_structures', function (Blueprint $table) {
@@ -108,10 +107,11 @@ return new class extends Migration
         });
 
         Schema::table('fee_structures', function (Blueprint $table) {
-            $table->dropUnique('fee_struct_program_year_unique');
+            if (Schema::hasIndex('fee_structures', 'fee_structures_program_id_index')) {
+                $table->dropIndex('fee_structures_program_id_index');
+            }
             $table->unsignedInteger('semester_number')->default(1);
             $table->unique(['program_id', 'academic_year_id', 'semester_number'], 'fee_struct_unique');
-            $table->dropIndex('fee_structures_program_id_index');
         });
     }
 };
