@@ -29,9 +29,9 @@
             <h3 class="tich-h4">Project profile</h3>
             <dl class="tich-mt-4" style="display:grid; gap:0.75rem;">
                 <div><dt class="tich-caption">Donor type</dt><dd>{{ ucfirst(str_replace('_', ' ', $project->donor_type)) }}</dd></div>
-                <div><dt class="tich-caption">Project leader</dt><dd>{{ $project->leader?->fullName() ?? '—' }}</dd></div>
-                <div><dt class="tich-caption">Start date</dt><dd>{{ $project->start_date?->format('d M Y') ?? '—' }}</dd></div>
-                <div><dt class="tich-caption">End date</dt><dd>{{ $project->end_date?->format('d M Y') ?? '—' }}</dd></div>
+                <div><dt class="tich-caption">Project leader</dt><dd>{{ $project->leader?->fullName() ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">Start date</dt><dd>{{ $project->start_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">End date</dt><dd>{{ $project->end_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div><dt class="tich-caption">Status</dt><dd>{{ ucfirst($project->status) }}</dd></div>
                 <div><dt class="tich-caption">KES equivalent (grant)</dt><dd>KES {{ number_format((float) $project->kes_equivalent, 2) }}</dd></div>
             </dl>
@@ -53,7 +53,7 @@
                         @forelse ($project->disbursements as $disbursement)
                             <tr>
                                 <td>{{ $disbursement->disbursement_number }}</td>
-                                <td>{{ $disbursement->receipt_date?->format('d M Y') ?? '—' }}</td>
+                                <td>{{ $disbursement->receipt_date?->format('d M Y') ?? '-' }}</td>
                                 <td>{{ $disbursement->currency_received }} {{ number_format((float) $disbursement->amount_received, 2) }}</td>
                                 <td>KES {{ number_format((float) $disbursement->kes_amount, 2) }}</td>
                             </tr>

@@ -88,7 +88,7 @@
                                 <strong>{{ $item->staff?->fullName() }}</strong>
                                 <p class="tich-caption">{{ $item->staff?->employee_number }}</p>
                             </td>
-                            <td>{{ $item->staff?->department?->dept_name ?? '—' }}</td>
+                            <td>{{ $item->staff?->department?->dept_name ?? '-' }}</td>
                             <td>KES {{ number_format((float) $item->gross_salary, 2) }}</td>
                             <td>KES {{ number_format((float) $item->total_deductions, 2) }}</td>
                             <td><strong>KES {{ number_format((float) $item->net_salary, 2) }}</strong></td>

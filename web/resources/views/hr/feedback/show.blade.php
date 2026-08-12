@@ -21,7 +21,7 @@
                 } }}">
                     {{ ucfirst(str_replace('_', ' ', $feedback->status)) }}
                 </span>
-                <span class="tich-caption">Type: {{ $feedback->feedback_type ?? '—' }}</span>
+                <span class="tich-caption">Type: {{ $feedback->feedback_type ?? '-' }}</span>
             </div>
         </div>
         <div class="tich-leave-hero__actions">
@@ -43,11 +43,11 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Department</span>
-                    <span class="tich-kv-grid__value">{{ $feedback->staff->department?->dept_name ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $feedback->staff->department?->dept_name ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Job title</span>
-                    <span class="tich-kv-grid__value">{{ $feedback->staff->job_title ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $feedback->staff->job_title ?? '-' }}</span>
                 </div>
             </div>
             <a href="{{ route('hr.staff.show', $feedback->staff) }}" class="tich-btn tich-btn-ghost tich-mt-4">View staff profile</a>
@@ -62,7 +62,7 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Resolved</span>
-                    <span class="tich-kv-grid__value">{{ $feedback->resolved_at?->format('d M Y') ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $feedback->resolved_at?->format('d M Y') ?? '-' }}</span>
                 </div>
             </div>
         </article>

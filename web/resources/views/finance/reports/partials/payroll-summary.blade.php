@@ -45,7 +45,7 @@
                     <td class="num">{{ number_format($row['total_gross'], 2) }}</td>
                     <td class="num">{{ number_format($row['total_net'], 2) }}</td>
                     <td class="num">{{ number_format($row['total_paye'], 2) }}</td>
-                    <td>{{ $row['posted_at'] ?? '—' }}</td>
+                    <td>{{ $row['posted_at'] ?? '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="8">No approved payroll runs yet.</td></tr>

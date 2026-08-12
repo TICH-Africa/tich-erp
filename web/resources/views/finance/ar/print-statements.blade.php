@@ -23,11 +23,11 @@
                 <tbody>
                     @forelse ($statement['entries'] as $entry)
                         <tr>
-                            <td>{{ $entry['date'] ? \Illuminate\Support\Carbon::parse($entry['date'])->format('d M Y') : '—' }}</td>
+                            <td>{{ $entry['date'] ? \Illuminate\Support\Carbon::parse($entry['date'])->format('d M Y') : '-' }}</td>
                             <td>{{ $entry['reference'] }}</td>
                             <td>{{ $entry['description'] }}</td>
-                            <td class="num">{{ $entry['debit'] > 0 ? number_format($entry['debit'], 2) : '—' }}</td>
-                            <td class="num">{{ $entry['credit'] > 0 ? number_format($entry['credit'], 2) : '—' }}</td>
+                            <td class="num">{{ $entry['debit'] > 0 ? number_format($entry['debit'], 2) : '-' }}</td>
+                            <td class="num">{{ $entry['credit'] > 0 ? number_format($entry['credit'], 2) : '-' }}</td>
                             <td class="num">{{ number_format($entry['running_balance'], 2) }}</td>
                         </tr>
                     @empty

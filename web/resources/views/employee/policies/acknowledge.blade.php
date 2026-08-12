@@ -20,7 +20,7 @@
                 <strong>Version:</strong> v{{ $policy->version }}
             </div>
             <div>
-                <strong>Effective Date:</strong> {{ $policy->effective_date?->format('Y-m-d') ?? '—' }}
+                <strong>Effective Date:</strong> {{ $policy->effective_date?->format('Y-m-d') ?? '-' }}
             </div>
             <div>
                 <strong>Category:</strong> {{ ucfirst($policy->category) }}

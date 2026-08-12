@@ -1,6 +1,6 @@
 #!/bin/bash
 # Links (or copies) Laravel public assets into the domain document root after git deploy.
-# Logs to deploy/cpanel/last-asset-sync.log — open in cPanel File Manager if styling breaks.
+# Logs to deploy/cpanel/last-asset-sync.log - open in cPanel File Manager if styling breaks.
 
 set -u
 

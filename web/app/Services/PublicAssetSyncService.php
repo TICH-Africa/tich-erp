@@ -108,7 +108,7 @@ class PublicAssetSyncService
 
             $log('WARN: docroot.txt path not found: '.$configured);
         } else {
-            $log('WARN: Missing '.$configPath.' — create it via File Manager (see deploy/cpanel/docroot.txt.example)');
+            $log('WARN: Missing '.$configPath.' - create it via File Manager (see deploy/cpanel/docroot.txt.example)');
         }
 
         $user = get_current_user() ?: 'tichafri';

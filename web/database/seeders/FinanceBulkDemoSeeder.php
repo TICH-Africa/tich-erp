@@ -51,7 +51,7 @@ class FinanceBulkDemoSeeder extends Seeder
             ?? 0);
 
         if ($staffId === 0) {
-            $this->command?->warn('FinanceBulkDemoSeeder: no staff found — run FinanceDemoSeeder first.');
+            $this->command?->warn('FinanceBulkDemoSeeder: no staff found - run FinanceDemoSeeder first.');
 
             return;
         }
@@ -373,7 +373,7 @@ class FinanceBulkDemoSeeder extends Seeder
             }
 
             if ($scenario === 9 && (float) $invoice->balance > 5000 && $invoice->payments()->count() > 0) {
-                $creditMemoService->issue($invoice, 2500, 'Demo credit — lab fee waiver', $staffId);
+                $creditMemoService->issue($invoice, 2500, 'Demo credit - lab fee waiver', $staffId);
             }
 
             if ($index % 7 === 0 && ! Invoice::query()->where('student_id', $student->id)->where('invoice_type', 'application')->exists()) {
@@ -463,7 +463,7 @@ class FinanceBulkDemoSeeder extends Seeder
             'student_id' => $invoice->student_id,
             'invoice_id' => $invoice->id,
             'adjustment_type' => $type,
-            'reason' => ucfirst($type).' allocation — finance demo seed',
+            'reason' => ucfirst($type).' allocation - finance demo seed',
             'amount' => $amount,
             'status' => $status,
             'requested_by' => $staffId,
@@ -492,7 +492,7 @@ class FinanceBulkDemoSeeder extends Seeder
             'student_account_id' => $invoice->student_account_id,
             'student_id' => $invoice->student_id,
             'amount' => min(1500, (float) $payment->amount),
-            'reason' => 'Duplicate payment — demo refund request',
+            'reason' => 'Duplicate payment - demo refund request',
             'status' => $index % 2 === 0 ? 'pending' : 'approved',
             'requested_by' => $staffId,
             'approved_by' => $index % 2 === 1 ? $staffId : null,
@@ -604,7 +604,7 @@ class FinanceBulkDemoSeeder extends Seeder
                 'requesting_department_id' => $deptId,
                 'requested_by' => $staffId,
                 'request_date' => now()->subDays(60)->toDateString(),
-                'justification' => 'Finance demo procurement — office and operational supplies',
+                'justification' => 'Finance demo procurement - office and operational supplies',
                 'estimated_cost' => $amount,
                 'budget_code' => 'FIN-OPS-'.date('Y'),
                 'status' => 'finance_approved',
@@ -758,7 +758,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     'kes_amount' => round($received * $rate, 2),
                     'receipt_date' => now()->subMonths(12 - ($d * 3))->toDateString(),
                     'bank_reference' => 'BNK-DON-'.str_replace('-', '', $code)."-{$d}",
-                    'purpose' => "Tranche {$d} disbursement — {$name}",
+                    'purpose' => "Tranche {$d} disbursement - {$name}",
                     'created_at' => now()->subMonths(12 - ($d * 3)),
                 ]);
                 $disbursementCount++;
@@ -824,7 +824,7 @@ class FinanceBulkDemoSeeder extends Seeder
                 'status' => 'active',
                 'approved_by' => $staffId,
                 'approved_at' => now()->subMonths(2),
-                'notes' => 'Finance demo budget — seeded for testing budget vs actual views.',
+                'notes' => 'Finance demo budget - seeded for testing budget vs actual views.',
                 'created_at' => now()->subMonths(3),
                 'updated_at' => now(),
             ]);
@@ -859,7 +859,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     0 => 'HP ProBook Laptop #'.$i,
                     1 => 'Executive Office Desk Set #'.$i,
                     2 => 'Laboratory Microscope #'.$i,
-                    3 => 'Institution Van — Unit '.$i,
+                    3 => 'Institution Van - Unit '.$i,
                     default => 'Multifunction Printer #'.$i,
                 },
                 'asset_category' => $assetCategories[$i % count($assetCategories)],
@@ -891,7 +891,7 @@ class FinanceBulkDemoSeeder extends Seeder
             ['INV-FIN-008', 'Laboratory Specimen Jars', 'medical', 180, 40, 120],
             ['INV-FIN-009', 'Toner Cartridge HP 85A', 'it', 18, 4, 4500],
             ['INV-FIN-010', 'First Aid Kit Refill Pack', 'medical', 35, 8, 2200],
-            ['INV-FIN-011', 'Desk Chairs — Standard', 'furniture', 12, 3, 8500],
+            ['INV-FIN-011', 'Desk Chairs - Standard', 'furniture', 12, 3, 8500],
             ['INV-FIN-012', 'Fire Extinguisher 6kg', 'safety', 22, 5, 4200],
             ['INV-FIN-013', 'Library Barcode Labels', 'admin', 5000, 500, 2],
             ['INV-FIN-014', 'USB Flash Drive 32GB', 'it', 45, 10, 850],
@@ -916,7 +916,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     'reorder_level' => $reorder,
                     'unit_cost' => $unitCost,
                     'supplier_id' => $supplierId,
-                    'store_location' => 'Main Store — Block B',
+                    'store_location' => 'Main Store - Block B',
                     'is_active' => 1,
                     'created_at' => now()->subMonths(4),
                 ]);
@@ -932,10 +932,10 @@ class FinanceBulkDemoSeeder extends Seeder
                     'total_cost' => $stock * $unitCost,
                     'reference_table' => 'purchase_orders',
                     'reference_id' => 'PO-FIN-DEMO',
-                    'to_location' => 'Main Store — Block B',
+                    'to_location' => 'Main Store - Block B',
                     'recorded_by' => $staffId,
                     'transaction_date' => now()->subMonths(3)->toDateString(),
-                    'notes' => 'Initial stock — finance demo seed',
+                    'notes' => 'Initial stock - finance demo seed',
                     'created_at' => now()->subMonths(3),
                 ]);
 
@@ -946,10 +946,10 @@ class FinanceBulkDemoSeeder extends Seeder
                         'quantity' => (int) round($stock * 0.15),
                         'unit_cost' => $unitCost,
                         'total_cost' => round($stock * 0.15 * $unitCost, 2),
-                        'from_location' => 'Main Store — Block B',
+                        'from_location' => 'Main Store - Block B',
                         'recorded_by' => $staffId,
                         'transaction_date' => now()->subWeeks(2)->toDateString(),
-                        'notes' => 'Department issue — finance demo',
+                        'notes' => 'Department issue - finance demo',
                         'created_at' => now()->subWeeks(2),
                     ]);
                 }

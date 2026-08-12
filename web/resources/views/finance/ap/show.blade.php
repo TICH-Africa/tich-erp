@@ -13,9 +13,9 @@
         <article class="tich-card">
             <h3 class="tich-h4">Invoice</h3>
             <dl class="tich-mt-4" style="display:grid; gap:0.75rem;">
-                <div><dt class="tich-caption">Supplier</dt><dd>{{ $payable->supplier?->supplier_name ?? '—' }}</dd></div>
-                <div><dt class="tich-caption">Invoice date</dt><dd>{{ $payable->invoice_date?->format('d M Y') ?? '—' }}</dd></div>
-                <div><dt class="tich-caption">Due date</dt><dd>{{ $payable->due_date?->format('d M Y') ?? '—' }}</dd></div>
+                <div><dt class="tich-caption">Supplier</dt><dd>{{ $payable->supplier?->supplier_name ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">Invoice date</dt><dd>{{ $payable->invoice_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">Due date</dt><dd>{{ $payable->due_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div><dt class="tich-caption">Invoice amount</dt><dd>KES {{ number_format((float) $payable->invoice_amount, 2) }}</dd></div>
                 <div><dt class="tich-caption">Tax</dt><dd>KES {{ number_format((float) $payable->tax_amount, 2) }}</dd></div>
                 <div><dt class="tich-caption">Total</dt><dd><strong>KES {{ number_format((float) $payable->total_amount, 2) }}</strong></dd></div>

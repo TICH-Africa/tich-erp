@@ -25,10 +25,10 @@
                         <tr>
                             <td>{{ $onboarding->onboarding_number }}</td>
                             <td>
-                                <strong>{{ $onboarding->staff->fullName() ?? '—' }}</strong>
+                                <strong>{{ $onboarding->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $onboarding->staff->employee_number ?? '' }}</p>
                             </td>
-                            <td>{{ $onboarding->staff?->department?->dept_name ?? '—' }}</td>
+                            <td>{{ $onboarding->staff?->department?->dept_name ?? '-' }}</td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $onboarding->current_step)) }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $onboarding->status === 'completed' ? 'success' : ($onboarding->status === 'rejected' ? 'danger' : 'warning') }}">

@@ -24,7 +24,7 @@
                         <tr>
                             <td><strong>{{ $ack->policy->title ?? $ack->policy_name }}</strong></td>
                             <td class="tich-caption">v{{ $ack->policy_version }}</td>
-                            <td class="tich-caption">{{ $ack->effective_date?->format('Y-m-d') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $ack->effective_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $ack->policy->is_active ? 'success' : 'warning' }}">
                                     {{ $ack->policy->is_active ? 'Active' : 'Inactive' }}

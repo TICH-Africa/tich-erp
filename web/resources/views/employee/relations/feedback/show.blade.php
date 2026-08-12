@@ -21,7 +21,7 @@
                 } }}">
                     {{ ucfirst(str_replace('_', ' ', $feedback->status)) }}
                 </span>
-                <span class="tich-caption">Type: {{ $feedback->feedback_type ?? '—' }}</span>
+                <span class="tich-caption">Type: {{ $feedback->feedback_type ?? '-' }}</span>
             </div>
         </div>
     </section>

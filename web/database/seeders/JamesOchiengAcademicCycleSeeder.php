@@ -31,7 +31,7 @@ class JamesOchiengAcademicCycleSeeder extends Seeder
         $staff = $this->resolveJamesOchieng();
 
         if (! $staff) {
-            $this->command?->warn('James Ochieng lecturer profile not found — run LecturerSeeder first.');
+            $this->command?->warn('James Ochieng lecturer profile not found - run LecturerSeeder first.');
 
             return;
         }
@@ -40,7 +40,7 @@ class JamesOchiengAcademicCycleSeeder extends Seeder
             ?? DB::table('academic_programs')->value('id'));
 
         if (! $programId) {
-            $this->command?->warn('HMD-CC programme not found — run ProgramsSeeder first.');
+            $this->command?->warn('HMD-CC programme not found - run ProgramsSeeder first.');
 
             return;
         }
@@ -56,7 +56,7 @@ class JamesOchiengAcademicCycleSeeder extends Seeder
             ?? Unit::query()->where('program_id', $programId)->orderBy('unit_code')->first();
 
         if (! $unit || ! $semesterId) {
-            $this->command?->warn('Teaching unit or semester missing — run HmdCcUnitsSeeder first.');
+            $this->command?->warn('Teaching unit or semester missing - run HmdCcUnitsSeeder first.');
 
             return;
         }

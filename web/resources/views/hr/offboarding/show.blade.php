@@ -14,15 +14,15 @@
                 <p><strong>Exit Type:</strong> {{ ucfirst(str_replace('_', ' ', $offboarding->exit_type)) }}</p>
                 <p><strong>Exit Date:</strong> {{ $offboarding->exit_date?->format('Y-m-d') }}</p>
                 <p><strong>Notice Period:</strong> {{ $offboarding->notice_period_days ?? 0 }} days</p>
-                <p><strong>Last Working Day:</strong> {{ $offboarding->last_working_day?->format('Y-m-d') ?? '—' }}</p>
+                <p><strong>Last Working Day:</strong> {{ $offboarding->last_working_day?->format('Y-m-d') ?? '-' }}</p>
                 <p><strong>Status:</strong>
                     <span class="tich-badge tich-badge--{{ $offboarding->status === 'completed' ? 'success' : ($offboarding->status === 'rejected' ? 'danger' : 'warning') }}">
                         {{ ucfirst($offboarding->status) }}
                     </span>
                 </p>
-                <p><strong>Initiated By:</strong> {{ $offboarding->initiator?->fullName() ?? '—' }}</p>
+                <p><strong>Initiated By:</strong> {{ $offboarding->initiator?->fullName() ?? '-' }}</p>
                 @if ($offboarding->approved_at)
-                    <p><strong>Approved By:</strong> {{ $offboarding->approver?->fullName() ?? '—' }} on {{ $offboarding->approved_at?->format('Y-m-d H:i') }}</p>
+                    <p><strong>Approved By:</strong> {{ $offboarding->approver?->fullName() ?? '-' }} on {{ $offboarding->approved_at?->format('Y-m-d H:i') }}</p>
                 @endif
             </div>
         </article>
@@ -30,7 +30,7 @@
         <article class="tich-card">
             <h3 class="tich-h3">Reason</h3>
             <div class="tich-mt-4">
-                <p>{{ $offboarding->reason ?: '—' }}</p>
+                <p>{{ $offboarding->reason ?: '-' }}</p>
                 @if ($offboarding->termination_reason)
                     <p class="tich-mt-2"><strong>Termination Reason:</strong> {{ $offboarding->termination_reason }}</p>
                 @endif
@@ -95,8 +95,8 @@
                                     <span class="tich-badge tich-badge--warning">Pending</span>
                                 @endif
                             </td>
-                            <td class="tich-caption">{{ $item->completedBy?->fullName() ?? '—' }}</td>
-                            <td class="tich-caption">{{ $item->remarks ?: '—' }}</td>
+                            <td class="tich-caption">{{ $item->completedBy?->fullName() ?? '-' }}</td>
+                            <td class="tich-caption">{{ $item->remarks ?: '-' }}</td>
                             <td>
                                 @if (!$item->is_completed && $offboarding->status === 'in_progress')
                                     <form method="POST" action="{{ route('hr.offboarding.complete-item', [$offboarding, $item]) }}" class="tich-d-inline">

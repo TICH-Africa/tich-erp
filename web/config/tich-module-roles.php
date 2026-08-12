@@ -36,7 +36,7 @@ return [
                     'role_name' => 'HOD',
                     'display_name' => 'Head of Department (Learning Department)',
                     'role_category' => 'academic',
-                    'description' => 'Leads a learning department — programmes, staff, and academic delivery.',
+                    'description' => 'Leads a learning department - programmes, staff, and academic delivery.',
                     'permission_modules' => ['core', 'academics', 'hr'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage'],
                 ],

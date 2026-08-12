@@ -14,7 +14,7 @@
                 <div>
                     <label for="staff_ids" class="tich-label">Staff Members</label>
                     <select id="staff_ids" name="staff_ids[]" multiple class="tich-input" style="min-height: 10rem;">
-                        <option value="">— Select staff —</option>
+                        <option value="">- Select staff -</option>
                         @foreach ($staff as $s)
                             <option value="{{ $s->id }}" {{ old('staff_ids', $training->assigned_staff_ids) && in_array($s->id, old('staff_ids', $training->assigned_staff_ids)) ? 'selected' : '' }}>
                                 {{ $s->fullName() }} ({{ $s->employee_number }})

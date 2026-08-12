@@ -14,14 +14,14 @@
 
     <div class="tich-grid tich-grid--2 tich-mt-8" style="align-items:start; gap:1.5rem;">
         <article class="tich-card">
-            <h2 class="tich-h3">Today — {{ now()->format('l, d M Y') }}</h2>
+            <h2 class="tich-h3">Today - {{ now()->format('l, d M Y') }}</h2>
 
             @if ($todayRecord)
                 <dl class="tich-dl tich-mt-4">
                     <dt>Clock in</dt>
-                    <dd>{{ $todayRecord->clock_in_time ? substr((string) $todayRecord->clock_in_time, 0, 5) : '—' }}</dd>
+                    <dd>{{ $todayRecord->clock_in_time ? substr((string) $todayRecord->clock_in_time, 0, 5) : '-' }}</dd>
                     <dt>Clock out</dt>
-                    <dd>{{ $todayRecord->clock_out_time ? substr((string) $todayRecord->clock_out_time, 0, 5) : '—' }}</dd>
+                    <dd>{{ $todayRecord->clock_out_time ? substr((string) $todayRecord->clock_out_time, 0, 5) : '-' }}</dd>
                     @if ($todayRecord->work_hours)
                         <dt>Hours worked</dt>
                         <dd>{{ number_format((float) $todayRecord->work_hours, 2) }}</dd>
@@ -82,9 +82,9 @@
                         @forelse ($recentRecords as $record)
                             <tr>
                                 <td>{{ $record->attendance_date->format('d M Y') }}</td>
-                                <td>{{ $record->clock_in_time ? substr((string) $record->clock_in_time, 0, 5) : '—' }}</td>
-                                <td>{{ $record->clock_out_time ? substr((string) $record->clock_out_time, 0, 5) : '—' }}</td>
-                                <td>{{ $record->work_hours ? number_format((float) $record->work_hours, 2) : '—' }}</td>
+                                <td>{{ $record->clock_in_time ? substr((string) $record->clock_in_time, 0, 5) : '-' }}</td>
+                                <td>{{ $record->clock_out_time ? substr((string) $record->clock_out_time, 0, 5) : '-' }}</td>
+                                <td>{{ $record->work_hours ? number_format((float) $record->work_hours, 2) : '-' }}</td>
                                 <td>{{ $record->is_off_campus ? 'Field' : 'On campus' }}</td>
                             </tr>
                         @empty

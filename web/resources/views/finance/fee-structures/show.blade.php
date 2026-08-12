@@ -3,7 +3,7 @@
 @section('title', 'Fee structure')
 
 @section('finance-content')
-    <x-page-toolbar title="Fee structure" meta="{{ $feeStructure->program?->program_name }} — {{ $feeStructure->academicYear?->year_label }}">
+    <x-page-toolbar title="Fee structure" meta="{{ $feeStructure->program?->program_name }} - {{ $feeStructure->academicYear?->year_label }}">
         <x-slot:actions>
             @unless ($feeStructure->is_approved)
                 <form method="post" action="{{ route('finance.fee-structures.approve', $feeStructure) }}">

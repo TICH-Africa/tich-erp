@@ -10,14 +10,14 @@
             <h3 class="tich-h3">Contract Details</h3>
             <div class="tich-mt-4">
                 <p><strong>Contract No.:</strong> {{ $contract->contract_number }}</p>
-                <p><strong>Staff:</strong> {{ $contract->staff->fullName() ?? '—' }}</p>
+                <p><strong>Staff:</strong> {{ $contract->staff->fullName() ?? '-' }}</p>
                 <p><strong>Job Title:</strong> {{ $contract->job_title }}</p>
-                <p><strong>Department:</strong> {{ $contract->department->dept_name ?? '—' }}</p>
+                <p><strong>Department:</strong> {{ $contract->department->dept_name ?? '-' }}</p>
                 <p><strong>Type:</strong> {{ ucfirst($contract->contract_type) }}</p>
                 <p><strong>Gross Salary:</strong> KES {{ number_format($contract->gross_salary, 2) }}</p>
                 <p><strong>Start Date:</strong> {{ $contract->start_date?->format('Y-m-d') }}</p>
                 <p><strong>End Date:</strong> {{ $contract->end_date?->format('Y-m-d') ?? 'Ongoing' }}</p>
-                <p><strong>Probation End:</strong> {{ $contract->probation_end_date?->format('Y-m-d') ?? '—' }}</p>
+                <p><strong>Probation End:</strong> {{ $contract->probation_end_date?->format('Y-m-d') ?? '-' }}</p>
                 <p><strong>Renewable:</strong> {{ $contract->is_renewable ? 'Yes' : 'No' }}</p>
                 <p><strong>Renewal Status:</strong> {{ ucfirst($contract->renewal_status) }}</p>
                 <p><strong>Signed:</strong> {{ $contract->is_signed ? 'Yes (' . $contract->signed_date?->format('Y-m-d') . ')' : 'No' }}</p>

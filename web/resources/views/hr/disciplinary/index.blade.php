@@ -44,7 +44,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $case->status)) }}
                                 </span>
                             </td>
-                            <td class="tich-caption">{{ $case->assignedTo?->fullName() ?? '—' }}</td>
+                            <td class="tich-caption">{{ $case->assignedTo?->fullName() ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('hr.employee-relations.disciplinary.show', $case) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>

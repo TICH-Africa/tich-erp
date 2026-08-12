@@ -3,7 +3,7 @@
 @section('employee-content')
     <x-page-toolbar
         title="Concerns &amp; issues"
-        meta="Raise workplace concerns anytime — HR will review and follow up"
+        meta="Raise workplace concerns anytime - HR will review and follow up"
     >
         <x-slot:actions>
             <a href="{{ route('employee.concerns.create') }}" class="tich-btn tich-btn-primary">+ Raise a concern</a>

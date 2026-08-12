@@ -73,7 +73,7 @@ class FinanceAccountsDemoSeeder extends Seeder
             ['1000', 'Main Treasury Account', 'asset', 'Treasury', null, 1],
             ['1010', 'M-Pesa Collections', 'asset', 'Cash', '1000', 1],
             ['1020', 'Bank Collections', 'asset', 'Cash', '1000', 1],
-            ['1100', 'Accounts Receivable — Students', 'asset', 'Receivables', null, 1],
+            ['1100', 'Accounts Receivable - Students', 'asset', 'Receivables', null, 1],
             ['2000', 'Accounts Payable', 'liability', 'Payables', null, 1],
             ['3000', 'Institutional Equity', 'equity', 'Equity', null, 1],
             ['4000', 'Tuition Revenue', 'revenue', 'Student Fees', null, 1],

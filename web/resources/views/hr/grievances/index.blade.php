@@ -45,7 +45,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $grievance->status)) }}
                                 </span>
                             </td>
-                            <td class="tich-caption">{{ $grievance->assignedTo?->fullName() ?? '—' }}</td>
+                            <td class="tich-caption">{{ $grievance->assignedTo?->fullName() ?? '-' }}</td>
                             <td class="tich-caption">{{ $grievance->created_at?->format('d M Y') }}</td>
                             <td>
                                 <a href="{{ route('hr.employee-relations.grievances.show', $grievance) }}" class="tich-btn tich-btn-ghost">View</a>

@@ -51,13 +51,13 @@
                             <td>
                                 <a href="{{ route('finance.ap.show', [$department, $payable]) }}">{{ $payable->invoice_number }}</a>
                             </td>
-                            <td>{{ $payable->supplier?->supplier_name ?? '—' }}</td>
+                            <td>{{ $payable->supplier?->supplier_name ?? '-' }}</td>
                             <td>KES {{ number_format((float) $payable->total_amount, 2) }}</td>
                             <td>KES {{ number_format((float) $payable->balance, 2) }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $payable->three_way_match_status)) }}</td>
                             <td>{{ ucfirst($payable->finance_approval_status) }}</td>
                             <td>{{ ucfirst($payable->payment_status) }}</td>
-                            <td>{{ $payable->due_date?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $payable->due_date?->format('d M Y') ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('finance.ap.show', [$department, $payable]) }}" class="tich-link">View</a>
                             </td>

@@ -26,7 +26,7 @@
                     @forelse ($offboardings as $offboarding)
                         <tr>
                             <td>
-                                <strong>{{ $offboarding->staff->fullName() ?? '—' }}</strong>
+                                <strong>{{ $offboarding->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $offboarding->staff->employee_number ?? '' }}</p>
                             </td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $offboarding->exit_type)) }}</td>
@@ -36,7 +36,7 @@
                                     {{ ucfirst($offboarding->status) }}
                                 </span>
                             </td>
-                            <td class="tich-caption">{{ $offboarding->initiator?->fullName() ?? '—' }}</td>
+                            <td class="tich-caption">{{ $offboarding->initiator?->fullName() ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('hr.offboarding.show', $offboarding) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>

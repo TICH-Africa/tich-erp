@@ -30,9 +30,9 @@
                     <td><code style="font-size:0.8125rem;">{{ $row['action'] }}</code></td>
                     <td>{{ $row['entity_type'] }}</td>
                     <td>{{ $row['entity_id'] }}</td>
-                    <td>{{ $row['user_email'] ?? '—' }}</td>
+                    <td>{{ $row['user_email'] ?? '-' }}</td>
                     <td>{{ ucfirst($row['status']) }}</td>
-                    <td>{{ $row['reason'] ?? '—' }}</td>
+                    <td>{{ $row['reason'] ?? '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">No finance audit entries yet. Actions such as invoices, payments, and payroll posting will appear here.</td></tr>

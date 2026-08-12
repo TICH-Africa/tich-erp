@@ -25,7 +25,7 @@
                             <td>
                                 <strong>{{ $member->fullName() }}</strong>
                             </td>
-                            <td class="tich-caption">{{ $member->department->dept_name ?? '—' }}</td>
+                            <td class="tich-caption">{{ $member->department->dept_name ?? '-' }}</td>
                             <td class="tich-caption">{{ $member->job_title }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $member->documents_count > 0 ? 'success' : 'warning' }}">

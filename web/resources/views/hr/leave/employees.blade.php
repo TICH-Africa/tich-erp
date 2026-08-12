@@ -39,7 +39,7 @@
                                 <strong>{{ $record->staff->fullName() }}</strong>
                                 <p class="tich-caption">{{ $record->staff->employee_number }}</p>
                             </td>
-                            <td>{{ $record->staff->department?->dept_name ?? '—' }}</td>
+                            <td>{{ $record->staff->department?->dept_name ?? '-' }}</td>
                             <td>
                                 @if ($record->on_leave)
                                     <span class="tich-leave-status tich-leave-status--on">On leave</span>
@@ -52,7 +52,7 @@
                                     <strong>{{ $record->current_leave_type }}</strong>
                                     <p class="tich-caption">{{ $record->current_leave_period }}</p>
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
                             <td>{{ $record->accrued_days }}</td>

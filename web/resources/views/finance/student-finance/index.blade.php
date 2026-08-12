@@ -40,7 +40,7 @@
         </a>
         <a href="{{ route('finance.student-finance.milestones.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h4">Payment milestones</h3>
-            <p class="tich-caption tich-mt-2">50% registration, 75% mid-semester, 100% before finals — auto-tracked.</p>
+            <p class="tich-caption tich-mt-2">50% registration, 75% mid-semester, 100% before finals - auto-tracked.</p>
         </a>
     </div>
 @endsection

@@ -61,7 +61,7 @@
             <div style="display: grid; gap: 1.25rem;">
                 <section>
                     <h3 class="tich-h3" style="font-size: 1rem;">Role &amp; department</h3>
-                    <p class="tich-caption tich-mb-3">Assign one or more roles with a main department each (top-level units only — not schools under Academics). Employees can hold multiple roles at once.</p>
+                    <p class="tich-caption tich-mb-3">Assign one or more roles with a main department each (top-level units only - not schools under Academics). Employees can hold multiple roles at once.</p>
 
                     <div id="staff-assignment-rows" style="display: grid; gap: 0.75rem;"></div>
                     <button type="button" class="tich-btn tich-btn-secondary tich-mt-3" id="staff-add-assignment">+ Add another role</button>
@@ -69,7 +69,7 @@
 
                 <section>
                     <h3 class="tich-h3" style="font-size: 1rem;">Additional modules</h3>
-                    <p class="tich-caption tich-mb-3">Optional access outside their home department — pick the department that owns the module.</p>
+                    <p class="tich-caption tich-mb-3">Optional access outside their home department - pick the department that owns the module.</p>
 
                     <div id="staff-grant-rows" style="display: grid; gap: 0.75rem;"></div>
                     <button type="button" class="tich-btn tich-btn-secondary tich-mt-3" id="staff-add-grant">+ Add module access</button>
@@ -383,7 +383,7 @@
     function openStaffModal(trigger) {
         form.action = trigger.getAttribute('data-update-url') || '#';
         document.getElementById('staff-access-user-id').value = trigger.getAttribute('data-user-id') || '';
-        document.getElementById('staff-access-modal-title').textContent = 'Assign access — ' + (trigger.getAttribute('data-display-name') || 'Employee');
+        document.getElementById('staff-access-modal-title').textContent = 'Assign access - ' + (trigger.getAttribute('data-display-name') || 'Employee');
         document.getElementById('staff-access-user-meta').textContent = trigger.getAttribute('data-email') || '';
 
         var assignments = [];

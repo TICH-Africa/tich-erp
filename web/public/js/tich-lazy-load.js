@@ -1,5 +1,5 @@
 /**
- * TICH platform lazy loading — YouTube-style progressive media loading.
+ * TICH platform lazy loading - YouTube-style progressive media loading.
  * - Images: native lazy + shimmer placeholder, fade-in on load
  * - Hero carousel: only the active slide loads immediately; others defer until shown
  * - Iframes: src deferred until near the viewport

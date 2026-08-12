@@ -1,5 +1,5 @@
 ---
-# TICH ERP — cPanel Git deployment (production)
+# TICH ERP - cPanel Git deployment (production)
 # Push → cPanel Git Version Control → Update from Remote → Deploy HEAD Commit
 # Paths live in deploy/cpanel/docroot.txt (committed). Log: deploy/cpanel/last-asset-sync.log
 

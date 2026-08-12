@@ -17,22 +17,22 @@
                 <p><strong>Gender:</strong> {{ $staff->gender }}</p>
                 <p><strong>DOB:</strong> {{ $staff->date_of_birth?->format('Y-m-d') }}</p>
                 <p><strong>Nationality:</strong> {{ $staff->nationality }}</p>
-                <p><strong>Home County:</strong> {{ $staff->home_county ?? '—' }}</p>
+                <p><strong>Home County:</strong> {{ $staff->home_county ?? '-' }}</p>
             </div>
         </article>
 
         <article class="tich-card">
             <h3 class="tich-h3">Employment</h3>
             <div class="tich-mt-4">
-                <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '—' }}</p>
-                <p><strong>Campus:</strong> {{ $staff->campus->campus_name ?? '—' }}</p>
+                <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '-' }}</p>
+                <p><strong>Campus:</strong> {{ $staff->campus->campus_name ?? '-' }}</p>
                 <p><strong>Job Title:</strong> {{ $staff->job_title }}</p>
-                <p><strong>Grade:</strong> {{ $staff->job_grade ?? '—' }}</p>
+                <p><strong>Grade:</strong> {{ $staff->job_grade ?? '-' }}</p>
                 <p><strong>Category:</strong> {{ config('tich-payroll.employment_categories.'.$staff->employment_category, ucfirst(str_replace('_', ' ', $staff->employment_category))) }}</p>
                 <p><strong>Payroll scheme:</strong> {{ $staff->payrollSchemeLabel() }}</p>
                 <p><strong>Start Date:</strong> {{ $staff->employment_start_date?->format('Y-m-d') }}</p>
-                <p><strong>Contract End:</strong> {{ $staff->contract_end_date?->format('Y-m-d') ?? '—' }}</p>
-                <p><strong>Salary Scale:</strong> {{ $staff->salary_scale ?? '—' }}</p>
+                <p><strong>Contract End:</strong> {{ $staff->contract_end_date?->format('Y-m-d') ?? '-' }}</p>
+                <p><strong>Salary Scale:</strong> {{ $staff->salary_scale ?? '-' }}</p>
                 <p><strong>Status:</strong> {{ ucfirst($staff->employment_status) }}</p>
             </div>
         </article>
@@ -40,12 +40,12 @@
         <article class="tich-card">
             <h3 class="tich-h3">Statutory</h3>
             <div class="tich-mt-4">
-                <p><strong>KRA PIN:</strong> {{ $staff->kra_pin ?? '—' }}</p>
-                <p><strong>NSSF:</strong> {{ $staff->nssf_number ?? '—' }}</p>
-                <p><strong>SHA:</strong> {{ $staff->sha_number ?? '—' }}</p>
-                <p><strong>HELB:</strong> {{ $staff->helb_number ?? '—' }}</p>
-                <p><strong>Bank:</strong> {{ $staff->bankAccount?->bank_name ?? '—' }}</p>
-                <p><strong>Pension:</strong> {{ $staff->pensionScheme?->scheme_name ?? '—' }}</p>
+                <p><strong>KRA PIN:</strong> {{ $staff->kra_pin ?? '-' }}</p>
+                <p><strong>NSSF:</strong> {{ $staff->nssf_number ?? '-' }}</p>
+                <p><strong>SHA:</strong> {{ $staff->sha_number ?? '-' }}</p>
+                <p><strong>HELB:</strong> {{ $staff->helb_number ?? '-' }}</p>
+                <p><strong>Bank:</strong> {{ $staff->bankAccount?->bank_name ?? '-' }}</p>
+                <p><strong>Pension:</strong> {{ $staff->pensionScheme?->scheme_name ?? '-' }}</p>
             </div>
         </article>
     </div>

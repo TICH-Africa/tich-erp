@@ -56,7 +56,7 @@
 <div class="tich-form-row">
     <label class="tich-label">
         <input type="checkbox" name="requires_indexing_nck" value="1" @checked(old('requires_indexing_nck', $feeStructure?->requires_indexing_nck))>
-        Requires indexing (NCK) — Kenya registered community health nursing only
+        Requires indexing (NCK) - Kenya registered community health nursing only
     </label>
 </div>
 <div class="tich-form-row">

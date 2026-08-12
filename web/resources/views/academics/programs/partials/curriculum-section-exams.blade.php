@@ -25,7 +25,7 @@
         $unitAssessmentUpdateBase = route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__']));
     @endphp
 
-    <x-page-toolbar title="Exams &amp; grading — {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
+    <x-page-toolbar title="Exams &amp; grading - {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
         <x-slot:filters>
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-page-toolbar__filters-form">
                 <select name="teaching_period" class="tich-input tich-input--compact" onchange="this.form.submit()">
@@ -495,12 +495,12 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Transcripts</h2>
                 <p class="tich-text tich-mt-2">Generate official transcripts from cumulative grade records and exam results for each eligible student below.</p>
-                <a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS — all students</a>
+                <a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open SIS - all students</a>
             </article>
         </div>
 
         <article class="tich-card tich-mb-6">
-            <h2 class="tich-h3">Exam-eligible students — Semester {{ $examTeachingPeriod }}</h2>
+            <h2 class="tich-h3">Exam-eligible students - Semester {{ $examTeachingPeriod }}</h2>
             <p class="tich-caption">
                 {{ $eligibleRoster['semester_label'] ?? 'Teaching period '.$examTeachingPeriod }} ·
                 Students with at least one unit cleared for exam sitting (attendance, fees, and verification checks).
@@ -513,7 +513,7 @@
                             <h3 class="tich-h3" style="font-size:1.1rem;">{{ $studentRow->student_name ?: 'Student' }}</h3>
                             <p class="tich-caption">{{ $studentRow->registration_number }} · {{ $studentRow->cohort_intake }} · {{ ucfirst($studentRow->enrollment_status) }}</p>
                             <p class="tich-caption">
-                                Campus: {{ $studentRow->campus_name ?? '—' }} ·
+                                Campus: {{ $studentRow->campus_name ?? '-' }} ·
                                 Fees: {{ ucfirst(str_replace('_', ' ', $studentRow->fee_clearance_status)) }} ·
                                 {{ $studentRow->eligible_unit_count }}/{{ $studentRow->total_units }} units eligible
                             </p>
@@ -541,12 +541,12 @@
                                             <strong>{{ $unitRow->unit_code }}</strong>
                                             <span class="tich-caption" style="display:block;">{{ $unitRow->unit_name }}</span>
                                         </td>
-                                        <td>{{ $unitRow->attendance_percentage !== null ? number_format((float) $unitRow->attendance_percentage, 1).'%' : '—' }}</td>
+                                        <td>{{ $unitRow->attendance_percentage !== null ? number_format((float) $unitRow->attendance_percentage, 1).'%' : '-' }}</td>
                                         <td>
                                             @if ($unitRow->status_flag)
                                                 @include('partials.attendance-flag', ['flag' => $unitRow->status_flag])
                                             @else
-                                                —
+                                                -
                                             @endif
                                         </td>
                                         <td>{{ $unitRow->fee_cleared ? 'Cleared' : 'Pending' }}</td>
@@ -561,16 +561,16 @@
                                         </td>
                                         <td>
                                             @if ($unitRow->cumulative_score !== null)
-                                                {{ number_format((float) $unitRow->cumulative_score, 1) }}% ({{ $unitRow->grade_letter ?? '—' }})
+                                                {{ number_format((float) $unitRow->cumulative_score, 1) }}% ({{ $unitRow->grade_letter ?? '-' }})
                                             @else
-                                                —
+                                                -
                                             @endif
                                         </td>
                                         <td>
                                             @if ($unitRow->exam_date)
                                                 {{ \Illuminate\Support\Carbon::parse($unitRow->exam_date)->format('d M Y') }}
                                                 {{ substr((string) $unitRow->start_time, 0, 5) }}–{{ substr((string) $unitRow->end_time, 0, 5) }}
-                                                <span class="tich-caption" style="display:block;">{{ $unitRow->venue ?? '—' }}</span>
+                                                <span class="tich-caption" style="display:block;">{{ $unitRow->venue ?? '-' }}</span>
                                             @else
                                                 Not scheduled
                                             @endif

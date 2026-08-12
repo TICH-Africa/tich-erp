@@ -45,7 +45,7 @@
                                 {{ $project->currency }} {{ number_format((float) $project->total_grant_amount, 2) }}
                             </td>
                             <td>KES {{ number_format((float) ($project->disbursed_kes ?? 0), 2) }}</td>
-                            <td>{{ $project->end_date?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $project->end_date?->format('d M Y') ?? '-' }}</td>
                             <td>{{ ucfirst($project->status) }}</td>
                             <td>
                                 <a href="{{ route('finance.projects-donors.show', [$department, $project]) }}" class="tich-link">View</a>

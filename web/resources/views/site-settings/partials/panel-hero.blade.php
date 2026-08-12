@@ -57,7 +57,7 @@
                         @if ($slide->cta_label)
                             {{ $slide->cta_label }} → {{ $slide->cta_url }}
                         @else
-                            —
+                            -
                         @endif
                     </td>
                     <td>{{ $slide->is_active ? 'Active' : 'Hidden' }}</td>

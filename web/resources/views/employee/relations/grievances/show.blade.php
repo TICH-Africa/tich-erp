@@ -21,7 +21,7 @@
                 } }}">
                     {{ ucfirst(str_replace('_', ' ', $grievance->status)) }}
                 </span>
-                <span class="tich-caption">Type: {{ $grievance->grievance_type ?? '—' }}</span>
+                <span class="tich-caption">Type: {{ $grievance->grievance_type ?? '-' }}</span>
             </div>
         </div>
     </section>

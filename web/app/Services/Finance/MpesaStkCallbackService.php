@@ -130,7 +130,7 @@ class MpesaStkCallbackService
                     'status' => MpesaStkRequest::STATUS_SUCCESS,
                     'mpesa_receipt_number' => $receipt,
                     'completed_at' => now(),
-                    'result_desc' => 'Duplicate callback ignored — payment already recorded.',
+                    'result_desc' => 'Duplicate callback ignored - payment already recorded.',
                 ]);
 
                 return;

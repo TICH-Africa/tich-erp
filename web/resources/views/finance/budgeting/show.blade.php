@@ -34,7 +34,7 @@
             <div><dt class="tich-caption">Department</dt><dd>{{ $budget->department?->dept_name ?? 'Institution-wide' }}</dd></div>
             <div><dt class="tich-caption">Period</dt><dd>{{ $budget->period_start?->format('d M Y') }} – {{ $budget->period_end?->format('d M Y') }}</dd></div>
             <div><dt class="tich-caption">Status</dt><dd>{{ ucfirst($budget->status) }}</dd></div>
-            <div><dt class="tich-caption">Approved by</dt><dd>{{ $budget->approver?->fullName() ?? '—' }}</dd></div>
+            <div><dt class="tich-caption">Approved by</dt><dd>{{ $budget->approver?->fullName() ?? '-' }}</dd></div>
         </dl>
         @if ($budget->notes)
             <p class="tich-mt-6 tich-text">{{ $budget->notes }}</p>

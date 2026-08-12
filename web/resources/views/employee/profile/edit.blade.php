@@ -75,7 +75,7 @@
                 <div>
                     <label for="marital_status" class="tich-label">Marital status</label>
                     <select id="marital_status" name="marital_status" class="tich-input">
-                        <option value="">—</option>
+                        <option value="">-</option>
                         @foreach (['Single', 'Married', 'Divorced', 'Widowed', 'Separated'] as $status)
                             <option value="{{ $status }}" @selected(old('marital_status', $staff->marital_status) === $status)>{{ $status }}</option>
                         @endforeach
@@ -120,7 +120,7 @@
                 <div>
                     <label for="qualification_type" class="tich-label">Qualification type</label>
                     <select id="qualification_type" name="qualification_type" class="tich-input">
-                        <option value="">— Skip —</option>
+                        <option value="">- Skip -</option>
                         @foreach ($qualificationTypes as $value => $label)
                             <option value="{{ $value }}" @selected(old('qualification_type') === $value)>{{ $label }}</option>
                         @endforeach

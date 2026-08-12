@@ -28,7 +28,7 @@
             <h3 style="margin-top: 0;">Your details</h3>
             <p><strong>Employee number:</strong> {{ $staff->employee_number }}</p>
             <p><strong>Job title:</strong> {{ $staff->job_title }}</p>
-            <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '—' }}</p>
+            <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '-' }}</p>
         </div>
         @endif
 

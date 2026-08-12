@@ -21,7 +21,7 @@
                     <td><span class="tich-caption">{{ $row['credit_account_code'] }}</span> {{ $row['credit_account_name'] }}</td>
                     <td class="num">{{ number_format($row['amount'], 2) }}</td>
                     <td>{{ $row['narration'] }}</td>
-                    <td>{{ $row['reference_id'] ?? '—' }}</td>
+                    <td>{{ $row['reference_id'] ?? '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">No journal entries posted yet.</td></tr>

@@ -59,7 +59,7 @@
         <dl style="display:grid; gap:1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));">
             <div>
                 <dt class="tich-caption">Business shortcode / paybill</dt>
-                <dd>{{ $settings->shortcode ?: '—' }}</dd>
+                <dd>{{ $settings->shortcode ?: '-' }}</dd>
             </div>
             <div>
                 <dt class="tich-caption">Lipa na M-Pesa passkey</dt>
@@ -67,7 +67,7 @@
             </div>
             <div>
                 <dt class="tich-caption">Consumer key</dt>
-                <dd>{{ $settings->consumer_key ? \Illuminate\Support\Str::mask($settings->consumer_key, '*', 4) : '—' }}</dd>
+                <dd>{{ $settings->consumer_key ? \Illuminate\Support\Str::mask($settings->consumer_key, '*', 4) : '-' }}</dd>
             </div>
             <div>
                 <dt class="tich-caption">Consumer secret</dt>
@@ -118,12 +118,12 @@
                     @forelse ($recentRequests as $request)
                         <tr>
                             <td>{{ $request->id }}</td>
-                            <td>{{ $request->invoice?->invoice_number ?? '—' }}</td>
-                            <td>{{ $request->student?->displayName() ?? '—' }}</td>
+                            <td>{{ $request->invoice?->invoice_number ?? '-' }}</td>
+                            <td>{{ $request->student?->displayName() ?? '-' }}</td>
                             <td>KES {{ number_format((float) $request->amount, 2) }}</td>
                             <td>{{ $request->phone }}</td>
                             <td>{{ ucfirst($request->status) }}</td>
-                            <td>{{ $request->mpesa_receipt_number ?? '—' }}</td>
+                            <td>{{ $request->mpesa_receipt_number ?? '-' }}</td>
                             <td>{{ $request->created_at?->format('d M Y H:i') }}</td>
                             <td>
                                 @if ($request->isPending())
