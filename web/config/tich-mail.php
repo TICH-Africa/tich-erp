@@ -50,6 +50,13 @@ return [
                 'name' => env('MAIL_NOTIFICATION_NAME', 'TICH Notifications'),
             ],
         ],
+        'ict' => [
+            'mailer' => 'ict',
+            'from' => [
+                'address' => env('MAIL_ICT_ADDRESS', 'ict@tich.africa'),
+                'name' => env('MAIL_ICT_NAME', 'TICH Information & Communication Technology'),
+            ],
+        ],
     ],
 
 ];

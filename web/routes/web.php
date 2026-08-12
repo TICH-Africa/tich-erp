@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
@@ -47,8 +48,11 @@ Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.in
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [WebAuthController::class, 'login']);
-    Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [WebAuthController::class, 'register']);
+    Route::get('/register', fn () => redirect()
+        ->route('login')
+        ->with('status', 'ERP registration is by invitation only. Contact ICT or HR if you need staff access.'));
+    Route::get('/register/invite/{token}', [ErpRegistrationController::class, 'showInvite'])->name('register.invite');
+    Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])->name('register.invite.store');
     Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
@@ -254,11 +258,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
+        Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
+        Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
+        Route::post('/registration-invites', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'store'])->name('hr.registration-invites.store');
 
         Route::middleware('permission:hr.staff.view')->group(function () {
             Route::get('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'index'])->name('hr.staff.index');

@@ -67,7 +67,6 @@
     </form>
 
     <p class="tich-text tich-mt-8 tich-text-center">
-        Don't have an account?
-        <a href="{{ route('register') }}" class="tich-link">Create one</a>
+        Staff access is by invitation only. Contact ICT or HR if you need an ERP account.
     </p>
 @endsection
