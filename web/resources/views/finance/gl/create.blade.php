@@ -2,7 +2,7 @@
 
 @section('title', 'General Ledger')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="General Ledger" meta="Create journal entry">
         <x-slot:actions>
             <a href="{{ route('finance.gl.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

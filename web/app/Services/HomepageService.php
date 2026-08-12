@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Schema;
 
 class HomepageService
 {
+    public function __construct(
+        protected ProgramCarouselSyncService $programCarousel,
+    ) {}
+
     public function getPayload(): array
     {
         return [
@@ -43,27 +47,73 @@ class HomepageService
             $slides = CarouselSlide::query()
                 ->where('is_active', 1)
                 ->orderBy('display_order')
+                ->orderBy('id')
                 ->get();
 
             if ($slides->isNotEmpty()) {
-                return $slides->map(fn ($slide) => (object) [
-                    'title' => $slide->title,
-                    'subtitle' => $slide->subtitle,
-                    'image_path' => $this->mediaUrl($slide->image_path),
-                    'video_url' => $slide->video_url,
-                    'cta_label' => $slide->cta_label,
-                    'cta_url' => $slide->cta_url ? url($slide->cta_url) : null,
-                ]);
+                return $this->mergeFeaturedProgramSlides(
+                    $slides->map(fn ($slide) => $this->mapCarouselSlide($slide))
+                );
             }
         }
 
         $this->carouselUsesFallback = true;
 
-        return collect(config('tich-homepage.carousel', []))
-            ->map(fn ($slide) => (object) array_merge($slide, [
-                'image_path' => $this->mediaUrl($slide['image_path'] ?? null),
-                'cta_url' => isset($slide['cta_url']) ? url($slide['cta_url']) : null,
-            ]));
+        return $this->mergeFeaturedProgramSlides(
+            collect(config('tich-homepage.carousel', []))
+                ->map(fn ($slide, $index) => (object) array_merge($slide, [
+                    'image_path' => $this->mediaUrl($slide['image_path'] ?? null),
+                    'cta_url' => isset($slide['cta_url']) ? url($slide['cta_url']) : null,
+                    'display_order' => $index + 1,
+                ]))
+        );
+    }
+
+    /**
+     * @param  Collection<int, object>  $slides
+     * @return Collection<int, object>
+     */
+    private function mergeFeaturedProgramSlides(Collection $slides): Collection
+    {
+        if (! $this->tableExists('academic_programs') || ! $this->columnExists('academic_programs', 'is_featured_on_homepage')) {
+            return $slides->values();
+        }
+
+        $linkedProgramIds = CarouselSlide::query()
+            ->whereNotNull('program_id')
+            ->pluck('program_id')
+            ->map(fn ($id) => (int) $id);
+
+        $featuredPrograms = AcademicProgram::query()
+            ->where('is_featured_on_homepage', 1)
+            ->where('status', 'active')
+            ->orderBy('homepage_display_order')
+            ->get();
+
+        foreach ($featuredPrograms as $program) {
+            if ($linkedProgramIds->contains($program->id)) {
+                continue;
+            }
+
+            $slides->push($this->programCarousel->mapProgramToSlideObject($program));
+        }
+
+        return $slides
+            ->sortBy(fn ($slide) => $slide->display_order ?? PHP_INT_MAX)
+            ->values();
+    }
+
+    private function mapCarouselSlide(CarouselSlide $slide): object
+    {
+        return (object) [
+            'title' => $slide->title,
+            'subtitle' => $slide->subtitle,
+            'image_path' => $this->mediaUrl($slide->image_path),
+            'video_url' => $slide->video_url,
+            'cta_label' => $slide->cta_label,
+            'cta_url' => $slide->cta_url ? url($slide->cta_url) : null,
+            'display_order' => (int) $slide->display_order,
+        ];
     }
 
     public function getFeaturedPrograms(): Collection

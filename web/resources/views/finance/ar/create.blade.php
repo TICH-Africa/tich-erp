@@ -2,7 +2,7 @@
 
 @section('title', 'Accounts Receivable')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Accounts Receivable" meta="Create AR invoice">
         <x-slot:actions>
             <a href="{{ route('finance.ar.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

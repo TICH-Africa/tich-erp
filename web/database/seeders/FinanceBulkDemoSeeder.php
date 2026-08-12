@@ -86,18 +86,20 @@ class FinanceBulkDemoSeeder extends Seeder
         $supplierStats = $this->seedSuppliersAndPayables($financeDeptId, $staffId);
         $bankCount = $this->seedBankTransactions();
         $donorStats = $this->seedDonorProjects($staffId);
+        $budgetCount = $this->seedBudgets($financeDeptId, $staffId);
         $assetStats = $this->seedAssetsAndInventory();
         $payrollCount = $this->seedPayrollHistory($staffId);
         $workStudyCount = $this->seedWorkStudyLedger($students, $staffId);
 
         $this->command?->info(sprintf(
-            'Finance bulk demo: %d students, %d invoices raised, %d suppliers, %d AP invoices, %d bank lines, %d donor projects, %d assets, %d inventory items, %d payroll slips, %d work-study entries.',
+            'Finance bulk demo: %d students, %d invoices raised, %d suppliers, %d AP invoices, %d bank lines, %d donor projects, %d budgets, %d assets, %d inventory items, %d payroll slips, %d work-study entries.',
             count($students),
             $invoiceStats['invoices'],
             $supplierStats['suppliers'],
             $supplierStats['ap'],
             $bankCount,
             $donorStats['projects'],
+            $budgetCount,
             $assetStats['assets'],
             $assetStats['inventory'],
             $payrollCount,
@@ -766,6 +768,70 @@ class FinanceBulkDemoSeeder extends Seeder
         }
 
         return ['projects' => $projectCount, 'disbursements' => $disbursementCount];
+    }
+
+    private function seedBudgets(int $financeDeptId, int $staffId): int
+    {
+        if (! DB::getSchemaBuilder()->hasTable('finance_budgets')) {
+            return 0;
+        }
+
+        $departments = DB::table('departments')
+            ->whereNull('parent_dept_id')
+            ->where('is_active', 1)
+            ->orderBy('dept_name')
+            ->limit(8)
+            ->get(['id', 'dept_code', 'dept_name']);
+
+        $definitions = [
+            ['BGT-FIN-INST', 'Institution operating budget', 'annual', null, 45000000, 12800000, 3200000],
+            ['BGT-FIN-CAPEX', 'Capital expenditure programme', 'annual', null, 18000000, 4200000, 2100000],
+        ];
+
+        foreach ($departments as $index => $department) {
+            $allocated = round(3500000 + ($index * 750000), 2);
+            $definitions[] = [
+                'BGT-FIN-'.strtoupper($department->dept_code ?? ('D'.$department->id)),
+                $department->dept_name.' operations',
+                'departmental',
+                (int) $department->id,
+                $allocated,
+                round($allocated * (0.25 + ($index * 0.04)), 2),
+                round($allocated * (0.12 + ($index * 0.02)), 2),
+            ];
+        }
+
+        $count = 0;
+        $year = (int) now()->format('Y');
+
+        foreach ($definitions as [$code, $name, $type, $deptId, $allocated, $spent, $committed]) {
+            $exists = DB::table('finance_budgets')->where('budget_code', $code)->exists();
+            if ($exists) {
+                continue;
+            }
+
+            DB::table('finance_budgets')->insert([
+                'budget_code' => $code,
+                'budget_name' => $name,
+                'budget_type' => $type,
+                'department_id' => $deptId,
+                'fiscal_year' => $year,
+                'period_start' => "{$year}-01-01",
+                'period_end' => "{$year}-12-31",
+                'allocated_amount' => $allocated,
+                'spent_amount' => $spent,
+                'committed_amount' => $committed,
+                'status' => 'active',
+                'approved_by' => $staffId,
+                'approved_at' => now()->subMonths(2),
+                'notes' => 'Finance demo budget — seeded for testing budget vs actual views.',
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now(),
+            ]);
+            $count++;
+        }
+
+        return $count;
     }
 
     /**

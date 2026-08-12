@@ -2,7 +2,7 @@
 
 @section('title', 'Payroll Integration')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Payroll Integration" meta="Sync approved payroll data from HR/Payroll">
         <x-slot:actions>
             <a href="{{ route('finance.payroll-integration.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

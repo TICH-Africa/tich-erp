@@ -2,7 +2,7 @@
 
 @section('title', 'Budgeting')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Budgeting" meta="Create budget">
         <x-slot:actions>
             <a href="{{ route('finance.budgeting.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
             return app(RBACService::class)->hasPermission($user, $ability) ? true : null;
         });
 
-        View::composer('layouts.app', PublicLayoutComposer::class);
+        View::composer(['layouts.app', 'layouts.auth'], PublicLayoutComposer::class);
         View::composer(['hr.partials.sidebar', 'layouts.hr'], HrSidebarComposer::class);
         View::composer(['finance.partials.sidebar', 'layouts.finance'], FinanceSidebarComposer::class);
         View::composer(['employee.partials.sidebar', 'layouts.employee'], EmployeeSidebarComposer::class);

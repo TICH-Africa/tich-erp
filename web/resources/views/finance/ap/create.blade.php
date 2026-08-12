@@ -2,7 +2,7 @@
 
 @section('title', 'Accounts Payable')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Accounts Payable" meta="Create supplier invoice">
         <x-slot:actions>
             <a href="{{ route('finance.ap.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const yearSelect = document.getElementById('academic_year_id');
 
     function loadPrograms() {
-        fetch('{{ route('programs.index') }}')
+        fetch('{{ route('finance.api.programs') }}')
             .then(response => response.json())
             .then(data => {
                 programSelect.innerHTML = '<option value="">Select program</option>';
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadAcademicYears() {
-        fetch('{{ route('academic-years.index') }}')
+        fetch('{{ route('finance.api.academic-years') }}')
             .then(response => response.json())
             .then(data => {
                 yearSelect.innerHTML = '<option value="">Select academic year</option>';
