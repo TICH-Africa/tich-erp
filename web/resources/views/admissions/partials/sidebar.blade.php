@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">Approval dashboard</p>
     <nav class="tich-admin-sidebar__nav">
         @include('partials.navigation.sidebar-link', ['href' => route('admissions.dashboard'), 'label' => 'Overview', 'icon' => 'dashboard', 'active' => request()->routeIs('admissions.dashboard')])

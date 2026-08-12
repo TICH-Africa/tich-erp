@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class DepartmentModuleService
 {
+    public const ACADEMICS_MODULE_KEY = 'academics';
+
     /**
      * @return list<array{key: string, label: string, description: string, permission: string, eligible_categories: list<string>, children: list<array<string, mixed>>}>
      */
@@ -83,6 +85,79 @@ class DepartmentModuleService
     public function departmentHasModule(Department $department, string $moduleKey): bool
     {
         return in_array($moduleKey, $this->effectiveModuleKeys($department), true);
+    }
+
+    public function canHostLearningDepartments(Department $department): bool
+    {
+        return $department->isMainDepartment()
+            && $this->departmentHasModule($department, self::ACADEMICS_MODULE_KEY);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function departmentIdsHostingLearningDepartments(): array
+    {
+        $rows = DB::table('department_modules')
+            ->join('departments', 'departments.id', '=', 'department_modules.department_id')
+            ->where('department_modules.module_key', self::ACADEMICS_MODULE_KEY)
+            ->whereNull('departments.parent_dept_id')
+            ->where('departments.is_active', 1)
+            ->pluck('departments.id');
+
+        return $rows->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, string>
+     */
+    public function learningDepartmentHierarchyErrors(array $validated, ?Department $department = null): array
+    {
+        $errors = [];
+        $category = (string) ($validated['dept_category'] ?? '');
+        $parentId = ! empty($validated['parent_dept_id']) ? (int) $validated['parent_dept_id'] : null;
+
+        if ($category === 'academic') {
+            if ($parentId === null) {
+                $errors['parent_dept_id'] = 'Academic learning departments must belong under a department with the Academics module.';
+
+                return $errors;
+            }
+
+            $parent = Department::query()->find($parentId);
+
+            if (! $parent) {
+                $errors['parent_dept_id'] = 'Select a valid parent department.';
+
+                return $errors;
+            }
+
+            if (! $parent->isMainDepartment()) {
+                $errors['parent_dept_id'] = 'Learning departments must sit directly under a top-level department with the Academics module.';
+            } elseif (! $this->canHostLearningDepartments($parent)) {
+                $errors['parent_dept_id'] = 'The parent department must have the Academics module enabled.';
+            }
+        } elseif ($parentId !== null) {
+            $errors['parent_dept_id'] = 'Only academic learning departments can be placed under another department.';
+        }
+
+        if ($department !== null && $department->isMainDepartment()) {
+            $requestedModules = $validated['module_keys'] ?? null;
+
+            if (is_array($requestedModules) && ! in_array(self::ACADEMICS_MODULE_KEY, $requestedModules, true)) {
+                $hasLearningChildren = Department::query()
+                    ->where('parent_dept_id', $department->id)
+                    ->where('dept_category', 'academic')
+                    ->exists();
+
+                if ($hasLearningChildren) {
+                    $errors['module_keys'] = 'Cannot remove the Academics module while learning departments are assigned under this department.';
+                }
+            }
+        }
+
+        return $errors;
     }
 
     /**

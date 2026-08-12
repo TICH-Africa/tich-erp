@@ -2825,6 +2825,70 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     flex-shrink: 0;
 }
 
+.tich-admin-sidebar__user {
+    display: flex;
+    align-items: center;
+    gap: calc(0.75rem * var(--sidebar-scale));
+    padding: 0 calc(0.625rem * var(--sidebar-scale)) calc(1rem * var(--sidebar-scale));
+    margin-bottom: calc(0.25rem * var(--sidebar-scale));
+    border-bottom: 1px solid var(--tich-neutral-border);
+    flex-shrink: 0;
+}
+
+.tich-admin-sidebar__user-photo {
+    width: calc(2.75rem * var(--sidebar-scale));
+    height: calc(2.75rem * var(--sidebar-scale));
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid var(--tich-neutral-border);
+    background: var(--tich-surface-muted, #f1f5f9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tich-admin-sidebar__user-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tich-admin-sidebar__user-initials {
+    font-family: var(--font-heading);
+    font-size: calc(0.875rem * var(--sidebar-scale));
+    font-weight: 700;
+    color: var(--tich-blue);
+    line-height: 1;
+}
+
+.tich-admin-sidebar__user-meta {
+    min-width: 0;
+    flex: 1;
+}
+
+.tich-admin-sidebar__user-name {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: calc(0.875rem * var(--sidebar-scale));
+    font-weight: 600;
+    color: var(--tich-text, #1f2937);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tich-admin-sidebar__user-email {
+    margin: 0.15rem 0 0;
+    font-size: calc(0.75rem * var(--sidebar-scale));
+    color: var(--tich-grey);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .tich-admin-sidebar > .tich-caption {
     flex-shrink: 0;
     padding: 0 calc(0.625rem * var(--sidebar-scale));

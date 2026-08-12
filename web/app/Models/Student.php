@@ -140,4 +140,29 @@ class Student extends Model
     {
         return $this->applicant?->fullName() ?? ($this->user?->name ?? 'N/A');
     }
+
+    public function photoUrl(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo_path);
+    }
+
+    public function initials(): string
+    {
+        $this->loadMissing('applicant');
+
+        $parts = array_filter([
+            $this->applicant?->first_name,
+            $this->applicant?->surname,
+        ]);
+
+        if ($parts === []) {
+            return strtoupper(mb_substr((string) ($this->registration_number ?? 'S'), 0, 2));
+        }
+
+        return strtoupper(collect($parts)->map(fn ($part) => mb_substr((string) $part, 0, 1))->join(''));
+    }
 }

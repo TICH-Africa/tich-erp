@@ -19,25 +19,30 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($departments as $learningDepartment)
+                @forelse ($departments as $learningDepartmentRow)
                     <tr>
-                        <td>{{ $learningDepartment->dept_code }}</td>
-                        <td>{{ $learningDepartment->dept_name }}</td>
-                        <td>{{ $profiles[$learningDepartment->curriculum_profile ?? 'standard'] ?? ucfirst($learningDepartment->curriculum_profile ?? 'standard') }}</td>
+                        <td>{{ $learningDepartmentRow->dept_code }}</td>
                         <td>
-                            @if ($learningDepartment->is_active)
+                            <a href="{{ route('departments.academics.programs.index', array_merge($hub, ['learning_department' => $learningDepartmentRow->id])) }}" class="tich-link">
+                                <strong>{{ $learningDepartmentRow->dept_name }}</strong>
+                            </a>
+                        </td>
+                        <td>{{ $profiles[$learningDepartmentRow->curriculum_profile ?? 'standard'] ?? ucfirst($learningDepartmentRow->curriculum_profile ?? 'standard') }}</td>
+                        <td>
+                            @if ($learningDepartmentRow->is_active)
                                 <span class="tich-caption">Active</span>
                             @else
                                 <span class="tich-caption">Inactive</span>
                             @endif
                         </td>
                         <td style="white-space: nowrap;">
-                            <form method="POST" action="{{ route('departments.academics.departments.update-profile', array_merge($hub, ['learningDepartment' => $learningDepartment->id])) }}" style="display:inline-flex; gap:0.5rem; align-items:center;">
+                            <a href="{{ route('departments.show', $learningDepartmentRow) }}" class="tich-link tich-mr-4">View hub</a>
+                            <form method="POST" action="{{ route('departments.academics.departments.update-profile', array_merge($hub, ['learningDepartment' => $learningDepartmentRow->id])) }}" style="display:inline-flex; gap:0.5rem; align-items:center;">
                                 @csrf
                                 @method('PUT')
                                 <select name="curriculum_profile" class="tich-input" style="width:auto;">
                                     @foreach ($profiles as $key => $label)
-                                        <option value="{{ $key }}" @selected(($learningDepartment->curriculum_profile ?? 'standard') === $key)>{{ $key }}</option>
+                                        <option value="{{ $key }}" @selected(($learningDepartmentRow->curriculum_profile ?? 'standard') === $key)>{{ $key }}</option>
                                     @endforeach
                                 </select>
                                 @can('academics.write')

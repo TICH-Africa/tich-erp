@@ -59,6 +59,7 @@ class DepartmentController extends Controller
             'parentDepartments' => Department::query()
                 ->whereNull('parent_dept_id')
                 ->where('is_active', 1)
+                ->whereIn('id', $this->departmentModuleService->departmentIdsHostingLearningDepartments())
                 ->orderBy('dept_name')
                 ->get(['id', 'dept_name', 'dept_code', 'department_group_id']),
             'deptCategories' => [
@@ -82,6 +83,11 @@ class DepartmentController extends Controller
             'module_keys' => ['nullable', 'array'],
             'module_keys.*' => ['string', 'in:'.implode(',', $this->departmentModuleService->validModuleKeys())],
         ]);
+
+        $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors($validated);
+        if ($hierarchyErrors !== []) {
+            return back()->withInput()->withErrors($hierarchyErrors);
+        }
 
         $moduleKeys = $validated['module_keys'] ?? $this->departmentModuleService->defaultModulesForCategory($validated['dept_category']);
         unset($validated['module_keys']);
@@ -130,6 +136,14 @@ class DepartmentController extends Controller
 
         if (! empty($validated['parent_dept_id']) && $this->isDescendant((int) $validated['parent_dept_id'], $department->id)) {
             return back()->withInput()->withErrors(['parent_dept_id' => 'Cannot assign a descendant department as parent.']);
+        }
+
+        $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors(
+            array_merge($validated, ['module_keys' => $validated['module_keys'] ?? []]),
+            $department,
+        );
+        if ($hierarchyErrors !== []) {
+            return back()->withInput()->withErrors($hierarchyErrors);
         }
 
         $moduleKeys = $validated['module_keys'] ?? [];

@@ -19,6 +19,7 @@
             : 'attendance-ledger.hod';
     @endphp
     <aside class="tich-admin-sidebar" id="academics-admin-sidebar">
+        @include('partials.navigation.sidebar-user')
         <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
         <p class="tich-caption">Academics &amp; curriculum</p>
 
@@ -30,10 +31,16 @@
             @endphp
 
             @can('academics.read')
+                @include('partials.navigation.sidebar-link', [
+                    'href' => route('departments.academics.departments.index', $hub),
+                    'label' => 'Learning Departments',
+                    'icon' => 'building-2',
+                    'active' => request()->routeIs('departments.academics.departments.*'),
+                ])
+
                 @php
                     $curriculumRoutesActive = request()->routeIs(
                         'departments.academics.dashboard',
-                        'departments.academics.departments.*',
                         'departments.academics.units.*',
                         'departments.academics.programs.*',
                         'departments.academics.attendance-ledger.*',
@@ -55,12 +62,6 @@
                             'label' => 'Overview',
                             'icon' => 'dashboard',
                             'active' => request()->routeIs('departments.academics.dashboard'),
-                        ],
-                        [
-                            'href' => route('departments.academics.departments.index', $hub),
-                            'label' => 'Learning departments',
-                            'icon' => 'building-2',
-                            'active' => request()->routeIs('departments.academics.departments.*'),
                         ],
                         [
                             'href' => route('departments.academics.units.index', $hub),

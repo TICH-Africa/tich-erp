@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">{{ $department->dept_name }}</p>
     <p class="tich-caption">{{ ($categoryLabel ?? fn ($dept) => ucfirst($dept->dept_category))($department) }} · {{ $department->dept_code }}</p>
 

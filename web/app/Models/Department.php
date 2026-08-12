@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -67,9 +68,23 @@ class Department extends Model
         return $this->dept_category === 'academic' && $this->parent_dept_id !== null;
     }
 
+    public function isValidLearningDepartment(): bool
+    {
+        if (! $this->isLearningDepartment()) {
+            return false;
+        }
+
+        $parent = $this->relationLoaded('parent') ? $this->parent : $this->parent()->first();
+
+        return $parent !== null
+            && app(\App\Services\DepartmentModuleService::class)->canHostLearningDepartments($parent);
+    }
+
     public function isAcademicsHub(): bool
     {
-        return $this->isMainDepartment() && $this->dept_code === 'ACAD';
+        return $this->isMainDepartment()
+            && $this->dept_code === 'ACAD'
+            && app(\App\Services\DepartmentModuleService::class)->canHostLearningDepartments($this);
     }
 
     /**
@@ -79,7 +94,9 @@ class Department extends Model
      */
     public function academicsScopeDepartmentIds(): array
     {
-        if ($this->isAcademicsHub()) {
+        $moduleService = app(\App\Services\DepartmentModuleService::class);
+
+        if ($moduleService->canHostLearningDepartments($this)) {
             return static::query()
                 ->where('parent_dept_id', $this->id)
                 ->where('dept_category', 'academic')
@@ -89,7 +106,7 @@ class Department extends Model
                 ->all();
         }
 
-        if ($this->isLearningDepartment()) {
+        if ($this->isValidLearningDepartment()) {
             return [(int) $this->id];
         }
 
@@ -114,7 +131,7 @@ class Department extends Model
         if ($this->isLearningDepartment()) {
             $parent = $this->relationLoaded('parent') ? $this->parent : $this->parent()->first();
 
-            if ($parent?->isAcademicsHub()) {
+            if ($parent && app(\App\Services\DepartmentModuleService::class)->canHostLearningDepartments($parent)) {
                 return $parent;
             }
         }
@@ -124,7 +141,27 @@ class Department extends Model
 
     public function isUnderAcademicsHub(): bool
     {
-        return $this->isLearningDepartment() && $this->academicsHub() !== null;
+        return $this->isValidLearningDepartment();
+    }
+
+    public function scopeLearningDepartments(Builder $query): Builder
+    {
+        return $query
+            ->where('dept_category', 'academic')
+            ->whereNotNull('parent_dept_id');
+    }
+
+    public function scopeValidLearningDepartments(Builder $query): Builder
+    {
+        $hostIds = app(\App\Services\DepartmentModuleService::class)->departmentIdsHostingLearningDepartments();
+
+        return $query
+            ->learningDepartments()
+            ->when(
+                $hostIds !== [],
+                fn (Builder $builder) => $builder->whereIn('parent_dept_id', $hostIds),
+                fn (Builder $builder) => $builder->whereRaw('1 = 0'),
+            );
     }
 
     public function isMainDepartment(): bool

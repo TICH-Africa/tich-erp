@@ -3,6 +3,7 @@
 @endphp
 
 <aside class="tich-admin-sidebar" id="student-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">Student portal</p>
     <p class="tich-caption">
         {{ $student->registration_number }}<br>

@@ -36,6 +36,7 @@ class DepartmentController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless(in_array($learningDepartment->id, $hub->academicsScopeDepartmentIds(), true), 404);
+        abort_unless($learningDepartment->isValidLearningDepartment(), 404);
 
         $validated = $request->validate([
             'curriculum_profile' => ['required', 'in:'.implode(',', config('tich-academics.curriculum_profiles'))],
