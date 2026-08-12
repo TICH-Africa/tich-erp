@@ -91,7 +91,11 @@ class UserAccessController extends Controller
                 ->get(['id', 'dept_name', 'dept_code', 'campus_id', 'dept_category']);
 
             $viewData = array_merge($viewData, [
-                'roles' => Role::query()->whereNotIn('role_name', self::STUDENT_ROLES)->orderBy('role_name')->get(),
+                'roles' => Role::query()
+                    ->whereNotIn('role_name', self::STUDENT_ROLES)
+                    ->orderByRaw('module_key IS NULL, module_key')
+                    ->orderBy('display_name')
+                    ->get(['id', 'role_name', 'display_name', 'module_key']),
                 'roleNamesById' => Role::query()->pluck('role_name', 'id'),
                 'campuses' => Campus::query()->where('is_active', 1)->orderBy('campus_name')->get(['id', 'campus_name']),
                 'departments' => $departments,

@@ -8,9 +8,21 @@
 
 <x-page-toolbar
     title="User roles &amp; categories"
-    meta="Built-in and custom roles for employee access"
+    meta="Module-scoped roles with configurable permissions for access and CRUD operations"
     class="tich-mt-4"
 />
+
+<div class="tich-tabs tich-mb-6">
+    <div class="tich-tabs__nav" style="flex-wrap: wrap; gap: 0.5rem;">
+        <a href="{{ $access->route('roles.index') }}" class="tich-tabs__btn{{ $selectedModule === '' ? ' is-active' : '' }}">All modules</a>
+        @foreach ($moduleOptions as $moduleKey => $module)
+            <a
+                href="{{ $access->route('roles.index', ['module' => $moduleKey]) }}"
+                class="tich-tabs__btn{{ $selectedModule === $moduleKey ? ' is-active' : '' }}"
+            >{{ $module['label'] }}</a>
+        @endforeach
+    </div>
+</div>
 
 @include('partials.access-management.roles-tabs', [
     'access' => $access,
@@ -27,23 +39,42 @@
     <table class="tich-admin-table">
         <thead>
             <tr>
-                <th>Role name</th>
-                <th>Display name</th>
+                <th>Role</th>
+                <th>Module</th>
                 <th>Category</th>
                 <th>Type</th>
+                <th>Permissions</th>
                 <th>Users</th>
-                <th style="width: 6rem;"></th>
+                <th style="width: 8rem;"></th>
             </tr>
         </thead>
         <tbody>
             @forelse ($roles as $roleItem)
                 <tr>
-                    <td><strong>{{ $roleItem->role_name }}</strong></td>
-                    <td>{{ $roleItem->display_name }}</td>
+                    <td>
+                        <strong>{{ $roleItem->display_name }}</strong>
+                        <p class="tich-caption">{{ $roleItem->role_name }}</p>
+                    </td>
+                    <td>{{ app(\App\Services\ModuleRoleCatalogService::class)->moduleLabel($roleItem->module_key) }}</td>
                     <td>{{ $categoryLabels[$roleItem->role_category] ?? ucfirst(str_replace('_', ' ', $roleItem->role_category)) }}</td>
-                    <td>{{ $roleItem->is_system_role ? 'System' : 'Custom' }}</td>
+                    <td>{{ $roleItem->is_system_role ? 'Predefined' : 'Custom' }}</td>
+                    <td>{{ $roleItem->permissions_count }}</td>
                     <td>{{ $roleItem->users_count }}</td>
                     <td style="white-space: nowrap;">
+                        <button
+                            type="button"
+                            class="tich-squircle-btn role-permissions-trigger"
+                            title="Manage permissions"
+                            aria-label="Manage permissions for {{ $roleItem->role_name }}"
+                            data-open-modal="role-permissions-modal"
+                            data-role-id="{{ $roleItem->id }}"
+                            data-role-name="{{ $roleItem->display_name }}"
+                            data-permissions-url="{{ $access->route('roles.permissions.update', $roleItem) }}"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </button>
                         <button
                             type="button"
                             class="tich-squircle-btn role-edit-trigger"
@@ -80,7 +111,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="tich-table-empty">No roles defined.</td></tr>
+                <tr><td colspan="7" class="tich-table-empty">No roles defined.</td></tr>
             @endforelse
         </tbody>
     </table>
@@ -101,6 +132,8 @@
                 'role' => null,
                 'formContext' => 'create',
                 'fieldIdPrefix' => 'role-create-',
+                'moduleOptions' => $moduleOptions,
+                'selectedModuleKey' => $selectedModule !== '' && $selectedModule !== $institutionKey ? $selectedModule : '',
             ])
             <footer class="tich-modal__footer">
                 <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="role-create-modal">Cancel</button>
@@ -136,6 +169,11 @@
     </div>
 </div>
 
+@include('admin.partials.role-permissions-modal', [
+    'permissionMatrices' => $permissionMatrices,
+    'categoryLabels' => config('tich-module-roles.permission_categories', []),
+])
+
 @include('admin.partials.tich-modal-assets')
 
 <script>
@@ -152,9 +190,12 @@
         trigger.addEventListener('click', function () {
             if (!createForm) return;
 
+            var defaultModule = @json($selectedModule !== '' && $selectedModule !== $institutionKey ? $selectedModule : '');
+
             setField('role-create-role_name', '');
             setField('role-create-display_name', '');
             setField('role-create-role_category', '');
+            setField('role-create-module_key', defaultModule);
             setField('role-create-description', '');
 
             var nameField = document.getElementById('role-create-role_name');

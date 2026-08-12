@@ -125,6 +125,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
             Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
             Route::put('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
+            Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('admin.roles.permissions.update');
             Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
 
             Route::get('/role-categories', [RoleCategoryController::class, 'index'])->name('admin.role-categories.index');
@@ -268,6 +269,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'index'])->name('ict.roles.index');
             Route::post('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'store'])->name('ict.roles.store');
             Route::put('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'update'])->name('ict.roles.update');
+            Route::put('/roles/{role}/permissions', [\App\Http\Controllers\Ict\RoleController::class, 'updatePermissions'])->name('ict.roles.permissions.update');
             Route::delete('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'destroy'])->name('ict.roles.destroy');
 
             Route::get('/role-categories', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'index'])->name('ict.role-categories.index');

@@ -90,8 +90,12 @@
             <label class="tich-label">Role <span style="color: #c0392b;">*</span></label>
             <select name="assignments[__INDEX__][role_id]" class="tich-input staff-role-select" required>
                 <option value="">Select role…</option>
-                @foreach ($roles as $role)
-                    <option value="{{ $role->id }}" data-role-name="{{ $role->role_name }}">{{ $role->role_name }}</option>
+            @foreach ($roles as $role)
+                    <option
+                        value="{{ $role->id }}"
+                        data-role-name="{{ $role->role_name }}"
+                        data-module-key="{{ $role->module_key ?? '' }}"
+                    >{{ $role->display_name }}@if ($role->module_key) ({{ ucfirst($role->module_key) }})@else (Institution-wide)@endif</option>
                 @endforeach
             </select>
         </div>
@@ -230,6 +234,54 @@
         }
     }
 
+    function filterRoleOptions(row) {
+        var deptSelect = row.querySelector('.staff-dept-select');
+        var roleSelect = row.querySelector('.staff-role-select');
+        if (!deptSelect || !roleSelect) return;
+
+        var departmentId = deptSelect.value;
+        var allowedModules = departmentId ? (departmentModuleAssignments[departmentId] || []) : null;
+
+        Array.prototype.forEach.call(roleSelect.options, function (option) {
+            if (!option.value) {
+                option.hidden = false;
+                return;
+            }
+
+            var moduleKey = option.getAttribute('data-module-key') || '';
+            var roleName = option.getAttribute('data-role-name') || '';
+            var isInstitutionWide = moduleKey === '' || institutionWideRoles.indexOf(roleName) !== -1;
+
+            option.hidden = allowedModules !== null && !isInstitutionWide && allowedModules.indexOf(moduleKey) === -1;
+        });
+    }
+
+    function filterDepartmentsForRole(row) {
+        var roleSelect = row.querySelector('.staff-role-select');
+        var deptSelect = row.querySelector('.staff-dept-select');
+        if (!roleSelect || !deptSelect) return;
+
+        var selectedOption = roleSelect.options[roleSelect.selectedIndex];
+        var moduleKey = selectedOption ? (selectedOption.getAttribute('data-module-key') || '') : '';
+        var roleName = selectedOption ? (selectedOption.getAttribute('data-role-name') || '') : '';
+        var isInstitutionWide = !moduleKey || institutionWideRoles.indexOf(roleName) !== -1;
+
+        Array.prototype.forEach.call(deptSelect.options, function (option) {
+            if (!option.value) {
+                option.hidden = false;
+                return;
+            }
+
+            if (isInstitutionWide) {
+                option.hidden = false;
+                return;
+            }
+
+            var deptModules = departmentModuleAssignments[option.value] || [];
+            option.hidden = deptModules.indexOf(moduleKey) === -1;
+        });
+    }
+
     function updateRoleDepartmentRequirement(row) {
         var roleSelect = row.querySelector('.staff-role-select');
         var deptSelect = row.querySelector('.staff-dept-select');
@@ -249,15 +301,26 @@
         if (placeholder) {
             placeholder.textContent = isInstitutionWide ? 'Institution-wide' : 'Select department…';
         }
+
+        filterDepartmentsForRole(row);
+        filterRoleOptions(row);
     }
 
     function bindAssignmentRow(row) {
         var roleSelect = row.querySelector('.staff-role-select');
+        var deptSelect = row.querySelector('.staff-dept-select');
+
         if (roleSelect) {
             roleSelect.addEventListener('change', function () {
                 updateRoleDepartmentRequirement(row);
             });
             updateRoleDepartmentRequirement(row);
+        }
+
+        if (deptSelect) {
+            deptSelect.addEventListener('change', function () {
+                filterRoleOptions(row);
+            });
         }
 
         var removeBtn = row.querySelector('.staff-remove-row');
