@@ -36,7 +36,6 @@ return [
         'hr.payroll.index' => 'wallet',
         'hr.policies.index' => 'shield-check',
         'hr.documents.index' => 'folder',
-        'hr.documents.templates.index' => 'files',
         'hr.offboarding.index' => 'log-out',
         'hr.training.index' => 'presentation',
         'departments.show' => 'layout-grid',

@@ -85,7 +85,6 @@
             'active' => request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*'),
             'badgeKey' => 'documents',
         ])
-        @include('partials.navigation.sidebar-link', ['href' => route('hr.documents.templates.index'), 'label' => 'Document Templates', 'icon' => 'files', 'active' => request()->routeIs('hr.documents.templates.*')])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.offboarding.index'),
             'label' => 'Offboarding',

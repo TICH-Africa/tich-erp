@@ -3,9 +3,9 @@
 @section('title', 'Employee Relations - Grievances')
 
 @section('hr-content')
-    <x-page-toolbar title="Employee concerns" meta="Issues raised by staff through the employee portal">
+    <x-page-toolbar title="Grievances" meta="Workplace concerns raised by staff through HR or the employee portal">
         <x-slot:actions>
-            <a href="{{ route('hr.employee-relations.grievances.create') }}" class="tich-btn tich-btn-primary">+ New grievance</a>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="grievance-create-modal">+ New grievance</button>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -53,7 +53,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="tich-table-empty">No concerns found.</td>
+                            <td colspan="8" class="tich-table-empty">No grievances found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -64,4 +64,14 @@
             <div class="tich-mt-4">{{ $grievances->links() }}</div>
         @endif
     </div>
+
+    @include('hr.grievances.partials.create-modal')
+@endsection
+
+@section('scripts')
+    @parent
+    @include('admin.partials.tich-modal-assets')
+    @if ($openCreateModal ?? false)
+        <script>document.body.style.overflow = 'hidden';</script>
+    @endif
 @endsection

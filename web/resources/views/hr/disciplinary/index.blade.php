@@ -3,9 +3,9 @@
 @section('title', 'Employee Relations - Disciplinary')
 
 @section('hr-content')
-    <x-page-toolbar title="Disciplinary cases" meta="Employee Relations">
+    <x-page-toolbar title="Disciplinary cases" meta="Track misconduct investigations, hearings, and outcomes">
         <x-slot:actions>
-            <a href="{{ route('hr.employee-relations.disciplinary.create') }}" class="tich-btn tich-btn-primary">+ New case</a>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="disciplinary-create-modal">+ New case</button>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -62,4 +62,14 @@
             <div class="tich-mt-4">{{ $cases->links() }}</div>
         @endif
     </div>
+
+    @include('hr.disciplinary.partials.create-modal')
+@endsection
+
+@section('scripts')
+    @parent
+    @include('admin.partials.tich-modal-assets')
+    @if ($openCreateModal ?? false)
+        <script>document.body.style.overflow = 'hidden';</script>
+    @endif
 @endsection
