@@ -10,6 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('fee_structures', function (Blueprint $table) {
+            if (Schema::hasIndex('fee_structures', 'fee_structures_program_id_index')) {
+                $table->dropIndex('fee_structures_program_id_index');
+            }
             $table->index('program_id', 'fee_structures_program_id_index');
         });
 
