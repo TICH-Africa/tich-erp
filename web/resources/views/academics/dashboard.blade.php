@@ -45,8 +45,11 @@
         <article class="tich-card">
             <h2 class="tich-h3">Learning departments</h2>
             <ul class="tich-mt-4" style="margin: 0; padding-left: 1.25rem;">
-                @forelse ($learningDepartments as $learningDepartment)
-                    <li class="tich-text">{{ $learningDepartment->dept_name }} ({{ $learningDepartment->dept_code }})</li>
+                @forelse ($learningDepartments as $learningDepartmentItem)
+                    <li class="tich-text">
+                        <a href="{{ route('departments.academics.programs.index', array_merge($hub, ['learning_department' => $learningDepartmentItem->id])) }}" class="tich-link">{{ $learningDepartmentItem->dept_name }}</a>
+                        ({{ $learningDepartmentItem->dept_code }})
+                    </li>
                 @empty
                     <li class="tich-text">No learning departments configured yet.</li>
                 @endforelse

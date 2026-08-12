@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">Site settings</p>
     <p class="tich-caption">Public website content and branding</p>
 

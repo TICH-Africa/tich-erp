@@ -24,8 +24,7 @@ class ProgramController extends Controller
             ->get();
 
         $learningDepartments = Department::query()
-            ->where('dept_category', 'academic')
-            ->whereNotNull('parent_dept_id')
+            ->validLearningDepartments()
             ->where('is_active', 1)
             ->orderBy('dept_name')
             ->get(['id', 'dept_name', 'dept_code']);
@@ -53,6 +52,13 @@ class ProgramController extends Controller
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
         ]);
+
+        $department = Department::query()->find($validated['department_id']);
+        if (! $department?->isValidLearningDepartment()) {
+            return back()->withInput()->withErrors([
+                'department_id' => 'Programmes must belong to a learning department under a department with the Academics module.',
+            ]);
+        }
 
         $program = AcademicProgram::create([
             ...$validated,
@@ -93,6 +99,13 @@ class ProgramController extends Controller
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
         ]);
+
+        $department = Department::query()->find($validated['department_id']);
+        if (! $department?->isValidLearningDepartment()) {
+            return back()->withInput()->withErrors([
+                'department_id' => 'Programmes must belong to a learning department under a department with the Academics module.',
+            ]);
+        }
 
         $old = $program->only(['program_code', 'program_name', 'department_id', 'status']);
         $program->update([

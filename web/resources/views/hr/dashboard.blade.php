@@ -125,6 +125,10 @@
         </article>
     </section>
 
+    @include('partials.staff-registration-invite-form', [
+        'action' => route('hr.registration-invites.store'),
+    ])
+
     <div class="tich-grid tich-grid--3">
         <a href="{{ route('hr.staff.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
             <h3 class="tich-h3">Staff Directory</h3>

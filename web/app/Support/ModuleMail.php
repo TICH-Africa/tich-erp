@@ -8,6 +8,8 @@ use Throwable;
 
 class ModuleMail
 {
+    public const ICT = 'ict';
+
     public const HR = 'hr';
 
     public const ACADEMICS = 'academics';

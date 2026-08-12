@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">Student Information System</p>
     <nav class="tich-admin-sidebar__nav">
         @can('students.read')

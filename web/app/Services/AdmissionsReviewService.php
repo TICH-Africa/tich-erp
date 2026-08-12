@@ -251,9 +251,8 @@ class AdmissionsReviewService
     public function filterDepartmentsForUser(User $user): Collection
     {
         $query = Department::query()
+            ->validLearningDepartments()
             ->where('is_active', 1)
-            ->where('dept_category', 'academic')
-            ->whereNotNull('parent_dept_id')
             ->orderBy('dept_name');
 
         $visibleIds = $this->visibleDepartmentIds($user);

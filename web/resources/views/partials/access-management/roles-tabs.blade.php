@@ -1,4 +1,5 @@
 @props([
+    'access',
     'section',
     'rolesCount',
     'categoriesCount',
@@ -8,14 +9,14 @@
     <div class="tich-tabs__nav" style="justify-content: space-between; align-items: center;">
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
             <a
-                href="{{ route('admin.roles.index') }}"
+                href="{{ $access->route('roles.index') }}"
                 class="tich-tabs__btn{{ $section === 'roles' ? ' is-active' : '' }}"
             >
                 Roles
                 <span class="tich-caption">({{ $rolesCount }})</span>
             </a>
             <a
-                href="{{ route('admin.role-categories.index') }}"
+                href="{{ $access->route('role-categories.index') }}"
                 class="tich-tabs__btn{{ $section === 'categories' ? ' is-active' : '' }}"
             >
                 Categories

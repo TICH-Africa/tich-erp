@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     @php
         $sidebarWorkingIntake = ! empty($program)
             ? app(\App\Services\WorkingIntakeService::class)->resolve($program, request())

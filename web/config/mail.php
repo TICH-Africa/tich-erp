@@ -90,6 +90,11 @@ return [
             env('MAIL_NOTIFICATION_PASSWORD'),
         ),
 
+        'ict' => $moduleSmtpMailer(
+            env('MAIL_ICT_ADDRESS'),
+            env('MAIL_ICT_PASSWORD'),
+        ),
+
         'ses' => [
             'transport' => 'ses',
         ],

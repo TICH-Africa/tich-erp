@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\Campus;
+use App\Models\Department;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -155,10 +156,9 @@ class ProgramsService
     private function getDepartments(): Collection
     {
         if ($this->tableExists('departments')) {
-            return DB::table('departments')
+            return Department::query()
+                ->validLearningDepartments()
                 ->where('is_active', 1)
-                ->where('dept_category', 'academic')
-                ->whereNotNull('parent_dept_id')
                 ->orderBy('display_order')
                 ->orderBy('dept_name')
                 ->get(['dept_code', 'dept_name']);

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditVerifyController;
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
@@ -47,8 +48,11 @@ Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.in
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [WebAuthController::class, 'login']);
-    Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [WebAuthController::class, 'register']);
+    Route::get('/register', fn () => redirect()
+        ->route('login')
+        ->with('status', 'ERP registration is by invitation only. Contact ICT or HR if you need staff access.'));
+    Route::get('/register/invite/{token}', [ErpRegistrationController::class, 'showInvite'])->name('register.invite');
+    Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])->name('register.invite.store');
     Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
@@ -121,6 +125,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
             Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
             Route::put('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
+            Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('admin.roles.permissions.update');
             Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
 
             Route::get('/role-categories', [RoleCategoryController::class, 'index'])->name('admin.role-categories.index');
@@ -254,11 +259,31 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
+        Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
+        Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
+
+        Route::middleware(['permission:users.access.manage'])->group(function () {
+            Route::get('/users', [\App\Http\Controllers\Ict\UserAccessController::class, 'index'])->name('ict.users.index');
+            Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');
+
+            Route::get('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'index'])->name('ict.roles.index');
+            Route::post('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'store'])->name('ict.roles.store');
+            Route::put('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'update'])->name('ict.roles.update');
+            Route::put('/roles/{role}/permissions', [\App\Http\Controllers\Ict\RoleController::class, 'updatePermissions'])->name('ict.roles.permissions.update');
+            Route::delete('/roles/{role}', [\App\Http\Controllers\Ict\RoleController::class, 'destroy'])->name('ict.roles.destroy');
+
+            Route::get('/role-categories', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'index'])->name('ict.role-categories.index');
+            Route::post('/role-categories/reorder', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'reorder'])->name('ict.role-categories.reorder');
+            Route::post('/role-categories', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'store'])->name('ict.role-categories.store');
+            Route::put('/role-categories/{roleCategory}', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'update'])->name('ict.role-categories.update');
+            Route::delete('/role-categories/{roleCategory}', [\App\Http\Controllers\Ict\RoleCategoryController::class, 'destroy'])->name('ict.role-categories.destroy');
+        });
     });
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
+        Route::post('/registration-invites', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'store'])->name('hr.registration-invites.store');
 
         Route::middleware('permission:hr.staff.view')->group(function () {
             Route::get('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'index'])->name('hr.staff.index');

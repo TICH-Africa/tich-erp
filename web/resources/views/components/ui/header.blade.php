@@ -33,8 +33,8 @@
                     <a href="{{ route('login') }}" class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
                         Sign in
                     </a>
-                    <a href="{{ route('register') }}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-700 rounded-md hover:bg-green-800 transition-colors shadow-sm">
-                        Apply / Register
+                    <a href="{{ route('apply.index') }}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-700 rounded-md hover:bg-green-800 transition-colors shadow-sm">
+                        Apply now
                     </a>
                 @endauth
 

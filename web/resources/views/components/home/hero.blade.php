@@ -21,7 +21,7 @@
             </p>
 
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('register') }}" class="inline-flex items-center justify-center bg-white text-green-800 font-bold px-6 py-3 rounded-lg hover:bg-green-50 transition-colors">
+                <a href="{{ route('apply.index') }}" class="inline-flex items-center justify-center bg-white text-green-800 font-bold px-6 py-3 rounded-lg hover:bg-green-50 transition-colors">
                     Apply for September 2026
                 </a>
                 <a href="{{ route('programs.index') }}" class="inline-flex items-center justify-center border border-white/40 text-white font-medium px-6 py-3 rounded-lg hover:bg-white/10 transition-colors">

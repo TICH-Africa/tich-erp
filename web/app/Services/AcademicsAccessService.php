@@ -58,6 +58,7 @@ class AcademicsAccessService
         }
 
         return Department::query()
+            ->validLearningDepartments()
             ->whereIn('id', $scopeIds)
             ->where('is_active', true)
             ->orderBy('display_order')

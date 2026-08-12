@@ -1,4 +1,5 @@
 <aside class="tich-admin-sidebar" id="administration-admin-sidebar">
+    @include('partials.navigation.sidebar-user')
     <p class="tich-admin-sidebar__title">Administration</p>
     <nav class="tich-admin-sidebar__nav" aria-label="Administration module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('administration.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('administration.*')])

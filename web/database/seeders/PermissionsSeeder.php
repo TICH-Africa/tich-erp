@@ -100,6 +100,7 @@ class PermissionsSeeder extends Seeder
         $this->assignRolePermissions('Procurement Manager', ['core', 'procurement'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Research Manager', ['core', 'research', 'portal'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('ICT Manager', ['core', 'ict'], ['view', 'create', 'edit', 'manage', 'export']);
+        $this->grantRolePermissionSlugs('ICT Manager', ['admin_manage_staff_manage', 'admin_manage_staff_view']);
         $this->assignRolePermissions('Student', ['academics', 'finance', 'portal'], ['view']);
         $this->assignRolePermissions('Applicant', ['admin'], ['view', 'create']);
         $this->assignRolePermissions('Alumni', ['portal'], ['view']);
@@ -117,6 +118,29 @@ class PermissionsSeeder extends Seeder
         }
 
         foreach ($query->pluck('id') as $permissionId) {
+            DB::table('role_permissions')->insert([
+                'role_id' => $roleId,
+                'permission_id' => $permissionId,
+                'granted_at' => now(),
+            ]);
+        }
+    }
+
+    private function grantRolePermissionSlugs(string $roleName, array $slugs): void
+    {
+        $roleId = DB::table('roles')->where('role_name', $roleName)->value('id');
+
+        if (! $roleId) {
+            return;
+        }
+
+        foreach ($slugs as $slug) {
+            $permissionId = DB::table('permissions')->where('slug', $slug)->value('id');
+
+            if (! $permissionId) {
+                continue;
+            }
+
             DB::table('role_permissions')->insert([
                 'role_id' => $roleId,
                 'permission_id' => $permissionId,

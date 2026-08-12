@@ -3,6 +3,8 @@
     'role' => null,
     'fieldIdPrefix' => '',
     'formContext' => 'create',
+    'moduleOptions' => [],
+    'selectedModuleKey' => '',
 ])
 
 @php
@@ -12,6 +14,15 @@
     $roleCategory = $useOld ? old('role_category', '') : ($role->role_category ?? '');
     $description = $useOld ? old('description', '') : ($role->description ?? '');
 @endphp
+
+@if ($formContext === 'create' && $moduleOptions !== [])
+    @include('admin.partials.role-module-field', [
+        'moduleOptions' => $moduleOptions,
+        'fieldIdPrefix' => $fieldIdPrefix,
+        'selectedModuleKey' => $selectedModuleKey,
+        'formContext' => $formContext,
+    ])
+@endif
 
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}role_name" @endif>Role name</label>

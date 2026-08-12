@@ -46,36 +46,6 @@ class WebAuthController extends Controller
         return $this->authService->redirectAfterAuthentication($user, $request);
     }
 
-    public function showRegister(): View
-    {
-        return view('auth.register');
-    }
-
-    public function register(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'user_type' => ['required', 'in:student,staff,external'],
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'terms' => ['accepted'],
-        ]);
-
-        $user = $this->authService->registerUser($validated, $request);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        if ($this->mfaService->isMFARequired($user)) {
-            return redirect()
-                ->route('mfa.setup')
-                ->with('status', 'Account created. Please configure multi-factor authentication to continue.');
-        }
-
-        return redirect()
-            ->to($this->authService->authenticatedHome($user))
-            ->with('status', 'Your account has been created successfully.');
-    }
-
     public function showForgotPassword(): View
     {
         return view('auth.forgot-password');

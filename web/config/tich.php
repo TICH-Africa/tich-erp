@@ -10,6 +10,10 @@ return [
         'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external'],
     ],
 
+    'erp_registration' => [
+        'invite_days' => (int) env('ERP_REGISTRATION_INVITE_DAYS', 14),
+    ],
+
     'role_hierarchy' => [
         'Applicant' => 10,
         'Student' => 20,

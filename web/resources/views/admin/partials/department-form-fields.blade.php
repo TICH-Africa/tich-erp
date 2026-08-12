@@ -60,7 +60,7 @@
             <option value="{{ $parent->id }}" @selected(old('parent_dept_id', $department->parent_dept_id ?? '') == $parent->id)>{{ $parent->dept_name }}</option>
         @endforeach
     </select>
-    <p class="tich-caption tich-mt-1">Set parent to <em>Academics</em> for academic departments that offer programmes.</p>
+    <p class="tich-caption tich-mt-1">For academic departments that offer programmes, choose a parent department that has the Academics module (typically <em>Academics</em>).</p>
 </div>
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}campus_id" @endif>Campus</label>
