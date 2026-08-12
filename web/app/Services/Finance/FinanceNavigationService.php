@@ -96,7 +96,6 @@ class FinanceNavigationService
             $this->item('Installment plans', 'calendar', route('finance.student-finance.installment-plans.index', $dept), request()->routeIs('finance.student-finance.installment-plans.*'), 'student-finance.installments'),
             $this->item('Refunds', 'refresh-cw', route('finance.student-finance.refunds.index', $dept), request()->routeIs('finance.student-finance.refunds.*'), 'student-finance.refunds'),
             $this->item('Clearance', 'check-circle', route('finance.student-finance.clearance.index', $dept), request()->routeIs('finance.student-finance.clearance.*')),
-            $this->item('Milestones', 'flag', route('finance.student-finance.milestones.index', $dept), request()->routeIs('finance.student-finance.milestones.*')),
         ];
     }
 

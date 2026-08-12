@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FinancialAdjustment extends Model
 {
     protected $table = 'financial_adjustments';
+    public $timestamps = false;
 
     protected $fillable = [
         'student_account_id',
@@ -27,6 +28,7 @@ class FinancialAdjustment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'created_at' => 'datetime',
         'approved_at' => 'datetime',
     ];
 

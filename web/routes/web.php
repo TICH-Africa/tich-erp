@@ -446,6 +446,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         });
     });
 
+    Route::get('/programs', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiPrograms'])->name('programs.index');
+    Route::get('/academic-years', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiAcademicYears'])->name('academic-years.index');
+    Route::get('/students', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiStudents'])->name('students.index');
+    Route::get('/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiInvoices'])->name('invoices.index');
+
     Route::prefix('departments/{department}/finance')
         ->where(['department' => '[0-9]+(-[0-9]+)?'])
         ->middleware(['permission:finance.read'])
@@ -462,10 +467,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/student-finance/invoices/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceCreate'])->name('student-finance.invoices.create');
             Route::post('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceStore'])->name('student-finance.invoices.store');
             Route::get('/student-finance/invoices/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceShow'])->name('student-finance.invoices.show');
+            Route::get('/student-finance/invoices/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceDownload'])->name('student-finance.invoices.download');
             Route::get('/student-finance/payments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'payments'])->name('student-finance.payments.index');
             Route::get('/student-finance/payments/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'paymentShow'])->name('student-finance.payments.show');
             Route::get('/student-finance/receipts', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receipts'])->name('student-finance.receipts.index');
             Route::get('/student-finance/receipts/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptShow'])->name('student-finance.receipts.show');
+            Route::get('/student-finance/receipts/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptDownload'])->name('student-finance.receipts.download');
             Route::get('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustments'])->name('student-finance.adjustments.index');
             Route::get('/student-finance/adjustments/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentCreate'])->name('student-finance.adjustments.create');
             Route::post('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentStore'])->name('student-finance.adjustments.store');
@@ -474,6 +481,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlans'])->name('student-finance.installment-plans.index');
             Route::get('/student-finance/installment-plans/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanCreate'])->name('student-finance.installment-plans.create');
             Route::post('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanStore'])->name('student-finance.installment-plans.store');
+            Route::get('/student-finance/installment-plans/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanShow'])->name('student-finance.installment-plans.show');
             Route::get('/student-finance/refunds', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refunds'])->name('student-finance.refunds.index');
             Route::get('/student-finance/refunds/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundCreate'])->name('student-finance.refunds.create');
             Route::post('/student-finance/refunds', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundStore'])->name('student-finance.refunds.store');
@@ -481,6 +489,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/student-finance/refunds/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundApprove'])->name('student-finance.refunds.approve');
             Route::post('/student-finance/refunds/{id}/process', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundProcess'])->name('student-finance.refunds.process');
             Route::get('/student-finance/clearance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearance'])->name('student-finance.clearance.index');
+            Route::post('/student-finance/clearance/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceApprove'])->name('student-finance.clearance.approve');
+            Route::post('/student-finance/clearance/{id}/reject', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceReject'])->name('student-finance.clearance.reject');
+
             Route::get('/student-finance/milestones', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestones'])->name('student-finance.milestones.index');
             Route::get('/student-finance/milestones/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestoneShow'])->name('student-finance.milestones.show');
 

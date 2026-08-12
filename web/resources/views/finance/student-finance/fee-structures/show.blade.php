@@ -19,10 +19,6 @@
             <p class="tich-stat__value">{{ $feeStructure->academicYear->year_label ?? 'N/A' }}</p>
         </div>
         <div class="tich-stat">
-            <p class="tich-stat__label">Semester</p>
-            <p class="tich-stat__value">{{ $feeStructure->semester_number }}</p>
-        </div>
-        <div class="tich-stat">
             <p class="tich-stat__label">Status</p>
             <p class="tich-stat__value">
                 <span class="tich-badge tich-badge--{{ $feeStructure->is_active ? 'success' : 'secondary' }}">

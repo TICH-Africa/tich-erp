@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InstallmentPlanItem extends Model
 {
     protected $table = 'installment_plan_items';
+    public $timestamps = false;
 
     protected $fillable = [
         'installment_plan_id',

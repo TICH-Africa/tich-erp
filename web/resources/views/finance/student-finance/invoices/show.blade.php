@@ -5,6 +5,10 @@
 @section('finance-content')
     <x-page-toolbar title="Invoice" meta="Invoice details">
         <x-slot:actions>
+            @if (in_array($invoice->status, ['issued', 'partial', 'overdue']) && $invoice->balance > 0)
+                <a href="{{ route('finance.payments.create', ['invoice_id' => $invoice->id]) }}" class="tich-btn tich-btn-primary">+ Record payment</a>
+            @endif
+            <a href="{{ route('finance.student-finance.invoices.download', ['department' => $department->id, 'id' => $invoice->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
             <a href="{{ route('finance.student-finance.invoices.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>

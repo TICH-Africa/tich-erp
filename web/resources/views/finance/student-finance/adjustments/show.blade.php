@@ -44,10 +44,10 @@
             <p class="tich-text"><strong>Invoice:</strong> {{ $adjustment->invoice->invoice_number ?? 'N/A' }}</p>
             <p class="tich-text"><strong>Requested By:</strong> {{ $adjustment->requestedBy?->fullName() ?? ($adjustment->requested_by ?? 'N/A') }}</p>
             <p class="tich-text"><strong>Date:</strong> {{ $adjustment->created_at?->format('d M Y') }}</p>
-            @if ($adjustment->approved_by)
+            @if ($adjustment->approved_by ?? null)
                 <p class="tich-text"><strong>Approved By:</strong> {{ $adjustment->approvedBy?->fullName() ?? 'N/A' }}</p>
             @endif
-            @if ($adjustment->approved_at)
+            @if ($adjustment->approved_at ?? null)
                 <p class="tich-text"><strong>Approved At:</strong> {{ $adjustment->approved_at?->format('d M Y H:i') }}</p>
             @endif
         </div>

@@ -23,6 +23,7 @@ class Payment extends Model
         'reconciled_by',
         'reconciled_at',
         'recorded_by',
+        'status',
     ];
 
     protected $casts = [

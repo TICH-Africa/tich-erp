@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Refund extends Model
 {
     protected $table = 'refunds';
+    public $timestamps = false;
 
     protected $fillable = [
         'refund_number',
@@ -29,6 +30,7 @@ class Refund extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'created_at' => 'datetime',
         'approved_at' => 'datetime',
         'processed_at' => 'datetime',
     ];

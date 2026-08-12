@@ -15,8 +15,8 @@
             <div class="tich-form-grid tich-form-grid--2">
                 <div class="tich-form-group">
                     <label class="tich-label">Student</label>
-                    <select name="student_id" class="tich-input" required>
-                        <option value="">Select student</option>
+                    <select name="student_id" id="student_id" class="tich-input" required>
+                        <option value="">Loading students...</option>
                     </select>
                 </div>
                 <div class="tich-form-group">
@@ -29,8 +29,8 @@
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Invoice (Optional)</label>
-                    <select name="invoice_id" class="tich-input">
-                        <option value="">Select invoice</option>
+                    <select name="invoice_id" id="invoice_id" class="tich-input">
+                        <option value="">Loading invoices...</option>
                     </select>
                 </div>
                 <div class="tich-form-group">
@@ -52,4 +52,56 @@
     </article>
 @endsection
 
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSelect = document.getElementById('student_id');
+    const invoiceSelect = document.getElementById('invoice_id');
 
+    function loadStudents() {
+        fetch('{{ route('students.index') }}')
+            .then(response => response.json())
+            .then(data => {
+                studentSelect.innerHTML = '<option value="">Select student</option>';
+                data.forEach(function(student) {
+                    const option = document.createElement('option');
+                    option.value = student.id;
+                    option.textContent = student.text;
+                    studentSelect.appendChild(option);
+                });
+            })
+            .catch(() => {
+                studentSelect.innerHTML = '<option value="">Failed to load students</option>';
+            });
+    }
+
+    function loadInvoices(studentId) {
+        const url = new URL('{{ route('invoices.index') }}');
+        if (studentId) {
+            url.searchParams.set('student_id', studentId);
+        }
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                invoiceSelect.innerHTML = '<option value="">Select invoice (optional)</option>';
+                data.forEach(function(invoice) {
+                    const option = document.createElement('option');
+                    option.value = invoice.id;
+                    option.textContent = invoice.text;
+                    invoiceSelect.appendChild(option);
+                });
+            })
+            .catch(() => {
+                invoiceSelect.innerHTML = '<option value="">Failed to load invoices</option>';
+            });
+    }
+
+    loadStudents();
+    loadInvoices();
+
+    studentSelect.addEventListener('change', function() {
+        loadInvoices(this.value);
+    });
+});
+</script>
+@endsection

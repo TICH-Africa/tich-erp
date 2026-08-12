@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Receipt extends Model
 {
     protected $table = 'receipts';
+    public $timestamps = false;
 
     protected $fillable = [
         'receipt_number',
