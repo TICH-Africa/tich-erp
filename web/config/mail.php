@@ -8,10 +8,6 @@ $smtpStream = [
 ];
 
 $moduleSmtpMailer = static function (?string $username, ?string $password) use ($smtpStream): array {
-    if (env('MAIL_MAILER', 'smtp') !== 'smtp') {
-        return ['transport' => env('MAIL_MAILER', 'array')];
-    }
-
     return [
         'transport' => 'smtp',
         'scheme' => env('MAIL_SCHEME'),
