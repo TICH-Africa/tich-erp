@@ -3,6 +3,8 @@
 namespace App\Models\Finance;
 
 use App\Models\Student;
+use App\Models\Semester;
+use App\Models\AcademicYear;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,11 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class InstallmentPlan extends Model
 {
     protected $table = 'installment_plans';
+    public $timestamps = false;
 
     protected $fillable = [
         'student_account_id',
         'student_id',
         'invoice_id',
+        'semester_id',
+        'academic_year_id',
         'plan_number',
         'total_amount',
         'paid_amount',
@@ -43,9 +48,24 @@ class InstallmentPlan extends Model
         return $this->belongsTo(Invoice::class);
     }
 
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class, 'semester_id');
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(InstallmentPlanItem::class);
+    }
+
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(PaymentMilestone::class, 'student_account_id', 'student_account_id');
     }
 
     public function getProgressPercentageAttribute(): float

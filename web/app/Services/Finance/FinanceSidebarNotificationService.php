@@ -89,8 +89,13 @@ class FinanceSidebarNotificationService
         $milestonesDue = $this->paymentMilestonesNeedingActionCount();
         $pendingMpesa = $this->pendingMpesaRequestsCount();
         $pendingAp = $this->accountsPayableNeedingActionCount();
-        $draftPayrollRuns = PayrollRun::query()->where('status', PayrollRun::STATUS_DRAFT)->count();
-        $approvedPayrollRuns = PayrollRun::query()->where('status', PayrollRun::STATUS_APPROVED)->count();
+        $draftPayrollRuns = 0;
+        $approvedPayrollRuns = 0;
+
+        if (Schema::hasTable('payroll_runs')) {
+            $draftPayrollRuns = PayrollRun::query()->where('status', PayrollRun::STATUS_DRAFT)->count();
+            $approvedPayrollRuns = PayrollRun::query()->where('status', PayrollRun::STATUS_APPROVED)->count();
+        }
 
         $studentFinance = $pendingRefunds
             + $pendingAdjustments

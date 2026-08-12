@@ -30,7 +30,7 @@
                         <td>{{ $memo->invoice?->invoice_number }}</td>
                         <td>KES {{ number_format((float) $memo->amount, 2) }}</td>
                         <td>{{ $memo->issued_at?->format('d M Y') }}</td>
-                        <td><a href="{{ route('finance.ar.credit-memos.show', array_merge($departmentParams, ['creditMemo' => $memo->id])) }}" class="tich-link">View</a></td>
+                        <td><a href="{{ route('finance.ar.credit-memos.show', ['department' => $departmentParams['department'] ?? $department->id, 'creditMemo' => $memo->id]) }}" class="tich-link">View</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="tich-table-empty">No credit memos yet.</td></tr>

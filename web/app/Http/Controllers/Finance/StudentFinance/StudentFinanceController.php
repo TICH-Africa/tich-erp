@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Finance\StudentFinance;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicProgram;
+use App\Models\AcademicYear;
 use App\Models\Department;
 use App\Models\Finance\FeeStructure;
 use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlan;
 use App\Models\Finance\Invoice;
 use App\Models\Finance\Payment;
+use App\Models\Finance\PaymentMilestone;
 use App\Models\Finance\Receipt;
 use App\Models\Finance\Refund;
 use App\Models\Finance\StudentAccount;
@@ -16,9 +19,11 @@ use App\Models\Student;
 use App\Services\DepartmentDashboardService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Finance\StudentFinanceService;
+use App\Services\PrintDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentFinanceController extends Controller
 {
@@ -314,7 +319,6 @@ class StudentFinanceController extends Controller
         $validated = $request->validate([
             'program_id' => 'required|exists:academic_programs,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'semester_number' => 'required|integer|min:1',
             'application_fee' => 'nullable|numeric|min:0',
             'tuition_fee' => 'nullable|numeric|min:0',
             'cautions_fee' => 'nullable|numeric|min:0',
@@ -328,7 +332,7 @@ class StudentFinanceController extends Controller
             'emergency_fund_fee' => 'nullable|numeric|min:0',
             'library_fee' => 'nullable|numeric|min:0',
             'indexing_nck_fee' => 'nullable|numeric|min:0',
-            'examination_fee' => 'nullable|numeric|min:0',
+            'examination_external_fee' => 'nullable|numeric|min:0',
             'attachment_fee' => 'nullable|numeric|min:0',
             'graduation_fee' => 'nullable|numeric|min:0',
             'other_fees' => 'nullable|array',
@@ -349,7 +353,7 @@ class StudentFinanceController extends Controller
             $validated['emergency_fund_fee'] ?? 0,
             $validated['library_fee'] ?? 0,
             $validated['indexing_nck_fee'] ?? 0,
-            $validated['examination_fee'] ?? 0,
+            $validated['examination_external_fee'] ?? 0,
             $validated['attachment_fee'] ?? 0,
             $validated['graduation_fee'] ?? 0,
             ...(collect($validated['other_fees'] ?? [])->map(fn ($v) => (float) $v)->all()),
@@ -359,6 +363,7 @@ class StudentFinanceController extends Controller
         $validated['is_approved'] = true;
         $validated['approved_by'] = $request->user()->id;
         $validated['approved_at'] = now();
+        $validated['created_at'] = now();
 
         FeeStructure::create($validated);
 
@@ -569,8 +574,42 @@ class StudentFinanceController extends Controller
         ]);
     }
 
+    public function invoiceDownload(Request $request, Department $department, int $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $invoice = Schema::hasTable('invoices') && Invoice::count() > 0
+            ? Invoice::with(['student', 'items', 'payments'])->findOrFail($id)
+            : (object) [
+                'id' => $id,
+                'invoice_number' => 'INV-2024-0001',
+                'student' => new class { public function fullName(): string { return 'Wanjiku Mwangi'; } public $registration_number = 'STU/2024/001'; },
+                'invoice_type' => 'tuition',
+                'amount' => 85000,
+                'amount_paid' => 42500,
+                'balance' => 42500,
+                'status' => 'partial',
+                'due_date' => now()->addDays(15),
+                'issue_date' => now()->subDays(10),
+                'description' => 'Semester 1 tuition fees',
+                'items' => collect([]),
+                'payments' => collect([]),
+            ];
+
+        return app(\App\Services\PrintDocumentService::class)->downloadPdf(
+            'finance.student-finance.invoices.pdf',
+            [
+                'department' => $department,
+                'invoice' => $invoice,
+            ],
+            'invoice-'.$invoice->invoice_number.'.pdf'
+        );
+    }
+
     public function payments(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
+        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+
         if (! Schema::hasTable('payments') || Payment::count() === 0) {
             $mockStudent1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -618,14 +657,48 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $payments = Payment::query()
-                ->with(['invoice.student', 'studentAccount'])
-                ->orderByDesc('payment_date')
-                ->paginate(20);
+            $query = Payment::query()
+                ->with(['invoice.student', 'studentAccount']);
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('payment_number', 'like', "%{$search}%")
+                      ->orWhere('payment_reference', 'like', "%{$search}%")
+                      ->orWhereHas('student', function ($sq) use ($search) {
+                          $sq->where('registration_number', 'like', "%{$search}%")
+                             ->orWhereHas('applicant', function ($sq2) use ($search) {
+                                 $sq2->where('first_name', 'like', "%{$search}%")
+                                     ->orWhere('surname', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            if ($semesterId > 0) {
+                $query->whereHas('invoice', fn ($q) => $q->where('semester_id', $semesterId));
+            }
+
+            if ($academicYearId > 0) {
+                $query->whereHas('invoice.semester', fn ($q) => $q->where('academic_year_id', $academicYearId));
+            }
+
+            $payments = $query->orderByDesc('payment_date')->paginate(20)->withQueryString();
         }
+
+        $allSemesters = Schema::hasTable('semesters')
+            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
+            : collect();
+        $allAcademicYears = Schema::hasTable('academic_years')
+            ? AcademicYear::query()->orderByDesc('year_label')->get()
+            : collect();
 
         return $this->view($request, 'finance.student-finance.payments.index', $department, [
             'payments' => $payments,
+            'search' => $search,
+            'semesterId' => $semesterId,
+            'academicYearId' => $academicYearId,
+            'allSemesters' => $allSemesters,
+            'allAcademicYears' => $allAcademicYears,
         ]);
     }
 
@@ -672,6 +745,10 @@ class StudentFinanceController extends Controller
 
     public function receipts(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
+        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+
         if (! Schema::hasTable('receipts') || Receipt::count() === 0) {
             $mockStudent1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -719,14 +796,48 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $receipts = Receipt::query()
-                ->with(['student', 'invoice'])
-                ->orderByDesc('issued_at')
-                ->paginate(20);
+            $query = Receipt::query()
+                ->with(['student', 'invoice']);
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('receipt_number', 'like', "%{$search}%")
+                      ->orWhere('payment_reference', 'like', "%{$search}%")
+                      ->orWhereHas('student', function ($sq) use ($search) {
+                          $sq->where('registration_number', 'like', "%{$search}%")
+                             ->orWhereHas('applicant', function ($sq2) use ($search) {
+                                 $sq2->where('first_name', 'like', "%{$search}%")
+                                     ->orWhere('surname', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            if ($semesterId > 0) {
+                $query->whereHas('invoice', fn ($q) => $q->where('semester_id', $semesterId));
+            }
+
+            if ($academicYearId > 0) {
+                $query->whereHas('invoice.semester', fn ($q) => $q->where('academic_year_id', $academicYearId));
+            }
+
+            $receipts = $query->orderByDesc('issued_at')->paginate(20)->withQueryString();
         }
+
+        $allSemesters = Schema::hasTable('semesters')
+            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
+            : collect();
+        $allAcademicYears = Schema::hasTable('academic_years')
+            ? AcademicYear::query()->orderByDesc('year_label')->get()
+            : collect();
 
         return $this->view($request, 'finance.student-finance.receipts.index', $department, [
             'receipts' => $receipts,
+            'search' => $search,
+            'semesterId' => $semesterId,
+            'academicYearId' => $academicYearId,
+            'allSemesters' => $allSemesters,
+            'allAcademicYears' => $allAcademicYears,
         ]);
     }
 
@@ -840,9 +951,14 @@ class StudentFinanceController extends Controller
             public $registration_number = 'STU/2024/045';
         };
 
+         $search = trim((string) $request->query('search', ''));
+        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
+        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+
         if (! Schema::hasTable('installment_plans') || InstallmentPlan::count() === 0) {
             $plans = collect([
                 (object) [
+                    'id' => 1,
                     'plan_number' => 'INST-STU001-001',
                     'student' => $mockStudent1,
                     'invoice' => new class { public $invoice_number = 'INV-STU001-001'; },
@@ -850,8 +966,14 @@ class StudentFinanceController extends Controller
                     'paid_amount' => 20333,
                     'remaining_amount' => 40667,
                     'status' => 'active',
+                    'milestones' => collect([
+                        (object) ['milestone_type' => 'registration', 'percentage' => 50, 'milestone_amount' => 30500, 'paid_amount' => 30500, 'status' => 'paid', 'due_date' => now()->subDays(20)],
+                        (object) ['milestone_type' => 'mid_semester', 'percentage' => 75, 'milestone_amount' => 45750, 'paid_amount' => 22875, 'status' => 'partial', 'due_date' => now()->addDays(15)],
+                        (object) ['milestone_type' => 'final', 'percentage' => 100, 'milestone_amount' => 61000, 'paid_amount' => 0, 'status' => 'pending', 'due_date' => now()->addDays(60)],
+                    ]),
                 ],
                 (object) [
+                    'id' => 2,
                     'plan_number' => 'INST-STU002-001',
                     'student' => $mockStudent2,
                     'invoice' => new class { public $invoice_number = 'INV-STU002-001'; },
@@ -859,8 +981,12 @@ class StudentFinanceController extends Controller
                     'paid_amount' => 42500,
                     'remaining_amount' => 42500,
                     'status' => 'active',
+                    'milestones' => collect([
+                        (object) ['milestone_type' => 'registration', 'percentage' => 50, 'milestone_amount' => 42500, 'paid_amount' => 0, 'status' => 'overdue', 'due_date' => now()->subDays(10)],
+                    ]),
                 ],
                 (object) [
+                    'id' => 3,
                     'plan_number' => 'INST-STU003-001',
                     'student' => new class {
                         public function fullName(): string { return 'Achieng Faith'; }
@@ -871,65 +997,54 @@ class StudentFinanceController extends Controller
                     'paid_amount' => 72000,
                     'remaining_amount' => 0,
                     'status' => 'completed',
+                    'milestones' => collect([]),
                 ],
             ]);
-        } else {
-            $plans = InstallmentPlan::query()
-                ->with(['student', 'invoice'])
-                ->orderByDesc('created_at')
-                ->paginate(20);
+         } else {
+            $query = InstallmentPlan::query()
+                ->with(['student', 'invoice.semester.academicYear', 'items', 'semester', 'academicYear']);
+
+            if ($search !== '') {
+                $query->whereHas('student', function ($q) use ($search) {
+                    $q->where('registration_number', 'like', "%{$search}%")
+                        ->orWhereHas('applicant', function ($q2) use ($search) {
+                            $q2->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('surname', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            if ($semesterId > 0) {
+                $query->where(function ($q) use ($semesterId) {
+                    $q->where('semester_id', $semesterId)
+                      ->orWhereHas('invoice', fn ($iq) => $iq->where('semester_id', $semesterId));
+                });
+            }
+
+            if ($academicYearId > 0) {
+                $query->where(function ($q) use ($academicYearId) {
+                    $q->where('academic_year_id', $academicYearId)
+                      ->orWhereHas('invoice.semester', fn ($iq) => $iq->where('academic_year_id', $academicYearId));
+                });
+            }
+
+            $plans = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         }
 
-        if (! Schema::hasTable('payment_milestones') || \App\Models\Finance\PaymentMilestone::count() === 0) {
-            $milestones = collect([
-                (object) [
-                    'milestone_type' => 'registration',
-                    'percentage' => 50,
-                    'milestone_amount' => 30500,
-                    'paid_amount' => 30500,
-                    'status' => 'paid',
-                    'due_date' => now()->subDays(20),
-                    'student' => $mockStudent1,
-                ],
-                (object) [
-                    'milestone_type' => 'mid_semester',
-                    'percentage' => 75,
-                    'milestone_amount' => 45750,
-                    'paid_amount' => 22875,
-                    'status' => 'partial',
-                    'due_date' => now()->addDays(15),
-                    'student' => $mockStudent1,
-                ],
-                (object) [
-                    'milestone_type' => 'final',
-                    'percentage' => 100,
-                    'milestone_amount' => 61000,
-                    'paid_amount' => 0,
-                    'status' => 'pending',
-                    'due_date' => now()->addDays(60),
-                    'student' => $mockStudent1,
-                ],
-                (object) [
-                    'milestone_type' => 'registration',
-                    'percentage' => 50,
-                    'milestone_amount' => 42500,
-                    'paid_amount' => 0,
-                    'status' => 'overdue',
-                    'due_date' => now()->subDays(10),
-                    'student' => $mockStudent2,
-                ],
-            ]);
-        } else {
-            $milestones = \App\Models\Finance\PaymentMilestone::query()
-                ->with(['student'])
-                ->orderByDesc('created_at')
-                ->limit(20)
-                ->get();
-        }
+        $allSemesters = Schema::hasTable('semesters')
+            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
+            : collect();
+        $allAcademicYears = Schema::hasTable('academic_years')
+            ? AcademicYear::query()->orderByDesc('year_label')->get()
+            : collect();
 
         return $this->view($request, 'finance.student-finance.installment-plans.index', $department, [
             'plans' => $plans,
-            'milestones' => $milestones,
+            'search' => $search,
+            'semesterId' => $semesterId,
+            'academicYearId' => $academicYearId,
+            'allSemesters' => $allSemesters,
+            'allAcademicYears' => $allAcademicYears,
         ]);
     }
 
@@ -947,29 +1062,45 @@ class StudentFinanceController extends Controller
             'installment_count' => 'required|integer|min:2|max:12',
         ]);
 
-        $student = \App\Models\Student::findOrFail($validated['student_id']);
-        $account = StudentAccount::where('student_id', $student->id)->first();
+        $student = Student::findOrFail($validated['student_id']);
+
+        $academicYearId = AcademicYear::query()->orderByDesc('start_date')->value('id');
+        $account = StudentAccount::firstOrCreate(
+            ['student_id' => $student->id],
+            ['academic_year_id' => $academicYearId]
+        );
         $invoice = Invoice::findOrFail($validated['invoice_id']);
 
+        $invoice->loadMissing('semester');
+        $semester = $invoice->semester;
+        $semesterId = $invoice->semester_id ?? $semester?->id;
+        $academicYearId = $semester?->academic_year_id ?? $account->academic_year_id;
+
         $plan = InstallmentPlan::create([
-            'student_account_id' => $account?->id,
+            'student_account_id' => $account->id,
             'student_id' => $student->id,
             'invoice_id' => $invoice->id,
-            'plan_number' => 'INST-' . strtoupper(uniqid()),
+            'semester_id' => $semesterId,
+            'academic_year_id' => $academicYearId,
+            'plan_number' => 'INST-' . now()->format('Ym') . '-' . str_pad($account->id, 4, '0', STR_PAD_LEFT),
             'total_amount' => $validated['total_amount'],
             'paid_amount' => 0,
             'remaining_amount' => $validated['total_amount'],
             'status' => 'active',
         ]);
 
+        if ($plan->semester_id && $plan->academic_year_id) {
+            $this->financeService->updatePlanProgress($plan, $account);
+        }
+
         $perInstallment = $validated['total_amount'] / $validated['installment_count'];
         $startDate = now()->addDays(30);
 
         for ($i = 1; $i <= $validated['installment_count']; $i++) {
-            \App\Models\Finance\InstallmentPlanItem::create([
+            InstallmentPlanItem::create([
                 'installment_plan_id' => $plan->id,
                 'installment_number' => $i,
-                'amount' => $perInstallment,
+                'amount' => round($perInstallment, 2),
                 'due_date' => $startDate->copy()->addDays(($i - 1) * 30),
                 'status' => 'pending',
             ]);
@@ -978,8 +1109,96 @@ class StudentFinanceController extends Controller
         return redirect()->route('finance.student-finance.installment-plans.index', ['department' => $department->id])->with('success', 'Installment plan created successfully.');
     }
 
+    public function milestoneShow(Request $request, Department $department, int $id): View
+    {
+        if (! Schema::hasTable('payment_milestones') || PaymentMilestone::count() === 0) {
+            $student = new class {
+                public function fullName(): string { return 'Wanjiku Mwangi'; }
+                public $registration_number = 'STU/2024/001';
+            };
+
+            $milestone = (object) [
+                'id' => $id,
+                'student' => $student,
+                'invoice' => new class { public $invoice_number = 'INV-2024-0001'; },
+                'milestone_type' => 'registration',
+                'percentage' => 50,
+                'milestone_amount' => 30500,
+                'paid_amount' => 30500,
+                'status' => 'paid',
+                'due_date' => now()->subDays(20),
+            ];
+        } else {
+            $milestone = PaymentMilestone::with(['student', 'invoice', 'studentAccount'])->findOrFail($id);
+        }
+
+        return $this->view($request, 'finance.student-finance.milestones.show', $department, [
+            'milestone' => $milestone,
+        ]);
+    }
+
+    public function installmentPlanShow(Request $request, Department $department, int $id): View
+    {
+        if (! Schema::hasTable('installment_plans') || InstallmentPlan::count() === 0) {
+            $mockStudent = new class {
+                public $id = 1;
+                public function fullName(): string { return 'Wanjiku Mwangi'; }
+                public $registration_number = 'STU/2024/001';
+            };
+
+            $plan = (object) [
+                'id' => $id,
+                'plan_number' => 'INST-STU001-001',
+                'student' => $mockStudent,
+                'invoice' => new class { public $invoice_number = 'INV-2024-0001'; },
+                'total_amount' => 61000,
+                'paid_amount' => 20333,
+                'remaining_amount' => 40667,
+                'status' => 'active',
+                'items' => collect([
+                    (object) ['installment_number' => 1, 'amount' => 20333, 'due_date' => now()->subDays(20), 'status' => 'paid'],
+                    (object) ['installment_number' => 2, 'amount' => 20334, 'due_date' => now()->addDays(10), 'status' => 'pending'],
+                    (object) ['installment_number' => 3, 'amount' => 20333, 'due_date' => now()->addDays(40), 'status' => 'pending'],
+                ]),
+                'milestones' => collect([
+                    (object) ['milestone_type' => 'registration', 'percentage' => 50, 'milestone_amount' => 30500, 'paid_amount' => 30500, 'status' => 'paid', 'due_date' => now()->subDays(20)],
+                    (object) ['milestone_type' => 'mid_semester', 'percentage' => 75, 'milestone_amount' => 45750, 'paid_amount' => 22875, 'status' => 'partial', 'due_date' => now()->addDays(15)],
+                    (object) ['milestone_type' => 'final', 'percentage' => 100, 'milestone_amount' => 61000, 'paid_amount' => 0, 'status' => 'pending', 'due_date' => now()->addDays(60)],
+                ]),
+            ];
+         } else {
+            $plan = InstallmentPlan::query()
+                ->with(['student', 'invoice.semester.academicYear', 'items', 'milestones', 'semester', 'academicYear'])
+                ->findOrFail($id);
+        }
+
+        $paymentHistory = collect();
+        if (Schema::hasTable('payments') && $plan->student) {
+            $payments = Payment::query()
+                ->with(['invoice.semester', 'receipt'])
+                ->where('student_id', $plan->student->id)
+                ->orderByDesc('payment_date')
+                ->get();
+
+            $paymentHistory = $payments->groupBy(fn ($p) => $p->invoice->semester?->semester_name ?? ($p->payment_date?->format('Y-m') ?? 'Unknown'));
+        }
+
+        if ($plan->milestones) {
+            $plan->setRelation('milestones', $plan->milestones->where('invoice_id', $plan->invoice_id)->values());
+        }
+
+        return $this->view($request, 'finance.student-finance.installment-plans.show', $department, [
+            'plan' => $plan,
+            'paymentHistory' => $paymentHistory,
+        ]);
+    }
+
     public function refunds(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
+        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+
         if (! Schema::hasTable('refunds') || Refund::count() === 0) {
             $mockStudent1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -1030,14 +1249,47 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $refunds = Refund::query()
-                ->with(['student', 'invoice', 'payment', 'requestedBy'])
-                ->orderByDesc('created_at')
-                ->paginate(20);
+            $query = Refund::query()
+                ->with(['student', 'invoice', 'payment', 'requestedBy']);
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('refund_number', 'like', "%{$search}%")
+                      ->orWhereHas('student', function ($sq) use ($search) {
+                          $sq->where('registration_number', 'like', "%{$search}%")
+                             ->orWhereHas('applicant', function ($sq2) use ($search) {
+                                 $sq2->where('first_name', 'like', "%{$search}%")
+                                     ->orWhere('surname', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            if ($semesterId > 0) {
+                $query->whereHas('invoice', fn ($q) => $q->where('semester_id', $semesterId));
+            }
+
+            if ($academicYearId > 0) {
+                $query->whereHas('invoice.semester', fn ($q) => $q->where('academic_year_id', $academicYearId));
+            }
+
+            $refunds = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         }
+
+        $allSemesters = Schema::hasTable('semesters')
+            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
+            : collect();
+        $allAcademicYears = Schema::hasTable('academic_years')
+            ? AcademicYear::query()->orderByDesc('year_label')->get()
+            : collect();
 
         return $this->view($request, 'finance.student-finance.refunds.index', $department, [
             'refunds' => $refunds,
+            'search' => $search,
+            'semesterId' => $semesterId,
+            'academicYearId' => $academicYearId,
+            'allSemesters' => $allSemesters,
+            'allAcademicYears' => $allAcademicYears,
         ]);
     }
 
@@ -1178,8 +1430,112 @@ class StudentFinanceController extends Controller
         ]);
     }
 
+    public function clearanceApprove(Request $request, Department $department, int $id): \Illuminate\Http\RedirectResponse
+    {
+        $account = Schema::hasTable('student_accounts') && StudentAccount::count() > 0
+            ? StudentAccount::findOrFail($id)
+            : null;
+
+        if ($account) {
+            $account->update([
+                'is_cleared' => true,
+                'cleared_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Student cleared successfully.');
+    }
+
+    public function clearanceReject(Request $request, Department $department, int $id): \Illuminate\Http\RedirectResponse
+    {
+        $account = Schema::hasTable('student_accounts') && StudentAccount::count() > 0
+            ? StudentAccount::findOrFail($id)
+            : null;
+
+        if ($account) {
+            $account->update([
+                'is_cleared' => false,
+                'cleared_at' => null,
+            ]);
+        }
+
+        return back()->with('success', 'Student clearance revoked.');
+    }
+
+    public function apiPrograms(): \Illuminate\Http\JsonResponse
+    {
+        $programs = AcademicProgram::query()
+            ->select('id', 'program_name', 'program_code')
+            ->orderBy('program_name')
+            ->get();
+
+        return response()->json($programs);
+    }
+
+    public function apiAcademicYears(): \Illuminate\Http\JsonResponse
+    {
+        $years = AcademicYear::query()
+            ->select('id', 'year_label')
+            ->orderByDesc('start_date')
+            ->get();
+
+        return response()->json($years);
+    }
+
+    public function apiStudents(): \Illuminate\Http\JsonResponse
+    {
+        if (! Schema::hasTable('students')) {
+            return response()->json([]);
+        }
+
+        $students = Student::query()
+            ->select('id', 'registration_number')
+            ->with(['applicant:id,first_name,middle_name,surname', 'user:id,name'])
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(function ($student) {
+                $name = $student->fullName();
+                return [
+                    'id' => $student->id,
+                    'text' => $name . ' (' . $student->registration_number . ')',
+                ];
+            });
+
+        return response()->json($students);
+    }
+
+    public function apiInvoices(Request $request): \Illuminate\Http\JsonResponse
+    {
+        if (! Schema::hasTable('invoices')) {
+            return response()->json([]);
+        }
+
+        $invoices = Invoice::query()
+            ->select('id', 'invoice_number', 'student_id', 'balance')
+            ->with(['student:id,registration_number'])
+            ->when($request->query('student_id'), function ($q, $studentId) {
+                $q->where('student_id', $studentId);
+            })
+            ->orderByDesc('issue_date')
+            ->limit(100)
+            ->get()
+            ->map(function ($invoice) {
+                return [
+                    'id' => $invoice->id,
+                    'text' => $invoice->invoice_number . ' - ' . ($invoice->student->registration_number ?? 'N/A') . ' (KES ' . number_format($invoice->balance, 2) . ')',
+                ];
+            });
+
+        return response()->json($invoices);
+    }
+
     public function milestones(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
+        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+
         if (! Schema::hasTable('payment_milestones') || \App\Models\Finance\PaymentMilestone::count() === 0) {
             $student1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -1228,14 +1584,47 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $milestones = \App\Models\Finance\PaymentMilestone::query()
-                ->with(['student', 'invoice'])
-                ->orderByDesc('created_at')
-                ->paginate(20);
+            $query = \App\Models\Finance\PaymentMilestone::query()
+                ->with(['student', 'invoice', 'invoice.semester.academicYear']);
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('milestone_type', 'like', "%{$search}%")
+                      ->orWhereHas('student', function ($sq) use ($search) {
+                          $sq->where('registration_number', 'like', "%{$search}%")
+                             ->orWhereHas('applicant', function ($sq2) use ($search) {
+                                 $sq2->where('first_name', 'like', "%{$search}%")
+                                     ->orWhere('surname', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            if ($semesterId > 0) {
+                $query->whereHas('invoice', fn ($q) => $q->where('semester_id', $semesterId));
+            }
+
+            if ($academicYearId > 0) {
+                $query->whereHas('invoice.semester', fn ($q) => $q->where('academic_year_id', $academicYearId));
+            }
+
+            $milestones = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         }
+
+        $allSemesters = Schema::hasTable('semesters')
+            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
+            : collect();
+        $allAcademicYears = Schema::hasTable('academic_years')
+            ? AcademicYear::query()->orderByDesc('year_label')->get()
+            : collect();
 
         return $this->view($request, 'finance.student-finance.milestones.index', $department, [
             'milestones' => $milestones,
+            'search' => $search,
+            'semesterId' => $semesterId,
+            'academicYearId' => $academicYearId,
+            'allSemesters' => $allSemesters,
+            'allAcademicYears' => $allAcademicYears,
         ]);
     }
 
@@ -1330,6 +1719,31 @@ class StudentFinanceController extends Controller
         ]);
     }
 
+    public function receiptDownload(Request $request, Department $department, int $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $receipt = Schema::hasTable('receipts') && Receipt::count() > 0
+            ? Receipt::with(['student', 'invoice', 'payment'])->findOrFail($id)
+            : (object) [
+                'id' => $id,
+                'receipt_number' => 'RCP-2024-0001',
+                'student' => new class { public function fullName(): string { return 'Wanjiku Mwangi'; } public $registration_number = 'STU/2024/001'; },
+                'invoice' => new class { public $invoice_number = 'INV-2024-0001'; },
+                'amount' => 42500,
+                'payment_method' => 'mpesa',
+                'payment_reference' => 'SFE123ABC456',
+                'issued_at' => now()->subDays(5),
+            ];
+
+        return app(\App\Services\PrintDocumentService::class)->downloadPdf(
+            'finance.student-finance.receipts.pdf',
+            [
+                'department' => $department,
+                'receipt' => $receipt,
+            ],
+            'receipt-'.$receipt->receipt_number.'.pdf'
+        );
+    }
+
     public function adjustmentShow(Request $request, Department $department, int $id): View
     {
         if (! Schema::hasTable('financial_adjustments') || FinancialAdjustment::count() === 0) {
@@ -1347,6 +1761,9 @@ class StudentFinanceController extends Controller
                 'reason' => 'Merit-based scholarship for top academic performance',
                 'status' => 'approved',
                 'requestedBy' => new class { public function fullName(): string { return 'Admin User'; } },
+                'approvedBy' => new class { public function fullName(): string { return 'Finance Director'; } },
+                'approved_by' => 3,
+                'approved_at' => now()->subDays(10),
                 'created_at' => now()->subDays(15),
             ];
         } else {
@@ -1391,36 +1808,8 @@ class StudentFinanceController extends Controller
             $refund = Refund::with(['student', 'invoice', 'payment', 'requestedBy'])->findOrFail($id);
         }
 
-        return $this->view($request, 'finance.student-finance.refunds.show', $department, [
+         return $this->view($request, 'finance.student-finance.refunds.show', $department, [
             'refund' => $refund,
-        ]);
-    }
-
-    public function milestoneShow(Request $request, Department $department, int $id): View
-    {
-        if (! Schema::hasTable('payment_milestones') || \App\Models\Finance\PaymentMilestone::count() === 0) {
-            $student = new class {
-                public function fullName(): string { return 'Wanjiku Mwangi'; }
-                public $registration_number = 'STU/2024/001';
-            };
-
-            $milestone = (object) [
-                'id' => $id,
-                'student' => $student,
-                'invoice' => new class { public $invoice_number = 'INV-2024-0001'; },
-                'milestone_type' => 'registration',
-                'percentage' => 50,
-                'milestone_amount' => 30500,
-                'paid_amount' => 30500,
-                'status' => 'paid',
-                'due_date' => now()->subDays(20),
-            ];
-        } else {
-            $milestone = \App\Models\Finance\PaymentMilestone::with(['student', 'invoice', 'studentAccount'])->findOrFail($id);
-        }
-
-        return $this->view($request, 'finance.student-finance.milestones.show', $department, [
-            'milestone' => $milestone,
         ]);
     }
 

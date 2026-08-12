@@ -15,19 +15,15 @@
             <div class="tich-form-grid tich-form-grid--2">
                 <div class="tich-form-group">
                     <label class="tich-label">Program</label>
-                    <select name="program_id" class="tich-input" required>
-                        <option value="">Select program</option>
+                    <select name="program_id" id="program_id" class="tich-input" required>
+                        <option value="">Loading programs...</option>
                     </select>
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Academic Year</label>
-                    <select name="academic_year_id" class="tich-input" required>
-                        <option value="">Select academic year</option>
+                    <select name="academic_year_id" id="academic_year_id" class="tich-input" required>
+                        <option value="">Loading academic years...</option>
                     </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Semester Number</label>
-                    <input type="number" name="semester_number" class="tich-input" min="1" required placeholder="e.g. 1" />
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Effective From</label>
@@ -95,7 +91,7 @@
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Examination Fee</label>
-                    <input type="number" name="examination_fee" class="tich-input" step="0.01" value="0.00" />
+                    <input type="number" name="examination_external_fee" class="tich-input" step="0.01" value="0.00" />
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Attachment Fee</label>
@@ -115,4 +111,48 @@
     </article>
 @endsection
 
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const programSelect = document.getElementById('program_id');
+    const yearSelect = document.getElementById('academic_year_id');
 
+    function loadPrograms() {
+        fetch('{{ route('programs.index') }}')
+            .then(response => response.json())
+            .then(data => {
+                programSelect.innerHTML = '<option value="">Select program</option>';
+                data.forEach(function(program) {
+                    const option = document.createElement('option');
+                    option.value = program.id;
+                    option.textContent = program.program_name + ' (' + program.program_code + ')';
+                    programSelect.appendChild(option);
+                });
+            })
+            .catch(() => {
+                programSelect.innerHTML = '<option value="">Failed to load programs</option>';
+            });
+    }
+
+    function loadAcademicYears() {
+        fetch('{{ route('academic-years.index') }}')
+            .then(response => response.json())
+            .then(data => {
+                yearSelect.innerHTML = '<option value="">Select academic year</option>';
+                data.forEach(function(year) {
+                    const option = document.createElement('option');
+                    option.value = year.id;
+                    option.textContent = year.year_label;
+                    yearSelect.appendChild(option);
+                });
+            })
+            .catch(() => {
+                yearSelect.innerHTML = '<option value="">Failed to load academic years</option>';
+            });
+    }
+
+    loadPrograms();
+    loadAcademicYears();
+});
+</script>
+@endsection

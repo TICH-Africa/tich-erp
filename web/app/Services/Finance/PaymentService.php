@@ -3,6 +3,7 @@
 namespace App\Services\Finance;
 
 use App\Mail\PaymentConfirmationMail;
+use App\Models\Finance\Receipt;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
 use App\Models\Payment;
@@ -15,6 +16,7 @@ class PaymentService
 {
     public function __construct(
         protected StudentAccountService $accounts,
+        protected StudentFinanceService $studentFinance,
         protected LedgerService $ledger,
         protected MpesaSettingsService $mpesaSettings,
         protected MpesaDarajaService $mpesaDaraja,
@@ -61,6 +63,27 @@ class PaymentService
 
             $this->ledger->postStudentPayment($amount, $payment->payment_number, $payment->payment_method, $recordedByStaffId);
             $this->accounts->recalculate($invoice->studentAccount);
+
+            if (! Receipt::where('payment_id', $payment->id)->exists()) {
+                $receiptNumber = 'RCP-' . now()->format('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT);
+                Receipt::create([
+                    'receipt_number' => $receiptNumber,
+                    'payment_id' => $payment->id,
+                    'invoice_id' => $payment->invoice_id,
+                    'student_account_id' => $payment->student_account_id,
+                    'student_id' => $payment->student_id,
+                    'amount' => $payment->amount,
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'issued_by' => $recordedByStaffId,
+                ]);
+            }
+
+            try {
+                $this->studentFinance->autoGenerateInstallmentPlan($payment, $recordedByStaffId);
+            } catch (Throwable $e) {
+                Log::warning('Failed to auto-generate installment plan for payment '.$payment->payment_number.': '.$e->getMessage());
+            }
 
             if ($sendConfirmation) {
                 $this->sendConfirmation($payment->fresh(['invoice', 'student.applicant', 'student.user']));

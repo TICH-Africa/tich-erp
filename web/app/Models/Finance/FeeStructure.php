@@ -12,11 +12,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class FeeStructure extends Model
 {
     protected $table = 'fee_structures';
+    public $timestamps = false;
 
     protected $fillable = [
         'program_id',
         'academic_year_id',
-        'semester_number',
         'application_fee',
         'tuition_fee',
         'cautions_fee',
@@ -30,7 +30,7 @@ class FeeStructure extends Model
         'emergency_fund_fee',
         'library_fee',
         'indexing_nck_fee',
-        'examination_fee',
+        'examination_external_fee',
         'attachment_fee',
         'graduation_fee',
         'other_fees',

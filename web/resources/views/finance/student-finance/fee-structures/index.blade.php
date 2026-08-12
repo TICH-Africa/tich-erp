@@ -17,7 +17,6 @@
                     <tr>
                     <th>Program</th>
                         <th>Academic Year</th>
-                        <th>Semester</th>
                         <th>Total Fee</th>
                         <th>Status</th>
                         <th>Effective From</th>
@@ -29,7 +28,6 @@
                         <tr>
                             <td><strong>{{ $structure->program->program_name ?? 'N/A' }}</strong></td>
                             <td class="tich-caption">{{ $structure->academicYear->year_label ?? 'N/A' }}</td>
-                            <td class="tich-caption">Semester {{ $structure->semester_number }}</td>
                             <td>KES {{ number_format($structure->total_semester_fee, 2) }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $structure->is_active ? 'success' : 'secondary' }}">
@@ -43,7 +41,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tich-table-empty">No fee structures found.</td>
+                            <td colspan="6" class="tich-table-empty">No fee structures found.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -77,6 +77,11 @@ class StudentAccount extends Model
         return $this->hasMany(InstallmentPlan::class);
     }
 
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
     public function milestones(): HasMany
     {
         return $this->hasMany(PaymentMilestone::class);

@@ -38,17 +38,9 @@
             <h3 class="tich-h4">Installment plans</h3>
             <p class="tich-caption tich-mt-2">Structured payment plans for large balances.</p>
         </a>
-        <a href="{{ route('finance.student-finance.refunds.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Refunds</h3>
-            <p class="tich-caption tich-mt-2">Maker-checker refund workflow for overpayments.</p>
-        </a>
-        <a href="{{ route('finance.student-finance.clearance.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Financial clearance</h3>
-            <p class="tich-caption tich-mt-2">Students cleared or blocked for registration and exams.</p>
-        </a>
         <a href="{{ route('finance.student-finance.milestones.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h4">Payment milestones</h3>
-            <p class="tich-caption tich-mt-2">Registration, mid-semester, and final payment checkpoints.</p>
+            <p class="tich-caption tich-mt-2">50% registration, 75% mid-semester, 100% before finals — auto-tracked.</p>
         </a>
     </div>
 @endsection
