@@ -21,6 +21,21 @@ class PayrollRunController extends Controller
         protected PrintDocumentService $printDocuments,
     ) {}
 
+    protected function viewPrefix(): string
+    {
+        return 'hr.payroll.runs';
+    }
+
+    protected function routePrefix(): string
+    {
+        return 'hr.payroll.runs';
+    }
+
+    protected function printView(): string
+    {
+        return 'hr.payroll.print';
+    }
+
     public function index(Request $request): View
     {
         $runs = PayrollRun::query()
@@ -29,7 +44,7 @@ class PayrollRunController extends Controller
             ->orderByDesc('pay_period_month')
             ->paginate(20);
 
-        return view('hr.payroll.runs.index', [
+        return view($this->viewPrefix().'.index', [
             'runs' => $runs,
         ]);
     }
@@ -38,7 +53,7 @@ class PayrollRunController extends Controller
     {
         $defaultPeriod = now()->subMonth();
 
-        return view('hr.payroll.runs.create', [
+        return view($this->viewPrefix().'.create', [
             'defaultYear' => (int) $defaultPeriod->year,
             'defaultMonth' => (int) $defaultPeriod->month,
         ]);
@@ -62,7 +77,7 @@ class PayrollRunController extends Controller
         );
 
         return redirect()
-            ->route('hr.payroll.runs.show', $run)
+            ->route($this->routePrefix().'.show', $run)
             ->with('success', "Payroll run {$run->run_number} created with {$run->staff_count} staff.");
     }
 
@@ -70,7 +85,7 @@ class PayrollRunController extends Controller
     {
         $payrollRun->load(['items.staff.department', 'items.statutoryDeductions', 'creator', 'approver', 'poster']);
 
-        return view('hr.payroll.runs.show', [
+        return view($this->viewPrefix().'.show', [
             'run' => $payrollRun,
         ]);
     }
@@ -96,7 +111,7 @@ class PayrollRunController extends Controller
         $this->payrollRuns->cancel($payrollRun);
 
         return redirect()
-            ->route('hr.payroll.runs.index')
+            ->route($this->routePrefix().'.index')
             ->with('success', 'Payroll run cancelled.');
     }
 
@@ -107,7 +122,7 @@ class PayrollRunController extends Controller
 
         $run = $payrollItem->run;
 
-        return $this->printDocuments->render('hr.payroll.print', [
+        return $this->printDocuments->render($this->printView(), [
             'documentTitle' => ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding'
                 ? 'Consultant Payment Statement'
                 : 'Monthly Payslip',
@@ -117,8 +132,8 @@ class PayrollRunController extends Controller
             'breakdown' => $breakdown,
             'payPeriod' => $run?->periodLabel() ?? now()->format('F Y'),
             'hideActions' => false,
-            'backUrl' => route('hr.payroll.runs.show', $payrollItem->payroll_run_id),
-            'pdfUrl' => route('hr.payroll.runs.item.payslip.pdf', $payrollItem),
+            'backUrl' => route($this->routePrefix().'.show', $payrollItem->payroll_run_id),
+            'pdfUrl' => route($this->routePrefix().'.item.payslip.pdf', $payrollItem),
             'bodyClass' => 'tich-payslip-page',
         ]);
     }
@@ -132,7 +147,7 @@ class PayrollRunController extends Controller
         $slug = Str::slug($breakdown['employee_name'] ?? 'payslip');
 
         return $this->printDocuments->downloadPdf(
-            'hr.payroll.print',
+            $this->printView(),
             [
                 'documentTitle' => 'Monthly Payslip',
                 'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$run?->periodLabel(),

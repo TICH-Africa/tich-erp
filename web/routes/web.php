@@ -203,6 +203,27 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
+
+        Route::prefix('employee/payroll')->name('finance.employee.payroll.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Finance\PayrollController::class, 'index'])->name('index');
+            Route::get('/report', [\App\Http\Controllers\Finance\PayrollController::class, 'report'])->name('report');
+            Route::get('/report/pdf', [\App\Http\Controllers\Finance\PayrollController::class, 'reportPdf'])->name('report.pdf');
+            Route::middleware('permission:finance.read')->group(function () {
+                Route::get('/runs', [\App\Http\Controllers\Finance\PayrollRunController::class, 'index'])->name('runs.index');
+                Route::get('/runs/create', [\App\Http\Controllers\Finance\PayrollRunController::class, 'create'])->name('runs.create');
+                Route::post('/runs', [\App\Http\Controllers\Finance\PayrollRunController::class, 'store'])->name('runs.store');
+                Route::get('/runs/{payrollRun}', [\App\Http\Controllers\Finance\PayrollRunController::class, 'show'])->name('runs.show');
+                Route::post('/runs/{payrollRun}/recalculate', [\App\Http\Controllers\Finance\PayrollRunController::class, 'recalculate'])->name('runs.recalculate');
+                Route::post('/runs/{payrollRun}/approve', [\App\Http\Controllers\Finance\PayrollRunController::class, 'approve'])->name('runs.approve');
+                Route::post('/runs/{payrollRun}/cancel', [\App\Http\Controllers\Finance\PayrollRunController::class, 'cancel'])->name('runs.cancel');
+                Route::get('/runs/{payrollRun}/statutory/{agency}', [\App\Http\Controllers\Finance\PayrollRunController::class, 'exportStatutory'])->name('runs.statutory.export');
+                Route::get('/items/{payrollItem}/payslip', [\App\Http\Controllers\Finance\PayrollRunController::class, 'itemPayslip'])->name('runs.item.payslip');
+                Route::get('/items/{payrollItem}/payslip/pdf', [\App\Http\Controllers\Finance\PayrollRunController::class, 'itemPayslipPdf'])->name('runs.item.payslip.pdf');
+                Route::get('/settings', [\App\Http\Controllers\Finance\PayrollController::class, 'settings'])->name('settings');
+                Route::put('/settings', [\App\Http\Controllers\Finance\PayrollController::class, 'updateSettings'])->name('settings.update');
+            });
+        });
+
         Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'indexGlobal'])->name('finance.ar.hub');
 
         Route::get('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'index'])->name('finance.fee-structures.index');

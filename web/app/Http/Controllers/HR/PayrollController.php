@@ -22,6 +22,21 @@ class PayrollController extends Controller
         protected PrintDocumentService $printDocuments,
     ) {}
 
+    protected function viewPrefix(): string
+    {
+        return 'hr.payroll';
+    }
+
+    protected function routePrefix(): string
+    {
+        return 'hr.payroll';
+    }
+
+    protected function printView(): string
+    {
+        return $this->viewPrefix().'.print';
+    }
+
     public function index(Request $request): View
     {
         $staff = Staff::query()
@@ -88,7 +103,7 @@ class PayrollController extends Controller
             $totals['employer_cost'] += $breakdown['total_employer_cost'];
         }
 
-        return view('hr.payroll.index', [
+        return view($this->viewPrefix().'.index', [
             'rows' => $rows,
             'totals' => $totals,
             'payslipPayload' => $this->buildPayslipPayload($rows),
@@ -105,7 +120,7 @@ class PayrollController extends Controller
             ->orderBy('min_amount')
             ->get();
 
-        return view('hr.payroll.settings', [
+        return view($this->viewPrefix().'.settings', [
             'bands' => $bands,
             'deductionTypes' => $deductionTypes,
             'withholdingRate' => $this->taxService->withholdingTaxRate(),
@@ -283,7 +298,7 @@ class PayrollController extends Controller
 
         abort_unless($breakdown, 404);
 
-        return $this->printDocuments->render('hr.payroll.print', $this->documentData($breakdown));
+        return $this->printDocuments->render($this->printView(), $this->documentData($breakdown));
     }
 
     public function reportPdf(Request $request): StreamedResponse
@@ -295,7 +310,7 @@ class PayrollController extends Controller
         $slug = Str::slug($breakdown['employee_name'] ?? 'payroll');
 
         return $this->printDocuments->downloadPdf(
-            'hr.payroll.print',
+            $this->printView(),
             $this->documentData($breakdown, includeActions: false),
             'payroll-'.$slug.'.pdf',
         );
@@ -419,8 +434,8 @@ class PayrollController extends Controller
             'breakdown' => $breakdown,
             'payPeriod' => $payPeriod,
             'hideActions' => ! $includeActions,
-            'backUrl' => route('hr.payroll.index'),
-            'pdfUrl' => route('hr.payroll.report.pdf', request()->query()),
+            'backUrl' => route($this->routePrefix().'.index'),
+            'pdfUrl' => route($this->routePrefix().'.report.pdf', request()->query()),
             'bodyClass' => 'tich-payslip-page',
         ];
     }
@@ -440,9 +455,9 @@ class PayrollController extends Controller
                 return [
                     'id' => $staff->id,
                     'label' => $staff->fullName().' ('.$staff->employee_number.')',
-                    'preview_url' => route('hr.payroll.report', $query),
-                    'download_url' => route('hr.payroll.report.pdf', $query),
-                    'external_url' => route('hr.payroll.report', $query),
+                    'preview_url' => route($this->routePrefix().'.report', $query),
+                    'download_url' => route($this->routePrefix().'.report.pdf', $query),
+                    'external_url' => route($this->routePrefix().'.report', $query),
                 ];
             })
             ->values()

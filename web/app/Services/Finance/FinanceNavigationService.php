@@ -65,8 +65,8 @@ class FinanceNavigationService
             $groups[] = [
                 'label' => 'Employee Finance',
                 'icon' => 'briefcase',
-                'open' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*', 'hr.payroll.*'),
-                'active' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*', 'hr.payroll.*'),
+                'open' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*'),
+                'active' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*'),
                 'badgeKey' => 'employee-finance',
                 'items' => $this->employeeFinanceItems($dept),
             ];
@@ -137,14 +137,14 @@ class FinanceNavigationService
             $this->item('Overview', 'layout-grid', route('finance.employee.index'), request()->routeIs('finance.employee.index')),
         ];
 
-        if (Auth::user()?->can('hr.staff.view')) {
-            $items[] = $this->item('Payroll preview', 'wallet', route('hr.payroll.index'), request()->routeIs('hr.payroll.index'));
-            $items[] = $this->item('Payroll runs', 'calendar', route('hr.payroll.runs.index'), request()->routeIs('hr.payroll.runs.*'), 'payroll-runs');
-            $items[] = $this->item('Payslip calculator', 'bar-chart', route('hr.payroll.report'), request()->routeIs('hr.payroll.report', 'hr.payroll.report.pdf'));
+        if (Auth::user()?->can('finance.read') || Auth::user()?->can('hr.staff.view')) {
+            $items[] = $this->item('Payroll preview', 'wallet', route('finance.employee.payroll.index'), request()->routeIs('finance.employee.payroll.index'));
+            $items[] = $this->item('Payroll runs', 'calendar', route('finance.employee.payroll.runs.index'), request()->routeIs('finance.employee.payroll.runs.*'), 'payroll-runs');
+            $items[] = $this->item('Payslip calculator', 'bar-chart', route('finance.employee.payroll.report'), request()->routeIs('finance.employee.payroll.report', 'finance.employee.payroll.report.pdf'));
         }
 
-        if (Auth::user()?->can('hr.manage_contracts')) {
-            $items[] = $this->item('Payroll settings', 'settings', route('hr.payroll.settings'), request()->routeIs('hr.payroll.settings*'));
+        if (Auth::user()?->can('finance.read') || Auth::user()?->can('hr.manage_contracts')) {
+            $items[] = $this->item('Payroll settings', 'settings', route('finance.employee.payroll.settings'), request()->routeIs('finance.employee.payroll.settings*'));
         }
 
         if ($dept !== []) {

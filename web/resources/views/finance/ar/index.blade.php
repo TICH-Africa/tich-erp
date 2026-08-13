@@ -16,7 +16,7 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-grid tich-grid--5 tich-dept-stats tich-mt-8">
+    <div class="tich-grid tich-grid--2 tich-dept-stats tich-mt-8">
         @foreach ($aging['buckets'] as $key => $bucket)
             <a href="{{ route('finance.ar.index', array_merge($dept, request('search') ? ['search' => request('search')] : [], ['bucket' => $key])) }}"
                class="tich-card tich-stat {{ request('bucket') === $key ? 'tich-card--active' : '' }}"
@@ -26,6 +26,11 @@
                 <p class="tich-caption">{{ $bucket['count'] }} invoice(s)</p>
             </a>
         @endforeach
+
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">Total outstanding · {{ $aging['invoice_count'] }} open invoice(s)</p>
+            <p class="tich-stat__value">KES {{ number_format($aging['total_outstanding'], 2) }}</p>
+        </article>
     </div>
 
     @if (request('bucket'))
@@ -33,11 +38,6 @@
             <a href="{{ route('finance.ar.index', array_merge($dept, request('search') ? ['search' => request('search')] : [])) }}" class="tich-link">Clear bucket filter</a>
         </p>
     @endif
-
-    <article class="tich-card tich-stat tich-mt-4">
-        <p class="tich-caption">Total outstanding · {{ $aging['invoice_count'] }} open invoice(s)</p>
-        <p class="tich-stat__value">KES {{ number_format($aging['total_outstanding'], 2) }}</p>
-    </article>
 
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
