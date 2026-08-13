@@ -52,15 +52,15 @@
     @if ($onboarding->status === 'pending_hr_review')
         <div class="tich-card tich-mb-8">
             <h3 class="tich-h3">Actions</h3>
-            <div class="tich-mt-4">
-                <form method="POST" action="{{ route('hr.onboarding.approve', $onboarding) }}" class="tich-d-inline">
+            <div class="tich-mt-4" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <form method="POST" action="{{ route('hr.onboarding.approve', $onboarding) }}">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-success">Approve Biodata</button>
                 </form>
 
-                <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger tich-ml-4">Reject</button>
+                <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger">Reject</button>
 
-                <div id="reject-form" style="display: none; margin-top: 1rem;">
+                <div id="reject-form" class="tich-mt-4" style="display: none;">
                     <form method="POST" action="{{ route('hr.onboarding.reject', $onboarding) }}">
                         @csrf
                         <textarea name="rejection_reason" placeholder="Enter rejection reason..." class="tich-input" rows="3" required></textarea>

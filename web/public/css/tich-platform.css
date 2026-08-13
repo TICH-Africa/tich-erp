@@ -129,6 +129,10 @@ h3.tich-h3 {
     line-height: 1.6;
 }
 
+.tich-text--secondary {
+    color: var(--tich-neutral-muted, #6b7280);
+}
+
 .tich-caption {
     font-family: var(--font-body);
     font-size: var(--text-caption);
@@ -260,7 +264,19 @@ h3.tich-h3 {
 /* ─── Forms ──────────────────────────────────────────────────────────── */
 
 .tich-form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.tich-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tich-form-error {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
 }
 
 .tich-form-grid {
@@ -1837,6 +1853,14 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     }
 }
 
+.tich-grid--2-span-full {
+    grid-column: 1 / -1;
+}
+
+.tich-grid--3-span-full {
+    grid-column: 1 / -1;
+}
+
 .tich-section {
     padding: 4rem 0;
 }
@@ -2153,11 +2177,50 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     gap: 1rem;
 }
 
+.tich-flex {
+    display: flex;
+    align-items: center;
+}
+
+.tich-flex--between {
+    justify-content: space-between;
+}
+
+.tich-flex--start {
+    align-items: flex-start;
+}
+
+.tich-flex--center {
+    justify-content: center;
+}
+
+.tich-flex--wrap {
+    flex-wrap: wrap;
+}
+
+.tich-flex--gap {
+    gap: 0.75rem;
+}
+
+.tich-flex--gap {
+    gap: 0.75rem;
+}
+
+.tich-d-inline {
+    display: inline-block;
+}
+
+.tich-mt-1 { margin-top: 0.25rem; }
 .tich-mt-2 { margin-top: 0.5rem; }
 .tich-mt-4 { margin-top: 1rem; }
 .tich-mt-6 { margin-top: 1.5rem; }
 .tich-mt-8 { margin-top: 2rem; }
+.tich-mb-2 { margin-bottom: 0.5rem; }
+.tich-mb-4 { margin-bottom: 1rem; }
+.tich-mb-6 { margin-bottom: 1.5rem; }
 .tich-mb-8 { margin-bottom: 2rem; }
+.tich-ml-2 { margin-left: 0.5rem; }
+.tich-mr-2 { margin-right: 0.5rem; }
 .tich-text-center { text-align: center; }
 
 /* ─── Homepage hero carousel (Animal IQ / Onagi style) ─────────────── */
@@ -3786,6 +3849,126 @@ a.tich-notification-badge:hover {
 
 .tich-list-row:last-child {
     border-bottom: none;
+}
+
+.tich-list-row--hover {
+    transition: background-color 0.15s ease;
+}
+
+.tich-list-row--hover:hover {
+    background-color: var(--tich-neutral);
+}
+
+.tich-list-item {
+    display: block;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--tich-neutral-border);
+    text-decoration: none;
+    color: inherit;
+}
+
+.tich-list-item:last-child {
+    border-bottom: none;
+}
+
+/* ─── Document Card ────────────────────────────────────────────────────── */
+
+.tich-doc-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: 0.5rem;
+    background: var(--tich-white);
+}
+
+.tich-doc-card:last-child {
+    margin-bottom: 0;
+}
+
+[data-theme="dark"] .tich-doc-card {
+    background: #1a1a1a;
+    border-color: #2d2d2d;
+}
+
+.tich-doc-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.tich-doc-card__row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.tich-doc-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    color: var(--tich-blue);
+}
+
+.tich-doc-card__svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.tich-doc-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.tich-doc-card__title {
+    display: block;
+    font-weight: 600;
+    color: var(--tich-grey);
+    word-break: break-word;
+}
+
+.tich-doc-card__meta {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--tich-neutral-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tich-doc-card__actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.tich-badge--sm {
+    font-size: 0.65rem;
+    padding: 0.125rem 0.5rem;
+}
+
+.tich-btn--sm,
+.tich-btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+}
+
+.tich-btn--danger {
+    color: #c53030;
+    border-color: #c53030;
+}
+
+.tich-btn--danger:hover {
+    background-color: #dc2626;
+    color: var(--tich-white);
 }
 
 [data-theme="dark"] .tich-status-badge.is-pending {

@@ -51,6 +51,11 @@
                                 </div>
                             </td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $template->type)) }}</td>
+                            <td class="tich-caption">
+                                <span class="tich-badge tich-badge--info tich-badge--sm">
+                                    {{ $template->format === 'docx' ? 'Word' : 'HTML' }}
+                                </span>
+                            </td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $template->is_active ? 'success' : 'warning' }}">
                                     {{ $template->is_active ? 'Active' : 'Inactive' }}
@@ -59,30 +64,30 @@
                             <td class="tich-caption">{{ $template->created_at?->format('Y-m-d') }}</td>
                             <td>
                                 <div class="tich-flex tich-flex--gap tich-flex--wrap">
-                                    <a href="{{ route('hr.documents.templates.edit', $template) }}" class="tich-btn tich-btn-ghost" style="padding: 6px 12px; font-size: 13px;">
+                                    <a href="{{ route('hr.documents.templates.edit', $template) }}" class="tich-btn tich-btn-ghost tich-btn--sm">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                         Edit
                                     </a>
-                                    <button type="button" class="tich-btn tich-btn-secondary template-action" data-template="{{ $template->id }}" data-action="preview" style="padding: 6px 12px; font-size: 13px;">
+                                    <button type="button" class="tich-btn tich-btn-secondary tich-btn--sm template-action" data-template="{{ $template->id }}" data-action="preview">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                         Preview
                                     </button>
-                                    <button type="button" class="tich-btn tich-btn-primary template-action" data-template="{{ $template->id }}" data-action="generate" style="padding: 6px 12px; font-size: 13px;">
+                                    <button type="button" class="tich-btn tich-btn-primary tich-btn--sm template-action" data-template="{{ $template->id }}" data-action="generate">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                                         Generate
                                     </button>
-                                    <button type="button" class="tich-btn template-action" data-template="{{ $template->id }}" data-action="download" style="padding: 6px 12px; font-size: 13px; background: #059669; color: white; border-color: #059669;">
+                                    <button type="button" class="tich-btn tich-btn-success tich-btn--sm template-action" data-template="{{ $template->id }}" data-action="download">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                         Download
                                     </button>
-                                    <button type="button" class="tich-btn tich-btn-blue template-action" data-template="{{ $template->id }}" data-action="send" style="padding: 6px 12px; font-size: 13px;">
+                                    <button type="button" class="tich-btn tich-btn-blue tich-btn--sm template-action" data-template="{{ $template->id }}" data-action="send">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                         Send
                                     </button>
-                                    <form method="POST" action="{{ route('hr.documents.templates.destroy', $template) }}" onsubmit="return confirm('Delete this template? This cannot be undone.')" style="display: inline;">
+                                    <form method="POST" action="{{ route('hr.documents.templates.destroy', $template) }}" onsubmit="return confirm('Delete this template? This cannot be undone.')" class="tich-flex tich-flex--center">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="tich-btn" style="padding: 6px 12px; font-size: 13px; color: #c53030; border-color: #c53030; background: transparent;">
+                                        <button type="submit" class="tich-btn tich-btn--sm tich-btn--danger">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                             Delete
                                         </button>

@@ -50,35 +50,35 @@
         'subtitle' => 'CV, cover letter, and certificates. Preview in the dashboard, or open externally for full-screen viewing, printing, and download.',
     ])
 
-    <div class="tich-card">
+    <div class="tich-card tich-mt-8">
         <h3 class="tich-h3">Actions</h3>
-        <div class="tich-mt-4">
-            <form method="POST" action="{{ route('hr.recruitment.shortlist', $application) }}" class="tich-d-inline">
+        <div class="tich-mt-4" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <form method="POST" action="{{ route('hr.recruitment.shortlist', $application) }}">
                 @csrf
                 <button type="submit" class="tich-btn tich-btn-primary">Shortlist</button>
             </form>
 
-            <form method="POST" action="{{ route('hr.recruitment.approve', $application) }}" class="tich-d-inline tich-ml-4">
+            <form method="POST" action="{{ route('hr.recruitment.approve', $application) }}">
                 @csrf
                 <button type="submit" class="tich-btn tich-btn-success">Approve & Offer</button>
             </form>
 
             @if ($application->decision == 'approved')
-                <form method="POST" action="{{ route('hr.recruitment.send-qualified-email', $application) }}" class="tich-d-inline tich-ml-4">
+                <form method="POST" action="{{ route('hr.recruitment.send-qualified-email', $application) }}">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-secondary">Email Qualified Status</button>
                 </form>
             @endif
 
-            <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger tich-ml-4">Reject</button>
+            <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger">Reject</button>
+        </div>
 
-            <div id="reject-form" style="display: none; margin-top: 1rem;">
-                <form method="POST" action="{{ route('hr.recruitment.reject', $application) }}">
-                    @csrf
-                    <textarea name="rejection_reason" placeholder="Enter rejection reason..." class="tich-input" rows="3" required></textarea>
-                    <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Confirm Rejection</button>
-                </form>
-            </div>
+        <div id="reject-form" class="tich-mt-4" style="display: none;">
+            <form method="POST" action="{{ route('hr.recruitment.reject', $application) }}">
+                @csrf
+                <textarea name="rejection_reason" placeholder="Enter rejection reason..." class="tich-input" rows="3" required></textarea>
+                <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Confirm Rejection</button>
+            </form>
         </div>
     </div>
 

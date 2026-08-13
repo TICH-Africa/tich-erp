@@ -143,19 +143,15 @@
 
                 <h2 class="tich-h2 tich-mb-4">Additional Information</h2>
                 <div class="tich-grid tich-grid--2 tich-mb-6">
-                    <div>
-                        <label for="expected_salary_min" class="tich-label">Expected salary range (KES) - minimum</label>
-                        <input type="number" id="expected_salary_min" name="expected_salary_min" value="{{ old('expected_salary_min') }}" min="0" step="1000" placeholder="e.g. 50000" class="tich-input">
-                    </div>
-                    <div>
-                        <label for="expected_salary_max" class="tich-label">Expected salary range (KES) - maximum</label>
-                        <input type="number" id="expected_salary_max" name="expected_salary_max" value="{{ old('expected_salary_max') }}" min="0" step="1000" placeholder="e.g. 80000" class="tich-input">
+                    <div class="tich-grid--2-span-full">
+                        <label for="expected_salary" class="tich-label">Expected Salary (KES)</label>
+                        <input type="number" id="expected_salary" name="expected_salary" value="{{ old('expected_salary') }}" min="0" step="1000" placeholder="e.g. 75000" class="tich-input">
                     </div>
                     <div>
                         <label for="notice_period" class="tich-label">Notice Period</label>
                         <select id="notice_period" name="notice_period" class="tich-input">
                             <option value="">Select notice period</option>
-                            @foreach (['1 week', '2 weeks', '3 weeks', '4 weeks', '5 weeks', '6 weeks', '8 weeks', '12 weeks', 'Immediate'] as $period)
+                            @foreach (['1 week', '2 weeks', '3 weeks', '4 weeks', 'Immediate'] as $period)
                                 <option value="{{ $period }}" {{ old('notice_period') == $period ? 'selected' : '' }}>{{ $period }}</option>
                             @endforeach
                         </select>

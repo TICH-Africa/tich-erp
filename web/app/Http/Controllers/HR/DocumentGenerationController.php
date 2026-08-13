@@ -36,6 +36,7 @@ class DocumentGenerationController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:200',
             'type' => 'required|string|max:100',
+            'format' => 'required|string|in:html,docx',
             'content' => 'required|string',
         ]);
 
@@ -59,6 +60,7 @@ class DocumentGenerationController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:200',
             'type' => 'required|string|max:100',
+            'format' => 'required|string|in:html,docx',
             'content' => 'required|string',
             'is_active' => 'sometimes|boolean',
         ]);

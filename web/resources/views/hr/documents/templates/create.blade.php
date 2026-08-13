@@ -2,6 +2,23 @@
 
 @section('title', 'New Template')
 
+@php
+    $placeholderHelp = 'Use {{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_gross_monthly_salary, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year';
+    $sampleData = [
+        '{{staff_full_name}}' => 'John Doe',
+        '{{staff_job_title}}' => 'Teacher',
+        '{{staff_department}}' => 'Academics',
+        '{{staff_employee_number}}' => 'EMP/2024/00001',
+        '{{institution_name}}' => 'TICH ERP',
+        '{{current_date}}' => 'January 1, 2024',
+        '{{staff_gross_monthly_salary}}' => '50,000.00',
+        '{{staff_kra_pin}}' => 'A123456789X',
+        '{{staff_nssf_number}}' => '123456789',
+        '{{staff_sha_number}}' => '987654321',
+        '{{staff_helb_number}}' => '555555555',
+    ];
+@endphp
+
 @section('hr-content')
     <x-page-toolbar title="Create Document Template" />
 
@@ -24,10 +41,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div>
+                        <label for="format" class="tich-label">Template Format *</label>
+                        <select id="format" name="format" required class="tich-input">
+                            <option value="html" {{ old('format', 'html') == 'html' ? 'selected' : '' }}>HTML (PDF output)</option>
+                            <option value="docx" {{ old('format') == 'docx' ? 'selected' : '' }}>Word Document (.docx)</option>
+                        </select>
+                    </div>
                     <div class="tich-grid--span-2">
                         <label for="content" class="tich-label">Template Content (HTML) *</label>
                         <textarea id="content" name="content" rows="20" required class="tich-input" style="font-family: monospace;">{{ old('content') }}</textarea>
-                        <p class="tich-caption tich-mt-1">Use @{{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_gross_monthly_salary, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year</p>
+                        <p class="tich-caption tich-mt-1">{{ $placeholderHelp }}</p>
                     </div>
                 </div>
 
@@ -41,7 +65,7 @@
         <article class="tich-card">
             <h3 class="tich-h3">Live Preview</h3>
             <p class="tich-text tich-text--secondary tich-mb-4">Preview how your template will look with staff data.</p>
-            <div style="border: 1px solid var(--tich-neutral-border); border-radius: var(--radius-md); overflow: hidden; background: #f8fafc; min-height: 400px;">
+            <div style="border: 1px solid var(--tich-neutral-border); border-radius: var(--radius_md); overflow: hidden; background: #f8fafc; min-height: 400px;">
                 <iframe id="preview-frame" src="about:blank" width="100%" height="600px" style="border: none; display: block;"></iframe>
             </div>
             <button type="button" class="tich-btn tich-btn-secondary tich-mt-4" onclick="updatePreview()">Refresh Preview</button>
@@ -51,6 +75,7 @@
     <script>
         const previewFrame = document.getElementById('preview-frame');
         const contentTextarea = document.getElementById('content');
+        const sampleData = @json($sampleData);
 
         function updatePreview() {
             const content = contentTextarea.value;
@@ -80,26 +105,9 @@
             previewHtml += '<div class="doc-body">';
 
             let processedContent = content;
-            const sampleData = {
-                '{{staff_full_name}}': 'John Doe',
-                '{{staff_job_title}}': 'Teacher',
-                '{{staff_department}}': 'Academics',
-                '{{staff_employee_number}}': 'EMP/2024/00001',
-                '{{institution_name}}': 'TICH ERP',
-                '{{current_date}}': 'January 1, 2024',
-                '{{staff_gross_monthly_salary}}': '50,000.00',
-                '{{staff_kra_pin}}': 'A123456789X',
-                '{{staff_nssf_number}}': '123456789',
-                '{{staff_sha_number}}': '987654321',
-                '{{staff_helb_number}}': '555555555',
-            };
-
             for (const [key, value] of Object.entries(sampleData)) {
-                processedContent = processedContent.replaceAll(key, value);
-                processedContent = processedContent.replaceAll(key.replace('{{', '{{ '), value);
-                processedContent = processedContent.replaceAll(key.replace('}}', ' }}'), value);
+                processedContent = processedContent.split(key).join(value);
             }
-
             previewHtml += processedContent;
             previewHtml += '</div></div></body></html>';
 

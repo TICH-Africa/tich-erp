@@ -38,38 +38,40 @@
         </article>
     </div>
 
-    <div class="tich-card tich-mb-8">
-        <div class="tich-flex tich-flex--between tich-flex--start">
-            <h3 class="tich-h3">Clearance Checklist</h3>
-            @if ($offboarding->status === 'pending')
-                <form method="POST" action="{{ route('hr.offboarding.approve', $offboarding) }}" class="tich-d-inline">
-                    @csrf
-                    <button type="submit" class="tich-btn tich-btn-success tich-mr-2">Approve</button>
-                </form>
-                <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger">Reject</button>
-                <div id="reject-form" style="display: none; margin-top: 1rem;">
-                    <form method="POST" action="{{ route('hr.offboarding.reject', $offboarding) }}">
+        <div class="tich-card tich-mb-8">
+            <div class="tich-flex tich-flex--between tich-flex--start">
+                <h3 class="tich-h3">Clearance Checklist</h3>
+                @if ($offboarding->status === 'pending')
+                    <div class="tich-flex tich-flex--gap tich-flex--center" style="flex-wrap: wrap;">
+                        <form method="POST" action="{{ route('hr.offboarding.approve', $offboarding) }}">
+                            @csrf
+                            <button type="submit" class="tich-btn tich-btn-success">Approve</button>
+                        </form>
+                        <button type="button" onclick="document.getElementById('reject-form').style.display='block'" class="tich-btn tich-btn-danger">Reject</button>
+                    </div>
+                    <div id="reject-form" class="tich-mt-4" style="display: none;">
+                        <form method="POST" action="{{ route('hr.offboarding.reject', $offboarding) }}">
+                            @csrf
+                            <textarea name="notes" placeholder="Rejection reason..." class="tich-input" rows="2" required></textarea>
+                            <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Confirm</button>
+                        </form>
+                    </div>
+                @endif
+
+                @if ($offboarding->status === 'approved' && !$offboarding->clearanceItems->where('is_completed', false)->isEmpty())
+                    <form method="POST" action="{{ route('hr.offboarding.start-clearance', $offboarding) }}">
                         @csrf
-                        <textarea name="notes" placeholder="Rejection reason..." class="tich-input" rows="2" required></textarea>
-                        <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Confirm</button>
+                        <button type="submit" class="tich-btn tich-btn-primary">Start Clearance</button>
                     </form>
-                </div>
-            @endif
+                @endif
 
-            @if ($offboarding->status === 'approved' && !$offboarding->clearanceItems->where('is_completed', false)->isEmpty())
-                <form method="POST" action="{{ route('hr.offboarding.start-clearance', $offboarding) }}">
-                    @csrf
-                    <button type="submit" class="tich-btn tich-btn-primary">Start Clearance</button>
-                </form>
-            @endif
-
-            @if ($offboarding->status === 'in_progress' && $offboarding->clearanceItems->where('is_completed', false)->isEmpty())
-                <form method="POST" action="{{ route('hr.offboarding.complete-clearance', $offboarding) }}" onsubmit="return confirm('Mark offboarding as completed? This will update staff status.')">
-                    @csrf
-                    <button type="submit" class="tich-btn tich-btn-success">Complete Clearance</button>
-                </form>
-            @endif
-        </div>
+                @if ($offboarding->status === 'in_progress' && $offboarding->clearanceItems->where('is_completed', false)->isEmpty())
+                    <form method="POST" action="{{ route('hr.offboarding.complete-clearance', $offboarding) }}" onsubmit="return confirm('Mark offboarding as completed? This will update staff status.')">
+                        @csrf
+                        <button type="submit" class="tich-btn tich-btn-success">Complete Clearance</button>
+                    </form>
+                @endif
+            </div>
 
         <div class="tich-mt-6">
             <table class="tich-admin-table">
@@ -99,7 +101,7 @@
                             <td class="tich-caption">{{ $item->remarks ?: '-' }}</td>
                             <td>
                                 @if (!$item->is_completed && $offboarding->status === 'in_progress')
-                                    <form method="POST" action="{{ route('hr.offboarding.complete-item', [$offboarding, $item]) }}" class="tich-d-inline">
+                                     <form method="POST" action="{{ route('hr.offboarding.complete-item', [$offboarding, $item]) }}" class="tich-flex tich-flex--gap" style="flex-wrap: wrap;">
                                         @csrf
                                         <input type="text" name="remarks" placeholder="Remarks (optional)" class="tich-input" style="width: 150px; padding: 4px 8px; font-size: 12px;">
                                         <button type="submit" class="tich-btn tich-btn-sm tich-btn-success">Complete</button>

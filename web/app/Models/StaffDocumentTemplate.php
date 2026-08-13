@@ -13,6 +13,7 @@ class StaffDocumentTemplate extends Model
         'name',
         'type',
         'content',
+        'format',
         'variables',
         'is_active',
         'created_by',
@@ -26,6 +27,7 @@ class StaffDocumentTemplate extends Model
     protected $attributes = [
         'variables' => '[]',
         'is_active' => true,
+        'format' => 'html',
     ];
 
     public function creator(): BelongsTo

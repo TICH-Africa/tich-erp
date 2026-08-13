@@ -25,15 +25,22 @@
                     </select>
                 </div>
                 <div>
+                    <label for="format" class="tich-label">Template Format *</label>
+                    <select id="format" name="format" required class="tich-input">
+                        <option value="html" {{ old('format', $template->format ?? 'html') == 'html' ? 'selected' : '' }}>HTML (PDF output)</option>
+                        <option value="docx" {{ old('format', $template->format) == 'docx' ? 'selected' : '' }}>Word Document (.docx)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="tich-checkbox">
                         <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $template->is_active) ? 'checked' : '' }}>
                         <span>Active</span>
                     </label>
                 </div>
                 <div class="tich-grid--span-2">
-                    <label for="content" class="tich-label">Template Content (HTML) *</label>
+                    <label for="content" class="tich-label">Template Content *</label>
                     <textarea id="content" name="content" rows="20" required class="tich-input" style="font-family: monospace;">{{ old('content', $template->content) }}</textarea>
-                    <p class="tich-caption tich-mt-1">Use @{{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_consolidated_gross_pay, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year</p>
+                    <p class="tich-caption tich-mt-1">Use {{variable_name}} for placeholders. Available variables: staff_full_name, staff_job_title, staff_department, staff_employee_number, staff_employment_start_date, staff_contract_end_date, staff_consolidated_gross_pay, staff_kra_pin, staff_nssf_number, staff_sha_number, staff_helb_number, institution_name, current_date, current_year</p>
                 </div>
             </div>
 

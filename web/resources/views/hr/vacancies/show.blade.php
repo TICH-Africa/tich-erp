@@ -47,11 +47,11 @@
             </div>
         </div>
 
-        <div class="tich-mt-6">
+        <div class="tich-mt-6" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             @if ($vacancy->is_published)
                 <a href="{{ route('careers.show', $vacancy) }}" class="tich-btn tich-btn-primary" target="_blank">View Public Page</a>
             @else
-                <form method="POST" action="{{ route('hr.vacancies.toggle-publish', $vacancy) }}" class="tich-d-inline">
+                <form method="POST" action="{{ route('hr.vacancies.toggle-publish', $vacancy) }}">
                     @csrf
                     @method('POST')
                     <button type="submit" class="tich-btn tich-btn-primary">Publish</button>

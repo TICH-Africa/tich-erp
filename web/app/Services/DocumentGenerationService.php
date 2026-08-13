@@ -290,24 +290,28 @@ HTML;
                 'name' => 'Standard Employment Contract',
                 'type' => 'contract',
                 'content' => $this->contractTemplate(),
+                'format' => 'html',
                 'variables' => array_keys($this->buildStaffContext(new Staff())),
             ],
             [
                 'name' => 'Probation Letter',
                 'type' => 'probation_letter',
                 'content' => $this->probationLetterTemplate(),
+                'format' => 'html',
                 'variables' => array_keys($this->buildStaffContext(new Staff())),
             ],
             [
                 'name' => 'Transfer Letter',
                 'type' => 'transfer_letter',
                 'content' => $this->transferLetterTemplate(),
+                'format' => 'html',
                 'variables' => array_keys($this->buildStaffContext(new Staff())),
             ],
             [
                 'name' => 'Exit Clearance Checklist',
                 'type' => 'exit_clearance',
                 'content' => $this->exitClearanceTemplate(),
+                'format' => 'html',
                 'variables' => array_keys($this->buildStaffContext(new Staff())),
             ],
         ];

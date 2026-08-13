@@ -63,19 +63,14 @@ class VacancyApplicationController extends Controller
             'cover_letter' => 'nullable|file|max:10240|mimes:pdf,doc,docx',
             'certificates' => 'nullable|array|max:5',
             'certificates.*' => 'file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png',
-            'expected_salary_min' => 'nullable|numeric|min:0|required_with:expected_salary_max',
-            'expected_salary_max' => 'nullable|numeric|min:0|required_with:expected_salary_min|gte:expected_salary_min',
-            'notice_period' => 'nullable|string|in:1 week,2 weeks,3 weeks,4 weeks,5 weeks,6 weeks,8 weeks,12 weeks,Immediate',
+            'expected_salary' => 'nullable|numeric|min:0',
+            'notice_period' => 'nullable|string|in:1 week,2 weeks,3 weeks,4 weeks,Immediate',
             'declaration' => 'required|accepted',
         ]);
 
-        $expectedSalary = null;
-
-        if (! empty($validated['expected_salary_min']) || ! empty($validated['expected_salary_max'])) {
-            $min = isset($validated['expected_salary_min']) ? number_format((float) $validated['expected_salary_min'], 0) : '-';
-            $max = isset($validated['expected_salary_max']) ? number_format((float) $validated['expected_salary_max'], 0) : '-';
-            $expectedSalary = "KES {$min} - KES {$max}";
-        }
+        $expectedSalary = $validated['expected_salary']
+            ? 'KES ' . number_format((float) $validated['expected_salary'], 0)
+            : null;
 
         $applicationNumber = 'APP-' . date('Y') . '-' . str_pad((string) RecruitmentApplication::count() + 1, 5, '0', STR_PAD_LEFT);
 
