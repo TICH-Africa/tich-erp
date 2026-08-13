@@ -28,7 +28,7 @@
                                 <strong>{{ $feedback->staff->fullName() }}</strong>
                                 <p class="tich-caption">{{ $feedback->staff->employee_number }}</p>
                             </td>
-                            <td class="tich-caption">{{ $feedback->feedback_type ?? '—' }}</td>
+                            <td class="tich-caption">{{ $feedback->feedback_type ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ match($feedback->status) {
                                     'open' => 'warning',

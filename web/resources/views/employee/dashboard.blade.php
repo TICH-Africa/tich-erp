@@ -75,7 +75,7 @@
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Time with TICH</p>
-            <p class="tich-stat__value" style="font-size:1.1rem;">{{ $employmentDuration ?? '—' }}</p>
+            <p class="tich-stat__value" style="font-size:1.1rem;">{{ $employmentDuration ?? '-' }}</p>
         </article>
     </div>
 
@@ -92,14 +92,14 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Employment &amp; contract</h2>
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">Department</span><span class="tich-kv-grid__value">{{ $staff->department?->dept_name ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Campus</span><span class="tich-kv-grid__value">{{ $staff->campus?->campus_name ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Job title</span><span class="tich-kv-grid__value">{{ $staff->job_title ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Grade</span><span class="tich-kv-grid__value">{{ $staff->job_grade ?? '—' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Department</span><span class="tich-kv-grid__value">{{ $staff->department?->dept_name ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Campus</span><span class="tich-kv-grid__value">{{ $staff->campus?->campus_name ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Job title</span><span class="tich-kv-grid__value">{{ $staff->job_title ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Grade</span><span class="tich-kv-grid__value">{{ $staff->job_grade ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Category</span><span class="tich-kv-grid__value">{{ $pay['employment_category'] }}</span></div>
                     <div><span class="tich-kv-grid__label">Payroll scheme</span><span class="tich-kv-grid__value">{{ $pay['payroll_scheme'] }}</span></div>
-                    <div><span class="tich-kv-grid__label">Line manager</span><span class="tich-kv-grid__value">{{ $staff->lineManager?->fullName() ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Start date</span><span class="tich-kv-grid__value">{{ $staff->employment_start_date?->format('d M Y') ?? '—' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Line manager</span><span class="tich-kv-grid__value">{{ $staff->lineManager?->fullName() ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Start date</span><span class="tich-kv-grid__value">{{ $staff->employment_start_date?->format('d M Y') ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Contract end</span><span class="tich-kv-grid__value">{{ $contract['end_date']?->format('d M Y') ?? 'Open-ended / permanent' }}</span></div>
                     @if ($currentContract)
                         <div><span class="tich-kv-grid__label">Contract no.</span><span class="tich-kv-grid__value">{{ $currentContract->contract_number }}</span></div>
@@ -114,7 +114,7 @@
                     <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value">KES {{ number_format($pay['gross_monthly_salary'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value">KES {{ number_format($pay['allowances_total'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value">KES {{ number_format($pay['total_monthly'], 2) }}</span></div>
-                    <div><span class="tich-kv-grid__label">Salary scale</span><span class="tich-kv-grid__value">{{ $staff->salary_scale ?? '—' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Salary scale</span><span class="tich-kv-grid__value">{{ $staff->salary_scale ?? '-' }}</span></div>
                 </div>
                 @if ($pay['allowances']->isNotEmpty())
                     <h3 class="tich-h3 tich-mt-6">Allowance breakdown</h3>
@@ -156,11 +156,11 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Personal &amp; contact</h2>
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">Marital status</span><span class="tich-kv-grid__value">{{ $staff->marital_status ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Organisation email</span><span class="tich-kv-grid__value">{{ $staff->organisation_email ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Personal email</span><span class="tich-kv-grid__value">{{ $staff->primary_email ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Phone</span><span class="tich-kv-grid__value">{{ $staff->phone_number ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Alt. phone</span><span class="tich-kv-grid__value">{{ $staff->alt_phone_number ?? '—' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Marital status</span><span class="tich-kv-grid__value">{{ $staff->marital_status ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Organisation email</span><span class="tich-kv-grid__value">{{ $staff->organisation_email ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Personal email</span><span class="tich-kv-grid__value">{{ $staff->primary_email ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Phone</span><span class="tich-kv-grid__value">{{ $staff->phone_number ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Alt. phone</span><span class="tich-kv-grid__value">{{ $staff->alt_phone_number ?? '-' }}</span></div>
                     <div style="grid-column:1/-1;">
                         <span class="tich-kv-grid__label">Emergency contact</span>
                         <span class="tich-kv-grid__value">
@@ -168,12 +168,12 @@
                                 {{ $staff->emergency_contact_name }}
                                 @if ($staff->emergency_contact_relationship) ({{ $staff->emergency_contact_relationship }}) @endif
                                 @if ($staff->emergency_contact_phone) · {{ $staff->emergency_contact_phone }} @endif
-                            @else — @endif
+                            @else - @endif
                         </span>
                     </div>
                     <div style="grid-column:1/-1;">
                         <span class="tich-kv-grid__label">Physical address</span>
-                        <p class="tich-kv-grid__value tich-kv-grid__value--block tich-mt-2">{{ $staff->physical_address ?? '—' }}</p>
+                        <p class="tich-kv-grid__value tich-kv-grid__value--block tich-mt-2">{{ $staff->physical_address ?? '-' }}</p>
                     </div>
                 </div>
             </article>
@@ -181,13 +181,13 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Statutory &amp; payroll details</h2>
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">KRA PIN</span><span class="tich-kv-grid__value">{{ $staff->kra_pin ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">NSSF number</span><span class="tich-kv-grid__value">{{ $staff->nssf_number ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">SHA number</span><span class="tich-kv-grid__value">{{ $staff->sha_number ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Bank</span><span class="tich-kv-grid__value">{{ $staff->bankAccount?->bank_name ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Account name</span><span class="tich-kv-grid__value">{{ $staff->bankAccount?->account_name ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Account number</span><span class="tich-kv-grid__value">{{ $pay['masked_account_number'] ?? '—' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Pension scheme</span><span class="tich-kv-grid__value">{{ $staff->pensionScheme?->scheme_name ?? '—' }}</span></div>
+                    <div><span class="tich-kv-grid__label">KRA PIN</span><span class="tich-kv-grid__value">{{ $staff->kra_pin ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">NSSF number</span><span class="tich-kv-grid__value">{{ $staff->nssf_number ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">SHA number</span><span class="tich-kv-grid__value">{{ $staff->sha_number ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Bank</span><span class="tich-kv-grid__value">{{ $staff->bankAccount?->bank_name ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Account name</span><span class="tich-kv-grid__value">{{ $staff->bankAccount?->account_name ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Account number</span><span class="tich-kv-grid__value">{{ $pay['masked_account_number'] ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Pension scheme</span><span class="tich-kv-grid__value">{{ $staff->pensionScheme?->scheme_name ?? '-' }}</span></div>
                 </div>
             </article>
         </div>
@@ -304,7 +304,7 @@
                 @forelse ($staff->qualifications as $qualification)
                     <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
                         <strong>{{ $qualification->qualification_name ?: ucfirst(str_replace('_', ' ', $qualification->qualification_type)) }}</strong>
-                        <p class="tich-caption tich-mt-2">{{ $qualification->institution ?? '—' }} · {{ $qualification->year_completed ?? '—' }}@if($qualification->grade_or_class) · {{ $qualification->grade_or_class }}@endif</p>
+                        <p class="tich-caption tich-mt-2">{{ $qualification->institution ?? '-' }} · {{ $qualification->year_completed ?? '-' }}@if($qualification->grade_or_class) · {{ $qualification->grade_or_class }}@endif</p>
                     </div>
                 @empty
                     <p class="tich-text tich-mt-4">No qualifications recorded.</p>
@@ -317,7 +317,7 @@
                     <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
                         <strong>{{ $document->document_name }}</strong>
                         <span class="tich-caption"> · {{ $document->is_verified ? 'Verified' : 'Pending verification' }}</span>
-                        <p class="tich-caption tich-mt-2">{{ ucfirst($document->document_type) }} · Expires {{ $document->expiry_date?->format('d M Y') ?? '—' }}</p>
+                        <p class="tich-caption tich-mt-2">{{ ucfirst($document->document_type) }} · Expires {{ $document->expiry_date?->format('d M Y') ?? '-' }}</p>
                     </div>
                 @empty
                     <p class="tich-text tich-mt-4">No HR documents on file.</p>
@@ -329,8 +329,8 @@
                         <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
                             <strong>{{ ucfirst(str_replace('_', ' ', $license->license_type)) }}</strong>
                             <p class="tich-caption tich-mt-2">
-                                {{ $license->issuing_body ?? '—' }} · {{ $license->license_number ?? '—' }}
-                                · Expires {{ $license->expiry_date?->format('d M Y') ?? '—' }}
+                                {{ $license->issuing_body ?? '-' }} · {{ $license->license_number ?? '-' }}
+                                · Expires {{ $license->expiry_date?->format('d M Y') ?? '-' }}
                             </p>
                         </div>
                     @endforeach
@@ -345,7 +345,7 @@
                     <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
                         <strong>{{ $review->review_period_start?->format('d M Y') ?? 'Review' }}@if($review->review_period_end) – {{ $review->review_period_end->format('d M Y') }}@endif</strong>
                         <span class="tich-caption"> · {{ ucfirst(str_replace('_', ' ', $review->overall_rating ?? 'completed')) }}</span>
-                        <p class="tich-caption tich-mt-2">{{ $review->review_date?->format('d M Y') ?? '—' }}</p>
+                        <p class="tich-caption tich-mt-2">{{ $review->review_date?->format('d M Y') ?? '-' }}</p>
                     </div>
                 @endforeach
             </article>

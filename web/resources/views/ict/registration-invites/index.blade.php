@@ -35,7 +35,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $invite->email }}</td>
-                                <td>{{ $invite->inviter?->email ?? '—' }}</td>
+                                <td>{{ $invite->inviter?->email ?? '-' }}</td>
                                 <td>
                                     @if ($invite->used_at)
                                         Registered

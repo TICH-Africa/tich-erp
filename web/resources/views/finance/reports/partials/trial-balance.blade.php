@@ -16,8 +16,8 @@
                     <td>{{ $row['account_code'] }}</td>
                     <td>{{ $row['account_name'] }}</td>
                     <td>{{ ucfirst($row['account_type']) }}</td>
-                    <td class="num">{{ $row['debit'] > 0 ? number_format($row['debit'], 2) : '—' }}</td>
-                    <td class="num">{{ $row['credit'] > 0 ? number_format($row['credit'], 2) : '—' }}</td>
+                    <td class="num">{{ $row['debit'] > 0 ? number_format($row['debit'], 2) : '-' }}</td>
+                    <td class="num">{{ $row['credit'] > 0 ? number_format($row['credit'], 2) : '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="5">No ledger balances to report yet.</td></tr>

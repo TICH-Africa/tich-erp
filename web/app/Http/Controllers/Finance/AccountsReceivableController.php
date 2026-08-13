@@ -75,7 +75,7 @@ class AccountsReceivableController extends Controller
 
         return back()->with($sent ? 'success' : 'error', $sent
             ? 'Payment reminder sent.'
-            : 'Could not send reminder — no email or phone on file.');
+            : 'Could not send reminder - no email or phone on file.');
     }
 
     public function sendBulkReminders(Request $request, Department $department): RedirectResponse

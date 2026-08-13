@@ -36,15 +36,15 @@
             <div class="tich-kv-grid tich-mt-4">
                 <div><span class="tich-kv-grid__label">Name</span><span class="tich-kv-grid__value">{{ $staffMember->fullName() }}</span></div>
                 <div><span class="tich-kv-grid__label">Employee no.</span><span class="tich-kv-grid__value">{{ $staffMember->employee_number }}</span></div>
-                <div><span class="tich-kv-grid__label">Department</span><span class="tich-kv-grid__value">{{ $staffMember->department?->dept_name ?? '—' }}</span></div>
-                <div><span class="tich-kv-grid__label">Job title</span><span class="tich-kv-grid__value">{{ $staffMember->job_title ?? '—' }}</span></div>
+                <div><span class="tich-kv-grid__label">Department</span><span class="tich-kv-grid__value">{{ $staffMember->department?->dept_name ?? '-' }}</span></div>
+                <div><span class="tich-kv-grid__label">Job title</span><span class="tich-kv-grid__value">{{ $staffMember->job_title ?? '-' }}</span></div>
             </div>
             <a href="{{ route('hr.staff.show', $staffMember) }}" class="tich-btn tich-btn-ghost tich-mt-4">View full staff record</a>
         </article>
 
         <article class="tich-card">
             <h2 class="tich-h3">Employee notes</h2>
-            <p class="tich-text tich-mt-4">{{ $changeRequest->employee_notes ?: '—' }}</p>
+            <p class="tich-text tich-mt-4">{{ $changeRequest->employee_notes ?: '-' }}</p>
         </article>
     </div>
 
@@ -94,8 +94,8 @@
                         @foreach ($changeRequest->proposed_changes ?? [] as $field => $proposed)
                             <tr>
                                 <td>{{ ucwords(str_replace('_', ' ', $field)) }}</td>
-                                <td>{{ $changeRequest->current_snapshot[$field] ?? '—' }}</td>
-                                <td><strong>{{ $proposed ?? '—' }}</strong></td>
+                                <td>{{ $changeRequest->current_snapshot[$field] ?? '-' }}</td>
+                                <td><strong>{{ $proposed ?? '-' }}</strong></td>
                             </tr>
                         @endforeach
                     </tbody>

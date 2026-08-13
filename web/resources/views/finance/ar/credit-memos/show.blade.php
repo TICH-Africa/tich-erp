@@ -20,7 +20,7 @@
             <dt class="tich-caption">Reason</dt>
             <dd>{{ $memo->reason }}</dd>
             <dt class="tich-caption">Issued by</dt>
-            <dd>{{ $memo->issuer?->fullName() ?? '—' }}</dd>
+            <dd>{{ $memo->issuer?->fullName() ?? '-' }}</dd>
             <dt class="tich-caption">Issued at</dt>
             <dd>{{ $memo->issued_at?->format('d M Y H:i') }}</dd>
         </dl>

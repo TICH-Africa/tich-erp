@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse ($feedbacks as $feedback)
                         <tr>
-                            <td class="tich-caption">{{ $feedback->feedback_type ?? '—' }}</td>
+                            <td class="tich-caption">{{ $feedback->feedback_type ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ match($feedback->status) {
                                     'open' => 'warning',

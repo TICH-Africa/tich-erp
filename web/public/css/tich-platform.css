@@ -1278,6 +1278,10 @@ select.tich-select:focus {
     min-width: 0;
 }
 
+.tich-stat-row--7 {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
 .tich-stat-row .tich-stat {
     padding: 0.875rem 0.75rem;
     min-width: 0;
@@ -1296,6 +1300,29 @@ select.tich-select:focus {
 .tich-stat-row .tich-caption {
     margin-top: 0.25rem;
     line-height: 1.25;
+}
+
+.tich-staff-table-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid var(--tich-neutral-border);
+    background: var(--tich-surface-muted, #f1f5f9);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--tich-blue);
+}
+
+.tich-staff-table-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 @media (max-width: 1200px) {
@@ -3466,7 +3493,7 @@ a.tich-notification-badge:hover {
     --content-scale: 0.95;
 }
 
-/* Main dashboard body content — scaled down; small meta text unchanged */
+/* Main dashboard body content - scaled down; small meta text unchanged */
 .tich-admin__main .tich-text {
     font-size: calc(var(--text-body) * var(--content-scale));
 }

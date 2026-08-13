@@ -2,7 +2,7 @@
 
 @section('title', 'Finance')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Finance" meta="Student accounts, invoicing, procurement, payroll, and financial control">
         <x-slot:actions>
             <a href="{{ route('finance.student-finance.index', $department) }}" class="tich-btn tich-btn-primary">+ New invoice</a>

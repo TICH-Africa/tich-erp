@@ -70,7 +70,7 @@ return [
         'admissions.application.portal_signup_email_sent' => ['module' => 'admissions', 'sensitive' => false],
         'admissions.application.staff_notified' => ['module' => 'admissions', 'sensitive' => false],
 
-        // Academics — units & programs
+        // Academics - units & programs
         'academics.unit.created' => ['module' => 'academics', 'sensitive' => false],
         'academics.unit.updated' => ['module' => 'academics', 'sensitive' => false],
         'academics.unit.submitted' => ['module' => 'academics', 'sensitive' => false],
@@ -84,7 +84,7 @@ return [
         'academics.unit_allocation.assigned' => ['module' => 'academics', 'sensitive' => false],
         'academics.unit_allocation.removed' => ['module' => 'academics', 'sensitive' => false],
 
-        // Academics — curriculum versions / intakes
+        // Academics - curriculum versions / intakes
         'academics.curriculum_version.created' => ['module' => 'academics', 'sensitive' => false],
         'academics.curriculum_version.units_synced' => ['module' => 'academics', 'sensitive' => false],
         'academics.curriculum_version.unit_added' => ['module' => 'academics', 'sensitive' => false],
@@ -94,7 +94,7 @@ return [
         'academics.curriculum_version.registrar_approved' => ['module' => 'academics', 'sensitive' => false],
         'academics.curriculum_version.ceo_approved' => ['module' => 'academics', 'sensitive' => false],
 
-        // Academics — calendar & timetables
+        // Academics - calendar & timetables
         'academics.calendar.year_created' => ['module' => 'academics', 'sensitive' => false],
         'academics.calendar.semester_updated' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable.generated' => ['module' => 'academics', 'sensitive' => false],
@@ -104,11 +104,11 @@ return [
         'academics.timetable_template.updated' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable_template.slots_updated' => ['module' => 'academics', 'sensitive' => false],
 
-        // Academics — exams
+        // Academics - exams
         'academics.exam_schedule.updated' => ['module' => 'academics', 'sensitive' => false],
         'academics.exam_schedule.synced_from_timetable' => ['module' => 'academics', 'sensitive' => false],
 
-        // Staff portal — lesson plans
+        // Staff portal - lesson plans
         'staff.lesson_plan.created' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.updated' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.submitted' => ['module' => 'staff', 'sensitive' => false],
@@ -118,7 +118,7 @@ return [
         'staff.lesson_plan.modification_requested' => ['module' => 'staff', 'sensitive' => false],
         'staff.lesson_plan.hod_updated' => ['module' => 'staff', 'sensitive' => false],
 
-        // Staff portal — attendance
+        // Staff portal - attendance
         'staff.attendance.session_created' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.sheet_uploaded' => ['module' => 'staff', 'sensitive' => false],
@@ -130,7 +130,7 @@ return [
         'staff.attendance.roster_verified' => ['module' => 'staff', 'sensitive' => false],
         'staff.attendance.eligibility_checked' => ['module' => 'staff', 'sensitive' => false],
 
-        // Staff portal — grading & content
+        // Staff portal - grading & content
         'staff.grading.grid_saved' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.cat_score_recorded' => ['module' => 'staff', 'sensitive' => false],
         'staff.grading.exam_marks_saved' => ['module' => 'staff', 'sensitive' => false],
@@ -139,7 +139,7 @@ return [
         'staff.grading.objective_auto_graded' => ['module' => 'staff', 'sensitive' => false],
         'staff.learning_content.uploaded' => ['module' => 'staff', 'sensitive' => false],
 
-        // HR — leave & attendance
+        // HR - leave & attendance
         'hr.leave.submitted' => ['module' => 'hr', 'sensitive' => false],
         'hr.leave.resubmitted' => ['module' => 'hr', 'sensitive' => false],
         'hr.leave.approved' => ['module' => 'hr', 'sensitive' => false],

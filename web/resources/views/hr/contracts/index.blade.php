@@ -29,7 +29,7 @@
                         <tr>
                             <td>{{ $contract->contract_number }}</td>
                             <td>
-                                <strong>{{ $contract->staff->fullName() ?? '—' }}</strong>
+                                <strong>{{ $contract->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $contract->staff->employee_number ?? '' }}</p>
                             </td>
                             <td class="tich-caption">{{ ucfirst($contract->contract_type) }}</td>

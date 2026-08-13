@@ -70,7 +70,7 @@
     document.querySelectorAll('.student-access-trigger').forEach(function (trigger) {
         trigger.addEventListener('click', function () {
             form.action = trigger.getAttribute('data-update-url') || '#';
-            document.getElementById('student-access-modal-title').textContent = 'Student role — ' + (trigger.getAttribute('data-display-name') || '');
+            document.getElementById('student-access-modal-title').textContent = 'Student role - ' + (trigger.getAttribute('data-display-name') || '');
             document.getElementById('student-access-user-meta').textContent = trigger.getAttribute('data-email') || '';
 
             var roleId = trigger.getAttribute('data-role-id') || '';

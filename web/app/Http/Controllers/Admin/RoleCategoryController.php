@@ -86,7 +86,7 @@ class RoleCategoryController extends Controller
                 ->route('admin.role-categories.index')
                 ->withInput()
                 ->withErrors([
-                    'category' => "Cannot deactivate \"{$roleCategory->category_name}\" — {$roleCategory->rolesCount()} role(s) still use it.",
+                    'category' => "Cannot deactivate \"{$roleCategory->category_name}\" - {$roleCategory->rolesCount()} role(s) still use it.",
                 ]);
         }
 
@@ -127,7 +127,7 @@ class RoleCategoryController extends Controller
             return redirect()
                 ->route('admin.role-categories.index')
                 ->withErrors([
-                    'category' => "Cannot delete \"{$roleCategory->category_name}\" — {$rolesCount} role(s) still use it. Reassign those roles first.",
+                    'category' => "Cannot delete \"{$roleCategory->category_name}\" - {$rolesCount} role(s) still use it. Reassign those roles first.",
                 ]);
         }
 

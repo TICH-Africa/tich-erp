@@ -87,15 +87,15 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Department</span>
-                    <span class="tich-kv-grid__value">{{ $staffMember->department?->dept_name ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $staffMember->department?->dept_name ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Job title</span>
-                    <span class="tich-kv-grid__value">{{ $staffMember->job_title ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $staffMember->job_title ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Line manager</span>
-                    <span class="tich-kv-grid__value">{{ $staffMember->lineManager?->fullName() ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $staffMember->lineManager?->fullName() ?? '-' }}</span>
                 </div>
             </div>
             <a href="{{ route('hr.staff.show', $staffMember) }}" class="tich-btn tich-btn-ghost tich-mt-4">View staff profile</a>
@@ -137,7 +137,7 @@
         <div class="tich-kv-grid tich-mt-4">
             <div>
                 <span class="tich-kv-grid__label">Submitted</span>
-                <span class="tich-kv-grid__value">{{ $leaveRequest->created_at?->format('d M Y, H:i') ?? '—' }}</span>
+                <span class="tich-kv-grid__value">{{ $leaveRequest->created_at?->format('d M Y, H:i') ?? '-' }}</span>
             </div>
             <div>
                 <span class="tich-kv-grid__label">Leave type</span>

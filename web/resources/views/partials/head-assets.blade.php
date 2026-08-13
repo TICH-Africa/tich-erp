@@ -1,3 +1,9 @@
+@php
+    $siteMetaForHead = $siteMeta ?? app(\App\Services\SiteSettingsService::class)->siteMeta();
+@endphp
+<link rel="icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
+<link rel="shortcut icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
+<link rel="apple-touch-icon" href="{{ $siteMetaForHead['favicon_url'] }}">
 <link rel="preconnect" href="https://fonts.bunny.net">
 @include('partials.theme-init')
 <link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" />

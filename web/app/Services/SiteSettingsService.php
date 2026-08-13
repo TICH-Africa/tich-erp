@@ -82,6 +82,8 @@ class SiteSettingsService
             'website' => $this->get('site.website', $defaults['website'] ?? ''),
             'logo_path' => $logoPath,
             'logo_url' => $this->publicAssetUrl($logoPath),
+            'favicon_url' => $this->faviconUrl(),
+            'favicon_type' => $this->faviconMimeType(),
             'brand_name' => $this->get('site.brand_name', $shortName),
             'brand_tagline' => $this->get('site.brand_tagline', $tagline),
         ];
@@ -127,6 +129,28 @@ class SiteSettingsService
         }
 
         return Storage::disk('public')->path($relative);
+    }
+
+    public function faviconUrl(): string
+    {
+        return $this->publicAssetUrl($this->get('site.logo_path'))
+            ?? asset('images/logo.png');
+    }
+
+    public function faviconAbsolutePath(): string
+    {
+        return $this->logoAbsolutePath() ?? public_path('images/logo.png');
+    }
+
+    public function faviconMimeType(): string
+    {
+        $absolute = $this->faviconAbsolutePath();
+
+        if (! is_file($absolute)) {
+            return 'image/png';
+        }
+
+        return mime_content_type($absolute) ?: 'image/png';
     }
 
     public function documentLogoSrc(bool $forPdf = false): ?string

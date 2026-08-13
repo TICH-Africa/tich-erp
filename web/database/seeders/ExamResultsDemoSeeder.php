@@ -14,7 +14,7 @@ class ExamResultsDemoSeeder extends Seeder
         $programId = DB::table('academic_programs')->where('program_code', 'HMD-CC')->value('id');
 
         if (! $programId) {
-            $this->command?->warn('HMD-CC program not found — skipping exam results demo seed.');
+            $this->command?->warn('HMD-CC program not found - skipping exam results demo seed.');
 
             return;
         }
@@ -24,7 +24,7 @@ class ExamResultsDemoSeeder extends Seeder
         $unitIds = [1, 2, 3];
 
         if (! $semesterId || DB::table('units')->whereIn('id', $unitIds)->count() < 3) {
-            $this->command?->warn('Required semester or units missing — skipping exam results demo seed.');
+            $this->command?->warn('Required semester or units missing - skipping exam results demo seed.');
 
             return;
         }

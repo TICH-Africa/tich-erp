@@ -121,7 +121,7 @@
                             <td class="tich-caption">{{ $payment->payment_date?->format('d M Y') }}</td>
                             <td class="tich-caption">{{ ucfirst($payment->payment_method) }}</td>
                             <td>KES {{ number_format($payment->amount, 2) }}</td>
-                            <td class="tich-caption">{{ $payment->payment_reference ?? '—' }}</td>
+                            <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('finance.student-finance.payments.show', ['department' => $department->id, 'id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>

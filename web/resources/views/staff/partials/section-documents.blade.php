@@ -33,8 +33,8 @@
                                 @endif
                             </td>
                             <td class="tich-caption">{{ $doc->original_filename }}</td>
-                            <td class="tich-caption">{{ $doc->issue_date?->format('Y-m-d') ?? '—' }}</td>
-                            <td class="tich-caption">{{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $doc->issue_date?->format('Y-m-d') ?? '-' }}</td>
+                            <td class="tich-caption">{{ $doc->expiry_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $doc->is_verified ? 'success' : 'warning' }}">
                                     {{ $doc->is_verified ? 'Verified' : 'Pending' }}

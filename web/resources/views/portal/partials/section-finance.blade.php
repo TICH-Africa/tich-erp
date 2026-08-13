@@ -220,8 +220,8 @@
                             <td>{{ $entry['date'] ? \Illuminate\Support\Carbon::parse($entry['date'])->format('d M Y') : '-' }}</td>
                             <td>{{ $entry['reference'] }}</td>
                             <td>{{ $entry['description'] }}</td>
-                            <td>{{ $entry['debit'] > 0 ? 'KES '.number_format($entry['debit'], 2) : '—' }}</td>
-                            <td>{{ $entry['credit'] > 0 ? 'KES '.number_format($entry['credit'], 2) : '—' }}</td>
+                            <td>{{ $entry['debit'] > 0 ? 'KES '.number_format($entry['debit'], 2) : '-' }}</td>
+                            <td>{{ $entry['credit'] > 0 ? 'KES '.number_format($entry['credit'], 2) : '-' }}</td>
                             <td>KES {{ number_format((float) $entry['running_balance'], 2) }}</td>
                         </tr>
                     @endforeach
@@ -257,7 +257,7 @@
                         <tr>
                             <td>{{ $invoice->invoice_number }}</td>
                             <td>{{ ucwords(str_replace('_', ' ', $invoice->invoice_type)) }}</td>
-                            <td>{{ $invoice->description ?: '—' }}</td>
+                            <td>{{ $invoice->description ?: '-' }}</td>
                             <td>KES {{ number_format((float) $invoice->amount, 2) }}</td>
                             <td>KES {{ number_format((float) $invoice->amount_paid, 2) }}</td>
                             <td>KES {{ number_format((float) $invoice->balance, 2) }}</td>
@@ -267,7 +267,7 @@
                                 @if ($isPayable && $mpesaEnabled)
                                     <a href="{{ route('portal.dashboard', ['section' => 'finance', 'invoice' => $invoice->id]) }}#pay-with-mpesa" class="tich-link">Pay</a>
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
                         </tr>

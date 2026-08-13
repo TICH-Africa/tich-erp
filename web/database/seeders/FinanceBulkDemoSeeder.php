@@ -51,7 +51,7 @@ class FinanceBulkDemoSeeder extends Seeder
             ?? 0);
 
         if ($staffId === 0) {
-            $this->command?->warn('FinanceBulkDemoSeeder: no staff found — run FinanceDemoSeeder first.');
+            $this->command?->warn('FinanceBulkDemoSeeder: no staff found - run FinanceDemoSeeder first.');
 
             return;
         }
@@ -86,18 +86,20 @@ class FinanceBulkDemoSeeder extends Seeder
         $supplierStats = $this->seedSuppliersAndPayables($financeDeptId, $staffId);
         $bankCount = $this->seedBankTransactions();
         $donorStats = $this->seedDonorProjects($staffId);
+        $budgetCount = $this->seedBudgets($financeDeptId, $staffId);
         $assetStats = $this->seedAssetsAndInventory();
         $payrollCount = $this->seedPayrollHistory($staffId);
         $workStudyCount = $this->seedWorkStudyLedger($students, $staffId);
 
         $this->command?->info(sprintf(
-            'Finance bulk demo: %d students, %d invoices raised, %d suppliers, %d AP invoices, %d bank lines, %d donor projects, %d assets, %d inventory items, %d payroll slips, %d work-study entries.',
+            'Finance bulk demo: %d students, %d invoices raised, %d suppliers, %d AP invoices, %d bank lines, %d donor projects, %d budgets, %d assets, %d inventory items, %d payroll slips, %d work-study entries.',
             count($students),
             $invoiceStats['invoices'],
             $supplierStats['suppliers'],
             $supplierStats['ap'],
             $bankCount,
             $donorStats['projects'],
+            $budgetCount,
             $assetStats['assets'],
             $assetStats['inventory'],
             $payrollCount,
@@ -371,7 +373,7 @@ class FinanceBulkDemoSeeder extends Seeder
             }
 
             if ($scenario === 9 && (float) $invoice->balance > 5000 && $invoice->payments()->count() > 0) {
-                $creditMemoService->issue($invoice, 2500, 'Demo credit — lab fee waiver', $staffId);
+                $creditMemoService->issue($invoice, 2500, 'Demo credit - lab fee waiver', $staffId);
             }
 
             if ($index % 7 === 0 && ! Invoice::query()->where('student_id', $student->id)->where('invoice_type', 'application')->exists()) {
@@ -461,7 +463,7 @@ class FinanceBulkDemoSeeder extends Seeder
             'student_id' => $invoice->student_id,
             'invoice_id' => $invoice->id,
             'adjustment_type' => $type,
-            'reason' => ucfirst($type).' allocation — finance demo seed',
+            'reason' => ucfirst($type).' allocation - finance demo seed',
             'amount' => $amount,
             'status' => $status,
             'requested_by' => $staffId,
@@ -490,7 +492,7 @@ class FinanceBulkDemoSeeder extends Seeder
             'student_account_id' => $invoice->student_account_id,
             'student_id' => $invoice->student_id,
             'amount' => min(1500, (float) $payment->amount),
-            'reason' => 'Duplicate payment — demo refund request',
+            'reason' => 'Duplicate payment - demo refund request',
             'status' => $index % 2 === 0 ? 'pending' : 'approved',
             'requested_by' => $staffId,
             'approved_by' => $index % 2 === 1 ? $staffId : null,
@@ -602,7 +604,7 @@ class FinanceBulkDemoSeeder extends Seeder
                 'requesting_department_id' => $deptId,
                 'requested_by' => $staffId,
                 'request_date' => now()->subDays(60)->toDateString(),
-                'justification' => 'Finance demo procurement — office and operational supplies',
+                'justification' => 'Finance demo procurement - office and operational supplies',
                 'estimated_cost' => $amount,
                 'budget_code' => 'FIN-OPS-'.date('Y'),
                 'status' => 'finance_approved',
@@ -756,7 +758,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     'kes_amount' => round($received * $rate, 2),
                     'receipt_date' => now()->subMonths(12 - ($d * 3))->toDateString(),
                     'bank_reference' => 'BNK-DON-'.str_replace('-', '', $code)."-{$d}",
-                    'purpose' => "Tranche {$d} disbursement — {$name}",
+                    'purpose' => "Tranche {$d} disbursement - {$name}",
                     'created_at' => now()->subMonths(12 - ($d * 3)),
                 ]);
                 $disbursementCount++;
@@ -766,6 +768,70 @@ class FinanceBulkDemoSeeder extends Seeder
         }
 
         return ['projects' => $projectCount, 'disbursements' => $disbursementCount];
+    }
+
+    private function seedBudgets(int $financeDeptId, int $staffId): int
+    {
+        if (! DB::getSchemaBuilder()->hasTable('finance_budgets')) {
+            return 0;
+        }
+
+        $departments = DB::table('departments')
+            ->whereNull('parent_dept_id')
+            ->where('is_active', 1)
+            ->orderBy('dept_name')
+            ->limit(8)
+            ->get(['id', 'dept_code', 'dept_name']);
+
+        $definitions = [
+            ['BGT-FIN-INST', 'Institution operating budget', 'annual', null, 45000000, 12800000, 3200000],
+            ['BGT-FIN-CAPEX', 'Capital expenditure programme', 'annual', null, 18000000, 4200000, 2100000],
+        ];
+
+        foreach ($departments as $index => $department) {
+            $allocated = round(3500000 + ($index * 750000), 2);
+            $definitions[] = [
+                'BGT-FIN-'.strtoupper($department->dept_code ?? ('D'.$department->id)),
+                $department->dept_name.' operations',
+                'departmental',
+                (int) $department->id,
+                $allocated,
+                round($allocated * (0.25 + ($index * 0.04)), 2),
+                round($allocated * (0.12 + ($index * 0.02)), 2),
+            ];
+        }
+
+        $count = 0;
+        $year = (int) now()->format('Y');
+
+        foreach ($definitions as [$code, $name, $type, $deptId, $allocated, $spent, $committed]) {
+            $exists = DB::table('finance_budgets')->where('budget_code', $code)->exists();
+            if ($exists) {
+                continue;
+            }
+
+            DB::table('finance_budgets')->insert([
+                'budget_code' => $code,
+                'budget_name' => $name,
+                'budget_type' => $type,
+                'department_id' => $deptId,
+                'fiscal_year' => $year,
+                'period_start' => "{$year}-01-01",
+                'period_end' => "{$year}-12-31",
+                'allocated_amount' => $allocated,
+                'spent_amount' => $spent,
+                'committed_amount' => $committed,
+                'status' => 'active',
+                'approved_by' => $staffId,
+                'approved_at' => now()->subMonths(2),
+                'notes' => 'Finance demo budget - seeded for testing budget vs actual views.',
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now(),
+            ]);
+            $count++;
+        }
+
+        return $count;
     }
 
     /**
@@ -793,7 +859,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     0 => 'HP ProBook Laptop #'.$i,
                     1 => 'Executive Office Desk Set #'.$i,
                     2 => 'Laboratory Microscope #'.$i,
-                    3 => 'Institution Van — Unit '.$i,
+                    3 => 'Institution Van - Unit '.$i,
                     default => 'Multifunction Printer #'.$i,
                 },
                 'asset_category' => $assetCategories[$i % count($assetCategories)],
@@ -825,7 +891,7 @@ class FinanceBulkDemoSeeder extends Seeder
             ['INV-FIN-008', 'Laboratory Specimen Jars', 'medical', 180, 40, 120],
             ['INV-FIN-009', 'Toner Cartridge HP 85A', 'it', 18, 4, 4500],
             ['INV-FIN-010', 'First Aid Kit Refill Pack', 'medical', 35, 8, 2200],
-            ['INV-FIN-011', 'Desk Chairs — Standard', 'furniture', 12, 3, 8500],
+            ['INV-FIN-011', 'Desk Chairs - Standard', 'furniture', 12, 3, 8500],
             ['INV-FIN-012', 'Fire Extinguisher 6kg', 'safety', 22, 5, 4200],
             ['INV-FIN-013', 'Library Barcode Labels', 'admin', 5000, 500, 2],
             ['INV-FIN-014', 'USB Flash Drive 32GB', 'it', 45, 10, 850],
@@ -850,7 +916,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     'reorder_level' => $reorder,
                     'unit_cost' => $unitCost,
                     'supplier_id' => $supplierId,
-                    'store_location' => 'Main Store — Block B',
+                    'store_location' => 'Main Store - Block B',
                     'is_active' => 1,
                     'created_at' => now()->subMonths(4),
                 ]);
@@ -866,10 +932,10 @@ class FinanceBulkDemoSeeder extends Seeder
                     'total_cost' => $stock * $unitCost,
                     'reference_table' => 'purchase_orders',
                     'reference_id' => 'PO-FIN-DEMO',
-                    'to_location' => 'Main Store — Block B',
+                    'to_location' => 'Main Store - Block B',
                     'recorded_by' => $staffId,
                     'transaction_date' => now()->subMonths(3)->toDateString(),
-                    'notes' => 'Initial stock — finance demo seed',
+                    'notes' => 'Initial stock - finance demo seed',
                     'created_at' => now()->subMonths(3),
                 ]);
 
@@ -880,10 +946,10 @@ class FinanceBulkDemoSeeder extends Seeder
                         'quantity' => (int) round($stock * 0.15),
                         'unit_cost' => $unitCost,
                         'total_cost' => round($stock * 0.15 * $unitCost, 2),
-                        'from_location' => 'Main Store — Block B',
+                        'from_location' => 'Main Store - Block B',
                         'recorded_by' => $staffId,
                         'transaction_date' => now()->subWeeks(2)->toDateString(),
-                        'notes' => 'Department issue — finance demo',
+                        'notes' => 'Department issue - finance demo',
                         'created_at' => now()->subWeeks(2),
                     ]);
                 }

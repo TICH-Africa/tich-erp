@@ -5,7 +5,7 @@
 @section('hr-content')
     <x-page-toolbar title="HR Dashboard" meta="Staff lifecycle, onboarding, contracts, and recruitment" />
 
-    <div class="tich-stat-row tich-mb-8">
+    <div class="tich-stat-row tich-stat-row--7 tich-mb-8">
         <div class="tich-stat">
             <p class="tich-stat__label">Total Staff</p>
             <p class="tich-stat__value">{{ $staffCount }}</p>
@@ -37,7 +37,7 @@
             @endif
         </div>
         <div class="tich-stat">
-            <p class="tich-stat__label">Profile updates pending</p>
+            <p class="tich-stat__label">Profile updates</p>
             <p class="tich-stat__value">{{ $pendingProfileChangeCount }}</p>
             @if ($pendingProfileChangeCount > 0)
                 <p class="tich-caption"><a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}">Review now</a></p>
@@ -78,7 +78,7 @@
                                     <p class="tich-caption">{{ $changeRequest->staff->employee_number }}</p>
                                 </td>
                                 <td>{{ $changeRequest->typeLabel() }}</td>
-                                <td class="tich-caption">{{ $summary ?: '—' }}</td>
+                                <td class="tich-caption">{{ $summary ?: '-' }}</td>
                                 <td class="tich-caption">{{ $changeRequest->created_at->format('d M Y H:i') }}</td>
                                 <td>
                                     <a href="{{ route('hr.profile-changes.show', $changeRequest) }}" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Review &amp; approve</a>

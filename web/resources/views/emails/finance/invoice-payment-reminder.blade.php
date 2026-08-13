@@ -7,7 +7,7 @@
     <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
         <tr><td><strong>Invoice</strong></td><td>{{ $invoice->invoice_number }}</td></tr>
         <tr><td><strong>Balance due</strong></td><td>KES {{ number_format((float) $invoice->balance, 2) }}</td></tr>
-        <tr><td><strong>Due date</strong></td><td>{{ $invoice->due_date?->format('d M Y') ?? '—' }}</td></tr>
+        <tr><td><strong>Due date</strong></td><td>{{ $invoice->due_date?->format('d M Y') ?? '-' }}</td></tr>
         <tr><td><strong>Status</strong></td><td>{{ ucfirst($invoice->status) }}</td></tr>
     </table>
     <p>Please pay promptly via M-Pesa in your <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}">Student Portal</a> to avoid clearance delays.</p>

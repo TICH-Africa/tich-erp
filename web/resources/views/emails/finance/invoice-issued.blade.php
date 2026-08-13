@@ -7,9 +7,9 @@
     <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
         <tr><td><strong>Invoice</strong></td><td>{{ $invoice->invoice_number }}</td></tr>
         <tr><td><strong>Registration</strong></td><td>{{ $invoice->student->registration_number }}</td></tr>
-        <tr><td><strong>Programme</strong></td><td>{{ $invoice->student->program?->program_name ?? '—' }}</td></tr>
+        <tr><td><strong>Programme</strong></td><td>{{ $invoice->student->program?->program_name ?? '-' }}</td></tr>
         <tr><td><strong>Amount</strong></td><td>KES {{ number_format((float) $invoice->amount, 2) }}</td></tr>
-        <tr><td><strong>Due date</strong></td><td>{{ $invoice->due_date?->format('d M Y') ?? '—' }}</td></tr>
+        <tr><td><strong>Due date</strong></td><td>{{ $invoice->due_date?->format('d M Y') ?? '-' }}</td></tr>
     </table>
     <p>{{ $invoice->description }}</p>
     <p>View and pay this invoice in your <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}">Student Portal</a>.</p>

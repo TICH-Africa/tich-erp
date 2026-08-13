@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse ($grievances as $grievance)
                         <tr>
-                            <td class="tich-caption">{{ $grievance->grievance_type ?? '—' }}</td>
+                            <td class="tich-caption">{{ $grievance->grievance_type ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ match($grievance->status) {
                                     'open' => 'warning',

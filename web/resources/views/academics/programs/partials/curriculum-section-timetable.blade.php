@@ -60,7 +60,7 @@
     @endphp
 
     <x-page-toolbar
-        title="Timetable — {{ $selectedIntake->intakeLabel() }}"
+        title="Timetable - {{ $selectedIntake->intakeLabel() }}"
         meta="Lesson bell schedule and semester timetables"
         class="tich-mb-6"
     />

@@ -68,7 +68,7 @@
             @if ($websiteHref)
                 <a href="{{ $websiteHref }}" class="tich-site-identity-stat-link" target="_blank" rel="noopener noreferrer">{{ $website }}</a>
             @else
-                —
+                -
             @endif
         </p>
     </article>
@@ -162,11 +162,11 @@
             </div>
             <div>
                 <span class="tich-kv-grid__label">Navbar tagline</span>
-                <span class="tich-kv-grid__value">{{ $siteMeta['brand_tagline'] ?: '—' }}</span>
+                <span class="tich-kv-grid__value">{{ $siteMeta['brand_tagline'] ?: '-' }}</span>
             </div>
             <div style="grid-column: 1 / -1;">
                 <span class="tich-kv-grid__label">Site tagline</span>
-                <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['tagline'] ?: '—' }}</span>
+                <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['tagline'] ?: '-' }}</span>
             </div>
         </div>
     </article>
@@ -181,13 +181,13 @@
                     @if ($websiteHref)
                         <a href="{{ $websiteHref }}" class="tich-link" target="_blank" rel="noopener noreferrer">{{ $website }}</a>
                     @else
-                        —
+                        -
                     @endif
                 </span>
             </div>
             <div style="grid-column: 1 / -1;">
                 <span class="tich-kv-grid__label">Copyright line</span>
-                <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['copyright'] ?: '—' }}</span>
+                <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['copyright'] ?: '-' }}</span>
             </div>
         </div>
 

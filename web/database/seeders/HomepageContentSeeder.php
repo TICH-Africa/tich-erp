@@ -71,5 +71,9 @@ class HomepageContentSeeder extends Seeder
                 ]);
             }
         }
+
+        if (Schema::hasTable('academic_programs')) {
+            app(\App\Services\ProgramCarouselSyncService::class)->syncAllFeatured();
+        }
     }
 }

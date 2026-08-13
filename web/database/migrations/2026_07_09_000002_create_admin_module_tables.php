@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Minimal staff skeleton — full definition in HR migration
+        // Minimal staff skeleton - full definition in HR migration
         // Created here because academic_programs, departments, applicants all FK → staff
         Schema::create('staff', function (Blueprint $table) {
             $table->id();

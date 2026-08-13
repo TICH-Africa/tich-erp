@@ -7,9 +7,11 @@ use App\Models\Grievance;
 use App\Models\Staff;
 use App\Services\AuditService;
 use App\Services\EmployeeConcernService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\View\View;
 
 class GrievanceController extends Controller
 {
@@ -32,28 +34,23 @@ class GrievanceController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->orderByDesc('created_at');
 
-        $grievances = $query->paginate(20);
-
         return view('hr.grievances.index', [
-            'grievances' => $grievances,
+            'grievances' => $query->paginate(20),
+            'staffList' => $this->staffList(),
+            'openCreateModal' => $request->session()->get('open_grievance_create_modal', false),
         ]);
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        $staffList = Staff::query()
-            ->orderBy('surname')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
-
-        return view('hr.grievances.create', [
-            'staffList' => $staffList,
-        ]);
+        return redirect()
+            ->route('hr.employee-relations.grievances.index')
+            ->with('open_grievance_create_modal', true);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'staff_id' => 'required|exists:staff,id',
             'assigned_to' => 'nullable|exists:staff,id',
             'grievance_type' => 'nullable|string|max:100',
@@ -62,6 +59,16 @@ class GrievanceController extends Controller
             'incident_date' => 'nullable|date',
             'resolution_notes' => 'nullable|string|max:5000',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('hr.employee-relations.grievances.index')
+                ->withInput()
+                ->withErrors($validator)
+                ->with('open_grievance_create_modal', true);
+        }
+
+        $validated = $validator->validated();
 
         $grievance = DB::transaction(function () use ($validated) {
             return Grievance::create([
@@ -82,7 +89,9 @@ class GrievanceController extends Controller
             $request->user()->id
         );
 
-        return redirect()->route('hr.employee-relations.grievances.index')->with('success', 'Grievance created successfully.');
+        return redirect()
+            ->route('hr.employee-relations.grievances.index')
+            ->with('success', 'Grievance created successfully.');
     }
 
     public function show(Grievance $grievance): View
@@ -97,18 +106,14 @@ class GrievanceController extends Controller
     public function edit(Grievance $grievance): View
     {
         $grievance->load('staff', 'assignedTo');
-        $staffList = Staff::query()
-            ->orderBy('surname')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
 
         return view('hr.grievances.edit', [
             'grievance' => $grievance,
-            'staffList' => $staffList,
+            'staffList' => $this->staffList(),
         ]);
     }
 
-    public function update(Request $request, Grievance $grievance)
+    public function update(Request $request, Grievance $grievance): RedirectResponse
     {
         $validated = $request->validate([
             'assigned_to' => 'nullable|exists:staff,id',
@@ -139,10 +144,12 @@ class GrievanceController extends Controller
             $request->user()->id
         );
 
-        return redirect()->route('hr.employee-relations.grievances.index')->with('success', 'Grievance updated successfully.');
+        return redirect()
+            ->route('hr.employee-relations.grievances.index')
+            ->with('success', 'Grievance updated successfully.');
     }
 
-    public function destroy(Request $request, Grievance $grievance)
+    public function destroy(Request $request, Grievance $grievance): RedirectResponse
     {
         DB::transaction(function () use ($grievance, $request) {
             $this->auditService->log(
@@ -159,6 +166,16 @@ class GrievanceController extends Controller
             $grievance->delete();
         });
 
-        return redirect()->route('hr.employee-relations.grievances.index')->with('success', 'Grievance deleted successfully.');
+        return redirect()
+            ->route('hr.employee-relations.grievances.index')
+            ->with('success', 'Grievance deleted successfully.');
+    }
+
+    private function staffList()
+    {
+        return Staff::query()
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
     }
 }

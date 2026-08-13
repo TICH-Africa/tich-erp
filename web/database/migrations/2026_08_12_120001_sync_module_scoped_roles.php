@@ -31,6 +31,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Data migration — role definitions are not rolled back.
+        // Data migration - role definitions are not rolled back.
     }
 };

@@ -37,7 +37,7 @@
                         <tr>
                             <td>
                                 <strong>{{ $record->staff->fullName() }}</strong>
-                                <p class="tich-caption">{{ $record->staff->employee_number }} · {{ $record->staff->department?->dept_name ?? '—' }}</p>
+                                <p class="tich-caption">{{ $record->staff->employee_number }} · {{ $record->staff->department?->dept_name ?? '-' }}</p>
                             </td>
                             <td>{{ $record->leave_type_name }}</td>
                             <td>{{ $record->reason }}</td>

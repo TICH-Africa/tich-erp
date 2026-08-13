@@ -34,8 +34,8 @@
                         <td>KES {{ number_format((float) $run->total_gross, 2) }}</td>
                         <td>KES {{ number_format((float) $run->total_net, 2) }}</td>
                         <td>{{ ucfirst($run->status) }}</td>
-                        <td>{{ $run->approved_at?->format('d M Y') ?? '—' }}</td>
-                        <td>{{ $run->posted_at?->format('d M Y') ?? '—' }}</td>
+                        <td>{{ $run->approved_at?->format('d M Y') ?? '-' }}</td>
+                        <td>{{ $run->posted_at?->format('d M Y') ?? '-' }}</td>
                         <td><a href="{{ route('hr.payroll.runs.show', $run) }}" class="tich-btn tich-btn-ghost">Open</a></td>
                     </tr>
                 @empty

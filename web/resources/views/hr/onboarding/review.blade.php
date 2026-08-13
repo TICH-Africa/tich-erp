@@ -13,8 +13,8 @@
                 <p><strong>Name:</strong> {{ $onboarding->staff->fullName() }}</p>
                 <p><strong>Date of Birth:</strong> {{ $onboarding->staff->date_of_birth?->format('Y-m-d') }}</p>
                 <p><strong>Gender:</strong> {{ $onboarding->staff->gender }}</p>
-                <p><strong>Marital Status:</strong> {{ $onboarding->staff->marital_status ?? '—' }}</p>
-                <p><strong>National ID:</strong> {{ $onboarding->staff->national_id_number ?? '—' }}</p>
+                <p><strong>Marital Status:</strong> {{ $onboarding->staff->marital_status ?? '-' }}</p>
+                <p><strong>National ID:</strong> {{ $onboarding->staff->national_id_number ?? '-' }}</p>
             </div>
         </article>
 
@@ -24,8 +24,8 @@
                 <p><strong>Primary Email:</strong> {{ $onboarding->staff->primary_email }}</p>
                 <p><strong>Organisation Email:</strong> {{ $onboarding->staff->organisation_email }}</p>
                 <p><strong>Phone:</strong> {{ $onboarding->staff->phone_number }}</p>
-                <p><strong>Postal Address:</strong> {{ $onboarding->staff->postal_address ?? '—' }}</p>
-                <p><strong>Physical Address:</strong> {{ $onboarding->staff->physical_address ?? '—' }}</p>
+                <p><strong>Postal Address:</strong> {{ $onboarding->staff->postal_address ?? '-' }}</p>
+                <p><strong>Physical Address:</strong> {{ $onboarding->staff->physical_address ?? '-' }}</p>
             </div>
         </article>
 
@@ -41,10 +41,10 @@
         <article class="tich-card">
             <h3 class="tich-h3">Statutory Information</h3>
             <div class="tich-mt-4">
-                <p><strong>KRA PIN:</strong> {{ $onboarding->staff->kra_pin ?? '—' }}</p>
-                <p><strong>NSSF:</strong> {{ $onboarding->staff->nssf_number ?? '—' }}</p>
-                <p><strong>SHA:</strong> {{ $onboarding->staff->sha_number ?? '—' }}</p>
-                <p><strong>HELB:</strong> {{ $onboarding->staff->helb_number ?? '—' }}</p>
+                <p><strong>KRA PIN:</strong> {{ $onboarding->staff->kra_pin ?? '-' }}</p>
+                <p><strong>NSSF:</strong> {{ $onboarding->staff->nssf_number ?? '-' }}</p>
+                <p><strong>SHA:</strong> {{ $onboarding->staff->sha_number ?? '-' }}</p>
+                <p><strong>HELB:</strong> {{ $onboarding->staff->helb_number ?? '-' }}</p>
             </div>
         </article>
     </div>
@@ -76,8 +76,8 @@
             <h3 class="tich-h3">Approval Details</h3>
             <div class="tich-mt-4">
                 <p><strong>Status:</strong> <span class="tich-badge tich-badge--success">Approved</span></p>
-                <p><strong>Reviewed By:</strong> {{ $onboarding->reviewer?->fullName() ?? '—' }}</p>
-                <p><strong>Reviewed At:</strong> {{ $onboarding->reviewed_at?->format('Y-m-d H:i') ?? '—' }}</p>
+                <p><strong>Reviewed By:</strong> {{ $onboarding->reviewer?->fullName() ?? '-' }}</p>
+                <p><strong>Reviewed At:</strong> {{ $onboarding->reviewed_at?->format('Y-m-d H:i') ?? '-' }}</p>
             </div>
         </div>
     @endif
@@ -88,8 +88,8 @@
             <div class="tich-mt-4">
                 <p><strong>Status:</strong> <span class="tich-badge tich-badge--danger">Rejected</span></p>
                 <p><strong>Reason:</strong> {{ $onboarding->rejection_reason }}</p>
-                <p><strong>Reviewed By:</strong> {{ $onboarding->reviewer?->fullName() ?? '—' }}</p>
-                <p><strong>Reviewed At:</strong> {{ $onboarding->reviewed_at?->format('Y-m-d H:i') ?? '—' }}</p>
+                <p><strong>Reviewed By:</strong> {{ $onboarding->reviewer?->fullName() ?? '-' }}</p>
+                <p><strong>Reviewed At:</strong> {{ $onboarding->reviewed_at?->format('Y-m-d H:i') ?? '-' }}</p>
             </div>
         </div>
     @endif

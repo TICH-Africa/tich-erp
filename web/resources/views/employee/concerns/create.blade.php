@@ -1,7 +1,7 @@
 @extends('layouts.employee')
 
 @section('employee-content')
-    <x-page-toolbar title="Raise a concern" meta="Describe the issue — HR will receive and work on it">
+    <x-page-toolbar title="Raise a concern" meta="Describe the issue - HR will receive and work on it">
         <x-slot:actions>
             <a href="{{ route('employee.concerns.index') }}" class="tich-btn tich-btn-ghost">← Back</a>
         </x-slot:actions>

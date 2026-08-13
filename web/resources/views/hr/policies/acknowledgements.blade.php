@@ -44,7 +44,7 @@
                                     {{ $ack->is_acknowledged ? 'Acknowledged' : 'Pending' }}
                                 </span>
                             </td>
-                            <td class="tich-caption">{{ $ack->acknowledged_at?->format('d M Y, H:i') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $ack->acknowledged_at?->format('d M Y, H:i') ?? '-' }}</td>
                             <td class="tich-caption">{{ ucfirst($ack->acknowledgement_method) }}</td>
                         </tr>
                     @empty

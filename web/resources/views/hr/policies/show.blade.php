@@ -11,12 +11,12 @@
             <div class="tich-mt-4">
                 <p><strong>Title:</strong> {{ $policy->title }}</p>
                 <p><strong>Category:</strong> {{ ucfirst($policy->category) }}</p>
-                <p><strong>Effective Date:</strong> {{ $policy->effective_date?->format('Y-m-d') ?? '—' }}</p>
-                <p><strong>Expiry Date:</strong> {{ $policy->expiry_date?->format('Y-m-d') ?? '—' }}</p>
+                <p><strong>Effective Date:</strong> {{ $policy->effective_date?->format('Y-m-d') ?? '-' }}</p>
+                <p><strong>Expiry Date:</strong> {{ $policy->expiry_date?->format('Y-m-d') ?? '-' }}</p>
                 <p><strong>Status:</strong> {{ $policy->is_active ? 'Active' : 'Inactive' }}</p>
                 <p><strong>File:</strong> {{ $policy->original_filename }}</p>
-                <p><strong>Uploaded By:</strong> {{ $policy->uploadedBy?->fullName() ?? '—' }}</p>
-                <p><strong>Tags:</strong> {{ $policy->tags ?: '—' }}</p>
+                <p><strong>Uploaded By:</strong> {{ $policy->uploadedBy?->fullName() ?? '-' }}</p>
+                <p><strong>Tags:</strong> {{ $policy->tags ?: '-' }}</p>
                 @if ($policy->description)
                     <p class="tich-mt-4"><strong>Description:</strong></p>
                     <p class="tich-text tich-text--secondary">{{ $policy->description }}</p>

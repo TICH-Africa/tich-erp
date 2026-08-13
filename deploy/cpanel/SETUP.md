@@ -1,4 +1,4 @@
-# TICH ERP — cPanel Git deployment
+# TICH ERP - cPanel Git deployment
 
 Everything needed for production lives in this repo. **No manual File Manager steps.**
 
@@ -15,7 +15,7 @@ Each deploy automatically:
 
 ## Paths (committed in git)
 
-cPanel shows **Document Root: `/public_html`** — that is relative to your home folder, i.e. **`/home3/tichafri/public_html`** (same pattern as Leysafaris on `leylasaf`).
+cPanel shows **Document Root: `/public_html`** - that is relative to your home folder, i.e. **`/home3/tichafri/public_html`** (same pattern as Leysafaris on `leylasaf`).
 
 | | Leysafaris | TICH |
 |---|------------|------|
@@ -44,5 +44,5 @@ Hard-refresh the homepage (Ctrl+Shift+R).
 | Problem | Fix |
 |---------|-----|
 | Pages work, CSS/JS 404 | Check `deploy/cpanel/last-asset-sync.log` after deploy |
-| Routes 404 | Redeploy — `.htaccess` is copied from git each time |
+| Routes 404 | Redeploy - `.htaccess` is copied from git each time |
 | Wrong document root | Update `deploy/cpanel/docroot.txt`, commit, redeploy |

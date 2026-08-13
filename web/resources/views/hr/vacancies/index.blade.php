@@ -32,7 +32,7 @@
                                 <strong>{{ $vacancy->job_title }}</strong>
                                 <p class="tich-caption">{{ Str::limit($vacancy->job_description, 80) }}</p>
                             </td>
-                            <td class="tich-caption">{{ $vacancy->department->dept_name ?? '—' }}</td>
+                            <td class="tich-caption">{{ $vacancy->department->dept_name ?? '-' }}</td>
                             <td class="tich-caption">{{ ucfirst($vacancy->employment_type) }}</td>
                             <td class="tich-caption">{{ $vacancy->slots_available }}</td>
                             <td class="tich-caption">{{ $vacancy->closing_date?->format('Y-m-d') ?? 'Open' }}</td>

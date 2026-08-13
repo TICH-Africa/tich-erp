@@ -14,7 +14,7 @@
                 <option value="">Select invoice…</option>
                 @foreach ($invoices as $invoice)
                     <option value="{{ $invoice->id }}" data-balance="{{ $invoice->balance }}" @selected(old('invoice_id') == $invoice->id)>
-                        {{ $invoice->invoice_number }} — {{ $invoice->student?->displayName() }} — balance KES {{ number_format((float) $invoice->balance, 2) }}
+                        {{ $invoice->invoice_number }} - {{ $invoice->student?->displayName() }} - balance KES {{ number_format((float) $invoice->balance, 2) }}
                     </option>
                 @endforeach
             </select>

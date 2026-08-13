@@ -55,7 +55,7 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
     $reviewer = \App\Models\User::query()->where('is_active', 1)->whereNotNull('email')->first();
 
     if (! $applicant) {
-        $this->warn('No applicants in database — using a sample applicant for template previews.');
+        $this->warn('No applicants in database - using a sample applicant for template previews.');
         $applicant = new \App\Models\Applicant([
             'application_number' => 'APP-TEST-001',
             'first_name' => 'Test',
@@ -101,7 +101,7 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
             'Approved',
             $statusUrl,
             null,
-            'Congratulations — your application has been approved.',
+            'Congratulations - your application has been approved.',
             url('/portal/activate/sample-token'),
         )],
         'Application rejected' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationStatusUpdatedMail(

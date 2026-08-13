@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
+use App\Http\Controllers\Public\FaviconController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
 use App\Http\Controllers\Academics\AttendanceLedgerController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
 use App\Http\Controllers\HR\EssOnboardingController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/favicon.ico', FaviconController::class)->name('favicon');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/research', [HomeController::class, 'research'])->name('research');
@@ -446,10 +448,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         });
     });
 
-    Route::get('/programs', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiPrograms'])->name('programs.index');
-    Route::get('/academic-years', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiAcademicYears'])->name('academic-years.index');
-    Route::get('/students', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiStudents'])->name('students.index');
-    Route::get('/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiInvoices'])->name('invoices.index');
+    Route::prefix('finance/api')
+        ->middleware(['permission:finance.read'])
+        ->name('finance.api.')
+        ->group(function () {
+            Route::get('/programs', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiPrograms'])->name('programs');
+            Route::get('/academic-years', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiAcademicYears'])->name('academic-years');
+            Route::get('/students', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiStudents'])->name('students');
+            Route::get('/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiInvoices'])->name('invoices');
+        });
 
     Route::prefix('departments/{department}/finance')
         ->where(['department' => '[0-9]+(-[0-9]+)?'])

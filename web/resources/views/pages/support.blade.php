@@ -44,7 +44,7 @@
                         <label class="tich-label">Message (optional)</label>
                         <textarea class="tich-input" rows="3"></textarea>
                     </div>
-                    <button type="button" class="tich-btn tich-btn-success tich-mt-4" onclick="alert('Thank you for your generous donation. This is a demo — no payment was processed.')">Donate Now</button>
+                    <button type="button" class="tich-btn tich-btn-success tich-mt-4" onclick="alert('Thank you for your generous donation. This is a demo - no payment was processed.')">Donate Now</button>
                 </div>
             </div>
         </div>

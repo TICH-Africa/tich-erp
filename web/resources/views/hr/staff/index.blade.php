@@ -37,6 +37,7 @@
                 <thead>
                     <tr>
                         <th>Employee No.</th>
+                        <th>Photo</th>
                         <th>Name</th>
                         <th>Department</th>
                         <th>Job Title</th>
@@ -51,13 +52,16 @@
                         <tr>
                             <td>{{ $member->employee_number }}</td>
                             <td>
+                                @include('hr.staff.partials.table-avatar', ['member' => $member])
+                            </td>
+                            <td>
                                 <strong>{{ $member->fullName() }}</strong>
                                 <p class="tich-caption">{{ $member->organisation_email }}</p>
                                 @if ($member->primary_email && $member->primary_email !== $member->organisation_email)
                                     <p class="tich-caption">Personal: {{ $member->primary_email }}</p>
                                 @endif
                             </td>
-                            <td>{{ $member->department->dept_name ?? '—' }}</td>
+                            <td>{{ $member->department->dept_name ?? '-' }}</td>
                             <td>{{ $member->job_title }}</td>
                             <td class="tich-caption">{{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', $member->employment_category))) }}</td>
                             <td>
@@ -78,7 +82,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="tich-table-empty">No staff records found.</td>
+                            <td colspan="9" class="tich-table-empty">No staff records found.</td>
                         </tr>
                     @endforelse
                 </tbody>

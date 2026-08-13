@@ -19,7 +19,7 @@
                         <option value="">Select student</option>
                         @foreach ($students as $student)
                             <option value="{{ $student->id }}" @selected(old('student_id') == $student->id)>
-                                {{ $student->registration_number }} — {{ $student->displayName() }}
+                                {{ $student->registration_number }} - {{ $student->displayName() }}
                             </option>
                         @endforeach
                     </select>
@@ -30,7 +30,7 @@
                         <option value="">Manual amount</option>
                         @foreach ($feeStructures as $structure)
                             <option value="{{ $structure->id }}" data-amount="{{ $structure->total_semester_fee }}" @selected(old('fee_structure_id') == $structure->id)>
-                                {{ $structure->program?->program_name ?? 'Programme' }} · {{ $structure->academicYear?->year_label ?? 'Year' }} — KES {{ number_format((float) $structure->total_semester_fee, 2) }}
+                                {{ $structure->program?->program_name ?? 'Programme' }} · {{ $structure->academicYear?->year_label ?? 'Year' }} - KES {{ number_format((float) $structure->total_semester_fee, 2) }}
                             </option>
                         @endforeach
                     </select>

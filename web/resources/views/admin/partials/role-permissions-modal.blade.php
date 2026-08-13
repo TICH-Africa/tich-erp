@@ -117,7 +117,7 @@
                     label.appendChild(input);
                     td.appendChild(label);
                 } else {
-                    td.innerHTML = '<span class="tich-caption">—</span>';
+                    td.innerHTML = '<span class="tich-caption">-</span>';
                 }
 
                 tr.appendChild(td);
@@ -135,7 +135,7 @@
             var roleId = trigger.getAttribute('data-role-id');
             var roleName = trigger.getAttribute('data-role-name') || 'Role';
             form.action = trigger.getAttribute('data-permissions-url') || '#';
-            title.textContent = 'Permissions — ' + roleName;
+            title.textContent = 'Permissions - ' + roleName;
             buildMatrix(roleId);
         });
     });

@@ -46,11 +46,11 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Department</span>
-                    <span class="tich-kv-grid__value">{{ $grievance->staff->department?->dept_name ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $grievance->staff->department?->dept_name ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Job title</span>
-                    <span class="tich-kv-grid__value">{{ $grievance->staff->job_title ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $grievance->staff->job_title ?? '-' }}</span>
                 </div>
             </div>
             <a href="{{ route('hr.staff.show', $grievance->staff) }}" class="tich-btn tich-btn-ghost tich-mt-4">View staff profile</a>
@@ -61,15 +61,15 @@
             <div class="tich-kv-grid tich-mt-4">
                 <div>
                     <span class="tich-kv-grid__label">Incident date</span>
-                    <span class="tich-kv-grid__value">{{ $grievance->incident_date?->format('d M Y') ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $grievance->incident_date?->format('d M Y') ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Assigned to</span>
-                    <span class="tich-kv-grid__value">{{ $grievance->assignedTo?->fullName() ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $grievance->assignedTo?->fullName() ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Resolved</span>
-                    <span class="tich-kv-grid__value">{{ $grievance->resolved_at?->format('d M Y') ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $grievance->resolved_at?->format('d M Y') ?? '-' }}</span>
                 </div>
             </div>
         </article>

@@ -117,7 +117,7 @@ class EmployeeConcernService
         $this->notifications->notifyUsers(
             $userIds,
             'New employee concern',
-            "{$staff->fullName()} raised {$grievance->reference_number}: {$categoryLabel} — {$subject}",
+            "{$staff->fullName()} raised {$grievance->reference_number}: {$categoryLabel} - {$subject}",
             'employee_concern',
             (string) $grievance->id,
         );

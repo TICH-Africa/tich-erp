@@ -168,12 +168,12 @@
                                     <td><strong>{{ $payment->payment_number }}</strong></td>
                                     <td class="tich-caption">{{ ucfirst($payment->payment_method) }}</td>
                                     <td>KES {{ number_format($payment->amount, 2) }}</td>
-                                    <td class="tich-caption">{{ $payment->payment_reference ?? '—' }}</td>
+                                    <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                                     <td>
                                         @if ($payment->receipt)
                                             <a href="{{ route('finance.student-finance.receipts.show', ['department' => $department->id, 'id' => $payment->receipt->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                                         @else
-                                            <span class="tich-caption">—</span>
+                                            <span class="tich-caption">-</span>
                                         @endif
                                     </td>
                                 </tr>

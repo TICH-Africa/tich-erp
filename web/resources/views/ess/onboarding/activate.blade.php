@@ -19,7 +19,7 @@
         <p class="tich-caption tich-mt-3">Job Title</p>
         <p class="tich-text">{{ $staff->job_title }}</p>
         <p class="tich-caption tich-mt-3">Department</p>
-        <p class="tich-text">{{ $staff->department->dept_name ?? '—' }}</p>
+        <p class="tich-text">{{ $staff->department->dept_name ?? '-' }}</p>
         <p class="tich-caption tich-mt-3">Email</p>
         <p class="tich-text">{{ $staff->primary_email ?? $staff->organisation_email }}</p>
     </div>

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\FinanceMpesaSetting;
 use App\Models\MpesaStkRequest;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\MpesaStkCallbackService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class MpesaSettingsController extends Controller
@@ -16,12 +19,13 @@ class MpesaSettingsController extends Controller
         protected MpesaSettingsService $settings,
     ) {}
 
-    public function edit(): View
+    public function edit(Request $request): View
     {
         $settings = $this->settings->settings();
+        $settings->loadMissing('updater');
 
         $recentRequests = collect();
-        if (\Illuminate\Support\Facades\Schema::hasTable((new \App\Models\MpesaStkRequest)->getTable())) {
+        if (Schema::hasTable((new MpesaStkRequest)->getTable())) {
             $recentRequests = MpesaStkRequest::query()
                 ->with(['invoice', 'student.applicant'])
                 ->latest('id')
@@ -32,13 +36,15 @@ class MpesaSettingsController extends Controller
         return view('finance.mpesa.settings', [
             'settings' => $settings,
             'callbackUrl' => $this->settings->callbackUrl(),
+            'credentialsReady' => $this->credentialsConfigured($settings),
             'recentRequests' => $recentRequests,
+            'openEditModal' => $request->session()->get('open_mpesa_edit_modal', false) || $request->session()->get('errors')?->any(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'is_enabled' => 'nullable|boolean',
             'environment' => 'required|in:sandbox,production',
             'shortcode' => 'nullable|string|max:20',
@@ -50,6 +56,15 @@ class MpesaSettingsController extends Controller
             'callback_url_override' => 'nullable|url|max:500',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()
+                ->route('finance.mpesa.settings')
+                ->withInput()
+                ->withErrors($validator)
+                ->with('open_mpesa_edit_modal', true);
+        }
+
+        $validated = $validator->validated();
         $validated['is_enabled'] = $request->boolean('is_enabled');
 
         $staffId = (int) ($request->user()?->staff?->id ?? 1);
@@ -67,5 +82,13 @@ class MpesaSettingsController extends Controller
         return redirect()
             ->route('finance.mpesa.settings')
             ->with('success', 'STK request status refreshed from Safaricom.');
+    }
+
+    private function credentialsConfigured(FinanceMpesaSetting $settings): bool
+    {
+        return filled($settings->shortcode ?: config('finance.mpesa.shortcode'))
+            && filled($settings->passkey ?: config('finance.mpesa.passkey'))
+            && filled($settings->consumer_key ?: config('finance.mpesa.consumer_key'))
+            && filled($settings->consumer_secret ?: config('finance.mpesa.consumer_secret'));
     }
 }

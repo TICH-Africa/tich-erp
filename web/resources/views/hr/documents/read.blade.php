@@ -30,11 +30,11 @@
             </div>
             <div>
                 <label class="tich-label">Issue Date</label>
-                <p class="tich-text">{{ $document->issue_date?->format('Y-m-d') ?? '—' }}</p>
+                <p class="tich-text">{{ $document->issue_date?->format('Y-m-d') ?? '-' }}</p>
             </div>
             <div>
                 <label class="tich-label">Expiry Date</label>
-                <p class="tich-text">{{ $document->expiry_date?->format('Y-m-d') ?? '—' }}</p>
+                <p class="tich-text">{{ $document->expiry_date?->format('Y-m-d') ?? '-' }}</p>
             </div>
             <div>
                 <label class="tich-label">Uploaded</label>

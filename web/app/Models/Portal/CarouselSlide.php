@@ -17,6 +17,7 @@ class CarouselSlide extends Model
     ];
 
     protected $fillable = [
+        'program_id',
         'title', 'subtitle', 'image_path', 'video_url',
         'cta_label', 'cta_url', 'display_order', 'is_active',
     ];
@@ -24,4 +25,9 @@ class CarouselSlide extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function program(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\AcademicProgram::class, 'program_id');
+    }
 }

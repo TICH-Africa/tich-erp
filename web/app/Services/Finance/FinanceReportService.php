@@ -317,7 +317,7 @@ class FinanceReportService
                 'total' => 0.0,
             ])->values()->all(),
             'rows' => [],
-            'empty_message' => 'Accounts payable ageing is not available yet — no vendor invoices or AP module data.',
+            'empty_message' => 'Accounts payable ageing is not available yet - no vendor invoices or AP module data.',
         ];
     }
 

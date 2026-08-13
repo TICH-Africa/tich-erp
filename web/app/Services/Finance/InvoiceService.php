@@ -77,7 +77,7 @@ class InvoiceService
         }
 
         $description = sprintf(
-            "Semester charges — %s (%s)\n%s",
+            "Semester charges - %s (%s)\n%s",
             $feeStructure->program?->program_name ?? 'Programme',
             $feeStructure->academicYear?->year_label ?? 'Academic year',
             implode('; ', $feeStructure->semesterChargeLines($includeOptional))
@@ -97,7 +97,7 @@ class InvoiceService
         return $this->generateForStudent($student, [
             'invoice_type' => 'application',
             'description' => sprintf(
-                'Application fee — %s (paid once after approval)',
+                'Application fee - %s (paid once after approval)',
                 $feeStructure->program?->program_name ?? 'Programme'
             ),
             'amount' => (float) $feeStructure->application_fee,
@@ -119,7 +119,7 @@ class InvoiceService
 
         return $this->generateForStudent($student, [
             'invoice_type' => 'indexing_nck',
-            'description' => 'Indexing (NCK) — paid once throughout the programme',
+            'description' => 'Indexing (NCK) - paid once throughout the programme',
             'amount' => (float) $feeStructure->indexing_nck_fee,
         ], $recordedByStaffId);
     }

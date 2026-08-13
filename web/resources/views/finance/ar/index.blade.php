@@ -76,9 +76,9 @@
                                 <td>
                                     <a href="{{ route('finance.student-finance.invoices.show', array_merge($dept, ['id' => $invoice->id])) }}">{{ $invoice->invoice_number }}</a>
                                 </td>
-                                <td>{{ $invoice->student?->displayName() ?? '—' }}<br><span class="tich-caption">{{ $invoice->student?->registration_number }}</span></td>
+                                <td>{{ $invoice->student?->displayName() ?? '-' }}<br><span class="tich-caption">{{ $invoice->student?->registration_number }}</span></td>
                                 <td>KES {{ number_format((float) $invoice->balance, 2) }}</td>
-                                <td>{{ $invoice->due_date?->format('d M Y') ?? '—' }}</td>
+                                <td>{{ $invoice->due_date?->format('d M Y') ?? '-' }}</td>
                                 <td>{{ $row['days_past_due'] }} days</td>
                                 <td>{{ app(\App\Services\Finance\AccountsReceivableService::class)->bucketLabel($row['bucket']) }}</td>
                                 <td>{{ ucfirst($invoice->status) }}</td>

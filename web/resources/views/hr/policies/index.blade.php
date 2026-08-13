@@ -31,14 +31,14 @@
                                 <p class="tich-caption">{{ $policy->original_filename }}</p>
                             </td>
                             <td class="tich-caption">{{ ucfirst($policy->category) }}</td>
-                            <td class="tich-caption">{{ $policy->effective_date?->format('Y-m-d') ?? '—' }}</td>
-                            <td class="tich-caption">{{ $policy->expiry_date?->format('Y-m-d') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $policy->effective_date?->format('Y-m-d') ?? '-' }}</td>
+                            <td class="tich-caption">{{ $policy->expiry_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $policy->is_active ? 'success' : 'warning' }}">
                                     {{ $policy->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td class="tich-caption">{{ $policy->uploadedBy?->fullName() ?? '—' }}</td>
+                            <td class="tich-caption">{{ $policy->uploadedBy?->fullName() ?? '-' }}</td>
                             <td>
                                 <div class="tich-flex tich-flex--gap">
                                     <a href="{{ route('hr.policies.show', $policy) }}" class="tich-btn tich-btn-ghost">View</a>

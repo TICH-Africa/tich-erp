@@ -2,7 +2,7 @@
 
 @section('title', 'Projects & Donors')
 
-@section('department-content')
+@section('finance-content')
     <x-page-toolbar title="Projects & Donors" meta="Create project">
         <x-slot:actions>
             <a href="{{ route('finance.projects-donors.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>

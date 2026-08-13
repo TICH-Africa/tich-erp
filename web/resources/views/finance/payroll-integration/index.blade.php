@@ -36,8 +36,8 @@
                         <td>KES {{ number_format((float) $run->total_gross, 2) }}</td>
                         <td>KES {{ number_format((float) $run->total_net, 2) }}</td>
                         <td>{{ ucfirst($run->status) }}</td>
-                        <td>{{ $run->gl_reference ?? '—' }}</td>
-                        <td>{{ $run->posted_at?->format('d M Y H:i') ?? '—' }}</td>
+                        <td>{{ $run->gl_reference ?? '-' }}</td>
+                        <td>{{ $run->posted_at?->format('d M Y H:i') ?? '-' }}</td>
                         <td>
                             <a href="{{ route('finance.payroll-integration.show', array_merge($dept, ['payrollRun' => $run->id])) }}" class="tich-btn tich-btn-ghost">Open</a>
                         </td>

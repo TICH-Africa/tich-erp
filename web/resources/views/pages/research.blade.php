@@ -9,7 +9,7 @@
                 <div>
                     <h2 class="tich-h2">A Hub of Research Excellence</h2>
                     <p class="tich-text tich-mt-4">
-                        From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice—translating research into action and policy.
+                        From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
                     </p>
                     <p class="tich-text tich-mt-4">
                         Through partnership with local and global organization, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.
@@ -24,7 +24,7 @@
                             Our research agenda is anchored in evidence-based public and community health, with a growing focus on digital transformation in healthcare. We are driven by the need to bridge the gap between evidence and practice, working closely with communities, policymakers, and practitioners to ensure our research is relevant, impactful, and inclusive.
                         </p>
                         <p class="tich-text tich-mt-4">
-                            We support an interdisciplinary approach that blends traditional health research with emerging digital innovations—generating solutions that respond to the evolving needs of the health sector in Africa and beyond.
+                            We support an interdisciplinary approach that blends traditional health research with emerging digital innovations-generating solutions that respond to the evolving needs of the health sector in Africa and beyond.
                         </p>
                     </div>
 

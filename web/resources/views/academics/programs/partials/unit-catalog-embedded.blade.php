@@ -103,8 +103,8 @@
                             <div class="tich-catalog-unit-name">{{ $unit->unit_name }}</div>
                         </td>
                         <td class="tich-catalog-hours">
-                            <div>{{ $unit->contact_hours ?? '—' }} contact</div>
-                            <div class="tich-caption">{{ $unit->total_learning_hours ?? '—' }} learning</div>
+                            <div>{{ $unit->contact_hours ?? '-' }} contact</div>
+                            <div class="tich-caption">{{ $unit->total_learning_hours ?? '-' }} learning</div>
                         </td>
                         <td>
                             <span class="tich-catalog-status {{ $statusClass }}">

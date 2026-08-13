@@ -51,21 +51,21 @@
                 <tr>
                     <td>{{ config('finance.accounts.salaries_expense') }} Salaries expense</td>
                     <td>{{ number_format((float) $run->total_gross, 2) }}</td>
-                    <td>—</td>
-                    <td>Payroll gross — {{ $run->periodLabel() }}</td>
+                    <td>-</td>
+                    <td>Payroll gross - {{ $run->periodLabel() }}</td>
                 </tr>
                 @if ($employerStatutory > 0)
                     <tr>
                         <td>{{ config('finance.accounts.employer_statutory_expense') }} Employer statutory</td>
                         <td>{{ number_format($employerStatutory, 2) }}</td>
-                        <td>—</td>
-                        <td>Employer NSSF/AHL — {{ $run->periodLabel() }}</td>
+                        <td>-</td>
+                        <td>Employer NSSF/AHL - {{ $run->periodLabel() }}</td>
                     </tr>
                 @endif
                 @if ((float) $run->total_paye > 0)
                     <tr>
                         <td>{{ config('finance.accounts.paye_payable') }} PAYE payable</td>
-                        <td>—</td>
+                        <td>-</td>
                         <td>{{ number_format((float) $run->total_paye, 2) }}</td>
                         <td>KRA remittance</td>
                     </tr>
@@ -73,7 +73,7 @@
                 @if ((float) $run->total_nssf > 0)
                     <tr>
                         <td>{{ config('finance.accounts.nssf_payable') }} NSSF payable</td>
-                        <td>—</td>
+                        <td>-</td>
                         <td>{{ number_format((float) $run->total_nssf, 2) }}</td>
                         <td>NSSF remittance</td>
                     </tr>
@@ -81,7 +81,7 @@
                 @if ((float) $run->total_sha > 0)
                     <tr>
                         <td>{{ config('finance.accounts.sha_payable') }} SHA payable</td>
-                        <td>—</td>
+                        <td>-</td>
                         <td>{{ number_format((float) $run->total_sha, 2) }}</td>
                         <td>SHA remittance</td>
                     </tr>
@@ -89,14 +89,14 @@
                 @if ((float) $run->total_ahl > 0)
                     <tr>
                         <td>{{ config('finance.accounts.ahl_payable') }} AHL payable</td>
-                        <td>—</td>
+                        <td>-</td>
                         <td>{{ number_format((float) $run->total_ahl, 2) }}</td>
                         <td>AHL remittance</td>
                     </tr>
                 @endif
                 <tr>
                     <td>{{ config('finance.accounts.cash_bank') }} Bank</td>
-                    <td>—</td>
+                    <td>-</td>
                     <td>{{ number_format((float) $run->total_net, 2) }}</td>
                     <td>Net salaries disbursed</td>
                 </tr>

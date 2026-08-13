@@ -12,7 +12,7 @@
             <select id="invoice_id" name="invoice_id" class="tich-input" required>
                 @foreach ($openInvoices as $openInvoice)
                     <option value="{{ $openInvoice->id }}" @selected(old('invoice_id', $invoice?->id) == $openInvoice->id)>
-                        {{ $openInvoice->invoice_number }} — {{ $openInvoice->student?->displayName() }} — Balance KES {{ number_format((float) $openInvoice->balance, 2) }}
+                        {{ $openInvoice->invoice_number }} - {{ $openInvoice->student?->displayName() }} - Balance KES {{ number_format((float) $openInvoice->balance, 2) }}
                     </option>
                 @endforeach
             </select>

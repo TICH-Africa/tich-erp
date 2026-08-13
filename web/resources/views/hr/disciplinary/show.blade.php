@@ -45,11 +45,11 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Department</span>
-                    <span class="tich-kv-grid__value">{{ $case->staff->department?->dept_name ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $case->staff->department?->dept_name ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Job title</span>
-                    <span class="tich-kv-grid__value">{{ $case->staff->job_title ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $case->staff->job_title ?? '-' }}</span>
                 </div>
             </div>
             <a href="{{ route('hr.staff.show', $case->staff) }}" class="tich-btn tich-btn-ghost tich-mt-4">View staff profile</a>
@@ -64,15 +64,15 @@
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Hearing date</span>
-                    <span class="tich-kv-grid__value">{{ $case->hearing_date?->format('d M Y') ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $case->hearing_date?->format('d M Y') ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Assigned to</span>
-                    <span class="tich-kv-grid__value">{{ $case->assignedTo?->fullName() ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $case->assignedTo?->fullName() ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Action type</span>
-                    <span class="tich-kv-grid__value">{{ ucfirst($case->action_type ?? '—') }}</span>
+                    <span class="tich-kv-grid__value">{{ ucfirst($case->action_type ?? '-') }}</span>
                 </div>
                 @if ($case->action_start_date)
                     <div>

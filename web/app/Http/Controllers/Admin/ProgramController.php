@@ -7,13 +7,17 @@ use App\Models\AcademicProgram;
 use App\Models\Campus;
 use App\Models\Department;
 use App\Services\AuditService;
+use App\Services\ProgramCarouselSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ProgramController extends Controller
 {
-    public function __construct(protected AuditService $auditService) {}
+    public function __construct(
+        protected AuditService $auditService,
+        protected ProgramCarouselSyncService $programCarousel,
+    ) {}
 
     public function index(): View
     {
@@ -81,6 +85,8 @@ class ProgramController extends Controller
             $request
         );
 
+        $this->programCarousel->sync($program->fresh());
+
         return back()->with('status', 'Program created successfully.');
     }
 
@@ -126,6 +132,8 @@ class ProgramController extends Controller
             $request->user()->id,
             $request
         );
+
+        $this->programCarousel->sync($program->fresh());
 
         return back()->with('status', 'Program updated successfully.');
     }

@@ -13,7 +13,7 @@
                 <option value="">Select student</option>
                 @foreach ($students as $student)
                     <option value="{{ $student->id }}" @selected(old('student_id', request('student_id')) == $student->id)>
-                        {{ $student->registration_number }} — {{ $student->displayName() }} ({{ $student->program?->program_name }})
+                        {{ $student->registration_number }} - {{ $student->displayName() }} ({{ $student->program?->program_name }})
                     </option>
                 @endforeach
             </select>
@@ -24,7 +24,7 @@
                 <option value="">Manual invoice</option>
                 @foreach ($feeStructures as $feeStructure)
                     <option value="{{ $feeStructure->id }}" @selected(old('fee_structure_id') == $feeStructure->id)>
-                        {{ $feeStructure->program?->program_name }} · {{ $feeStructure->academicYear?->year_label }} — Semester KES {{ number_format((float) $feeStructure->total_semester_fee, 2) }}
+                        {{ $feeStructure->program?->program_name }} · {{ $feeStructure->academicYear?->year_label }} - Semester KES {{ number_format((float) $feeStructure->total_semester_fee, 2) }}
                     </option>
                 @endforeach
             </select>
@@ -35,7 +35,7 @@
                 <option value="semester" @selected(old('fee_structure_charge', 'semester') === 'semester')>Semester charges</option>
                 <option value="application" @selected(old('fee_structure_charge') === 'application')>Application fee (once, after approval)</option>
                 <option value="qa_annual" @selected(old('fee_structure_charge') === 'qa_annual')>Quality assurance (annual)</option>
-                <option value="indexing_nck" @selected(old('fee_structure_charge') === 'indexing_nck')>Indexing (NCK) — once per programme</option>
+                <option value="indexing_nck" @selected(old('fee_structure_charge') === 'indexing_nck')>Indexing (NCK) - once per programme</option>
                 <option value="graduation" @selected(old('fee_structure_charge') === 'graduation')>Graduation fees (post learning)</option>
             </select>
         </div>

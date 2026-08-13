@@ -3,7 +3,7 @@
 @section('title', 'Documents - ' . $staff->fullName())
 
 @section('hr-content')
-    <x-page-toolbar :title="$staff->fullName() . ' — Documents'" :meta="$staff->employee_number . ' · ' . $staff->job_title . ' · ' . ($staff->department->dept_name ?? '—')">
+    <x-page-toolbar :title="$staff->fullName() . ' - Documents'" :meta="$staff->employee_number . ' · ' . $staff->job_title . ' · ' . ($staff->department->dept_name ?? '-')">
         <x-slot:actions>
             <div class="tich-flex tich-flex--gap">
                 <a href="{{ route('hr.staff.documents.create', $staff) }}" class="tich-btn tich-btn-primary">+ Upload Document</a>
@@ -38,8 +38,8 @@
                                 @endif
                             </td>
                             <td class="tich-caption">{{ $doc->original_filename }}</td>
-                            <td class="tich-caption">{{ $doc->issue_date?->format('Y-m-d') ?? '—' }}</td>
-                            <td class="tich-caption">{{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $doc->issue_date?->format('Y-m-d') ?? '-' }}</td>
+                            <td class="tich-caption">{{ $doc->expiry_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $doc->status === 'approved' ? 'success' : ($doc->status === 'rejected' ? 'danger' : 'warning') }}">
                                     {{ ucfirst($doc->status ?? 'pending') }}

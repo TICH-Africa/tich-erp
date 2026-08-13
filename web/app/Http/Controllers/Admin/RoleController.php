@@ -178,7 +178,7 @@ class RoleController extends Controller
 
         if ($assignedUsers > 0) {
             return back()->withErrors([
-                'role' => "Cannot delete \"{$role->role_name}\" — {$assignedUsers} user(s) still have this role. Reassign them first.",
+                'role' => "Cannot delete \"{$role->role_name}\" - {$assignedUsers} user(s) still have this role. Reassign them first.",
             ]);
         }
 

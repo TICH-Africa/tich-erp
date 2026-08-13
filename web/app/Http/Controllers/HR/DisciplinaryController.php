@@ -4,13 +4,14 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\DisciplinaryCase;
-use App\Models\DisciplinaryDocument;
 use App\Models\Staff;
 use App\Services\AuditService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class DisciplinaryController extends Controller
 {
@@ -33,28 +34,23 @@ class DisciplinaryController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->orderByDesc('incident_date');
 
-        $cases = $query->paginate(20);
-
         return view('hr.disciplinary.index', [
-            'cases' => $cases,
+            'cases' => $query->paginate(20),
+            'staffList' => $this->staffList(),
+            'openCreateModal' => $request->session()->get('open_disciplinary_create_modal', false),
         ]);
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        $staffList = Staff::query()
-            ->orderBy('surname')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
-
-        return view('hr.disciplinary.create', [
-            'staffList' => $staffList,
-        ]);
+        return redirect()
+            ->route('hr.employee-relations.disciplinary.index')
+            ->with('open_disciplinary_create_modal', true);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'staff_id' => 'required|exists:staff,id',
             'assigned_to' => 'nullable|exists:staff,id',
             'incident_date' => 'required|date',
@@ -65,7 +61,16 @@ class DisciplinaryController extends Controller
             'committee_members' => 'nullable|string|max:2000',
         ]);
 
-        $caseNumber = 'DISC-' . now()->format('Y') . '-' . strtoupper(Str::random(6));
+        if ($validator->fails()) {
+            return redirect()
+                ->route('hr.employee-relations.disciplinary.index')
+                ->withInput()
+                ->withErrors($validator)
+                ->with('open_disciplinary_create_modal', true);
+        }
+
+        $validated = $validator->validated();
+        $caseNumber = 'DISC-'.now()->format('Y').'-'.strtoupper(Str::random(6));
 
         $case = DB::transaction(function () use ($validated, $caseNumber) {
             return DisciplinaryCase::create([
@@ -93,7 +98,9 @@ class DisciplinaryController extends Controller
             $request->user()->id
         );
 
-        return redirect()->route('hr.disciplinary.index')->with('success', 'Disciplinary case created successfully.');
+        return redirect()
+            ->route('hr.employee-relations.disciplinary.index')
+            ->with('success', 'Disciplinary case created successfully.');
     }
 
     public function show(DisciplinaryCase $disciplinaryCase): View
@@ -108,20 +115,16 @@ class DisciplinaryController extends Controller
     public function edit(DisciplinaryCase $disciplinaryCase): View
     {
         $case = $disciplinaryCase->load('staff', 'assignedTo');
-        $staffList = Staff::query()
-            ->orderBy('surname')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
 
         return view('hr.disciplinary.edit', [
             'case' => $case,
-            'staffList' => $staffList,
+            'staffList' => $this->staffList(),
         ]);
     }
 
-    public function update(Request $request, DisciplinaryCase $disciplinaryCase)
+    public function update(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'assigned_to' => 'nullable|exists:staff,id',
             'investigation_notes' => 'nullable|string|max:5000',
             'witness_information' => 'nullable|string|max:3000',
@@ -136,7 +139,15 @@ class DisciplinaryController extends Controller
             'hr_comments' => 'nullable|string|max:5000',
         ]);
 
-        $oldSnapshot = $case->toArray();
+        if ($validator->fails()) {
+            return redirect()
+                ->route('hr.employee-relations.disciplinary.edit', $disciplinaryCase)
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
+        $oldSnapshot = $disciplinaryCase->toArray();
 
         DB::transaction(function () use ($disciplinaryCase, $validated) {
             $disciplinaryCase->update($validated);
@@ -153,10 +164,12 @@ class DisciplinaryController extends Controller
             $request->user()->id
         );
 
-        return redirect()->route('hr.disciplinary.index')->with('success', 'Disciplinary case updated successfully.');
+        return redirect()
+            ->route('hr.employee-relations.disciplinary.index')
+            ->with('success', 'Disciplinary case updated successfully.');
     }
 
-    public function destroy(Request $request, DisciplinaryCase $disciplinaryCase)
+    public function destroy(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
     {
         DB::transaction(function () use ($disciplinaryCase, $request) {
             $this->auditService->log(
@@ -173,6 +186,16 @@ class DisciplinaryController extends Controller
             $disciplinaryCase->delete();
         });
 
-        return redirect()->route('hr.disciplinary.index')->with('success', 'Disciplinary case deleted successfully.');
+        return redirect()
+            ->route('hr.employee-relations.disciplinary.index')
+            ->with('success', 'Disciplinary case deleted successfully.');
+    }
+
+    private function staffList()
+    {
+        return Staff::query()
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
     }
 }

@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const invoiceSelect = document.getElementById('invoice_id');
 
     function loadStudents() {
-        fetch('{{ route('students.index') }}')
+        fetch('{{ route('finance.api.students') }}')
             .then(response => response.json())
             .then(data => {
                 studentSelect.innerHTML = '<option value="">Select student</option>';
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadInvoices(studentId) {
-        const url = new URL('{{ route('invoices.index') }}');
+        const url = new URL('{{ route('finance.api.invoices') }}');
         if (studentId) {
             url.searchParams.set('student_id', studentId);
         }
