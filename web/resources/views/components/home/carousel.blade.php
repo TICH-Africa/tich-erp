@@ -13,7 +13,6 @@
 
             <div class="tich-container tich-hero-carousel__content">
                 <div class="tich-hero-carousel__inner {{ $index === 0 ? 'is-visible' : '' }}" data-carousel-content>
-                  
                     <h1 class="tich-hero-carousel__title">{{ $slide->title }}</h1>
                     @if (!empty($slide->subtitle))
                         <p class="tich-hero-carousel__lead">{{ $slide->subtitle }}</p>
@@ -45,6 +44,16 @@
                     aria-label="Go to slide {{ $index + 1 }}"
                 ></button>
             @endforeach
+        </div>
+    @endif
+
+    @if (!empty($tickerMessage))
+        <div class="tich-hero-ticker" aria-live="polite" aria-label="Announcements">
+            <div class="tich-hero-ticker__track">
+                <span class="tich-hero-ticker__item">{{ $tickerMessage }}</span>
+                <span class="tich-hero-ticker__item">{{ $tickerMessage }}</span>
+                <span class="tich-hero-ticker__item">{{ $tickerMessage }}</span>
+            </div>
         </div>
     @endif
 </section>

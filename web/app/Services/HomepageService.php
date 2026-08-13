@@ -7,6 +7,7 @@ use App\Models\Portal\BlogPost;
 use App\Models\Portal\CarouselSlide;
 use App\Models\Portal\Event;
 use App\Models\Portal\ResearchProject;
+use App\Services\SiteSettingsService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,7 @@ class HomepageService
 {
     public function __construct(
         protected ProgramCarouselSyncService $programCarousel,
+        protected SiteSettingsService $settings,
     ) {}
 
     public function getPayload(): array
@@ -25,6 +27,7 @@ class HomepageService
             'research' => $this->getFeaturedResearch(),
             'events' => $this->getUpcomingEvents(),
             'blogPosts' => $this->getLatestBlogPosts(),
+            'tickerMessage' => $this->settings->get('site.ticker_message', ''),
             'usingFallback' => [
                 'carousel' => $this->carouselUsesFallback,
                 'programs' => $this->programsUseFallback,
@@ -84,6 +87,13 @@ class HomepageService
             ->pluck('program_id')
             ->map(fn ($id) => (int) $id);
 
+        $existingTitles = $slides
+            ->pluck('title')
+            ->filter()
+            ->map(fn ($title) => strtolower(trim((string) $title)))
+            ->values()
+            ->all();
+
         $featuredPrograms = AcademicProgram::query()
             ->where('is_featured_on_homepage', 1)
             ->where('status', 'active')
@@ -92,6 +102,11 @@ class HomepageService
 
         foreach ($featuredPrograms as $program) {
             if ($linkedProgramIds->contains($program->id)) {
+                continue;
+            }
+
+            $programTitle = strtolower(trim((string) ($program->program_name ?? '')));
+            if ($programTitle !== '' && in_array($programTitle, $existingTitles, true)) {
                 continue;
             }
 

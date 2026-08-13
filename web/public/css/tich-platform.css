@@ -2245,7 +2245,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     inset: 0;
     display: flex;
     align-items: center;
-    padding: 6rem 0 5rem;
+    padding: 4rem 0 3.5rem;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.9s ease, visibility 0.9s ease;
@@ -2304,7 +2304,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     max-width: 52rem;
     margin: 0 auto;
     text-align: center;
-    padding-top: 3rem;
+    padding: 1.5rem 1rem 4.5rem;
 }
 
 .tich-hero-carousel__eyebrow {
@@ -2340,7 +2340,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     font-weight: 700;
     line-height: 1.15;
     color: var(--hero-white);
-    margin: 0 0 1.25rem;
+    margin: 0 0 0.75rem;
     text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
     opacity: 0;
     transform: translateY(18px);
@@ -2360,7 +2360,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 }
 
 .tich-hero-carousel__actions {
-    margin-top: 2rem;
+    margin-top: 1.25rem;
     opacity: 0;
     transform: translateY(18px);
     transition: opacity 0.6s ease 0.55s, transform 0.6s ease 0.55s;
@@ -2458,6 +2458,58 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
     .tich-hero-carousel__indicators {
         bottom: 1.75rem;
+    }
+}
+
+/* ─── Hero ticker / marquee ─────────────────────────────────────────── */
+
+.tich-hero-ticker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    background: rgba(15, 23, 42, 0.85);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    padding: 0.35rem 0;
+    backdrop-filter: blur(4px);
+}
+
+.tich-hero-ticker__track {
+    display: flex;
+    width: max-content;
+    animation: tich-ticker-scroll 40s linear infinite;
+}
+
+.tich-hero-ticker__item {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0 2rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+}
+
+.tich-hero-ticker__item::after {
+    content: ' \2022';
+    margin-left: 2rem;
+    opacity: 0.7;
+}
+
+@keyframes tich-ticker-scroll {
+    0% {
+        transform: translateX(-33.333%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tich-hero-ticker__track {
+        animation: none;
     }
 }
 

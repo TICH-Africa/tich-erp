@@ -47,6 +47,7 @@ class SiteSettingsController extends Controller
             'tagline' => ['nullable', 'string', 'max:300'],
             'copyright' => ['nullable', 'string', 'max:300'],
             'website' => ['nullable', 'string', 'max:200'],
+            'ticker_message' => ['nullable', 'string', 'max:1000'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
         ]);
@@ -77,6 +78,10 @@ class SiteSettingsController extends Controller
         $this->settings->set('site.copyright', $validated['copyright'] ?? '', $userId, [
             'group_name' => 'identity',
             'label' => 'Copyright',
+        ]);
+        $this->settings->set('site.ticker_message', $validated['ticker_message'] ?? '', $userId, [
+            'group_name' => 'identity',
+            'label' => 'Homepage ticker message',
         ]);
         $this->settings->set('site.website', $validated['website'] ?? '', $userId, [
             'group_name' => 'identity',

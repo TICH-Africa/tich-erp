@@ -86,6 +86,7 @@ class SiteSettingsService
             'favicon_type' => $this->faviconMimeType(),
             'brand_name' => $this->get('site.brand_name', $shortName),
             'brand_tagline' => $this->get('site.brand_tagline', $tagline),
+            'ticker_message' => $this->get('site.ticker_message', ''),
         ];
     }
 

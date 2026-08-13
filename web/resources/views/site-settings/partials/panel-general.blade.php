@@ -76,6 +76,12 @@
         <p class="tich-caption">Logo asset</p>
         <p class="tich-stat__value" style="font-size:1.05rem;">{{ $hasLogo ? 'Uploaded' : 'Not set' }}</p>
     </article>
+    <article class="tich-card tich-stat">
+        <p class="tich-caption">Ticker message</p>
+        <p class="tich-stat__value" style="font-size:1.05rem; {{ ! $siteMeta['ticker_message'] ? 'color: var(--tich-neutral-muted);' : '' }}">
+            {{ $siteMeta['ticker_message'] ?: 'Not set' }}
+        </p>
+    </article>
 </div>
 
 <div class="tich-grid tich-grid--2 tich-mb-8" style="align-items: stretch; gap: 1.5rem;">
@@ -238,6 +244,11 @@
                         <label for="tagline" class="tich-label">Site tagline</label>
                         <input type="text" id="tagline" name="tagline" class="tich-input"
                             value="{{ old('tagline', $siteMeta['tagline']) }}">
+                    </div>
+                    <div class="tich-form-group" style="grid-column: 1 / -1;">
+                        <label for="ticker_message" class="tich-label">Homepage ticker message</label>
+                        <textarea id="ticker_message" name="ticker_message" class="tich-input" rows="2" placeholder="e.g. TICH 18th Graduation — 9th to 11th September at Mama Grace Social Hall">{{ old('ticker_message', $siteMeta['ticker_message'] ?? '') }}</textarea>
+                        <p class="tich-caption tich-mt-2">Shown as a scrolling marquee at the bottom of the homepage hero. Leave blank to hide.</p>
                     </div>
                     <div class="tich-form-group">
                         <label for="website" class="tich-label">Website</label>

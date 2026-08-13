@@ -3,7 +3,7 @@
 @section('title', 'Home')
 
 @section('content')
-    @include('components.home.carousel', ['carousel' => $carousel])
+    @include('components.home.carousel', ['carousel' => $carousel, 'tickerMessage' => $tickerMessage])
 
     @include('components.home.programs-matrix', ['programs' => $programs, 'usingFallback' => $usingFallback])
 
