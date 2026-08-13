@@ -11,28 +11,33 @@
         <div class="tich-grid tich-grid--3">
             @foreach ($programs as $program)
                 <article class="tich-card tich-program-card">
-                    <p class="tich-caption">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type)) }}</p>
-                    <h3 class="tich-h3 tich-mt-2">{{ $program->program_name }}</h3>
-                    @if (!empty($program->homepage_tagline))
-                        <p class="tich-text tich-mt-2">{{ $program->homepage_tagline }}</p>
-                    @endif
+                    <div class="tich-program-card__media">
+                        @include('programs.partials.cover-image', ['program' => $program])
+                    </div>
+                    <div class="tich-program-card__body">
+                        <p class="tich-caption">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type)) }}</p>
+                        <h3 class="tich-h3 tich-mt-2">{{ $program->program_name }}</h3>
+                        @if (!empty($program->homepage_tagline))
+                            <p class="tich-text tich-mt-2">{{ $program->homepage_tagline }}</p>
+                        @endif
 
-                    <ul class="tich-program-card__meta tich-mt-4">
-                        @if (!empty($program->duration_months))
-                            <li><span class="tich-caption">Duration</span> {{ $program->duration_months }} months</li>
-                        @endif
-                        @if (!empty($program->regulatory_body))
-                            <li><span class="tich-caption">Accreditation</span> {{ $program->regulatory_body }}</li>
-                        @endif
-                        @if (!empty($program->entry_requirements))
-                            <li><span class="tich-caption">Entry</span> {{ \Illuminate\Support\Str::limit($program->entry_requirements, 80) }}</li>
-                        @endif
-                        @if (!empty($program->fee_display))
-                            <li><span class="tich-caption">Fees</span> {{ $program->fee_display }}</li>
-                        @endif
-                    </ul>
+                        <ul class="tich-program-card__meta tich-mt-4">
+                            @if (!empty($program->duration_months))
+                                <li><span class="tich-caption">Duration</span> {{ $program->duration_months }} months</li>
+                            @endif
+                            @if (!empty($program->regulatory_body))
+                                <li><span class="tich-caption">Accreditation</span> {{ $program->regulatory_body }}</li>
+                            @endif
+                            @if (!empty($program->entry_requirements))
+                                <li><span class="tich-caption">Entry</span> {{ \Illuminate\Support\Str::limit($program->entry_requirements, 80) }}</li>
+                            @endif
+                            @if (!empty($program->fee_display))
+                                <li><span class="tich-caption">Fees</span> {{ $program->fee_display }}</li>
+                            @endif
+                        </ul>
 
-                    <a href="{{ $program->apply_url ?? url('/apply') }}" class="tich-btn tich-btn-primary tich-mt-4">Apply now</a>
+                        <a href="{{ $program->apply_url ?? url('/apply') }}" class="tich-btn tich-btn-primary tich-mt-4">Apply now</a>
+                    </div>
                 </article>
             @endforeach
         </div>

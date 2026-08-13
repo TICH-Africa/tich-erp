@@ -48,6 +48,7 @@ class HomepageService
     {
         if ($this->tableExists('homepage_carousel_slides')) {
             $slides = CarouselSlide::query()
+                ->with('program:id,program_code')
                 ->where('is_active', 1)
                 ->orderBy('display_order')
                 ->orderBy('id')
@@ -127,8 +128,18 @@ class HomepageService
             'video_url' => $slide->video_url,
             'cta_label' => $slide->cta_label,
             'cta_url' => $slide->cta_url ? url($slide->cta_url) : null,
+            'view_url' => $this->programViewUrl($slide->program?->program_code),
             'display_order' => (int) $slide->display_order,
         ];
+    }
+
+    private function programViewUrl(?string $programCode): ?string
+    {
+        if (! $programCode) {
+            return null;
+        }
+
+        return route('programs.index', ['search' => $programCode]);
     }
 
     public function getFeaturedPrograms(): Collection
@@ -257,6 +268,7 @@ class HomepageService
             'homepage_tagline' => $program->homepage_tagline ?? null,
             'entry_requirements' => $program->entry_requirements ?? 'See admissions guide for entry requirements.',
             'fee_display' => $feeDisplay,
+            'cover_image_url' => $program->coverImageUrl(),
             'apply_url' => route('apply.index', ['program' => $program->program_code]),
         ];
     }

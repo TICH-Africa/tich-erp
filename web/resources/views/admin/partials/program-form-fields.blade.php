@@ -7,6 +7,36 @@
 ])
 
 <div class="tich-form-group">
+    <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}cover_image" @endif>Cover image</label>
+    @if ($program?->coverImageUrl())
+        <img
+            src="{{ $program->coverImageUrl() }}"
+            alt="{{ $program->program_name }}"
+            id="{{ $fieldIdPrefix }}cover_preview"
+            class="tich-program-form-cover-preview"
+            style="display: block; width: 100%; max-width: 16rem; height: 8rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem); margin-bottom: 0.75rem;"
+        >
+    @else
+        <img
+            src=""
+            alt=""
+            id="{{ $fieldIdPrefix }}cover_preview"
+            class="tich-program-form-cover-preview"
+            hidden
+            style="width: 100%; max-width: 16rem; height: 8rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem); margin-bottom: 0.75rem;"
+        >
+    @endif
+    <input
+        type="file"
+        name="cover_image"
+        @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}cover_image" @endif
+        class="tich-input"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        @if (! $program) required @endif
+    >
+    <p class="tich-caption tich-mt-2">Shown on the programs catalogue and homepage. JPG, PNG or WebP, max 5 MB.</p>
+</div>
+<div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}program_code" @endif>Programme code</label>
     <input
         type="text"

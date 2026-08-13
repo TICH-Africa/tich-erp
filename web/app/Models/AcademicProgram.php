@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AcademicProgram extends Model
 {
+    use PrunesStoredFiles;
+
     protected $table = 'academic_programs';
+
+    /** @var array<string, string> */
+    protected array $storedFiles = [
+        'cover_image_path' => 'public',
+    ];
 
     public $timestamps = false;
 
@@ -19,7 +27,7 @@ class AcademicProgram extends Model
         'is_nursing_track', 'min_attendance_pct', 'theory_pass_mark', 'clinical_pass_mark',
         'status', 'approved_by_ceo_at', 'approved_by_ceo_id',
         'is_featured_on_homepage', 'homepage_display_order',
-        'homepage_tagline', 'entry_requirements', 'created_by',
+        'homepage_tagline', 'cover_image_path', 'entry_requirements', 'created_by',
     ];
 
     protected $casts = [
@@ -113,5 +121,20 @@ class AcademicProgram extends Model
         $termInYear = (($periodNumber - 1) % $termsPerYear) + 1;
 
         return "Year {$year} · Semester {$termInYear}";
+    }
+
+    public function coverImageUrl(): ?string
+    {
+        $path = $this->cover_image_path;
+
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return asset(ltrim($path, '/'));
     }
 }

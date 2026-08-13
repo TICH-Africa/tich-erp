@@ -68,7 +68,7 @@ class ProgramCarouselSyncService
      */
     public function slidePayload(AcademicProgram $program): array
     {
-        return [
+        $payload = [
             'program_id' => $program->id,
             'title' => $program->program_name,
             'subtitle' => $this->subtitleFor($program),
@@ -77,6 +77,12 @@ class ProgramCarouselSyncService
             'display_order' => self::PROGRAM_SLIDE_ORDER_OFFSET + (int) $program->homepage_display_order,
             'is_active' => true,
         ];
+
+        if ($program->cover_image_path) {
+            $payload['image_path'] = $program->cover_image_path;
+        }
+
+        return $payload;
     }
 
     /**
@@ -89,10 +95,11 @@ class ProgramCarouselSyncService
         return (object) [
             'title' => $payload['title'],
             'subtitle' => $payload['subtitle'],
-            'image_path' => null,
+            'image_path' => $program->coverImageUrl(),
             'video_url' => null,
             'cta_label' => $payload['cta_label'],
             'cta_url' => url($payload['cta_url']),
+            'view_url' => route('programs.index', ['search' => $program->program_code]),
             'display_order' => $payload['display_order'],
         ];
     }

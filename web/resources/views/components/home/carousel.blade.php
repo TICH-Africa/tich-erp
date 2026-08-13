@@ -17,9 +17,14 @@
                     @if (!empty($slide->subtitle))
                         <p class="tich-hero-carousel__lead">{{ $slide->subtitle }}</p>
                     @endif
-                    @if (!empty($slide->cta_label) && !empty($slide->cta_url))
+                    @if (!empty($slide->view_url) || (!empty($slide->cta_label) && !empty($slide->cta_url)))
                         <div class="tich-hero-carousel__actions">
-                            <a href="{{ $slide->cta_url }}" class="tich-btn tich-btn-primary">{{ $slide->cta_label }}</a>
+                            @if (!empty($slide->view_url))
+                                <a href="{{ $slide->view_url }}" class="tich-btn tich-btn-secondary">View Program</a>
+                            @endif
+                            @if (!empty($slide->cta_label) && !empty($slide->cta_url))
+                                <a href="{{ $slide->cta_url }}" class="tich-btn tich-btn-primary">{{ $slide->cta_label }}</a>
+                            @endif
                         </div>
                     @endif
                 </div>

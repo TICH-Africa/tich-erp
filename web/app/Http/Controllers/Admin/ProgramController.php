@@ -8,6 +8,7 @@ use App\Models\Campus;
 use App\Models\Department;
 use App\Services\AuditService;
 use App\Services\ProgramCarouselSyncService;
+use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,6 +18,7 @@ class ProgramController extends Controller
     public function __construct(
         protected AuditService $auditService,
         protected ProgramCarouselSyncService $programCarousel,
+        protected StoredFileService $files,
     ) {}
 
     public function index(): View
@@ -55,6 +57,7 @@ class ProgramController extends Controller
             'entry_requirements' => ['nullable', 'string', 'max:2000'],
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
+            'cover_image' => ['required', 'image', 'max:5120'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);
@@ -69,6 +72,7 @@ class ProgramController extends Controller
             'duration_months' => $validated['duration_months'] ?? 12,
             'homepage_display_order' => $validated['homepage_display_order'] ?? 0,
             'is_featured_on_homepage' => $request->boolean('is_featured_on_homepage'),
+            'cover_image_path' => $this->files->replace(null, $request->file('cover_image'), 'programs', 'public', null, true),
             'created_by' => $request->user()->id,
             'created_at' => now(),
         ]);
@@ -104,6 +108,7 @@ class ProgramController extends Controller
             'entry_requirements' => ['nullable', 'string', 'max:2000'],
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);
@@ -114,12 +119,25 @@ class ProgramController extends Controller
         }
 
         $old = $program->only(['program_code', 'program_name', 'department_id', 'status']);
-        $program->update([
+        $updates = [
             ...$validated,
             'duration_months' => $validated['duration_months'] ?? $program->duration_months,
             'homepage_display_order' => $validated['homepage_display_order'] ?? 0,
             'is_featured_on_homepage' => $request->boolean('is_featured_on_homepage'),
-        ]);
+        ];
+
+        if ($request->hasFile('cover_image')) {
+            $updates['cover_image_path'] = $this->files->replace(
+                $program->cover_image_path,
+                $request->file('cover_image'),
+                'programs',
+                'public',
+                null,
+                true,
+            );
+        }
+
+        $program->update($updates);
 
         $this->auditService->log(
             'core.program.updated',

@@ -22,6 +22,7 @@
         <table class="tich-admin-table tich-mt-4">
             <thead>
                 <tr>
+                    <th>Image</th>
                     <th>Code</th>
                     <th>Name</th>
                     <th>Department</th>
@@ -33,6 +34,13 @@
             <tbody>
                 @forelse ($programs as $program)
                     <tr>
+                        <td>
+                            @if ($program->coverImageUrl())
+                                <img src="{{ $program->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
+                            @else
+                                <span class="tich-caption">No image</span>
+                            @endif
+                        </td>
                         <td>{{ $program->program_code }}</td>
                         <td>{{ $program->program_name }}</td>
                         <td>{{ $program->department?->dept_name ?? '-' }}</td>
@@ -58,6 +66,7 @@
                                 data-entry-requirements="{{ $program->entry_requirements }}"
                                 data-homepage-display-order="{{ $program->homepage_display_order ?? 0 }}"
                                 data-is-featured="{{ $program->is_featured_on_homepage ? '1' : '0' }}"
+                                data-cover-image-url="{{ $program->coverImageUrl() ?? '' }}"
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M12 20h9"/>
@@ -68,7 +77,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">No programmes yet. Add academic departments under Academics first.</td>
+                        <td colspan="7">No programmes yet. Add academic departments under Academics first.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -94,7 +103,7 @@
                 <h2 id="program-create-modal-title" class="tich-h3" style="margin: 0;">Add programme</h2>
                 <button type="button" class="tich-modal__close" data-close-modal="program-create-modal" aria-label="Close">&times;</button>
             </header>
-            <form method="POST" action="{{ route('admin.programs.store') }}" class="tich-modal__body">
+            <form method="POST" action="{{ route('admin.programs.store') }}" class="tich-modal__body" enctype="multipart/form-data">
                 @csrf
                 @if ($errors->any() && old('_method') !== 'PUT')
                     <div class="tich-modal__errors">
@@ -109,6 +118,7 @@
                     'learningDepartments' => $learningDepartments,
                     'programTypes' => $programTypes,
                     'programStatuses' => $programStatuses,
+                    'fieldIdPrefix' => 'program-create-',
                 ])
                 <footer class="tich-modal__footer">
                     <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="program-create-modal">Cancel</button>
@@ -138,6 +148,7 @@
                 method="POST"
                 action="{{ $editProgram ? route('admin.programs.update', $editProgram) : '#' }}"
                 class="tich-modal__body"
+                enctype="multipart/form-data"
             >
                 @csrf
                 @method('PUT')
@@ -203,7 +214,33 @@
             setFieldValue('program-edit-entry_requirements', trigger.getAttribute('data-entry-requirements') || '');
             setFieldValue('program-edit-homepage_display_order', trigger.getAttribute('data-homepage-display-order') || '0');
             setFieldValue('program-edit-is_featured_on_homepage', trigger.getAttribute('data-is-featured'));
+
+            var coverPreview = document.getElementById('program-edit-cover_preview');
+            var coverUrl = trigger.getAttribute('data-cover-image-url') || '';
+            if (coverPreview) {
+                if (coverUrl) {
+                    coverPreview.src = coverUrl;
+                    coverPreview.alt = trigger.getAttribute('data-program-name') || 'Programme cover';
+                    coverPreview.hidden = false;
+                } else {
+                    coverPreview.removeAttribute('src');
+                    coverPreview.hidden = true;
+                }
+            }
         }
+
+        document.querySelectorAll('input[type="file"][name="cover_image"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                var previewId = input.id ? input.id.replace('cover_image', 'cover_preview') : '';
+                var preview = previewId ? document.getElementById(previewId) : null;
+                if (!preview || !input.files || !input.files[0]) {
+                    return;
+                }
+
+                preview.src = URL.createObjectURL(input.files[0]);
+                preview.hidden = false;
+            });
+        });
 
         document.querySelectorAll('.program-edit-trigger').forEach(function (trigger) {
             trigger.addEventListener('click', function () {

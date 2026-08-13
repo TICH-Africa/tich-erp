@@ -116,6 +116,7 @@ class ProgramsService
             'entry_requirements' => $program->entry_requirements ?? 'See admissions guide for entry requirements.',
             'fee_display' => $feeDisplay,
             'is_featured_on_homepage' => (bool) $program->is_featured_on_homepage,
+            'cover_image_url' => $program->coverImageUrl(),
             'apply_url' => route('apply.index', ['program' => $program->program_code]),
         ];
     }
