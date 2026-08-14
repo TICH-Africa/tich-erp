@@ -66,6 +66,7 @@ class FinanceReportExportService
             'ap_aging' => $this->apAgingRows($data),
             'payroll_summary' => $this->payrollSummaryRows($data),
             'finance_audit' => $this->financeAuditRows($data),
+            'reconciliation' => $this->reconciliationRows($data),
             default => $this->trialBalanceRows($data),
         };
     }
@@ -313,6 +314,54 @@ class FinanceReportExportService
                 $row['user_email'],
                 $row['status'],
                 $row['reason'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<list<string|float|int|null>>
+     */
+    private function reconciliationRows(array $data): array
+    {
+        $rows = [
+            ['Reconciliation Report', $data['period_label']],
+            [],
+            ['Opening balance', '', '', number_format($data['opening_balance'], 2)],
+            [],
+        ];
+
+        foreach ($data['income']['categories'] as $category => $summary) {
+            $rows[] = ['INCOME', $category, 'Count: '.$summary['count'], number_format($summary['total'], 2)];
+        }
+        $rows[] = ['', 'Total income', '', number_format($data['income']['total'], 2)];
+        $rows[] = [];
+
+        foreach ($data['expenses']['categories'] as $category => $summary) {
+            $rows[] = ['EXPENSE', $category, 'Count: '.$summary['count'], number_format($summary['total'], 2)];
+        }
+        $rows[] = ['', 'Total expenses', '', number_format($data['expenses']['total'], 2)];
+        $rows[] = [];
+
+        $rows[] = ['', 'Net position', '', number_format($data['net_position'], 2)];
+        $rows[] = ['', 'Closing balance', '', number_format($data['closing_balance'], 2)];
+        $rows[] = [];
+
+        $rows[] = ['DETAILED TRANSACTIONS'];
+        $rows[] = [];
+        $rows[] = ['Date', 'Category', 'Type', 'Narration', 'Reference', 'Income (KES)', 'Expense (KES)'];
+
+        foreach ($data['rows'] as $row) {
+            $rows[] = [
+                $row['date_display'],
+                $row['category'],
+                $row['type'],
+                $row['narration'],
+                $row['reference'],
+                $row['income'] > 0 ? number_format($row['income'], 2) : '',
+                $row['expense'] > 0 ? number_format($row['expense'], 2) : '',
             ];
         }
 

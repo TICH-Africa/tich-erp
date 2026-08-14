@@ -14,6 +14,7 @@
             'ap_aging' => 'AP ageing',
             'payroll_summary' => 'Payroll summary',
             'finance_audit' => 'Finance audit',
+            'reconciliation' => 'Reconciliation',
         ];
     @endphp
 
@@ -56,4 +57,5 @@
     @includeWhen($report === 'ap_aging', 'finance.reports.partials.ap-aging', ['data' => $reportData])
     @includeWhen($report === 'payroll_summary', 'finance.reports.partials.payroll-summary', ['data' => $reportData])
     @includeWhen($report === 'finance_audit', 'finance.reports.partials.finance-audit', ['data' => $reportData, 'filters' => $filters ?? []])
+    @includeWhen($report === 'reconciliation', 'finance.reports.partials.reconciliation', ['data' => $reportData])
 @endsection

@@ -25,6 +25,7 @@ class FinanceReportService
             'ap_aging' => 'Accounts Payable Ageing',
             'payroll_summary' => 'Institutional Payroll Summary',
             'finance_audit' => 'Finance Audit Trail',
+            'reconciliation' => 'Reconciliation Report',
             default => 'Financial Report',
         };
     }
@@ -45,6 +46,7 @@ class FinanceReportService
             'ap_aging' => $this->apAging(),
             'payroll_summary' => $this->payrollSummary(),
             'finance_audit' => $this->financeAuditReport($filters),
+            'reconciliation' => $this->reconciliation($filters),
             default => $this->trialBalance(),
         };
     }
@@ -401,6 +403,124 @@ class FinanceReportService
             'rows' => $rows,
             'entry_count' => count($rows),
             'filters' => $filters,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function reconciliation(array $filters = []): array
+    {
+        $from = $filters['from'] ?? now()->subMonth()->toDateString();
+        $to = $filters['to'] ?? now()->toDateString();
+
+        $query = AccountLedger::query()
+            ->whereBetween('ledger_date', [$from, $to])
+            ->orderBy('ledger_date')
+            ->orderBy('id');
+
+        $entries = $query->get();
+
+        $incomeTypes = ['student_payment', 'invoice_raised'];
+        $expenseTypes = ['payroll_disbursement', 'statutory_remittance', 'credit_memo'];
+        $allTypes = ['student_payment', 'invoice_raised', 'credit_memo', 'payroll_disbursement', 'statutory_remittance'];
+
+        $categoryMap = [
+            'student_payment' => 'Student receipts',
+            'invoice_raised' => 'Invoices raised',
+            'credit_memo' => 'Credit memos',
+            'payroll_disbursement' => 'Payroll disbursements',
+            'statutory_remittance' => 'Statutory remittances',
+        ];
+
+        $typeLabelMap = [
+            'student_payment' => 'Student payment',
+            'invoice_raised' => 'Invoice raised',
+            'credit_memo' => 'Credit memo',
+            'payroll_disbursement' => 'Payroll disbursement',
+            'statutory_remittance' => 'Statutory remittance',
+        ];
+
+        $incomeRows = [];
+        $expenseRows = [];
+        $incomeTotal = 0.0;
+        $expenseTotal = 0.0;
+        $balance = 0.0;
+
+        foreach ($entries as $entry) {
+            $type = (string) $entry->transaction_type;
+            $amount = (float) ($entry->debit_amount ?? 0);
+            $isIncome = in_array($type, $incomeTypes, true);
+            $isExpense = in_array($type, $expenseTypes, true);
+
+            if (! $isIncome && ! $isExpense) {
+                continue;
+            }
+
+            $row = [
+                'date' => $entry->ledger_date?->format('Y-m-d'),
+                'date_display' => $entry->ledger_date?->format('d M Y'),
+                'category' => $categoryMap[$type] ?? ucfirst(str_replace('_', ' ', $type)),
+                'type' => $typeLabelMap[$type] ?? ucfirst(str_replace('_', ' ', $type)),
+                'narration' => $entry->narration,
+                'reference' => $entry->reference_id,
+                'source' => $entry->source_module,
+                'income' => $isIncome ? $amount : 0.0,
+                'expense' => $isExpense ? $amount : 0.0,
+            ];
+
+            if ($isIncome) {
+                $incomeRows[] = $row;
+                $incomeTotal += $amount;
+                $balance += $amount;
+            } else {
+                $expenseRows[] = $row;
+                $expenseTotal += $amount;
+                $balance -= $amount;
+            }
+        }
+
+        $incomeByCategory = collect($incomeRows)->groupBy('category')->map(fn ($rows) => [
+            'count' => $rows->count(),
+            'total' => round($rows->sum('income'), 2),
+        ])->all();
+
+        $expenseByCategory = collect($expenseRows)->groupBy('category')->map(fn ($rows) => [
+            'count' => $rows->count(),
+            'total' => round($rows->sum('expense'), 2),
+        ])->all();
+
+        $detailRows = [];
+        foreach ($incomeRows as $row) {
+            $detailRows[] = $row;
+        }
+        foreach ($expenseRows as $row) {
+            $detailRows[] = $row;
+        }
+
+        return [
+            'report' => 'reconciliation',
+            'title' => $this->title('reconciliation'),
+            'period_label' => 'From '.now()->parse($from)->format('d M Y').' to '.now()->parse($to)->format('d M Y'),
+            'filters' => $filters,
+            'from' => $from,
+            'to' => $to,
+            'opening_balance' => 0.0,
+            'income' => [
+                'categories' => $incomeByCategory,
+                'total' => round($incomeTotal, 2),
+                'rows' => $incomeRows,
+            ],
+            'expenses' => [
+                'categories' => $expenseByCategory,
+                'total' => round($expenseTotal, 2),
+                'rows' => $expenseRows,
+            ],
+            'net_position' => round($incomeTotal - $expenseTotal, 2),
+            'closing_balance' => round($balance, 2),
+            'rows' => $detailRows,
+            'entry_count' => count($detailRows),
         ];
     }
 }

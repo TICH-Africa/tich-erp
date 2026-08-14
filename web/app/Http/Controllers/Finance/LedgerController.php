@@ -24,6 +24,7 @@ class LedgerController extends Controller
         'ap_aging',
         'payroll_summary',
         'finance_audit',
+        'reconciliation',
     ];
 
     public function __construct(
