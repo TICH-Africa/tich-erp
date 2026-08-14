@@ -5,10 +5,11 @@
 @section('finance-content')
     @php
         $chartData = $chartData ?? [];
-        $totalInvoices = \App\Models\Finance\Invoice::count();
+        $stats = $stats ?? [];
+        $totalInvoices = $stats['pending_invoices'] ?? \App\Models\Finance\Invoice::count();
         $totalPayments = \App\Models\Finance\Payment::count();
-        $totalAccounts = \App\Models\Finance\StudentAccount::count();
-        $outstandingBalance = \App\Models\Finance\StudentAccount::sum('outstanding_balance');
+        $totalAccounts = $stats['total_accounts'] ?? \App\Models\Finance\StudentAccount::count();
+        $outstandingBalance = $stats['outstanding_balance'] ?? \App\Models\Finance\StudentAccount::sum('outstanding_balance');
     @endphp
 
     <x-page-toolbar title="Student Finance" meta="Student accounts, fee structures, invoices, payments, receipts, adjustments, and clearance">
@@ -103,5 +104,10 @@
     @parent
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script id="finance-dashboard-chart-data" type="application/json">@json($chartData)</script>
+    <script>
+        console.log('Student Finance chartData:', @json($chartData));
+        console.log('Student Finance Chart.js loaded:', typeof Chart !== 'undefined');
+        console.log('Student Finance dataEl:', document.getElementById('finance-dashboard-chart-data'));
+    </script>
     <script src="{{ asset('js/tich-finance-dashboard.js') }}"></script>
 @endsection

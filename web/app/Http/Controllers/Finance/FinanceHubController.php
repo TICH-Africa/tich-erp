@@ -20,9 +20,18 @@ class FinanceHubController extends Controller
 
         abort_if($dept === [], 404, 'Finance department is not configured.');
 
+        $chartData = $this->stats->studentFinanceChartData();
+
+        \Log::debug('FinanceHubController@studentFinance chartData', [
+            'chartData' => $chartData,
+            'invoice_count' => \App\Models\Finance\Invoice::count(),
+            'payment_count' => \App\Models\Finance\Payment::count(),
+            'account_count' => \App\Models\Finance\StudentAccount::count(),
+        ]);
+
         return view('finance.student-finance.index', [
             'department' => $this->navigation->financeDepartment(),
-            'chartData' => $this->stats->studentFinanceChartData(),
+            'chartData' => $chartData,
         ]);
     }
 

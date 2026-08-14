@@ -14,10 +14,21 @@ class FinanceDashboardStatsService
 {
     public function studentFinanceChartData(): array
     {
+        \Log::debug('FinanceDashboardStatsService@studentFinanceChartData starting');
+
+        $invoicesByStatus = $this->invoicesByStatus();
+        \Log::debug('invoicesByStatus', $invoicesByStatus);
+
+        $paymentsByMethod = $this->paymentsByMethod();
+        \Log::debug('paymentsByMethod', $paymentsByMethod);
+
+        $accountsByClearance = $this->accountsByClearance();
+        \Log::debug('accountsByClearance', $accountsByClearance);
+
         return [
-            'invoicesByStatus' => $this->invoicesByStatus(),
-            'paymentsByMethod' => $this->paymentsByMethod(),
-            'accountsByClearance' => $this->accountsByClearance(),
+            'invoicesByStatus' => $invoicesByStatus,
+            'paymentsByMethod' => $paymentsByMethod,
+            'accountsByClearance' => $accountsByClearance,
         ];
     }
 

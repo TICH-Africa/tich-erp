@@ -31,6 +31,7 @@ class StudentFinanceController extends Controller
         protected DepartmentDashboardService $departmentDashboard,
         protected StudentFinanceService $financeService,
         protected InvoiceService $invoiceService,
+        protected \App\Services\FinanceDashboardStatsService $stats,
     ) {
     }
 
@@ -68,6 +69,7 @@ class StudentFinanceController extends Controller
 
         return $this->view($request, 'finance.student-finance.index', $department, [
             'stats' => $stats,
+            'chartData' => $this->stats->studentFinanceChartData(),
         ]);
     }
 
