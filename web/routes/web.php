@@ -477,6 +477,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/academic-years', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiAcademicYears'])->name('academic-years');
             Route::get('/students', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiStudents'])->name('students');
             Route::get('/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'apiInvoices'])->name('invoices');
+            Route::get('/suppliers', [\App\Http\Controllers\Finance\FinanceController::class, 'apiSuppliers'])->name('suppliers');
         });
 
     Route::prefix('departments/{department}/finance')

@@ -9,9 +9,11 @@ use App\Models\ChartOfAccount;
 use App\Models\Department;
 use App\Models\DonorProject;
 use App\Models\FinanceBudget;
+use App\Models\Supplier;
 use App\Services\DepartmentDashboardService;
 use App\Services\Finance\LedgerService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class FinanceController extends Controller
@@ -99,12 +101,50 @@ class FinanceController extends Controller
 
     public function apCreate(Request $request, Department $department): View
     {
-        return $this->departmentView($request, 'finance.ap.create', $department);
+        return $this->departmentView($request, 'finance.ap.create', $department, [
+            'suppliers' => Supplier::query()
+                ->where('is_active', 1)
+                ->orderBy('supplier_name')
+                ->get(['id', 'supplier_name', 'supplier_code']),
+        ]);
     }
 
     public function apStore(Request $request, Department $department)
     {
-        //
+        $validated = $request->validate([
+            'supplier_id' => ['required', 'exists:suppliers,id'],
+            'invoice_number' => ['required', 'string', 'max:50', 'unique:accounts_payable,invoice_number'],
+            'invoice_amount' => ['required', 'numeric', 'min:0'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'due_date' => ['required', 'date'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $invoiceAmount = (float) $validated['invoice_amount'];
+        $taxAmount = (float) ($validated['tax_amount'] ?? 0);
+        $totalAmount = $invoiceAmount + $taxAmount;
+
+        $payable = new AccountsPayable([
+            'supplier_id' => $validated['supplier_id'],
+            'invoice_number' => $validated['invoice_number'],
+            'invoice_date' => now()->toDateString(),
+            'due_date' => $validated['due_date'],
+            'invoice_amount' => $invoiceAmount,
+            'tax_amount' => $taxAmount,
+            'total_amount' => $totalAmount,
+            'amount_paid' => 0,
+            'balance' => $totalAmount,
+            'description' => $validated['description'] ?? null,
+            'three_way_match_status' => 'pending',
+            'finance_approval_status' => 'pending',
+            'payment_status' => 'unpaid',
+        ]);
+
+        $payable->save();
+
+        return redirect()
+            ->route('finance.ap.show', [$department, $payable])
+            ->with('success', 'Supplier invoice created successfully.');
     }
 
     public function apShow(Request $request, Department $department, AccountsPayable $ap): View
@@ -255,5 +295,18 @@ class FinanceController extends Controller
     public function payrollIntegrationShow(Request $request, Department $department, $id): View
     {
         return $this->departmentView($request, 'finance.payroll-integration.show', $department);
+    }
+
+    public function apiSuppliers(Request $request)
+    {
+        $search = $request->string('search')->toString();
+
+        $suppliers = Supplier::query()
+            ->where('is_active', 1)
+            ->when($search !== '', fn ($query) => $query->where('supplier_name', 'like', "%{$search}%"))
+            ->orderBy('supplier_name')
+            ->get(['id', 'supplier_name', 'supplier_code']);
+
+        return response()->json($suppliers);
     }
 }

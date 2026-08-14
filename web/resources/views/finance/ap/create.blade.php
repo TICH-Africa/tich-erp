@@ -10,12 +10,16 @@
     </x-page-toolbar>
 
     <div class="tich-card">
-        <form method="POST" action="{{ route('finance.ap.store', $department) }}" class="tich-form">
+        <form method="POST" action="{{ route('finance.ap.store', $department) }}" class="tich-form" id="ap-create-form">
             @csrf
             <div class="tich-form__row">
                 <label class="tich-form__label">Supplier</label>
-                <select name="supplier_id" class="tich-form__input" required>
+                <input type="text" id="supplier-search" class="tich-form__input" placeholder="Search supplier..." autocomplete="off" required>
+                <select name="supplier_id" id="supplier-select" class="tich-form__input" required>
                     <option value="">Select supplier</option>
+                    @foreach ($suppliers as $supplier)
+                        <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
+                    @endforeach
                 </select>
             </div>
             <div class="tich-form__row">
@@ -23,8 +27,12 @@
                 <input type="text" name="invoice_number" class="tich-form__input" required />
             </div>
             <div class="tich-form__row">
-                <label class="tich-form__label">Amount</label>
-                <input type="number" name="amount" class="tich-form__input" step="0.01" required />
+                <label class="tich-form__label">Invoice amount (KES)</label>
+                <input type="number" name="invoice_amount" class="tich-form__input" step="0.01" min="0" required />
+            </div>
+            <div class="tich-form__row">
+                <label class="tich-form__label">Tax amount (KES, optional)</label>
+                <input type="number" name="tax_amount" class="tich-form__input" step="0.01" min="0" value="0" />
             </div>
             <div class="tich-form__row">
                 <label class="tich-form__label">Due date</label>
@@ -37,5 +45,39 @@
             <button type="submit" class="tich-btn tich-btn-primary">Create invoice</button>
         </form>
     </div>
-@endsection
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('supplier-search');
+            const select = document.getElementById('supplier-select');
+            if (!searchInput || !select) return;
+
+            searchInput.addEventListener('input', function () {
+                const query = this.value.trim();
+                if (query.length < 1) return;
+
+                fetch(`{{ route('finance.api.suppliers') }}?search=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(suppliers => {
+                        select.innerHTML = '<option value="">Select supplier</option>';
+                        suppliers.forEach(supplier => {
+                            const option = document.createElement('option');
+                            option.value = supplier.id;
+                            option.textContent = `${supplier.supplier_name} (${supplier.supplier_code})`;
+                            select.appendChild(option);
+                        });
+                    })
+                    .catch(() => {
+                        select.innerHTML = '<option value="">Select supplier</option>';
+                    });
+            });
+
+            select.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    searchInput.value = selectedOption.textContent.replace(/\s*\([^)]*\)/, '').trim();
+                }
+            });
+        });
+    </script>
+@endsection
