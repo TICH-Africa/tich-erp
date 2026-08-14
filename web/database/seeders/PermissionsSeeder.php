@@ -99,7 +99,7 @@ class PermissionsSeeder extends Seeder
         $this->assignRolePermissions('Administration Manager', ['core', 'administration'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Procurement Manager', ['core', 'procurement'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Research Manager', ['core', 'research', 'portal'], ['view', 'create', 'edit', 'manage', 'export']);
-        $this->assignRolePermissions('ICT Manager', ['core', 'ict'], ['view', 'create', 'edit', 'manage', 'export']);
+        $this->assignRolePermissions('ICT Manager', ['core', 'ict', 'site_settings'], ['view', 'create', 'edit', 'manage', 'export']);
         $this->grantRolePermissionSlugs('ICT Manager', ['admin_manage_staff_manage', 'admin_manage_staff_view']);
         $this->assignRolePermissions('Student', ['academics', 'finance', 'portal'], ['view']);
         $this->assignRolePermissions('Applicant', ['admin'], ['view', 'create']);

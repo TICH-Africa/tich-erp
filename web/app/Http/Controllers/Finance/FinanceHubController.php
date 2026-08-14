@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Services\Finance\FinanceNavigationService;
+use App\Services\FinanceDashboardStatsService;
 use Illuminate\View\View;
 
 class FinanceHubController extends Controller
 {
     public function __construct(
         protected FinanceNavigationService $navigation,
+        protected FinanceDashboardStatsService $stats,
     ) {}
 
     public function studentFinance(): View
@@ -20,6 +22,7 @@ class FinanceHubController extends Controller
 
         return view('finance.student-finance.index', [
             'department' => $this->navigation->financeDepartment(),
+            'chartData' => $this->stats->studentFinanceChartData(),
         ]);
     }
 
@@ -27,6 +30,7 @@ class FinanceHubController extends Controller
     {
         return view('finance.records.index', [
             'departmentParams' => $this->navigation->departmentParams(),
+            'chartData' => $this->stats->financeRecordsChartData(),
         ]);
     }
 
@@ -34,6 +38,7 @@ class FinanceHubController extends Controller
     {
         return view('finance.employee.index', [
             'departmentParams' => $this->navigation->departmentParams(),
+            'chartData' => $this->stats->employeeFinanceChartData(),
         ]);
     }
 }

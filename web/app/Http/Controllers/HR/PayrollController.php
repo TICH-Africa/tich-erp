@@ -296,7 +296,11 @@ class PayrollController extends Controller
     {
         $breakdown = $this->runCalculation($request);
 
-        abort_unless($breakdown, 404);
+        if (! $breakdown) {
+            return view($this->viewPrefix().'.calculator', [
+                'withholdingRate' => $this->taxService->withholdingTaxRate(),
+            ]);
+        }
 
         return $this->printDocuments->render($this->printView(), $this->documentData($breakdown));
     }
