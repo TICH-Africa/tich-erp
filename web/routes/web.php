@@ -389,7 +389,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
                 Route::get('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'settings'])->name('hr.payroll.settings');
                 Route::put('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'updateSettings'])->name('hr.payroll.settings.update');
             });
-        Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
+            Route::get('/p9-forms', [\App\Http\Controllers\HR\P9FormController::class, 'index'])->name('hr.p9-forms.index');
+            Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
         Route::get('/policies/create', [\App\Http\Controllers\HR\HrPolicyController::class, 'create'])->name('hr.policies.create');
         Route::post('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'store'])->name('hr.policies.store');
         Route::get('/policies/{policy}', [\App\Http\Controllers\HR\HrPolicyController::class, 'show'])->name('hr.policies.show');
@@ -511,16 +512,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/student-finance/installment-plans/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanCreate'])->name('student-finance.installment-plans.create');
             Route::post('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanStore'])->name('student-finance.installment-plans.store');
             Route::get('/student-finance/installment-plans/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanShow'])->name('student-finance.installment-plans.show');
-            Route::get('/student-finance/refunds', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refunds'])->name('student-finance.refunds.index');
-            Route::get('/student-finance/refunds/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundCreate'])->name('student-finance.refunds.create');
-            Route::post('/student-finance/refunds', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundStore'])->name('student-finance.refunds.store');
-            Route::get('/student-finance/refunds/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundShow'])->name('student-finance.refunds.show');
-            Route::post('/student-finance/refunds/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundApprove'])->name('student-finance.refunds.approve');
-            Route::post('/student-finance/refunds/{id}/process', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'refundProcess'])->name('student-finance.refunds.process');
             Route::get('/student-finance/clearance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearance'])->name('student-finance.clearance.index');
             Route::post('/student-finance/clearance/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceApprove'])->name('student-finance.clearance.approve');
             Route::post('/student-finance/clearance/{id}/reject', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceReject'])->name('student-finance.clearance.reject');
-
             Route::get('/student-finance/milestones', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestones'])->name('student-finance.milestones.index');
             Route::get('/student-finance/milestones/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestoneShow'])->name('student-finance.milestones.show');
 

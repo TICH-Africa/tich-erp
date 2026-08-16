@@ -611,6 +611,7 @@ class StudentFinanceController extends Controller
         $search = trim((string) $request->query('search', ''));
         $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
         $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
+        $programId = (int) ($request->query('program_id', 0) ?: 0);
 
         if (! Schema::hasTable('payments') || Payment::count() === 0) {
             $mockStudent1 = new class {
@@ -660,7 +661,14 @@ class StudentFinanceController extends Controller
             ]);
         } else {
             $query = Payment::query()
-                ->with(['invoice.student', 'studentAccount']);
+                ->with(['invoice.student.program', 'student.program', 'studentAccount']);
+
+            if ($programId > 0) {
+                $query->where(function ($q) use ($programId) {
+                    $q->whereHas('student', fn ($sq) => $sq->where('program_id', $programId))
+                        ->orWhereHas('invoice.student', fn ($sq) => $sq->where('program_id', $programId));
+                });
+            }
 
             if ($search !== '') {
                 $query->where(function ($q) use ($search) {
@@ -693,14 +701,19 @@ class StudentFinanceController extends Controller
         $allAcademicYears = Schema::hasTable('academic_years')
             ? AcademicYear::query()->orderByDesc('year_label')->get()
             : collect();
+        $allPrograms = Schema::hasTable('academic_programs')
+            ? AcademicProgram::query()->where('status', 'active')->orderBy('program_name')->get(['id', 'program_code', 'program_name'])
+            : collect();
 
         return $this->view($request, 'finance.student-finance.payments.index', $department, [
             'payments' => $payments,
             'search' => $search,
             'semesterId' => $semesterId,
             'academicYearId' => $academicYearId,
+            'programId' => $programId,
             'allSemesters' => $allSemesters,
             'allAcademicYears' => $allAcademicYears,
+            'allPrograms' => $allPrograms,
         ]);
     }
 

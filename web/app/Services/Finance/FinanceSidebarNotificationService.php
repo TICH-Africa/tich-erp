@@ -24,7 +24,6 @@ class FinanceSidebarNotificationService
     /** @var array<string, string> */
     public const MENU_KEYS = [
         'student-finance' => 'Student Finance',
-        'student-finance.refunds' => 'Refunds',
         'student-finance.adjustments' => 'Adjustments',
         'student-finance.invoices' => 'Invoices',
         'student-finance.fee-structures' => 'Fee structures',
@@ -81,7 +80,6 @@ class FinanceSidebarNotificationService
      */
     private function computeCounts(): array
     {
-        $pendingRefunds = $this->refundsNeedingActionCount();
         $pendingAdjustments = $this->pendingAdjustmentsCount();
         $openInvoices = $this->openInvoicesCount();
         $unapprovedFeeStructures = $this->unapprovedFeeStructuresCount();
@@ -97,8 +95,7 @@ class FinanceSidebarNotificationService
             $approvedPayrollRuns = PayrollRun::query()->where('status', PayrollRun::STATUS_APPROVED)->count();
         }
 
-        $studentFinance = $pendingRefunds
-            + $pendingAdjustments
+        $studentFinance = $pendingAdjustments
             + $openInvoices
             + $unapprovedFeeStructures
             + $installmentItemsDue
@@ -109,7 +106,6 @@ class FinanceSidebarNotificationService
         $employeeFinance = $draftPayrollRuns + $approvedPayrollRuns;
 
         return [
-            'student-finance.refunds' => $pendingRefunds,
             'student-finance.adjustments' => $pendingAdjustments,
             'student-finance.invoices' => $openInvoices,
             'student-finance.fee-structures' => $unapprovedFeeStructures,

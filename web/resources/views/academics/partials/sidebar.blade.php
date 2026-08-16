@@ -44,6 +44,7 @@
                         'departments.academics.units.*',
                         'departments.academics.programs.*',
                         'departments.academics.attendance-ledger.*',
+                        'departments.academics.clearance.*',
                         'departments.academics.lesson-plans.index',
                         'departments.academics.lesson-plans.show',
                         'departments.academics.performance.*',
@@ -83,6 +84,12 @@
                             'icon' => 'clipboard-check',
                             'active' => request()->routeIs('departments.academics.attendance-ledger.*'),
                             'badgeKey' => $attendanceBadgeKey,
+                        ],
+                        [
+                            'href' => route('departments.academics.clearance.index', $hub),
+                            'label' => 'Academic clearance',
+                            'icon' => 'check-circle',
+                            'active' => request()->routeIs('departments.academics.clearance.*'),
                         ],
                         [
                             'href' => route('departments.academics.lesson-plans.index', $hub),

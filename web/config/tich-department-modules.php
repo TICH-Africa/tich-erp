@@ -176,7 +176,7 @@ return [
                 [
                     'key' => 'finance.student_finance',
                     'label' => 'Student Finance',
-                    'description' => 'Student accounts, fee structures, invoices, payments, receipts, adjustments, installment plans, refunds, clearance, and milestones.',
+                    'description' => 'Student accounts, fee structures, invoices, payments, receipts, adjustments, installment plans, clearance, and milestones.',
                     'permission' => 'finance.read',
                     'route' => 'finance.student-finance.hub',
                     'context' => 'operational',

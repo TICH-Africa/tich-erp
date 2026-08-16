@@ -12,7 +12,7 @@
         $outstandingBalance = $stats['outstanding_balance'] ?? \App\Models\Finance\StudentAccount::sum('outstanding_balance');
     @endphp
 
-    <x-page-toolbar title="Student Finance" meta="Student accounts, fee structures, invoices, payments, receipts, adjustments, and clearance">
+    <x-page-toolbar title="Student Finance" meta="Student accounts, fee structures, invoices, payments, receipts, adjustments, and fee clearance">
         <x-slot:actions>
             <a href="{{ route('finance.student-finance.invoices.create', ['department' => $department->id]) }}" class="tich-btn tich-btn-primary">+ New invoice</a>
         </x-slot:actions>
@@ -92,6 +92,10 @@
         <a href="{{ route('finance.student-finance.installment-plans.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h4">Installment plans</h3>
             <p class="tich-caption tich-mt-2">Structured payment plans for large balances.</p>
+        </a>
+        <a href="{{ route('finance.student-finance.clearance.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <h3 class="tich-h4">Clearance</h3>
+            <p class="tich-caption tich-mt-2">Fee clearance for exams, progression, and graduation.</p>
         </a>
         <a href="{{ route('finance.student-finance.milestones.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h4">Payment milestones</h3>

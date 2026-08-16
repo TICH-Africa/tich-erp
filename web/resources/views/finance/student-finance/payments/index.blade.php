@@ -32,13 +32,21 @@
                     <option value="{{ $year->id }}" {{ $academicYearId == $year->id ? 'selected' : '' }}>{{ $year->year_label }}</option>
                 @endforeach
             </select>
+            <select name="program_id" class="tich-input" style="padding: 8px 12px; font-size: 14px; max-width: 220px;">
+                <option value="0">All Programmes</option>
+                @foreach ($allPrograms as $program)
+                    <option value="{{ $program->id }}" {{ ($programId ?? 0) == $program->id ? 'selected' : '' }}>
+                        {{ $program->program_code }} - {{ $program->program_name }}
+                    </option>
+                @endforeach
+            </select>
             <button type="submit" class="tich-btn tich-btn-secondary" style="padding: 8px 16px; font-size: 14px;">
                 <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zM3 12a1 1 0 011-1h10a1 1 0 010 2H4a1 1 0 01-1-1zM3 20a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1z"></path>
                 </svg>
                 Filter
             </button>
-            @if ($search !== '' || $semesterId > 0 || $academicYearId > 0)
+            @if ($search !== '' || $semesterId > 0 || $academicYearId > 0 || ($programId ?? 0) > 0)
                 <a href="{{ route('finance.student-finance.payments.index', $department) }}" class="tich-btn tich-btn-ghost" style="padding: 8px 16px; font-size: 14px;">
                     <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -56,6 +64,7 @@
                     <tr>
                         <th>Payment</th>
                         <th>Student</th>
+                        <th>Programme</th>
                         <th>Invoice</th>
                         <th>Date</th>
                         <th>Method</th>
@@ -66,11 +75,21 @@
                 </thead>
                 <tbody>
                     @forelse ($payments as $payment)
+                        @php
+                            $student = $payment->student ?? $payment->invoice?->student;
+                            $program = $student?->program;
+                        @endphp
                         <tr>
                             <td><strong>{{ $payment->payment_number }}</strong></td>
                             <td>
-                                <strong>{{ $payment->student->fullName() ?? 'N/A' }}</strong>
-                                <p class="tich-caption">{{ $payment->student->registration_number ?? 'N/A' }}</p>
+                                <strong>{{ $student?->fullName() ?? 'N/A' }}</strong>
+                                <p class="tich-caption">{{ $student?->registration_number ?? 'N/A' }}</p>
+                            </td>
+                            <td class="tich-caption">
+                                {{ $program?->program_code ?? '-' }}
+                                @if ($program?->program_name)
+                                    · {{ $program->program_name }}
+                                @endif
                             </td>
                             <td class="tich-caption">{{ $payment->invoice->invoice_number ?? 'N/A' }}</td>
                             <td class="tich-caption">{{ $payment->payment_date?->format('d M Y') }}</td>
@@ -83,7 +102,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="tich-table-empty">No payments found.</td>
+                            <td colspan="9" class="tich-table-empty">No payments found.</td>
                         </tr>
                     @endforelse
                 </tbody>
