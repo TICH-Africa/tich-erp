@@ -8,7 +8,7 @@
 <article class="tich-card">
     <div class="tich-notice tich-notice--warning tich-mb-4">
         <p class="tich-text" style="margin:0;">
-            <strong>Select or create an intake before building a timetable.</strong>
+            <strong>Select or create an intake before using {{ strtolower($currentSectionLabel ?? 'this tool') }}.</strong>
         </p>
     </div>
 
@@ -21,8 +21,8 @@
             No intakes exist for this programme yet.
         </p>
         <div class="tich-mt-4">
-            <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'learning_department' => $learningDepartmentId])) }}" class="tich-btn tich-btn-primary tich-ml-2">
-                Create Intake
+            <a href="{{ route('departments.academics.programs.curriculum', $intakeListParams) }}" class="tich-btn tich-btn-primary tich-ml-2">
+                Create intake
             </a>
             <a href="{{ route('departments.academics.programs.curriculum', $intakeListParams) }}" class="tich-btn tich-btn-ghost tich-ml-2">
                 View All Intakes

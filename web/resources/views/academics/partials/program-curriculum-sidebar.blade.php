@@ -28,8 +28,9 @@
                     } elseif (($item['route'] ?? '') === 'departments.show') {
                         $isActive = request()->routeIs('departments.show')
                             && (int) request()->route('department')?->id === (int) ($item['target_id'] ?? 0);
-                    } elseif (($item['route'] ?? '') === 'dashboard') {
-                        $isActive = request()->routeIs('dashboard');
+                    } elseif (! empty($item['route'])) {
+                        $routeBase = preg_replace('/\.(index|dashboard)$/', '', $item['route']) ?? $item['route'];
+                        $isActive = request()->routeIs($item['route']) || request()->routeIs($routeBase.'.*');
                     }
 
                     $icon = $item['icon'] ?? \App\Support\SidebarIcon::forRoute($item['route'] ?? null);

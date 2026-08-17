@@ -8,7 +8,8 @@
         if (! empty($learningDepartment)) {
             $hub['learning_department'] = $learningDepartment->id;
         }
-        $mappingIndex = 0;
+        $sectionLabels = \App\Services\ProgramCurriculumService::curriculumSections();
+        $currentSectionLabel = $sectionLabels[$section] ?? ucfirst($section);
         $assignedUnitIds = $mappings->pluck('unit_id')->all();
         $curriculumParams = array_filter(array_merge($hub, [
             'program' => $program->id,

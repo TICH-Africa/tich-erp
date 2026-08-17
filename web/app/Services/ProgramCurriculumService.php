@@ -268,10 +268,11 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $requiresIntake = ['semesters', 'applications', 'enrolled', 'timetable', 'exams'];
         $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');
-        $programHasIntakes = CurriculumVersion::query()->where('program_id', $program->id)->exists();
+        $canViewAcademics = $this->rbacService->hasPermission($user, 'academics.read');
+
+        $items[] = ['type' => 'heading', 'label' => 'Programme tools'];
 
         foreach (self::curriculumSections() as $key => $label) {
             if ($key === 'applications' && ! $canViewApplications) {
@@ -282,16 +283,55 @@ class ProgramCurriculumService
                 continue;
             }
 
-            if (in_array($key, $requiresIntake, true) && ! $programHasIntakes) {
-                continue;
-            }
-
             $items[] = [
                 'type' => 'link',
                 'label' => $label,
                 'route' => 'departments.academics.programs.curriculum',
                 'params' => array_merge($programParams, ['section' => $key]),
                 'section' => $key,
+            ];
+        }
+
+        if ($canViewAcademics) {
+            $items[] = ['type' => 'heading', 'label' => 'Academics'];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Curriculum overview',
+                'route' => 'departments.academics.dashboard',
+                'params' => $listParams,
+            ];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Attendance ledger',
+                'route' => 'departments.academics.attendance-ledger.index',
+                'params' => $listParams,
+            ];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Academic clearance',
+                'route' => 'departments.academics.clearance.index',
+                'params' => $listParams,
+            ];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Lesson plan approval',
+                'route' => 'departments.academics.lesson-plans.index',
+                'params' => $listParams,
+            ];
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Performance terminal',
+                'route' => 'departments.academics.performance.index',
+                'params' => $listParams,
+            ];
+        }
+
+        if ($this->rbacService->hasPermission($user, 'academics.calendar')) {
+            $items[] = [
+                'type' => 'link',
+                'label' => 'Academic calendar',
+                'route' => 'departments.academics.calendar.index',
+                'params' => $listParams,
             ];
         }
 
