@@ -2,10 +2,12 @@
 
 namespace App\Services\Finance;
 
+use App\Models\Applicant;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
 use App\Models\Payment;
 use App\Models\Staff;
+use App\Services\ApplicationFeeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -136,6 +138,12 @@ class MpesaStkCallbackService
                 return;
             }
 
+            if ($locked->applicant_id && ! $locked->invoice_id) {
+                $this->settleApplicantFee($locked, $receipt, $amount);
+
+                return;
+            }
+
             $invoice = Invoice::query()->lockForUpdate()->find($locked->invoice_id);
 
             if (! $invoice || ! $invoice->isPayable()) {
@@ -195,6 +203,29 @@ class MpesaStkCallbackService
             1037 => MpesaStkRequest::STATUS_TIMEOUT,
             default => MpesaStkRequest::STATUS_FAILED,
         };
+    }
+
+    private function settleApplicantFee(MpesaStkRequest $stkRequest, string $receipt, float $amount): void
+    {
+        $applicant = Applicant::query()->lockForUpdate()->find($stkRequest->applicant_id);
+
+        if (! $applicant) {
+            $stkRequest->update([
+                'status' => MpesaStkRequest::STATUS_FAILED,
+                'completed_at' => now(),
+                'result_desc' => 'Applicant record was not found for this payment.',
+            ]);
+
+            return;
+        }
+
+        app(ApplicationFeeService::class)->markPaidFromMpesa($applicant, $receipt, $amount);
+
+        $stkRequest->update([
+            'status' => MpesaStkRequest::STATUS_SUCCESS,
+            'mpesa_receipt_number' => $receipt !== '' ? $receipt : null,
+            'completed_at' => now(),
+        ]);
     }
 
     private function systemStaffId(): int

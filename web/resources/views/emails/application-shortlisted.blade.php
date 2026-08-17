@@ -33,8 +33,9 @@
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;background:#f5f6f6;border:1px solid #e2e4e5;">
                                 <tr>
                                     <td style="padding:16px 18px;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#494c50;">
-                                        <strong>Status:</strong> Shortlisted<br>
-                                        <strong>Next step:</strong> Pay the admission fee once issued by Finance
+                                        <strong>Status:</strong> Academically validated — payment required<br>
+                                        <strong>Application fee:</strong> KES {{ number_format($feeAmount, 2) }}<br>
+                                        <strong>Payment reference:</strong> {{ $accountReference ?: $applicant->application_number }}
                                     </td>
                                 </tr>
                             </table>
@@ -42,6 +43,18 @@
                             <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
                                 {{ $admissionFeeNotice }}
                             </p>
+
+                            @if ($payUrl)
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 16px;">
+                                <tr>
+                                    <td style="border-radius:4px;background:#6cab33;">
+                                        <a href="{{ $payUrl }}" style="display:inline-block;padding:12px 20px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">
+                                            Pay application fee (M-Pesa)
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            @endif
 
                             <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
                                 <tr>

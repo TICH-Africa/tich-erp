@@ -89,7 +89,16 @@
             @if ($applicant->academic_review_status === 'shortlisted')
                 <div class="tich-mt-6" style="padding: 1rem; background: rgba(108, 171, 51, 0.08); border-left: 3px solid var(--tich-green, #6cab33);">
                     <p class="tich-text" style="margin: 0;">
-                        <strong>Shortlisted.</strong> Applicant notified to pay admission fee once Finance creates the invoice.
+                        @if ($applicant->application_fee_paid || $applicant->status === 'paid')
+                            <strong>Fee verified.</strong>
+                            {{ $applicant->application_fee_payment_ref ? 'Receipt '.$applicant->application_fee_payment_ref.'.' : 'Application fee payment has been confirmed.' }}
+                            Ready for Stage 5 onboarding.
+                        @else
+                            <strong>Payment stage.</strong>
+                            Application fee of KES {{ number_format((float) ($feeInstructions['amount'] ?? 0), 2) }} is due.
+                            M-Pesa uses account reference <strong>{{ $feeInstructions['account_reference'] ?? $applicant->application_number }}</strong>
+                            and updates this record automatically when the STK callback succeeds.
+                        @endif
                     </p>
                 </div>
             @endif
@@ -164,24 +173,56 @@
     @unless ($applicant->isFinalized())
         <div class="tich-grid tich-grid--3 tich-mt-8" style="align-items: start; gap: 2rem;">
             @can('admissions.write')
+            @if (in_array($applicant->status, ['submitted_admin', 'submitted'], true))
             <article class="tich-card">
-                <h2 class="tich-h3">Shortlist</h2>
-                <p class="tich-text tich-mb-4">Mark as shortlisted and notify the applicant to pay the admission fee (invoice to be created by Finance).</p>
+                <h2 class="tich-h3">Stage 1 → 2 Handoff</h2>
+                <p class="tich-text tich-mb-4">Confirm intake completeness and hand off this application from Administration desk to Academic qualification review.</p>
+                <form method="POST" action="{{ route('admissions.applications.handoff-academics', $applicant->id) }}">
+                    @csrf
+                    <div class="tich-form-group">
+                        <label class="tich-label">Notes (optional)</label>
+                        <textarea name="review_notes" class="tich-input" rows="3">{{ old('review_notes') }}</textarea>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Hand off to academics</button>
+                </form>
+            </article>
+            @endif
+
+            @if ($applicant->status === 'academic_review')
+            <article class="tich-card">
+                <h2 class="tich-h3">Academic Validation</h2>
+                <p class="tich-text tich-mb-4">Mark as academically cleared and move to payment instruction stage.</p>
                 <form method="POST" action="{{ route('admissions.applications.shortlist', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Notes (optional)</label>
                         <textarea name="review_notes" class="tich-input" rows="3">{{ old('review_notes') }}</textarea>
                     </div>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Shortlist</button>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Validate & move to payment</button>
                 </form>
             </article>
+            @endif
+
+            @if ($applicant->status === 'fee_pending')
+            <article class="tich-card">
+                <h2 class="tich-h3">Stage 4 Payment Verification</h2>
+                <p class="tich-text tich-mb-4">M-Pesa updates this automatically. Use this only if Finance reconciled the receipt manually.</p>
+                <form method="POST" action="{{ route('admissions.applications.confirm-payment', $applicant->id) }}">
+                    @csrf
+                    <div class="tich-form-group">
+                        <label class="tich-label">Finance/Admin notes (optional)</label>
+                        <textarea name="review_notes" class="tich-input" rows="3">{{ old('review_notes') }}</textarea>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Confirm fee paid</button>
+                </form>
+            </article>
+            @endif
             @endcan
 
             @if ($canApprove)
             <article class="tich-card">
-                <h2 class="tich-h3">Accept</h2>
-                <p class="tich-text tich-mb-4">Approve onboarding and mark the applicant as admitted.</p>
+                <h2 class="tich-h3">Stage 5 Final Onboarding</h2>
+                <p class="tich-text tich-mb-4">Authorize onboarding and admission-letter package generation. This requires confirmed application fee payment.</p>
                 <form method="POST" action="{{ route('admissions.applications.approve', $applicant->id) }}">
                     @csrf
                     <div class="tich-form-group">

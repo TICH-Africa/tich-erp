@@ -96,6 +96,13 @@ class PaymentService
                 'payment_method' => $payment->payment_method,
             ]);
 
+            if ($invoice->status === 'paid' || $invoice->invoice_type === 'application') {
+                app(\App\Services\ApplicationFeeService::class)->syncFromInvoice(
+                    $invoice->fresh(),
+                    $payment->payment_reference ?: $payment->payment_number
+                );
+            }
+
             return $payment;
         });
     }

@@ -35,7 +35,7 @@
                     'success'
                 );
                 window.setTimeout(function () {
-                    window.location.href = window.location.pathname + '?section=finance';
+                    window.location.href = banner.dataset.redirectUrl || (window.location.pathname + '?section=finance');
                 }, 1500);
 
                 return;

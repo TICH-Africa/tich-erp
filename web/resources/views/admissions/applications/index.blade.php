@@ -16,6 +16,7 @@
                 <select name="status" class="tich-input tich-input--compact">
                     <option value="">All</option>
                     <option value="pending" @selected($filters['status'] === 'pending')>Pending review</option>
+                    <option value="payment_pending" @selected($filters['status'] === 'payment_pending')>Awaiting payment/finalization</option>
                     <option value="admitted" @selected($filters['status'] === 'admitted')>Admitted</option>
                     <option value="rejected" @selected($filters['status'] === 'rejected')>Rejected</option>
                 </select>

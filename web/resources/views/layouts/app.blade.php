@@ -14,6 +14,7 @@
         $hideAppFooter = request()->routeIs([
             'dashboard',
             'admin.*',
+            'administration.*',
             'site-settings.*',
             'departments.*',
             'finance.*',
@@ -23,11 +24,15 @@
             'staff.*',
             'employee.*',
             'hr.*',
-            'finance.*',
+            'qa.*',
+            'procurement.*',
+            'research.*',
+            'ict.*',
         ]);
 
         $hideAppAlerts = request()->routeIs([
             'admin.*',
+            'administration.*',
             'departments.*',
             'finance.*',
             'sis.*',
@@ -36,7 +41,10 @@
             'staff.*',
             'employee.*',
             'hr.*',
-            'finance.*',
+            'qa.*',
+            'procurement.*',
+            'research.*',
+            'ict.*',
         ]);
     @endphp
 

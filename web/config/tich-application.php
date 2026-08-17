@@ -63,7 +63,7 @@ return [
         ],
     ],
 
-    'admission_fee_notice' => 'Congratulations on being shortlisted. To proceed with admission processing, you are required to pay an admission fee. The Finance Department will create your fee invoice and send payment instructions to this email address. Admission cannot be finalized until the fee is confirmed.',
+    'admission_fee_notice' => 'Your academic qualifications have been validated. Pay the application fee using your Unique Application ID as the M-Pesa account reference. Payment is confirmed automatically via M-Pesa; Finance can also clear it manually if needed.',
 
     'fallback_review_emails' => [
         'admissions@tich.ac.ke',

@@ -17,6 +17,7 @@ class AdmissionsReviewService
         protected RBACService $rbacService,
         protected AuditService $auditService,
         protected ApplicationMailService $mailService,
+        protected ApplicationFeeService $feeService,
     ) {}
 
     /**
@@ -45,7 +46,7 @@ class AdmissionsReviewService
         $base = $this->scopedQuery($user);
 
         return [
-            'pending' => (clone $base)->whereIn('status', ['submitted', 'academic_review'])
+            'pending' => (clone $base)->whereIn('status', ['submitted_admin', 'submitted', 'academic_review', 'fee_pending', 'paid'])
                 ->whereIn('academic_review_status', ['pending', 'under_review'])
                 ->count(),
             'shortlisted' => (clone $base)->where('academic_review_status', 'shortlisted')->count(),
@@ -67,7 +68,7 @@ class AdmissionsReviewService
                 'd.dept_name',
                 'd.dept_code',
                 DB::raw('COUNT(*) as total'),
-                DB::raw("SUM(CASE WHEN a.status IN ('submitted','academic_review') AND a.academic_review_status IN ('pending','under_review') THEN 1 ELSE 0 END) as pending_count")
+                DB::raw("SUM(CASE WHEN a.status IN ('submitted_admin','submitted','academic_review','fee_pending','paid') AND a.academic_review_status IN ('pending','under_review') THEN 1 ELSE 0 END) as pending_count")
             )
             ->groupBy('d.id', 'd.dept_name', 'd.dept_code')
             ->orderBy('d.dept_name');
@@ -110,8 +111,11 @@ class AdmissionsReviewService
         }
 
         if ($status === 'pending') {
-            $query->whereIn('status', ['submitted', 'academic_review'])
+            $query->whereIn('status', ['submitted_admin', 'submitted', 'academic_review', 'fee_pending', 'paid'])
                 ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted']);
+        } elseif ($status === 'payment_pending') {
+            $query->whereIn('status', ['fee_pending', 'paid'])
+                ->where('academic_review_status', 'shortlisted');
         } elseif ($status === 'admitted') {
             $query->where('status', 'admitted');
         } elseif ($status === 'rejected') {
@@ -150,10 +154,10 @@ class AdmissionsReviewService
     public function shortlist(User $user, Applicant $applicant, ?string $notes = null): Applicant
     {
         $this->assertCanReview($user, $applicant);
-        $this->assertPendingReview($applicant);
+        $this->assertAcademicReviewStage($applicant);
 
         $applicant->update([
-            'status' => 'academic_review',
+            'status' => 'fee_pending',
             'academic_review_status' => 'shortlisted',
             'review_notes' => $notes,
             'academic_reviewer_id' => $user->staff_id,
@@ -163,13 +167,52 @@ class AdmissionsReviewService
         $this->logDecision($user, $applicant, 'admissions.application.shortlisted', 'Application shortlisted');
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
-        $mailResult = $this->mailService->sendShortlistNotification($applicant);
+        $instructions = $this->feeService->paymentInstructions($applicant);
+        $mailResult = $this->mailService->sendShortlistNotification($applicant, null, $instructions);
 
         if (! $mailResult['sent']) {
             session()->flash('application_mail_error', $mailResult['error']);
         }
 
         return $applicant;
+    }
+
+    public function handoffToAcademicReview(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    {
+        $this->assertCanReview($user, $applicant);
+        $this->assertNotFinalized($applicant);
+
+        if (! in_array($applicant->status, ['submitted_admin', 'submitted'], true)) {
+            throw ValidationException::withMessages([
+                'application' => 'Only newly submitted applications can be handed off to academics.',
+            ]);
+        }
+
+        $applicant->update([
+            'status' => 'academic_review',
+            'academic_review_status' => 'under_review',
+            'review_notes' => $notes,
+            'academic_reviewer_id' => $user->staff_id,
+            'reviewed_at' => now(),
+        ]);
+
+        $this->logDecision($user, $applicant, 'admissions.application.handed_off_to_academics', 'Application handed off from intake to academic review');
+
+        return $applicant->fresh(['program.department', 'handlingDepartment']);
+    }
+
+    public function confirmApplicationFee(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    {
+        $this->assertCanReview($user, $applicant);
+        $this->assertNotFinalized($applicant);
+
+        return $this->feeService->markPaid(
+            $applicant,
+            'MANUAL-'.$applicant->application_number,
+            'manual',
+            null,
+            $notes
+        );
     }
 
     public function approve(User $user, Applicant $applicant, ?string $notes = null): Applicant
@@ -180,6 +223,18 @@ class AdmissionsReviewService
         if (! $user->hasPermission('admissions.approve') && ! $user->hasRole('Super Admin')) {
             throw ValidationException::withMessages([
                 'approve' => 'You do not have permission to approve applications.',
+            ]);
+        }
+
+        if (! $applicant->application_fee_paid) {
+            throw ValidationException::withMessages([
+                'approve' => 'Cannot finalize admission before application fee payment is verified.',
+            ]);
+        }
+
+        if ($applicant->academic_review_status !== 'shortlisted') {
+            throw ValidationException::withMessages([
+                'approve' => 'Application must be academically shortlisted before final approval.',
             ]);
         }
 
@@ -301,6 +356,21 @@ class AdmissionsReviewService
         if (in_array($applicant->status, ['admitted', 'rejected'], true)) {
             throw ValidationException::withMessages([
                 'application' => 'This application has already been finalized.',
+            ]);
+        }
+    }
+
+    private function assertAcademicReviewStage(Applicant $applicant): void
+    {
+        if (in_array($applicant->status, ['submitted_admin', 'submitted'], true)) {
+            throw ValidationException::withMessages([
+                'application' => 'Hand off this application to academics before shortlisting.',
+            ]);
+        }
+
+        if ($applicant->status !== 'academic_review') {
+            throw ValidationException::withMessages([
+                'application' => 'This application is not in an academic review stage.',
             ]);
         }
     }

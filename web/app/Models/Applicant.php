@@ -39,6 +39,8 @@ class Applicant extends Model
         'next_of_kin_address',
         'next_of_kin_phone',
         'application_fee_paid',
+        'application_fee_paid_at',
+        'application_fee_payment_ref',
         'status',
         'academic_review_status',
         'review_notes',
@@ -51,6 +53,7 @@ class Applicant extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'application_fee_paid' => 'boolean',
+        'application_fee_paid_at' => 'datetime',
         'created_at' => 'datetime',
         'reviewed_at' => 'datetime',
     ];

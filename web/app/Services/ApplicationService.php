@@ -384,7 +384,7 @@ class ApplicationService
             'next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
             'next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
             'next_of_kin_address' => $data['next_of_kin_address'] ?? null,
-            'status' => 'submitted',
+            'status' => 'submitted_admin',
             'academic_review_status' => 'pending',
             'application_source' => 'online',
         ];

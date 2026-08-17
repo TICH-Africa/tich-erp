@@ -82,11 +82,13 @@ class ApplicationMailService
     }
 
     /**
+     * @param  array{amount?: float, account_reference?: string, pay_url?: string}|null  $paymentInstructions
      * @return array{sent: bool, error: ?string}
      */
-    public function sendShortlistNotification(Applicant $applicant, ?Request $request = null): array
+    public function sendShortlistNotification(Applicant $applicant, ?Request $request = null, ?array $paymentInstructions = null): array
     {
         $applicant = $this->prepareApplicant($applicant);
+        $instructions = $paymentInstructions ?? [];
 
         return $this->deliverToApplicant(
             $applicant,
@@ -95,6 +97,9 @@ class ApplicationMailService
                 $applicant->program?->program_name ?? 'Selected programme',
                 $this->statusCheckUrl($applicant),
                 config('tich-application.admission_fee_notice'),
+                (float) ($instructions['amount'] ?? 0),
+                (string) ($instructions['account_reference'] ?? $applicant->application_number),
+                (string) ($instructions['pay_url'] ?? $this->statusCheckUrl($applicant)),
             ),
             'admissions.application.shortlist_email_sent',
             'Application shortlist notification email sent',

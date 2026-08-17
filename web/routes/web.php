@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
 use App\Http\Controllers\Public\ApplicationController;
+use App\Http\Controllers\Public\ApplicationPaymentController;
 use App\Http\Controllers\Public\FaviconController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ProgramsController;
@@ -175,6 +176,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/applications/{id}/shortlist', [ApprovalController::class, 'shortlist'])
             ->middleware('permission:admissions.write')
             ->name('admissions.applications.shortlist');
+        Route::post('/applications/{id}/handoff-academics', [ApprovalController::class, 'handoffToAcademics'])
+            ->middleware('permission:admissions.write')
+            ->name('admissions.applications.handoff-academics');
+        Route::post('/applications/{id}/confirm-payment', [ApprovalController::class, 'confirmPayment'])
+            ->middleware('permission:admissions.write')
+            ->name('admissions.applications.confirm-payment');
         Route::post('/applications/{id}/approve', [ApprovalController::class, 'approve'])
             ->middleware('permission:admissions.approve')
             ->name('admissions.applications.approve');
@@ -719,6 +726,9 @@ Route::prefix('apply')->group(function () {
     Route::post('/step/{step}', [ApplicationController::class, 'handleStep'])->name('apply.step');
     Route::get('/confirmation/{number}', [ApplicationController::class, 'confirmation'])->name('apply.confirmation');
     Route::match(['get', 'post'], '/check-status', [ApplicationController::class, 'checkStatus'])->name('apply.status');
+    Route::get('/pay', [ApplicationPaymentController::class, 'show'])->name('apply.pay');
+    Route::post('/pay', [ApplicationPaymentController::class, 'store'])->name('apply.pay.store');
+    Route::get('/pay/stk/{stkRequest}/status', [ApplicationPaymentController::class, 'status'])->name('apply.pay.stk.status');
     Route::post('/reset', [ApplicationController::class, 'reset'])->name('apply.reset');
 });
 

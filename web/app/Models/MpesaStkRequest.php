@@ -20,6 +20,7 @@ class MpesaStkRequest extends Model
     protected $fillable = [
         'invoice_id',
         'student_id',
+        'applicant_id',
         'amount',
         'phone',
         'account_reference',
@@ -48,6 +49,11 @@ class MpesaStkRequest extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(Applicant::class);
     }
 
     public function payment(): BelongsTo

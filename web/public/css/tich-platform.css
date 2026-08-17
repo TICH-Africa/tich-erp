@@ -3884,6 +3884,11 @@ a.tich-notification-badge:hover {
     color: #1e40af;
 }
 
+.tich-status-badge.is-warning {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
 .tich-status-badge.is-success {
     background: #d1fae5;
     color: #065f46;
@@ -4078,6 +4083,11 @@ a.tich-notification-badge:hover {
 [data-theme="dark"] .tich-status-badge.is-info {
     background: rgba(59, 130, 246, 0.2);
     color: #93c5fd;
+}
+
+[data-theme="dark"] .tich-status-badge.is-warning {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fdba74;
 }
 
 [data-theme="dark"] .tich-status-badge.is-success {

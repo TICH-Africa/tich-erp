@@ -3,6 +3,8 @@
         'admitted' => 'is-success',
         'rejected' => 'is-danger',
         'academic_review' => 'is-info',
+        'fee_pending' => 'is-warning',
+        'paid' => 'is-info',
         default => 'is-pending',
     };
 @endphp

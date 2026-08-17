@@ -25,12 +25,23 @@
 
         @if (!empty($lookedUp))
             @if ($applicant)
+                @php
+                    $stageLabel = match ($applicant->status) {
+                        'submitted_admin', 'submitted' => 'Stage 1: Intake received by Administration',
+                        'academic_review' => 'Stage 2: Academic qualification review',
+                        'fee_pending' => 'Stage 3: Payment instructions issued',
+                        'paid' => 'Stage 4: Fee payment verified',
+                        'admitted' => 'Stage 5: Onboarding and admission package issued',
+                        'rejected' => 'Application closed (not admitted)',
+                        default => ucfirst(str_replace('_', ' ', $applicant->status)),
+                    };
+                @endphp
                 <div class="tich-card tich-mt-6">
                     <h2 class="tich-h3">{{ $applicant->application_number }}</h2>
                     <p class="tich-text tich-mt-2">{{ trim($applicant->first_name.' '.$applicant->surname) }}</p>
                     <ul class="tich-program-card__meta tich-mt-4">
                         <li><span class="tich-caption">Programme</span> {{ $applicant->program?->program_name ?? '-' }}</li>
-                        <li><span class="tich-caption">Status</span> {{ ucfirst(str_replace('_', ' ', $applicant->status)) }}</li>
+                        <li><span class="tich-caption">Workflow stage</span> {{ $stageLabel }}</li>
                         <li><span class="tich-caption">Academic review</span> {{ ucfirst(str_replace('_', ' ', $applicant->academic_review_status)) }}</li>
                         <li><span class="tich-caption">Submitted</span> {{ $applicant->created_at?->format('M j, Y g:i A') ?? '-' }}</li>
                         @if ($applicant->reviewed_at)
@@ -39,7 +50,13 @@
                         @if ($applicant->rejection_reason)
                             <li><span class="tich-caption">Reason</span> {{ $applicant->rejection_reason }}</li>
                         @endif
+                        @if ($applicant->application_fee_paid)
+                            <li><span class="tich-caption">Application fee</span> Paid{{ $applicant->application_fee_payment_ref ? ' · '.$applicant->application_fee_payment_ref : '' }}</li>
+                        @endif
                     </ul>
+                    @if ($applicant->status === 'fee_pending' && ! $applicant->application_fee_paid)
+                        <a href="{{ route('apply.pay', ['application_number' => $applicant->application_number, 'email' => $applicant->email]) }}" class="tich-btn tich-btn-primary tich-mt-4">Pay application fee</a>
+                    @endif
                 </div>
             @else
                 <p class="tich-field-error tich-mt-4">No application found for those details. Check your application number and email.</p>

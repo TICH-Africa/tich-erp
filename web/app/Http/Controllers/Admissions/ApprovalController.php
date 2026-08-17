@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admissions;
 
 use App\Http\Controllers\Controller;
 use App\Services\AdmissionsReviewService;
+use App\Services\ApplicationFeeService;
 use App\Services\ApplicationMailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class ApprovalController extends Controller
     public function __construct(
         protected AdmissionsReviewService $reviewService,
         protected ApplicationMailService $mailService,
+        protected ApplicationFeeService $feeService,
     ) {}
 
     public function dashboard(Request $request): View
@@ -56,6 +58,9 @@ class ApprovalController extends Controller
             'applicant' => $applicant,
             'handlingDepartment' => $this->reviewService->handlingDepartmentName($applicant),
             'canApprove' => $request->user()->hasPermission('admissions.approve') || $request->user()->hasRole('Super Admin'),
+            'feeInstructions' => in_array($applicant->status, ['fee_pending', 'paid'], true)
+                ? $this->feeService->paymentInstructions($applicant)
+                : null,
             'portalSignupEmail' => $applicant->status === 'admitted'
                 ? $this->mailService->portalSignupEmailStatus($applicant)
                 : null,
@@ -89,7 +94,35 @@ class ApprovalController extends Controller
 
         return redirect()
             ->route('admissions.applications.show', $id)
-            ->with('status', 'Application shortlisted. The applicant has been emailed about the admission fee requirement.');
+            ->with('status', 'Application academically validated and moved to payment instructions stage.');
+    }
+
+    public function handoffToAcademics(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $applicant = $this->reviewService->findForReview($request->user(), $id);
+        $this->reviewService->handoffToAcademicReview($request->user(), $applicant, $validated['review_notes'] ?? null);
+
+        return redirect()
+            ->route('admissions.applications.show', $id)
+            ->with('status', 'Application received by Admissions Desk and handed off to Academic review.');
+    }
+
+    public function confirmPayment(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $applicant = $this->reviewService->findForReview($request->user(), $id);
+        $this->reviewService->confirmApplicationFee($request->user(), $applicant, $validated['review_notes'] ?? null);
+
+        return redirect()
+            ->route('admissions.applications.show', $id)
+            ->with('status', 'Application fee payment verified. The application is ready for final onboarding approval.');
     }
 
     public function approve(Request $request, int $id): RedirectResponse

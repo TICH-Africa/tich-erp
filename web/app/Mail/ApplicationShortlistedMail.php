@@ -20,6 +20,9 @@ class ApplicationShortlistedMail extends Mailable
         public string $programName,
         public string $statusUrl,
         public string $admissionFeeNotice,
+        public float $feeAmount = 0,
+        public string $accountReference = '',
+        public string $payUrl = '',
     ) {}
 
     protected function mailModule(): string

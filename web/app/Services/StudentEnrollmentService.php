@@ -28,7 +28,7 @@ class StudentEnrollmentService
             $expiresAt = now()->addDays((int) config('tich-sis.portal_invite_days', 14));
 
             $student = Student::create([
-                'registration_number' => $this->generateRegistrationNumber(),
+                'registration_number' => $this->generateRegistrationNumber($applicant),
                 'application_id' => $applicant->id,
                 'program_id' => $applicant->program_id,
                 'cohort_intake' => $this->cohortIntakeFromApplicant($applicant),
@@ -88,21 +88,25 @@ class StudentEnrollmentService
             ->first();
     }
 
-    private function generateRegistrationNumber(): string
+    private function generateRegistrationNumber(Applicant $applicant): string
     {
         $year = date('Y');
-        $latest = Student::query()
-            ->where('registration_number', 'like', "REG-{$year}-%")
-            ->orderByDesc('id')
-            ->value('registration_number');
+        $month = strtoupper(date('M'));
+        $sequence = Student::query()
+            ->whereYear('date_of_admission', (int) $year)
+            ->count() + 1;
 
-        $sequence = 1;
+        $campusCode = strtoupper((string) ($applicant->preferredCampus?->campus_code ?? 'THC'));
+        $examBodyToken = substr(preg_replace('/[^A-Z0-9]/', '', strtoupper((string) ($applicant->program?->regulatory_body ?? 'N'))) ?: 'N', 0, 1);
 
-        if ($latest && preg_match('/REG-\d{4}-(\d+)/', $latest, $matches)) {
-            $sequence = (int) $matches[1] + 1;
-        }
-
-        return sprintf('REG-%s-%05d', $year, $sequence);
+        return sprintf(
+            '%s/%s/%s%02d/%s',
+            $campusCode,
+            $examBodyToken,
+            $month,
+            $sequence,
+            $year
+        );
     }
 
     private function cohortIntakeFromApplicant(Applicant $applicant): string
