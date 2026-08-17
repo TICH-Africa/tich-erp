@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'quickbooks' => [
+        'enabled' => env('QUICKBOOKS_ENABLED', false),
+        'client_id' => env('QUICKBOOKS_CLIENT_ID'),
+        'client_secret' => env('QUICKBOOKS_CLIENT_SECRET'),
+        'realm_id' => env('QUICKBOOKS_REALM_ID'),
+        'environment' => env('QUICKBOOKS_ENVIRONMENT', 'sandbox'),
+    ],
+
 ];

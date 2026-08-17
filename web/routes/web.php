@@ -266,6 +266,36 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Administration\DashboardController::class, '__invoke'])->name('administration.dashboard');
+
+        Route::get('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'index'])->name('administration.planning.index');
+        Route::post('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'store'])->name('administration.planning.store');
+        Route::post('/planning/{cycle}/lock', [\App\Http\Controllers\Administration\PlanningController::class, 'lock'])->name('administration.planning.lock');
+
+        Route::get('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'index'])->name('administration.budget-aggregation.index');
+        Route::post('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'store'])->name('administration.budget-aggregation.store');
+
+        Route::get('/approvals', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'index'])->name('administration.approvals.index');
+        Route::post('/approvals/{budgetRequest}/route-finance', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'routeToFinance'])->name('administration.approvals.route-finance');
+        Route::post('/approvals/{budgetRequest}/finance-verify', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'financeVerify'])->name('administration.approvals.finance-verify');
+        Route::post('/approvals/{budgetRequest}/executive-authorize', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'executiveAuthorize'])->name('administration.approvals.executive-authorize');
+        Route::post('/approvals/{budgetRequest}/reject', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'reject'])->name('administration.approvals.reject');
+
+        Route::get('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'index'])->name('administration.fund-distribution.index');
+        Route::post('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'store'])->name('administration.fund-distribution.store');
+
+        Route::get('/applications', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'applications'])->name('administration.applications.index');
+        Route::get('/lifecycle', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'lifecycle'])->name('administration.lifecycle.index');
+        Route::get('/admission-packages', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'packages'])->name('administration.admission-packages.index');
+
+        Route::get('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'statutory'])->name('administration.statutory.index');
+        Route::post('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeStatutory'])->name('administration.statutory.store');
+        Route::get('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'inspection'])->name('administration.inspection.index');
+        Route::post('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeInspectionCheck'])->name('administration.inspection.store');
+        Route::post('/inspection/{check}/status', [\App\Http\Controllers\Administration\ComplianceController::class, 'updateInspectionStatus'])->name('administration.inspection.status');
+
+        Route::get('/procurement-pay', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'procurementPay'])->name('administration.procurement-pay.index');
+        Route::get('/ledger-sync', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'ledgerSync'])->name('administration.ledger-sync.index');
+        Route::post('/ledger-sync/run', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'runSync'])->name('administration.ledger-sync.run');
     });
 
     Route::prefix('qa')->middleware(['permission:qa.read'])->group(function () {

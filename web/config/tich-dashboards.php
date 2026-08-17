@@ -82,7 +82,7 @@ return [
         [
             'key' => 'administration',
             'label' => 'Administration',
-            'description' => 'General administration, registry, and campus services.',
+            'description' => 'Institutional planning, budget approvals, admissions ops, compliance, and procurement visibility.',
             'route' => 'administration.dashboard',
             'permission' => 'administration.read',
             'category' => 'admin',
