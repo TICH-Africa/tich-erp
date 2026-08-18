@@ -43,7 +43,11 @@ class FundDistributionController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $this->admin->releaseFundAllocation($data, $request->user()->id);
+        try {
+            $this->admin->releaseFundAllocation($data, $request->user()->id);
+        } catch (\RuntimeException $exception) {
+            return back()->withInput()->withErrors(['allocation' => $exception->getMessage()]);
+        }
 
         return back()->with('status', 'Monthly allocation released digitally to the department.');
     }

@@ -46,9 +46,7 @@ class AdministrationService
             ? PlanningCycle::query()->find($data['planning_cycle_id'])
             : null;
 
-        if ($cycle && $cycle->isPastDeadline() && $cycle->status === 'locked') {
-            throw new \RuntimeException('Requisition deadline for this planning cycle has passed.');
-        }
+        $isLate = $cycle?->isPastDeadline() ?? false;
 
         return BudgetRequest::query()->create([
             'request_code' => $this->nextCode('BQR'),
@@ -56,11 +54,15 @@ class AdministrationService
             'department_id' => $data['department_id'],
             'title' => $data['title'],
             'framework' => $data['framework'] ?? 'standard',
+            'standard_line_items' => $data['standard_line_items'] ?? null,
+            'cbe_details' => $data['cbe_details'] ?? null,
             'requested_amount' => $data['requested_amount'],
             'status' => 'submitted',
             'justification' => $data['justification'] ?? null,
             'submitted_by' => $userId,
             'submitted_at' => now(),
+            'is_late' => $isLate,
+            'deadline_at' => $cycle?->requisition_deadline,
         ]);
     }
 
@@ -124,6 +126,21 @@ class AdministrationService
 
     public function releaseFundAllocation(array $data, ?int $userId = null): FundAllocation
     {
+        if (! empty($data['budget_request_id'])) {
+            $request = BudgetRequest::query()->findOrFail($data['budget_request_id']);
+            if ($request->status !== 'approved') {
+                throw new \RuntimeException('Funds can only be released for an approved budget request.');
+            }
+
+            $alreadyReleased = (float) FundAllocation::query()
+                ->where('budget_request_id', $request->id)
+                ->whereIn('status', ['pending', 'released'])
+                ->sum('amount');
+            if ($alreadyReleased + (float) $data['amount'] > (float) $request->approved_amount) {
+                throw new \RuntimeException('The release amount exceeds the remaining approved budget.');
+            }
+        }
+
         return FundAllocation::query()->create([
             'allocation_code' => $this->nextCode('FDA'),
             'budget_request_id' => $data['budget_request_id'] ?? null,

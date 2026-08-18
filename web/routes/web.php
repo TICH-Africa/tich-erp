@@ -278,6 +278,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'store'])->name('administration.planning.store');
         Route::post('/planning/{cycle}/lock', [\App\Http\Controllers\Administration\PlanningController::class, 'lock'])->name('administration.planning.lock');
 
+        Route::get('/workflow', [\App\Http\Controllers\Administration\WorkflowController::class, 'index'])->name('administration.workflow.index');
+        Route::post('/workflow/calendar-events', [\App\Http\Controllers\Administration\WorkflowController::class, 'storeEvent'])->name('administration.workflow.calendar.store');
+        Route::post('/workflow/tasks', [\App\Http\Controllers\Administration\WorkflowController::class, 'storeTask'])->name('administration.workflow.tasks.store');
+        Route::post('/workflow/tasks/{task}/complete', [\App\Http\Controllers\Administration\WorkflowController::class, 'completeTask'])->name('administration.workflow.tasks.complete');
+        Route::post('/workflow/variances', [\App\Http\Controllers\Administration\WorkflowController::class, 'storeVariance'])->name('administration.workflow.variances.store');
+
         Route::get('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'index'])->name('administration.budget-aggregation.index');
         Route::post('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'store'])->name('administration.budget-aggregation.store');
 
@@ -569,6 +575,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/ap/create', [\App\Http\Controllers\Finance\FinanceController::class, 'apCreate'])->name('ap.create');
             Route::post('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apStore'])->name('ap.store');
             Route::get('/ap/{ap}', [\App\Http\Controllers\Finance\FinanceController::class, 'apShow'])->name('ap.show');
+            Route::get('/suppliers', [\App\Http\Controllers\Finance\FinanceController::class, 'suppliersWorkflow'])->name('suppliers.index');
 
             Route::get('/gl', [\App\Http\Controllers\Finance\FinanceController::class, 'glIndex'])->name('gl.index');
             Route::get('/gl/journal/create', [\App\Http\Controllers\Finance\FinanceController::class, 'glJournalCreate'])->name('gl.journal.create');

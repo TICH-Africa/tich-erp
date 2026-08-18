@@ -77,6 +77,15 @@ class DatabaseSeeder extends Seeder
                 'mfa_method' => 'email',
             ],
             [
+                'email' => 'hod@tich.ac.ke',
+                'user_type' => 'staff',
+                'password' => 'Password123!',
+                'role' => 'HOD',
+                'mfa_enabled' => false,
+                'mfa_method' => null,
+                'mfa_verified' => true,
+            ],
+            [
                 'email' => 'student@tich.ac.ke',
                 'user_type' => 'student',
                 'password' => 'Password123!',

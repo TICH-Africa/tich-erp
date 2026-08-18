@@ -44,8 +44,23 @@ class BudgetAggregationController extends Controller
             'title' => ['required', 'string', 'max:300'],
             'framework' => ['required', 'in:standard,cbe'],
             'requested_amount' => ['required', 'numeric', 'min:0'],
+            'line_items' => ['nullable', 'json'],
+            'cbe_competencies' => ['nullable', 'string', 'max:5000'],
+            'assessment_hours' => ['nullable', 'numeric', 'min:0'],
+            'consumables_per_cohort' => ['nullable', 'string', 'max:5000'],
             'justification' => ['nullable', 'string', 'max:3000'],
         ]);
+
+        $data['standard_line_items'] = $data['framework'] === 'standard' && ! empty($data['line_items'])
+            ? json_decode($data['line_items'], true, 512, JSON_THROW_ON_ERROR)
+            : null;
+        $data['cbe_details'] = $data['framework'] === 'cbe'
+            ? array_filter([
+                'competencies' => $data['cbe_competencies'] ?? null,
+                'assessment_hours' => $data['assessment_hours'] ?? null,
+                'consumables_per_cohort' => $data['consumables_per_cohort'] ?? null,
+            ], static fn ($value) => $value !== null && $value !== '')
+            : null;
 
         try {
             $this->admin->createBudgetRequest($data, $request->user()->id);

@@ -90,7 +90,7 @@ class PermissionsSeeder extends Seeder
         $this->assignRolePermissions('CEO', ['core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa', 'administration', 'procurement', 'research', 'ict'], ['approve', 'view', 'manage', 'audit', 'export']);
         $this->assignRolePermissions('Academic Registrar', ['core', 'admin', 'academics'], ['approve', 'view', 'create', 'edit', 'manage', 'export']);
         $this->assignRolePermissions('Dean', ['core', 'academics', 'hr', 'portal'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
-        $this->assignRolePermissions('HOD', ['core', 'academics', 'hr'], ['view', 'create', 'edit', 'approve', 'manage']);
+        $this->assignRolePermissions('HOD', ['core', 'academics', 'hr', 'administration'], ['view', 'create', 'edit', 'approve', 'manage']);
         $this->assignRolePermissions('Lecturer/Tutor', ['academics'], ['view', 'create', 'edit', 'manage']);
         $this->assignRolePermissions('Admissions Officer', ['admin'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);
         $this->assignRolePermissions('Finance Manager', ['core', 'finance'], ['view', 'create', 'edit', 'approve', 'manage', 'export']);

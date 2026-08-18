@@ -146,6 +146,22 @@
                         <input type="number" step="0.01" min="0" name="requested_amount" class="tich-input" required>
                     </div>
                     <div class="tich-form-group">
+                        <label class="tich-label">Standard line items by category (JSON)</label>
+                        <textarea name="line_items" class="tich-input" rows="3" placeholder='[{"category":"Training","description":"Materials","amount":10000}]'></textarea>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">CBE competencies</label>
+                        <textarea name="cbe_competencies" class="tich-input" rows="2"></textarea>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">CBE assessment hours</label>
+                        <input type="number" step="0.25" min="0" name="assessment_hours" class="tich-input">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">CBE consumables per cohort</label>
+                        <textarea name="consumables_per_cohort" class="tich-input" rows="2"></textarea>
+                    </div>
+                    <div class="tich-form-group">
                         <label class="tich-label">Justification</label>
                         <textarea name="justification" class="tich-input" rows="3"></textarea>
                     </div>

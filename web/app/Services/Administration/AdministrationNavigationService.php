@@ -18,18 +18,21 @@ class AdministrationNavigationService
                     'administration.budget-aggregation.*',
                     'administration.approvals.*',
                     'administration.fund-distribution.*',
+                    'administration.workflow.*',
                 ),
                 'active' => request()->routeIs(
                     'administration.planning.*',
                     'administration.budget-aggregation.*',
                     'administration.approvals.*',
                     'administration.fund-distribution.*',
+                    'administration.workflow.*',
                 ),
                 'items' => [
                     $this->item('Multi-tier planning', 'calendar', route('administration.planning.index'), request()->routeIs('administration.planning.*')),
                     $this->item('Budget aggregation', 'layers', route('administration.budget-aggregation.index'), request()->routeIs('administration.budget-aggregation.*')),
                     $this->item('Approval workflow', 'clipboard-check', route('administration.approvals.index'), request()->routeIs('administration.approvals.*')),
                     $this->item('Fund distribution', 'wallet', route('administration.fund-distribution.index'), request()->routeIs('administration.fund-distribution.*')),
+                    $this->item('Annual plan workflow', 'clipboard', route('administration.workflow.index'), request()->routeIs('administration.workflow.*')),
                 ],
             ],
             [

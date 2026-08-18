@@ -5,6 +5,37 @@
 @section('administration-content')
     <x-page-toolbar title="Administration" meta="Institutional planning, admissions ops, compliance, and procurement visibility" />
 
+    @if ($department)
+        <article class="tich-card tich-mt-8">
+            <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+                <div>
+                    <p class="tich-caption">Administrative unit</p>
+                    <h2 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h2>
+                    <p class="tich-caption tich-mt-2">{{ $department->dept_code }} · Department operations, workflows, and records.</p>
+                </div>
+                <span class="tich-badge">Administration module enabled</span>
+            </div>
+            <div class="tich-grid tich-grid--3 tich-mt-6" style="gap:0.75rem;">
+                <a href="{{ route('administration.planning.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                    <h3 class="tich-h4">Annual and monthly plans</h3>
+                    <p class="tich-caption tich-mt-2">Open planning cycles and manage submission deadlines.</p>
+                </a>
+                <a href="{{ route('administration.budget-aggregation.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                    <h3 class="tich-h4">Department budget requests</h3>
+                    <p class="tich-caption tich-mt-2">Submit and consolidate Standard or CBE requests.</p>
+                </a>
+                <a href="{{ route('administration.approvals.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                    <h3 class="tich-h4">Review and variance</h3>
+                    <p class="tich-caption tich-mt-2">Track approvals and operational follow-up for this unit.</p>
+                </a>
+                <a href="{{ route('administration.workflow.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                    <h3 class="tich-h4">Annual to weekly workflow</h3>
+                    <p class="tich-caption tich-mt-2">Calendar, departmental tasks, deadlines, and monthly variance lessons.</p>
+                </a>
+            </div>
+        </article>
+    @endif
+
     <div class="tich-stat-row tich-stat-row--4 tich-mt-8">
         <div class="tich-stat">
             <p class="tich-stat__label">Open planning cycles</p>
@@ -51,6 +82,29 @@
         </article>
     </div>
 
+    <section class="tich-dashboard-charts tich-mt-8" aria-label="Administration statistics charts">
+        <article class="tich-card tich-chart-card">
+            <h3 class="tich-h3">Budget requests by status</h3>
+            <p class="tich-chart-card__meta">Live request workflow distribution</p>
+            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-budget-status" aria-label="Budget requests by status chart"></canvas></div>
+        </article>
+        <article class="tich-card tich-chart-card">
+            <h3 class="tich-h3">Budget framework mix</h3>
+            <p class="tich-chart-card__meta">Standard versus CBE submissions</p>
+            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-budget-framework" aria-label="Budget framework mix chart"></canvas></div>
+        </article>
+        <article class="tich-card tich-chart-card">
+            <h3 class="tich-h3">Weekly task status</h3>
+            <p class="tich-chart-card__meta">Departmental task board activity</p>
+            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-task-status" aria-label="Weekly task status chart"></canvas></div>
+        </article>
+        <article class="tich-card tich-chart-card">
+            <h3 class="tich-h3">Procurement-to-pay pipeline</h3>
+            <p class="tich-chart-card__meta">Current supplier and payment workload</p>
+            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-procurement" aria-label="Procurement-to-pay pipeline chart"></canvas></div>
+        </article>
+    </section>
+
     <h3 class="tich-h3 tich-mt-8 tich-mb-4">Module hubs</h3>
     <div class="tich-grid tich-grid--3" style="gap: 0.75rem;">
         <a href="{{ route('administration.planning.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
@@ -78,4 +132,11 @@
             <p class="tich-caption tich-mt-2">Payment and AP ledger synchronization.</p>
         </a>
     </div>
+@endsection
+
+@section('scripts')
+    @parent
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script id="administration-dashboard-chart-data" type="application/json">@json($chartData)</script>
+    <script src="{{ asset('js/tich-administration-dashboard.js') }}" defer></script>
 @endsection
