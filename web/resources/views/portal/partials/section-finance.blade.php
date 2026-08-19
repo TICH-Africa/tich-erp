@@ -309,13 +309,11 @@
         </div>
     </section>
 @elseif ($finance['accounts']->isEmpty() && $finance['invoices']->isEmpty())
-    <article class="tich-card tich-mt-8">
-        <h2 class="tich-h3">No financial records yet</h2>
-        <p class="tich-text tich-mt-2">
-            Your fee account, invoices, and receipts will appear here once the finance office posts them.
-            Current balance: <strong>KES {{ number_format((float) $finance['summary']['outstanding_balance'], 2) }}</strong>.
-        </p>
-    </article>
+    @include('partials.states.empty', [
+        'title' => 'No financial records yet',
+        'description' => 'Your fee account, invoices, and receipts will appear here once the finance office posts them. Current balance: KES ' . number_format((float) $finance['summary']['outstanding_balance'], 2) . '.',
+        'icon' => 'inbox',
+    ])
 @endif
 
 @if ($pendingStk || $payableInvoices->isNotEmpty())

@@ -98,9 +98,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="tich-table-empty">No students found.</td>
-                        </tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No students found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

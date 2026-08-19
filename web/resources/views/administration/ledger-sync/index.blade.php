@@ -49,7 +49,7 @@
                             <td class="tich-caption">{{ \Illuminate\Support\Str::limit($log->error_message, 80) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No sync activity yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No sync activity yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

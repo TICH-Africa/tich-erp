@@ -62,7 +62,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No inspection checklist items yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No inspection checklist items yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

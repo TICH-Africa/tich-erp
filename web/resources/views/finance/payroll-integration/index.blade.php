@@ -43,7 +43,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="tich-table-empty">No approved payroll runs yet. Approve a run in HR first.</td></tr>
+                    <tr>@include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No approved payroll runs yet. Approve a run in HR first.', 'icon' => 'inbox'])</tr>
                 @endforelse
             </tbody>
         </table>

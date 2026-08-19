@@ -48,7 +48,7 @@
                             <td>{{ ! empty($application->application_fee_paid) ? 'Yes' : 'No' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="tich-table-empty">No applications found.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No applications found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

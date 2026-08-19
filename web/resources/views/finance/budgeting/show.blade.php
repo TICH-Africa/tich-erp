@@ -79,7 +79,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="tich-table-empty">No cycles added yet.</td></tr>
+                        <tr>@include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No cycles added yet.', 'icon' => 'inbox'])</tr>
                     @endforelse
                 </tbody>
             </table>

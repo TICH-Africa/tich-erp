@@ -132,8 +132,9 @@
 @endif
 
 @if ($academics['grades']->isEmpty() && $academics['cat_scores']->isEmpty() && $academics['exam_results']->isEmpty())
-    <article class="tich-card tich-dept-empty tich-mt-8">
-        <h2 class="tich-h3">No exam or grade records yet</h2>
-        <p class="tich-text tich-mt-2">CAT marks, exam results, and final grades will appear here once your lecturers publish them.</p>
-    </article>
+    @include('partials.states.empty', [
+        'title' => 'No exam or grade records yet',
+        'description' => 'CAT marks, exam results, and final grades will appear here once your lecturers publish them.',
+        'icon' => 'inbox',
+    ])
 @endif

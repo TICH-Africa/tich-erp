@@ -211,6 +211,11 @@
         && $academics['grades']->isEmpty()
         && $academics['attendance']->isEmpty()
     )
-        <p class="tich-text tich-mt-4">No academic records yet for this student. Units, marks, and results will appear once semester registration and assessment data is captured.</p>
+        @include('partials.states.empty', [
+            'title' => 'No academic records yet',
+            'description' => 'Units, marks, and results will appear once semester registration and assessment data is captured.',
+            'icon' => 'inbox',
+            'inline' => true,
+        ])
     @endif
 </div>

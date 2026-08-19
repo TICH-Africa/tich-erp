@@ -2,11 +2,33 @@
     $errorNav = app(\App\Services\ErrorNavigationService::class);
     $actions = $actions ?? $errorNav->actions();
     $hint = $hint ?? null;
+    $iconMap = [
+        '403' => 'permission',
+        '401' => 'permission',
+        '419' => 'session',
+        '404' => 'no-results',
+        '500' => 'error',
+        '503' => 'offline',
+        '429' => 'slow',
+        '405' => 'error',
+    ];
+    $iconVariant = $iconMap[$code] ?? 'error';
+    $iconFile = match ($code) {
+        '403', '401' => 'shield-x',
+        '419' => 'clock-alert',
+        '404' => 'search-x',
+        '503' => 'wifi-off',
+        '429' => 'clock',
+        default => 'alert-circle',
+    };
 @endphp
 
 <section class="tich-section tich-error-page">
     <div class="tich-container">
         <div class="tich-error-page__card tich-card">
+            <div class="tich-state__icon tich-state__icon--{{ $iconVariant }}" style="margin: 0 auto 1rem;">
+                @include('partials.states.icons.' . $iconFile)
+            </div>
             <p class="tich-error-page__code">{{ $code }}</p>
             <h1 class="tich-h1 tich-error-page__title">{{ $title }}</h1>
             <p class="tich-text tich-error-page__message">{{ $message }}</p>

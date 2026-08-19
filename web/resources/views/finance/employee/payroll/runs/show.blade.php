@@ -99,7 +99,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No staff with pay in this run.</td></tr>
+                        <tr>@include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No staff with pay in this run.', 'icon' => 'inbox'])</tr>
                     @endforelse
                 </tbody>
             </table>

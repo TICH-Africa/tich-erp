@@ -59,9 +59,7 @@
                         <td><a href="{{ route('sis.students.show', $student) }}" class="tich-link">View 360°</a></td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" style="padding: 2rem; text-align: center;" class="tich-text">No student records yet. Students are created when applications are approved.</td>
-                    </tr>
+                    @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No student records yet', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

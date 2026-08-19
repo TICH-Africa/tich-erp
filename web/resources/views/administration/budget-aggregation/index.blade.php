@@ -61,7 +61,7 @@
                             <td>{{ $row['cbe_count'] }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No budget requests for this year.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No budget requests for this year', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>
@@ -93,7 +93,7 @@
                             <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No requests yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No requests yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

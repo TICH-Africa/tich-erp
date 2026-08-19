@@ -66,7 +66,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7">No campuses yet.</td></tr>
+                    @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No campuses yet', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

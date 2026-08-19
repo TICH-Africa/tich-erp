@@ -65,7 +65,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="tich-table-empty">No items in the approval queue.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No items in the approval queue', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

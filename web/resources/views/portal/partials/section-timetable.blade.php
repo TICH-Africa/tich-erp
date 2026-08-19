@@ -70,25 +70,16 @@
                     'segments' => $gridSegments,
                 ])
             @else
-                <p class="tich-text tich-mt-4">No sessions scheduled yet.</p>
+                @include('partials.states.empty', ['title' => 'No sessions scheduled yet', 'icon' => 'clock', 'inline' => true])
             @endif
         </article>
     @endforeach
 @else
-    <article class="tich-card tich-dept-empty tich-mt-8">
-        <h2 class="tich-h3">
-            @if ($timetableTab === 'exam')
-                No exam timetable published yet
-            @else
-                No lesson timetable published yet
-            @endif
-        </h2>
-        <p class="tich-text tich-mt-2">
-            @if ($timetableTab === 'exam')
-                Your exam schedule will appear here once the academic office publishes it for this semester.
-            @else
-                Your weekly lesson schedule will appear here once the academic office publishes the timetable for this semester.
-            @endif
-        </p>
-    </article>
+    @include('partials.states.empty', [
+        'title' => $timetableTab === 'exam' ? 'No exam timetable published yet' : 'No lesson timetable published yet',
+        'description' => $timetableTab === 'exam'
+            ? 'Your exam schedule will appear here once the academic office publishes it for this semester.'
+            : 'Your weekly lesson schedule will appear here once the academic office publishes the timetable for this semester.',
+        'icon' => 'clock',
+    ])
 @endif

@@ -39,7 +39,7 @@
                         <td><a href="{{ route('hr.payroll.runs.show', $run) }}" class="tich-btn tich-btn-ghost">Open</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="tich-table-empty">No payroll runs yet. Create one to save a monthly batch.</td></tr>
+                    @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No payroll runs yet', 'description' => 'Create one to save a monthly batch.', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

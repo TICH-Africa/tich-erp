@@ -8,6 +8,7 @@
     @include('partials.head-assets')
 </head>
 <body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
+    @include('partials.states.global-banners')
     @include('partials.navigation.header')
 
     @php
@@ -61,6 +62,7 @@
 
     <script src="{{ asset('js/tich-nav.js') }}" defer></script>
     <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
+    <script src="{{ asset('js/tich-states.js') }}" defer></script>
     @yield('scripts')
 </body>
 </html>

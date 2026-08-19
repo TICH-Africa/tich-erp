@@ -64,9 +64,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="8">No applications match your filters.</td>
-                    </tr>
+                    @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No applications match your filters', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

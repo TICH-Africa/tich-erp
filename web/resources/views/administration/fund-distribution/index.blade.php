@@ -53,7 +53,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No budgets in the approval pipeline.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No budgets in the approval pipeline', 'icon' => 'inbox'])
                     @endforelse
 
                     @forelse ($allocations as $allocation)
@@ -81,7 +81,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No allocations released yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No allocations released yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

@@ -2,7 +2,7 @@
 
 <article class="tich-card tich-table-panel tich-mt-8">
     @if ($biodata['documents']->isEmpty())
-        <p class="tich-text">No documents on record yet.</p>
+        @include('partials.states.table-empty', ['colspan' => 4, 'title' => 'No documents on record yet', 'icon' => 'file-x'])
     @else
         <table class="tich-admin-table">
             <thead>

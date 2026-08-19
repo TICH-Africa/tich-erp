@@ -52,9 +52,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" style="padding: 2rem; text-align: center;" class="tich-text">No learning departments under this academics hub.</td>
-                    </tr>
+                    @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No learning departments under this academics hub', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

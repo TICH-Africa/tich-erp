@@ -39,7 +39,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No statutory certificates recorded.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No statutory certificates recorded', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

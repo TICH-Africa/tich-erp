@@ -102,7 +102,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="tich-table-empty">No payments found.</td>
+                            @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No payments found.', 'icon' => 'inbox'])
                         </tr>
                     @endforelse
                 </tbody>

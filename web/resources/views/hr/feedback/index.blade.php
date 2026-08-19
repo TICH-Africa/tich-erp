@@ -46,9 +46,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="5" class="tich-table-empty">No feedback found.</td>
-                        </tr>
+                        @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No feedback found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

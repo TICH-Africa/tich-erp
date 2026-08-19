@@ -43,7 +43,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="tich-table-empty">No forwarded budget requests.</td></tr>
+                            <tr>@include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No forwarded budget requests.', 'icon' => 'inbox'])</tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -92,7 +92,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="tich-table-empty">No budgets yet.</td>
+                            @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No budgets yet.', 'icon' => 'inbox'])
                         </tr>
                     @endforelse
                 </tbody>

@@ -50,9 +50,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="tich-table-empty">No disciplinary cases found.</td>
-                        </tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No disciplinary cases found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

@@ -85,7 +85,7 @@
                             <td>{{ $row->practical_entries }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No assessment data for this semester yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No assessment data for this semester yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>
@@ -117,7 +117,7 @@
                             <td>{{ $row->high_performers }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5">No cumulative grades compiled yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No cumulative grades compiled yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

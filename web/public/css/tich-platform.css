@@ -6103,3 +6103,262 @@ a.tich-tabs__btn {
         transition: none;
     }
 }
+
+/* ─── UI State Components ─────────────────────────────────────────────── */
+
+.tich-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    gap: 0.75rem;
+}
+
+.tich-state--inline {
+    padding: 2rem 1rem;
+}
+
+.tich-state__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    margin-bottom: 0.5rem;
+}
+
+.tich-state__icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    stroke-width: 1.5;
+    fill: none;
+    stroke: currentColor;
+}
+
+.tich-state__icon--empty {
+    background: var(--tich-neutral);
+    color: var(--tich-neutral-muted);
+}
+
+.tich-state__icon--error {
+    background: var(--tich-error-bg);
+    color: var(--tich-error);
+}
+
+.tich-state__icon--offline {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.tich-state__icon--slow {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.tich-state__icon--no-results {
+    background: var(--tich-blue-light);
+    color: var(--tich-blue);
+}
+
+.tich-state__icon--permission {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.tich-state__icon--session {
+    background: #fef3c7;
+    color: #78350f;
+}
+
+.tich-state__icon--success {
+    background: var(--tich-green-light);
+    color: var(--tich-green-dark);
+}
+
+.tich-state__icon--loading {
+    background: var(--tich-neutral);
+    color: var(--tich-blue);
+    animation: tich-state-pulse 1.5s ease-in-out infinite;
+}
+
+.tich-state__title {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--tich-grey);
+    margin: 0;
+}
+
+.tich-state__description {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    color: var(--tich-neutral-muted);
+    margin: 0;
+    max-width: 28rem;
+    line-height: 1.5;
+}
+
+.tich-state__action {
+    margin-top: 0.75rem;
+}
+
+@keyframes tich-state-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes tich-state-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.tich-state__icon--loading svg {
+    animation: tich-state-spin 1.2s linear infinite;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] .tich-state__title {
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .tich-state__description {
+    color: #9ca3af;
+}
+
+[data-theme="dark"] .tich-state__icon--empty {
+    background: rgba(107, 110, 114, 0.15);
+    color: #9ca3af;
+}
+
+[data-theme="dark"] .tich-state__icon--error {
+    background: rgba(197, 48, 48, 0.15);
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .tich-state__icon--offline {
+    background: rgba(146, 64, 14, 0.15);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .tich-state__icon--slow {
+    background: rgba(194, 65, 12, 0.15);
+    color: #fb923c;
+}
+
+[data-theme="dark"] .tich-state__icon--no-results {
+    background: rgba(22, 105, 166, 0.15);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .tich-state__icon--permission {
+    background: rgba(153, 27, 27, 0.15);
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .tich-state__icon--session {
+    background: rgba(120, 53, 15, 0.15);
+    color: #fde68a;
+}
+
+[data-theme="dark"] .tich-state__icon--success {
+    background: rgba(108, 171, 51, 0.15);
+    color: #86efac;
+}
+
+[data-theme="dark"] .tich-state__icon--loading {
+    background: rgba(22, 105, 166, 0.15);
+    color: #93c5fd;
+}
+
+/* Global offline/session banners */
+.tich-global-banner {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-align: center;
+    justify-content: center;
+}
+
+.tich-global-banner svg {
+    width: 1rem;
+    height: 1rem;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    flex-shrink: 0;
+}
+
+.tich-global-banner--offline {
+    background: #fef3c7;
+    color: #92400e;
+    border-bottom: 1px solid #fde68a;
+}
+
+.tich-global-banner--slow {
+    background: #fff7ed;
+    color: #c2410c;
+    border-bottom: 1px solid #fed7aa;
+}
+
+.tich-global-banner--session {
+    background: #fef2f2;
+    color: #991b1b;
+    border-bottom: 1px solid #fecaca;
+}
+
+.tich-global-banner.is-visible {
+    display: flex;
+}
+
+[data-theme="dark"] .tich-global-banner--offline {
+    background: rgba(146, 64, 14, 0.15);
+    color: #fbbf24;
+    border-bottom-color: rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="dark"] .tich-global-banner--slow {
+    background: rgba(194, 65, 12, 0.15);
+    color: #fb923c;
+    border-bottom-color: rgba(251, 146, 60, 0.2);
+}
+
+[data-theme="dark"] .tich-global-banner--session {
+    background: rgba(153, 27, 27, 0.15);
+    color: #fca5a5;
+    border-bottom-color: rgba(252, 165, 165, 0.2);
+}
+
+/* Loading skeleton for tables */
+.tich-skeleton-row td {
+    padding: 0.75rem;
+}
+
+.tich-skeleton-bar {
+    height: 0.75rem;
+    background: linear-gradient(90deg, var(--tich-neutral) 25%, var(--tich-neutral-border) 50%, var(--tich-neutral) 75%);
+    background-size: 200% 100%;
+    animation: tich-skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+    width: 80%;
+}
+
+.tich-skeleton-bar--short { width: 40%; }
+.tich-skeleton-bar--medium { width: 60%; }
+
+@keyframes tich-skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+[data-theme="dark"] .tich-skeleton-bar {
+    background: linear-gradient(90deg, rgba(107,110,114,0.15) 25%, rgba(107,110,114,0.3) 50%, rgba(107,110,114,0.15) 75%);
+    background-size: 200% 100%;
+    animation: tich-skeleton-shimmer 1.5s ease-in-out infinite;
+}

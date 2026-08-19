@@ -46,9 +46,7 @@
                 </tr>
             @empty
                 @if ($emptyMessage)
-                    <tr>
-                        <td colspan="9" class="tich-table-empty">{{ $emptyMessage }}</td>
-                    </tr>
+                    @include('partials.states.table-empty', ['colspan' => 9, 'title' => $emptyMessage, 'icon' => 'inbox'])
                 @endif
             @endforelse
         </tbody>

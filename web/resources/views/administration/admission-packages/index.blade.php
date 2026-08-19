@@ -33,7 +33,7 @@
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $student->enrollment_status ?? 'unknown')) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No enrolled students yet.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No enrolled students yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

@@ -82,7 +82,7 @@
     <article class="tich-card tich-mt-6">
         <h2 class="tich-h3">Application documents</h2>
         @if ($biodata['documents']->isEmpty())
-            <p class="tich-text tich-mt-4">No documents uploaded.</p>
+            @include('partials.states.empty', ['title' => 'No documents uploaded', 'icon' => 'file-x', 'inline' => true])
         @else
             <table class="tich-admin-table tich-mt-4">
                 <thead>

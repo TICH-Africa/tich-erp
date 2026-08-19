@@ -107,7 +107,7 @@
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="15" class="tich-table-empty">No staff found.</td></tr>
+                        <tr>@include('partials.states.table-empty', ['colspan' => 15, 'title' => 'No staff found.', 'icon' => 'inbox'])</tr>
                     @endforelse
                 </tbody>
                 @if ($rows->contains(fn ($row) => $row['breakdown'] !== null))

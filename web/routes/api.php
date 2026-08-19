@@ -112,3 +112,7 @@ Route::middleware(['auth:sanctum', 'mfa'])->prefix('hr')->group(function () {
         Route::post('/vacancies/{vacancy}/toggle-publish', [VacancyController::class, 'togglePublish']);
     });
 });
+
+Route::get('/session-check', function () {
+    return response()->json(['authenticated' => auth()->check()], auth()->check() ? 200 : 401);
+})->middleware('web');

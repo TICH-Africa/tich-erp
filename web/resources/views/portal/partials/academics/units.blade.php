@@ -44,9 +44,7 @@
                 </table>
             </div>
         @else
-            <article class="tich-card tich-mt-4">
-                <p class="tich-text">No units are mapped to this semester yet.</p>
-            </article>
+            @include('partials.states.empty', ['title' => 'No units are mapped to this semester yet', 'icon' => 'inbox', 'inline' => true])
         @endif
     </section>
 @endif
@@ -176,14 +174,11 @@
     });
     </script>
 @elseif ($academics['registered_units']->isEmpty() && ! $academics['curriculum'])
-    <article class="tich-card tich-dept-empty tich-mt-8">
-        <h2 class="tich-h3">No units yet</h2>
-        <p class="tich-text tich-mt-2">
-            @if ($student->program_id)
-                Your programme units will appear here once the curriculum is published and semester registration opens.
-            @else
-                Your programme has not been assigned yet. Contact the admissions office if this persists.
-            @endif
-        </p>
-    </article>
+    @include('partials.states.empty', [
+        'title' => 'No units yet',
+        'description' => $student->program_id
+            ? 'Your programme units will appear here once the curriculum is published and semester registration opens.'
+            : 'Your programme has not been assigned yet. Contact the admissions office if this persists.',
+        'icon' => 'inbox',
+    ])
 @endif

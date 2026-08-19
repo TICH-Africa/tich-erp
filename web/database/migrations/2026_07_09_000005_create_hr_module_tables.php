@@ -409,7 +409,7 @@ Schema::create('policy_acknowledgements', function (Blueprint $table) {
 
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['staff_id']);
-            $table->dropForeign(['student_id']);
+            $table->dropForeign(['student_id']);Those curriculum tools are still in the codebase; the sidebar hides most of them when a programme has no intake
             $table->dropForeign(['created_by']);
         });
 

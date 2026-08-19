@@ -53,7 +53,7 @@
                             <td class="tich-caption">{{ ! empty($ap->is_quickbooks_synced) ? 'Synced' : 'Pending' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="tich-table-empty">No AP invoices found.</td></tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No AP invoices found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

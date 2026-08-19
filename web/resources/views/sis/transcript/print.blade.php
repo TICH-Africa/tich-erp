@@ -47,7 +47,12 @@
             </table>
         </section>
     @empty
-        <p>No cumulative grade records compiled yet. Transcript rows appear once tutors save assessment data in the evaluation terminal.</p>
+        @include('partials.states.empty', [
+            'title' => 'No cumulative grade records compiled yet',
+            'description' => 'Transcript rows appear once tutors save assessment data in the evaluation terminal.',
+            'icon' => 'inbox',
+            'inline' => true,
+        ])
     @endforelse
 
     <section class="tich-doc-section">

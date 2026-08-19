@@ -110,9 +110,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="tich-table-empty">No clearance items.</td>
-                        </tr>
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No clearance items', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

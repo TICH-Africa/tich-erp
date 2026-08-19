@@ -29,8 +29,9 @@
         </div>
     </section>
 @else
-    <article class="tich-card tich-dept-empty tich-mt-8">
-        <h2 class="tich-h3">No attendance records yet</h2>
-        <p class="tich-text tich-mt-2">Attendance summaries will appear here once sessions are recorded for your registered units.</p>
-    </article>
+    @include('partials.states.empty', [
+        'title' => 'No attendance records yet',
+        'description' => 'Attendance summaries will appear here once sessions are recorded for your registered units.',
+        'icon' => 'inbox',
+    ])
 @endif

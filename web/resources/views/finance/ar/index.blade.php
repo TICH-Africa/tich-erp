@@ -90,7 +90,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="tich-table-empty">No open receivables.</td></tr>
+                            <tr>@include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No open receivables.', 'icon' => 'inbox'])</tr>
                         @endforelse
                     </tbody>
                 </table>
