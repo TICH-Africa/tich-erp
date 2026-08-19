@@ -31,7 +31,7 @@ class PlanningController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:300'],
-            'plan_tier' => ['required', 'in:annual,monthly,weekly'],
+            'plan_tier' => ['required', 'in:annual,quarterly,monthly,weekly'],
             'fiscal_year' => ['required', 'integer', 'min:2020', 'max:2100'],
             'period_start' => ['required', 'date'],
             'period_end' => ['required', 'date', 'after_or_equal:period_start'],

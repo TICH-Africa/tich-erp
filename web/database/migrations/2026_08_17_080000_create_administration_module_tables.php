@@ -13,7 +13,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('cycle_code', 50)->unique();
                 $table->string('title', 300);
-                $table->string('plan_tier', 30); // annual, monthly, weekly
+                $table->string('plan_tier', 30); // annual, quarterly, monthly, weekly
                 $table->unsignedSmallInteger('fiscal_year');
                 $table->date('period_start');
                 $table->date('period_end');

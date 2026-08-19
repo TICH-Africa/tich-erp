@@ -22,7 +22,12 @@ class FundDistributionController extends Controller
             : collect();
 
         $approved = Schema::hasTable('admin_budget_requests')
-            ? BudgetRequest::query()->with('department')->where('status', 'approved')->latest()->limit(50)->get()
+            ? BudgetRequest::query()
+                ->with(['department', 'planningCycle'])
+                ->whereIn('status', ['submitted', 'finance_review', 'executive_review', 'approved', 'disbursed'])
+                ->orderByRaw("FIELD(status, 'submitted', 'finance_review', 'executive_review', 'approved', 'disbursed')")
+                ->latest()
+                ->get()
             : collect();
 
         return view('administration.fund-distribution.index', [
@@ -50,5 +55,38 @@ class FundDistributionController extends Controller
         }
 
         return back()->with('status', 'Monthly allocation released digitally to the department.');
+    }
+
+    public function markAsDisbursed(Request $request, $id): RedirectResponse
+    {
+        $budgetRequest = BudgetRequest::query()->findOrFail($id);
+
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $budgetRequest->update([
+            'status' => 'disbursed',
+            'disbursed_at' => now(),
+            'disbursed_by' => $request->user()->id,
+            'workflow_notes' => trim(($budgetRequest->workflow_notes ? $budgetRequest->workflow_notes."\n" : '').($request->input('notes') ?: 'Marked as disbursed by Administration.')),
+        ]);
+
+        return back()->with('status', 'Budget request marked as disbursed successfully.');
+    }
+
+    public function markAllocationAsDisbursed(Request $request, FundAllocation $allocation): RedirectResponse
+    {
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $allocation->update([
+            'status' => 'disbursed',
+            'released_at' => now(),
+            'notes' => $request->input('notes') ? trim($allocation->notes.' '.$request->input('notes')) : $allocation->notes,
+        ]);
+
+        return back()->with('status', 'Allocation marked as disbursed successfully.');
     }
 }

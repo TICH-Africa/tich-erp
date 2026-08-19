@@ -401,7 +401,7 @@ return [
                 [
                     'key' => 'administration.planning',
                     'label' => 'Multi-tier planning',
-                    'description' => 'Annual, monthly, and weekly planning with requisition deadlines.',
+                     'description' => 'Annual, quarterly, monthly, and weekly planning with requisition deadlines.',
                     'permission' => 'administration.read',
                     'route' => 'administration.planning.index',
                     'context' => 'operational',

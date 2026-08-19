@@ -11,6 +11,7 @@ use App\View\Composers\PublicLayoutComposer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +31,14 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return app(RBACService::class)->hasPermission($user, $ability) ? true : null;
+        });
+
+        Route::bind('budgetRequest', function ($value) {
+            return \App\Models\Administration\BudgetRequest::query()->findOrFail($value);
+        });
+
+        Route::bind('allocation', function ($value) {
+            return \App\Models\Administration\FundAllocation::query()->findOrFail($value);
         });
 
         View::composer(['layouts.app', 'layouts.auth'], PublicLayoutComposer::class);

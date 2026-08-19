@@ -3,7 +3,7 @@
 @section('title', 'Multi-tier planning')
 
 @section('administration-content')
-    <x-page-toolbar title="Multi-tier planning" meta="Annual, monthly, and weekly institutional planning with strict requisition deadlines">
+    <x-page-toolbar title="Multi-tier planning" meta="Annual, quarterly, monthly, and weekly institutional planning with strict requisition deadlines">
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="planning-create-modal">+ New cycle</button>
         </x-slot:actions>
@@ -74,6 +74,7 @@
                         <label class="tich-label">Plan tier</label>
                         <select name="plan_tier" class="tich-input" required>
                             <option value="annual">Annual</option>
+                            <option value="quarterly">Quarterly</option>
                             <option value="monthly">Monthly</option>
                             <option value="weekly">Weekly</option>
                         </select>

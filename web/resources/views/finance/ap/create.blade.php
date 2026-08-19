@@ -9,42 +9,54 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-card">
-        <form method="POST" action="{{ route('finance.ap.store', $department) }}" class="tich-form" id="ap-create-form">
-            @csrf
-            <div class="tich-form__row">
-                <label class="tich-form__label">Supplier</label>
-                <input type="text" id="supplier-search" class="tich-form__input" placeholder="Search supplier..." autocomplete="off" required>
-                <select name="supplier_id" id="supplier-select" class="tich-form__input" required>
-                    <option value="">Select supplier</option>
-                    @foreach ($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Invoice number</label>
-                <input type="text" name="invoice_number" class="tich-form__input" required />
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Invoice amount (KES)</label>
-                <input type="number" name="invoice_amount" class="tich-form__input" step="0.01" min="0" required />
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Tax amount (KES, optional)</label>
-                <input type="number" name="tax_amount" class="tich-form__input" step="0.01" min="0" value="0" />
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Due date</label>
-                <input type="date" name="due_date" class="tich-form__input" required />
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Description</label>
-                <textarea name="description" class="tich-form__input" rows="3"></textarea>
-            </div>
+    @if ($errors->any())
+        <div class="tich-alert tich-alert--error tich-mt-4">
+            <ul style="margin:0; padding-left:1.25rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('finance.ap.store', $department) }}" class="tich-card tich-form-grid" id="ap-create-form">
+        @csrf
+        <div class="tich-form-row">
+            <label class="tich-label" for="supplier-search">Supplier <span class="tich-text--danger">*</span></label>
+            <input type="text" id="supplier-search" class="tich-input" placeholder="Search supplier..." autocomplete="off" required>
+            <select name="supplier_id" id="supplier-select" class="tich-input" required>
+                <option value="">Select supplier</option>
+                @foreach ($suppliers as $supplier)
+                    <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
+                @endforeach
+            </select>
+            <p class="tich-caption tich-mt-2">Search for a supplier to auto-fill the dropdown.</p>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="invoice_number">Invoice number <span class="tich-text--danger">*</span></label>
+            <input type="text" id="invoice_number" name="invoice_number" class="tich-input" placeholder="e.g. INV-2026-001" required>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="invoice_amount">Invoice amount (KES) <span class="tich-text--danger">*</span></label>
+            <input type="number" step="0.01" min="0" id="invoice_amount" name="invoice_amount" class="tich-input" placeholder="0.00" required>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="tax_amount">Tax amount (KES)</label>
+            <input type="number" step="0.01" min="0" id="tax_amount" name="tax_amount" class="tich-input" placeholder="0.00" value="0">
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="due_date">Due date <span class="tich-text--danger">*</span></label>
+            <input type="date" id="due_date" name="due_date" class="tich-input" required>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="description">Description</label>
+            <textarea id="description" name="description" class="tich-input" rows="4" placeholder="Optional notes..."></textarea>
+        </div>
+        <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Create invoice</button>
-        </form>
-    </div>
+            <a href="{{ route('finance.ap.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+        </div>
+    </form>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

@@ -288,13 +288,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'store'])->name('administration.budget-aggregation.store');
 
         Route::get('/approvals', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'index'])->name('administration.approvals.index');
-        Route::post('/approvals/{budgetRequest}/route-finance', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'routeToFinance'])->name('administration.approvals.route-finance');
-        Route::post('/approvals/{budgetRequest}/finance-verify', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'financeVerify'])->name('administration.approvals.finance-verify');
-        Route::post('/approvals/{budgetRequest}/executive-authorize', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'executiveAuthorize'])->name('administration.approvals.executive-authorize');
-        Route::post('/approvals/{budgetRequest}/reject', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'reject'])->name('administration.approvals.reject');
+        Route::post('/approvals/{budget_request}/route-finance', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'routeToFinance'])->name('administration.approvals.route-finance');
+        Route::post('/approvals/{budget_request}/reject', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'reject'])->name('administration.approvals.reject');
 
         Route::get('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'index'])->name('administration.fund-distribution.index');
         Route::post('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'store'])->name('administration.fund-distribution.store');
+        Route::post('/fund-distribution/budget-requests/{id}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAsDisbursed'])->name('administration.fund-distribution.budget.disburse');
+        Route::post('/fund-distribution/allocations/{allocation}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAllocationAsDisbursed'])->name('administration.fund-distribution.disburse');
 
         Route::get('/applications', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'applications'])->name('administration.applications.index');
         Route::get('/lifecycle', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'lifecycle'])->name('administration.lifecycle.index');
@@ -585,7 +585,18 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::get('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingIndex'])->name('budgeting.index');
             Route::get('/budgeting/create', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCreate'])->name('budgeting.create');
             Route::post('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingStore'])->name('budgeting.store');
+
+            Route::get('/budgeting/requests', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestsIndex'])->name('budgeting.requests.index');
+            Route::get('/budgeting/requests/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestShow'])->name('budgeting.requests.show');
+            Route::post('/budgeting/requests/{id}/review', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReview'])->name('budgeting.requests.review');
+            Route::post('/budgeting/requests/{id}/reject', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReject'])->name('budgeting.requests.reject');
+            Route::post('/budgeting/requests/{id}/ceo-approve', [\App\Http\Controllers\Finance\FinanceController::class, 'ceoApprove'])->name('budgeting.requests.ceo-approve');
+            Route::post('/budgeting/requests/{id}/disburse', [\App\Http\Controllers\Finance\FinanceController::class, 'markAsDisbursed'])->name('budgeting.requests.disburse');
+
             Route::get('/budgeting/{budgeting}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingShow'])->name('budgeting.show');
+            Route::post('/budgeting/{budget}/cycles', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleStore'])->name('budgeting.cycles.store');
+            Route::put('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleUpdate'])->name('budgeting.cycles.update');
+            Route::delete('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleDestroy'])->name('budgeting.cycles.destroy');
 
             Route::get('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsIndex'])->name('projects-donors.index');
             Route::get('/projects-donors/create', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsCreate'])->name('projects-donors.create');

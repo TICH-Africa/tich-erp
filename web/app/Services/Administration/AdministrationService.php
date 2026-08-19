@@ -54,6 +54,7 @@ class AdministrationService
             'department_id' => $data['department_id'],
             'title' => $data['title'],
             'framework' => $data['framework'] ?? 'standard',
+            'budget_type' => $data['budget_type'] ?? null,
             'standard_line_items' => $data['standard_line_items'] ?? null,
             'cbe_details' => $data['cbe_details'] ?? null,
             'requested_amount' => $data['requested_amount'],
@@ -119,6 +120,45 @@ class AdministrationService
         $request->update([
             'status' => 'rejected',
             'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').($notes ?: 'Rejected in approval workflow.')),
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function divideBudgetIntoGroups(BudgetRequest $request, array $groupAllocations, ?float $allocatedAmount = null): BudgetRequest
+    {
+        if (! in_array($request->status, ['submitted', 'finance_review', 'executive_review', 'approved'], true)) {
+            throw new \RuntimeException('Budget can only be divided while in Finance review or after approval.');
+        }
+
+        $total = array_sum(array_column($groupAllocations, 'amount'));
+        $requested = (float) $request->requested_amount;
+
+        if ($total > $requested + 0.01) {
+            throw new \RuntimeException('Total group allocations cannot exceed the requested amount.');
+        }
+
+        $request->update([
+            'allocated_amount' => $allocatedAmount ?? $requested,
+            'group_allocations' => $groupAllocations,
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'Budget divided into groups by Finance.'),
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function forwardToExecutive(BudgetRequest $request, ?int $userId = null, ?string $notes = null): BudgetRequest
+    {
+        if (! in_array($request->status, ['submitted', 'finance_review', 'executive_review'], true)) {
+            throw new \RuntimeException('Only budgets in Finance review can be forwarded to Executive/CEO.');
+        }
+
+        $request->update([
+            'status' => 'executive_review',
+            'verified_amount' => $request->verified_amount ?? $request->requested_amount,
+            'finance_verified_by' => $userId,
+            'finance_verified_at' => now(),
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').($notes ?: 'Forwarded to Executive/CEO for authorization.')),
         ]);
 
         return $request->fresh();

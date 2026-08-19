@@ -50,7 +50,7 @@ class FinanceAccountsDemoSeeder extends Seeder
                 'attachment_fee' => 4000,
                 'qa_annual_fee' => 1000,
                 'requires_indexing_nck' => 0,
-                'indexing_nck_fee' => null,
+                'indexing_nck_fee' => 0,
                 'graduation_fee' => 4000,
                 'is_approved' => 1,
                 'approved_by' => $staffId,

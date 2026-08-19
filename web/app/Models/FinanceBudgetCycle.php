@@ -5,24 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class FinanceBudget extends Model
+class FinanceBudgetCycle extends Model
 {
-    protected $table = 'finance_budgets';
+    protected $table = 'finance_budget_cycles';
 
     protected $fillable = [
-        'budget_code',
-        'budget_name',
-        'budget_type',
-        'department_id',
-        'fiscal_year',
+        'budget_id',
+        'cycle_type',
+        'label',
         'period_start',
         'period_end',
         'allocated_amount',
         'spent_amount',
         'committed_amount',
         'status',
-        'approved_by',
-        'approved_at',
         'notes',
     ];
 
@@ -32,22 +28,11 @@ class FinanceBudget extends Model
         'allocated_amount' => 'decimal:2',
         'spent_amount' => 'decimal:2',
         'committed_amount' => 'decimal:2',
-        'approved_at' => 'datetime',
     ];
 
-    public function department(): BelongsTo
+    public function budget(): BelongsTo
     {
-        return $this->belongsTo(Department::class);
-    }
-
-    public function approver(): BelongsTo
-    {
-        return $this->belongsTo(Staff::class, 'approved_by');
-    }
-
-    public function cycles()
-    {
-        return $this->hasMany(FinanceBudgetCycle::class, 'budget_id');
+        return $this->belongsTo(FinanceBudget::class, 'budget_id');
     }
 
     public function availableAmount(): float

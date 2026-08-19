@@ -6,6 +6,7 @@
     <x-page-toolbar title="Budgeting" meta="Annual, departmental and project budgets, budget requests, approvals and budget vs actual tracking">
         <x-slot:actions>
             <a href="{{ route('finance.budgeting.create', $department) }}" class="tich-btn tich-btn-primary">+ New budget</a>
+            <a href="{{ route('finance.budgeting.requests.index', $department) }}" class="tich-btn tich-btn-secondary">Review budget requests</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -14,7 +15,43 @@
         <button type="submit" class="tich-btn tich-btn-secondary">Search</button>
     </form>
 
-    <div class="tich-card tich-table-panel">
+    @if ($forwardedRequests->isNotEmpty())
+        <div class="tich-card tich-table-panel tich-mt-8">
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Forwarded request</th>
+                            <th>Department</th>
+                            <th>Requested</th>
+                            <th>Stage</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($forwardedRequests as $item)
+                            <tr>
+                                <td>
+                                    <strong>{{ $item->request_code }}</strong>
+                                    <p class="tich-caption">{{ $item->title }}</p>
+                                </td>
+                                <td>{{ $item->department?->dept_name }}</td>
+                                <td>KES {{ number_format($item->requested_amount, 0) }}</td>
+                                <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
+                                <td>
+                                    <a href="{{ route('finance.budgeting.requests.show', [$department, $item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="tich-table-empty">No forwarded budget requests.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    <div class="tich-card tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>

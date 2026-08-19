@@ -9,56 +9,62 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <article class="tich-card">
-        <form method="POST" action="{{ route('finance.student-finance.refunds.store', ['department' => $department->id]) }}" class="tich-mt-4">
-            @csrf
-            <div class="tich-form-grid tich-form-grid--2">
-                <div class="tich-form-group">
-                    <label class="tich-label">Student</label>
-                    <select name="student_id" id="refund-student" class="tich-input" required>
-                        <option value="">Search/select student</option>
-                        @foreach ($students as $student)
-                            <option value="{{ $student->id }}">
-                                {{ $student->applicant?->surname ?? '' }}, {{ $student->applicant?->first_name ?? '' }} ({{ $student->registration_number }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Payment</label>
-                    <select name="payment_id" id="refund-payment" class="tich-input" required disabled>
-                        <option value="">Select student first</option>
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Invoice</label>
-                    <select name="invoice_id" id="refund-invoice" class="tich-input" required disabled>
-                        <option value="">Select student first</option>
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Refund Amount (KES)</label>
-                    <input type="number" name="amount" class="tich-input" step="0.01" required placeholder="0.00" />
-                </div>
-            </div>
+    @if ($errors->any())
+        <div class="tich-alert tich-alert--error tich-mt-4">
+            <ul style="margin:0; padding-left:1.25rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-            <div class="tich-form-group tich-mt-4">
-                <label class="tich-label">Reason</label>
-                <textarea name="reason" class="tich-input" rows="3" required placeholder="Explain the reason for this refund..."></textarea>
-            </div>
+    <form method="POST" action="{{ route('finance.student-finance.refunds.store', ['department' => $department->id]) }}" class="tich-card tich-form-grid tich-form-grid--2">
+        @csrf
+        <div class="tich-form-group">
+            <label class="tich-label" for="refund-student">Student <span class="tich-text--danger">*</span></label>
+            <select name="student_id" id="refund-student" class="tich-input" required>
+                <option value="">Search/select student</option>
+                @foreach ($students as $student)
+                    <option value="{{ $student->id }}">
+                        {{ $student->applicant?->surname ?? '' }}, {{ $student->applicant?->first_name ?? '' }} ({{ $student->registration_number }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="tich-form-group">
+            <label class="tich-label" for="refund-payment">Payment</label>
+            <select name="payment_id" id="refund-payment" class="tich-input" required disabled>
+                <option value="">Select student first</option>
+            </select>
+        </div>
+        <div class="tich-form-group">
+            <label class="tich-label" for="refund-invoice">Invoice</label>
+            <select name="invoice_id" id="refund-invoice" class="tich-input" required disabled>
+                <option value="">Select student first</option>
+            </select>
+        </div>
+        <div class="tich-form-group">
+            <label class="tich-label" for="amount">Refund Amount (KES) <span class="tich-text--danger">*</span></label>
+            <input type="number" id="amount" name="amount" class="tich-input" step="0.01" placeholder="0.00" required>
+        </div>
 
-            <div class="tich-inset-panel tich-mt-4">
-                <p class="tich-caption">
-                    <strong>Maker-checker rule:</strong> The person who creates this refund request must NOT approve their own refund.
-                </p>
-            </div>
+        <div class="tich-form-group" style="grid-column: 1 / -1;">
+            <label class="tich-label" for="reason">Reason <span class="tich-text--danger">*</span></label>
+            <textarea id="reason" name="reason" class="tich-input" rows="4" placeholder="Explain the reason for this refund...">{{ old('reason') }}</textarea>
+        </div>
 
-            <div class="tich-form-group tich-mt-4">
-                <button type="submit" class="tich-btn tich-btn-primary">Create refund request</button>
-                <a href="{{ route('finance.student-finance.refunds.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Cancel</a>
-            </div>
-        </form>
-    </article>
+        <div class="tich-inset-panel" style="grid-column: 1 / -1;">
+            <p class="tich-caption">
+                <strong>Maker-checker rule:</strong> The person who creates this refund request must NOT approve their own refund.
+            </p>
+        </div>
+
+        <div class="tich-form-group" style="grid-column: 1 / -1;">
+            <button type="submit" class="tich-btn tich-btn-primary">Create refund request</button>
+            <a href="{{ route('finance.student-finance.refunds.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+        </div>
+    </form>
 
     @push('scripts')
         <script>

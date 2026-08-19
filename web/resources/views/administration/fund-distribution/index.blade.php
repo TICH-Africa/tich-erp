@@ -3,7 +3,7 @@
 @section('title', 'Fund distribution')
 
 @section('administration-content')
-    <x-page-toolbar title="Fund distribution" meta="Digital release of approved monthly allocations to departments via Finance">
+    <x-page-toolbar title="Fund distribution" meta="Approved budgets from Finance and released monthly allocations to departments">
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="fund-release-modal">+ Release allocation</button>
         </x-slot:actions>
@@ -19,11 +19,43 @@
                         <th>Period</th>
                         <th>Amount</th>
                         <th>Linked request</th>
-                        <th>Released</th>
+                        <th>Date</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @forelse ($approvedRequests as $approved)
+                        <tr>
+                            <td><strong>{{ $approved->request_code }}</strong></td>
+                            <td>{{ $approved->department?->dept_name }}</td>
+                            <td class="tich-caption">
+                                {{ $approved->planningCycle?->fiscal_year ?? now()->year }}
+                            </td>
+                            <td>KES {{ number_format((float) ($approved->approved_amount ?? $approved->requested_amount ?? 0), 0) }}</td>
+                            <td class="tich-caption">{{ $approved->request_code }}</td>
+                            <td class="tich-caption">{{ $approved->disbursed_at?->format('d M Y H:i') ?? ($approved->executive_approved_at?->format('d M Y H:i') ?? ($approved->finance_verified_at?->format('d M Y H:i') ?? ($approved->submitted_at?->format('d M Y H:i') ?? '-'))) }}</td>
+                            <td>
+                                @if ($approved->status === 'disbursed')
+                                    <span class="tich-badge tich-badge--success">Disbursed</span>
+                                @elseif ($approved->status === 'approved')
+                                    <span class="tich-badge tich-badge--warning">Waiting disbursement</span>
+                                    <form method="POST" action="{{ route('administration.fund-distribution.budget.disburse', $approved->id) }}" onsubmit="return confirm('Mark this budget request as disbursed?')" style="display:inline; margin-left: 0.5rem;">
+                                        @csrf
+                                        <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark as disbursed</button>
+                                    </form>
+                                @elseif ($approved->status === 'executive_review')
+                                    <span class="tich-badge tich-badge--warning">Awaiting CEO Approval</span>
+                                @elseif ($approved->status === 'finance_review')
+                                    <span class="tich-badge tich-badge--info">In Finance Review</span>
+                                @else
+                                    <span class="tich-badge tich-badge--info">Awaiting Finance Review</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7" class="tich-table-empty">No budgets in the approval pipeline.</td></tr>
+                    @endforelse
+
                     @forelse ($allocations as $allocation)
                         <tr>
                             <td><strong>{{ $allocation->allocation_code }}</strong></td>
@@ -34,10 +66,19 @@
                                     / {{ str_pad((string) $allocation->month, 2, '0', STR_PAD_LEFT) }}
                                 @endif
                             </td>
-                            <td>KES {{ number_format($allocation->amount, 0) }}</td>
+                            <td>KES {{ number_format((float) $allocation->amount, 0) }}</td>
                             <td class="tich-caption">{{ $allocation->budgetRequest?->request_code ?? '-' }}</td>
                             <td class="tich-caption">{{ $allocation->released_at?->format('d M Y H:i') ?? '-' }}</td>
-                            <td><span class="tich-badge tich-badge--success">{{ ucfirst($allocation->status) }}</span></td>
+                            <td>
+                                @if ($allocation->status === 'released')
+                                    <form method="POST" action="{{ route('administration.fund-distribution.disburse', $allocation) }}" onsubmit="return confirm('Mark this allocation as disbursed?')" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark as disbursed</button>
+                                    </form>
+                                @else
+                                    <span class="tich-badge tich-badge--success">{{ ucfirst($allocation->status) }}</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="7" class="tich-table-empty">No allocations released yet.</td></tr>
@@ -64,7 +105,7 @@
                         <label class="tich-label">Approved budget request</label>
                         <select name="budget_request_id" class="tich-input">
                             <option value="">Optional</option>
-                            @foreach ($approvedRequests as $approved)
+                            @foreach ($approvedRequests->where('status', 'approved') as $approved)
                                 <option value="{{ $approved->id }}">
                                     {{ $approved->request_code }} - {{ $approved->department?->dept_name }} (KES {{ number_format($approved->approved_amount ?? 0, 0) }})
                                 </option>

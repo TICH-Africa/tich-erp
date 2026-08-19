@@ -142,6 +142,16 @@
                         </select>
                     </div>
                     <div class="tich-form-group">
+                        <label class="tich-label">Budget type</label>
+                        <select name="budget_type" class="tich-input">
+                            <option value="">Not specified</option>
+                            <option value="annual">Annual</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
                         <label class="tich-label">Requested amount (KES)</label>
                         <input type="number" step="0.01" min="0" name="requested_amount" class="tich-input" required>
                     </div>

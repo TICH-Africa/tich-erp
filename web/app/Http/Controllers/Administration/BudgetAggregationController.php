@@ -43,6 +43,7 @@ class BudgetAggregationController extends Controller
             'department_id' => ['required', 'exists:departments,id'],
             'title' => ['required', 'string', 'max:300'],
             'framework' => ['required', 'in:standard,cbe'],
+            'budget_type' => ['nullable', 'in:annual,quarterly,monthly,weekly'],
             'requested_amount' => ['required', 'numeric', 'min:0'],
             'line_items' => ['nullable', 'json'],
             'cbe_competencies' => ['nullable', 'string', 'max:5000'],

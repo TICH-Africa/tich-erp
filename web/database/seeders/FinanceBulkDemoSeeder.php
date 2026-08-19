@@ -143,7 +143,7 @@ class FinanceBulkDemoSeeder extends Seeder
                     'attachment_fee' => round(4000 * $m, 2),
                     'qa_annual_fee' => 1000,
                     'requires_indexing_nck' => str_contains(strtoupper($program->program_code ?? ''), 'NUR') ? 1 : 0,
-                    'indexing_nck_fee' => str_contains(strtoupper($program->program_code ?? ''), 'NUR') ? 8500 : null,
+                    'indexing_nck_fee' => str_contains(strtoupper($program->program_code ?? ''), 'NUR') ? 8500 : 0,
                     'graduation_fee' => 4000,
                     'is_approved' => 1,
                     'approved_by' => $staffId,

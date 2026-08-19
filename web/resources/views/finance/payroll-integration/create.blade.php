@@ -9,27 +9,27 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-card">
-        <form method="POST" action="{{ route('finance.payroll-integration.sync', $department) }}" class="tich-form">
-            @csrf
-            <div class="tich-form__row">
-                <label class="tich-form__label">Payroll period</label>
-                <input type="month" name="period" class="tich-form__input" required />
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">Source</label>
-                <select name="source" class="tich-form__input" required>
-                    <option value="workpay">Workpay</option>
-                </select>
-            </div>
-            <div class="tich-form__row">
-                <label class="tich-form__label">GL account</label>
-                <select name="gl_account_id" class="tich-form__input" required>
-                    <option value="">Select GL account</option>
-                </select>
-            </div>
+    <form method="POST" action="{{ route('finance.payroll-integration.sync', $department) }}" class="tich-card tich-form-grid">
+        @csrf
+        <div class="tich-form-row">
+            <label class="tich-label" for="period">Payroll period <span class="tich-text--danger">*</span></label>
+            <input type="month" id="period" name="period" class="tich-input" required>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="source">Source <span class="tich-text--danger">*</span></label>
+            <select id="source" name="source" class="tich-input" required>
+                <option value="workpay">Workpay</option>
+            </select>
+        </div>
+        <div class="tich-form-row">
+            <label class="tich-label" for="gl_account_id">GL account <span class="tich-text--danger">*</span></label>
+            <select id="gl_account_id" name="gl_account_id" class="tich-input" required>
+                <option value="">Select GL account</option>
+            </select>
+        </div>
+        <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Sync payroll</button>
-        </form>
-    </div>
+            <a href="{{ route('finance.payroll-integration.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+        </div>
+    </form>
 @endsection
-

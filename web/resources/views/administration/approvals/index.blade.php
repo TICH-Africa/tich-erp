@@ -3,7 +3,7 @@
 @section('title', 'Approval workflow')
 
 @section('administration-content')
-    <x-page-toolbar title="Approval workflow" meta="Automated routing: Departments → Finance verification → Executive/CEO authorization" />
+    <x-page-toolbar title="Approval workflow" meta="Administration creates and forwards budgets. Finance reviews, divides into groups, and forwards to Executive/CEO for final authorization." />
 
     @error('workflow')
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
@@ -34,34 +34,30 @@
                                 @if ($item->verified_amount !== null)
                                     <p class="tich-caption">Verified: KES {{ number_format($item->verified_amount, 0) }}</p>
                                 @endif
+                                @if ($item->approved_amount !== null)
+                                    <p class="tich-caption">Approved: KES {{ number_format($item->approved_amount, 0) }}</p>
+                                @endif
                             </td>
-                            <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
+                            <td><span class="tich-badge">{{ match($item->status) {
+                                'submitted' => 'Awaiting Finance Review',
+                                'draft' => 'Draft',
+                                'finance_review' => 'In Finance Review',
+                                'executive_review' => 'Awaiting Executive/CEO Approval',
+                                'approved' => 'Approved - Awaiting Disbursement',
+                                'disbursed' => 'Disbursed',
+                                'rejected' => 'Rejected',
+                                default => str_replace('_', ' ', ucfirst($item->status)),
+                            } }}</span></td>
                             <td>
-                                <div class="tich-flex-wrap" style="gap: 0.5rem;">
-                                    @if ($item->status === 'submitted')
-                                        <form method="POST" action="{{ route('administration.approvals.route-finance', $item) }}">
+                                <div class="tich-flex-wrap" style="gap: 0.5rem; align-items: center;">
+                                    @if ($item->status === 'submitted' || $item->status === 'draft')
+                                        <form method="POST" action="{{ route('administration.approvals.route-finance', $item) }}" onsubmit="return confirm('Forward this budget request to Finance?')">
                                             @csrf
-                                            <button type="submit" class="tich-btn tich-btn-secondary">Route to Finance</button>
+                                            <button type="submit" class="tich-btn tich-btn-primary">Forward to Finance</button>
                                         </form>
                                     @endif
 
-                                    @if ($item->status === 'finance_review')
-                                        <form method="POST" action="{{ route('administration.approvals.finance-verify', $item) }}" class="tich-flex-wrap" style="gap: 0.35rem; align-items: center;">
-                                            @csrf
-                                            <input type="number" step="0.01" name="verified_amount" class="tich-input" style="width: 8rem;" value="{{ $item->requested_amount }}" required>
-                                            <button type="submit" class="tich-btn tich-btn-primary">Verify</button>
-                                        </form>
-                                    @endif
-
-                                    @if ($item->status === 'executive_review')
-                                        <form method="POST" action="{{ route('administration.approvals.executive-authorize', $item) }}" class="tich-flex-wrap" style="gap: 0.35rem; align-items: center;">
-                                            @csrf
-                                            <input type="number" step="0.01" name="approved_amount" class="tich-input" style="width: 8rem;" value="{{ $item->verified_amount ?? $item->requested_amount }}" required>
-                                            <button type="submit" class="tich-btn tich-btn-primary">Authorize</button>
-                                        </form>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('administration.approvals.reject', $item) }}" onsubmit="return confirm('Reject this request?')">
+                                    <form method="POST" action="{{ route('administration.approvals.reject', $item) }}" onsubmit="return confirm('Reject this request? This cannot be undone.')">
                                         @csrf
                                         <button type="submit" class="tich-btn tich-btn-danger">Reject</button>
                                     </form>
@@ -77,5 +73,9 @@
         @if ($queue instanceof \Illuminate\Contracts\Pagination\Paginator && $queue->hasPages())
             <div class="tich-mt-4">{{ $queue->links() }}</div>
         @endif
+    </div>
+
+    <div class="tich-alert tich-alert--info tich-mt-6">
+        <strong>Workflow:</strong> Administration creates and forwards budgets to Finance. Finance reviews budgets, divides amounts into groups (annual, quarterly, monthly, weekly), and forwards to Executive/CEO for final authorization. Approved budgets can be disbursed.
     </div>
 @endsection
