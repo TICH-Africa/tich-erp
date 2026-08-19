@@ -413,6 +413,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
             Route::post('/leave/{leaveRequest}/return', [\App\Http\Controllers\HR\LeaveRequestController::class, 'returnForChanges'])
                 ->middleware('permission:hr.manage_leave')
                 ->name('hr.leave.return');
+            Route::get('/leave/carry-forward', [\App\Http\Controllers\HR\LeaveCarryForwardController::class, 'index'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.carry-forward.index');
+            Route::post('/leave/carry-forward/{carryForwardRequest}/approve', [\App\Http\Controllers\HR\LeaveCarryForwardController::class, 'approve'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.carry-forward.approve');
+            Route::post('/leave/carry-forward/{carryForwardRequest}/reject', [\App\Http\Controllers\HR\LeaveCarryForwardController::class, 'reject'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.carry-forward.reject');
             Route::get('/payroll', [\App\Http\Controllers\HR\PayrollController::class, 'index'])->name('hr.payroll.index');
             Route::get('/payroll/report', [\App\Http\Controllers\HR\PayrollController::class, 'report'])->name('hr.payroll.report');
             Route::get('/payroll/report/pdf', [\App\Http\Controllers\HR\PayrollController::class, 'reportPdf'])->name('hr.payroll.report.pdf');
@@ -666,6 +675,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::post('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'store'])->name('employee.leave.store');
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
         Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'cancel'])->name('employee.leave.cancel');
+        Route::get('/leave/carry-forward', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardForm'])->name('employee.leave.carry-forward');
+        Route::post('/leave/carry-forward', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardStore'])->name('employee.leave.carry-forward.store');
 
         Route::get('/attendance', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'index'])->name('employee.attendance.index');
         Route::post('/attendance/clock-in', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'clockIn'])->name('employee.attendance.clock-in');

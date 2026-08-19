@@ -16,6 +16,7 @@ class LeaveBalance extends Model
         'leave_type_id',
         'year',
         'entitled_days',
+        'carried_forward_days',
         'days_taken',
         'days_pending',
         'balance_days',
@@ -24,6 +25,7 @@ class LeaveBalance extends Model
 
     protected $casts = [
         'entitled_days' => 'decimal:2',
+        'carried_forward_days' => 'decimal:2',
         'days_taken' => 'decimal:2',
         'days_pending' => 'decimal:2',
         'balance_days' => 'decimal:2',

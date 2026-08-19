@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Services\EmployeePortalService;
+use App\Services\LeaveCarryForwardService;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class EmployeeLeaveController extends Controller
     public function __construct(
         protected EmployeePortalService $employeePortal,
         protected LeaveRequestService $leaveRequests,
+        protected LeaveCarryForwardService $carryForwardService,
     ) {}
 
     public function index(Request $request): View
@@ -123,6 +125,36 @@ class EmployeeLeaveController extends Controller
             'is_emergency' => ['nullable', 'boolean'],
             'medical_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ]);
+    }
+
+    public function carryForwardForm(Request $request): View
+    {
+        $staff = $this->staff($request);
+        $requests = $this->carryForwardService->forEmployee($staff);
+
+        return view('employee.leave.carry-forward', [
+            'staff' => $staff,
+            'carryForwardRequests' => $requests,
+            'currentYear' => now()->year,
+        ]);
+    }
+
+    public function carryForwardStore(Request $request): RedirectResponse
+    {
+        $staff = $this->staff($request);
+
+        $validated = $request->validate([
+            'days_requested' => ['required', 'numeric', 'min:0.5', 'max:10'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $validated['from_year'] = now()->year;
+
+        $this->carryForwardService->submit($staff, $validated);
+
+        return redirect()
+            ->route('employee.leave.carry-forward')
+            ->with('success', 'Carry-forward request submitted for HR approval.');
     }
 
     private function staff(Request $request): \App\Models\Staff
