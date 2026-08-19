@@ -442,6 +442,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
                 Route::put('/payroll/settings', [\App\Http\Controllers\HR\PayrollController::class, 'updateSettings'])->name('hr.payroll.settings.update');
             });
             Route::get('/p9-forms', [\App\Http\Controllers\HR\P9FormController::class, 'index'])->name('hr.p9-forms.index');
+            Route::get('/p9-forms/{staff}', [\App\Http\Controllers\HR\P9FormController::class, 'show'])->name('hr.p9-forms.show');
+            Route::get('/p9-forms/{staff}/download', [\App\Http\Controllers\HR\P9FormController::class, 'download'])->name('hr.p9-forms.download');
             Route::get('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'index'])->name('hr.policies.index');
         Route::get('/policies/create', [\App\Http\Controllers\HR\HrPolicyController::class, 'create'])->name('hr.policies.create');
         Route::post('/policies', [\App\Http\Controllers\HR\HrPolicyController::class, 'store'])->name('hr.policies.store');

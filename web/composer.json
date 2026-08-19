@@ -13,6 +13,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "mpdf/mpdf": "*",
+        "phpoffice/phpspreadsheet": "^5.9",
         "spomky-labs/otphp": "^11.5"
     },
     "require-dev": {
