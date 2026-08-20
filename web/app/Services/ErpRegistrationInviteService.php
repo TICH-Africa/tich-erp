@@ -120,20 +120,31 @@ class ErpRegistrationInviteService
 
         abort_if($staff?->user_id, 422, 'This employee already has an ERP account.');
 
+        // Invited accounts are employees — ensure a staff record exists so they can open My Employee Portal.
+        if (! $staff) {
+            $staff = $this->createProvisionalStaff($invitation->email, $invitation->invited_by);
+            $invitation->update(['staff_id' => $staff->id]);
+        }
+
         $user = User::query()->create([
             'email' => $invitation->email,
             'user_type' => 'staff',
             'password_hash' => \Illuminate\Support\Facades\Hash::make($password),
-            'staff_id' => $staff?->id,
+            'staff_id' => $staff->id,
             'is_active' => 1,
             'mfa_enabled' => 0,
             'mfa_verified' => true,
         ]);
 
-        if ($staff && ! $staff->user_id) {
+        if (! $staff->user_id) {
             $staff->update(['user_id' => $user->id]);
-            $invitation->update(['staff_id' => $staff->id]);
         }
+
+        if ($staff->primary_email !== $invitation->email) {
+            $staff->update(['primary_email' => $invitation->email]);
+        }
+
+        $invitation->update(['staff_id' => $staff->id]);
 
         app(RBACService::class)->assignDefaultRole($user);
 
@@ -148,7 +159,7 @@ class ErpRegistrationInviteService
                 'email' => $user->email,
                 'user_type' => $user->user_type,
                 'invitation_id' => $invitation->id,
-                'staff_id' => $staff?->id,
+                'staff_id' => $staff->id,
             ],
             'Invitation registration',
             'success',
@@ -156,7 +167,7 @@ class ErpRegistrationInviteService
             $request,
         );
 
-        return $user;
+        return $user->fresh(['staff']);
     }
 
     /**
@@ -177,5 +188,49 @@ class ErpRegistrationInviteService
             ->with('department')
             ->whereRaw('LOWER(primary_email) = ?', [strtolower(trim($email))])
             ->first();
+    }
+
+    private function createProvisionalStaff(string $email, ?int $createdBy = null): Staff
+    {
+        $departmentId = \App\Models\Department::query()
+            ->where('is_active', true)
+            ->whereNull('parent_dept_id')
+            ->where('dept_code', 'HR')
+            ->value('id')
+            ?? \App\Models\Department::query()
+                ->where('is_active', true)
+                ->whereNull('parent_dept_id')
+                ->orderBy('id')
+                ->value('id');
+
+        abort_unless($departmentId, 422, 'Cannot create employee profile: no top-level department exists. Seed departments first.');
+
+        $local = strstr($email, '@', true) ?: 'employee';
+        $local = preg_replace('/[^a-zA-Z]+/', ' ', $local) ?: 'Employee';
+        $parts = preg_split('/\s+/', trim($local)) ?: ['Employee'];
+        $firstName = ucfirst(strtolower($parts[0] ?? 'Employee'));
+        $surname = ucfirst(strtolower($parts[1] ?? 'Invitee'));
+
+        $lifecycle = app(StaffLifecycleService::class);
+
+        return Staff::query()->create([
+            'employee_number' => $lifecycle->generateEmployeeNumber(),
+            'first_name' => $firstName,
+            'surname' => $surname,
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'Other',
+            'primary_email' => strtolower(trim($email)),
+            'organisation_email' => Staff::organisationEmailFromName($firstName, $surname),
+            'phone_number' => '0700000000',
+            'department_id' => $departmentId,
+            'job_title' => 'Pending assignment',
+            'employment_category' => 'contract',
+            'payroll_scheme' => 'employee',
+            'employment_start_date' => now()->toDateString(),
+            'employment_status' => 'onboarding',
+            'is_profile_locked' => false,
+            'gross_monthly_salary' => 0,
+            'created_by' => $createdBy,
+        ]);
     }
 }

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\StaffProfileChangeRequest;
+use App\Services\AuthService;
 use App\Services\EmployeePortalService;
 use App\Services\EmployeeProfileChangeService;
+use App\Services\EmployeeProfileCompletenessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,11 +17,14 @@ class EmployeeProfileController extends Controller
     public function __construct(
         protected EmployeePortalService $employeePortal,
         protected EmployeeProfileChangeService $profileChanges,
+        protected EmployeeProfileCompletenessService $completeness,
+        protected AuthService $authService,
     ) {}
 
     public function edit(Request $request): View
     {
         $staff = $this->staff($request);
+        $mustComplete = ! $this->completeness->isComplete($staff);
 
         $pendingRequests = StaffProfileChangeRequest::query()
             ->where('staff_id', $staff->id)
@@ -28,9 +33,12 @@ class EmployeeProfileController extends Controller
             ->get();
 
         return view('employee.profile.edit', [
-            'portalTitle' => 'Update my profile',
+            'portalTitle' => $mustComplete ? 'Complete your profile' : 'Update my profile',
             'staff' => $staff,
             'pendingRequests' => $pendingRequests,
+            'mustCompleteProfile' => $mustComplete,
+            'missingProfileLabels' => $this->completeness->missingLabels($staff),
+            'requiredProfileFields' => EmployeeProfileCompletenessService::REQUIRED_FIELDS,
             'editableFields' => EmployeeProfileChangeService::EDITABLE_FIELDS,
             'qualificationTypes' => [
                 'certificate' => 'Certificate',
@@ -47,19 +55,25 @@ class EmployeeProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $staff = $this->staff($request);
+        $mustComplete = ! $this->completeness->isComplete($staff);
 
-        $validated = $request->validate([
-            'primary_email' => 'nullable|email|max:255',
-            'phone_number' => 'nullable|string|max:30',
+        $rules = [
+            'first_name' => ($mustComplete ? 'required' : 'nullable').'|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'surname' => ($mustComplete ? 'required' : 'nullable').'|string|max:100',
+            'date_of_birth' => ($mustComplete ? 'required' : 'nullable').'|date|before:today',
+            'gender' => ($mustComplete ? 'required' : 'nullable').'|string|in:Male,Female,Other',
+            'primary_email' => ($mustComplete ? 'required' : 'nullable').'|email|max:255',
+            'phone_number' => ($mustComplete ? 'required' : 'nullable').'|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
-            'marital_status' => 'nullable|string|in:Single,Married,Divorced,Widowed,Separated',
+            'marital_status' => ($mustComplete ? 'required' : 'nullable').'|string|in:Single,Married,Divorced,Widowed,Separated',
             'postal_address' => 'nullable|string|max:500',
             'postal_code' => 'nullable|string|max:20',
-            'physical_address' => 'nullable|string|max:500',
+            'physical_address' => ($mustComplete ? 'required' : 'nullable').'|string|max:500',
             'home_county' => 'nullable|string|max:100',
-            'emergency_contact_name' => 'nullable|string|max:200',
-            'emergency_contact_phone' => 'nullable|string|max:30',
-            'emergency_contact_relationship' => 'nullable|string|max:100',
+            'emergency_contact_name' => ($mustComplete ? 'required' : 'nullable').'|string|max:200',
+            'emergency_contact_phone' => ($mustComplete ? 'required' : 'nullable').'|string|max:30',
+            'emergency_contact_relationship' => ($mustComplete ? 'required' : 'nullable').'|string|max:100',
             'employee_notes' => 'nullable|string|max:2000',
             'cropped_photo' => 'nullable|string',
             'qualification_type' => 'nullable|string|in:certificate,diploma,degree,masters,phd,professional_cert,trade_test',
@@ -70,7 +84,9 @@ class EmployeeProfileController extends Controller
             'grade_or_class' => 'nullable|string|max:50',
             'certificate_number' => 'nullable|string|max:50',
             'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         if (! empty($validated['qualification_type']) && empty($validated['qualification_name'])) {
             return back()->withInput()->withErrors(['qualification_name' => 'Qualification name is required when adding a certificate.']);
@@ -79,6 +95,37 @@ class EmployeeProfileController extends Controller
         $validated['certificate_file'] = $request->file('certificate_file');
 
         try {
+            if ($mustComplete) {
+                $staff = $this->profileChanges->applySelfServiceCompletion($staff, $request->user(), $validated);
+
+                if (! $this->completeness->isComplete($staff)) {
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            'form' => 'Still missing: '.implode(', ', $this->completeness->missingLabels($staff)).'.',
+                        ]);
+                }
+
+                // Optional qualification still goes through HR after the gate opens.
+                if (! empty($validated['qualification_type']) && ! empty($validated['qualification_name'])) {
+                    $this->profileChanges->submitUpdates($staff, $request->user(), [
+                        'qualification_type' => $validated['qualification_type'],
+                        'qualification_name' => $validated['qualification_name'],
+                        'institution' => $validated['institution'] ?? null,
+                        'country' => $validated['country'] ?? null,
+                        'year_completed' => $validated['year_completed'] ?? null,
+                        'grade_or_class' => $validated['grade_or_class'] ?? null,
+                        'certificate_number' => $validated['certificate_number'] ?? null,
+                        'certificate_file' => $validated['certificate_file'],
+                        'employee_notes' => $validated['employee_notes'] ?? null,
+                    ]);
+                }
+
+                return redirect()
+                    ->intended($this->authService->authenticatedHome($request->user()))
+                    ->with('success', 'Profile saved. You can now use the ERP. Later changes will be reviewed by HR.');
+            }
+
             $created = $this->profileChanges->submitUpdates($staff, $request->user(), $validated);
         } catch (\InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['form' => $exception->getMessage()]);

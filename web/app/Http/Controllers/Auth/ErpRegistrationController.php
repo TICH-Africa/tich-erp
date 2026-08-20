@@ -71,8 +71,8 @@ class ErpRegistrationController extends Controller
                 ->with('status', 'Account created. Please configure multi-factor authentication to continue.');
         }
 
-        return redirect()
-            ->to($this->authService->authenticatedHome($user))
+        return $this->authService
+            ->redirectAfterAuthentication($user, $request)
             ->with('status', 'Welcome to TICH ERP. Your account has been created successfully.');
     }
 }

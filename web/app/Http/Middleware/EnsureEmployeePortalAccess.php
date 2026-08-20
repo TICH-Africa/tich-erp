@@ -19,7 +19,8 @@ class EnsureEmployeePortalAccess
             abort(403);
         }
 
-        $staff = $this->employeePortal->staffForUser($user);
+        $staff = $this->employeePortal->ensureStaffProfile($user)
+            ?? $this->employeePortal->staffForUser($user);
 
         if (! $staff) {
             abort(403, 'My Employee Portal requires a linked employee profile. Contact HR if your account is not linked.');

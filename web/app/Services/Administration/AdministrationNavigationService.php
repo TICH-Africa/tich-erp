@@ -13,6 +13,7 @@ class AdministrationNavigationService
             [
                 'label' => 'Planning & funds',
                 'icon' => 'calendar',
+                'badgeKey' => 'planning-funds',
                 'open' => request()->routeIs(
                     'administration.planning.*',
                     'administration.budget-aggregation.*',
@@ -30,7 +31,7 @@ class AdministrationNavigationService
                 'items' => [
                     $this->item('Multi-tier planning', 'calendar', route('administration.planning.index'), request()->routeIs('administration.planning.*')),
                     $this->item('Budget aggregation', 'layers', route('administration.budget-aggregation.index'), request()->routeIs('administration.budget-aggregation.*')),
-                    $this->item('Approval workflow', 'clipboard-check', route('administration.approvals.index'), request()->routeIs('administration.approvals.*')),
+                    $this->item('Approval workflow', 'clipboard-check', route('administration.approvals.index'), request()->routeIs('administration.approvals.*'), 'approvals'),
                     $this->item('Fund distribution', 'wallet', route('administration.fund-distribution.index'), request()->routeIs('administration.fund-distribution.*')),
                     $this->item('Annual plan workflow', 'clipboard', route('administration.workflow.index'), request()->routeIs('administration.workflow.*')),
                 ],
@@ -38,6 +39,7 @@ class AdministrationNavigationService
             [
                 'label' => 'Admissions ops',
                 'icon' => 'user-plus',
+                'badgeKey' => 'admissions-ops',
                 'open' => request()->routeIs(
                     'administration.applications.*',
                     'administration.lifecycle.*',
@@ -49,19 +51,20 @@ class AdministrationNavigationService
                     'administration.admission-packages.*',
                 ),
                 'items' => [
-                    $this->item('Application framework', 'file-text', route('administration.applications.index'), request()->routeIs('administration.applications.*')),
-                    $this->item('Automated lifecycle', 'refresh-cw', route('administration.lifecycle.index'), request()->routeIs('administration.lifecycle.*')),
+                    $this->item('Application framework', 'file-text', route('administration.applications.index'), request()->routeIs('administration.applications.*'), 'applications'),
+                    $this->item('Automated lifecycle', 'refresh-cw', route('administration.lifecycle.index'), request()->routeIs('administration.lifecycle.*'), 'lifecycle'),
                     $this->item('Admission packages', 'mail', route('administration.admission-packages.index'), request()->routeIs('administration.admission-packages.*')),
                 ],
             ],
             [
                 'label' => 'Compliance',
                 'icon' => 'shield-check',
+                'badgeKey' => 'compliance',
                 'open' => request()->routeIs('administration.statutory.*', 'administration.inspection.*'),
                 'active' => request()->routeIs('administration.statutory.*', 'administration.inspection.*'),
                 'items' => [
-                    $this->item('Statutory tracking', 'file-text', route('administration.statutory.index'), request()->routeIs('administration.statutory.*')),
-                    $this->item('Inspection readiness', 'clipboard-check', route('administration.inspection.index'), request()->routeIs('administration.inspection.*')),
+                    $this->item('Statutory tracking', 'file-text', route('administration.statutory.index'), request()->routeIs('administration.statutory.*'), 'statutory'),
+                    $this->item('Inspection readiness', 'clipboard-check', route('administration.inspection.index'), request()->routeIs('administration.inspection.*'), 'inspection'),
                 ],
             ],
             [
@@ -80,13 +83,19 @@ class AdministrationNavigationService
     /**
      * @return array<string, mixed>
      */
-    private function item(string $label, string $icon, string $href, bool $active): array
+    private function item(string $label, string $icon, string $href, bool $active, ?string $badgeKey = null): array
     {
-        return [
+        $item = [
             'label' => $label,
             'icon' => $icon,
             'href' => $href,
             'active' => $active,
         ];
+
+        if ($badgeKey) {
+            $item['badgeKey'] = $badgeKey;
+        }
+
+        return $item;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AuthService;
 use App\Services\RBACService;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,7 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    public function __construct(protected RBACService $rbacService) {}
+    public function __construct(
+        protected RBACService $rbacService,
+        protected AuthService $authService,
+    ) {}
 
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
@@ -47,9 +51,17 @@ class CheckRole
                 ], 403);
             }
 
+            $message = 'Your role does not allow access to that area. If you just joined, ask ICT or HR to assign the right role.';
+            $home = $this->authService->authenticatedHome($user);
+            $homePath = parse_url($home, PHP_URL_PATH) ?: '';
+
+            if ($request->url() === $home || $request->getPathInfo() === $homePath || $request->routeIs('dashboard', 'account.start')) {
+                abort(403, $message);
+            }
+
             return redirect()
-                ->route('dashboard')
-                ->withErrors(['role' => 'Your role does not allow access to that area.']);
+                ->to($home)
+                ->withErrors(['role' => $message]);
         }
 
         return $next($request);

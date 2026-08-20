@@ -7,7 +7,7 @@
     $badgeKey = $badgeKey ?? null;
     $groupBadge = $groupBadge ?? null;
     $menuLabel = $menuLabel ?? $label;
-    $sidebarLabels = $sidebarLabels ?? $financeSidebarLabels ?? $hrSidebarLabels ?? [];
+    $sidebarLabels = $sidebarLabels ?? $administrationSidebarLabels ?? $financeSidebarLabels ?? $hrSidebarLabels ?? [];
 
     if ($badgeKey && $groupBadge === null) {
         $groupBadge = $sidebarLabels[$badgeKey] ?? null;

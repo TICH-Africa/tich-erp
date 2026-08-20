@@ -191,7 +191,7 @@ class AuthService
             return;
         }
 
-        if ($request->routeIs('login', 'register', 'password.*', 'mfa.*', 'logout', 'home')) {
+        if ($request->routeIs('login', 'register', 'password.*', 'mfa.*', 'logout', 'home', 'employee.profile.*')) {
             return;
         }
 
@@ -213,12 +213,54 @@ class AuthService
             return redirect()->to($this->mfaEntryRoute($user));
         }
 
-        return redirect()->intended($this->authenticatedHome($user));
+        app(EmployeePortalService::class)->ensureStaffProfile($user);
+        $user->refresh();
+
+        $home = $this->authenticatedHome($user);
+
+        if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
+            return redirect()
+                ->to($home)
+                ->with('warning', 'Complete your employee profile before using the ERP. This is required for accountability and emergency contact records.');
+        }
+
+        // Do not honour an intended /dashboard URL for new employees — send them to the portal first.
+        if ($this->shouldPreferEmployeeHome($user)) {
+            return redirect()->to($home);
+        }
+
+        return redirect()->intended($home);
     }
 
     public function redirectAfterMfa(User $user, Request $request): RedirectResponse
     {
-        return redirect()->intended($this->authenticatedHome($user));
+        app(EmployeePortalService::class)->ensureStaffProfile($user);
+        $user->refresh();
+
+        $home = $this->authenticatedHome($user);
+
+        if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
+            return redirect()
+                ->to($home)
+                ->with('warning', 'Complete your employee profile before using the ERP. This is required for accountability and emergency contact records.');
+        }
+
+        if ($this->shouldPreferEmployeeHome($user)) {
+            return redirect()->to($home);
+        }
+
+        return redirect()->intended($home);
+    }
+
+    private function shouldPreferEmployeeHome(User $user): bool
+    {
+        if ($this->isEnrolledStudent($user)) {
+            return false;
+        }
+
+        return $user->user_type === 'staff'
+            || $user->user_type === 'admin'
+            || app(EmployeePortalService::class)->hasEmployeeProfile($user);
     }
 
     public function authenticatedHome(User $user): string
@@ -227,11 +269,36 @@ class AuthService
             return route('portal.dashboard');
         }
 
+        $employeePortal = app(EmployeePortalService::class);
+        $employeePortal->ensureStaffProfile($user);
+        $user->refresh();
+
+        $isEmployee = $user->user_type === 'staff'
+            || $user->user_type === 'admin'
+            || $employeePortal->hasEmployeeProfile($user);
+
+        // Invited users and all staff are employees — send them to My Employee Portal.
+        if ($isEmployee) {
+            if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
+                return route('employee.profile.edit');
+            }
+
+            if ($employeePortal->hasEmployeeProfile($user)) {
+                return route('employee.dashboard');
+            }
+
+            return route('account.start');
+        }
+
         if (app(StaffPortalService::class)->isTeachingStaff($user)) {
             return route('staff.dashboard');
         }
 
-        return route('dashboard');
+        if ($this->rbacService->hasPermission($user, 'dashboard.access')) {
+            return route('dashboard');
+        }
+
+        return route('account.start');
     }
 
     public function isEnrolledStudent(User $user): bool

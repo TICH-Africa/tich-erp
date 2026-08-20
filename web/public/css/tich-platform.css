@@ -772,6 +772,13 @@ select.tich-select:focus {
     color: #166534;
 }
 
+.tich-toast--warning {
+    border-color: #d97706;
+    border-left-color: #d97706;
+    background: #fffbeb;
+    color: #92400e;
+}
+
 .tich-toast--error {
     border-color: var(--tich-error-border);
     border-left-color: #dc2626;

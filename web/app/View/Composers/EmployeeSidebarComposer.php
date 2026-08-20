@@ -28,6 +28,8 @@ class EmployeeSidebarComposer
         $counts = $this->notifications->countsFor($staff);
 
         $view->with([
+            'staff' => $staff,
+            'mustCompleteProfile' => app(\App\Services\EmployeeProfileCompletenessService::class)->isComplete($staff) === false,
             'sidebarCounts' => $counts,
             'sidebarLabels' => $this->notifications->formattedCounts($counts),
             'sidebarMenuLabels' => EmployeeSidebarNotificationService::MENU_KEYS,

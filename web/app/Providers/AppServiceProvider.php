@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\RBACService;
 use App\View\Composers\AcademicsSidebarComposer;
+use App\View\Composers\AdminSidebarComposer;
+use App\View\Composers\AdministrationSidebarComposer;
 use App\View\Composers\EmployeeSidebarComposer;
 use App\View\Composers\FinanceSidebarComposer;
 use App\View\Composers\HrSidebarComposer;
@@ -48,5 +50,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['staff.partials.sidebar', 'layouts.staff'], StaffSidebarComposer::class);
         View::composer(['portal.partials.sidebar', 'layouts.portal'], StudentSidebarComposer::class);
         View::composer(['academics.partials.sidebar', 'layouts.academics'], AcademicsSidebarComposer::class);
+        View::composer(['admin.partials.sidebar', 'layouts.admin'], AdminSidebarComposer::class);
+        View::composer(['administration.partials.sidebar', 'layouts.administration'], AdministrationSidebarComposer::class);
     }
 }

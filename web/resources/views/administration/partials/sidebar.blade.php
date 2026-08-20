@@ -17,6 +17,7 @@
                 'icon' => $group['icon'],
                 'open' => $group['open'],
                 'active' => $group['active'],
+                'badgeKey' => $group['badgeKey'] ?? null,
                 'items' => $group['items'],
             ])
         @endforeach

@@ -26,7 +26,7 @@
 
 @if ($audience === 'staff')
     <p class="tich-text tich-mb-4">
-        Click the edit icon to assign departments and modules. Each employee can hold <strong>multiple roles</strong> - use “Add another role” in the popup.
+        Click the edit icon to assign departments and modules. Pick the <strong>department first</strong>, then a role for that unit. Each employee can hold <strong>multiple roles</strong> - use “Add another role” in the popup.
     </p>
 
     <div class="tich-card tich-table-panel">

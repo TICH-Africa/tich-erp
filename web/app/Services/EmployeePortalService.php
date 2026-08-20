@@ -27,6 +27,72 @@ class EmployeePortalService
     }
 
     /**
+     * Staff/admin accounts are employees. If an invited user has no staff row yet, create a
+     * provisional one so My Employee Portal (and profile completion) always works.
+     */
+    public function ensureStaffProfile(User $user): ?Staff
+    {
+        if (! in_array($user->user_type, ['staff', 'admin'], true)) {
+            return $this->staffForUser($user);
+        }
+
+        $existing = $this->staffForUser($user);
+        if ($existing) {
+            return $existing;
+        }
+
+        $departmentId = \App\Models\Department::query()
+            ->where('is_active', true)
+            ->whereNull('parent_dept_id')
+            ->where('dept_code', 'HR')
+            ->value('id')
+            ?? \App\Models\Department::query()
+                ->where('is_active', true)
+                ->whereNull('parent_dept_id')
+                ->orderBy('id')
+                ->value('id');
+
+        if (! $departmentId) {
+            return null;
+        }
+
+        $email = (string) $user->email;
+        $local = strstr($email, '@', true) ?: 'employee';
+        $local = preg_replace('/[^a-zA-Z]+/', ' ', $local) ?: 'Employee';
+        $parts = preg_split('/\s+/', trim((string) $local)) ?: ['Employee'];
+        $firstName = ucfirst(strtolower($parts[0] ?? 'Employee'));
+        $surname = ucfirst(strtolower($parts[1] ?? 'Invitee'));
+
+        $lifecycle = app(StaffLifecycleService::class);
+
+        $staff = Staff::query()->create([
+            'employee_number' => $lifecycle->generateEmployeeNumber(),
+            'first_name' => $firstName,
+            'surname' => $surname,
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'Other',
+            'primary_email' => strtolower($email),
+            'organisation_email' => Staff::organisationEmailFromName($firstName, $surname),
+            'phone_number' => '0700000000',
+            'department_id' => $departmentId,
+            'job_title' => 'Pending assignment',
+            'employment_category' => 'contract',
+            'payroll_scheme' => 'employee',
+            'employment_start_date' => now()->toDateString(),
+            'employment_status' => 'onboarding',
+            'is_profile_locked' => false,
+            'gross_monthly_salary' => 0,
+            'user_id' => $user->id,
+        ]);
+
+        if (! $user->staff_id) {
+            $user->forceFill(['staff_id' => $staff->id])->save();
+        }
+
+        return $staff;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function dashboardData(Staff $staff): array

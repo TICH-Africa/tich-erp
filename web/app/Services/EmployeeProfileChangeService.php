@@ -15,6 +15,11 @@ class EmployeeProfileChangeService
 {
     /** @var list<string> */
     public const EDITABLE_FIELDS = [
+        'first_name',
+        'middle_name',
+        'surname',
+        'date_of_birth',
+        'gender',
         'primary_email',
         'phone_number',
         'alt_phone_number',
@@ -27,6 +32,9 @@ class EmployeeProfileChangeService
         'emergency_contact_phone',
         'emergency_contact_relationship',
     ];
+
+    /** Fields applied immediately during first profile completion (invitees). */
+    public const INITIAL_COMPLETION_FIELDS = self::EDITABLE_FIELDS;
 
     public function __construct(
         protected AuditService $auditService,
@@ -105,6 +113,56 @@ class EmployeeProfileChangeService
         app(HrSidebarNotificationService::class)->broadcastCounts();
 
         return $created;
+    }
+
+    /**
+     * First-time / incomplete profile: apply contact details immediately so the employee
+     * is not blocked waiting for HR approval.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function applySelfServiceCompletion(Staff $staff, User $user, array $input): Staff
+    {
+        $updates = [];
+
+        foreach (self::INITIAL_COMPLETION_FIELDS as $field) {
+            if (! array_key_exists($field, $input)) {
+                continue;
+            }
+
+            $value = $input[$field];
+            $value = is_string($value) ? trim($value) : $value;
+            $updates[$field] = $value === '' ? null : $value;
+        }
+
+        if (! empty($input['cropped_photo'])) {
+            $updates['photo_path'] = $this->storeCroppedPhoto($staff, (string) $input['cropped_photo']);
+        }
+
+        if ($updates === []) {
+            throw new InvalidArgumentException('Fill in the required profile fields to continue.');
+        }
+
+        $before = $staff->only(array_keys($updates));
+
+        DB::transaction(function () use ($staff, $updates) {
+            $staff->update($updates);
+        });
+
+        $this->auditService->log(
+            'staff.profile.self_service_completed',
+            'staff',
+            $staff->id,
+            $before,
+            $updates,
+            'Employee completed required profile details for ERP access',
+            'success',
+            $user->id,
+        );
+
+        $this->notifyHrSelfServiceCompletion($staff);
+
+        return $staff->fresh();
     }
 
     public function approve(StaffProfileChangeRequest $request, Staff $reviewer, ?string $hrNotes = null): StaffProfileChangeRequest
@@ -359,6 +417,31 @@ class EmployeeProfileChangeService
             'Profile change pending review',
             "{$staff->fullName()} submitted {$count} profile change request(s) for HR approval.",
             'staff_profile_change',
+            (string) $staff->id,
+        );
+    }
+
+    private function notifyHrSelfServiceCompletion(Staff $staff): void
+    {
+        $rbac = app(RBACService::class);
+        $userIds = User::query()
+            ->where('is_active', 1)
+            ->get()
+            ->filter(fn (User $user) => $rbac->hasPermission($user, 'hr.staff.view'))
+            ->pluck('id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($userIds === []) {
+            return;
+        }
+
+        $this->notifications->notifyUsers(
+            $userIds,
+            'Employee profile confirmed',
+            "{$staff->fullName()} confirmed their contact and emergency details in My Employee Portal.",
+            'staff',
             (string) $staff->id,
         );
     }

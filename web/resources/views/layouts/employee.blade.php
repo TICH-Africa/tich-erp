@@ -9,7 +9,7 @@
     <div class="tich-admin__main">
         @include('partials.alerts')
 
-        @if (auth()->user()->isTeachingStaff())
+        @if (! ($mustCompleteProfile ?? false) && auth()->user()->isTeachingStaff())
             <article class="tich-card tich-card--highlight tich-mb-6">
                 <p class="tich-caption">Teaching</p>
                 <h3 class="tich-h3 tich-mt-2">Staff portal</h3>

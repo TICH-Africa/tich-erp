@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\AuditService;
+use App\Services\AuthService;
 use App\Services\RBACService;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class CheckPermission
     public function __construct(
         protected RBACService $rbacService,
         protected AuditService $auditService,
+        protected AuthService $authService,
     ) {}
 
     public function handle(Request $request, Closure $next, string ...$permissions): Response
@@ -56,11 +58,29 @@ class CheckPermission
                 ], 403);
             }
 
-            return redirect()
-                ->route('dashboard')
-                ->withErrors(['permission' => 'You do not have permission to access that area.']);
+            return $this->denyAccess(
+                $request,
+                'You do not have permission to access that area. If you just joined, ask ICT or HR to assign your department role.'
+            );
         }
 
         return $next($request);
+    }
+
+    private function denyAccess(Request $request, string $message): Response
+    {
+        $home = $this->authService->authenticatedHome($request->user());
+        $current = $request->url();
+        $homePath = parse_url($home, PHP_URL_PATH) ?: '';
+        $currentPath = $request->getPathInfo();
+
+        // Avoid ERR_TOO_MANY_REDIRECTS when the fallback is the same page (e.g. /dashboard).
+        if ($current === $home || $currentPath === $homePath || $request->routeIs('dashboard', 'account.start')) {
+            abort(403, $message);
+        }
+
+        return redirect()
+            ->to($home)
+            ->withErrors(['permission' => $message]);
     }
 }

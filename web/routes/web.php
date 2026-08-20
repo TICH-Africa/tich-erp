@@ -84,7 +84,9 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
+Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->group(function () {
+    Route::get('/start', \App\Http\Controllers\AccountStartController::class)->name('account.start');
+
     Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:dashboard.access')
         ->name('dashboard');
@@ -98,6 +100,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])
             ->middleware('permission:admin.access')
             ->name('admin.index');
+
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Admin\SidebarNotificationController::class)
+            ->middleware('permission:admin.access')
+            ->name('admin.sidebar-notifications');
 
         Route::middleware(['permission:campuses.manage'])->group(function () {
             Route::get('/campuses', [CampusController::class, 'index'])->name('admin.campuses.index');
@@ -274,6 +280,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
     Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Administration\DashboardController::class, '__invoke'])->name('administration.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Administration\SidebarNotificationController::class)->name('administration.sidebar-notifications');
 
         Route::get('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'index'])->name('administration.planning.index');
         Route::post('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'store'])->name('administration.planning.store');

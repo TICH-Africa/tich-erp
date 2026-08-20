@@ -13,3 +13,9 @@
     </div>
 </div>
 @endsection
+
+@section('scripts')
+    @parent
+    @include('partials.navigation.sidebar-realtime-config')
+    <script src="{{ asset('js/tich-sidebar.js') }}" defer></script>
+@endsection

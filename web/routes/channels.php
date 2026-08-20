@@ -21,6 +21,22 @@ Broadcast::channel('hr.sidebar', function ($user) {
     return app(RBACService::class)->hasPermission($user, 'hr.staff.view');
 });
 
+Broadcast::channel('admin.sidebar', function ($user) {
+    if (! $user) {
+        return false;
+    }
+
+    return app(RBACService::class)->hasPermission($user, 'admin.access');
+});
+
+Broadcast::channel('administration.sidebar', function ($user) {
+    if (! $user) {
+        return false;
+    }
+
+    return app(RBACService::class)->hasPermission($user, 'administration.read');
+});
+
 Broadcast::channel('finance.sidebar', function ($user) {
     if (! $user) {
         return false;

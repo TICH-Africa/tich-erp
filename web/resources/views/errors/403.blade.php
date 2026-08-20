@@ -6,7 +6,9 @@
     @include('errors.partials.page', [
         'code' => '403',
         'title' => 'Access denied',
-        'message' => 'You do not have permission to view this page.',
-        'hint' => 'If you believe this is a mistake, contact your administrator or try signing in with a different account.',
+        'message' => trim($exception->getMessage() ?? '') !== ''
+            ? $exception->getMessage()
+            : 'You do not have permission to view this page.',
+        'hint' => 'If you just created your account, ask ICT or HR to assign your department role. After signing in you can also open /start for next steps.',
     ])
 @endsection
