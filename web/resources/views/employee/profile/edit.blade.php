@@ -17,7 +17,7 @@
     @if ($mustCompleteProfile)
         <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
             <strong>Profile confirmation required.</strong>
-            Fill in the marked fields so we have accurate contact and emergency details on record. You cannot open other ERP modules until this is done.
+            Fill in your legal name and the marked contact fields. Invitees often start with a temporary name from their email — replace it with your real name. You cannot open other ERP modules until this is done.
             @if (! empty($missingProfileLabels))
                 <p class="tich-mt-2 tich-caption">Still needed: {{ implode(', ', $missingProfileLabels) }}</p>
             @endif
