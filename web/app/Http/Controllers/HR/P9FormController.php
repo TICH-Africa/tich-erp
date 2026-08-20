@@ -17,21 +17,25 @@ class P9FormController extends Controller
 
     public function index(Request $request): View
     {
-        $year = $request->integer('year', now()->year - 1);
-        $staff = $this->p9Service->staffWithPayrollData($year);
+        $year = $request->filled('year')
+            ? $request->integer('year')
+            : $this->p9Service->defaultYear();
 
-        $availableYears = range(now()->year, now()->year - 5);
+        $staff = $this->p9Service->staffWithPayrollData($year);
 
         return view('hr.p9-forms.index', [
             'staff' => $staff,
             'year' => $year,
-            'availableYears' => $availableYears,
+            'availableYears' => $this->p9Service->availableYears(),
         ]);
     }
 
     public function show(Request $request, Staff $staff): View
     {
-        $year = $request->integer('year', now()->year - 1);
+        $year = $request->filled('year')
+            ? $request->integer('year')
+            : $this->p9Service->defaultYear();
+
         $monthlyData = $this->p9Service->getMonthlyData($staff, $year);
 
         return view('hr.p9-forms.show', [
@@ -43,7 +47,9 @@ class P9FormController extends Controller
 
     public function download(Request $request, Staff $staff): StreamedResponse
     {
-        $year = $request->integer('year', now()->year - 1);
+        $year = $request->filled('year')
+            ? $request->integer('year')
+            : $this->p9Service->defaultYear();
 
         return $this->p9Service->download($staff, $year);
     }

@@ -67,8 +67,26 @@
             ],
         ])
 
-        @include('partials.navigation.sidebar-link', ['href' => route('hr.payroll.index'), 'label' => 'Payroll', 'icon' => 'wallet', 'active' => request()->routeIs('hr.payroll.*')])
-        @include('partials.navigation.sidebar-link', ['href' => route('hr.p9-forms.index'), 'label' => 'P9 Forms', 'icon' => 'file-text', 'active' => request()->routeIs('hr.p9-forms.*')])
+        @include('partials.navigation.sidebar-group', [
+            'label' => 'Payroll & tax',
+            'icon' => 'wallet',
+            'open' => request()->routeIs('hr.payroll.*', 'hr.p9-forms.*'),
+            'active' => request()->routeIs('hr.payroll.*', 'hr.p9-forms.*'),
+            'items' => [
+                [
+                    'href' => route('hr.payroll.index'),
+                    'label' => 'Payroll',
+                    'icon' => 'wallet',
+                    'active' => request()->routeIs('hr.payroll.*'),
+                ],
+                [
+                    'href' => route('hr.p9-forms.index'),
+                    'label' => 'P9 Forms',
+                    'icon' => 'file-text',
+                    'active' => request()->routeIs('hr.p9-forms.*'),
+                ],
+            ],
+        ])
         @can('finance.read')
             @include('partials.navigation.sidebar-link', ['href' => route('finance.employee.index'), 'label' => 'Finance: Employee', 'icon' => 'briefcase', 'active' => request()->routeIs('finance.employee.*', 'finance.payroll-integration.*'), 'muted' => true])
         @endcan

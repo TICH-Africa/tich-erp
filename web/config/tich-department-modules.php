@@ -326,6 +326,15 @@ return [
                     'context' => 'operational',
                     'group' => 'hr',
                 ],
+                [
+                    'key' => 'hr.p9_forms',
+                    'label' => 'P9 Forms',
+                    'description' => 'Generate and download KRA P9A tax deduction cards for staff.',
+                    'permission' => 'hr.staff.view',
+                    'route' => 'hr.p9-forms.index',
+                    'context' => 'operational',
+                    'group' => 'hr',
+                ],
             ],
         ],
         [

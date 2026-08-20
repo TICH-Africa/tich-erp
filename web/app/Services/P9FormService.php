@@ -67,6 +67,33 @@ class P9FormService
             ->get();
     }
 
+    /**
+     * Prefer the latest year that has payroll items; fall back to the current calendar year.
+     */
+    public function defaultYear(): int
+    {
+        $latest = PayrollItem::query()->max('pay_period_year');
+
+        return $latest ? (int) $latest : (int) now()->year;
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function availableYears(): array
+    {
+        $fromPayroll = PayrollItem::query()
+            ->distinct()
+            ->orderByDesc('pay_period_year')
+            ->pluck('pay_period_year')
+            ->map(fn ($y) => (int) $y)
+            ->all();
+
+        $fallback = range((int) now()->year, (int) now()->year - 5);
+
+        return array_values(array_unique(array_merge($fromPayroll, $fallback)));
+    }
+
     public function getMonthlyData(Staff $staff, int $year): array
     {
         return $this->getMonthlyPayrollData($staff, $year);
@@ -312,9 +339,12 @@ class P9FormService
         $sheet->getStyle('A8:R8')->getFont()->setBold(true);
         $sheet->getStyle('A8:R8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A8:R8')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(8)->setRowHeight(36);
 
         $sheet->getStyle('B15:R27')->getNumberFormat()
             ->setFormatCode('#,##0');
+        $sheet->getStyle('B15:R27')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         $sheet->getStyle('A3')->getFont()->setBold(true);
         $sheet->getStyle('A5:A7')->getFont()->setBold(true);
@@ -325,8 +355,47 @@ class P9FormService
         $sheet->getStyle('A8:R27')->getBorders()->getAllBorders()
             ->setBorderStyle(Border::BORDER_THIN);
 
-        foreach (range('A', 'R') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // Fixed widths — autoSize balloons columns from long header/footer text.
+        $widths = [
+            'A' => 12,
+            'B' => 11,
+            'C' => 10,
+            'D' => 10,
+            'E' => 11,
+            'F' => 10,
+            'G' => 9,
+            'H' => 9,
+            'I' => 10,
+            'J' => 10,
+            'K' => 10,
+            'L' => 10,
+            'M' => 10,
+            'N' => 11,
+            'O' => 10,
+            'P' => 9,
+            'Q' => 9,
+            'R' => 10,
+        ];
+
+        foreach ($widths as $col => $width) {
+            $sheet->getColumnDimension($col)->setAutoSize(false);
+            $sheet->getColumnDimension($col)->setWidth($width);
         }
+
+        // Keep long notes readable without stretching columns.
+        $sheet->getStyle('A31:R41')->getAlignment()->setWrapText(true);
+        $sheet->mergeCells('F3:M3');
+        $sheet->mergeCells('C5:L5');
+        $sheet->mergeCells('C6:L6');
+        $sheet->mergeCells('C7:L7');
+        $sheet->mergeCells('B32:M32');
+        $sheet->mergeCells('B33:M33');
+        $sheet->mergeCells('A34:M34');
+        $sheet->mergeCells('A35:M35');
+        $sheet->mergeCells('A36:M36');
+        $sheet->mergeCells('A37:M37');
+        $sheet->mergeCells('A38:M38');
+        $sheet->mergeCells('A39:M39');
+        $sheet->mergeCells('A40:M40');
     }
 }
