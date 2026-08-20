@@ -28,7 +28,7 @@ class AuditService
         }
 
         $userId = $userId ?? Auth::id();
-        $module = config("audit.actions.{$action}.module");
+        $module = $this->resolveModule($action);
         $createdAt = now();
 
         $sanitizedOld = $this->sanitize($oldValue);
@@ -183,14 +183,50 @@ class AuditService
 
     public function query(array $filters = [])
     {
-        $query = AuditLog::query()->with('user:id,email,user_type,staff_id,student_id')->orderByDesc('created_at');
+        $query = AuditLog::query()
+            ->with([
+                'user:id,email,user_type,staff_id,student_id',
+                'user.staff:id,first_name,surname,employee_number',
+                'user.student:id,registration_number,application_id',
+                'user.student.applicant:id,first_name,surname',
+            ])
+            ->orderByDesc('created_at');
 
         if (! empty($filters['action'])) {
             $query->where('action', $filters['action']);
         }
 
         if (! empty($filters['module']) && Schema::hasColumn('audit_logs', 'module')) {
-            $query->where('module', $filters['module']);
+            $module = $filters['module'];
+            // Treat "hr" as covering leave/employee prefixes that map to HR.
+            if ($module === 'hr') {
+                $query->where(function ($q) {
+                    $q->where('module', 'hr')
+                        ->orWhere('action', 'like', 'hr.%')
+                        ->orWhere('action', 'like', 'leave.%')
+                        ->orWhere('action', 'like', 'employee.%')
+                        ->orWhere(function ($inner) {
+                            $inner->where('module', 'staff')
+                                ->where(function ($staffQ) {
+                                    $staffQ->where('action', 'like', 'staff.created%')
+                                        ->orWhere('action', 'like', 'staff.updated%')
+                                        ->orWhere('action', 'like', 'staff.deleted%')
+                                        ->orWhere('action', 'like', 'staff.onboarding.%')
+                                        ->orWhere('action', 'like', 'staff.profile.%')
+                                        ->orWhere('action', 'like', 'staff.status.%')
+                                        ->orWhere('action', 'like', 'staff.document.%')
+                                        ->orWhere('action', 'like', 'staff.allowance.%');
+                                });
+                        });
+                });
+            } elseif ($module === 'admin' || $module === 'core') {
+                $query->where(function ($q) {
+                    $q->whereIn('module', ['admin', 'core'])
+                        ->orWhere('action', 'like', 'core.%');
+                });
+            } else {
+                $query->where('module', $module);
+            }
         }
 
         if (! empty($filters['entity_type'])) {
@@ -201,16 +237,47 @@ class AuditService
             $query->where('user_id', $filters['user_id']);
         }
 
+        if (! empty($filters['account_type'])) {
+            match ($filters['account_type']) {
+                'staff' => $query->whereHas('user', fn ($q) => $q->whereNotNull('staff_id')),
+                'student' => $query->whereHas('user', fn ($q) => $q->whereNotNull('student_id')),
+                'system' => $query->whereNull('user_id'),
+                default => null,
+            };
+        }
+
+        if (! empty($filters['account'])) {
+            $account = trim((string) $filters['account']);
+            $query->where(function ($q) use ($account) {
+                $q->whereHas('user', function ($userQ) use ($account) {
+                    $userQ->where('email', 'like', "%{$account}%")
+                        ->orWhereHas('staff', function ($staffQ) use ($account) {
+                            $staffQ->where('employee_number', 'like', "%{$account}%")
+                                ->orWhere('first_name', 'like', "%{$account}%")
+                                ->orWhere('surname', 'like', "%{$account}%");
+                        })
+                        ->orWhereHas('student', function ($studentQ) use ($account) {
+                            $studentQ->where('registration_number', 'like', "%{$account}%")
+                                ->orWhereHas('applicant', function ($appQ) use ($account) {
+                                    $appQ->where('first_name', 'like', "%{$account}%")
+                                        ->orWhere('surname', 'like', "%{$account}%")
+                                        ->orWhere('email', 'like', "%{$account}%");
+                                });
+                        });
+                });
+            });
+        }
+
         if (! empty($filters['status']) && Schema::hasColumn('audit_logs', 'status')) {
             $query->where('status', $filters['status']);
         }
 
         if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', $filters['from']);
+            $query->where('created_at', '>=', $filters['from'].(strlen($filters['from']) <= 10 ? ' 00:00:00' : ''));
         }
 
         if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', $filters['to']);
+            $query->where('created_at', '<=', $filters['to'].(strlen($filters['to']) <= 10 ? ' 23:59:59' : ''));
         }
 
         if (! empty($filters['search'])) {
@@ -220,7 +287,8 @@ class AuditService
                     ->orWhere('entity_type', 'like', "%{$search}%")
                     ->orWhere('entity_id', 'like', "%{$search}%")
                     ->orWhere('reason', 'like', "%{$search}%")
-                    ->orWhere('ip_address', 'like', "%{$search}%");
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhere('module', 'like', "%{$search}%");
 
                 if ($this->hasClientContextColumn()) {
                     $q->orWhere('client_context->browser', 'like', "%{$search}%")
@@ -232,6 +300,56 @@ class AuditService
         }
 
         return $query;
+    }
+
+    public function moduleOptions(): array
+    {
+        $configured = config('audit.modules', []);
+        $fromDb = [];
+
+        if ($this->isAvailable() && Schema::hasColumn('audit_logs', 'module')) {
+            $fromDb = AuditLog::query()
+                ->whereNotNull('module')
+                ->distinct()
+                ->orderBy('module')
+                ->pluck('module')
+                ->all();
+        }
+
+        $options = [];
+        foreach (array_unique(array_merge(array_keys($configured), $fromDb)) as $key) {
+            $options[$key] = $configured[$key] ?? ucfirst(str_replace('_', ' ', (string) $key));
+        }
+
+        asort($options);
+
+        return $options;
+    }
+
+    public function resolveModule(string $action): ?string
+    {
+        $configured = config("audit.actions.{$action}.module");
+        if ($configured) {
+            return $configured;
+        }
+
+        $prefix = explode('.', $action)[0] ?? null;
+        if (! $prefix) {
+            return null;
+        }
+
+        $modules = config('audit.modules', []);
+        if (isset($modules[$prefix])) {
+            // Prefer the canonical module key (e.g. leave -> hr)
+            return match ($prefix) {
+                'leave', 'employee' => 'hr',
+                'access' => 'security',
+                'core' => 'admin',
+                default => $prefix,
+            };
+        }
+
+        return $prefix;
     }
 
     public function sanitize(?array $data): ?array
@@ -263,6 +381,23 @@ class AuditService
         };
 
         return $walk($data);
+    }
+
+    /**
+     * Compact one-line summary for list/export rows.
+     */
+    public function summary(AuditLog $log): string
+    {
+        if ($log->reason) {
+            return \Illuminate\Support\Str::limit($log->reason, 80);
+        }
+
+        $parts = array_filter([
+            $log->entity_type,
+            $log->entity_id ? '#'.$log->entity_id : null,
+        ]);
+
+        return implode(' ', $parts) ?: '-';
     }
 
     /**

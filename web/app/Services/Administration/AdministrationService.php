@@ -13,12 +13,17 @@ use App\Models\AccountsPayable;
 use App\Models\Finance\Payment;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AdministrationService
 {
+    public function __construct(
+        protected AuditService $auditService,
+    ) {}
+
     public function nextCode(string $prefix): string
     {
         return strtoupper($prefix).'-'.now()->format('ymd').'-'.Str::upper(Str::random(4));
@@ -26,7 +31,7 @@ class AdministrationService
 
     public function createPlanningCycle(array $data, ?int $userId = null): PlanningCycle
     {
-        return PlanningCycle::query()->create([
+        $cycle = PlanningCycle::query()->create([
             'cycle_code' => $this->nextCode('PLC'),
             'title' => $data['title'],
             'plan_tier' => $data['plan_tier'],
@@ -38,6 +43,19 @@ class AdministrationService
             'notes' => $data['notes'] ?? null,
             'created_by' => $userId,
         ]);
+
+        $this->auditService->log(
+            'administration.planning_cycle.created',
+            'planning_cycles',
+            $cycle->id,
+            null,
+            $cycle->only(['cycle_code', 'title', 'plan_tier', 'fiscal_year', 'status']),
+            'Planning cycle created',
+            'success',
+            $userId
+        );
+
+        return $cycle;
     }
 
     public function createBudgetRequest(array $data, ?int $userId = null): BudgetRequest
@@ -48,7 +66,7 @@ class AdministrationService
 
         $isLate = $cycle?->isPastDeadline() ?? false;
 
-        return BudgetRequest::query()->create([
+        $request = BudgetRequest::query()->create([
             'request_code' => $this->nextCode('BQR'),
             'planning_cycle_id' => $data['planning_cycle_id'] ?? null,
             'department_id' => $data['department_id'],
@@ -65,6 +83,19 @@ class AdministrationService
             'is_late' => $isLate,
             'deadline_at' => $cycle?->requisition_deadline,
         ]);
+
+        $this->auditService->log(
+            'administration.budget_request.created',
+            'budget_requests',
+            $request->id,
+            null,
+            $request->only(['request_code', 'department_id', 'title', 'requested_amount', 'status']),
+            'Budget request submitted',
+            'success',
+            $userId
+        );
+
+        return $request;
     }
 
     public function routeBudgetToFinance(BudgetRequest $request, ?int $userId = null): BudgetRequest
@@ -73,12 +104,25 @@ class AdministrationService
             throw new \RuntimeException('Only submitted requests can be sent to Finance.');
         }
 
+        $old = ['status' => $request->status];
         $request->update([
             'status' => 'finance_review',
             'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'Routed to Finance for verification.'),
         ]);
 
-        return $request->fresh();
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.routed_finance',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status],
+            'Budget request routed to Finance',
+            'success',
+            $userId
+        );
+
+        return $fresh;
     }
 
     public function verifyBudgetByFinance(BudgetRequest $request, float $verifiedAmount, ?int $userId = null, ?string $notes = null): BudgetRequest
@@ -87,6 +131,7 @@ class AdministrationService
             throw new \RuntimeException('Request is not awaiting Finance verification.');
         }
 
+        $old = ['status' => $request->status, 'verified_amount' => $request->verified_amount];
         $request->update([
             'status' => 'executive_review',
             'verified_amount' => $verifiedAmount,
@@ -95,7 +140,19 @@ class AdministrationService
             'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').($notes ?: 'Verified by Finance. Awaiting Executive/CEO authorization.')),
         ]);
 
-        return $request->fresh();
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.finance_verified',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status, 'verified_amount' => $fresh->verified_amount],
+            $notes ?: 'Verified by Finance',
+            'success',
+            $userId
+        );
+
+        return $fresh;
     }
 
     public function authorizeBudgetByExecutive(BudgetRequest $request, float $approvedAmount, ?int $userId = null, ?string $notes = null): BudgetRequest
@@ -104,6 +161,7 @@ class AdministrationService
             throw new \RuntimeException('Request is not awaiting Executive authorization.');
         }
 
+        $old = ['status' => $request->status, 'approved_amount' => $request->approved_amount];
         $request->update([
             'status' => 'approved',
             'approved_amount' => $approvedAmount,
@@ -112,17 +170,42 @@ class AdministrationService
             'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').($notes ?: 'Authorized by Executive/CEO.')),
         ]);
 
-        return $request->fresh();
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.executive_approved',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status, 'approved_amount' => $fresh->approved_amount],
+            $notes ?: 'Authorized by Executive/CEO',
+            'success',
+            $userId
+        );
+
+        return $fresh;
     }
 
     public function rejectBudget(BudgetRequest $request, ?int $userId = null, ?string $notes = null): BudgetRequest
     {
+        $old = ['status' => $request->status];
         $request->update([
             'status' => 'rejected',
             'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').($notes ?: 'Rejected in approval workflow.')),
         ]);
 
-        return $request->fresh();
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.rejected',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status],
+            $notes ?: 'Rejected in approval workflow',
+            'success',
+            $userId
+        );
+
+        return $fresh;
     }
 
     public function divideBudgetIntoGroups(BudgetRequest $request, array $groupAllocations, ?float $allocatedAmount = null): BudgetRequest
@@ -181,7 +264,7 @@ class AdministrationService
             }
         }
 
-        return FundAllocation::query()->create([
+        $allocation = FundAllocation::query()->create([
             'allocation_code' => $this->nextCode('FDA'),
             'budget_request_id' => $data['budget_request_id'] ?? null,
             'department_id' => $data['department_id'],
@@ -193,6 +276,19 @@ class AdministrationService
             'released_at' => now(),
             'notes' => $data['notes'] ?? null,
         ]);
+
+        $this->auditService->log(
+            'administration.fund_allocation.released',
+            'fund_allocations',
+            $allocation->id,
+            null,
+            $allocation->only(['allocation_code', 'department_id', 'amount', 'fiscal_year', 'month', 'status']),
+            'Fund allocation released',
+            'success',
+            $userId
+        );
+
+        return $allocation;
     }
 
     public function aggregatedBudgets(?int $fiscalYear = null): array

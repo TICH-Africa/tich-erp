@@ -13,6 +13,36 @@ return [
         'secret', 'backup_codes', 'plainTextToken',
     ],
 
+    /*
+    | Module labels used in the audit log filter and exports.
+    | Action prefixes (first segment before ".") map here when an action
+    | is not explicitly listed under "actions".
+    */
+    'modules' => [
+        'auth' => 'Authentication',
+        'rbac' => 'Access control',
+        'security' => 'Security',
+        'access' => 'Security',
+        'audit' => 'Audit',
+        'core' => 'Admin',
+        'admin' => 'Admin',
+        'sis' => 'SIS',
+        'admissions' => 'Admissions',
+        'academics' => 'Academics',
+        'staff' => 'Staff portal',
+        'hr' => 'HR',
+        'leave' => 'HR',
+        'employee' => 'HR',
+        'finance' => 'Finance',
+        'administration' => 'Administration',
+        'procurement' => 'Procurement',
+        'ict' => 'ICT',
+        'qa' => 'Quality assurance',
+        'research' => 'Research',
+        'portal' => 'Student portal',
+        'site' => 'Site settings',
+    ],
+
     'actions' => [
         // Auth
         'auth.login.success' => ['module' => 'auth', 'sensitive' => false],
@@ -158,6 +188,49 @@ return [
         'finance.payroll_run.posted_gl' => ['module' => 'finance', 'sensitive' => false],
         'finance.ar.reminder_sent' => ['module' => 'finance', 'sensitive' => false],
         'finance.report.exported' => ['module' => 'finance', 'sensitive' => false],
+
+        // HR - staff lifecycle & people ops
+        'staff.created' => ['module' => 'hr', 'sensitive' => false],
+        'staff.updated' => ['module' => 'hr', 'sensitive' => false],
+        'staff.deleted' => ['module' => 'hr', 'sensitive' => false],
+        'staff.onboarding.started' => ['module' => 'hr', 'sensitive' => false],
+        'staff.onboarding.step_updated' => ['module' => 'hr', 'sensitive' => false],
+        'staff.onboarding.completed' => ['module' => 'hr', 'sensitive' => false],
+        'staff.profile.locked' => ['module' => 'hr', 'sensitive' => false],
+        'staff.profile.change_requested' => ['module' => 'hr', 'sensitive' => false],
+        'staff.profile.change_approved' => ['module' => 'hr', 'sensitive' => false],
+        'staff.status.changed' => ['module' => 'hr', 'sensitive' => false],
+        'staff.document.uploaded' => ['module' => 'hr', 'sensitive' => false],
+        'staff.allowance.created' => ['module' => 'hr', 'sensitive' => false],
+
+        // HR - leave carry-forward
+        'leave.accrual.updated' => ['module' => 'hr', 'sensitive' => false],
+        'leave.carry_forward.requested' => ['module' => 'hr', 'sensitive' => false],
+        'leave.carry_forward.approved' => ['module' => 'hr', 'sensitive' => false],
+        'leave.carry_forward.rejected' => ['module' => 'hr', 'sensitive' => false],
+        'leave.carry_forward.applied' => ['module' => 'hr', 'sensitive' => false],
+
+        // Admissions - payment stage
+        'admissions.application.fee_paid' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.fee_verified' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.handoff_academics' => ['module' => 'admissions', 'sensitive' => false],
+
+        // Administration module
+        'administration.planning_cycle.created' => ['module' => 'administration', 'sensitive' => false],
+        'administration.budget_request.created' => ['module' => 'administration', 'sensitive' => false],
+        'administration.budget_request.routed_finance' => ['module' => 'administration', 'sensitive' => false],
+        'administration.budget_request.finance_verified' => ['module' => 'administration', 'sensitive' => false],
+        'administration.budget_request.executive_approved' => ['module' => 'administration', 'sensitive' => false],
+        'administration.budget_request.rejected' => ['module' => 'administration', 'sensitive' => false],
+        'administration.fund_allocation.released' => ['module' => 'administration', 'sensitive' => false],
+        'administration.statutory.created' => ['module' => 'administration', 'sensitive' => false],
+        'administration.statutory.updated' => ['module' => 'administration', 'sensitive' => false],
+        'administration.inspection.created' => ['module' => 'administration', 'sensitive' => false],
+        'administration.inspection.updated' => ['module' => 'administration', 'sensitive' => false],
+        'administration.quickbooks.sync' => ['module' => 'administration', 'sensitive' => false],
+
+        // Site settings
+        'site.settings.updated' => ['module' => 'site', 'sensitive' => false],
     ],
 
 ];

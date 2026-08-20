@@ -140,6 +140,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa'])->group(function () {
 
         Route::prefix('audit-logs')->middleware(['permission:audit_logs.read'])->group(function () {
             Route::get('/', [AuditController::class, 'index'])->name('admin.audit-logs.index');
+            Route::get('/export', [AuditController::class, 'export'])->name('admin.audit-logs.export');
             Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
             Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
         });
