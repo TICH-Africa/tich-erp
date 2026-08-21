@@ -6,7 +6,6 @@
     <x-page-toolbar title="Student admission lifecycle" meta="5-step workflow from submission to admission package dispatch">
         <x-slot:actions>
             <a href="{{ $admissionsUrl }}" class="tich-btn tich-btn-secondary">Admissions dashboard</a>
-            <a href="{{ $mpesaUrl }}" class="tich-btn tich-btn-ghost">M-Pesa settings</a>
         </x-slot:actions>
     </x-page-toolbar>
 

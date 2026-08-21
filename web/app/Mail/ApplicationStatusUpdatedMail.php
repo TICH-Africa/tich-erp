@@ -7,6 +7,7 @@ use App\Models\Applicant;
 use App\Support\ModuleMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -15,6 +16,9 @@ class ApplicationStatusUpdatedMail extends Mailable
 {
     use Queueable, SerializesModels, UsesModuleEnvelope;
 
+    /**
+     * @param  array{path: string, filename: string}|null  $admissionLetter
+     */
     public function __construct(
         public Applicant $applicant,
         public string $programName,
@@ -24,6 +28,7 @@ class ApplicationStatusUpdatedMail extends Mailable
         public ?string $rejectionReason = null,
         public ?string $reviewNotes = null,
         public ?string $portalActivationUrl = null,
+        public ?array $admissionLetter = null,
     ) {}
 
     protected function mailModule(): string
@@ -41,5 +46,20 @@ class ApplicationStatusUpdatedMail extends Mailable
         return new Content(
             view: 'emails.application-status-updated',
         );
+    }
+
+    /**
+     * @return array<int, Attachment>
+     */
+    public function attachments(): array
+    {
+        if (! $this->admissionLetter) {
+            return [];
+        }
+
+        return [
+            Attachment::fromStorageDisk('public', $this->admissionLetter['path'])
+                ->as($this->admissionLetter['filename']),
+        ];
     }
 }

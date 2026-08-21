@@ -331,9 +331,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/applications', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'applications'])->name('administration.applications.index');
         Route::get('/lifecycle', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'lifecycle'])->name('administration.lifecycle.index');
         Route::get('/admission-packages', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'packages'])->name('administration.admission-packages.index');
+        Route::post('/admission-packages/letter', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'storeAdmissionLetter'])->name('administration.admission-packages.letter.store');
+        Route::get('/admission-packages/letter/download', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'downloadAdmissionLetter'])->name('administration.admission-packages.letter.download');
+        Route::delete('/admission-packages/letter', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'destroyAdmissionLetter'])->name('administration.admission-packages.letter.destroy');
 
         Route::get('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'statutory'])->name('administration.statutory.index');
         Route::post('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeStatutory'])->name('administration.statutory.store');
+        Route::get('/statutory/{certification}/download', [\App\Http\Controllers\Administration\ComplianceController::class, 'downloadStatutory'])->name('administration.statutory.download');
         Route::get('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'inspection'])->name('administration.inspection.index');
         Route::post('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeInspectionCheck'])->name('administration.inspection.store');
         Route::post('/inspection/{check}/status', [\App\Http\Controllers\Administration\ComplianceController::class, 'updateInspectionStatus'])->name('administration.inspection.status');

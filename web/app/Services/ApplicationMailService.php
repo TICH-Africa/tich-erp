@@ -125,6 +125,7 @@ class ApplicationMailService
                 $applicant->rejection_reason,
                 $applicant->review_notes,
                 $this->portalActivationUrlForApplicant($applicant),
+                $this->admissionLetterAttachmentFor($applicant),
             ),
             'admissions.application.status_email_sent',
             'Application status update email sent',
@@ -158,6 +159,18 @@ class ApplicationMailService
         $student = Student::query()->where('application_id', $applicant->id)->first();
 
         return $student?->portalActivationUrl();
+    }
+
+    /**
+     * @return array{path: string, filename: string}|null
+     */
+    private function admissionLetterAttachmentFor(Applicant $applicant): ?array
+    {
+        if ($applicant->status !== 'admitted') {
+            return null;
+        }
+
+        return app(\App\Services\Administration\AdmissionLetterTemplateService::class)->attachment();
     }
 
     /**
@@ -258,6 +271,7 @@ class ApplicationMailService
                 $applicant->rejection_reason,
                 $applicant->review_notes,
                 $student->portalActivationUrl(),
+                $this->admissionLetterAttachmentFor($applicant),
             ),
             'admissions.application.portal_signup_email_sent',
             'Student portal signup email sent',

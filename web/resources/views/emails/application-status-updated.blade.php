@@ -57,6 +57,9 @@
                                 </table>
                                 <p style="margin:0 0 24px;font-size:13px;line-height:1.6;color:#494c50;">
                                     You have been admitted. Use the button above to create your password and access your student portal with your registration details, documents, and enrolment information.
+                                    @if (! empty($admissionLetter))
+                                        Your official admission letter is attached to this email.
+                                    @endif
                                 </p>
                             @endif
 
