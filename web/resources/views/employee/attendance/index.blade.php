@@ -75,10 +75,12 @@
                                 </div>
                             @endif
 
-                            <label class="tich-checkbox">
-                                <input type="checkbox" name="is_off_campus" value="1" id="is_off_campus">
-                                Off-campus / field work
-                            </label>
+                            <div class="tich-form-row">
+                                <label class="tich-label" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer;">
+                                    <input type="checkbox" name="is_off_campus" value="1" id="is_off_campus" style="width: auto; height: auto; margin: 0;">
+                                    Off-campus / field work
+                                </label>
+                            </div>
                             <div id="field-details" hidden>
                                 <label for="field_project_name" class="tich-label">Project / site name</label>
                                 <input type="text" id="field_project_name" name="field_project_name" class="tich-input" maxlength="300" placeholder="e.g. Community outreach - Muhoroni">
@@ -162,11 +164,11 @@
                 var lngInput = document.getElementById('clock_in_longitude');
                 var accuracyInput = document.getElementById('clock_in_accuracy_m');
                 var legacyInput = document.getElementById('location_lat_long');
-                var campusLat = {{ json_encode($campusGeofence['latitude']) }};
-                var campusLng = {{ json_encode($campusGeofence['longitude']) }};
-                var campusRadius = {{ json_encode($campusGeofence['radius_meters']) }};
-                var campusName = {{ json_encode($campusGeofence['name']) }};
-                var maxAccuracy = {{ json_encode($maxLocationAccuracy ?? 2000) }};
+                var campusLat = @json($campusGeofence['latitude']);
+                var campusLng = @json($campusGeofence['longitude']);
+                var campusRadius = @json($campusGeofence['radius_meters']);
+                var campusName = @json($campusGeofence['name']);
+                var maxAccuracy = @json($maxLocationAccuracy ?? 2000);
                 var allowRemoteClockIn = {{ ($needsLocationVerification ?? false) ? 'true' : 'false' }};
                 var shouldPromptLocation = {{ ($promptLocation ?? false) ? 'true' : 'false' }};
                 var latestPosition = null;
@@ -344,7 +346,9 @@
                         return;
                     }
 
-                    if (latInput.value && lngInput.value && submitAllowed) {
+                    var offCampusChecked = offCampus && offCampus.checked;
+
+                    if ((latInput.value && lngInput.value && (submitAllowed || offCampusChecked)) || offCampusChecked) {
                         return;
                     }
 
@@ -357,7 +361,7 @@
                         return;
                     }
 
-                    if (!submitAllowed) {
+                    if (!submitAllowed && !offCampusChecked) {
                         locationError('Your current location does not meet the clock-in rules shown above.');
                     }
                 });

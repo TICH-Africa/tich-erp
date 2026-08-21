@@ -437,16 +437,20 @@ class FinanceController extends Controller
 
         $validated = $request->validate([
             'receipt_number' => ['nullable', 'string', 'max:200'],
-            'disbursed_at' => ['nullable', 'date'],
+            'disbursed_at' => ['nullable', 'date_format:d/m/Y'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $disbursedAt = $validated['disbursed_at']
+            ? \Carbon\Carbon::createFromFormat('d/m/Y', $validated['disbursed_at'], config('app.timezone'))
+            : now();
+
         $budgetRequest->update([
             'status' => 'disbursed',
-            'disbursed_at' => $validated['disbursed_at'] ? now()->parse($validated['disbursed_at']) : now(),
+            'disbursed_at' => $disbursedAt,
             'disbursed_by' => auth()->id(),
             'receipt_number' => $validated['receipt_number'] ?? null,
-            'workflow_notes' => trim(($budgetRequest->workflow_notes ? $budgetRequest->workflow_notes."\n" : '').($validated['notes'] ?: 'Marked as disbursed by Finance. Receipt: '.($validated['receipt_number'] ?? '').' Date: '.($validated['disbursed_at'] ?? now()->format('Y-m-d H:i')))),
+            'workflow_notes' => trim(($budgetRequest->workflow_notes ? $budgetRequest->workflow_notes."\n" : '').($validated['notes'] ?: 'Marked as disbursed by Finance. Receipt: '.($validated['receipt_number'] ?? '').' Date: '.$disbursedAt->format('d M Y H:i'))),
         ]);
 
         return back()->with('status', 'Budget marked as disbursed successfully.');

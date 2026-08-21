@@ -1,18 +1,21 @@
 @extends('layouts.employee')
 
 @section('employee-content')
-    @php($mustCompleteProfile = $mustCompleteProfile ?? false)
+    @php
+        $mustCompleteProfile = $mustCompleteProfile ?? false;
+    @endphp
 
-    <x-page-toolbar
-        title="{{ $mustCompleteProfile ? 'Complete your profile' : 'Update my profile' }}"
-        meta="{{ $mustCompleteProfile ? 'Required before you can use the ERP' : 'Changes are reviewed by HR before they take effect' }}"
-    >
-        <x-slot:actions>
+    <div class="tich-page-toolbar">
+        <div>
+            <h1 class="tich-h3">{{ $mustCompleteProfile ? 'Complete your profile' : 'Update my profile' }}</h1>
+            <p class="tich-caption tich-mt-2">{{ $mustCompleteProfile ? 'Required before you can use the ERP' : 'Changes are reviewed by HR before they take effect' }}</p>
+        </div>
+        <div>
             @unless ($mustCompleteProfile)
                 <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">Back to profile</a>
             @endunless
-        </x-slot:actions>
-    </x-page-toolbar>
+        </div>
+    </div>
 
     @if ($mustCompleteProfile)
         <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
@@ -100,6 +103,7 @@
                     @error('surname')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
+<<<<<<< Updated upstream
                     <label for="date_of_birth" class="tich-label">Date of birth (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     <input
                         type="date"
@@ -109,6 +113,17 @@
                         value="{{ old('date_of_birth', ($staff->date_of_birth && $staff->date_of_birth->format('Y-m-d') !== '1990-01-01') ? $staff->date_of_birth->format('Y-m-d') : '') }}"
                         @required($mustCompleteProfile)
                     >
+=======
+                    <label for="date_of_birth" class="tich-label">Date of birth @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    @php
+                        $dobValue = old('date_of_birth');
+                        if ($dobValue === null) {
+                            $dob = $staff->date_of_birth;
+                            $dobValue = ($dob && $dob->format('Y-m-d') !== '1990-01-01') ? $dob->format('Y-m-d') : '';
+                        }
+                    @endphp
+                    <input type="date" id="date_of_birth" name="date_of_birth" class="tich-input @error('date_of_birth') tich-input--error @enderror" value="{{ $dobValue ?? '' }}" @required($mustCompleteProfile)>
+>>>>>>> Stashed changes
                     @error('date_of_birth')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>

@@ -536,6 +536,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
             Route::post('/offboarding/{offboarding}/start-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'startClearance'])->name('hr.offboarding.start-clearance');
             Route::post('/offboarding/{offboarding}/complete-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearance'])->name('hr.offboarding.complete-clearance');
             Route::post('/offboarding/{offboarding}/items/{item}/complete', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearanceItem'])->name('hr.offboarding.complete-item');
+            Route::get('/attendance', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'index'])->name('hr.attendance.index');
+            Route::get('/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'show'])->name('hr.attendance.show');
+            Route::post('/attendance/{attendance}/approve', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'approve'])->name('hr.attendance.approve');
+            Route::post('/attendance/{attendance}/reject', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'reject'])->name('hr.attendance.reject');
 
             Route::prefix('employee-relations')->name('hr.employee-relations.')->group(function () {
                 Route::get('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'index'])->name('disciplinary.index');

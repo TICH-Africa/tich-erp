@@ -70,6 +70,9 @@ class StaffAttendanceService
                 'clock_in_longitude' => $location['longitude'],
                 'clock_in_accuracy_m' => $location['accuracy_m'],
                 'location_verification_status' => $location['location_verification_status'],
+                'hr_review_status' => config('hr-attendance.require_hr_review', true)
+                    ? StaffAttendance::HR_STATUS_PENDING
+                    : StaffAttendance::HR_STATUS_APPROVED,
                 'notes' => $data['notes'] ?? null,
                 'recorded_by' => $staff->id,
             ]

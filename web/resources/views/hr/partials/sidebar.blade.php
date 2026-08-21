@@ -12,6 +12,13 @@
             'badgeKey' => 'profile-changes',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.attendance.index'),
+            'label' => 'Attendance reviews',
+            'icon' => 'clock',
+            'active' => request()->routeIs('hr.attendance.*'),
+            'badgeKey' => 'attendance',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('hr.onboarding.index'),
             'label' => 'Onboarding',
             'icon' => 'user-plus',

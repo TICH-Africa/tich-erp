@@ -12,6 +12,7 @@ use App\Models\RecruitmentApplication;
 use App\Models\StaffContract;
 use App\Models\StaffDocument;
 use App\Models\StaffOnboarding;
+use App\Models\StaffAttendance;
 use App\Models\StaffProfileChangeRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,7 @@ class HrSidebarNotificationService
         'offboarding' => 'Offboarding',
         'contracts' => 'Contracts',
         'profile-changes' => 'Profile changes',
+        'attendance' => 'Attendance reviews',
         'policies' => 'HR Policies',
         'grievances' => 'Grievances',
         'feedback' => 'Feedback',
@@ -96,6 +98,7 @@ class HrSidebarNotificationService
             'offboarding' => $this->pendingOffboardingCount(),
             'contracts' => $this->contractsNeedingAction(),
             'profile-changes' => $this->pendingProfileChangesCount(),
+            'attendance' => $this->pendingAttendanceCount(),
             'policies' => $this->pendingPolicyAcknowledgementsCount(),
             'grievances' => $grievances,
             'feedback' => $feedback,
@@ -180,6 +183,19 @@ class HrSidebarNotificationService
 
         return StaffProfileChangeRequest::query()
             ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+            ->count();
+    }
+
+    private function pendingAttendanceCount(): int
+    {
+        if (! Schema::hasTable('staff_attendance')) {
+            return 0;
+        }
+
+        return StaffAttendance::query()
+            ->where('hr_review_status', StaffAttendance::HR_STATUS_PENDING)
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
             ->count();
     }
 }
