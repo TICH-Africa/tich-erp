@@ -3,6 +3,7 @@
     <p class="tich-admin-sidebar__title">ICT</p>
     <nav class="tich-admin-sidebar__nav" aria-label="ICT module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('ict.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('ict.dashboard')])
+        @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.registration-invites.index'), 'label' => 'ERP registration invites', 'icon' => 'mail', 'active' => request()->routeIs('ict.registration-invites.*')])
         @can('users.access.manage')
             @include('partials.navigation.sidebar-link', ['href' => route('ict.users.index'), 'label' => 'Users & access', 'icon' => 'users', 'active' => request()->routeIs('ict.users.*')])

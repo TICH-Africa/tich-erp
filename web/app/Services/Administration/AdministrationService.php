@@ -125,6 +125,105 @@ class AdministrationService
         return $fresh;
     }
 
+    public function recordAdminReview(BudgetRequest $request, string $notes, ?int $userId = null): BudgetRequest
+    {
+        if (! in_array($request->status, ['submitted', 'draft'], true)) {
+            throw new \RuntimeException('Administration can only review requests that have not yet been forwarded to Finance.');
+        }
+
+        $note = trim($notes);
+        if ($note === '') {
+            throw new \RuntimeException('Review notes are required.');
+        }
+
+        $old = ['status' => $request->status];
+        $request->update([
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'[Admin review] '.$note),
+        ]);
+
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.admin_reviewed',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status],
+            'Administration recorded a review note',
+            'success',
+            $userId
+        );
+
+        return $fresh;
+    }
+
+    public function returnBudgetToSender(BudgetRequest $request, ?int $userId = null, ?string $notes = null): BudgetRequest
+    {
+        if (! in_array($request->status, ['submitted', 'draft'], true)) {
+            throw new \RuntimeException('Only submitted requests can be returned to the sender.');
+        }
+
+        $note = trim((string) $notes);
+        if ($note === '') {
+            throw new \RuntimeException('A reason is required when returning a request to the sender.');
+        }
+
+        $old = ['status' => $request->status];
+        $request->update([
+            'status' => 'returned',
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'[Returned to sender] '.$note),
+        ]);
+
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.returned',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status],
+            'Budget request returned to sender',
+            'success',
+            $userId
+        );
+
+        return $fresh;
+    }
+
+    public function resubmitBudgetRequest(BudgetRequest $request, array $data, ?int $userId = null): BudgetRequest
+    {
+        if ($request->status !== 'returned') {
+            throw new \RuntimeException('Only returned requests can be resubmitted.');
+        }
+
+        $old = ['status' => $request->status, 'requested_amount' => $request->requested_amount];
+
+        $request->update([
+            'planning_cycle_id' => $data['planning_cycle_id'] ?? $request->planning_cycle_id,
+            'title' => $data['title'],
+            'budget_type' => $data['budget_type'] ?? null,
+            'requested_amount' => $data['requested_amount'],
+            'standard_line_items' => $data['standard_line_items'] ?? null,
+            'justification' => $data['justification'] ?? null,
+            'status' => 'submitted',
+            'submitted_by' => $userId ?? $request->submitted_by,
+            'submitted_at' => now(),
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'Resubmitted by department after Administration return.'),
+        ]);
+
+        $fresh = $request->fresh();
+        $this->auditService->log(
+            'administration.budget_request.resubmitted',
+            'budget_requests',
+            $fresh->id,
+            $old,
+            ['status' => $fresh->status, 'requested_amount' => $fresh->requested_amount],
+            'Budget request resubmitted',
+            'success',
+            $userId
+        );
+
+        return $fresh;
+    }
+
     public function verifyBudgetByFinance(BudgetRequest $request, float $verifiedAmount, ?int $userId = null, ?string $notes = null): BudgetRequest
     {
         if ($request->status !== 'finance_review') {

@@ -118,8 +118,11 @@
                 @include('partials.navigation.sidebar-link', ['href' => route('departments.academics.calendar.index', $hub), 'label' => 'Academic calendar', 'icon' => 'calendar', 'active' => request()->routeIs('departments.academics.calendar.*')])
             @endcan
 
+            <p class="tich-admin-sidebar__section">Planning</p>
+            @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
+
             <p class="tich-admin-sidebar__section">Navigation</p>
-            @include('partials.navigation.sidebar-link', ['href' => route('departments.show', $department), 'label' => $department->dept_name.' hub', 'icon' => 'layout-grid', 'muted' => true])
+            @include('partials.navigation.sidebar-link', ['href' => route('departments.academics.dashboard', $hub), 'label' => $department->dept_name.' hub', 'icon' => 'layout-grid', 'muted' => true])
         </nav>
     </aside>
 @endif

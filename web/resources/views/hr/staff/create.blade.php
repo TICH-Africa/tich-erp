@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <label for="organisation_email" class="tich-label">Organisation email</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Auto-generated as firstname.surname@tich.africa">
+                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Optional — set when issued (e.g. name@tich.africa)">
                     <p class="tich-caption tich-mt-1">Leave blank to auto-generate an @tich.africa address.</p>
                 </div>
                 <div>

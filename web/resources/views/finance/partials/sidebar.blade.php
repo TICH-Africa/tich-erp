@@ -5,6 +5,7 @@
     <p class="tich-admin-sidebar__title">Finance Module</p>
     <nav class="tich-admin-sidebar__nav" aria-label="Finance module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('finance.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('finance.dashboard')])
+        @include('partials.navigation.department-budgeting-link', ['module' => 'finance'])
 
         @foreach ($financeNav->sidebarGroups() as $group)
             @include('partials.navigation.sidebar-group', [

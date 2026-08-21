@@ -351,10 +351,8 @@ class StaffLifecycleService
             $employmentDetails['primary_email'] = $application->email;
         }
 
-        if (empty($employmentDetails['organisation_email'])) {
-            $firstName = (string) ($employmentDetails['first_name'] ?? $application->first_name ?? 'employee');
-            $surname = (string) ($employmentDetails['surname'] ?? $application->surname ?? 'staff');
-            $employmentDetails['organisation_email'] = Staff::organisationEmailFromName($firstName, $surname);
+        if (array_key_exists('organisation_email', $employmentDetails) && $employmentDetails['organisation_email'] === '') {
+            $employmentDetails['organisation_email'] = null;
         }
 
         return $employmentDetails;

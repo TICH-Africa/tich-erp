@@ -36,7 +36,7 @@
                             @endif
                         </td>
                         <td style="white-space: nowrap;">
-                            <a href="{{ route('departments.show', $learningDepartmentRow) }}" class="tich-link tich-mr-4">View hub</a>
+                            <a href="{{ route('departments.academics.dashboard', array_merge($hub, ['learning_department' => $learningDepartmentRow->id])) }}" class="tich-link tich-mr-4">Open</a>
                             <form method="POST" action="{{ route('departments.academics.departments.update-profile', array_merge($hub, ['learningDepartment' => $learningDepartmentRow->id])) }}" style="display:inline-flex; gap:0.5rem; align-items:center;">
                                 @csrf
                                 @method('PUT')

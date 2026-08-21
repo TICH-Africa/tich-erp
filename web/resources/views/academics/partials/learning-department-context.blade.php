@@ -4,6 +4,6 @@
             <p class="tich-caption">Managing</p>
             <p class="tich-text"><strong>{{ $learningDepartment->dept_name }}</strong> ({{ $learningDepartment->dept_code }})</p>
         </div>
-        <a href="{{ route('departments.show', $learningDepartment) }}" class="tich-btn tich-btn-secondary">← Department dashboard</a>
+        <a href="{{ route('departments.academics.dashboard', ['learning_department' => $learningDepartment->id]) }}" class="tich-btn tich-btn-secondary">← Academics dashboard</a>
     </div>
 @endif

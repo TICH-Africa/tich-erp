@@ -340,10 +340,8 @@ class ProgramCurriculumService
             $items[] = [
                 'type' => 'link',
                 'label' => 'Overview',
-                'route' => 'departments.show',
-                'params' => ['department' => $learningDepartment->getRouteKey()],
-                'target_id' => $learningDepartment->id,
-                'section' => 'overview',
+                'route' => 'departments.academics.dashboard',
+                'params' => ['learning_department' => $learningDepartment->id],
             ];
         }
 

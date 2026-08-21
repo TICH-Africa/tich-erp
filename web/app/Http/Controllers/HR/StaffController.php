@@ -143,11 +143,8 @@ class StaffController extends Controller
                 $validated['employee_number'] = $this->lifecycleService->generateEmployeeNumber();
             }
 
-            if (empty($validated['organisation_email'])) {
-                $validated['organisation_email'] = Staff::organisationEmailFromName(
-                    $validated['first_name'],
-                    $validated['surname']
-                );
+            if (array_key_exists('organisation_email', $validated) && $validated['organisation_email'] === '') {
+                $validated['organisation_email'] = null;
             }
 
             $staff = Staff::create($validated);
@@ -188,7 +185,7 @@ class StaffController extends Controller
             'nationality' => 'nullable|string|max:100',
             'home_county' => 'nullable|string|max:100',
             'primary_email' => 'sometimes|email|max:255',
-            'organisation_email' => 'sometimes|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
+            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
             'phone_number' => 'sometimes|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',

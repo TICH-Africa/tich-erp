@@ -65,8 +65,8 @@
                     <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', $staff->primary_email) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label for="organisation_email" class="tich-label">Organisation email *</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email', $staff->organisation_email) }}" required class="tich-input" pattern=".+@tich\.africa$" title="Must use @tich.africa">
+                    <label for="organisation_email" class="tich-label">Organisation email</label>
+                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email', $staff->organisation_email) }}" class="tich-input" pattern=".+@tich\.africa$" title="If set, must use @tich.africa" placeholder="Optional — e.g. name@tich.africa">
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>

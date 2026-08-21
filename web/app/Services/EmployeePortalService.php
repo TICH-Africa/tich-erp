@@ -72,7 +72,7 @@ class EmployeePortalService
             'date_of_birth' => '1990-01-01',
             'gender' => 'Other',
             'primary_email' => strtolower($email),
-            'organisation_email' => Staff::organisationEmailFromName($firstName, $surname),
+            'organisation_email' => null,
             'phone_number' => '0700000000',
             'department_id' => $departmentId,
             'job_title' => 'Pending assignment',

@@ -160,7 +160,7 @@ class RecruitmentController extends Controller
                 'national_id_number' => $application->id_number,
                 'nationality' => 'Kenyan',
                 'primary_email' => $application->email,
-                'organisation_email' => $this->generateOrganisationEmail($nameParts['first'], $nameParts['last']),
+                'organisation_email' => null,
                 'phone_number' => $application->phone_number,
                 'postal_address' => $application->postal_address,
                 'physical_address' => $application->physical_address,
@@ -244,14 +244,6 @@ class RecruitmentController extends Controller
             'middle' => implode(' ', $parts),
             'last' => $last,
         ];
-    }
-
-    private function generateOrganisationEmail(string $firstName, string $surname): string
-    {
-        $first = strtolower(preg_replace('/[^a-z0-9]/', '', $firstName));
-        $last = strtolower(preg_replace('/[^a-z0-9]/', '', $surname));
-
-        return substr($first, 0, 1) . $last . '@tich.africa';
     }
 
     public function sendQualifiedEmail(Request $request, int $id)

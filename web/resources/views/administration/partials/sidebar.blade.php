@@ -10,6 +10,7 @@
             'icon' => 'dashboard',
             'active' => request()->routeIs('administration.dashboard'),
         ])
+        @include('partials.navigation.department-budgeting-link', ['module' => 'administration'])
 
         @foreach ($adminNav->sidebarGroups() as $group)
             @include('partials.navigation.sidebar-group', [

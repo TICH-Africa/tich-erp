@@ -25,6 +25,7 @@
             'active' => request()->routeIs('hr.contracts.*'),
             'badgeKey' => 'contracts',
         ])
+        @include('partials.navigation.department-budgeting-link', ['module' => 'hr'])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.vacancies.index'), 'label' => 'Vacancies', 'icon' => 'briefcase', 'active' => request()->routeIs('hr.vacancies.*')])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.recruitment.index'),

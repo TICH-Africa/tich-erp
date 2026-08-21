@@ -407,9 +407,14 @@ class DepartmentDashboardService
 
     public function entryUrlForDepartment(User $user, Department $department): string
     {
+        $moduleHome = app(DepartmentBudgetingService::class)->moduleHomeUrlForDepartment($department);
+        if ($moduleHome) {
+            return $moduleHome;
+        }
+
         if ($this->accessibleChildDepartments($user, $department)->isNotEmpty()
             && $this->modulesForDepartment($user, $department) === []) {
-            return route('departments.show', $department);
+            return route('dashboard');
         }
 
         $modules = collect($this->modulesForDepartment($user, $department))
@@ -421,7 +426,7 @@ class DepartmentDashboardService
             return route($module['route'], $module['params'] ?? []);
         }
 
-        return route('departments.show', $department);
+        return route('dashboard');
     }
 
     public function cardDescription(Department $department): string

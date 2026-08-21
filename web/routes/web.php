@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
+use App\Http\Controllers\Module\BudgetingController as ModuleBudgetingController;
 use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\ApplicationPaymentController;
 use App\Http\Controllers\Public\FaviconController;
@@ -95,6 +96,24 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         ->middleware('permission:dashboard.access')
         ->where('department', '[0-9]+(-[0-9]+)?')
         ->name('departments.show');
+
+    $registerModuleBudgeting = static function (string $module): void {
+        if ($module === 'finance') {
+            Route::get('/budgeting', [ModuleBudgetingController::class, 'index'])->name('finance.budget-requests.index');
+            Route::get('/budgeting/create', [ModuleBudgetingController::class, 'create'])->name('finance.budget-requests.create');
+            Route::post('/budgeting', [ModuleBudgetingController::class, 'store'])->name('finance.budget-requests.store');
+            Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name('finance.budget-requests.edit');
+            Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name('finance.budget-requests.update');
+
+            return;
+        }
+
+        Route::get('/budgeting', [ModuleBudgetingController::class, 'index'])->name("{$module}.budgeting.index");
+        Route::get('/budgeting/create', [ModuleBudgetingController::class, 'create'])->name("{$module}.budgeting.create");
+        Route::post('/budgeting', [ModuleBudgetingController::class, 'store'])->name("{$module}.budgeting.store");
+        Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name("{$module}.budgeting.edit");
+        Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name("{$module}.budgeting.update");
+    };
 
     Route::prefix('admin')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])
@@ -211,9 +230,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/students/{student}/transcript/pdf', [\App\Http\Controllers\Sis\TranscriptController::class, 'pdf'])->name('sis.students.transcript.pdf');
     });
 
-    Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () {
+    Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Finance\SidebarNotificationController::class)->name('finance.sidebar-notifications');
+        $registerModuleBudgeting('finance');
         Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
@@ -278,9 +298,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/reports/export/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'exportExcel'])->name('finance.reports.export.excel');
     });
 
-    Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () {
+    Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Administration\DashboardController::class, '__invoke'])->name('administration.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Administration\SidebarNotificationController::class)->name('administration.sidebar-notifications');
+        $registerModuleBudgeting('administration');
 
         Route::get('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'index'])->name('administration.planning.index');
         Route::post('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'store'])->name('administration.planning.store');
@@ -296,7 +317,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::post('/budget-aggregation', [\App\Http\Controllers\Administration\BudgetAggregationController::class, 'store'])->name('administration.budget-aggregation.store');
 
         Route::get('/approvals', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'index'])->name('administration.approvals.index');
+        Route::get('/approvals/{budget_request}', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'show'])->name('administration.approvals.show');
+        Route::post('/approvals/{budget_request}/review', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'review'])->name('administration.approvals.review');
         Route::post('/approvals/{budget_request}/route-finance', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'routeToFinance'])->name('administration.approvals.route-finance');
+        Route::post('/approvals/{budget_request}/return', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'returnToSender'])->name('administration.approvals.return');
         Route::post('/approvals/{budget_request}/reject', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'reject'])->name('administration.approvals.reject');
 
         Route::get('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'index'])->name('administration.fund-distribution.index');
@@ -319,20 +343,24 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::post('/ledger-sync/run', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'runSync'])->name('administration.ledger-sync.run');
     });
 
-    Route::prefix('qa')->middleware(['permission:qa.read'])->group(function () {
+    Route::prefix('qa')->middleware(['permission:qa.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Qa\DashboardController::class, '__invoke'])->name('qa.dashboard');
+        $registerModuleBudgeting('qa');
     });
 
-    Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () {
+    Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Procurement\DashboardController::class, '__invoke'])->name('procurement.dashboard');
+        $registerModuleBudgeting('procurement');
     });
 
-    Route::prefix('research')->middleware(['permission:research.read'])->group(function () {
+    Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+        $registerModuleBudgeting('research');
     });
 
-    Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () {
+    Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
+        $registerModuleBudgeting('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
 
@@ -354,9 +382,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         });
     });
 
-    Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () {
+    Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
+        $registerModuleBudgeting('hr');
         Route::post('/registration-invites', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'store'])->name('hr.registration-invites.store');
 
         Route::middleware('permission:hr.staff.view')->group(function () {
@@ -631,8 +660,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
 
     Route::prefix('academics')
         ->middleware('resolve.academics.hub')
-        ->group(function () use ($registerAcademicsRoutes) {
+        ->group(function () use ($registerAcademicsRoutes, $registerModuleBudgeting) {
             $registerAcademicsRoutes(true);
+            Route::middleware('permission:academics.read')->group(function () use ($registerModuleBudgeting) {
+                $registerModuleBudgeting('academics');
+            });
         });
 
     Route::prefix('departments/{department}/academics')
