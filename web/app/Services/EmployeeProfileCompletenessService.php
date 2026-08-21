@@ -56,6 +56,10 @@ class EmployeeProfileCompletenessService
 
     public function mustCompleteProfile(User $user): bool
     {
+        if ($user->hasRole('Super Admin')) {
+            return false;
+        }
+
         $staff = $this->staffForUser($user);
 
         return $staff !== null && ! $this->isComplete($staff);

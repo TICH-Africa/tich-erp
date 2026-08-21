@@ -213,8 +213,10 @@ class AuthService
             return redirect()->to($this->mfaEntryRoute($user));
         }
 
-        app(EmployeePortalService::class)->ensureStaffProfile($user);
-        $user->refresh();
+        if (! $this->rbacService->hasRole($user, 'Super Admin')) {
+            app(EmployeePortalService::class)->ensureStaffProfile($user);
+            $user->refresh();
+        }
 
         $home = $this->authenticatedHome($user);
 
@@ -234,8 +236,10 @@ class AuthService
 
     public function redirectAfterMfa(User $user, Request $request): RedirectResponse
     {
-        app(EmployeePortalService::class)->ensureStaffProfile($user);
-        $user->refresh();
+        if (! $this->rbacService->hasRole($user, 'Super Admin')) {
+            app(EmployeePortalService::class)->ensureStaffProfile($user);
+            $user->refresh();
+        }
 
         $home = $this->authenticatedHome($user);
 
@@ -254,12 +258,11 @@ class AuthService
 
     private function shouldPreferEmployeeHome(User $user): bool
     {
-        if ($this->isEnrolledStudent($user)) {
+        if ($this->isEnrolledStudent($user) || $this->rbacService->hasRole($user, 'Super Admin')) {
             return false;
         }
 
         return $user->user_type === 'staff'
-            || $user->user_type === 'admin'
             || app(EmployeePortalService::class)->hasEmployeeProfile($user);
     }
 
@@ -269,15 +272,19 @@ class AuthService
             return route('portal.dashboard');
         }
 
+        // Super Admins use the full platform — never force employee profile completion.
+        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+            return route('dashboard');
+        }
+
         $employeePortal = app(EmployeePortalService::class);
         $employeePortal->ensureStaffProfile($user);
         $user->refresh();
 
         $isEmployee = $user->user_type === 'staff'
-            || $user->user_type === 'admin'
             || $employeePortal->hasEmployeeProfile($user);
 
-        // Invited users and all staff are employees — send them to My Employee Portal.
+        // Invited users and staff are employees — send them to My Employee Portal.
         if ($isEmployee) {
             if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
                 return route('employee.profile.edit');

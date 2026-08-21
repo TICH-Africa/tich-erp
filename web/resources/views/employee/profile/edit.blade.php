@@ -85,7 +85,7 @@
 
             <div class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem;">
                 <div>
-                    <label for="first_name" class="tich-label">First name @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    <label for="first_name" class="tich-label">First name (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     <input type="text" id="first_name" name="first_name" class="tich-input @error('first_name') tich-input--error @enderror" value="{{ old('first_name', $staff->first_name) }}" @required($mustCompleteProfile) autocomplete="given-name">
                     @error('first_name')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
@@ -95,24 +95,24 @@
                     @error('middle_name')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="surname" class="tich-label">Surname @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    <label for="surname" class="tich-label">Surname (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     <input type="text" id="surname" name="surname" class="tich-input @error('surname') tich-input--error @enderror" value="{{ old('surname', $staff->surname === 'Invitee' ? '' : $staff->surname) }}" @required($mustCompleteProfile) autocomplete="family-name">
                     @error('surname')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="date_of_birth" class="tich-label">Date of birth @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
-                    @php
-                        $dobValue = old('date_of_birth');
-                        if ($dobValue === null) {
-                            $dob = $staff->date_of_birth;
-                            $dobValue = ($dob && $dob->format('Y-m-d') !== '1990-01-01') ? $dob->format('Y-m-d') : '';
-                        }
-                    @endphp
-                    <input type="date" id="date_of_birth" name="date_of_birth" class="tich-input @error('date_of_birth') tich-input--error @enderror" value="{{ $dobValue }}" @required($mustCompleteProfile)>
+                    <label for="date_of_birth" class="tich-label">Date of birth (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    <input
+                        type="date"
+                        id="date_of_birth"
+                        name="date_of_birth"
+                        class="tich-input @error('date_of_birth') tich-input--error @enderror"
+                        value="{{ old('date_of_birth', ($staff->date_of_birth && $staff->date_of_birth->format('Y-m-d') !== '1990-01-01') ? $staff->date_of_birth->format('Y-m-d') : '') }}"
+                        @required($mustCompleteProfile)
+                    >
                     @error('date_of_birth')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="gender" class="tich-label">Gender @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    <label for="gender" class="tich-label">Gender (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     <select id="gender" name="gender" class="tich-input @error('gender') tich-input--error @enderror" @required($mustCompleteProfile)>
                         <option value="">-</option>
                         @foreach (['Male', 'Female', 'Other'] as $gender)
