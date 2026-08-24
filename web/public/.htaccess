@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    # Prefer HTTPS when the environment already terminates TLS at the edge
+    # (uncomment if Apache itself should redirect plain HTTP):
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +28,24 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Hide server fingerprinting where mod_headers is available.
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+    Header always unset Server
+    Header unset Server
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Do not expose directory listings.
+Options -Indexes
+
+# Reduce PHP exposure when running as Apache module.
+<IfModule mod_php.c>
+    php_flag expose_php Off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag expose_php Off
 </IfModule>

@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => env('SESSION_ENCRYPT', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,6 +169,7 @@ return [
     |
     */
 
+    // null = auto (secure when the request is HTTPS). Set true in production TLS.
     'secure' => env('SESSION_SECURE_COOKIE'),
 
     /*

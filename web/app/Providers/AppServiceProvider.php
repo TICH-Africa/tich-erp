@@ -14,6 +14,7 @@ use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (config('security.force_https')) {
+            URL::forceScheme('https');
+        }
+
+        // Prefer HttpOnly + SameSite session cookies (secure when HTTPS / FORCE_HTTPS).
+        if (config('security.force_https') && config('session.secure') === null) {
+            config(['session.secure' => true]);
+        }
+
         Gate::before(function ($user, string $ability) {
             if (! $user) {
                 return null;

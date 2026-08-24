@@ -13,6 +13,9 @@
 <script src="{{ asset('js/tich-toasts.js') }}" defer></script>
 <script src="{{ asset('js/tich-lazy-load.js') }}" defer></script>
 <script src="{{ asset('js/tich-form-submit-once.js') }}" defer></script>
+@if (config('security.block_inspect_ui', true))
+<script src="{{ asset('js/tich-ui-protection.js') }}" defer></script>
+@endif
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {

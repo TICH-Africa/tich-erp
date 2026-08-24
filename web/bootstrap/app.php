@@ -20,13 +20,28 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Needed so ForceHttps / secure cookies see the real scheme behind Apache/XAMPP proxies.
+        $middleware->trustProxies(at: '*');
+
+        $middleware->web(prepend: [
+            \App\Http\Middleware\ForceHttps::class,
+        ]);
+
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceHttps::class,
+        ]);
+
         $middleware->web(append: [
+            \App\Http\Middleware\SanitizeInput::class,
             \App\Http\Middleware\CaptureClientContext::class,
             \App\Http\Middleware\PreventDuplicateFormSubmission::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         $middleware->api(append: [
+            \App\Http\Middleware\SanitizeInput::class,
             \App\Http\Middleware\PreventDuplicateFormSubmission::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         $middleware->alias([

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $document['label'] }} - {{ $application->full_name }}</title>
     <link rel="stylesheet" href="{{ asset('css/tich-platform.css') }}">
+    @if (config('security.block_inspect_ui', true))
+        <script src="{{ asset('js/tich-ui-protection.js') }}" defer></script>
+    @endif
     <style>
         html, body {
             margin: 0;

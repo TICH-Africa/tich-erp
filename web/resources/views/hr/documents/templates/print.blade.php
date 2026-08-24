@@ -1,1 +1,1 @@
-{!! $html !!}
+{!! \App\Support\SafeHtml::clean($html) !!}

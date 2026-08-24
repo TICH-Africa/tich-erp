@@ -69,7 +69,7 @@
             <h3 class="tich-h3">Live Preview</h3>
             <p class="tich-text tich-text--secondary tich-mb-4">Previewing with: <strong>{{ $previewStaff->fullName() }}</strong> ({{ $previewStaff->employee_number }})</p>
             <div style="border: 1px solid var(--tich-neutral-border); border-radius: var(--radius-md); overflow: hidden; background: #f8fafc; min-height: 300px;">
-                {!! $previewContent !!}
+                {!! \App\Support\SafeHtml::clean($previewContent) !!}
             </div>
             <div class="tich-mt-4">
                 <a href="{{ route('hr.documents.templates.generate', ['template' => $template, 'staff_id' => $previewStaff->id]) }}" class="tich-btn tich-btn-secondary" target="_blank">Open Full Preview</a>
