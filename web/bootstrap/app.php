@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\CaptureClientContext::class,
+            \App\Http\Middleware\PreventDuplicateFormSubmission::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\PreventDuplicateFormSubmission::class,
         ]);
 
         $middleware->alias([

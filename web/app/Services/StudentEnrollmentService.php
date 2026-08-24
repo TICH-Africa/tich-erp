@@ -24,6 +24,14 @@ class StudentEnrollmentService
         $applicant->loadMissing(['program', 'preferredCampus']);
 
         return DB::transaction(function () use ($applicant, $createdBy) {
+            // Serialize concurrent enrollments for the same applicant (double-click / race).
+            Applicant::query()->whereKey($applicant->id)->lockForUpdate()->firstOrFail();
+
+            $existing = Student::query()->where('application_id', $applicant->id)->first();
+            if ($existing) {
+                return $this->refreshPortalInvite($existing);
+            }
+
             $token = Str::random(48);
             $expiresAt = now()->addDays((int) config('tich-sis.portal_invite_days', 14));
 
@@ -62,7 +70,7 @@ class StudentEnrollmentService
             );
 
             return $student;
-        });
+        }, 3);
     }
 
     public function refreshPortalInvite(Student $student): Student

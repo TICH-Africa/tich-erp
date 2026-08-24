@@ -25,10 +25,27 @@ class InvoiceService
     public function generateForStudent(Student $student, array $data, ?int $recordedByStaffId = null, bool $dispatch = true): Invoice
     {
         return DB::transaction(function () use ($student, $data, $recordedByStaffId, $dispatch) {
+            $student = Student::query()->whereKey($student->id)->lockForUpdate()->firstOrFail();
             $student->loadMissing(['applicant', 'program']);
             $account = $this->accounts->ensureAccount($student);
 
             $amount = round((float) $data['amount'], 2);
+            $invoiceType = (string) $data['invoice_type'];
+            $description = (string) $data['description'];
+
+            $recentDuplicate = Invoice::query()
+                ->where('student_id', $student->id)
+                ->where('invoice_type', $invoiceType)
+                ->where('amount', $amount)
+                ->where('description', $description)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recentDuplicate) {
+                return $recentDuplicate->loadMissing(['student.applicant', 'student.program']);
+            }
+
             $dueDate = isset($data['due_date'])
                 ? \Illuminate\Support\Carbon::parse($data['due_date'])->toDateString()
                 : now()->addDays(config('finance.invoice_due_days', 30))->toDateString();
@@ -38,8 +55,8 @@ class InvoiceService
                 'student_account_id' => $account->id,
                 'student_id' => $student->id,
                 'semester_id' => $data['semester_id'] ?? null,
-                'invoice_type' => $data['invoice_type'],
-                'description' => $data['description'],
+                'invoice_type' => $invoiceType,
+                'description' => $description,
                 'amount' => $amount,
                 'amount_paid' => 0,
                 'balance' => $amount,
@@ -52,7 +69,13 @@ class InvoiceService
             $this->accounts->recalculate($account);
 
             if ($dispatch) {
-                $this->dispatchToChannels($invoice);
+                try {
+                    $this->dispatchToChannels($invoice);
+                } catch (Throwable $e) {
+                    Log::warning('Invoice created but dispatch failed: '.$e->getMessage(), [
+                        'invoice_id' => $invoice->id,
+                    ]);
+                }
             }
 
             $this->audit->log('finance.invoice.raised', 'invoices', $invoice->id, null, [
@@ -63,7 +86,7 @@ class InvoiceService
             ]);
 
             return $invoice->fresh(['student.applicant', 'student.program']);
-        });
+        }, 3);
     }
 
     /** Semester charges invoice from an approved programme fee structure. */

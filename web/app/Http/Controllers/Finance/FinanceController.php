@@ -262,7 +262,27 @@ class FinanceController extends Controller
         $validated['spent_amount'] = 0;
         $validated['committed_amount'] = 0;
 
-        FinanceBudget::query()->create($validated);
+        $existing = FinanceBudget::query()
+            ->where('budget_code', $validated['budget_code'])
+            ->where('fiscal_year', $validated['fiscal_year'])
+            ->first();
+
+        if ($existing) {
+            return redirect()
+                ->route('finance.budgeting.index', $department)
+                ->with('status', 'Budget already exists for that code and fiscal year. No duplicate was created.');
+        }
+
+        try {
+            FinanceBudget::query()->create($validated);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (\App\Support\SafeWrite::isUniqueViolation($e)) {
+                return redirect()
+                    ->route('finance.budgeting.index', $department)
+                    ->with('status', 'Budget already exists. No duplicate was created.');
+            }
+            throw $e;
+        }
 
         return redirect()->route('finance.budgeting.index', $department)->with('status', 'Budget created successfully.');
     }

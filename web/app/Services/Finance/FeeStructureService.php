@@ -22,6 +22,22 @@ class FeeStructureService
      */
     public function create(array $data): FeeStructure
     {
+        $programId = $data['program_id'] ?? null;
+        $academicYearId = $data['academic_year_id'] ?? null;
+
+        if ($programId && $academicYearId) {
+            $recent = FeeStructure::query()
+                ->where('program_id', $programId)
+                ->where('academic_year_id', $academicYearId)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recent) {
+                return $recent->fresh(['program', 'academicYear']);
+            }
+        }
+
         $feeStructure = new FeeStructure($data);
         $feeStructure->recalculateTotal();
         $feeStructure->save();

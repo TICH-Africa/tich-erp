@@ -12,6 +12,7 @@
 <script src="{{ asset('js/tich-select.js') }}" defer></script>
 <script src="{{ asset('js/tich-toasts.js') }}" defer></script>
 <script src="{{ asset('js/tich-lazy-load.js') }}" defer></script>
+<script src="{{ asset('js/tich-form-submit-once.js') }}" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {

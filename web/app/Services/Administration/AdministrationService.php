@@ -66,6 +66,19 @@ class AdministrationService
 
         $isLate = $cycle?->isPastDeadline() ?? false;
 
+        $recent = BudgetRequest::query()
+            ->where('department_id', $data['department_id'])
+            ->where('title', $data['title'])
+            ->where('requested_amount', $data['requested_amount'])
+            ->when($userId, fn ($q) => $q->where('submitted_by', $userId))
+            ->where('created_at', '>=', now()->subSeconds(90))
+            ->orderByDesc('id')
+            ->first();
+
+        if ($recent) {
+            return $recent;
+        }
+
         $request = BudgetRequest::query()->create([
             'request_code' => $this->nextCode('BQR'),
             'planning_cycle_id' => $data['planning_cycle_id'] ?? null,

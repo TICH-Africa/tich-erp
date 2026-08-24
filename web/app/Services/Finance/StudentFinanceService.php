@@ -116,49 +116,62 @@ class StudentFinanceService
 
     public function approveAdjustment(FinancialAdjustment $adjustment, int $approvedBy): FinancialAdjustment
     {
-        if ($adjustment->status !== 'pending') {
-            return $adjustment;
-        }
+        return DB::transaction(function () use ($adjustment, $approvedBy) {
+            /** @var FinancialAdjustment $adjustment */
+            $adjustment = FinancialAdjustment::query()->whereKey($adjustment->id)->lockForUpdate()->firstOrFail();
 
-        $adjustment->update([
-            'status' => 'approved',
-            'approved_by' => $approvedBy,
-            'approved_at' => now(),
-        ]);
+            if ($adjustment->status !== 'pending') {
+                return $adjustment;
+            }
 
-        if ($adjustment->studentAccount) {
-            $this->recalculateAccount($adjustment->studentAccount);
-        }
+            $adjustment->update([
+                'status' => 'approved',
+                'approved_by' => $approvedBy,
+                'approved_at' => now(),
+            ]);
 
-        return $adjustment->fresh();
+            if ($adjustment->studentAccount) {
+                $this->recalculateAccount($adjustment->studentAccount);
+            }
+
+            return $adjustment->fresh();
+        }, 3);
     }
 
     public function approveRefund(Refund $refund, int $approvedBy): Refund
     {
-        if ($refund->status !== 'pending') {
-            return $refund;
-        }
+        return DB::transaction(function () use ($refund, $approvedBy) {
+            /** @var Refund $refund */
+            $refund = Refund::query()->whereKey($refund->id)->lockForUpdate()->firstOrFail();
 
-        if ($refund->requested_by === $approvedBy) {
-            return $refund;
-        }
+            if ($refund->status !== 'pending') {
+                return $refund;
+            }
 
-        $refund->update([
-            'status' => 'approved',
-            'approved_by' => $approvedBy,
-            'approved_at' => now(),
-        ]);
+            if ($refund->requested_by === $approvedBy) {
+                return $refund;
+            }
 
-        return $refund->fresh();
+            $refund->update([
+                'status' => 'approved',
+                'approved_by' => $approvedBy,
+                'approved_at' => now(),
+            ]);
+
+            return $refund->fresh();
+        }, 3);
     }
 
     public function processRefund(Refund $refund, int $processedBy): Refund
     {
-        if (! in_array($refund->status, ['pending', 'approved'])) {
-            return $refund;
-        }
+        return DB::transaction(function () use ($refund, $processedBy) {
+            /** @var Refund $refund */
+            $refund = Refund::query()->whereKey($refund->id)->lockForUpdate()->firstOrFail();
 
-        DB::transaction(function () use ($refund, $processedBy) {
+            if (! in_array($refund->status, ['pending', 'approved'], true)) {
+                return $refund;
+            }
+
             $payment = $refund->payment;
 
             if ($payment && $payment->status === 'SUCCESS') {
@@ -174,9 +187,9 @@ class StudentFinanceService
             if ($refund->studentAccount) {
                 $this->recalculateAccount($refund->studentAccount);
             }
-        });
 
-        return $refund->fresh();
+            return $refund->fresh();
+        }, 3);
     }
 
     public function autoGenerateInstallmentPlan($payment, int $recordedByStaffId): ?InstallmentPlan
@@ -191,82 +204,87 @@ class StudentFinanceService
             return null;
         }
 
-        $existingPlan = InstallmentPlan::where('student_account_id', $account->id)
-            ->where('invoice_id', $invoice->id)
-            ->first();
+        return DB::transaction(function () use ($payment, $recordedByStaffId, $invoice, $account) {
+            $existingPlan = InstallmentPlan::query()
+                ->where('student_account_id', $account->id)
+                ->where('invoice_id', $invoice->id)
+                ->lockForUpdate()
+                ->first();
 
-        if ($existingPlan) {
-            $this->updatePlanProgress($existingPlan, $account);
-            return $existingPlan;
-        }
+            if ($existingPlan) {
+                $this->updatePlanProgress($existingPlan, $account);
 
-        $semester = $invoice->semester;
-        $semesterId = $invoice->semester_id;
-        $academicYearId = $semester?->academic_year_id ?? ($account->academic_year_id ?? null);
+                return $existingPlan;
+            }
 
-        $totalAmount = max(0, (float) $invoice->balance);
+            $semester = $invoice->semester;
+            $semesterId = $invoice->semester_id;
+            $academicYearId = $semester?->academic_year_id ?? ($account->academic_year_id ?? null);
 
-        $plan = InstallmentPlan::create([
-            'student_account_id' => $account->id,
-            'student_id' => $payment->student_id,
-            'invoice_id' => $invoice->id,
-            'semester_id' => $semesterId,
-            'academic_year_id' => $academicYearId,
-            'plan_number' => 'INST-' . now()->format('Ym') . '-' . str_pad($account->id, 4, '0', STR_PAD_LEFT),
-            'total_amount' => $totalAmount,
-            'paid_amount' => 0,
-            'remaining_amount' => $totalAmount,
-            'status' => 'active',
-        ]);
+            $totalAmount = max(0, (float) $invoice->balance);
 
-        $milestones = [
-            ['milestone_type' => 'registration', 'percentage' => 50, 'due_offset_days' => 0],
-            ['milestone_type' => 'mid_semester', 'percentage' => 75, 'due_offset_days' => 60],
-            ['milestone_type' => 'final', 'percentage' => 100, 'due_offset_days' => 120],
-        ];
-
-        $paidSoFar = 0;
-
-        foreach ($milestones as $m) {
-            $milestoneAmount = round($totalAmount * ($m['percentage'] / 100), 2);
-            $milestonePaid = min($payment->amount, max(0, $milestoneAmount - $paidSoFar));
-            $paidSoFar += $milestonePaid;
-
-            $status = match (true) {
-                $milestonePaid >= $milestoneAmount && $milestoneAmount > 0 => 'paid',
-                $milestonePaid > 0 && $milestonePaid < $milestoneAmount => 'partial',
-                $milestoneAmount <= 0 => 'paid',
-                default => 'pending',
-            };
-
-            PaymentMilestone::create([
+            $plan = InstallmentPlan::create([
                 'student_account_id' => $account->id,
                 'student_id' => $payment->student_id,
                 'invoice_id' => $invoice->id,
-                'milestone_type' => $m['milestone_type'],
-                'percentage' => $m['percentage'],
-                'milestone_amount' => $milestoneAmount,
-                'paid_amount' => $milestonePaid,
-                'status' => $status,
-                'due_date' => now()->addDays($m['due_offset_days'])->toDateString(),
-                'paid_at' => $milestonePaid > 0 ? now() : null,
-                'recorded_by' => $recordedByStaffId,
+                'semester_id' => $semesterId,
+                'academic_year_id' => $academicYearId,
+                'plan_number' => 'INST-'.now()->format('Ym').'-'.str_pad((string) $account->id, 4, '0', STR_PAD_LEFT),
+                'total_amount' => $totalAmount,
+                'paid_amount' => 0,
+                'remaining_amount' => $totalAmount,
+                'status' => 'active',
             ]);
-        }
 
-        InstallmentPlanItem::create([
-            'installment_plan_id' => $plan->id,
-            'installment_number' => 1,
-            'amount' => $totalAmount,
-            'due_date' => now()->addDays(30)->toDateString(),
-            'status' => 'pending',
-            'paid_amount' => $payment->amount,
-            'paid_at' => now(),
-        ]);
+            $milestones = [
+                ['milestone_type' => 'registration', 'percentage' => 50, 'due_offset_days' => 0],
+                ['milestone_type' => 'mid_semester', 'percentage' => 75, 'due_offset_days' => 60],
+                ['milestone_type' => 'final', 'percentage' => 100, 'due_offset_days' => 120],
+            ];
 
-        $this->updatePlanProgress($plan, $account);
+            $paidSoFar = 0;
 
-        return $plan->fresh(['student', 'invoice', 'items', 'milestones']);
+            foreach ($milestones as $m) {
+                $milestoneAmount = round($totalAmount * ($m['percentage'] / 100), 2);
+                $milestonePaid = min($payment->amount, max(0, $milestoneAmount - $paidSoFar));
+                $paidSoFar += $milestonePaid;
+
+                $status = match (true) {
+                    $milestonePaid >= $milestoneAmount && $milestoneAmount > 0 => 'paid',
+                    $milestonePaid > 0 && $milestonePaid < $milestoneAmount => 'partial',
+                    $milestoneAmount <= 0 => 'paid',
+                    default => 'pending',
+                };
+
+                PaymentMilestone::create([
+                    'student_account_id' => $account->id,
+                    'student_id' => $payment->student_id,
+                    'invoice_id' => $invoice->id,
+                    'milestone_type' => $m['milestone_type'],
+                    'percentage' => $m['percentage'],
+                    'milestone_amount' => $milestoneAmount,
+                    'paid_amount' => $milestonePaid,
+                    'status' => $status,
+                    'due_date' => now()->addDays($m['due_offset_days'])->toDateString(),
+                    'paid_at' => $milestonePaid > 0 ? now() : null,
+                    'recorded_by' => $recordedByStaffId,
+                ]);
+            }
+
+            InstallmentPlanItem::create([
+                'installment_plan_id' => $plan->id,
+                'installment_number' => 1,
+                'amount' => $totalAmount,
+                'due_date' => now()->addDays(30)->toDateString(),
+                'status' => 'pending',
+                'paid_amount' => $payment->amount,
+                'paid_at' => now(),
+            ]);
+
+            $this->updatePlanProgress($plan, $account);
+
+            return $plan->fresh(['student', 'invoice', 'items', 'milestones']);
+        }, 3);
     }
 
      public function updatePlanProgress(InstallmentPlan $plan, StudentAccount $account): void

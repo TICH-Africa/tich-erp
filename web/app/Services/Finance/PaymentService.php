@@ -29,10 +29,41 @@ class PaymentService
     public function recordPayment(Invoice $invoice, array $data, int $recordedByStaffId, bool $sendConfirmation = true): Payment
     {
         return DB::transaction(function () use ($invoice, $data, $recordedByStaffId, $sendConfirmation) {
+            /** @var Invoice $invoice */
+            $invoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             $invoice->loadMissing(['studentAccount', 'student.applicant', 'student.user']);
-            $amount = round(min((float) $data['amount'], (float) $invoice->balance), 2);
 
+            $amount = round(min((float) $data['amount'], (float) $invoice->balance), 2);
             abort_if($amount <= 0, 422, 'Payment amount must be greater than zero.');
+
+            $method = (string) $data['payment_method'];
+            $reference = $data['payment_reference'] ?? null;
+
+            // Absorb rapid double-submits of the same payment.
+            $recentDuplicate = Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('amount', $amount)
+                ->where('payment_method', $method)
+                ->where('status', 'SUCCESS')
+                ->where('recorded_by', $recordedByStaffId)
+                ->when($reference, fn ($q) => $q->where('payment_reference', $reference))
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recentDuplicate) {
+                return $recentDuplicate->loadMissing(['invoice', 'student.applicant', 'student.user']);
+            }
+
+            if (! empty($reference)) {
+                $byReference = Payment::query()
+                    ->where('payment_reference', $reference)
+                    ->where('status', 'SUCCESS')
+                    ->first();
+                if ($byReference) {
+                    return $byReference->loadMissing(['invoice', 'student.applicant', 'student.user']);
+                }
+            }
 
             $payment = Payment::query()->create([
                 'payment_number' => $this->nextPaymentNumber(),
@@ -41,8 +72,8 @@ class PaymentService
                 'student_id' => $invoice->student_id,
                 'payment_date' => $data['payment_date'] ?? now()->toDateString(),
                 'amount' => $amount,
-                'payment_method' => $data['payment_method'],
-                'payment_reference' => $data['payment_reference'] ?? null,
+                'payment_method' => $method,
+                'payment_reference' => $reference,
                 'transaction_channel_ref' => $data['transaction_channel_ref'] ?? null,
                 'status' => 'SUCCESS',
                 'is_reconciled' => 1,
@@ -65,7 +96,7 @@ class PaymentService
             $this->accounts->recalculate($invoice->studentAccount);
 
             if (! Receipt::where('payment_id', $payment->id)->exists()) {
-                $receiptNumber = 'RCP-' . now()->format('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT);
+                $receiptNumber = 'RCP-' . now()->format('Y') . '-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT);
                 Receipt::create([
                     'receipt_number' => $receiptNumber,
                     'payment_id' => $payment->id,
@@ -86,7 +117,13 @@ class PaymentService
             }
 
             if ($sendConfirmation) {
-                $this->sendConfirmation($payment->fresh(['invoice', 'student.applicant', 'student.user']));
+                try {
+                    $this->sendConfirmation($payment->fresh(['invoice', 'student.applicant', 'student.user']));
+                } catch (Throwable $e) {
+                    Log::warning('Payment recorded but confirmation email failed: '.$e->getMessage(), [
+                        'payment_id' => $payment->id,
+                    ]);
+                }
             }
 
             $this->audit->log('finance.payment.recorded', 'payments', $payment->id, null, [
@@ -97,14 +134,21 @@ class PaymentService
             ]);
 
             if ($invoice->status === 'paid' || $invoice->invoice_type === 'application') {
-                app(\App\Services\ApplicationFeeService::class)->syncFromInvoice(
-                    $invoice->fresh(),
-                    $payment->payment_reference ?: $payment->payment_number
-                );
+                try {
+                    app(\App\Services\ApplicationFeeService::class)->syncFromInvoice(
+                        $invoice->fresh(),
+                        $payment->payment_reference ?: $payment->payment_number
+                    );
+                } catch (Throwable $e) {
+                    Log::warning('Payment recorded but application fee sync failed: '.$e->getMessage(), [
+                        'payment_id' => $payment->id,
+                        'invoice_id' => $invoice->id,
+                    ]);
+                }
             }
 
             return $payment;
-        });
+        }, 3);
     }
 
     public function initiateMpesaPayment(Invoice $invoice, float $amount, string $phoneNumber, int $studentId): MpesaStkRequest

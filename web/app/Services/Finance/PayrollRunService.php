@@ -22,13 +22,17 @@ class PayrollRunService
     public function createRun(int $year, int $month, ?int $createdByStaffId = null, ?string $notes = null): PayrollRun
     {
         abort_if($month < 1 || $month > 12, 422, 'Invalid pay period month.');
-        abort_if(
-            PayrollRun::query()->where('pay_period_year', $year)->where('pay_period_month', $month)->where('status', '!=', PayrollRun::STATUS_CANCELLED)->exists(),
-            422,
-            'A payroll run already exists for this period.',
-        );
 
         return DB::transaction(function () use ($year, $month, $createdByStaffId, $notes) {
+            $existing = PayrollRun::query()
+                ->where('pay_period_year', $year)
+                ->where('pay_period_month', $month)
+                ->where('status', '!=', PayrollRun::STATUS_CANCELLED)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($existing !== null, 422, 'A payroll run already exists for this period.');
+
             $run = PayrollRun::query()->create([
                 'run_number' => $this->nextRunNumber($year, $month),
                 'pay_period_year' => $year,
@@ -50,7 +54,7 @@ class PayrollRunService
             ]);
 
             return $fresh;
-        });
+        }, 3);
     }
 
     public function populateRun(PayrollRun $run): PayrollRun

@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Finance\FeeStructure;
 use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlan;
+use App\Models\Finance\InstallmentPlanItem;
 use App\Models\Finance\Invoice;
 use App\Models\Finance\Payment;
 use App\Models\Finance\PaymentMilestone;
@@ -20,6 +21,7 @@ use App\Services\DepartmentDashboardService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Finance\StudentFinanceService;
 use App\Services\PrintDocumentService;
+use App\Support\SafeWrite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -935,22 +937,42 @@ class StudentFinanceController extends Controller
         ]);
 
         $student = \App\Models\Student::findOrFail($validated['student_id']);
-        $account = StudentAccount::where('student_id', $student->id)->first();
+        $requestedBy = (int) $request->user()->id;
 
-        $adjustment = FinancialAdjustment::create([
-            'student_account_id' => $account?->id,
-            'student_id' => $student->id,
-            'invoice_id' => $validated['invoice_id'] ?? null,
-            'adjustment_type' => $validated['adjustment_type'],
-            'reason' => $validated['reason'],
-            'amount' => $validated['amount'],
-            'status' => 'pending',
-            'requested_by' => $request->user()->id,
-        ]);
+        SafeWrite::transaction(function () use ($validated, $student, $requestedBy) {
+            $account = StudentAccount::where('student_id', $student->id)->lockForUpdate()->first();
 
-        if ($account) {
-            $this->financeService->recalculateAccount($account);
-        }
+            $recent = FinancialAdjustment::query()
+                ->where('student_id', $student->id)
+                ->where('adjustment_type', $validated['adjustment_type'])
+                ->where('amount', $validated['amount'])
+                ->where('reason', $validated['reason'])
+                ->where('requested_by', $requestedBy)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recent) {
+                return $recent;
+            }
+
+            $adjustment = FinancialAdjustment::create([
+                'student_account_id' => $account?->id,
+                'student_id' => $student->id,
+                'invoice_id' => $validated['invoice_id'] ?? null,
+                'adjustment_type' => $validated['adjustment_type'],
+                'reason' => $validated['reason'],
+                'amount' => $validated['amount'],
+                'status' => 'pending',
+                'requested_by' => $requestedBy,
+            ]);
+
+            if ($account) {
+                $this->financeService->recalculateAccount($account);
+            }
+
+            return $adjustment;
+        });
 
         return redirect()->route('finance.student-finance.adjustments.index', ['department' => $department->id])->with('success', 'Adjustment request submitted successfully.');
     }
@@ -1078,48 +1100,63 @@ class StudentFinanceController extends Controller
         ]);
 
         $student = Student::findOrFail($validated['student_id']);
-
-        $academicYearId = AcademicYear::query()->orderByDesc('start_date')->value('id');
-        $account = StudentAccount::firstOrCreate(
-            ['student_id' => $student->id],
-            ['academic_year_id' => $academicYearId]
-        );
         $invoice = Invoice::findOrFail($validated['invoice_id']);
 
-        $invoice->loadMissing('semester');
-        $semester = $invoice->semester;
-        $semesterId = $invoice->semester_id ?? $semester?->id;
-        $academicYearId = $semester?->academic_year_id ?? $account->academic_year_id;
+        SafeWrite::transaction(function () use ($validated, $student, $invoice) {
+            $academicYearId = AcademicYear::query()->orderByDesc('start_date')->value('id');
+            $account = StudentAccount::firstOrCreate(
+                ['student_id' => $student->id],
+                ['academic_year_id' => $academicYearId]
+            );
 
-        $plan = InstallmentPlan::create([
-            'student_account_id' => $account->id,
-            'student_id' => $student->id,
-            'invoice_id' => $invoice->id,
-            'semester_id' => $semesterId,
-            'academic_year_id' => $academicYearId,
-            'plan_number' => 'INST-' . now()->format('Ym') . '-' . str_pad($account->id, 4, '0', STR_PAD_LEFT),
-            'total_amount' => $validated['total_amount'],
-            'paid_amount' => 0,
-            'remaining_amount' => $validated['total_amount'],
-            'status' => 'active',
-        ]);
+            $existing = InstallmentPlan::query()
+                ->where('student_id', $student->id)
+                ->where('invoice_id', $invoice->id)
+                ->whereIn('status', ['active', 'pending'])
+                ->lockForUpdate()
+                ->first();
 
-        if ($plan->semester_id && $plan->academic_year_id) {
-            $this->financeService->updatePlanProgress($plan, $account);
-        }
+            if ($existing) {
+                return $existing;
+            }
 
-        $perInstallment = $validated['total_amount'] / $validated['installment_count'];
-        $startDate = now()->addDays(30);
+            $invoice->loadMissing('semester');
+            $semester = $invoice->semester;
+            $semesterId = $invoice->semester_id ?? $semester?->id;
+            $academicYearId = $semester?->academic_year_id ?? $account->academic_year_id;
 
-        for ($i = 1; $i <= $validated['installment_count']; $i++) {
-            InstallmentPlanItem::create([
-                'installment_plan_id' => $plan->id,
-                'installment_number' => $i,
-                'amount' => round($perInstallment, 2),
-                'due_date' => $startDate->copy()->addDays(($i - 1) * 30),
-                'status' => 'pending',
+            $plan = InstallmentPlan::create([
+                'student_account_id' => $account->id,
+                'student_id' => $student->id,
+                'invoice_id' => $invoice->id,
+                'semester_id' => $semesterId,
+                'academic_year_id' => $academicYearId,
+                'plan_number' => 'INST-'.now()->format('Ym').'-'.str_pad((string) $account->id, 4, '0', STR_PAD_LEFT),
+                'total_amount' => $validated['total_amount'],
+                'paid_amount' => 0,
+                'remaining_amount' => $validated['total_amount'],
+                'status' => 'active',
             ]);
-        }
+
+            if ($plan->semester_id && $plan->academic_year_id) {
+                $this->financeService->updatePlanProgress($plan, $account);
+            }
+
+            $perInstallment = $validated['total_amount'] / $validated['installment_count'];
+            $startDate = now()->addDays(30);
+
+            for ($i = 1; $i <= $validated['installment_count']; $i++) {
+                InstallmentPlanItem::create([
+                    'installment_plan_id' => $plan->id,
+                    'installment_number' => $i,
+                    'amount' => round($perInstallment, 2),
+                    'due_date' => $startDate->copy()->addDays(($i - 1) * 30),
+                    'status' => 'pending',
+                ]);
+            }
+
+            return $plan;
+        });
 
         return redirect()->route('finance.student-finance.installment-plans.index', ['department' => $department->id])->with('success', 'Installment plan created successfully.');
     }
@@ -1347,22 +1384,48 @@ class StudentFinanceController extends Controller
         $payment = Payment::findOrFail($validated['payment_id']);
         $invoice = Invoice::findOrFail($validated['invoice_id']);
         $studentId = (int) $validated['student_id'];
+        $requestedBy = (int) $request->user()->id;
 
         abort_if($payment->student_id !== $studentId || $invoice->student_id !== $studentId, 400, 'Selected payment and invoice do not belong to the chosen student.');
 
-        $studentAccount = StudentAccount::where('student_id', $studentId)->first();
+        SafeWrite::transaction(function () use ($validated, $payment, $invoice, $studentId, $requestedBy) {
+            $openRefund = Refund::query()
+                ->where('payment_id', $payment->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->lockForUpdate()
+                ->first();
 
-        $refund = Refund::create([
-            'refund_number' => 'REF-' . strtoupper(uniqid()),
-            'payment_id' => $payment->id,
-            'invoice_id' => $invoice->id,
-            'student_account_id' => $studentAccount?->id,
-            'student_id' => $studentId,
-            'amount' => $validated['amount'],
-            'reason' => $validated['reason'],
-            'status' => 'pending',
-            'requested_by' => $request->user()->id,
-        ]);
+            if ($openRefund) {
+                return $openRefund;
+            }
+
+            $recent = Refund::query()
+                ->where('payment_id', $payment->id)
+                ->where('amount', $validated['amount'])
+                ->where('reason', $validated['reason'])
+                ->where('requested_by', $requestedBy)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recent) {
+                return $recent;
+            }
+
+            $studentAccount = StudentAccount::where('student_id', $studentId)->first();
+
+            return Refund::create([
+                'refund_number' => 'REF-'.strtoupper(uniqid()),
+                'payment_id' => $payment->id,
+                'invoice_id' => $invoice->id,
+                'student_account_id' => $studentAccount?->id,
+                'student_id' => $studentId,
+                'amount' => $validated['amount'],
+                'reason' => $validated['reason'],
+                'status' => 'pending',
+                'requested_by' => $requestedBy,
+            ]);
+        });
 
         return redirect()->route('finance.student-finance.refunds.index', ['department' => $department->id])->with('success', 'Refund request submitted successfully.');
     }

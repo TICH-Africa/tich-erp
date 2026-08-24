@@ -17,10 +17,25 @@ class CreditMemoService
     public function issue(Invoice $invoice, float $amount, string $reason, int $issuedByStaffId): CreditMemo
     {
         return DB::transaction(function () use ($invoice, $amount, $reason, $issuedByStaffId) {
+            /** @var Invoice $invoice */
+            $invoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             $invoice->loadMissing('studentAccount');
 
             $creditAmount = round(min($amount, (float) $invoice->balance), 2);
             abort_if($creditAmount <= 0, 422, 'Nothing to credit on this invoice.');
+
+            $recentDuplicate = CreditMemo::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('amount', $creditAmount)
+                ->where('reason', $reason)
+                ->where('issued_by', $issuedByStaffId)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($recentDuplicate) {
+                return $recentDuplicate->loadMissing(['invoice', 'student.applicant', 'issuer']);
+            }
 
             $memo = CreditMemo::query()->create([
                 'credit_memo_number' => $this->nextNumber(),
@@ -52,7 +67,7 @@ class CreditMemoService
             ]);
 
             return $memo->fresh(['invoice', 'student.applicant', 'issuer']);
-        });
+        }, 3);
     }
 
     private function nextNumber(): string
