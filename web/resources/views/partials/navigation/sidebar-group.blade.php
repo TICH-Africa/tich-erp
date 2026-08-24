@@ -2,7 +2,6 @@
     $label = $label ?? '';
     $icon = $icon ?? 'circle';
     $open = $open ?? false;
-    $active = $active ?? false;
     $items = $items ?? [];
     $badgeKey = $badgeKey ?? null;
     $groupBadge = $groupBadge ?? null;
@@ -45,16 +44,30 @@
 
     <div class="tich-admin-sidebar__subnav" data-sidebar-group-panel @unless($open) hidden @endunless>
         @foreach ($items as $item)
-            @include('partials.navigation.sidebar-link', [
-                'href' => $item['href'],
-                'label' => $item['label'],
-                'icon' => $item['icon'] ?? 'circle',
-                'active' => $item['active'] ?? false,
-                'badgeKey' => $item['badgeKey'] ?? null,
-                'badge' => $item['badge'] ?? null,
-                'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
-                'sub' => true,
-            ])
+            @if (($item['type'] ?? '') === 'subgroup' && ! empty($item['items']))
+                @include('partials.navigation.sidebar-subgroup', [
+                    'label' => $item['label'],
+                    'icon' => $item['icon'] ?? 'circle',
+                    'open' => $item['open'] ?? false,
+                    'active' => $item['active'] ?? false,
+                    'items' => $item['items'],
+                    'badgeKey' => $item['badgeKey'] ?? null,
+                    'groupBadge' => $item['groupBadge'] ?? null,
+                    'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
+                    'sidebarLabels' => $sidebarLabels,
+                ])
+            @else
+                @include('partials.navigation.sidebar-link', [
+                    'href' => $item['href'],
+                    'label' => $item['label'],
+                    'icon' => $item['icon'] ?? 'circle',
+                    'active' => $item['active'] ?? false,
+                    'badgeKey' => $item['badgeKey'] ?? null,
+                    'badge' => $item['badge'] ?? null,
+                    'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
+                    'sub' => true,
+                ])
+            @endif
         @endforeach
     </div>
 </div>

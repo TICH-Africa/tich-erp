@@ -86,7 +86,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         ]);
     }
 
-    public function show(Request $request, AcademicProgram $program, Department $department): View
+    public function show(Request $request, Department $department, AcademicProgram $program): View
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -291,7 +291,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         ]);
     }
 
-    public function updateFormat(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function updateFormat(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -315,7 +315,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Programme structure updated.');
     }
 
-    public function syncUnits(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function syncUnits(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -344,7 +344,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Programme unit mapping saved.');
     }
 
-    public function createVersion(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function createVersion(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -371,7 +371,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', "Intake {$version->intakeLabel()} created.");
     }
 
-    public function syncIntakeUnits(Request $request, AcademicProgram $program, CurriculumVersion $version, Department $department): RedirectResponse
+    public function syncIntakeUnits(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -401,7 +401,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Intake unit mapping saved.');
     }
 
-    public function syncIntakePeriods(Request $request, AcademicProgram $program, CurriculumVersion $version, Department $department): RedirectResponse
+    public function syncIntakePeriods(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -441,7 +441,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Semester dates saved.');
     }
 
-    public function syncTimetableTemplate(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function syncTimetableTemplate(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -476,7 +476,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Bell schedule saved.');
     }
 
-    public function syncTimetableKindSlots(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function syncTimetableKindSlots(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -513,7 +513,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Exam slots saved.');
     }
 
-    public function generateTimetable(Request $request, AcademicProgram $program, CurriculumVersion $version, Department $department): RedirectResponse
+    public function generateTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -552,7 +552,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Timetable draft generated. Review conflicts, then publish.');
     }
 
-    public function addTimetableSession(Request $request, AcademicProgram $program, ProgramTimetable $timetable, Department $department): RedirectResponse
+    public function addTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -576,7 +576,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Session added to timetable draft.');
     }
 
-    public function moveTimetableSession(Request $request, AcademicProgram $program, ProgramTimetable $timetable, ProgramTimetableSession $session, Department $department): JsonResponse|RedirectResponse
+    public function moveTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable, ProgramTimetableSession $session): JsonResponse|RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -620,7 +620,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Session moved.');
     }
 
-    public function publishTimetable(Request $request, AcademicProgram $program, ProgramTimetable $timetable, Department $department): RedirectResponse
+    public function publishTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -631,7 +631,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Timetable published. Students can now view it in the portal.');
     }
 
-    public function printTimetable(Request $request, AcademicProgram $program, ProgramTimetable $timetable, Department $department): View
+    public function printTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): View
     {
         return $this->printDocuments->render(
             'academics.programs.timetable-print',
@@ -639,7 +639,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
     }
 
-    public function downloadTimetablePdf(Request $request, AcademicProgram $program, ProgramTimetable $timetable, Department $department): Response
+    public function downloadTimetablePdf(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): Response
     {
         $data = $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
         $program = $data['program'];
@@ -714,7 +714,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         ]);
     }
 
-    public function addIntakeUnit(Request $request, AcademicProgram $program, CurriculumVersion $version, int $semester, Department $department): RedirectResponse
+    public function addIntakeUnit(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version, int $semester): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -788,7 +788,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Curriculum version published.');
     }
 
-    public function updateExamSchedule(Request $request, AcademicProgram $program, int $schedule, Department $department): RedirectResponse
+    public function updateExamSchedule(Request $request, Department $department, AcademicProgram $program, int $schedule): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -830,7 +830,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Exam session updated.');
     }
 
-    public function updateUnitAssessmentWeights(Request $request, AcademicProgram $program, Unit $unit, Department $department): RedirectResponse
+    public function updateUnitAssessmentWeights(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
@@ -858,7 +858,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Unit assessment weights updated.');
     }
 
-    public function storeAllocation(Request $request, AcademicProgram $program, Department $department): RedirectResponse
+    public function storeAllocation(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless($request->user()->hasPermission('academics.write'), 403);
@@ -905,7 +905,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Lecturer assigned to unit.');
     }
 
-    public function destroyAllocation(Request $request, AcademicProgram $program, UnitAllocation $allocation, Department $department): RedirectResponse
+    public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $allocation): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless($request->user()->hasPermission('academics.write'), 403);
@@ -924,3 +924,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Lecturer allocation removed.');
     }
 }
+
+
+
+
+
+
+
