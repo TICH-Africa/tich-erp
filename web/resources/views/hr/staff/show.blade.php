@@ -120,35 +120,6 @@
 
         <article class="tich-card">
             <div class="tich-flex tich-flex--between tich-mb-4">
-                <h3 class="tich-h3 mb-0">Generate Document</h3>
-                <a href="{{ route('hr.documents.templates.index') }}" class="tich-btn tich-btn-secondary tich-btn--sm">
-                    All Templates
-                </a>
-            </div>
-            <p class="tich-text tich-text--secondary tich-mb-4">Generate contracts, letters, or clearance documents for this staff member.</p>
-            @php
-                $templates = \App\Models\StaffDocumentTemplate::where('is_active', 1)->get(['id', 'name', 'type']);
-            @endphp
-            @forelse ($templates as $template)
-                <div class="tich-list-row tich-list-row--hover">
-                    <div>
-                        <strong>{{ $template->name }}</strong>
-                        <span class="tich-badge tich-badge--info tich-ml-2">{{ ucfirst(str_replace('_', ' ', $template->type)) }}</span>
-                    </div>
-                    <div class="tich-flex tich-flex--gap">
-                        <a href="{{ route('hr.documents.templates.generate', ['template' => $template, 'staff_id' => $staff->id]) }}" class="tich-btn tich-btn-secondary tich-btn--sm" target="_blank">Generate</a>
-                        <a href="{{ route('hr.staff.documents.send', $staff) }}?template_id={{ $template->id }}" class="tich-btn tich-btn-primary tich-btn--sm">Send</a>
-                    </div>
-                </div>
-            @empty
-                <div class="tich-text-center tich-mt-6 tich-mb-4">
-                    <p class="tich-text tich-text--secondary">No document templates available.</p>
-                </div>
-            @endforelse
-        </article>
-
-        <article class="tich-card">
-            <div class="tich-flex tich-flex--between tich-mb-4">
                 <h3 class="tich-h3 mb-0">Documents</h3>
                 <a href="{{ route('hr.staff.documents.create', $staff) }}" class="tich-btn tich-btn-primary tich-btn--sm">
                     + Upload

@@ -5,21 +5,17 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Models\StaffDocument;
-use App\Models\StaffDocumentTemplate;
-use App\Services\DocumentGenerationService;
 use App\Services\StaffLifecycleService;
 use App\Services\StoredFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffDocumentController extends Controller
 {
     public function __construct(
         protected StaffLifecycleService $lifecycleService,
-        protected DocumentGenerationService $documentService,
         protected \App\Services\PlatformNotificationService $notifications,
         protected StoredFileService $files,
     ) {}
@@ -121,96 +117,6 @@ $validated = $request->validate([
         ], $request->user()->staff_id ?? $staff->id);
 
         return back()->with('success', 'Document uploaded successfully.');
-    }
-
-    public function sendForm(int $staffId): View
-    {
-        $staff = Staff::findOrFail($staffId);
-        $templates = StaffDocumentTemplate::where('is_active', 1)->get(['id', 'name', 'type', 'content']);
-
-        return view('hr.documents.send', ['staff' => $staff, 'templates' => $templates]);
-    }
-
-    public function sendToStaff(Request $request, int $staffId)
-    {
-        $staff = Staff::findOrFail($staffId);
-        $template = StaffDocumentTemplate::findOrFail($request->integer('template_id'));
-
-        $content = $this->documentService->populateTemplate($template, $staff);
-        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), true);
-
-        $filename = $template->name . ' - ' . $staff->fullName() . '.pdf';
-        $path = 'staff/' . $staff->employee_number . '/documents/' . time() . '_' . preg_replace('/[^a-z0-9_-]/i', '_', $filename);
-
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'margin_left' => 15,
-            'margin_right' => 15,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
-        ]);
-
-        $mpdf->WriteHTML($html);
-        $pdfContent = $mpdf->Output('', 'S');
-
-        Storage::disk('public')->put($path, $pdfContent);
-
-        $this->lifecycleService->addDocument($staffId, [
-            'document_type' => 'other',
-            'document_name' => $template->name . ' - ' . $staff->fullName(),
-            'file_path' => $path,
-            'original_filename' => $filename,
-            'mime_type' => 'application/pdf',
-            'file_size' => strlen($pdfContent),
-            'notes' => 'Generated from template: ' . $template->name,
-        ], $request->user()->staff_id ?? $staff->id);
-
-        return redirect()->route('hr.documents.show', $staff)->with('success', 'Document sent to staff successfully.');
-    }
-
-    private function populateTemplate(StaffDocumentTemplate $template, Staff $staff): string
-    {
-        $data = [
-            'staff_full_name' => $staff->fullName(),
-            'staff_first_name' => $staff->first_name,
-            'staff_middle_name' => $staff->middle_name ?? '',
-            'staff_surname' => $staff->surname,
-            'staff_employee_number' => $staff->employee_number,
-            'staff_job_title' => $staff->job_title,
-            'staff_department' => $staff->department->dept_name ?? '',
-            'staff_campus' => $staff->campus->campus_name ?? '',
-            'staff_employment_category' => ucfirst($staff->employment_category),
-            'staff_employment_start_date' => $staff->employment_start_date?->format('F j, Y') ?? '',
-            'staff_contract_end_date' => $staff->contract_end_date?->format('F j, Y') ?? 'Ongoing',
-            'staff_gross_monthly_salary' => number_format($staff->gross_monthly_salary, 2),
-            'staff_kra_pin' => $staff->kra_pin ?? '',
-            'staff_nssf_number' => $staff->nssf_number ?? '',
-            'staff_sha_number' => $staff->sha_number ?? '',
-            'staff_helb_number' => $staff->helb_number ?? '',
-            'staff_phone_number' => $staff->phone_number,
-            'staff_primary_email' => $staff->primary_email,
-            'staff_organisation_email' => $staff->organisation_email,
-            'staff_postal_address' => $staff->postal_address ?? '',
-            'staff_physical_address' => $staff->physical_address ?? '',
-            'staff_date_of_birth' => $staff->date_of_birth?->format('F j, Y') ?? '',
-            'staff_gender' => $staff->gender,
-            'staff_marital_status' => $staff->marital_status ?? '',
-            'staff_national_id' => $staff->national_id_number ?? '',
-            'staff_line_manager' => $staff->lineManager?->fullName() ?? '',
-            'institution_name' => app(SiteSettingsService::class)->siteMeta()['institution_name'],
-            'current_date' => now()->format('F j, Y'),
-            'current_year' => now()->format('Y'),
-        ];
-
-        $content = $template->content;
-
-        foreach ($data as $key => $value) {
-            $content = str_replace('{{' . $key . '}}', $value ?? '', $content);
-            $content = str_replace('{{ ' . $key . ' }}', $value ?? '', $content);
-        }
-
-        return $content;
     }
 
     public function destroy(Request $request, int $staffId, int $documentId)

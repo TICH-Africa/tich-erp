@@ -59,11 +59,13 @@
                         <td>
                             @if ($session->exam_eligibility_checked_at)
                                 Checked {{ \Illuminate\Support\Carbon::parse($session->exam_eligibility_checked_at)->format('d M Y H:i') }}
-                            @else
-                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.exam-eligibility', array_merge($hub, ['session' => $session->id])) }}" style="display:inline;">
+                            @elseif ($session->verification_status === 'registrar_verified')
+                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.exam-eligibility', array_merge(['department' => $department->id], $hub, ['session' => $session->id])) }}" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="tich-link">Check eligibility</button>
                                 </form>
+                            @else
+                                <span class="tich-caption">Requires full verification</span>
                             @endif
                         </td>
                         <td>
@@ -87,7 +89,7 @@
                                 </form>
                             @endif
                             @if (! $session->roster_verified_at && in_array($session->verification_status, ['draft', 'submitted', 'hod_verified'], true))
-                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-roster', array_merge($hub, ['session' => $session->id])) }}" style="display:inline;">
+                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-roster', array_merge(['department' => $department->id], $hub, ['session' => $session->id])) }}" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="tich-link">Verify roster</button>
                                 </form>

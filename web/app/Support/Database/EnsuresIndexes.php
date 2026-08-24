@@ -123,9 +123,9 @@ trait EnsuresIndexes
 
         $grouped = [];
         foreach ($rows as $row) {
-            $name = (string) $row->index_name;
-            $grouped[$name]['unique'] = ((int) $row->non_unique) === 0;
-            $grouped[$name]['columns'][] = strtolower((string) $row->column_name);
+            $name = (string) ($row->INDEX_NAME ?? $row->index_name ?? '');
+            $grouped[$name]['unique'] = ((int) ($row->NON_UNIQUE ?? $row->non_unique ?? 1)) === 0;
+            $grouped[$name]['columns'][] = strtolower((string) ($row->COLUMN_NAME ?? $row->column_name ?? ''));
         }
 
         foreach ($grouped as $meta) {

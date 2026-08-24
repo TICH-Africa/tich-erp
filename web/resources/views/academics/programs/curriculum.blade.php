@@ -18,9 +18,9 @@
         ]));
     @endphp
 
-    @error('intake')
-        <p class="tich-text tich-mb-4" style="color: var(--tich-danger, #b91c1c);">{{ $message }}</p>
-    @enderror
+    @if (isset($errors) && $errors->has('intake'))
+        <p class="tich-text tich-mb-4" style="color: var(--tich-danger, #b91c1c);">{{ $errors->first('intake') }}</p>
+    @endif
 
     @include('academics.programs.partials.working-intake-bar')
 

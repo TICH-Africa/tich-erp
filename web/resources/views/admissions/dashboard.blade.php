@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="tich-grid tich-grid--2" style="align-items: start; gap: 2rem;">
+    <div class="tich-grid tich-grid--1" style="gap: 1.5rem;">
         <article class="tich-card">
             <h2 class="tich-h3">By handling department</h2>
             <p class="tich-text tich-mb-4">Each application is routed to the academic department offering the selected programme.</p>
@@ -33,28 +33,30 @@
             @if ($departmentBreakdown->isEmpty())
                 <p class="tich-caption">No applications in your scope yet.</p>
             @else
-                <table class="tich-admin-table">
-                    <thead>
-                        <tr>
-                            <th>Department</th>
-                            <th>Pending</th>
-                            <th>Total</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($departmentBreakdown as $row)
+                <div class="tich-table-wrap">
+                    <table class="tich-admin-table">
+                        <thead>
                             <tr>
-                                <td>{{ $row->dept_name }}</td>
-                                <td>{{ $row->pending_count }}</td>
-                                <td>{{ $row->total }}</td>
-                                <td>
-                                    <a href="{{ route('admissions.applications.index', ['department' => $row->id, 'status' => 'pending']) }}" class="tich-link">Review</a>
-                                </td>
+                                <th>Department</th>
+                                <th>Pending</th>
+                                <th>Total</th>
+                                <th></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($departmentBreakdown as $row)
+                                <tr>
+                                    <td>{{ $row->dept_name }}</td>
+                                    <td>{{ $row->pending_count }}</td>
+                                    <td>{{ $row->total }}</td>
+                                    <td>
+                                        <a href="{{ route('admissions.applications.index', ['department' => $row->id, 'status' => 'pending']) }}" class="tich-link">Review</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </article>
 
@@ -67,32 +69,34 @@
             @if ($recentApplications->isEmpty())
                 <p class="tich-caption tich-mt-4">No applications submitted yet.</p>
             @else
-                <table class="tich-admin-table tich-mt-4">
-                    <thead>
-                        <tr>
-                            <th>Applicant</th>
-                            <th>Programme</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($recentApplications as $application)
+                <div class="tich-table-wrap tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
                             <tr>
-                                <td>
-                                    <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">
-                                        {{ $application->fullName() }}
-                                    </a>
-                                    <br>
-                                    <span class="tich-caption">{{ $application->application_number }}</span>
-                                </td>
-                                <td>{{ $application->program?->program_name ?? '-' }}</td>
-                                <td>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? '-' }}</td>
-                                <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
+                                <th>Applicant</th>
+                                <th>Programme</th>
+                                <th>Department</th>
+                                <th>Status</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($recentApplications as $application)
+                                <tr>
+                                    <td>
+                                        <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">
+                                            {{ $application->fullName() }}
+                                        </a>
+                                        <br>
+                                        <span class="tich-caption">{{ $application->application_number }}</span>
+                                    </td>
+                                    <td>{{ $application->program?->program_name ?? '-' }}</td>
+                                    <td>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? '-' }}</td>
+                                    <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </article>
     </div>

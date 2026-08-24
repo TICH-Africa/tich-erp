@@ -7,6 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\UnitAllocation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ExamEligibilityService
