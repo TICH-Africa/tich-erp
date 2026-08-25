@@ -15,24 +15,6 @@
                 </div>
                 <span class="tich-badge">Administration module enabled</span>
             </div>
-            <div class="tich-grid tich-grid--3 tich-mt-6" style="gap:0.75rem;">
-                <a href="{{ route('administration.planning.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                    <h3 class="tich-h4">Annual and monthly plans</h3>
-                    <p class="tich-caption tich-mt-2">Open planning cycles and manage submission deadlines.</p>
-                </a>
-                <a href="{{ route('administration.budget-aggregation.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                    <h3 class="tich-h4">Department budget requests</h3>
-                    <p class="tich-caption tich-mt-2">Submit and consolidate Standard or CBE requests.</p>
-                </a>
-                <a href="{{ route('administration.approvals.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                    <h3 class="tich-h4">Review and variance</h3>
-                    <p class="tich-caption tich-mt-2">Track approvals and operational follow-up for this unit.</p>
-                </a>
-                <a href="{{ route('administration.workflow.index', ['department' => $department->id]) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                    <h3 class="tich-h4">Annual to weekly workflow</h3>
-                    <p class="tich-caption tich-mt-2">Calendar, departmental tasks, deadlines, and monthly variance lessons.</p>
-                </a>
-            </div>
         </article>
     @endif
 
@@ -55,55 +37,285 @@
         </div>
     </div>
 
-    <div class="tich-grid tich-grid--2 tich-mt-8" style="gap: 1.5rem; align-items: start;">
+    <div class="tich-mt-8" style="display:grid;gap:1.5rem;">
         <article class="tich-card">
-            <h2 class="tich-h3">Admissions lifecycle</h2>
-            <p class="tich-caption tich-mt-2">5-step flow across submission, verification, payment, approval, and letters.</p>
-            <ul class="tich-program-card__meta tich-mt-4">
-                <li><span class="tich-caption">1. Submission</span> {{ $lifecycle['submission'] }}</li>
-                <li><span class="tich-caption">2. Academic verification</span> {{ $lifecycle['academic_verification'] }}</li>
-                <li><span class="tich-caption">3. Payment</span> {{ $lifecycle['payment'] }}</li>
-                <li><span class="tich-caption">4. Admin approval</span> {{ $lifecycle['admin_approval'] }}</li>
-                <li><span class="tich-caption">5. Letter generation</span> {{ $lifecycle['letter_generation'] }}</li>
-            </ul>
-            <a href="{{ route('administration.lifecycle.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open lifecycle</a>
+            <div style="padding: 1.25rem 1.25rem 0.75rem;">
+                <h2 class="tich-h3">1. Annual institutional plan</h2>
+                <p class="tich-caption tich-mt-2">Record intakes, trimesters, holidays, graduation, and field-placement blocks.</p>
+            </div>
+            <div style="padding: 0 1.25rem 1.25rem;">
+                <form method="POST" action="{{ route('administration.workflow.calendar.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
+                    @csrf
+                    <div class="tich-form-group">
+                        <label class="tich-label">Fiscal year</label>
+                        <input type="number" name="fiscal_year" class="tich-input" value="{{ date('Y') }}" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Event type</label>
+                        <select name="event_type" class="tich-input" required>
+                            <option value="intake">Intake</option>
+                            <option value="trimester">Trimester</option>
+                            <option value="holiday">Holiday</option>
+                            <option value="graduation">Graduation</option>
+                            <option value="field_placement">Field placement</option>
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Title</label>
+                        <input type="text" name="title" class="tich-input" placeholder="September Intake" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Starts</label>
+                        <input type="date" name="starts_on" class="tich-input" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Ends</label>
+                        <input type="date" name="ends_on" class="tich-input">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Notes</label>
+                        <input type="text" name="notes" class="tich-input">
+                    </div>
+                    <div>
+                        <button type="submit" class="tich-btn tich-btn-primary">Save calendar event</button>
+                    </div>
+                </form>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Event type</th>
+                            <th>Title</th>
+                            <th>Starts</th>
+                            <th>Ends</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($calendarEvents as $event)
+                            <tr>
+                                <td><span class="tich-badge">{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</span></td>
+                                <td><strong>{{ $event->title }}</strong></td>
+                                <td>{{ $event->starts_on?->format('d/m/Y') }}</td>
+                                <td>{{ $event->ends_on?->format('d/m/Y') }}</td>
+                                <td>{{ $event->notes ?: '—' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="tich-table-empty">No calendar events recorded yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </article>
 
         <article class="tich-card">
-            <h2 class="tich-h3">Procurement-to-pay</h2>
-            <p class="tich-caption tich-mt-2">Supplier vetting through invoice verification and three-way match.</p>
-            <ul class="tich-program-card__meta tich-mt-4">
-                <li><span class="tich-caption">Suppliers</span> {{ $p2p['suppliers'] }}</li>
-                <li><span class="tich-caption">Purchase orders</span> {{ $p2p['purchase_orders'] }}</li>
-                <li><span class="tich-caption">Open AP</span> {{ $p2p['ap_open'] }}</li>
-                <li><span class="tich-caption">Awaiting 3-way match</span> {{ $p2p['three_way_pending'] }}</li>
-            </ul>
-            <a href="{{ route('administration.procurement-pay.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View pipeline</a>
+            <div style="padding: 1.25rem 1.25rem 0.75rem;">
+                <h2 class="tich-h3">2-3. Monthly to weekly task board</h2>
+                <p class="tich-caption tich-mt-2">Section Heads add named owners, due dates, milestones, and budget implications.</p>
+            </div>
+            <div style="padding: 0 1.25rem 1.25rem;">
+                <form method="POST" action="{{ route('administration.workflow.tasks.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
+                    @csrf
+                    <div class="tich-form-group">
+                        <label class="tich-label">Department</label>
+                        <select name="department_id" class="tich-input" required>
+                            <option value="">Select department</option>
+                            @foreach ($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Monthly plan</label>
+                        <select name="planning_cycle_id" class="tich-input">
+                            <option value="">Unlinked</option>
+                            @foreach ($planningCycles as $cycle)
+                                <option value="{{ $cycle->id }}">{{ $cycle->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Task or milestone</label>
+                        <input type="text" name="title" class="tich-input" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Owner user ID</label>
+                        <input type="number" name="owner_id" class="tich-input" min="1">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Due date</label>
+                        <input type="date" name="due_on" class="tich-input" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Budget implication</label>
+                        <input type="number" step="0.01" name="budget_implication" class="tich-input" value="0">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Description</label>
+                        <input type="text" name="description" class="tich-input">
+                    </div>
+                    <div>
+                        <button type="submit" class="tich-btn tich-btn-primary">Add weekly task</button>
+                    </div>
+                </form>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Owner</th>
+                            <th>Due date</th>
+                            <th>Budget implication</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($adminTasks as $task)
+                            <tr>
+                                <td><strong>{{ $task->title }}</strong></td>
+                                <td>{{ $task->owner_id ?: '—' }}</td>
+                                <td>{{ $task->due_on?->format('d/m/Y') }}</td>
+                                <td>KES {{ number_format($task->budget_implication, 2) }}</td>
+                                <td><span class="tich-badge">{{ ucfirst($task->status) }}</span></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="tich-table-empty">No weekly tasks recorded yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="tich-card">
+            <div class="tich-table-panel" style="padding: 0; overflow: visible;">
+                <div style="padding: 1.25rem 1.25rem 0.75rem;">
+                    <h2 class="tich-h3">4. Prior-month deadline control</h2>
+                    <p class="tich-caption tich-mt-2">Planning cycles keep their submission deadline. Budget requests submitted after it are marked late with the deadline timestamp for review.</p>
+                </div>
+                <div class="tich-table-wrap">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Cycle</th>
+                                <th>Tier</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($planningCycles as $cycle)
+                                <tr>
+                                    <td><strong>{{ $cycle->title }}</strong></td>
+                                    <td>{{ ucfirst($cycle->plan_tier) }}</td>
+                                    <td>{{ $cycle->requisition_deadline?->format('d/m/Y H:i') }}</td>
+                                    <td><span class="tich-badge">{{ ucfirst($cycle->status) }}</span></td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="tich-table-empty">No planning cycles with deadlines recorded yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+
+        <article class="tich-card">
+            <div style="padding: 1.25rem 1.25rem 0.75rem;">
+                <h2 class="tich-h3">5. Monthly variance and lessons</h2>
+                <p class="tich-caption tich-mt-2">Director of Administration records planned versus executed amounts and carries lessons into the next plan.</p>
+            </div>
+            <div style="padding: 0 1.25rem 1.25rem;">
+                <form method="POST" action="{{ route('administration.workflow.variances.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
+                    @csrf
+                    <div class="tich-form-group">
+                        <label class="tich-label">Department</label>
+                        <select name="department_id" class="tich-input" required>
+                            <option value="">Select department</option>
+                            @foreach ($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Year</label>
+                        <input type="number" name="fiscal_year" class="tich-input" value="{{ date('Y') }}" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Month</label>
+                        <input type="number" name="month" class="tich-input" min="1" max="12" value="{{ date('n') }}" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Planned amount</label>
+                        <input type="number" step="0.01" name="planned_amount" class="tich-input" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Actual amount</label>
+                        <input type="number" step="0.01" name="actual_amount" class="tich-input" required>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Monthly plan</label>
+                        <select name="planning_cycle_id" class="tich-input">
+                            <option value="">Unlinked</option>
+                            @foreach ($planningCycles as $cycle)
+                                <option value="{{ $cycle->id }}">{{ $cycle->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Explanation</label>
+                        <input type="text" name="explanation" class="tich-input">
+                    </div>
+                    <div class="tich-form-group">
+                        <label class="tich-label">Lessons for next plan</label>
+                        <input type="text" name="lessons" class="tich-input">
+                    </div>
+                    <div>
+                        <button type="submit" class="tich-btn tich-btn-primary">Save variance review</button>
+                    </div>
+                </form>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Period</th>
+                            <th>Planned</th>
+                            <th>Actual</th>
+                            <th>Variance</th>
+                            <th>Explanation</th>
+                            <th>Lessons</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($variances as $variance)
+                            <tr>
+                                <td><strong>{{ $variance->department?->dept_name ?? '—' }}</strong></td>
+                                <td>{{ $variance->fiscal_year }} / {{ str_pad((string) $variance->month, 2, '0', STR_PAD_LEFT) }}</td>
+                                <td>KES {{ number_format($variance->planned_amount, 2) }}</td>
+                                <td>KES {{ number_format($variance->actual_amount, 2) }}</td>
+                                <td>KES {{ number_format($variance->planned_amount - $variance->actual_amount, 2) }}</td>
+                                <td>{{ $variance->explanation ?: '—' }}</td>
+                                <td>{{ $variance->lessons ?: '—' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="tich-table-empty">No monthly variance reviews recorded yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </article>
     </div>
-
-    <section class="tich-dashboard-charts tich-mt-8" aria-label="Administration statistics charts">
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Budget requests by status</h3>
-            <p class="tich-chart-card__meta">Live request workflow distribution</p>
-            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-budget-status" aria-label="Budget requests by status chart"></canvas></div>
-        </article>
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Budget framework mix</h3>
-            <p class="tich-chart-card__meta">Standard versus CBE submissions</p>
-            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-budget-framework" aria-label="Budget framework mix chart"></canvas></div>
-        </article>
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Weekly task status</h3>
-            <p class="tich-chart-card__meta">Departmental task board activity</p>
-            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-task-status" aria-label="Weekly task status chart"></canvas></div>
-        </article>
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Procurement-to-pay pipeline</h3>
-            <p class="tich-chart-card__meta">Current supplier and payment workload</p>
-            <div class="tich-chart-card__canvas-wrap"><canvas id="admin-chart-procurement" aria-label="Procurement-to-pay pipeline chart"></canvas></div>
-        </article>
-    </section>
 
     <h3 class="tich-h3 tich-mt-8 tich-mb-4">Module hubs</h3>
     <div class="tich-grid tich-grid--3" style="gap: 0.75rem;">

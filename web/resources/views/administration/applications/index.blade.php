@@ -44,7 +44,13 @@
                             <td><strong>{{ $application->application_number }}</strong></td>
                             <td>{{ trim(($application->first_name ?? '').' '.($application->surname ?? '')) }}</td>
                             <td class="tich-caption">{{ $application->program?->program_name ?? '-' }}</td>
-                            <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($application->status ?? 'unknown')) }}</span></td>
+                                @php
+                                    $applicationStatus = match ($application->status) {
+                                        'submitted_admin', 'submitted' => 'Submitted',
+                                        default => ucfirst(str_replace('_', ' ', $application->status ?? 'unknown')),
+                                    };
+                                @endphp
+                                <td><span class="tich-badge">{{ $applicationStatus }}</span></td>
                             <td>{{ ! empty($application->application_fee_paid) ? 'Yes' : 'No' }}</td>
                         </tr>
                     @empty

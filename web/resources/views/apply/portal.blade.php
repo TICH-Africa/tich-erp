@@ -14,24 +14,42 @@
         @include('apply.partials.progress', ['step' => $step, 'steps' => $steps])
 
         <div class="tich-card tich-mt-8">
-            <form method="POST" action="{{ route('apply.step', $step) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('apply.step', $step) }}" enctype="multipart/form-data" data-apply-form>
                 @csrf
-
+                <input type="hidden" name="action" value="save">
                 @include('apply.partials.step-' . $step)
 
                 <div class="tich-apply-actions tich-mt-8">
                     @if ($step > 1)
-                        <button type="submit" name="action" value="back" class="tich-btn tich-btn-secondary">Back</button>
+                        <button type="submit" data-apply-action="back" class="tich-btn tich-btn-secondary">Back</button>
                     @endif
 
                     @if ($step < 7)
-                        <button type="submit" name="action" value="next" class="tich-btn tich-btn-primary">Save &amp; continue</button>
+                        <button type="submit" data-apply-action="next" class="tich-btn tich-btn-primary">Save &amp; continue</button>
                     @else
-                        <button type="submit" name="action" value="submit" class="tich-btn tich-btn-primary">Submit application</button>
+                        <button type="submit" data-apply-action="submit" class="tich-btn tich-btn-primary">Submit application</button>
                     @endif
                 </div>
             </form>
         </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var form = document.querySelector('[data-apply-form]');
+                if (!form) return;
+
+                var actionInput = form.querySelector('input[name="action"]');
+                var buttons = form.querySelectorAll('[data-apply-action]');
+
+                buttons.forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        if (actionInput) {
+                            actionInput.value = btn.getAttribute('data-apply-action') || 'save';
+                        }
+                    });
+                });
+            });
+        </script>
 
         <form method="POST" action="{{ route('apply.reset') }}" class="tich-mt-4 tich-text-center">
             @csrf

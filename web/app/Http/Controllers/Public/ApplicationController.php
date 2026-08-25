@@ -48,7 +48,7 @@ class ApplicationController extends Controller
             return redirect()->route('apply.index', ['step' => $previous]);
         }
 
-        if ($step === 7 && $request->input('action') === 'submit') {
+        if ($step === 7) {
             $this->applicationService->validateStep($request, 7);
             $applicant = $this->applicationService->submit($request);
 

@@ -90,7 +90,7 @@ class Applicant extends Model
 
     public function isPendingReview(): bool
     {
-        return in_array($this->status, ['submitted', 'academic_review'], true)
+        return in_array($this->status, ['submitted_admin', 'submitted', 'academic_review'], true)
             && ! in_array($this->academic_review_status, ['approved', 'rejected'], true);
     }
 

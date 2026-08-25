@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administration\AdminTask;
 use App\Models\Administration\BudgetRequest;
+use App\Models\Administration\CalendarEvent;
 use App\Models\Administration\FundAllocation;
 use App\Models\Administration\PlanningCycle;
 use App\Models\Department;
@@ -42,6 +44,27 @@ class DashboardController extends Controller
         $budgetRequests = Schema::hasTable('admin_budget_requests')
             ? BudgetRequest::query()->when($department, fn ($query) => $query->where('department_id', $department->id))
             : null;
+
+        $planningCycles = Schema::hasTable('admin_planning_cycles')
+            ? PlanningCycle::query()->orderByDesc('fiscal_year')->orderByDesc('period_start')->limit(20)->get()
+            : collect();
+
+        $calendarEvents = Schema::hasTable('admin_calendar_events')
+            ? CalendarEvent::query()->orderByDesc('starts_on')->limit(20)->get()
+            : collect();
+
+        $adminTasks = Schema::hasTable('admin_tasks')
+            ? AdminTask::query()->when($department, fn ($query) => $query->where('department_id', $department->id))->orderByDesc('due_on')->limit(20)->get()
+            : collect();
+
+        $variances = Schema::hasTable('admin_variances')
+            ? \App\Models\Administration\Variance::query()->when($department, fn ($query) => $query->where('department_id', $department->id))->orderByDesc('fiscal_year')->orderByDesc('month')->limit(20)->get()
+            : collect();
+
+        $departments = Schema::hasTable('departments')
+            ? Department::query()->where('dept_category', 'administrative')->where('is_active', true)->orderBy('dept_name')->get()
+            : collect();
+
         $chartData = [
             'budgetByStatus' => $this->groupedChartData($budgetRequests, 'status'),
             'budgetByFramework' => $this->groupedChartData($budgetRequests, 'framework'),
@@ -59,6 +82,7 @@ class DashboardController extends Controller
 
         return view('administration.dashboard', [
             'department' => $department,
+            'departments' => $departments,
             'planningOpen' => Schema::hasTable('admin_planning_cycles')
                 ? PlanningCycle::query()->where('status', 'open')->count()
                 : 0,
@@ -72,6 +96,10 @@ class DashboardController extends Controller
             'inspectionScore' => $inspection['score'],
             'p2p' => $p2p,
             'chartData' => $chartData,
+            'planningCycles' => $planningCycles,
+            'calendarEvents' => $calendarEvents,
+            'adminTasks' => $adminTasks,
+            'variances' => $variances,
         ]);
     }
 
