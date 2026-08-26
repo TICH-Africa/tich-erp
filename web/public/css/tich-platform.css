@@ -2836,6 +2836,9 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         background: transparent;
         box-shadow: none;
         overflow: hidden;
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
     }
 
     .tich-nav-drawer[hidden] {
@@ -2852,13 +2855,25 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     .tich-nav-drawer__panel {
         position: relative;
         z-index: 1;
-        max-height: 100%;
+        width: 68vw;
+        max-width: 68vw;
+        min-width: 16rem;
+        max-height: calc(100% - 0.75rem);
+        margin-top: 0.375rem;
+        margin-right: 0.375rem;
         overflow-y: auto;
         background: var(--tich-white);
-        border-top: 1px solid var(--tich-neutral-border);
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+        border: 1px solid var(--tich-neutral-border);
+        border-radius: 0.75rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
         padding: 0.75rem 0 1rem;
         -webkit-overflow-scrolling: touch;
+        transform: translateX(102%);
+        transition: transform 0.22s ease;
+    }
+
+    .tich-nav-drawer:not([hidden]) .tich-nav-drawer__panel {
+        transform: translateX(0);
     }
 
     body.is-nav-open {
