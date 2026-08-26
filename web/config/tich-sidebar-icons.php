@@ -65,6 +65,7 @@ return [
         'departments.academics.programs.index' => 'book-open',
         'departments.academics.attendance-ledger.index' => 'clipboard-check',
         'departments.academics.clearance.index' => 'check-circle',
+        'departments.academics.suggestions.index' => 'clipboard-list',
         'departments.academics.lesson-plans.index' => 'notebook',
         'departments.academics.lesson-plans.audit' => 'search',
         'departments.academics.performance.index' => 'bar-chart',
@@ -92,6 +93,7 @@ return [
         'enrolment' => 'badge-check',
         'academics' => 'graduation-cap',
         'finance' => 'wallet',
+        'suggestions' => 'clipboard-list',
         'account' => 'lock',
     ],
 

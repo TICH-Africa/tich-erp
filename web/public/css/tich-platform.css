@@ -2560,7 +2560,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-program-card__placeholder {
     width: 100%;
     height: 11rem;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center center;
     display: block;
     margin: 0;
@@ -4368,7 +4368,7 @@ a.tich-notification-badge:hover {
 .tich-featured-program__media .tich-program-card__image,
 .tich-featured-program__media .tich-program-card__placeholder {
     height: 18rem;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center center;
     background: var(--tich-neutral, #f1f3f4);
 }
@@ -6477,42 +6477,31 @@ a.tich-tabs__btn {
 /* Public event detail */
 .tich-event-show__hero {
     position: relative;
-    min-height: clamp(18rem, 42vh, 26rem);
     display: flex;
     align-items: flex-end;
     color: #fff;
     background: var(--tich-green-dark);
-    overflow: hidden;
-}
-
-.tich-event-show__hero-media,
-.tich-event-show__hero-fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.tich-event-show__hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center center;
-    display: block;
-}
-
-.tich-event-show__hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(10, 24, 32, 0.45);
 }
 
 .tich-event-show__hero-content {
     position: relative;
     z-index: 1;
-    padding-top: 4rem;
-    padding-bottom: 2.5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.25rem;
+}
+
+.tich-event-show__figure {
+    margin: 0 0 1.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.tich-event-show__figure-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
 }
 
 .tich-event-show__back {
@@ -6624,42 +6613,31 @@ a.tich-tabs__btn {
 /* Public programme detail */
 .tich-program-show__hero {
     position: relative;
-    min-height: clamp(18rem, 42vh, 26rem);
     display: flex;
     align-items: flex-end;
     color: #fff;
     background: var(--tich-green-dark);
-    overflow: hidden;
-}
-
-.tich-program-show__hero-media,
-.tich-program-show__hero-fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.tich-program-show__hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center center;
-    display: block;
-}
-
-.tich-program-show__hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(10, 24, 32, 0.45);
 }
 
 .tich-program-show__hero-content {
     position: relative;
     z-index: 1;
-    padding-top: 4rem;
-    padding-bottom: 2.5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.25rem;
+}
+
+.tich-program-show__figure {
+    margin: 0 0 1.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.tich-program-show__figure-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
 }
 
 .tich-program-show__back {

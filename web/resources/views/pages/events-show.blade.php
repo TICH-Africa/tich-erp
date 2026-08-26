@@ -5,19 +5,6 @@
 @section('content')
     <article class="tich-event-show">
         <header class="tich-event-show__hero">
-            @if (!empty($event->cover_image_url) || !empty($event->cover_image_path))
-                <div class="tich-event-show__hero-media" aria-hidden="true">
-                    <img
-                        src="{{ $event->cover_image_url ?? $event->cover_image_path }}"
-                        alt=""
-                        class="tich-event-show__hero-image"
-                    >
-                    <div class="tich-event-show__hero-overlay"></div>
-                </div>
-            @else
-                <div class="tich-event-show__hero-fallback" aria-hidden="true"></div>
-            @endif
-
             <div class="tich-container tich-event-show__hero-content">
                 <p class="tich-event-show__back">
                     <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
@@ -33,6 +20,16 @@
         <div class="tich-container tich-event-show__body">
             <div class="tich-event-show__layout">
                 <div class="tich-event-show__main">
+                    @if (!empty($event->cover_image_url) || !empty($event->cover_image_path))
+                        <figure class="tich-event-show__figure">
+                            <img
+                                src="{{ $event->cover_image_url ?? $event->cover_image_path }}"
+                                alt="{{ $event->title }}"
+                                class="tich-event-show__figure-image"
+                            >
+                        </figure>
+                    @endif
+
                     @if (!empty($event->description))
                         <h2 class="tich-h3">About this event</h2>
                         <div class="tich-event-show__description">{{ $event->description }}</div>

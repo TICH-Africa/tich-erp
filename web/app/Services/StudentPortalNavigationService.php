@@ -21,6 +21,7 @@ class StudentPortalNavigationService
             'academics' => 'Academics',
             'timetable' => 'Timetable',
             'finance' => 'Finance',
+            'suggestions' => 'Suggestion box',
             'account' => 'Account',
         ];
     }
@@ -159,6 +160,11 @@ class StudentPortalNavigationService
                 'label' => 'Finance',
                 'section' => 'finance',
             ],
+            [
+                'type' => 'link',
+                'label' => 'Suggestion box',
+                'section' => 'suggestions',
+            ],
             ['type' => 'heading', 'label' => 'Account'],
             [
                 'type' => 'link',
@@ -214,6 +220,12 @@ class StudentPortalNavigationService
                 'label' => 'Finance',
                 'description' => 'Fee balance, invoices, payment history, and M-Pesa self-pay.',
                 'section' => 'finance',
+                'group' => 'learning',
+            ],
+            [
+                'label' => 'Suggestion box',
+                'description' => 'Share suggestions, comments, or complaints with Academics.',
+                'section' => 'suggestions',
                 'group' => 'learning',
             ],
             [

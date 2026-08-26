@@ -726,6 +726,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
             ->name('portal.invoices.pay');
         Route::get('/mpesa/stk/{stkRequest}/status', [\App\Http\Controllers\Portal\MpesaPaymentStatusController::class, '__invoke'])
             ->name('portal.mpesa.stk.status');
+        Route::post('/suggestions', [\App\Http\Controllers\Portal\PortalSuggestionController::class, 'store'])
+            ->name('portal.suggestions.store');
     });
 
     Route::get('/lesson-plans/{plan}/print', [StaffLessonPlanDocumentController::class, 'print'])->name('lesson-plans.print');

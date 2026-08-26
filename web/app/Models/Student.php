@@ -105,6 +105,11 @@ class Student extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function suggestions(): HasMany
+    {
+        return $this->hasMany(StudentSuggestion::class);
+    }
+
     public function displayName(): string
     {
         $this->loadMissing('applicant');

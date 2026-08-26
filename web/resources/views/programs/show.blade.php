@@ -5,19 +5,6 @@
 @section('content')
     <article class="tich-program-show">
         <header class="tich-program-show__hero">
-            @if (!empty($program->cover_image_url))
-                <div class="tich-program-show__hero-media" aria-hidden="true">
-                    <img
-                        src="{{ $program->cover_image_url }}"
-                        alt=""
-                        class="tich-program-show__hero-image"
-                    >
-                    <div class="tich-program-show__hero-overlay"></div>
-                </div>
-            @else
-                <div class="tich-program-show__hero-fallback" aria-hidden="true"></div>
-            @endif
-
             <div class="tich-container tich-program-show__hero-content">
                 <p class="tich-program-show__back">
                     <a href="{{ route('programs.index') }}" class="tich-program-show__back-link">← All programmes</a>
@@ -33,6 +20,16 @@
         <div class="tich-container tich-program-show__body">
             <div class="tich-program-show__layout">
                 <div class="tich-program-show__main">
+                    @if (!empty($program->cover_image_url))
+                        <figure class="tich-program-show__figure">
+                            <img
+                                src="{{ $program->cover_image_url }}"
+                                alt="{{ $program->program_name }}"
+                                class="tich-program-show__figure-image"
+                            >
+                        </figure>
+                    @endif
+
                     <h2 class="tich-h3">About this programme</h2>
                     @if (!empty($program->homepage_tagline))
                         <p class="tich-text tich-mt-4">{{ $program->homepage_tagline }}</p>

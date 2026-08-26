@@ -9,6 +9,7 @@ use App\Http\Controllers\Academics\LessonPlanController;
 use App\Http\Controllers\Academics\PerformanceTerminalController;
 use App\Http\Controllers\Academics\ProgramCurriculumController;
 use App\Http\Controllers\Academics\SidebarNotificationController as AcademicsSidebarNotificationController;
+use App\Http\Controllers\Academics\SuggestionBoxController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,8 @@ return function (bool $named = true): void {
         $register('get', '/programs/{program}/timetables/{timetable}/pdf', [ProgramCurriculumController::class, 'downloadTimetablePdf'], 'departments.academics.programs.timetable.pdf');
         $register('get', '/attendance-ledger', [AttendanceLedgerController::class, 'index'], 'departments.academics.attendance-ledger.index');
         $register('get', '/clearance', [AcademicClearanceController::class, 'index'], 'departments.academics.clearance.index');
+        $register('get', '/suggestions', [SuggestionBoxController::class, 'index'], 'departments.academics.suggestions.index');
+        $register('get', '/suggestions/{suggestion}', [SuggestionBoxController::class, 'show'], 'departments.academics.suggestions.show');
         $register('get', '/lesson-plans', [LessonPlanController::class, 'index'], 'departments.academics.lesson-plans.index');
         $register('get', '/lesson-plans/audit', [LessonPlanController::class, 'audit'], 'departments.academics.lesson-plans.audit');
         $register('get', '/lesson-plans/{plan}', [LessonPlanController::class, 'show'], 'departments.academics.lesson-plans.show');
@@ -66,6 +69,7 @@ return function (bool $named = true): void {
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');
         $register('post', '/clearance/{student}/approve', [AcademicClearanceController::class, 'approve'], 'departments.academics.clearance.approve');
         $register('post', '/clearance/{student}/reject', [AcademicClearanceController::class, 'reject'], 'departments.academics.clearance.reject');
+        $register('put', '/suggestions/{suggestion}', [SuggestionBoxController::class, 'update'], 'departments.academics.suggestions.update');
         $register('post', '/attendance-ledger/{session}/verify-registrar', [AttendanceLedgerController::class, 'verifyRegistrar'], 'departments.academics.attendance-ledger.verify-registrar');
         $register('put', '/lesson-plans/{plan}', [LessonPlanController::class, 'update'], 'departments.academics.lesson-plans.update');
         $register('post', '/lesson-plans/{plan}/approve', [LessonPlanController::class, 'approve'], 'departments.academics.lesson-plans.approve');

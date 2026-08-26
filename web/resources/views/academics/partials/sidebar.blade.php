@@ -31,6 +31,7 @@
 
                 $curriculumActive = request()->routeIs('departments.academics.units.*', 'departments.academics.programs.*', 'departments.academics.lesson-plans.*');
                 $assessmentActive = request()->routeIs('departments.academics.attendance-ledger.*', 'departments.academics.clearance.*', 'departments.academics.performance.*');
+                $studentVoiceActive = request()->routeIs('departments.academics.suggestions.*');
                 $planningActive = request()->routeIs('departments.academics.calendar.*', 'admin.departments.*');
 
                 $programsQuery = app(\App\Services\AcademicsAccessService::class)->programsQueryForHub(auth()->user(), $department);
@@ -130,6 +131,23 @@
                             'label' => 'Performance terminal',
                             'icon' => 'bar-chart',
                             'active' => request()->routeIs('departments.academics.performance.*'),
+                        ],
+                    ],
+                ])
+
+                @include('partials.navigation.sidebar-group', [
+                    'label' => 'Student voice',
+                    'icon' => 'clipboard-list',
+                    'open' => $studentVoiceActive,
+                    'active' => $studentVoiceActive,
+                    'badgeKey' => 'suggestions.open',
+                    'items' => [
+                        [
+                            'href' => route('departments.academics.suggestions.index', $hub),
+                            'label' => 'Suggestion box',
+                            'icon' => 'clipboard-list',
+                            'active' => request()->routeIs('departments.academics.suggestions.*'),
+                            'badgeKey' => 'suggestions.open',
                         ],
                     ],
                 ])

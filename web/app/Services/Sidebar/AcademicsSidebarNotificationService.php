@@ -11,6 +11,7 @@ use App\Services\AcademicsAccessService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AcademicsSidebarNotificationService
 {
@@ -28,6 +29,7 @@ class AcademicsSidebarNotificationService
         'lesson-plans.review' => 'Lesson plan approval',
         'attendance-ledger.hod' => 'Attendance ledger',
         'attendance-ledger.registrar' => 'Attendance ledger',
+        'suggestions.open' => 'Suggestion box',
     ];
 
     public function __construct(
@@ -88,6 +90,7 @@ class AcademicsSidebarNotificationService
             str_contains($routeName, 'departments.academics.lesson-plans.index'),
             str_contains($routeName, 'departments.academics.lesson-plans.show') => 'lesson-plans.review',
             str_contains($routeName, 'departments.academics.attendance-ledger.') => $this->attendanceLedgerBadgeKey(),
+            str_contains($routeName, 'departments.academics.suggestions.') => 'suggestions.open',
             default => null,
         };
     }
@@ -178,6 +181,9 @@ class AcademicsSidebarNotificationService
             'lesson-plans.review' => $lessonPlanCount,
             'attendance-ledger.hod' => $attendanceHod + $attendanceIncomplete,
             'attendance-ledger.registrar' => $attendanceRegistrar + $attendanceIncomplete,
+            'suggestions.open' => Schema::hasTable('student_suggestions')
+                ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
+                : 0,
             'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount + $attendanceForUser,
         ];
     }
