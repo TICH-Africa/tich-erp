@@ -2560,10 +2560,12 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-program-card__placeholder {
     width: 100%;
     height: 11rem;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center center;
     display: block;
     margin: 0;
     border-radius: 0;
+    background: var(--tich-neutral, #f1f3f4);
 }
 
 .tich-program-card__placeholder {
@@ -4351,6 +4353,9 @@ a.tich-notification-badge:hover {
 .tich-featured-program__media .tich-program-card__image,
 .tich-featured-program__media .tich-program-card__placeholder {
     height: 18rem;
+    object-fit: contain;
+    object-position: center center;
+    background: var(--tich-neutral, #f1f3f4);
 }
 
 .tich-featured-program__body {
@@ -6380,7 +6385,7 @@ a.tich-tabs__btn {
     animation: tich-skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
-/* Public About Us — alternating image sides + scroll reveal */
+/* Public About Us  alternating image sides + scroll reveal */
 .tich-about-block {
     margin-bottom: 4.5rem;
 }
@@ -6452,5 +6457,298 @@ a.tich-tabs__btn {
         transform: none;
         transition: none;
     }
+}
+
+/* Public event detail */
+.tich-event-show__hero {
+    position: relative;
+    min-height: clamp(18rem, 42vh, 26rem);
+    display: flex;
+    align-items: flex-end;
+    color: #fff;
+    background: var(--tich-green-dark);
+    overflow: hidden;
+}
+
+.tich-event-show__hero-media,
+.tich-event-show__hero-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tich-event-show__hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+}
+
+.tich-event-show__hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 24, 32, 0.45);
+}
+
+.tich-event-show__hero-content {
+    position: relative;
+    z-index: 1;
+    padding-top: 4rem;
+    padding-bottom: 2.5rem;
+}
+
+.tich-event-show__back {
+    margin: 0 0 1rem;
+}
+
+.tich-event-show__back-link {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.tich-event-show__back-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.tich-event-show__eyebrow {
+    margin: 0;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.tich-event-show__title {
+    margin: 0.65rem 0 0;
+    font-size: clamp(1.85rem, 4vw, 2.75rem);
+    line-height: 1.15;
+    max-width: 40rem;
+    color: #fff;
+}
+
+.tich-event-show__lead {
+    margin: 0.85rem 0 0;
+    max-width: 36rem;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tich-event-show__body {
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+}
+
+.tich-event-show__layout {
+    display: grid;
+    gap: 2rem;
+}
+
+@media (min-width: 900px) {
+    .tich-event-show__layout {
+        grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.9fr);
+        gap: 3rem;
+        align-items: start;
+    }
+}
+
+.tich-event-show__description {
+    margin-top: 1rem;
+    white-space: pre-wrap;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--tich-text, #1f2933);
+}
+
+.tich-event-show__aside {
+    padding: 1.5rem;
+    border: 1px solid var(--tich-border, #e2e4e5);
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--tich-surface, #fff);
+}
+
+.tich-event-show__meta {
+    margin: 1rem 0 0;
+}
+
+.tich-event-show__meta > div {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--tich-border, #e2e4e5);
+}
+
+.tich-event-show__meta > div:last-child {
+    border-bottom: 0;
+}
+
+.tich-event-show__meta dt {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-muted, #64748b);
+}
+
+.tich-event-show__meta dd {
+    margin: 0.3rem 0 0;
+    font-weight: 600;
+    color: var(--tich-text, #1f2933);
+}
+
+.tich-event-show__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* Public programme detail */
+.tich-program-show__hero {
+    position: relative;
+    min-height: clamp(18rem, 42vh, 26rem);
+    display: flex;
+    align-items: flex-end;
+    color: #fff;
+    background: var(--tich-green-dark);
+    overflow: hidden;
+}
+
+.tich-program-show__hero-media,
+.tich-program-show__hero-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tich-program-show__hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+}
+
+.tich-program-show__hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 24, 32, 0.45);
+}
+
+.tich-program-show__hero-content {
+    position: relative;
+    z-index: 1;
+    padding-top: 4rem;
+    padding-bottom: 2.5rem;
+}
+
+.tich-program-show__back {
+    margin: 0 0 1rem;
+}
+
+.tich-program-show__back-link {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.tich-program-show__back-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.tich-program-show__eyebrow {
+    margin: 0;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.tich-program-show__title {
+    margin: 0.65rem 0 0;
+    font-size: clamp(1.85rem, 4vw, 2.75rem);
+    line-height: 1.15;
+    max-width: 40rem;
+    color: #fff;
+}
+
+.tich-program-show__lead {
+    margin: 0.85rem 0 0;
+    max-width: 36rem;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tich-program-show__body {
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+}
+
+.tich-program-show__layout {
+    display: grid;
+    gap: 2rem;
+}
+
+@media (min-width: 900px) {
+    .tich-program-show__layout {
+        grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.9fr);
+        gap: 3rem;
+        align-items: start;
+    }
+}
+
+.tich-program-show__copy {
+    white-space: pre-wrap;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--tich-text, #1f2933);
+}
+
+.tich-program-show__aside {
+    padding: 1.5rem;
+    border: 1px solid var(--tich-border, #e2e4e5);
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--tich-surface, #fff);
+}
+
+.tich-program-show__meta {
+    margin: 1rem 0 0;
+}
+
+.tich-program-show__meta > div {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--tich-border, #e2e4e5);
+}
+
+.tich-program-show__meta > div:last-child {
+    border-bottom: 0;
+}
+
+.tich-program-show__meta dt {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-muted, #64748b);
+}
+
+.tich-program-show__meta dd {
+    margin: 0.3rem 0 0;
+    font-weight: 600;
+    color: var(--tich-text, #1f2933);
+}
+
+.tich-program-show__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
 }
 

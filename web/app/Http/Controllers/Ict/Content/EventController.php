@@ -34,6 +34,7 @@ class EventController extends Controller
 
         $event = Event::query()->create([
             ...$validated,
+            'slug' => Event::uniqueSlug($validated['title']),
             'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
             'cover_image_path' => $request->hasFile('cover_image')
                 ? $this->files->replace(null, $request->file('cover_image'), 'events', 'public', null, true)
@@ -62,6 +63,10 @@ class EventController extends Controller
             'updated_by' => $request->user()?->staff_id,
             'updated_at' => now(),
         ];
+
+        if (! $event->slug) {
+            $updates['slug'] = Event::uniqueSlug($validated['title'], $event->id);
+        }
 
         if ($request->hasFile('cover_image')) {
             $updates['cover_image_path'] = $this->files->replace(

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Portal\BlogPost;
+use App\Models\Portal\Event;
 use App\Models\Portal\ResearchProject;
 use App\Services\AboutContentService;
 use App\Services\HomepageService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -56,6 +58,19 @@ class HomeController extends Controller
         return view('pages.events', [
             'events' => $events,
             'usingFallback' => ['events' => $events->isEmpty()],
+        ]);
+    }
+
+    public function eventShow(Event $event): View|RedirectResponse
+    {
+        abort_unless($event->is_public, 404);
+
+        if (preg_match('#^events/\d+$#', request()->path())) {
+            return redirect()->route('events.show', $event, 301);
+        }
+
+        return view('pages.events-show', [
+            'event' => $this->homepageService->mapEventForPublic($event),
         ]);
     }
 

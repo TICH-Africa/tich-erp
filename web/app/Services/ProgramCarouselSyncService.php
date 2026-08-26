@@ -99,7 +99,7 @@ class ProgramCarouselSyncService
             'video_url' => null,
             'cta_label' => $payload['cta_label'],
             'cta_url' => url($payload['cta_url']),
-            'view_url' => route('programs.index', ['search' => $program->program_code]),
+            'view_url' => route('programs.show', $program->program_code),
             'display_order' => $payload['display_order'],
         ];
     }

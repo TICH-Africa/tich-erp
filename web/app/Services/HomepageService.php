@@ -49,7 +49,7 @@ class HomepageService
     {
         if ($this->tableExists('homepage_carousel_slides')) {
             $slides = CarouselSlide::query()
-                ->with(['program:id,program_code', 'event:id,title'])
+                ->with(['program:id,program_code', 'event:id,title,slug'])
                 ->where('is_active', 1)
                 ->orderBy('display_order')
                 ->orderBy('id')
@@ -179,6 +179,23 @@ class HomepageService
 
     private function mapCarouselSlide(CarouselSlide $slide): object
     {
+        if ($slide->event_id) {
+            $eventUrl = $slide->event
+                ? route('events.show', $slide->event)
+                : route('events.show', $slide->event_id);
+
+            return (object) [
+                'title' => $slide->title,
+                'subtitle' => $slide->subtitle,
+                'image_path' => $this->mediaUrl($slide->image_path),
+                'video_url' => $slide->video_url,
+                'cta_label' => 'View event',
+                'cta_url' => $eventUrl,
+                'view_url' => null,
+                'display_order' => (int) $slide->display_order,
+            ];
+        }
+
         return (object) [
             'title' => $slide->title,
             'subtitle' => $slide->subtitle,
@@ -186,9 +203,7 @@ class HomepageService
             'video_url' => $slide->video_url,
             'cta_label' => $slide->cta_label,
             'cta_url' => $slide->cta_url ? (str_starts_with($slide->cta_url, 'http') ? $slide->cta_url : url($slide->cta_url)) : null,
-            'view_url' => $slide->event_id
-                ? route('events')
-                : $this->programViewUrl($slide->program?->program_code),
+            'view_url' => $this->programViewUrl($slide->program?->program_code),
             'display_order' => (int) $slide->display_order,
         ];
     }
@@ -199,7 +214,7 @@ class HomepageService
             return null;
         }
 
-        return route('programs.index', ['search' => $programCode]);
+        return route('programs.show', $programCode);
     }
 
     public function getFeaturedPrograms(): Collection
@@ -385,6 +400,7 @@ class HomepageService
             'fee_display' => $feeDisplay,
             'cover_image_url' => $program->coverImageUrl(),
             'apply_url' => route('apply.index', ['program' => $program->program_code]),
+            'url' => route('programs.show', $program->program_code),
         ];
     }
 
@@ -407,23 +423,34 @@ class HomepageService
         return 'Contact admissions for current fee structure';
     }
 
+    public function mapEventForPublic(Event $event): object
+    {
+        return $this->mapEvent($event);
+    }
+
     private function mapEvent(Event $event): object
     {
         return (object) [
+            'id' => $event->id,
             'title' => $event->title,
             'subtitle' => $event->subtitle,
             'description' => $event->description,
             'event_type' => $event->event_type,
             'start_datetime' => $event->start_datetime,
+            'end_datetime' => $event->end_datetime,
             'formatted_date' => $event->start_datetime?->format('M j, Y'),
+            'formatted_time' => $event->start_datetime?->format('g:i A'),
+            'formatted_end' => $event->end_datetime?->format('M j, Y · g:i A'),
             'venue' => $event->venue,
             'cover_image_path' => $this->mediaUrl($event->cover_image_path),
+            'cover_image_url' => $this->mediaUrl($event->cover_image_path),
             'registration_url_or_form' => $event->registration_url_or_form
                 ? (str_starts_with($event->registration_url_or_form, 'http')
                     ? $event->registration_url_or_form
                     : url($event->registration_url_or_form))
                 : null,
-            'url' => route('events'),
+            'url' => route('events.show', $event),
+            'slug' => $event->slug,
         ];
     }
 

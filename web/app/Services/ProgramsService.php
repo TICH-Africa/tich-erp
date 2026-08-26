@@ -48,6 +48,23 @@ class ProgramsService
         return $this->getProgramOptions()->first(fn ($program) => strtoupper($program->program_code ?? '') === strtoupper($code));
     }
 
+    public function findActiveProgramByCode(string $code): ?object
+    {
+        if ($this->tableExists('academic_programs')) {
+            $program = AcademicProgram::query()
+                ->with('department:id,dept_name')
+                ->where('status', 'active')
+                ->whereRaw('LOWER(program_code) = ?', [strtolower($code)])
+                ->first();
+
+            if ($program) {
+                return $this->mapProgram($program);
+            }
+        }
+
+        return $this->findProgramByCode($code);
+    }
+
     public function findProgramById(?int $id): ?object
     {
         if (! $id) {
@@ -118,6 +135,7 @@ class ProgramsService
             'is_featured_on_homepage' => (bool) $program->is_featured_on_homepage,
             'cover_image_url' => $program->coverImageUrl(),
             'apply_url' => route('apply.index', ['program' => $program->program_code]),
+            'url' => route('programs.show', $program->program_code),
         ];
     }
 

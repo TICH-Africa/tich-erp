@@ -26,6 +26,7 @@
                     @if (!empty($event->registration_url_or_form))
                         <a href="{{ $event->registration_url_or_form }}" class="tich-btn tich-btn-secondary tich-mt-4">Register</a>
                     @endif
+                    <a href="{{ $event->url ?? route('events') }}" class="tich-btn tich-btn-primary tich-mt-4">View event</a>
                 </article>
             @endforeach
         </div>

@@ -83,8 +83,8 @@ class EventCarouselSyncService
             'program_id' => null,
             'title' => $event->title,
             'subtitle' => $subtitle !== '' ? $subtitle : null,
-            'cta_label' => $event->registration_url_or_form ? 'Register' : 'View events',
-            'cta_url' => $event->registration_url_or_form ?: '/events',
+            'cta_label' => 'View event',
+            'cta_url' => '/events/'.($event->slug ?: $event->id),
             'display_order' => self::EVENT_SLIDE_ORDER_OFFSET + (int) $event->id,
             'is_active' => true,
         ];
@@ -102,16 +102,15 @@ class EventCarouselSyncService
     public function mapEventToSlideObject(Event $event): object
     {
         $payload = $this->slidePayload($event);
-        $cta = (string) $payload['cta_url'];
 
         return (object) [
             'title' => $payload['title'],
             'subtitle' => $payload['subtitle'],
             'image_path' => $event->coverImageUrl(),
             'video_url' => null,
-            'cta_label' => $payload['cta_label'],
-            'cta_url' => str_starts_with($cta, 'http') ? $cta : url($cta),
-            'view_url' => route('events'),
+            'cta_label' => 'View event',
+            'cta_url' => route('events.show', $event),
+            'view_url' => null,
             'display_order' => $payload['display_order'],
         ];
     }

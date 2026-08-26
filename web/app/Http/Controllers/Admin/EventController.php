@@ -41,6 +41,7 @@ class EventController extends Controller
 
         $event = Event::query()->create([
             ...$validated,
+            'slug' => Event::uniqueSlug($validated['title']),
             'cover_image_path' => $coverPath,
             'is_public' => $request->boolean('is_public', true),
             'is_featured' => $request->boolean('is_featured'),
@@ -76,6 +77,10 @@ class EventController extends Controller
             'is_featured' => $request->boolean('is_featured'),
             'updated_at' => now(),
         ];
+
+        if (! $event->slug) {
+            $updates['slug'] = Event::uniqueSlug($validated['title'], $event->id);
+        }
 
         if ($request->hasFile('cover_image')) {
             $updates['cover_image_path'] = $this->files->replace(

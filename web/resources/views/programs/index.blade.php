@@ -72,8 +72,8 @@
                                     @endif
                                 </ul>
                                 <div class="tich-flex-wrap tich-mt-6">
-                                    <a href="{{ $featured->apply_url ?? route('apply.index', ['program' => $featured->program_code]) }}" class="tich-btn tich-btn-primary">Apply for this programme</a>
-                                    <a href="{{ route('apply.index') }}" class="tich-btn tich-btn-blue">Open application portal</a>
+                                    <a href="{{ $featured->url ?? route('programs.show', $featured->program_code) }}" class="tich-btn tich-btn-primary">View programme</a>
+                                    <a href="{{ $featured->apply_url ?? route('apply.index', ['program' => $featured->program_code]) }}" class="tich-btn tich-btn-blue">Apply now</a>
                                 </div>
                             </div>
                             <div class="tich-featured-program__aside">
@@ -123,7 +123,10 @@
                                 @endif
                             </ul>
 
-                            <a href="{{ $program->apply_url ?? route('apply.index', ['program' => $program->program_code]) }}" class="tich-btn tich-btn-primary tich-mt-4">Apply now</a>
+                            <div class="tich-flex-wrap tich-mt-4" style="gap: 0.5rem;">
+                                <a href="{{ $program->url ?? route('programs.show', $program->program_code) }}" class="tich-btn tich-btn-primary">View programme</a>
+                                <a href="{{ $program->apply_url ?? route('apply.index', ['program' => $program->program_code]) }}" class="tich-btn tich-btn-secondary">Apply now</a>
+                            </div>
                         </div>
                     </article>
                 @empty

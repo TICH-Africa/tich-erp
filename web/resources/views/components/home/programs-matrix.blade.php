@@ -36,7 +36,10 @@
                             @endif
                         </ul>
 
-                        <a href="{{ $program->apply_url ?? url('/apply') }}" class="tich-btn tich-btn-primary tich-mt-4">Apply now</a>
+                        <div class="tich-flex-wrap tich-mt-4" style="gap: 0.5rem;">
+                            <a href="{{ $program->url ?? route('programs.show', $program->program_code) }}" class="tich-btn tich-btn-primary">View programme</a>
+                            <a href="{{ $program->apply_url ?? url('/apply') }}" class="tich-btn tich-btn-secondary">Apply now</a>
+                        </div>
                     </div>
                 </article>
             @endforeach
