@@ -90,13 +90,18 @@ class ImageWebpEncoder
         return $this->encodeFromBinary((string) file_get_contents($file->getRealPath()), $quality);
     }
 
+    /**
+     * Resize (if needed) and encode as compressed WebP.
+     */
     public function encodeFromBinary(string $binary, ?int $quality = null): ?string
     {
         if (! $this->shouldConvertBinary($binary)) {
             return null;
         }
 
-        $quality = $quality ?? config('tich-media.webp_quality', 85);
+        $quality = $quality ?? (int) config('tich-media.webp_quality', 78);
+        $qualityFloor = (int) config('tich-media.webp_quality_floor', 55);
+        $targetBytes = (int) config('tich-media.target_max_bytes', 900000);
 
         try {
             $image = @imagecreatefromstring($binary);
@@ -104,14 +109,24 @@ class ImageWebpEncoder
                 return null;
             }
 
+            $image = $this->resizeIfNeeded($image);
             $this->preserveAlpha($image);
 
-            ob_start();
-            imagewebp($image, null, max(0, min(100, $quality)));
-            $webp = ob_get_clean() ?: null;
+            $webp = $this->renderWebp($image, $quality);
+
+            while (
+                $webp !== null
+                && $targetBytes > 0
+                && strlen($webp) > $targetBytes
+                && $quality > $qualityFloor
+            ) {
+                $quality = max($qualityFloor, $quality - 8);
+                $webp = $this->renderWebp($image, $quality);
+            }
+
             imagedestroy($image);
 
-            return $webp !== '' ? $webp : null;
+            return $webp !== '' && $webp !== null ? $webp : null;
         } catch (Throwable $e) {
             Log::warning('WebP conversion failed', ['message' => $e->getMessage()]);
 
@@ -149,6 +164,57 @@ class ImageWebpEncoder
         $info = @getimagesizefromstring($binary);
 
         return is_array($info) && isset($info['mime']) ? strtolower((string) $info['mime']) : null;
+    }
+
+    /**
+     * @param  \GdImage  $image
+     * @return \GdImage
+     */
+    private function resizeIfNeeded($image)
+    {
+        $maxDimension = (int) config('tich-media.max_dimension', 1920);
+        if ($maxDimension <= 0) {
+            return $image;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $longest = max($width, $height);
+
+        if ($longest <= $maxDimension) {
+            return $image;
+        }
+
+        $scale = $maxDimension / $longest;
+        $newWidth = max(1, (int) round($width * $scale));
+        $newHeight = max(1, (int) round($height * $scale));
+
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+        if ($resized === false) {
+            return $image;
+        }
+
+        $this->preserveAlpha($resized);
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        imagedestroy($image);
+
+        return $resized;
+    }
+
+    /**
+     * @param  \GdImage  $image
+     */
+    private function renderWebp($image, int $quality): ?string
+    {
+        ob_start();
+        $ok = imagewebp($image, null, max(0, min(100, $quality)));
+        $webp = ob_get_clean() ?: null;
+
+        if (! $ok || $webp === null || $webp === '') {
+            return null;
+        }
+
+        return $webp;
     }
 
     /**

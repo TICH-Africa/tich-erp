@@ -259,7 +259,7 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
 
         $request->validate([
-            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
@@ -275,7 +275,7 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
 
         $request->validate([
-            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));

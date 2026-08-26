@@ -172,7 +172,7 @@ class AboutController extends Controller
             'subtitle' => ['nullable', 'string', 'max:500'],
             'body' => ['required', 'string', 'max:20000'],
             'is_active' => ['nullable', 'boolean'],
-            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'remove_image' => ['nullable', 'boolean'],
         ]);
     }

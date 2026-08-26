@@ -42,6 +42,8 @@ Route::get('/research', [HomeController::class, 'research'])->name('research');
 Route::get('/support', [HomeController::class, 'support'])->name('support');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/events', [HomeController::class, 'events'])->name('events');
+Route::get('/blog', [HomeController::class, 'blog'])->name('blog');
+Route::get('/blog/{slug}', [HomeController::class, 'blogShow'])->name('blog.show');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 
 /*
@@ -366,7 +368,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
     });
 
     Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting) {
-        Route::get('/', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
         $registerModuleBudgeting('research');
     });
 

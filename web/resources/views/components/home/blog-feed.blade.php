@@ -26,10 +26,14 @@
                         @if (!empty($post->excerpt))
                             <p class="tich-text tich-mt-2">{{ $post->excerpt }}</p>
                         @endif
-                        <a href="{{ $post->url ?? '#blog' }}" class="tich-link tich-mt-4" style="display: inline-block;">Read article</a>
+                        <a href="{{ $post->url }}" class="tich-link tich-mt-4" style="display: inline-block;">Read article</a>
                     </div>
                 </article>
             @endforeach
+        </div>
+
+        <div class="tich-mt-8">
+            <a href="{{ route('blog') }}" class="tich-btn tich-btn-primary">View all posts</a>
         </div>
     </div>
 </section>

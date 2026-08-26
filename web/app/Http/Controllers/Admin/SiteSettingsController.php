@@ -48,7 +48,7 @@ class SiteSettingsController extends Controller
             'copyright' => ['nullable', 'string', 'max:300'],
             'website' => ['nullable', 'string', 'max:200'],
             'ticker_message' => ['nullable', 'string', 'max:1000'],
-            'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
+            'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'remove_logo' => ['nullable', 'boolean'],
         ]);
 
@@ -299,7 +299,7 @@ class SiteSettingsController extends Controller
             'video_url' => ['nullable', 'url', 'max:500'],
             'cta_label' => ['nullable', 'string', 'max:100'],
             'cta_url' => ['nullable', 'string', 'max:500'],
-            'image' => [$ignoreId ? 'nullable' : 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'image' => [$ignoreId ? 'nullable' : 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
         ]);
     }
 

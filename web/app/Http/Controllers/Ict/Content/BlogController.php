@@ -126,7 +126,7 @@ class BlogController extends Controller
             'body' => ['required', 'string', 'max:50000'],
             'status' => ['required', 'in:draft,published,archived'],
             'published_at' => ['nullable', 'date'],
-            'featured_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'featured_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'remove_image' => ['nullable', 'boolean'],
         ]);
     }

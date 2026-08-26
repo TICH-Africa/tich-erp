@@ -8,8 +8,8 @@
                 <h3 class="tich-h3 tich-mt-4">{{ $research->title }}</h3>
                 <p class="tich-text tich-mt-4">{{ $research->summary }}</p>
                 <div class="tich-flex-wrap tich-mt-6">
-                    <a href="{{ $research->url ?? '#research' }}" class="tich-btn tich-btn-blue">Read more</a>
-                    <a href="#research" class="tich-btn tich-btn-secondary">View all research</a>
+                    <a href="{{ route('research') }}" class="tich-btn tich-btn-blue">Read more</a>
+                    <a href="{{ route('research') }}" class="tich-btn tich-btn-secondary">View all research</a>
                 </div>
             </div>
             <div class="tich-research-card">

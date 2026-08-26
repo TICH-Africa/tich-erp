@@ -29,7 +29,7 @@
         class="tich-input"
         accept="image/jpeg,image/png,image/webp,image/gif"
     >
-    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Saved as WebP. Used on the events feed and featured hero slide. Max 5 MB.</p>
+    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. Used on the events feed and featured hero slide.</p>
 </div>
 
 <div class="tich-form-group">

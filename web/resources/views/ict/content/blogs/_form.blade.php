@@ -27,7 +27,7 @@
 <div class="tich-form-group">
     <label class="tich-label" for="{{ $prefix }}featured_image">Featured image</label>
     <input id="{{ $prefix }}featured_image" type="file" name="featured_image" class="tich-input" accept="image/jpeg,image/png,image/webp,image/gif">
-    <p class="tich-caption tich-mt-2">Upload a file only (not a URL). Saved as WebP.</p>
+    <p class="tich-caption tich-mt-2">Upload a file only (not a URL). Compressed and saved as WebP.</p>
     @if ($post?->imageUrl())
         <label style="display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;">
             <input type="checkbox" name="remove_image" value="1">

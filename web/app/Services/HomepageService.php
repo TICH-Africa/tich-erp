@@ -250,7 +250,7 @@ class HomepageService
                     'summary' => $project->summary,
                     'status' => $project->status,
                     'cover_image_path' => $this->mediaUrl($project->cover_image_path),
-                    'url' => '#research',
+                    'url' => route('research'),
                 ];
             }
         }
@@ -258,7 +258,13 @@ class HomepageService
         $this->researchUsesFallback = true;
         $fallback = config('tich-homepage.research');
 
-        return $fallback ? (object) $fallback : null;
+        if ($fallback) {
+            $fallback = (object) array_merge($fallback, [
+                'url' => route('research'),
+            ]);
+        }
+
+        return $fallback ?: null;
     }
 
     public function getUpcomingEvents(int $limit = 6): Collection
@@ -285,7 +291,29 @@ class HomepageService
                 'registration_url_or_form' => isset($event['registration_url_or_form'])
                     ? url($event['registration_url_or_form'])
                     : null,
+                'url' => route('events'),
+                'cover_image_path' => $this->mediaUrl($event['cover_image_path'] ?? null),
             ]));
+    }
+
+    /**
+     * Full public events listing.
+     */
+    public function getPublicEvents(int $limit = 48): Collection
+    {
+        if ($this->tableExists('events')) {
+            $events = Event::query()
+                ->where('is_public', 1)
+                ->orderByDesc('start_datetime')
+                ->limit($limit)
+                ->get();
+
+            if ($events->isNotEmpty()) {
+                return $events->map(fn ($event) => $this->mapEvent($event));
+            }
+        }
+
+        return $this->getUpcomingEvents($limit);
     }
 
     public function getLatestBlogPosts(int $limit = 3): Collection
@@ -310,9 +338,36 @@ class HomepageService
             ->take($limit)
             ->map(fn ($post) => (object) array_merge($post, [
                 'formatted_date' => date('M j, Y', strtotime($post['published_at'])),
-                'url' => '#blog',
+                'url' => route('blog'),
                 'featured_image_path' => $this->mediaUrl($post['featured_image_path'] ?? null),
             ]));
+    }
+
+    /**
+     * Full public blog listing.
+     */
+    public function getPublishedBlogPosts(int $limit = 48): Collection
+    {
+        if ($this->tableExists('blog_posts')) {
+            $posts = BlogPost::query()
+                ->where('status', 'published')
+                ->whereNotNull('published_at')
+                ->where('published_at', '<=', now())
+                ->orderByDesc('published_at')
+                ->limit($limit)
+                ->get();
+
+            if ($posts->isNotEmpty()) {
+                return $posts->map(fn ($post) => $this->mapBlogPost($post));
+            }
+        }
+
+        return $this->getLatestBlogPosts($limit);
+    }
+
+    public function mapBlogPostForPublic(BlogPost $post): object
+    {
+        return $this->mapBlogPost($post, true);
     }
 
     private function mapProgram(AcademicProgram $program): object
@@ -357,6 +412,7 @@ class HomepageService
         return (object) [
             'title' => $event->title,
             'subtitle' => $event->subtitle,
+            'description' => $event->description,
             'event_type' => $event->event_type,
             'start_datetime' => $event->start_datetime,
             'formatted_date' => $event->start_datetime?->format('M j, Y'),
@@ -367,21 +423,29 @@ class HomepageService
                     ? $event->registration_url_or_form
                     : url($event->registration_url_or_form))
                 : null,
+            'url' => route('events'),
         ];
     }
 
-    private function mapBlogPost(BlogPost $post): object
+    private function mapBlogPost(BlogPost $post, bool $withBody = false): object
     {
-        return (object) [
+        $payload = [
             'title' => $post->title,
+            'subtitle' => $post->subtitle,
             'slug' => $post->slug,
             'excerpt' => $post->excerpt,
             'published_at' => $post->published_at,
             'formatted_date' => $post->published_at?->format('M j, Y'),
             'reading_time_minutes' => $post->reading_time_minutes,
             'featured_image_path' => $this->mediaUrl($post->featured_image_path),
-            'url' => '#blog',
+            'url' => route('blog.show', $post->slug),
         ];
+
+        if ($withBody) {
+            $payload['body'] = $post->body;
+        }
+
+        return (object) $payload;
     }
 
     private function mediaUrl(?string $path): ?string

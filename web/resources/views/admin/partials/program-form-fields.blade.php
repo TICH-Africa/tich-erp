@@ -34,7 +34,7 @@
         accept="image/jpeg,image/png,image/webp,image/gif"
         @if (! $program) required @endif
     >
-    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Saved as WebP. Shown on the programmes catalogue and homepage. Max 5 MB.</p>
+    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. Shown on the programmes catalogue and homepage.</p>
 </div>
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}program_code" @endif>Programme code</label>

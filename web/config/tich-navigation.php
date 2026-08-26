@@ -5,20 +5,20 @@ return [
     'header' => [
         ['label' => 'Home', 'url' => '/'],
         ['label' => 'About Us', 'url' => '/about'],
-        ['label' => 'Research', 'url' => '#research'],
-        ['label' => 'Academics', 'url' => '#programs'],
+        ['label' => 'Research', 'url' => '/research'],
         ['label' => 'Programs & courses', 'url' => '/programs'],
-        ['label' => 'Events', 'url' => '#events'],
-        ['label' => 'Blog', 'url' => '#blog'],
+        ['label' => 'Events', 'url' => '/events'],
+        ['label' => 'Blog', 'url' => '/blog'],
         ['label' => 'Careers', 'url' => '/careers'],
     ],
 
     'footer_primary' => [
         ['label' => 'Home', 'url' => '/'],
         ['label' => 'About Us', 'url' => '/about'],
-        ['label' => 'Research Portal', 'url' => '#research'],
-        ['label' => 'Academics Catalog', 'url' => '#programs'],
+        ['label' => 'Research', 'url' => '/research'],
         ['label' => 'Programs & Courses', 'url' => '/programs'],
+        ['label' => 'Events', 'url' => '/events'],
+        ['label' => 'Blog', 'url' => '/blog'],
     ],
 
     'footer_quick_links' => [
@@ -27,6 +27,7 @@ return [
         ['label' => 'Staff ESS', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'SACCO Login', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'Careers', 'url' => '/careers'],
+        ['label' => 'Contact', 'url' => '/contact'],
     ],
 
     'contact' => [

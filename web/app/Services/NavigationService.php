@@ -190,6 +190,23 @@ class NavigationService
             $item['url'] = route('programs.index', absolute: false);
         }
 
+        $publicPageMap = [
+            'About Us' => '/about',
+            'Research' => '/research',
+            'Research Portal' => '/research',
+            'Events' => '/events',
+            'Blog' => '/blog',
+            'Academics' => '/programs',
+            'Academics Catalog' => '/programs',
+        ];
+
+        $label = $item['label'] ?? '';
+        if (isset($publicPageMap[$label])) {
+            $path = $publicPageMap[$label];
+            $item['url_or_route'] = $path;
+            $item['url'] = $this->resolveUrl($path);
+        }
+
         if (! empty($item['children'])) {
             $item['children'] = collect($item['children'])
                 ->map(fn ($child) => $this->normalizeNavItem($child))

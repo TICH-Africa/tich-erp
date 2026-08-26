@@ -30,7 +30,7 @@
         </label>
     </div>
     <input id="{{ $prefix }}image" type="file" name="image" class="tich-input" accept="image/jpeg,image/png,image/webp,image/gif">
-    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Saved as WebP. If none is set, the public page shows text only.</p>
+    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. If none is set, the public page shows text only.</p>
 </div>
 
 <label style="display:flex;gap:0.5rem;align-items:center;">

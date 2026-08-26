@@ -57,7 +57,7 @@ class ProgramController extends Controller
             'entry_requirements' => ['nullable', 'string', 'max:2000'],
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
-            'cover_image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'cover_image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);
@@ -108,7 +108,7 @@ class ProgramController extends Controller
             'entry_requirements' => ['nullable', 'string', 'max:2000'],
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
-            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);

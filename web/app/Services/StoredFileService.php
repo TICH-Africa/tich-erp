@@ -164,7 +164,7 @@ class StoredFileService
     }
 
     /**
-     * Always persists raster uploads as .webp under $directory.
+     * Always persists raster uploads as compressed .webp under $directory.
      */
     private function storeImageAsWebp(UploadedFile $file, string $directory, string $disk, ?string $filename): string
     {
@@ -174,13 +174,7 @@ class StoredFileService
             ]);
         }
 
-        $contents = null;
-
-        if ($this->webp->isAlreadyWebp($file)) {
-            $contents = (string) file_get_contents($file->getRealPath());
-        } else {
-            $contents = $this->webp->encodeUploadedFile($file);
-        }
+        $contents = $this->webp->encodeUploadedFile($file);
 
         if ($contents === null || $contents === '') {
             throw ValidationException::withMessages([

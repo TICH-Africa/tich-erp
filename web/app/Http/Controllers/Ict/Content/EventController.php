@@ -107,7 +107,7 @@ class EventController extends Controller
             'end_datetime' => ['nullable', 'date', 'after_or_equal:start_datetime'],
             'venue' => ['nullable', 'string', 'max:300'],
             'registration_url_or_form' => ['nullable', 'string', 'max:500'],
-            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'is_public' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
         ]);

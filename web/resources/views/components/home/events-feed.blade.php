@@ -11,6 +11,9 @@
         <div class="tich-grid tich-grid--3">
             @foreach ($events as $event)
                 <article class="tich-card tich-event-card">
+                    @if (!empty($event->cover_image_path))
+                        <img src="{{ $event->cover_image_path }}" alt="{{ $event->title }}" class="tich-blog-card__image" style="margin-bottom: 1rem;">
+                    @endif
                     <p class="tich-caption">{{ strtoupper(str_replace('_', ' ', $event->event_type)) }}</p>
                     <p class="tich-event-card__date tich-mt-2">{{ $event->formatted_date ?? '' }}</p>
                     <h3 class="tich-h3 tich-mt-2">{{ $event->title }}</h3>
@@ -25,6 +28,10 @@
                     @endif
                 </article>
             @endforeach
+        </div>
+
+        <div class="tich-mt-8">
+            <a href="{{ route('events') }}" class="tich-btn tich-btn-primary">View all events</a>
         </div>
     </div>
 </section>
