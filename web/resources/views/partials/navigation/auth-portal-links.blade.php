@@ -42,11 +42,24 @@
         </div>
     @endunless
 @else
+    @php
+        $dashboardRoute = match (true) {
+            auth()->user()->hasRole('Super Admin') => route('dashboard'),
+            auth()->user()->hasPermission('finance.read') => route('finance.dashboard'),
+            auth()->user()->hasPermission('hr.read') => route('hr.dashboard'),
+            auth()->user()->hasPermission('admissions.read') => route('admissions.dashboard'),
+            auth()->user()->hasPermission('academics.read') => route('departments.academics.dashboard'),
+            auth()->user()->hasPermission('research.read') => route('research.dashboard'),
+            auth()->user()->hasPermission('qa.read') => route('qa.dashboard'),
+            auth()->user()->hasPermission('procurement.read') => route('procurement.dashboard'),
+            default => route('dashboard'),
+        };
+    @endphp
     @unless ($mobile ?? false)
         <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
-        'href' => route('dashboard'),
+        'href' => $dashboardRoute,
         'label' => 'Dashboard',
         'icon' => 'dashboard',
         'active' => request()->routeIs('dashboard'),

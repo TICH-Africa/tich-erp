@@ -12,6 +12,30 @@ class ContractService
 {
     public function __construct(protected AuditService $auditService) {}
 
+    public function calculateEndDate(string $startDate, ?string $duration): ?string
+    {
+        if (! $duration) {
+            return null;
+        }
+
+        $duration = strtolower(trim($duration));
+        $start = \Carbon\Carbon::parse($startDate);
+
+        if (preg_match('/(\d+)\s*(y|year|years)/', $duration, $matches)) {
+            return $start->copy()->addYears((int) $matches[1])->toDateString();
+        }
+
+        if (preg_match('/(\d+)\s*(m|month|months)/', $duration, $matches)) {
+            return $start->copy()->addMonths((int) $matches[1])->toDateString();
+        }
+
+        if (is_numeric($duration)) {
+            return $start->copy()->addMonths((int) $duration)->toDateString();
+        }
+
+        return null;
+    }
+
     public function createContract(int $staffId, array $data, int $createdBy): StaffContract
     {
         $staff = Staff::findOrFail($staffId);
@@ -42,6 +66,9 @@ class ContractService
             return $contract;
         });
 
+        $contract->load('staff');
+        $this->syncToStaff($contract);
+
         return $contract;
     }
 
@@ -65,6 +92,9 @@ class ContractService
                 $updatedBy
             );
         });
+
+        $contract->load('staff');
+        $this->syncToStaff($contract);
 
         return $contract->fresh();
     }
@@ -109,6 +139,9 @@ class ContractService
             return $newContract;
         });
 
+        $newContract->load('staff');
+        $this->syncToStaff($newContract);
+
         return $newContract;
     }
 
@@ -132,6 +165,9 @@ class ContractService
                 $terminatedBy
             );
         });
+
+        $contract->load('staff');
+        $this->syncToStaff($contract);
 
         return $contract->fresh();
     }
@@ -216,6 +252,9 @@ class ContractService
             $signedBy
         );
 
+        $contract->load('staff');
+        $this->syncToStaff($contract);
+
         return $contract->fresh();
     }
 
@@ -267,6 +306,9 @@ class ContractService
             return $permanent;
         });
 
+        $permanentContract->load('staff');
+        $this->syncToStaff($permanentContract);
+
         return $permanentContract;
     }
 
@@ -287,5 +329,33 @@ class ContractService
         }
 
         return $prefix . str_pad((string) $num, 5, '0', STR_PAD_LEFT);
+    }
+
+    private function syncToStaff(StaffContract $contract): void
+    {
+        if (! $contract->staff) {
+            return;
+        }
+
+        $organisationEmail = $contract->organisation_email
+            ?: $contract->staff->organisation_email
+            ?: ($contract->staff->user ? $contract->staff->user->email : null);
+
+        $contract->staff->update([
+            'job_title' => $contract->job_title,
+            'department_id' => $contract->department_id,
+            'campus_id' => $contract->campus_id,
+            'job_grade' => $contract->job_grade,
+            'payroll_scheme' => $contract->payroll_scheme ?: $contract->staff->payroll_scheme ?: 'employee',
+            'salary_scale' => $contract->salary_scale,
+            'line_manager_id' => $contract->line_manager_id,
+            'organisation_email' => $organisationEmail,
+            'gross_monthly_salary' => $contract->gross_salary,
+            'employment_start_date' => $contract->start_date,
+            'contract_end_date' => $contract->end_date,
+            'employment_category' => $contract->contract_type,
+            'probation_end_date' => $contract->probation_end_date,
+            'is_on_probation' => $contract->probation_status === 'active',
+        ]);
     }
 }

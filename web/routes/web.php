@@ -203,7 +203,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         });
     });
 
-    Route::prefix('admissions')->middleware(['permission:admissions.read'])->group(function () {
+    Route::prefix('admissions')->middleware(['permission:admin_manage_admissions_view'])->group(function () {
         Route::get('/', [ApprovalController::class, 'dashboard'])->name('admissions.dashboard');
         Route::get('/applications', [ApprovalController::class, 'index'])->name('admissions.applications.index');
         Route::get('/applications/{id}', [ApprovalController::class, 'show'])->name('admissions.applications.show');
@@ -212,22 +212,22 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'])
             ->name('admissions.applications.documents.download');
         Route::post('/applications/{id}/shortlist', [ApprovalController::class, 'shortlist'])
-            ->middleware('permission:admissions.write')
+            ->middleware('permission:admin_manage_admissions_manage')
             ->name('admissions.applications.shortlist');
         Route::post('/applications/{id}/handoff-academics', [ApprovalController::class, 'handoffToAcademics'])
-            ->middleware('permission:admissions.write')
+            ->middleware('permission:admin_manage_admissions_manage')
             ->name('admissions.applications.handoff-academics');
         Route::post('/applications/{id}/confirm-payment', [ApprovalController::class, 'confirmPayment'])
-            ->middleware('permission:admissions.write')
+            ->middleware('permission:admin_manage_admissions_manage')
             ->name('admissions.applications.confirm-payment');
         Route::post('/applications/{id}/approve', [ApprovalController::class, 'approve'])
-            ->middleware('permission:admissions.approve')
+            ->middleware('permission:admin_manage_admissions_approve')
             ->name('admissions.applications.approve');
         Route::post('/applications/{id}/reject', [ApprovalController::class, 'reject'])
-            ->middleware('permission:admissions.approve')
+            ->middleware('permission:admin_manage_admissions_approve')
             ->name('admissions.applications.reject');
         Route::post('/applications/{id}/resend-portal-signup', [ApprovalController::class, 'resendPortalSignup'])
-            ->middleware('permission:admissions.write')
+            ->middleware('permission:admin_manage_admissions_manage')
             ->name('admissions.applications.resend-portal-signup');
     });
 

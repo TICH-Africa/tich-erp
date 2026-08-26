@@ -40,14 +40,24 @@
             @if (auth()->user()->isTeachingStaff())
                 @include('partials.navigation.sidebar-link', ['href' => route('staff.dashboard'), 'label' => 'Staff portal', 'icon' => 'book-open'])
             @endif
-            @if (auth()->user()->hasPermission('hr.staff.view'))
-                @include('partials.navigation.sidebar-link', ['href' => route('hr.dashboard'), 'label' => 'HR dashboard', 'icon' => 'users'])
-            @endif
         @endunless
     </nav>
     <div class="tich-admin-sidebar__footer">
         @unless ($mustCompleteProfile ?? false)
-            @include('partials.navigation.sidebar-link', ['href' => route('dashboard'), 'label' => 'Main dashboard', 'icon' => 'home', 'muted' => true])
+            @php
+                $dashboardRoute = match (true) {
+                    auth()->user()->hasRole('Super Admin') => route('dashboard'),
+                    auth()->user()->hasPermission('finance.read') => route('finance.dashboard'),
+                    auth()->user()->hasPermission('hr.read') => route('hr.dashboard'),
+                    auth()->user()->hasPermission('admissions.read') => route('admissions.dashboard'),
+                    auth()->user()->hasPermission('academics.read') => route('departments.academics.dashboard'),
+                    auth()->user()->hasPermission('research.read') => route('research.dashboard'),
+                    auth()->user()->hasPermission('qa.read') => route('qa.dashboard'),
+                    auth()->user()->hasPermission('procurement.read') => route('procurement.dashboard'),
+                    default => route('dashboard'),
+                };
+            @endphp
+            @include('partials.navigation.sidebar-link', ['href' => $dashboardRoute, 'label' => 'Main dashboard', 'icon' => 'home', 'muted' => true])
         @endunless
     </div>
 </aside>

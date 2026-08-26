@@ -54,9 +54,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'permission_aliases' => [
-        'admissions.read' => 'admin_manage_applicants_view',
-        'admissions.write' => 'admin_manage_applicants_manage',
-        'admissions.approve' => 'admin_manage_applicants_approve',
+        'admissions.read' => 'admin_manage_admissions_view',
+        'admissions.write' => 'admin_manage_admissions_manage',
+        'admissions.approve' => 'admin_manage_admissions_approve',
         'students.read' => 'admin_manage_students_view',
         'students.write' => 'admin_manage_students_manage',
         'roles.assign' => 'admin_manage_staff_manage',

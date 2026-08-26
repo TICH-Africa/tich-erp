@@ -50,6 +50,28 @@
                     </select>
                 </div>
                 <div>
+                    <label for="campus_id" class="tich-label">Campus</label>
+                    <select id="campus_id" name="campus_id" class="tich-input">
+                        <option value="">Select campus</option>
+                        @foreach ($campuses as $campus)
+                            <option value="{{ $campus->id }}" {{ old('campus_id') == $campus->id ? 'selected' : '' }}>
+                                {{ $campus->campus_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="line_manager_id" class="tich-label">Line manager</label>
+                    <select id="line_manager_id" name="line_manager_id" class="tich-input">
+                        <option value="">Select line manager</option>
+                        @foreach ($staff as $manager)
+                            <option value="{{ $manager->id }}" {{ old('line_manager_id') == $manager->id ? 'selected' : '' }}>
+                                {{ $manager->fullName() }} ({{ $manager->employee_number }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label for="gross_salary" class="tich-label">Gross Salary *</label>
                     <input type="number" step="0.01" id="gross_salary" name="gross_salary" value="{{ old('gross_salary') }}" required class="tich-input">
                 </div>
@@ -58,8 +80,14 @@
                     <input type="date" id="start_date" name="start_date" value="{{ old('start_date') }}" required class="tich-input">
                 </div>
                 <div>
+                    <label for="duration" class="tich-label">Duration</label>
+                    <input type="text" id="duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year, 2y">
+                    <p class="tich-caption tich-mt-1">Examples: 6 months, 1 year, 2y, 3m</p>
+                </div>
+                <div>
                     <label for="end_date" class="tich-label">End Date</label>
-                    <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}" class="tich-input">
+                    <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}" class="tich-input" readonly>
+                    <p class="tich-caption tich-mt-1">Auto-calculated from start date and duration.</p>
                 </div>
                 <div>
                     <label for="probation_end_date" class="tich-label">Probation End Date</label>
@@ -79,4 +107,45 @@
             </div>
         </form>
     </article>
+    <script>
+        (function () {
+            var startInput = document.getElementById('start_date');
+            var durationInput = document.getElementById('duration');
+            var endInput = document.getElementById('end_date');
+            if (!startInput || !durationInput || !endInput) return;
+
+            function calculateEnd() {
+                var start = startInput.value;
+                var duration = durationInput.value.trim();
+                if (!start || !duration) {
+                    endInput.value = '';
+                    return;
+                }
+
+                var lower = duration.toLowerCase();
+                var months = 0;
+                var yearMatch = lower.match(/(\d+)\s*y/);
+                var monthMatch = lower.match(/(\d+)\s*m/);
+
+                if (yearMatch) months += parseInt(yearMatch[1], 10) * 12;
+                if (monthMatch) months += parseInt(monthMatch[1], 10);
+                if (!yearMatch && !monthMatch && /^\d+$/.test(lower)) months = parseInt(lower, 10);
+
+                if (months <= 0) {
+                    endInput.value = '';
+                    return;
+                }
+
+                var date = new Date(start);
+                date.setMonth(date.getMonth() + months);
+                var yyyy = date.getFullYear();
+                var mm = String(date.getMonth() + 1).padStart(2, '0');
+                var dd = String(date.getDate()).padStart(2, '0');
+                endInput.value = yyyy + '-' + mm + '-' + dd;
+            }
+
+            startInput.addEventListener('change', calculateEnd);
+            durationInput.addEventListener('input', calculateEnd);
+        })();
+    </script>
 @endsection

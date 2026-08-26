@@ -95,9 +95,6 @@
                     <div><span class="tich-kv-grid__label">Department</span><span class="tich-kv-grid__value">{{ $staff->department?->dept_name ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Campus</span><span class="tich-kv-grid__value">{{ $staff->campus?->campus_name ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Job title</span><span class="tich-kv-grid__value">{{ $staff->job_title ?? '-' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Grade</span><span class="tich-kv-grid__value">{{ $staff->job_grade ?? '-' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Category</span><span class="tich-kv-grid__value">{{ $pay['employment_category'] }}</span></div>
-                    <div><span class="tich-kv-grid__label">Payroll scheme</span><span class="tich-kv-grid__value">{{ $pay['payroll_scheme'] }}</span></div>
                     <div><span class="tich-kv-grid__label">Line manager</span><span class="tich-kv-grid__value">{{ $staff->lineManager?->fullName() ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Start date</span><span class="tich-kv-grid__value">{{ $staff->employment_start_date?->format('d M Y') ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Contract end</span><span class="tich-kv-grid__value">{{ $contract['end_date']?->format('d M Y') ?? 'Open-ended / permanent' }}</span></div>
@@ -114,7 +111,6 @@
                     <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value">KES {{ number_format($pay['gross_monthly_salary'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value">KES {{ number_format($pay['allowances_total'], 2) }}</span></div>
                     <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value">KES {{ number_format($pay['total_monthly'], 2) }}</span></div>
-                    <div><span class="tich-kv-grid__label">Salary scale</span><span class="tich-kv-grid__value">{{ $staff->salary_scale ?? '-' }}</span></div>
                 </div>
                 @if ($pay['allowances']->isNotEmpty())
                     <h3 class="tich-h3 tich-mt-6">Allowance breakdown</h3>

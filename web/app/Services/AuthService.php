@@ -301,6 +301,34 @@ class AuthService
             return route('staff.dashboard');
         }
 
+        if ($this->rbacService->hasPermission($user, 'finance.read')) {
+            return route('finance.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'hr.read')) {
+            return route('hr.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'admissions.read')) {
+            return route('admissions.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'academics.read')) {
+            return route('departments.academics.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'research.read')) {
+            return route('research.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'qa.read')) {
+            return route('qa.dashboard');
+        }
+
+        if ($this->rbacService->hasPermission($user, 'procurement.read')) {
+            return route('procurement.dashboard');
+        }
+
         if ($this->rbacService->hasPermission($user, 'dashboard.access')) {
             return route('dashboard');
         }

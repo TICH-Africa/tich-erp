@@ -70,11 +70,19 @@ class ContractController extends Controller
             'department_id' => 'required|exists:departments,id',
             'gross_salary' => 'required|numeric|min:0',
             'start_date' => 'required|date',
+            'duration' => 'nullable|string|max:50',
             'end_date' => 'nullable|date',
             'is_renewable' => 'boolean',
             'probation_end_date' => 'nullable|date',
             'contract_document_path' => 'nullable|string|max:500',
         ]);
+
+        if (empty($validated['end_date']) && ! empty($validated['duration'])) {
+            $calculated = $this->contractService->calculateEndDate($validated['start_date'], $validated['duration']);
+            if ($calculated) {
+                $validated['end_date'] = $calculated;
+            }
+        }
 
         $contract = $this->contractService->createContract($staffId, $validated, $request->user()->id);
 
@@ -91,6 +99,7 @@ class ContractController extends Controller
             'department_id' => 'sometimes|exists:departments,id',
             'gross_salary' => 'sometimes|numeric|min:0',
             'start_date' => 'sometimes|date',
+            'duration' => 'nullable|string|max:50',
             'end_date' => 'nullable|date',
             'is_renewable' => 'sometimes|boolean',
             'probation_end_date' => 'nullable|date',
@@ -100,6 +109,21 @@ class ContractController extends Controller
             'signed_date' => 'nullable|date',
             'witnessed_by' => 'nullable|string|max:200',
         ]);
+
+        if (empty($validated['end_date']) && ! empty($validated['duration']) && ! empty($validated['start_date'])) {
+            $startDate = $validated['start_date'] ?? $contract->start_date;
+            if ($startDate) {
+                $calculated = $this->contractService->calculateEndDate($startDate, $validated['duration']);
+                if ($calculated) {
+                    $validated['end_date'] = $calculated;
+                }
+            }
+        } elseif (empty($validated['end_date']) && ! empty($validated['duration']) && ! empty($contract->start_date)) {
+            $calculated = $this->contractService->calculateEndDate($contract->start_date, $validated['duration']);
+            if ($calculated) {
+                $validated['end_date'] = $calculated;
+            }
+        }
 
         $contract = $this->contractService->updateContract($id, $validated, $request->user()->id);
 
@@ -131,11 +155,19 @@ class ContractController extends Controller
     {
         $validated = $request->validate([
             'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'duration' => 'nullable|string|max:50',
+            'end_date' => 'nullable|date',
             'gross_salary' => 'required|numeric|min:0',
             'job_title' => 'sometimes|string|max:200',
             'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
         ]);
+
+        if (empty($validated['end_date']) && ! empty($validated['duration'])) {
+            $calculated = $this->contractService->calculateEndDate($validated['start_date'], $validated['duration']);
+            if ($calculated) {
+                $validated['end_date'] = $calculated;
+            }
+        }
 
         $newContract = $this->contractService->renewContract($id, $validated, $request->user()->id);
 

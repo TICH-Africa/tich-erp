@@ -103,17 +103,6 @@
                     @error('surname')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
-<<<<<<< Updated upstream
-                    <label for="date_of_birth" class="tich-label">Date of birth (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
-                    <input
-                        type="date"
-                        id="date_of_birth"
-                        name="date_of_birth"
-                        class="tich-input @error('date_of_birth') tich-input--error @enderror"
-                        value="{{ old('date_of_birth', ($staff->date_of_birth && $staff->date_of_birth->format('Y-m-d') !== '1990-01-01') ? $staff->date_of_birth->format('Y-m-d') : '') }}"
-                        @required($mustCompleteProfile)
-                    >
-=======
                     <label for="date_of_birth" class="tich-label">Date of birth @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     @php
                         $dobValue = old('date_of_birth');
@@ -123,7 +112,6 @@
                         }
                     @endphp
                     <input type="date" id="date_of_birth" name="date_of_birth" class="tich-input @error('date_of_birth') tich-input--error @enderror" value="{{ $dobValue ?? '' }}" @required($mustCompleteProfile)>
->>>>>>> Stashed changes
                     @error('date_of_birth')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>

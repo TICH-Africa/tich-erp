@@ -37,8 +37,14 @@
                             <input type="date" id="renew_start_date" name="start_date" value="{{ old('start_date', $contract->start_date?->format('Y-m-d')) }}" required class="tich-input">
                         </div>
                         <div>
-                            <label for="renew_end_date" class="tich-label">End Date *</label>
-                            <input type="date" id="renew_end_date" name="end_date" value="{{ old('end_date', $contract->end_date?->format('Y-m-d')) }}" required class="tich-input">
+                            <label for="renew_duration" class="tich-label">Duration</label>
+                            <input type="text" id="renew_duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year, 2y">
+                            <p class="tich-caption tich-mt-1">Examples: 6 months, 1 year, 2y, 3m</p>
+                        </div>
+                        <div>
+                            <label for="renew_end_date" class="tich-label">End Date</label>
+                            <input type="date" id="renew_end_date" name="end_date" value="{{ old('end_date', $contract->end_date?->format('Y-m-d')) }}" class="tich-input" readonly>
+                            <p class="tich-caption tich-mt-1">Auto-calculated from start date and duration.</p>
                         </div>
                         <div>
                             <label for="renew_gross_salary" class="tich-label">Gross Salary *</label>
@@ -85,4 +91,45 @@
             </p>
         </article>
     @endif
+    <script>
+        (function () {
+            var startInput = document.getElementById('renew_start_date');
+            var durationInput = document.getElementById('renew_duration');
+            var endInput = document.getElementById('renew_end_date');
+            if (!startInput || !durationInput || !endInput) return;
+
+            function calculateEnd() {
+                var start = startInput.value;
+                var duration = durationInput.value.trim();
+                if (!start || !duration) {
+                    endInput.value = '';
+                    return;
+                }
+
+                var lower = duration.toLowerCase();
+                var months = 0;
+                var yearMatch = lower.match(/(\d+)\s*y/);
+                var monthMatch = lower.match(/(\d+)\s*m/);
+
+                if (yearMatch) months += parseInt(yearMatch[1], 10) * 12;
+                if (monthMatch) months += parseInt(monthMatch[1], 10);
+                if (!yearMatch && !monthMatch && /^\d+$/.test(lower)) months = parseInt(lower, 10);
+
+                if (months <= 0) {
+                    endInput.value = '';
+                    return;
+                }
+
+                var date = new Date(start);
+                date.setMonth(date.getMonth() + months);
+                var yyyy = date.getFullYear();
+                var mm = String(date.getMonth() + 1).padStart(2, '0');
+                var dd = String(date.getDate()).padStart(2, '0');
+                endInput.value = yyyy + '-' + mm + '-' + dd;
+            }
+
+            startInput.addEventListener('change', calculateEnd);
+            durationInput.addEventListener('input', calculateEnd);
+        })();
+    </script>
 @endsection
