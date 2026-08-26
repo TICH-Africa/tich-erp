@@ -2,6 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><title>Payment reminder</title></head>
 <body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">
+    @include('emails.partials.brand-header')
     <p>Dear {{ $invoice->student->displayName() }},</p>
     <p>This is a friendly reminder about an outstanding invoice on your student account.</p>
     <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">

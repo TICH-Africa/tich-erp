@@ -30,4 +30,17 @@ class Event extends Model
         'is_public' => 'boolean',
         'is_featured' => 'boolean',
     ];
+
+    public function coverImageUrl(): ?string
+    {
+        if (! $this->cover_image_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->cover_image_path, 'http://') || str_starts_with($this->cover_image_path, 'https://')) {
+            return $this->cover_image_path;
+        }
+
+        return asset(ltrim($this->cover_image_path, '/'));
+    }
 }

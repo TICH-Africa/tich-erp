@@ -2,6 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><title>Payment confirmation</title></head>
 <body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">
+    @include('emails.partials.brand-header')
     <p>Dear {{ $payment->student->displayName() }},</p>
     <p>We have received your payment. Thank you.</p>
     <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">

@@ -16,6 +16,7 @@ class HomepageService
 {
     public function __construct(
         protected ProgramCarouselSyncService $programCarousel,
+        protected EventCarouselSyncService $eventCarousel,
         protected SiteSettingsService $settings,
     ) {}
 
@@ -48,28 +49,32 @@ class HomepageService
     {
         if ($this->tableExists('homepage_carousel_slides')) {
             $slides = CarouselSlide::query()
-                ->with('program:id,program_code')
+                ->with(['program:id,program_code', 'event:id,title'])
                 ->where('is_active', 1)
                 ->orderBy('display_order')
                 ->orderBy('id')
                 ->get();
 
             if ($slides->isNotEmpty()) {
-                return $this->mergeFeaturedProgramSlides(
-                    $slides->map(fn ($slide) => $this->mapCarouselSlide($slide))
+                return $this->mergeFeaturedEventSlides(
+                    $this->mergeFeaturedProgramSlides(
+                        $slides->map(fn ($slide) => $this->mapCarouselSlide($slide))
+                    )
                 );
             }
         }
 
         $this->carouselUsesFallback = true;
 
-        return $this->mergeFeaturedProgramSlides(
-            collect(config('tich-homepage.carousel', []))
-                ->map(fn ($slide, $index) => (object) array_merge($slide, [
-                    'image_path' => $this->mediaUrl($slide['image_path'] ?? null),
-                    'cta_url' => isset($slide['cta_url']) ? url($slide['cta_url']) : null,
-                    'display_order' => $index + 1,
-                ]))
+        return $this->mergeFeaturedEventSlides(
+            $this->mergeFeaturedProgramSlides(
+                collect(config('tich-homepage.carousel', []))
+                    ->map(fn ($slide, $index) => (object) array_merge($slide, [
+                        'image_path' => $this->mediaUrl($slide['image_path'] ?? null),
+                        'cta_url' => isset($slide['cta_url']) ? url($slide['cta_url']) : null,
+                        'display_order' => $index + 1,
+                    ]))
+            )
         );
     }
 
@@ -119,6 +124,59 @@ class HomepageService
             ->values();
     }
 
+    /**
+     * @param  Collection<int, object>  $slides
+     * @return Collection<int, object>
+     */
+    private function mergeFeaturedEventSlides(Collection $slides): Collection
+    {
+        if (! $this->tableExists('events') || ! $this->columnExists('events', 'is_featured')) {
+            return $slides->values();
+        }
+
+        $linkedEventIds = collect();
+        if ($this->tableExists('homepage_carousel_slides') && $this->columnExists('homepage_carousel_slides', 'event_id')) {
+            $linkedEventIds = CarouselSlide::query()
+                ->whereNotNull('event_id')
+                ->pluck('event_id')
+                ->map(fn ($id) => (int) $id);
+        }
+
+        $existingTitles = $slides
+            ->pluck('title')
+            ->filter()
+            ->map(fn ($title) => strtolower(trim((string) $title)))
+            ->values()
+            ->all();
+
+        $featuredEvents = Event::query()
+            ->where('is_featured', 1)
+            ->where('is_public', 1)
+            ->where(function ($query) {
+                $query->whereNull('end_datetime')
+                    ->orWhere('end_datetime', '>=', now()->subDay());
+            })
+            ->orderBy('start_datetime')
+            ->get();
+
+        foreach ($featuredEvents as $event) {
+            if ($linkedEventIds->contains($event->id)) {
+                continue;
+            }
+
+            $eventTitle = strtolower(trim((string) ($event->title ?? '')));
+            if ($eventTitle !== '' && in_array($eventTitle, $existingTitles, true)) {
+                continue;
+            }
+
+            $slides->push($this->eventCarousel->mapEventToSlideObject($event));
+        }
+
+        return $slides
+            ->sortBy(fn ($slide) => $slide->display_order ?? PHP_INT_MAX)
+            ->values();
+    }
+
     private function mapCarouselSlide(CarouselSlide $slide): object
     {
         return (object) [
@@ -127,8 +185,10 @@ class HomepageService
             'image_path' => $this->mediaUrl($slide->image_path),
             'video_url' => $slide->video_url,
             'cta_label' => $slide->cta_label,
-            'cta_url' => $slide->cta_url ? url($slide->cta_url) : null,
-            'view_url' => $this->programViewUrl($slide->program?->program_code),
+            'cta_url' => $slide->cta_url ? (str_starts_with($slide->cta_url, 'http') ? $slide->cta_url : url($slide->cta_url)) : null,
+            'view_url' => $slide->event_id
+                ? route('events')
+                : $this->programViewUrl($slide->program?->program_code),
             'display_order' => (int) $slide->display_order,
         ];
     }

@@ -6,6 +6,7 @@ use App\Services\RBACService;
 use App\View\Composers\AcademicsSidebarComposer;
 use App\View\Composers\AdminSidebarComposer;
 use App\View\Composers\AdministrationSidebarComposer;
+use App\View\Composers\EmailBrandComposer;
 use App\View\Composers\EmployeeSidebarComposer;
 use App\View\Composers\FinanceSidebarComposer;
 use App\View\Composers\HrSidebarComposer;
@@ -54,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer(['layouts.app', 'layouts.auth'], PublicLayoutComposer::class);
+        View::composer(['emails.*', 'emails.finance.*'], EmailBrandComposer::class);
         View::composer(['hr.partials.sidebar', 'layouts.hr'], HrSidebarComposer::class);
         View::composer(['finance.partials.sidebar', 'layouts.finance'], FinanceSidebarComposer::class);
         View::composer(['employee.partials.sidebar', 'layouts.employee'], EmployeeSidebarComposer::class);

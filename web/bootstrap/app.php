@@ -2,12 +2,14 @@
 
 use App\Services\AuthService;
 use App\Services\ErrorNavigationService;
+use App\Support\DatabaseAvailability;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -137,5 +139,36 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect()
                 ->to($request->headers->get('referer') ?: $home)
                 ->withErrors(['upload' => 'The uploaded file exceeds the server size limit. Try a smaller file.']);
+        });
+
+        // Never expose SQL / connection internals to end users (especially production).
+        // Use a DB-free view so rendering the error cannot re-trigger the same failure.
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (! DatabaseAvailability::isUnavailable($e)) {
+                return null;
+            }
+
+            try {
+                Log::error('Database unavailable', [
+                    'message' => $e->getMessage(),
+                    'exception' => $e::class,
+                    'url' => $request->fullUrl(),
+                ]);
+            } catch (\Throwable) {
+                // Logging itself may need the DB — ignore.
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The service is temporarily unavailable. Please try again shortly.',
+                ], 503);
+            }
+
+            return response()->view('errors.unavailable', [
+                'code' => '503',
+                'title' => 'Service unavailable',
+                'message' => 'The platform is temporarily unavailable while we reconnect to the database.',
+                'hint' => 'Please try again in a few minutes. If you manage this server, check that MariaDB/MySQL is running and allows local connections.',
+            ], 503);
         });
     })->create();

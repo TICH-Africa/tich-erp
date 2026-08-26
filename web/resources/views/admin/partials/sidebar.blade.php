@@ -31,6 +31,14 @@
                 'badgeKey' => 'programs',
             ])
         @endcan
+        @can('portal.manage_events.manage')
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('admin.events.index'),
+                'label' => 'Events',
+                'icon' => 'calendar',
+                'active' => request()->routeIs('admin.events.*'),
+            ])
+        @endcan
         @can('users.access.manage')
             @include('partials.navigation.sidebar-link', [
                 'href' => route('admin.users.index'),

@@ -18,6 +18,7 @@ class CarouselSlide extends Model
 
     protected $fillable = [
         'program_id',
+        'event_id',
         'title', 'subtitle', 'image_path', 'video_url',
         'cta_label', 'cta_url', 'display_order', 'is_active',
     ];
@@ -29,5 +30,10 @@ class CarouselSlide extends Model
     public function program(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\AcademicProgram::class, 'program_id');
+    }
+
+    public function event(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Event::class, 'event_id');
     }
 }

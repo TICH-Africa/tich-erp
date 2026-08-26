@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DepartmentGroupController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\RoleCategoryController;
 use App\Http\Controllers\Admin\RoleController;
@@ -144,6 +145,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
             Route::get('/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
             Route::post('/programs', [ProgramController::class, 'store'])->name('admin.programs.store');
             Route::put('/programs/{program}', [ProgramController::class, 'update'])->name('admin.programs.update');
+        });
+
+        Route::middleware(['permission:portal.manage_events.manage'])->group(function () {
+            Route::get('/events', [EventController::class, 'index'])->name('admin.events.index');
+            Route::post('/events', [EventController::class, 'store'])->name('admin.events.store');
+            Route::put('/events/{event}', [EventController::class, 'update'])->name('admin.events.update');
+            Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('admin.events.destroy');
         });
 
         Route::middleware(['permission:users.access.manage'])->group(function () {
