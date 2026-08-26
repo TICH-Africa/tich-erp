@@ -72,6 +72,36 @@
 
 html {
     -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
 }
 
 body.tich-body {
@@ -349,6 +379,7 @@ h3.tich-h3 {
 .tich-lesson-plan-verify {
     background: var(--tich-surface-muted, #f8fafc);
     border-color: var(--tich-primary, #2563eb);
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--tich-primary, #2563eb) 35%, transparent);
 }
 
@@ -364,6 +395,7 @@ h3.tich-h3 {
 [data-theme="dark"] .tich-lesson-plan-verify {
     background: var(--tich-surface-muted);
     border-color: var(--tich-green);
+    box-shadow: 0 0 0 1px rgba(108, 171, 51, 0.45);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--tich-green) 45%, transparent);
 }
 
@@ -3808,6 +3840,7 @@ a.tich-notification-badge:hover {
 }
 
 .tich-admin-table tbody tr:hover {
+    background: #eef4f9;
     background: color-mix(in srgb, var(--tich-blue) 6%, var(--tich-surface-muted));
 }
 

@@ -1,23 +1,26 @@
 @php
     $siteMetaForHead = $siteMeta ?? app(\App\Services\SiteSettingsService::class)->siteMeta();
 @endphp
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
 <link rel="shortcut icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
 <link rel="apple-touch-icon" href="{{ $siteMetaForHead['favicon_url'] }}">
-<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
 @include('partials.theme-init')
-<link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" />
-<link rel="stylesheet" href="{{ asset('css/tich-platform.css') }}">
-<script src="{{ asset('js/tich-theme.js') }}" defer></script>
-<script src="{{ asset('js/tich-select.js') }}" defer></script>
-<script src="{{ asset('js/tich-toasts.js') }}" defer></script>
-<script src="{{ asset('js/tich-lazy-load.js') }}" defer></script>
-<script src="{{ asset('js/tich-form-submit-once.js') }}" defer></script>
+<link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" type="text/css" />
+<x-asset.stylesheet path="css/tich-platform.css" />
+<x-asset.script path="js/tich-theme.js" />
+<x-asset.script path="js/tich-select.js" />
+<x-asset.script path="js/tich-toasts.js" />
+<x-asset.script path="js/tich-lazy-load.js" />
+<x-asset.script path="js/tich-form-submit-once.js" />
 @if (config('security.block_inspect_ui', true))
-<script src="{{ asset('js/tich-ui-protection.js') }}" defer></script>
+    <x-asset.script path="js/tich-ui-protection.js" />
 @endif
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
+<script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+<script type="text/javascript">
     tailwind.config = {
         theme: {
             extend: {

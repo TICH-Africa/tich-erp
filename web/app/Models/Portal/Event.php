@@ -73,10 +73,6 @@ class Event extends Model
             return null;
         }
 
-        if (str_starts_with($this->cover_image_path, 'http://') || str_starts_with($this->cover_image_path, 'https://')) {
-            return $this->cover_image_path;
-        }
-
-        return asset(ltrim($this->cover_image_path, '/'));
+        return \App\Support\PublicAsset::media($this->cover_image_path);
     }
 }

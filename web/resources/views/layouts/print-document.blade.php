@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $documentTitle ?? 'Official document' }} - {{ $institution['short_name'] ?? 'TICH' }}</title>
     @if (empty($forPdf))
-        <link rel="stylesheet" href="{{ asset('css/tich-print-documents.css') }}">
+        <x-asset.stylesheet path="css/tich-print-documents.css" />
         @if (config('security.block_inspect_ui', true))
-            <script src="{{ asset('js/tich-ui-protection.js') }}" defer></script>
+            <x-asset.script path="js/tich-ui-protection.js" />
         @endif
     @else
         <style>@include('partials.print.document-styles-inline')</style>

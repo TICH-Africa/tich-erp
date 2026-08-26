@@ -56,6 +56,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Asset URL / CDN root
+    |--------------------------------------------------------------------------
+    |
+    | When set, Laravel's asset() helper (CSS, JS, images under /public) uses
+    | this base instead of the current request host. Leave null to use APP_URL
+    | / the request root. Example CDN: https://cdn.tich.africa
+    |
+    */
+
+    'asset_url' => env('ASSET_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Force generated URLs to APP_URL
+    |--------------------------------------------------------------------------
+    |
+    | When true (default in production), route() and asset() always use APP_URL
+    | as the root — required behind cPanel / reverse proxies with odd Host headers.
+    |
+    */
+
+    'force_https_urls' => (bool) env('FORCE_HTTPS', env('APP_ENV') === 'production'),
+
+    'force_root_url' => env('FORCE_APP_URL', env('APP_ENV') === 'production'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # Prefer HTTPS when TLS terminates at the edge (uncomment if needed):
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -18,8 +23,54 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Serve real static files (css/js/images/storage) with correct MIME — never through Laravel.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Correct Content-Type so browsers do not treat CSS/JS as text/html.
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType text/javascript .js .mjs
+    AddType application/javascript .js .mjs
+    AddType application/json .json
+    AddType image/svg+xml .svg .svgz
+    AddType image/webp .webp
+    AddType image/avif .avif
+    AddType image/x-icon .ico
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType font/ttf .ttf
+    AddType font/otf .otf
+    AddCharset UTF-8 .css .js .mjs .json .svg .html .htm .txt
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType text/javascript "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+    Header set X-Content-Type-Options "nosniff"
+
+    <FilesMatch "\.(css|js|mjs|map|json|woff2?|ttf|otf|eot|svg|webp|avif|png|jpe?g|gif|ico)$">
+        Header set X-Content-Type-Options "nosniff"
+        Header unset Content-Security-Policy
+    </FilesMatch>
+</IfModule>
+
+Options -Indexes

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Attendance sheet {{ $tracking_id }}</title>
-    <link rel="stylesheet" href="{{ asset('css/tich-print-documents.css') }}">
+    <x-asset.stylesheet path="css/tich-print-documents.css" />
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 24px; }
         h1 { font-size: 18px; margin: 0 0 4px; }

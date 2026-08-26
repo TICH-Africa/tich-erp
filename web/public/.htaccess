@@ -24,10 +24,49 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Never route real static files through Laravel (keeps correct MIME types).
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Correct Content-Type so browsers do not treat CSS/JS as text/html.
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType text/javascript .js .mjs
+    AddType application/javascript .js .mjs
+    AddType application/json .json
+    AddType application/manifest+json .webmanifest
+    AddType image/svg+xml .svg .svgz
+    AddType image/webp .webp
+    AddType image/avif .avif
+    AddType image/x-icon .ico
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType font/ttf .ttf
+    AddType font/otf .otf
+    AddType application/vnd.ms-fontobject .eot
+    AddType application/wasm .wasm
+    AddType text/plain .txt .map
+    AddCharset UTF-8 .css .js .mjs .json .svg .html .htm .txt .xml
+</IfModule>
+
+# Cache static assets; MIME above still applies.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType text/javascript "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType font/woff "access plus 30 days"
 </IfModule>
 
 # Hide server fingerprinting where mod_headers is available.
@@ -37,6 +76,11 @@
     Header always unset Server
     Header unset Server
     Header set X-Content-Type-Options "nosniff"
+
+    <FilesMatch "\.(css|js|mjs|map|json|woff2?|ttf|otf|eot|svg|webp|avif|png|jpe?g|gif|ico)$">
+        Header set X-Content-Type-Options "nosniff"
+        Header unset Content-Security-Policy
+    </FilesMatch>
 </IfModule>
 
 # Do not expose directory listings.

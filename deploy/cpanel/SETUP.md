@@ -36,6 +36,8 @@ If the host ever changes document root, edit **`docroot.txt`** in git and redepl
 
 - https://tich.africa/css/tich-platform.css
 - https://tich.africa/js/tich-nav.js
+- Ensure `web/.env` has `APP_URL=https://tich.africa` (and optional `ASSET_URL` if using a CDN)
+- Run `php artisan storage:link` once so `/storage` serves uploads
 
 Hard-refresh the homepage (Ctrl+Shift+R).
 
@@ -46,3 +48,5 @@ Hard-refresh the homepage (Ctrl+Shift+R).
 | Pages work, CSS/JS 404 | Check `deploy/cpanel/last-asset-sync.log` after deploy |
 | Routes 404 | Redeploy - `.htaccess` is copied from git each time |
 | Wrong document root | Update `deploy/cpanel/docroot.txt`, commit, redeploy |
+| Assets point at localhost | Set `APP_URL=https://tich.africa` and clear config cache (`php artisan config:clear`) |
+| Uploaded images 404 | `php artisan storage:link` then re-run asset sync so `public_html/storage` exists |

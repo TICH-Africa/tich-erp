@@ -158,6 +158,11 @@ class StoredFileService
             return $path;
         }
 
+        // Prefer PublicAsset so APP_URL / ASSET_URL always apply.
+        if ($disk === 'public') {
+            return \App\Support\PublicAsset::media($path);
+        }
+
         $relative = $this->relativePath($path);
 
         return $relative ? Storage::disk($disk)->url($relative) : null;

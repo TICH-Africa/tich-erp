@@ -29,9 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if (config('security.force_https')) {
-            URL::forceScheme('https');
-        }
+        $this->configurePublicUrls();
 
         // Prefer HttpOnly + SameSite session cookies (secure when HTTPS / FORCE_HTTPS).
         if (config('security.force_https') && config('session.secure') === null) {
@@ -64,5 +62,31 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['academics.partials.sidebar', 'layouts.academics'], AcademicsSidebarComposer::class);
         View::composer(['admin.partials.sidebar', 'layouts.admin'], AdminSidebarComposer::class);
         View::composer(['administration.partials.sidebar', 'layouts.administration'], AdministrationSidebarComposer::class);
+    }
+
+    /**
+     * Make route()/asset()/Storage URLs resolve from APP_URL (and ASSET_URL) in production.
+     */
+    private function configurePublicUrls(): void
+    {
+        $appUrl = rtrim((string) config('app.url'), '/');
+
+        if ($appUrl !== '' && filter_var(config('app.force_root_url'), FILTER_VALIDATE_BOOLEAN)) {
+            URL::forceRootUrl($appUrl);
+        }
+
+        $forceHttps = (bool) config('security.force_https', false)
+            || filter_var(config('app.force_https_urls'), FILTER_VALIDATE_BOOLEAN)
+            || str_starts_with($appUrl, 'https://');
+
+        if ($forceHttps) {
+            URL::forceScheme('https');
+        }
+
+        // Keep the public disk aligned with ASSET_URL / APP_URL at runtime.
+        $assetRoot = rtrim((string) (config('app.asset_url') ?: $appUrl), '/');
+        if ($assetRoot !== '') {
+            config(['filesystems.disks.public.url' => $assetRoot.'/storage']);
+        }
     }
 }

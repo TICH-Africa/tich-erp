@@ -29,4 +29,4 @@
     <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js" defer></script>
 @endif
-<script src="{{ asset('js/tich-sidebar-badges.js') }}" defer></script>
+<script src="{{ \App\Support\PublicAsset::url('js/tich-sidebar-badges.js') }}" type="text/javascript" defer></script>

@@ -46,6 +46,6 @@
             </div>
         </main>
     </div>
-    <script src="{{ asset('js/tich-password-toggle.js') }}" defer></script>
+    <x-asset.script path="js/tich-password-toggle.js" />
 </body>
 </html>

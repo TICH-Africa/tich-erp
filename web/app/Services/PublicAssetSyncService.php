@@ -46,6 +46,19 @@ class PublicAssetSyncService
             return ['ok' => false, 'messages' => $messages];
         }
 
+        $storageLink = $appPublic.'/storage';
+        $storageTarget = storage_path('app/public');
+        if (! File::exists($storageLink)) {
+            File::ensureDirectoryExists($storageTarget);
+            if (@symlink($storageTarget, $storageLink)) {
+                $log('Created storage link: '.$storageLink.' -> '.$storageTarget);
+            } else {
+                $log('WARN: Could not create public/storage symlink — run php artisan storage:link');
+            }
+        } else {
+            $log('Storage link present: '.$storageLink);
+        }
+
         $docroot = $this->resolveDocroot($log);
 
         if ($docroot === null) {

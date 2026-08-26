@@ -60,9 +60,9 @@
         @include('partials.navigation.footer')
     @endunless
 
-    <script src="{{ asset('js/tich-nav.js') }}" defer></script>
-    <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
-    <script src="{{ asset('js/tich-states.js') }}" defer></script>
+    <x-asset.script path="js/tich-nav.js" />
+    <x-asset.script path="js/tich-homepage.js" />
+    <x-asset.script path="js/tich-states.js" />
     @yield('scripts')
     @stack('scripts')
 </body>

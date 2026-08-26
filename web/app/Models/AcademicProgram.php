@@ -131,10 +131,6 @@ class AcademicProgram extends Model
             return null;
         }
 
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        return asset(ltrim($path, '/'));
+        return \App\Support\PublicAsset::media($path);
     }
 }
