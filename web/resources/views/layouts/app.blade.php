@@ -64,5 +64,6 @@
     <script src="{{ asset('js/tich-homepage.js') }}" defer></script>
     <script src="{{ asset('js/tich-states.js') }}" defer></script>
     @yield('scripts')
+    @stack('scripts')
 </body>
 </html>

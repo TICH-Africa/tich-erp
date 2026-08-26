@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Ict\Content;
 
 use App\Http\Controllers\Controller;
 use App\Models\Portal\Event;
@@ -21,13 +21,8 @@ class EventController extends Controller
 
     public function index(): View
     {
-        $events = Event::query()
-            ->orderByDesc('is_featured')
-            ->orderBy('start_datetime')
-            ->get();
-
-        return view('admin.events.index', [
-            'events' => $events,
+        return view('ict.content.events.index', [
+            'events' => Event::query()->orderByDesc('is_featured')->orderBy('start_datetime')->get(),
             'eventTypes' => ['conference', 'open_day', 'workshop', 'outreach', 'graduation', 'other'],
         ]);
     }
@@ -35,45 +30,36 @@ class EventController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validated($request);
-        $coverPath = $request->hasFile('cover_image')
-            ? $this->files->replace(null, $request->file('cover_image'), 'events', 'public', null, true)
-            : null;
+        $staffId = $request->user()?->staff_id;
 
         $event = Event::query()->create([
             ...$validated,
-            'cover_image_path' => $coverPath,
-            'is_public' => $request->boolean('is_public', true),
+            'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
+            'cover_image_path' => $request->hasFile('cover_image')
+                ? $this->files->replace(null, $request->file('cover_image'), 'events', 'public', null, true)
+                : null,
+            'is_public' => $request->boolean('is_public'),
             'is_featured' => $request->boolean('is_featured'),
+            'created_by' => $staffId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $this->auditService->log(
-            'portal.event.created',
-            'events',
-            $event->id,
-            null,
-            $event->only(['title', 'event_type', 'is_featured', 'is_public']),
-            null,
-            'success',
-            $request->user()->id,
-            $request
-        );
-
         $this->eventCarousel->sync($event->fresh());
+        $this->auditService->log('portal.event.created', 'events', $event->id, null, $event->only(['title', 'is_featured']), null, 'success', $request->user()?->id, $request);
 
-        return back()->with('status', 'Event created successfully.');
+        return back()->with('status', 'Event created.');
     }
 
     public function update(Request $request, Event $event): RedirectResponse
     {
         $validated = $this->validated($request, $event);
-        $old = $event->only(['title', 'event_type', 'is_featured', 'is_public']);
-
         $updates = [
             ...$validated,
-            'is_public' => $request->boolean('is_public', true),
+            'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
+            'is_public' => $request->boolean('is_public'),
             'is_featured' => $request->boolean('is_featured'),
+            'updated_by' => $request->user()?->staff_id,
             'updated_at' => now(),
         ];
 
@@ -89,50 +75,20 @@ class EventController extends Controller
         }
 
         $event->update($updates);
-
-        $this->auditService->log(
-            'portal.event.updated',
-            'events',
-            $event->id,
-            $old,
-            $event->only(['title', 'event_type', 'is_featured', 'is_public']),
-            null,
-            'success',
-            $request->user()->id,
-            $request
-        );
-
         $this->eventCarousel->sync($event->fresh());
 
-        return back()->with('status', 'Event updated successfully.');
+        return back()->with('status', 'Event updated.');
     }
 
     public function destroy(Request $request, Event $event): RedirectResponse
     {
-        $id = $event->id;
-        $title = $event->title;
-
         if ($event->cover_image_path) {
             $this->files->delete($event->cover_image_path, 'public');
         }
 
-        // Remove linked hero slide first.
         $event->is_featured = false;
         $this->eventCarousel->sync($event);
-
         $event->delete();
-
-        $this->auditService->log(
-            'portal.event.deleted',
-            'events',
-            $id,
-            ['title' => $title],
-            null,
-            null,
-            'success',
-            $request->user()->id,
-            $request
-        );
 
         return back()->with('status', 'Event deleted.');
     }
@@ -151,7 +107,7 @@ class EventController extends Controller
             'end_datetime' => ['nullable', 'date', 'after_or_equal:start_datetime'],
             'venue' => ['nullable', 'string', 'max:300'],
             'registration_url_or_form' => ['nullable', 'string', 'max:500'],
-            'cover_image' => [$event ? 'nullable' : 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'is_public' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
         ]);

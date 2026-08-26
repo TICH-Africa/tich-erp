@@ -5,11 +5,11 @@ namespace App\Models\Portal;
 use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 
-class BlogPost extends Model
+class AboutContentBlock extends Model
 {
     use PrunesStoredFiles;
 
-    protected $table = 'blog_posts';
+    protected $table = 'about_content_blocks';
 
     /** @var array<string, string> */
     protected array $storedFiles = [
@@ -19,12 +19,22 @@ class BlogPost extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'title', 'subtitle', 'slug', 'excerpt', 'body', 'featured_image_path',
-        'author_staff_id', 'status', 'published_at', 'reading_time_minutes', 'view_count',
+        'block_key',
+        'title',
+        'subtitle',
+        'body',
+        'featured_image_path',
+        'display_order',
+        'is_active',
+        'created_by',
+        'updated_by',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
-        'published_at' => 'datetime',
+        'is_active' => 'boolean',
+        'display_order' => 'integer',
     ];
 
     public function imageUrl(): ?string

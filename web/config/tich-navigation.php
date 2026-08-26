@@ -4,7 +4,7 @@ return [
 
     'header' => [
         ['label' => 'Home', 'url' => '/'],
-        ['label' => 'About Us', 'url' => '#about'],
+        ['label' => 'About Us', 'url' => '/about'],
         ['label' => 'Research', 'url' => '#research'],
         ['label' => 'Academics', 'url' => '#programs'],
         ['label' => 'Programs & courses', 'url' => '/programs'],
@@ -15,7 +15,7 @@ return [
 
     'footer_primary' => [
         ['label' => 'Home', 'url' => '/'],
-        ['label' => 'About Us', 'url' => '#about'],
+        ['label' => 'About Us', 'url' => '/about'],
         ['label' => 'Research Portal', 'url' => '#research'],
         ['label' => 'Academics Catalog', 'url' => '#programs'],
         ['label' => 'Programs & Courses', 'url' => '/programs'],

@@ -376,6 +376,28 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
 
+        Route::prefix('content')->name('ict.content.')->group(function () {
+            Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');
+            Route::post('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'store'])->name('about.store');
+            Route::post('/about/reorder', [\App\Http\Controllers\Ict\Content\AboutController::class, 'reorder'])->name('about.reorder');
+            Route::put('/about/{block}', [\App\Http\Controllers\Ict\Content\AboutController::class, 'update'])->name('about.update');
+            Route::delete('/about/{block}', [\App\Http\Controllers\Ict\Content\AboutController::class, 'destroy'])->name('about.destroy');
+
+            Route::get('/blogs', [\App\Http\Controllers\Ict\Content\BlogController::class, 'index'])->name('blogs.index');
+            Route::post('/blogs', [\App\Http\Controllers\Ict\Content\BlogController::class, 'store'])->name('blogs.store');
+            Route::put('/blogs/{post}', [\App\Http\Controllers\Ict\Content\BlogController::class, 'update'])->name('blogs.update');
+            Route::delete('/blogs/{post}', [\App\Http\Controllers\Ict\Content\BlogController::class, 'destroy'])->name('blogs.destroy');
+
+            Route::get('/events', [\App\Http\Controllers\Ict\Content\EventController::class, 'index'])->name('events.index');
+            Route::post('/events', [\App\Http\Controllers\Ict\Content\EventController::class, 'store'])->name('events.store');
+            Route::put('/events/{event}', [\App\Http\Controllers\Ict\Content\EventController::class, 'update'])->name('events.update');
+            Route::delete('/events/{event}', [\App\Http\Controllers\Ict\Content\EventController::class, 'destroy'])->name('events.destroy');
+
+            Route::get('/courses', [\App\Http\Controllers\Ict\Content\CourseController::class, 'index'])->name('courses.index');
+            Route::post('/courses', [\App\Http\Controllers\Ict\Content\CourseController::class, 'store'])->name('courses.store');
+            Route::put('/courses/{program}', [\App\Http\Controllers\Ict\Content\CourseController::class, 'update'])->name('courses.update');
+        });
+
         Route::middleware(['permission:users.access.manage'])->group(function () {
             Route::get('/users', [\App\Http\Controllers\Ict\UserAccessController::class, 'index'])->name('ict.users.index');
             Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');

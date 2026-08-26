@@ -136,7 +136,7 @@
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Background image</label>
-                    <input type="file" name="image" accept="image/*" class="tich-input">
+                    <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="tich-input">
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Video URL (optional)</label>
@@ -185,7 +185,7 @@
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Replace background image</label>
-                    <input type="file" name="image" accept="image/*" class="tich-input">
+                    <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="tich-input">
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Video URL (optional)</label>

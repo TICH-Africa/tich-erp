@@ -13,15 +13,19 @@ class ImageWebpEncoder
         return function_exists('imagewebp') && function_exists('imagecreatefromstring');
     }
 
-    public function shouldConvertUploadedFile(UploadedFile $file): bool
+    public function mimeOf(UploadedFile $file): string
     {
-        if (! $this->isAvailable()) {
-            return false;
-        }
+        return strtolower((string) ($file->getMimeType() ?: ''));
+    }
 
-        $mime = strtolower((string) ($file->getMimeType() ?: ''));
+    /**
+     * Raster images that must be stored as .webp (upload only — no remote URLs).
+     */
+    public function isRasterImageUpload(UploadedFile $file): bool
+    {
+        $mime = $this->mimeOf($file);
 
-        if ($this->shouldSkipMime($mime)) {
+        if ($mime === 'image/svg+xml') {
             return false;
         }
 
@@ -29,7 +33,41 @@ class ImageWebpEncoder
             return true;
         }
 
-        return $this->isImageBinary((string) file_get_contents($file->getRealPath()));
+        $path = $file->getRealPath();
+
+        return $path !== false && $this->isImageBinary((string) file_get_contents($path));
+    }
+
+    public function isAlreadyWebp(UploadedFile $file): bool
+    {
+        $mime = $this->mimeOf($file);
+
+        if ($mime === 'image/webp') {
+            return true;
+        }
+
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+
+        return $extension === 'webp';
+    }
+
+    public function shouldConvertUploadedFile(UploadedFile $file): bool
+    {
+        if (! $this->isAvailable()) {
+            return false;
+        }
+
+        if (! $this->isRasterImageUpload($file)) {
+            return false;
+        }
+
+        $mime = $this->mimeOf($file);
+
+        if ($this->shouldSkipMime($mime)) {
+            return false;
+        }
+
+        return true;
     }
 
     public function shouldConvertBinary(string $binary): bool

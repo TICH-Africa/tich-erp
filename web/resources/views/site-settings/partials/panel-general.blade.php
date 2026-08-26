@@ -273,7 +273,7 @@
                             </label>
                         </div>
                     @endif
-                    <input type="file" id="logo" name="logo" accept="image/*" class="tich-input">
+                    <input type="file" id="logo" name="logo" accept="image/jpeg,image/png,image/webp,image/gif" class="tich-input">
                     <p class="tich-caption tich-mt-2">PNG or JPG, up to 2 MB. Used in the navigation bar when uploaded.</p>
                 </div>
 

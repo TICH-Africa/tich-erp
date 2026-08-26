@@ -6,9 +6,11 @@ use App\Support\ImageWebpEncoder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
- * Central file storage helper. Images are converted to WebP before saving.
+ * Central file storage helper. Raster images must be uploaded as files
+ * and are always saved as .webp (remote image URLs are not accepted).
  * Prefer model updates with {@see \App\Models\Concerns\PrunesStoredFiles}
  * or {@see replace()} so previous files are removed when paths change.
  */
@@ -68,8 +70,8 @@ class StoredFileService
     {
         $directory = trim($directory, '/');
 
-        if ($webpPath = $this->storeAsWebp($file, $directory, $disk, $filename)) {
-            return $webpPath;
+        if ($this->webp->isRasterImageUpload($file)) {
+            return $this->storeImageAsWebp($file, $directory, $disk, $filename);
         }
 
         if ($filename) {
@@ -161,20 +163,34 @@ class StoredFileService
         return $relative ? Storage::disk($disk)->url($relative) : null;
     }
 
-    private function storeAsWebp(UploadedFile $file, string $directory, string $disk, ?string $filename): ?string
+    /**
+     * Always persists raster uploads as .webp under $directory.
+     */
+    private function storeImageAsWebp(UploadedFile $file, string $directory, string $disk, ?string $filename): string
     {
-        if (! $this->webp->shouldConvertUploadedFile($file)) {
-            return null;
+        if (! $this->webp->isAvailable()) {
+            throw ValidationException::withMessages([
+                'image' => 'Image uploads require WebP support on the server. Please contact ICT.',
+            ]);
         }
 
-        $webp = $this->webp->encodeUploadedFile($file);
-        if ($webp === null) {
-            return null;
+        $contents = null;
+
+        if ($this->webp->isAlreadyWebp($file)) {
+            $contents = (string) file_get_contents($file->getRealPath());
+        } else {
+            $contents = $this->webp->encodeUploadedFile($file);
+        }
+
+        if ($contents === null || $contents === '') {
+            throw ValidationException::withMessages([
+                'image' => 'Unable to convert the uploaded image to WebP. Upload a JPG, PNG, GIF, or WebP file (not a link).',
+            ]);
         }
 
         $storedName = $this->webp->toWebpFilename($filename, Str::uuid()->toString());
         $path = $directory.'/'.$storedName;
-        Storage::disk($disk)->put($path, $webp);
+        Storage::disk($disk)->put($path, $contents);
 
         return $path;
     }
