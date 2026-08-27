@@ -100,8 +100,11 @@ class RbacCatalogService
                     continue;
                 }
 
+                $institutionKey = config('tich-module-roles.institution_module_key', '_institution');
+
                 $definitions[$name] = array_merge($definition, [
-                    'module_key' => $moduleKey,
+                    // Institution-wide catalog roles are stored with null module_key.
+                    'module_key' => $moduleKey === $institutionKey ? null : $moduleKey,
                 ]);
             }
         }
@@ -184,6 +187,7 @@ class RbacCatalogService
 
     /**
      * Materialize thin role rows for FK assignment only (no permission / nav seeding).
+     * Always syncs catalog definitions so renames/additions take effect.
      */
     public function ensureRolesExist(): void
     {
@@ -192,13 +196,6 @@ class RbacCatalogService
         }
 
         $definitions = $this->roleDefinitionsByName();
-        $expected = count($definitions);
-        $existingSystem = Role::query()->where('is_system_role', true)->count();
-
-        // Skip rewrite when catalog already materialized.
-        if ($existingSystem >= $expected && Role::query()->where('role_name', 'Super Admin')->exists()) {
-            return;
-        }
 
         foreach ($definitions as $roleName => $definition) {
             Role::query()->updateOrCreate(
@@ -212,6 +209,12 @@ class RbacCatalogService
                 ]
             );
         }
+
+        // Demote obsolete catalog roles that are no longer defined (keep rows if assigned).
+        Role::query()
+            ->where('is_system_role', true)
+            ->whereNotIn('role_name', array_keys($definitions))
+            ->update(['is_system_role' => false]);
     }
 
     public function roleIdByName(string $roleName): ?int

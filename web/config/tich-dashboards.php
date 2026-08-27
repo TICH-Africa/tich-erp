@@ -125,6 +125,15 @@ return [
             'scope' => 'department',
         ],
         [
+            'key' => 'monitoring_evaluation',
+            'label' => 'Monitoring & evaluation',
+            'description' => 'M&E frameworks, indicators, reporting, and follow-up.',
+            'route' => 'monitoring_evaluation.dashboard',
+            'permission' => 'monitoring_evaluation.read',
+            'category' => 'admin',
+            'scope' => 'department',
+        ],
+        [
             'key' => 'audit',
             'label' => 'Audit logs',
             'description' => 'Security and compliance activity trail.',
@@ -153,6 +162,7 @@ return [
         'procurement.read' => 'procurement_manage_suppliers_view',
         'research.read' => 'research_manage_projects_view',
         'ict.read' => 'ict_manage_helpdesk_view',
+        'monitoring_evaluation.read' => 'monitoring_evaluation_manage_frameworks_view',
     ],
 
 ];

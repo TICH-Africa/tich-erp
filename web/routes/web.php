@@ -375,6 +375,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         $registerModuleBudgeting('research');
     });
 
+    Route::prefix('monitoring-evaluation')->middleware(['permission:monitoring_evaluation.read'])->group(function () use ($registerModuleBudgeting) {
+        Route::get('/dashboard', [\App\Http\Controllers\MonitoringEvaluation\DashboardController::class, '__invoke'])->name('monitoring_evaluation.dashboard');
+        $registerModuleBudgeting('monitoring_evaluation');
+    });
+
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
         $registerModuleBudgeting('ict');

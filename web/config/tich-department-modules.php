@@ -580,6 +580,24 @@ return [
                 ],
             ],
         ],
+        [
+            'key' => 'monitoring_evaluation',
+            'label' => 'Monitoring & evaluation',
+            'description' => 'M&E frameworks, indicators, institutional reporting, and follow-up actions.',
+            'permission' => 'monitoring_evaluation.read',
+            'eligible_categories' => ['administrative', 'support'],
+            'children' => [
+                [
+                    'key' => 'monitoring_evaluation.dashboard',
+                    'label' => 'M&E dashboard',
+                    'description' => 'Monitoring and evaluation overview.',
+                    'permission' => 'monitoring_evaluation.read',
+                    'route' => 'monitoring_evaluation.dashboard',
+                    'context' => 'operational',
+                    'group' => 'monitoring_evaluation',
+                ],
+            ],
+        ],
     ],
 
     /** Default top-level modules when creating departments by category. */
@@ -601,6 +619,8 @@ return [
         'RES' => ['research'],
         'ICTO' => ['ict'],
         'MKT' => ['portal'],
+        'MNE' => ['monitoring_evaluation'],
+        'ME' => ['monitoring_evaluation'],
     ],
 
     /** Map dashboard permission keys to assignable department module keys. */
@@ -615,6 +635,7 @@ return [
         'procurement.read' => 'procurement',
         'research.read' => 'research',
         'ict.read' => 'ict',
+        'monitoring_evaluation.read' => 'monitoring_evaluation',
         'dashboard.access' => 'portal',
         'audit_logs.read' => null,
         'admin.access' => null,

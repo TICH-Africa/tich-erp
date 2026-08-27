@@ -84,6 +84,7 @@ return [
         'procurement.read' => 'procurement_manage_suppliers_view',
         'research.read' => 'research_manage_projects_view',
         'ict.read' => 'ict_manage_helpdesk_view',
+        'monitoring_evaluation.read' => 'monitoring_evaluation_manage_frameworks_view',
     ],
 
     /** Roles that may be assigned without a department (institution-wide). */

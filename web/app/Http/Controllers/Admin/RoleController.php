@@ -71,7 +71,10 @@ class RoleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $institutionKey = config('tich-module-roles.institution_module_key', '_institution');
-        $moduleKeys = array_keys(config('tich-module-roles.modules', []));
+        $moduleKeys = array_values(array_unique(array_merge(
+            [$institutionKey],
+            array_keys(config('tich-module-roles.modules', []))
+        )));
 
         $validated = $request->validate([
             'role_name' => ['required', 'string', 'max:100', 'unique:roles,role_name'],

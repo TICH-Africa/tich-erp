@@ -109,6 +109,12 @@ return [
             'manage_infrastructure',
             'manage_systems',
         ],
+        'monitoring_evaluation' => [
+            'manage_frameworks',
+            'manage_indicators',
+            'manage_reports',
+            'manage_followups',
+        ],
         'notifications' => [
             'manage_templates',
             'send_notifications',

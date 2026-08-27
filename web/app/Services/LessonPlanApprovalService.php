@@ -387,7 +387,7 @@ class LessonPlanApprovalService
 
     private function notifySubmissionStakeholders(LessonPlan $plan): void
     {
-        foreach ($this->userIdsForRoles(['Academic Registrar', 'QA Officer']) as $userId) {
+        foreach ($this->userIdsForRoles(['Academic Registrar', 'QA Officer', 'Assistant QA Officer']) as $userId) {
             $this->notifyStakeholder(
                 $userId,
                 'Lesson plan submitted for review',
