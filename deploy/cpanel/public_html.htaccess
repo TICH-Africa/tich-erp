@@ -1,48 +1,24 @@
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
     RewriteEngine On
     DirectoryIndex index.php
 
-    # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Handle X-XSRF-Token Header
-    RewriteCond %{HTTP:x-xsrf-token} .
-    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
-
-    # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Existing files in public_html (including symlinks) are served directly.
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
-    # Everything else goes through the Laravel bridge (also serves assets as fallback).
     RewriteRule ^ index.php [L]
 </IfModule>
 
 <IfModule mod_mime.c>
     AddType text/css .css
-    AddType text/javascript .js .mjs
-    AddType application/javascript .js .mjs
-    AddType application/json .json
-    AddType image/svg+xml .svg .svgz
+    AddType application/javascript .js
     AddType image/webp .webp
-    AddType image/avif .avif
-    AddType image/x-icon .ico
-    AddType font/woff .woff
-    AddType font/woff2 .woff2
-    AddCharset UTF-8 .css .js .mjs .json .svg .html .htm .txt
-</IfModule>
-
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
 </IfModule>
 
 Options -Indexes

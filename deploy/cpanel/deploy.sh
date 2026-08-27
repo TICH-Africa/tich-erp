@@ -64,15 +64,27 @@ if [[ -z "$COMPOSER_BIN" ]]; then
   exit 1
 fi
 
-log "composer install…"
+log "composer install --no-dev (fresh autoload, no mockery)…"
+# Broken autoload referencing mockery/phpunit is a common HostPinnacle 500.
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php 2>/dev/null || true
 if ! "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"; then
   log "ERROR: composer install failed"
   exit 1
 fi
+"$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG" || true
 
 if [[ ! -f vendor/autoload.php ]]; then
   log "ERROR: vendor/autoload.php still missing after composer install"
   exit 1
+fi
+if [[ -d vendor/mockery ]]; then
+  log "WARN: vendor/mockery present — production should not include require-dev packages"
+fi
+if grep -R "mockery/mockery" vendor/composer/autoload_files.php >/dev/null 2>&1; then
+  log "ERROR: autoload still references mockery — removing vendor and reinstalling"
+  rm -rf vendor
+  "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"
+  "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG"
 fi
 
 log "artisan down / migrate / storage:link…"
@@ -93,8 +105,8 @@ log "Docroot: ${DOCROOT}"
 
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.index.php" "${DOCROOT}/index.php"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.htaccess" "${DOCROOT}/.htaccess"
-/bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-diagnose.php" "${DOCROOT}/tich-diagnose.php"
-log "Copied index.php, .htaccess, tich-diagnose.php into docroot"
+rm -f "${DOCROOT}/tich-diagnose.php" 2>/dev/null || true
+log "Copied index.php + .htaccess into docroot"
 
 # Prefer fresh config from .env over a stale config.php cache after ChatGPT/manual edits.
 rm -f "${WEB}/bootstrap/cache/config.php" "${WEB}/bootstrap/cache/routes-v7.php" "${WEB}/bootstrap/cache/routes.php" "${WEB}/bootstrap/cache/events.php" 2>/dev/null || true
@@ -104,7 +116,7 @@ log "Cleared bootstrap cache files before rebuild"
   log "WARN: asset sync had issues — index.php can still serve css/js as fallback"
 }
 
-log "Clearing caches (no config:cache — safer on shared hosting until stable)…"
+log "Clearing caches…"
 "$PHP_BIN" artisan config:clear --no-interaction 2>&1 | tee -a "$LOG" || true
 "$PHP_BIN" artisan route:clear --no-interaction 2>&1 | tee -a "$LOG" || true
 "$PHP_BIN" artisan view:clear --no-interaction 2>&1 | tee -a "$LOG" || true
@@ -114,5 +126,4 @@ rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/r
 "$PHP_BIN" artisan up 2>&1 | tee -a "$LOG" || true
 
 log "Deploy finished OK"
-log "Next: open https://tich.africa/tich-diagnose.php"
 exit 0
