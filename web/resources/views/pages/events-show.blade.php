@@ -12,78 +12,88 @@
 @endphp
 
 @section('content')
-    <article class="tich-event-show" itemscope itemtype="https://schema.org/Event">
-        <header class="tich-event-show__hero">
-            <div class="tich-container tich-event-show__hero-content">
-                <p class="tich-event-show__back">
-                    <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
-                </p>
-                <p class="tich-event-show__eyebrow">{{ strtoupper(str_replace('_', ' ', $event->event_type ?? 'EVENT')) }}</p>
-                <h1 class="tich-event-show__title" itemprop="name">{{ $event->title }}</h1>
-                @if (!empty($event->subtitle))
-                    <p class="tich-event-show__lead" itemprop="description">{{ $event->subtitle }}</p>
-                @endif
-            </div>
-        </header>
-
-        <div class="tich-container tich-event-show__body">
-            <div class="tich-event-show__layout">
-                <div class="tich-event-show__main">
-                    @if (!empty($event->cover_image_url) || !empty($event->cover_image_path))
-                        <figure class="tich-event-show__figure">
-                            <img
-                                src="{{ $event->cover_image_url ?? $event->cover_image_path }}"
-                                alt="{{ $event->title }}"
-                                class="tich-event-show__figure-image"
-                            >
-                        </figure>
-                    @endif
-
-                    @if (!empty($event->description))
-                        <h2 class="tich-h3">About this event</h2>
-                        <div class="tich-event-show__description">{{ $event->description }}</div>
-                    @else
-                        <p class="tich-text">More details for this event will be published soon.</p>
-                    @endif
+    <x-animated-section animation="fade">
+        <article class="tich-event-show" itemscope itemtype="https://schema.org/Event">
+            <header class="tich-event-show__hero">
+                <div class="tich-container tich-event-show__hero-content">
+                    <x-animated-card animation="left">
+                        <p class="tich-event-show__back">
+                            <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
+                        </p>
+                    </x-animated-card>
+                    <x-animated-card animation="bottom">
+                        <p class="tich-event-show__eyebrow">{{ strtoupper(str_replace('_', ' ', $event->event_type ?? 'EVENT')) }}</p>
+                        <h1 class="tich-event-show__title" itemprop="name">{{ $event->title }}</h1>
+                        @if (!empty($event->subtitle))
+                            <p class="tich-event-show__lead" itemprop="description">{{ $event->subtitle }}</p>
+                        @endif
+                    </x-animated-card>
                 </div>
+            </header>
 
-                <aside class="tich-event-show__aside">
-                    <h2 class="tich-h3">Details</h2>
-                    <dl class="tich-event-show__meta">
-                        @if (!empty($event->formatted_date))
-                            <div>
-                                <dt>Starts</dt>
-                                <dd>{{ $event->formatted_date }}@if (!empty($event->formatted_time)) · {{ $event->formatted_time }}@endif</dd>
-                            </div>
-                        @endif
-                        @if (!empty($event->formatted_end))
-                            <div>
-                                <dt>Ends</dt>
-                                <dd>{{ $event->formatted_end }}</dd>
-                            </div>
-                        @endif
-                        @if (!empty($event->venue))
-                            <div>
-                                <dt>Venue</dt>
-                                <dd>{{ $event->venue }}</dd>
-                            </div>
-                        @endif
-                        <div>
-                            <dt>Type</dt>
-                            <dd>{{ ucfirst(str_replace('_', ' ', $event->event_type ?? 'event')) }}</dd>
-                        </div>
-                    </dl>
+            <div class="tich-container tich-event-show__body">
+                <div class="tich-event-show__layout">
+                    <div class="tich-event-show__main">
+                        <x-animated-card animation="fade">
+                            @if (!empty($event->cover_image_url) || !empty($event->cover_image_path))
+                                <figure class="tich-event-show__figure">
+                                    <img
+                                        src="{{ $event->cover_image_url ?? $event->cover_image_path }}"
+                                        alt="{{ $event->title }}"
+                                        class="tich-event-show__figure-image"
+                                    >
+                                </figure>
+                            @endif
 
-                    <div class="tich-event-show__actions">
-                        @if (!empty($event->registration_url_or_form))
-                            <a href="{{ $event->registration_url_or_form }}" class="tich-btn tich-btn-primary">Register</a>
-                        @endif
-                        <a href="{{ route('events') }}" class="tich-btn tich-btn-secondary">Browse events</a>
+                            @if (!empty($event->description))
+                                <h2 class="tich-h3">About this event</h2>
+                                <div class="tich-event-show__description">{{ $event->description }}</div>
+                            @else
+                                <p class="tich-text">More details for this event will be published soon.</p>
+                            @endif
+                        </x-animated-card>
                     </div>
-                </aside>
+
+                    <x-animated-card animation="right">
+                        <aside class="tich-event-show__aside">
+                            <h2 class="tich-h3">Details</h2>
+                            <dl class="tich-event-show__meta">
+                                @if (!empty($event->formatted_date))
+                                    <div>
+                                        <dt>Starts</dt>
+                                        <dd>{{ $event->formatted_date }}@if (!empty($event->formatted_time)) · {{ $event->formatted_time }}@endif</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($event->formatted_end))
+                                    <div>
+                                        <dt>Ends</dt>
+                                        <dd>{{ $event->formatted_end }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($event->venue))
+                                    <div>
+                                        <dt>Venue</dt>
+                                        <dd>{{ $event->venue }}</dd>
+                                    </div>
+                                @endif
+                                <div>
+                                    <dt>Type</dt>
+                                    <dd>{{ ucfirst(str_replace('_', ' ', $event->event_type ?? 'event')) }}</dd>
+                                </div>
+                            </dl>
+
+                            <div class="tich-event-show__actions">
+                                @if (!empty($event->registration_url_or_form))
+                                    <a href="{{ $event->registration_url_or_form }}" class="tich-btn tich-btn-primary">Register</a>
+                                @endif
+                                <a href="{{ route('events') }}" class="tich-btn tich-btn-secondary">Browse events</a>
+                            </div>
+                        </aside>
+                    </x-animated-card>
+                </div>
             </div>
-        </div>
-    </article>
+        </article>
+    </x-animated-section>
 @endsection
 
 @section('seo_jsonld')

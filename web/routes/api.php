@@ -114,5 +114,9 @@ Route::middleware(['auth:sanctum', 'mfa'])->prefix('hr')->group(function () {
 });
 
 Route::get('/session-check', function () {
-    return response()->json(['authenticated' => auth()->check()], auth()->check() ? 200 : 401);
+    $authenticated = auth()->check();
+
+    return response()->json([
+        'authenticated' => $authenticated,
+    ], 200);
 })->middleware('web');

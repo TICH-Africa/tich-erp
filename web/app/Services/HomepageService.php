@@ -449,7 +449,7 @@ class HomepageService
                     ? $event->registration_url_or_form
                     : url($event->registration_url_or_form))
                 : null,
-            'url' => route('events.show', $event),
+            'url' => route('events.show', ['event' => $event->slug ?: $event->id]),
             'slug' => $event->slug,
         ];
     }

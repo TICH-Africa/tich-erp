@@ -93,22 +93,21 @@
     }
 
     // --- Session expiry detection ---
-    var sessionCheckInterval = 60000;
+    var sessionCheckInterval = 60000; // 1 minute
     var sessionCheckUrl = '/api/session-check';
 
     function checkSession() {
         if (!sessionBanner || !navigator.onLine) return;
-
         fetch(sessionCheckUrl, {
             method: 'GET',
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
         }).then(function (response) {
             if (response.status === 401 || response.status === 419) {
-                setToastVisible(sessionBanner, true, 'session');
+                sessionBanner.classList.add('is-visible');
             }
         }).catch(function () {
-            // Network error — offline toast handles this
+            // Network error, offline banner handles this
         });
     }
 
