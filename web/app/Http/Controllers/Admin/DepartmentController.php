@@ -10,6 +10,9 @@ use App\Services\AuditService;
 use App\Services\DepartmentModuleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DepartmentController extends Controller
@@ -54,6 +57,7 @@ class DepartmentController extends Controller
             'allDepartments' => $allDepartments,
             'moduleAssignments' => $moduleAssignments,
             'moduleCatalog' => $this->departmentModuleService->catalog(),
+            'modulesTableReady' => Schema::hasTable('department_modules'),
             'campuses' => Campus::query()->where('is_active', 1)->orderBy('campus_name')->get(['id', 'campus_name']),
             'departmentGroups' => DepartmentGroup::query()->where('is_active', 1)->orderBy('display_order')->get(['id', 'group_name', 'group_code']),
             'parentDepartments' => Department::query()
@@ -72,6 +76,18 @@ class DepartmentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if ($redirect = $this->ensureModulesStorageReady()) {
+            return $redirect;
+        }
+
+        $validKeys = $this->departmentModuleService->validModuleKeys();
+
+        if ($validKeys === []) {
+            return back()->withInput()->withErrors([
+                'module_keys' => 'Platform module catalog is empty. Deploy config/tich-department-modules.php and clear config cache.',
+            ]);
+        }
+
         $validated = $request->validate([
             'dept_code' => ['required', 'string', 'max:20', 'unique:departments,dept_code'],
             'dept_name' => ['required', 'string', 'max:200'],
@@ -81,15 +97,23 @@ class DepartmentController extends Controller
             'parent_dept_id' => ['nullable', 'exists:departments,id'],
             'display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'module_keys' => ['nullable', 'array'],
-            'module_keys.*' => ['string', 'in:'.implode(',', $this->departmentModuleService->validModuleKeys())],
+            'module_keys.*' => ['string', Rule::in($validKeys)],
         ]);
 
-        $moduleKeys = $validated['module_keys']
-            ?? $this->departmentModuleService->defaultModulesForCategory($validated['dept_category']);
+        $submittedKeys = $request->input('module_keys');
+        $moduleKeys = is_array($submittedKeys)
+            ? $submittedKeys
+            : $this->departmentModuleService->defaultModulesForCategory($validated['dept_category']);
         $moduleKeys = $this->departmentModuleService->filterKeysForCategory(
             $validated['dept_category'],
             $moduleKeys
         );
+
+        if (is_array($submittedKeys) && $submittedKeys !== [] && $moduleKeys === []) {
+            return back()->withInput()->withErrors([
+                'module_keys' => 'None of the selected modules are valid for this department category.',
+            ]);
+        }
 
         $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors(
             array_merge($validated, ['module_keys' => $moduleKeys])
@@ -100,14 +124,26 @@ class DepartmentController extends Controller
 
         unset($validated['module_keys']);
 
-        $department = Department::create([
-            ...$validated,
-            'display_order' => $validated['display_order'] ?? 0,
-            'is_active' => 1,
-            'created_by' => $request->user()->id,
-        ]);
+        try {
+            $department = DB::transaction(function () use ($request, $validated, $moduleKeys) {
+                $department = Department::create([
+                    ...$validated,
+                    'display_order' => $validated['display_order'] ?? 0,
+                    'is_active' => 1,
+                    'created_by' => $request->user()->id,
+                ]);
 
-        $this->departmentModuleService->syncModules($department, $moduleKeys, $request->user()->id);
+                $this->departmentModuleService->syncModules($department, $moduleKeys, $request->user()->id);
+
+                return $department;
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'module_keys' => 'Department was not saved because module assignment failed: '.$e->getMessage(),
+            ]);
+        }
 
         $this->auditService->log(
             'core.department.created',
@@ -124,11 +160,30 @@ class DepartmentController extends Controller
             $request
         );
 
-        return back()->with('status', 'Department created successfully.');
+        $moduleCount = count($moduleKeys);
+
+        return back()->with(
+            'status',
+            $moduleCount > 0
+                ? "Department created with {$moduleCount} module(s) assigned."
+                : 'Department created successfully (no modules assigned).'
+        );
     }
 
     public function update(Request $request, Department $department): RedirectResponse
     {
+        if ($redirect = $this->ensureModulesStorageReady()) {
+            return $redirect;
+        }
+
+        $validKeys = $this->departmentModuleService->validModuleKeys();
+
+        if ($validKeys === []) {
+            return back()->withInput()->withErrors([
+                'module_keys' => 'Platform module catalog is empty. Deploy config/tich-department-modules.php and clear config cache.',
+            ]);
+        }
+
         $validated = $request->validate([
             'dept_code' => ['required', 'string', 'max:20', 'unique:departments,dept_code,'.$department->id],
             'dept_name' => ['required', 'string', 'max:200'],
@@ -139,17 +194,24 @@ class DepartmentController extends Controller
             'display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
             'module_keys' => ['nullable', 'array'],
-            'module_keys.*' => ['string', 'in:'.implode(',', $this->departmentModuleService->validModuleKeys())],
+            'module_keys.*' => ['string', Rule::in($validKeys)],
         ]);
 
         if (! empty($validated['parent_dept_id']) && $this->isDescendant((int) $validated['parent_dept_id'], $department->id)) {
             return back()->withInput()->withErrors(['parent_dept_id' => 'Cannot assign a descendant department as parent.']);
         }
 
+        $submittedKeys = $request->input('module_keys');
         $moduleKeys = $this->departmentModuleService->filterKeysForCategory(
             $validated['dept_category'],
-            $validated['module_keys'] ?? []
+            is_array($submittedKeys) ? $submittedKeys : []
         );
+
+        if (is_array($submittedKeys) && $submittedKeys !== [] && $moduleKeys === []) {
+            return back()->withInput()->withErrors([
+                'module_keys' => 'None of the selected modules are valid for this department category.',
+            ]);
+        }
 
         $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors(
             array_merge($validated, ['module_keys' => $moduleKeys]),
@@ -166,13 +228,23 @@ class DepartmentController extends Controller
             'module_keys' => $this->departmentModuleService->assignedModuleKeys($department),
         ];
 
-        $department->update([
-            ...$validated,
-            'display_order' => $validated['display_order'] ?? 0,
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        try {
+            DB::transaction(function () use ($request, $department, $validated, $moduleKeys) {
+                $department->update([
+                    ...$validated,
+                    'display_order' => $validated['display_order'] ?? 0,
+                    'is_active' => $request->boolean('is_active'),
+                ]);
 
-        $this->departmentModuleService->syncModules($department, $moduleKeys, $request->user()->id);
+                $this->departmentModuleService->syncModules($department, $moduleKeys, $request->user()->id);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'module_keys' => 'Changes were not saved because module assignment failed: '.$e->getMessage(),
+            ]);
+        }
 
         $this->auditService->log(
             'core.department.updated',
@@ -189,7 +261,25 @@ class DepartmentController extends Controller
             $request
         );
 
-        return back()->with('status', 'Department updated successfully.');
+        $moduleCount = count($moduleKeys);
+
+        return back()->with(
+            'status',
+            $moduleCount > 0
+                ? "Department updated with {$moduleCount} module(s) assigned."
+                : 'Department updated successfully (no modules assigned).'
+        );
+    }
+
+    private function ensureModulesStorageReady(): ?RedirectResponse
+    {
+        if (Schema::hasTable('department_modules')) {
+            return null;
+        }
+
+        return back()->withInput()->withErrors([
+            'module_keys' => 'The department_modules table is missing on this database. Import deploy/production.sql (or run migrations) before assigning modules.',
+        ]);
     }
 
     private function isDescendant(int $candidateParentId, int $departmentId): bool

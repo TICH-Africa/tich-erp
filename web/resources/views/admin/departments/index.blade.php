@@ -17,6 +17,15 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if (! ($modulesTableReady ?? true))
+        <div class="tich-modal__errors tich-mb-4" role="alert">
+            <p class="tich-text" style="margin: 0;">
+                Module assignment is unavailable: the <code>department_modules</code> table is missing.
+                Import <code>deploy/production.sql</code> (or run <code>php artisan migrate</code>) on production, then try again.
+            </p>
+        </div>
+    @endif
+
     <div class="tich-card tich-table-panel">
         <h2 class="tich-h3">All departments</h2>
 
