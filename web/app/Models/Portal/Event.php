@@ -30,6 +30,8 @@ class Event extends Model
         'end_datetime' => 'datetime',
         'is_public' => 'boolean',
         'is_featured' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function getRouteKeyName(): string

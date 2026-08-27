@@ -1,10 +1,16 @@
 @extends('layouts.app')
 
 @section('title', 'Support Us')
+@section('meta_description', config('tich-seo.pages.support.description'))
 
 @section('content')
-    <section class="tich-section">
+    <section class="tich-section" aria-labelledby="support-heading">
         <div class="tich-container">
+            <header class="tich-mb-8">
+                <h1 id="support-heading" class="tich-h1">Support Us</h1>
+                <p class="tich-text tich-mt-2">Partner with TICH Fund to expand community health education across Africa.</p>
+            </header>
+
             <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
                 <div>
                     <h2 class="tich-h2">About TICH Fund</h2>
@@ -25,27 +31,29 @@
                     <p class="tich-text tich-mt-4">Thank you for your support</p>
                     <p class="tich-text">On behalf of the entire TICH family, we extend our heartfelt gratitude for your commitment to building a better future. Your generosity drives our mission forward and brings us closer to a world where everyone has access to the opportunities they need to succeed.</p>
                 </div>
-                <div class="tich-card">
-                    <h3 class="tich-h3">Make a Donation</h3>
+                <aside class="tich-card" aria-labelledby="donate-heading">
+                    <h2 id="donate-heading" class="tich-h3">Make a Donation</h2>
                     <p class="tich-text tich-mt-2">Support our mission and help us empower communities.</p>
-                    <div class="tich-mt-4">
-                        <label class="tich-label">Donation Amount (KES)</label>
-                        <input type="number" class="tich-input" placeholder="Enter amount">
-                    </div>
-                    <div class="tich-mt-4">
-                        <label class="tich-label">Full Name</label>
-                        <input type="text" class="tich-input">
-                    </div>
-                    <div class="tich-mt-4">
-                        <label class="tich-label">Email</label>
-                        <input type="email" class="tich-input">
-                    </div>
-                    <div class="tich-mt-4">
-                        <label class="tich-label">Message (optional)</label>
-                        <textarea class="tich-input" rows="3"></textarea>
-                    </div>
-                    <button type="button" class="tich-btn tich-btn-success tich-mt-4" onclick="alert('Thank you for your generous donation. This is a demo - no payment was processed.')">Donate Now</button>
-                </div>
+                    <form class="tich-mt-4" method="post" action="#" aria-label="Donation form" onsubmit="event.preventDefault(); alert('Thank you for your generous donation. This is a demo - no payment was processed.');">
+                        <div>
+                            <label class="tich-label" for="donation-amount">Donation Amount (KES)</label>
+                            <input id="donation-amount" type="number" class="tich-input" name="amount" min="1" placeholder="Enter amount">
+                        </div>
+                        <div class="tich-mt-4">
+                            <label class="tich-label" for="donation-name">Full Name</label>
+                            <input id="donation-name" type="text" class="tich-input" name="name" autocomplete="name">
+                        </div>
+                        <div class="tich-mt-4">
+                            <label class="tich-label" for="donation-email">Email</label>
+                            <input id="donation-email" type="email" class="tich-input" name="email" autocomplete="email">
+                        </div>
+                        <div class="tich-mt-4">
+                            <label class="tich-label" for="donation-message">Message (optional)</label>
+                            <textarea id="donation-message" class="tich-input" name="message" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="tich-btn tich-btn-success tich-mt-4">Donate Now</button>
+                    </form>
+                </aside>
             </div>
         </div>
     </section>

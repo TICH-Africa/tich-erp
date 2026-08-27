@@ -1,11 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Events')
+@section('meta_description', config('tich-seo.pages.events.description'))
 
 @section('content')
-    <section class="tich-section tich-section--hero-plain">
+    <section class="tich-section tich-section--hero-plain" aria-labelledby="events-heading">
         <div class="tich-container">
-            <h1 class="tich-h1">Events</h1>
+            <h1 id="events-heading" class="tich-h1">Events</h1>
             <p class="tich-text tich-mt-4" style="max-width: 42rem;">
                 Symposiums, open days, outreach drives, and institutional calendar highlights.
             </p>

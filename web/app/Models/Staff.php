@@ -243,6 +243,15 @@ class Staff extends Model
 
     public function fullName(): string
     {
+        $first = trim((string) $this->first_name);
+        $surname = trim((string) $this->surname);
+
+        if (strcasecmp($first, 'Pending') === 0 && strcasecmp($surname, 'Invitee') === 0) {
+            $email = $this->primary_email ?: 'awaiting profile';
+
+            return 'Invited employee ('.$email.')';
+        }
+
         return trim(implode(' ', array_filter([$this->title, $this->first_name, $this->middle_name, $this->surname])));
     }
 

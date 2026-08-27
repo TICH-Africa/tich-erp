@@ -1,13 +1,14 @@
 @extends('layouts.app')
 
 @section('title', 'Apply for ' . $vacancy->job_title)
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-<section class="tich-section tich-careers-page" id="apply-vacancy">
+<section class="tich-section tich-careers-page" id="apply-vacancy" aria-labelledby="vacancy-apply-heading">
     <div class="tich-container">
         <div class="tich-mb-8">
             <a href="{{ route('careers.show', $vacancy) }}" class="tich-btn tich-btn-ghost">&larr; Back to vacancy</a>
-            <h1 class="tich-h1 tich-mt-4">Apply for: {{ $vacancy->job_title }}</h1>
+            <h1 id="vacancy-apply-heading" class="tich-h1 tich-mt-4">Apply for: {{ $vacancy->job_title }}</h1>
             <p class="tich-text tich-text--secondary tich-mt-2">
                 {{ $vacancy->department->dept_name ?? 'General' }} &middot; {{ ucfirst($vacancy->employment_type) }}
             </p>

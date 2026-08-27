@@ -73,15 +73,23 @@ class SiteSettingsService
         $shortName = $this->get('site.short_name', $defaults['short_name'] ?? 'TICH in Africa');
         $tagline = $this->get('site.tagline', $defaults['tagline'] ?? '');
         $logoPath = $this->get('site.logo_path');
+        $ogImagePath = $this->get('site.og_image_path') ?: $logoPath;
+        $metaDescription = $this->get(
+            'site.meta_description',
+            $this->get('site.tagline', $defaults['tagline'] ?? '')
+        );
 
         return [
             'institution_name' => $this->get('site.institution_name', $defaults['institution_name'] ?? $shortName),
             'short_name' => $shortName,
             'tagline' => $tagline,
+            'meta_description' => $metaDescription,
             'copyright' => $this->get('site.copyright', $defaults['copyright'] ?? $shortName),
             'website' => $this->get('site.website', $defaults['website'] ?? ''),
             'logo_path' => $logoPath,
             'logo_url' => $this->publicAssetUrl($logoPath),
+            'og_image_path' => $ogImagePath,
+            'og_image_url' => $this->publicAssetUrl($ogImagePath),
             'favicon_url' => $this->faviconUrl(),
             'favicon_type' => $this->faviconMimeType(),
             'brand_name' => $this->get('site.brand_name', $shortName),

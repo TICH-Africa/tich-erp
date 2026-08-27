@@ -174,6 +174,10 @@
                 <span class="tich-kv-grid__label">Site tagline</span>
                 <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['tagline'] ?: '-' }}</span>
             </div>
+            <div style="grid-column: 1 / -1;">
+                <span class="tich-kv-grid__label">Default SEO description</span>
+                <span class="tich-kv-grid__value tich-kv-grid__value--block">{{ $siteMeta['meta_description'] ?: '-' }}</span>
+            </div>
         </div>
     </article>
 
@@ -250,6 +254,11 @@
                         <textarea id="ticker_message" name="ticker_message" class="tich-input" rows="2" placeholder="e.g. TICH 18th Graduation — 9th to 11th September at Mama Grace Social Hall">{{ old('ticker_message', $siteMeta['ticker_message'] ?? '') }}</textarea>
                         <p class="tich-caption tich-mt-2">Shown as a scrolling marquee at the bottom of the homepage hero. Leave blank to hide.</p>
                     </div>
+                    <div class="tich-form-group" style="grid-column: 1 / -1;">
+                        <label for="meta_description" class="tich-label">Default SEO description</label>
+                        <textarea id="meta_description" name="meta_description" class="tich-input" rows="2" maxlength="320" placeholder="Short summary for search engines (≈150–160 characters)">{{ old('meta_description', $siteMeta['meta_description'] ?? '') }}</textarea>
+                        <p class="tich-caption tich-mt-2">Used as the fallback meta description and Open Graph text when a page does not set its own.</p>
+                    </div>
                     <div class="tich-form-group">
                         <label for="website" class="tich-label">Website</label>
                         <input type="text" id="website" name="website" class="tich-input"
@@ -275,6 +284,21 @@
                     @endif
                     <input type="file" id="logo" name="logo" accept="image/jpeg,image/png,image/webp,image/gif" class="tich-input">
                     <p class="tich-caption tich-mt-2">PNG or JPG, up to 2 MB. Used in the navigation bar when uploaded.</p>
+                </div>
+
+                <div class="tich-form-group tich-mt-4">
+                    <label for="og_image" class="tich-label">Default social share image (Open Graph)</label>
+                    @if (! empty($siteMeta['og_image_url']) && ($siteMeta['og_image_path'] ?? null) !== ($siteMeta['logo_path'] ?? null))
+                        <div class="tich-mb-4" style="display:flex; align-items:center; gap:1rem;">
+                            <img src="{{ $siteMeta['og_image_url'] }}" alt="Current social share image" style="max-height: 72px; max-width: 240px; object-fit: cover;">
+                            <label class="tich-text" style="display:flex; align-items:center; gap:0.5rem;">
+                                <input type="checkbox" name="remove_og_image" value="1">
+                                Remove current image
+                            </label>
+                        </div>
+                    @endif
+                    <input type="file" id="og_image" name="og_image" accept="image/jpeg,image/png,image/webp,image/gif" class="tich-input">
+                    <p class="tich-caption tich-mt-2">Recommended 1200×630. Falls back to the site logo when empty.</p>
                 </div>
 
                 <footer class="tich-modal__footer">

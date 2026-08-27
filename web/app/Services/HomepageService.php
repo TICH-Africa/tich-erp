@@ -449,7 +449,7 @@ class HomepageService
                     ? $event->registration_url_or_form
                     : url($event->registration_url_or_form))
                 : null,
-            'url' => route('events.show', ['event' => $event->id]),
+            'url' => route('events.show', $event),
             'slug' => $event->slug,
         ];
     }
@@ -462,9 +462,13 @@ class HomepageService
             'slug' => $post->slug,
             'excerpt' => $post->excerpt,
             'published_at' => $post->published_at,
+            'created_at' => $post->created_at,
+            'updated_at' => $post->updated_at,
             'formatted_date' => $post->published_at?->format('M j, Y'),
             'reading_time_minutes' => $post->reading_time_minutes,
             'featured_image_path' => $this->mediaUrl($post->featured_image_path),
+            'seo_meta_title' => $post->seo_meta_title,
+            'seo_meta_description' => $post->seo_meta_description,
             'url' => route('blog.show', $post->slug),
         ];
 

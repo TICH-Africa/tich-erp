@@ -36,6 +36,7 @@ use App\Http\Controllers\HR\EssOnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/favicon.ico', FaviconController::class)->name('favicon');
+Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/research', [HomeController::class, 'research'])->name('research');

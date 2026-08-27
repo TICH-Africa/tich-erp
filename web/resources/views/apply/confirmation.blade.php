@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Application submitted')
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-<section class="tich-section">
+<section class="tich-section" aria-labelledby="confirmation-heading">
     <div class="tich-container" style="max-width: 36rem; text-align: center;">
         <div class="tich-card">
-            <h1 class="tich-h2">Application submitted</h1>
+            <h1 id="confirmation-heading" class="tich-h1">Application submitted</h1>
             <p class="tich-text tich-mt-4">Thank you. Your application has been received and queued for academic department review.</p>
 
             <p class="tich-stat tich-mt-8">

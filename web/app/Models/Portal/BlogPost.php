@@ -21,10 +21,13 @@ class BlogPost extends Model
     protected $fillable = [
         'title', 'subtitle', 'slug', 'excerpt', 'body', 'featured_image_path',
         'author_staff_id', 'status', 'published_at', 'reading_time_minutes', 'view_count',
+        'seo_meta_title', 'seo_meta_description',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function imageUrl(): ?string

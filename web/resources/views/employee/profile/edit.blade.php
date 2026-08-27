@@ -89,7 +89,7 @@
             <div class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem;">
                 <div>
                     <label for="first_name" class="tich-label">First name (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
-                    <input type="text" id="first_name" name="first_name" class="tich-input @error('first_name') tich-input--error @enderror" value="{{ old('first_name', $staff->first_name) }}" @required($mustCompleteProfile) autocomplete="given-name">
+                    <input type="text" id="first_name" name="first_name" class="tich-input @error('first_name') tich-input--error @enderror" value="{{ old('first_name', strcasecmp((string) $staff->first_name, 'Pending') === 0 ? '' : $staff->first_name) }}" @required($mustCompleteProfile) autocomplete="given-name" placeholder="Enter your first name">
                     @error('first_name')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -99,7 +99,7 @@
                 </div>
                 <div>
                     <label for="surname" class="tich-label">Surname (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
-                    <input type="text" id="surname" name="surname" class="tich-input @error('surname') tich-input--error @enderror" value="{{ old('surname', $staff->surname === 'Invitee' ? '' : $staff->surname) }}" @required($mustCompleteProfile) autocomplete="family-name">
+                    <input type="text" id="surname" name="surname" class="tich-input @error('surname') tich-input--error @enderror" value="{{ old('surname', strcasecmp((string) $staff->surname, 'Invitee') === 0 ? '' : $staff->surname) }}" @required($mustCompleteProfile) autocomplete="family-name" placeholder="Enter your surname">
                     @error('surname')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -116,10 +116,16 @@
                 </div>
                 <div>
                     <label for="gender" class="tich-label">Gender (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    @php
+                        $genderValue = old('gender', $staff->gender);
+                        if (strcasecmp((string) $genderValue, 'Unspecified') === 0 && old('gender') === null) {
+                            $genderValue = '';
+                        }
+                    @endphp
                     <select id="gender" name="gender" class="tich-input @error('gender') tich-input--error @enderror" @required($mustCompleteProfile)>
                         <option value="">-</option>
                         @foreach (['Male', 'Female', 'Other'] as $gender)
-                            <option value="{{ $gender }}" @selected(old('gender', $staff->gender) === $gender)>{{ $gender }}</option>
+                            <option value="{{ $gender }}" @selected($genderValue === $gender)>{{ $gender }}</option>
                         @endforeach
                     </select>
                     @error('gender')<p class="tich-form-error">{{ $message }}</p>@enderror
@@ -139,7 +145,7 @@
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone number @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
-                    <input type="text" id="phone_number" name="phone_number" class="tich-input @error('phone_number') tich-input--error @enderror" value="{{ old('phone_number', $staff->phone_number) }}" @required($mustCompleteProfile)>
+                    <input type="text" id="phone_number" name="phone_number" class="tich-input @error('phone_number') tich-input--error @enderror" value="{{ old('phone_number', in_array($staff->phone_number, ['0700000000', '0000000000'], true) ? '' : $staff->phone_number) }}" @required($mustCompleteProfile) placeholder="e.g. 07XXXXXXXX">
                     @error('phone_number')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div>

@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Home') - {{ $siteMeta['short_name'] ?? config('app.name', 'TICH ERP') }}</title>
+    @include('partials.seo')
     @include('partials.head-assets')
 </head>
 <body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
+    <a class="tich-skip-link" href="#main-content">Skip to main content</a>
     @include('partials.states.global-banners')
     @include('partials.navigation.header')
 
@@ -49,7 +50,7 @@
         ]);
     @endphp
 
-    <main>
+    <main id="main-content">
         @unless ($hideAppAlerts)
             @include('partials.alerts')
         @endunless

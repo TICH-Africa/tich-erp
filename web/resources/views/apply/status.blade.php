@@ -1,11 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Application status')
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-<section class="tich-section">
+<section class="tich-section" aria-labelledby="status-heading">
     <div class="tich-container" style="max-width: 36rem;">
-        <h1 class="tich-h1">Check application status</h1>
+        <h1 id="status-heading" class="tich-h1">Check application status</h1>
         <p class="tich-text tich-mt-4">Enter your application number and email address used during submission.</p>
 
         <div class="tich-card tich-mt-8">

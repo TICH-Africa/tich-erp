@@ -1,12 +1,15 @@
 @extends('layouts.app')
 
 @section('title', 'About Us')
+@section('meta_description', config('tich-seo.pages.about.description'))
+
+@php $seoPageKey = 'about'; @endphp
 
 @section('content')
-    <section class="tich-section tich-about-page">
+    <section class="tich-section tich-about-page" aria-labelledby="about-heading">
         <div class="tich-container">
             <header class="tich-section__intro tich-about-page__intro tich-mb-8" data-about-reveal>
-                <h1 class="tich-h1">About Us</h1>
+                <h1 id="about-heading" class="tich-h1">About Us</h1>
                 <p class="tich-text tich-mt-2">Who we are, what drives us, and how we got here.</p>
             </header>
 

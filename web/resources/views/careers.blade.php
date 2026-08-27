@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Careers')
+@section('meta_description', config('tich-seo.pages.careers.description'))
 
 @section('content')
-    <section class="tich-section tich-careers-page" id="careers">
+    <section class="tich-section tich-careers-page" id="careers" aria-labelledby="careers-heading">
         <div class="tich-container">
             <div class="tich-mb-8">
-                <h1 class="tich-h1">Join Our Team</h1>
+                <h1 id="careers-heading" class="tich-h1">Join Our Team</h1>
                 <p class="tich-text tich-text--secondary">
                     Explore career opportunities at {{ $siteMeta['institution_name'] ?? 'TICH in Africa' }}.
                 </p>

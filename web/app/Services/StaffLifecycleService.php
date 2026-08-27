@@ -376,4 +376,106 @@ class StaffLifecycleService
 
         return $prefix . str_pad((string) $num, 5, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Create a provisional staff row for an ERP invitee.
+     * Names are placeholders (employee enters their own). No @tich.africa org email is issued.
+     */
+    public function createProvisionalInviteStaff(string $personalEmail, ?int $createdBy = null, ?User $linkUser = null): Staff
+    {
+        $departmentId = Department::query()
+            ->where('is_active', true)
+            ->whereNull('parent_dept_id')
+            ->where('dept_code', 'HR')
+            ->value('id')
+            ?? Department::query()
+                ->where('is_active', true)
+                ->whereNull('parent_dept_id')
+                ->orderBy('id')
+                ->value('id');
+
+        if (! $departmentId) {
+            throw new \RuntimeException('Cannot create employee profile: no top-level department exists.');
+        }
+
+        return DB::transaction(function () use ($personalEmail, $createdBy, $linkUser, $departmentId) {
+            $staff = Staff::query()->create([
+                'employee_number' => $this->generateEmployeeNumber(),
+                // Placeholders only — completeness treats these as incomplete.
+                'first_name' => 'Pending',
+                'surname' => 'Invitee',
+                'date_of_birth' => '1990-01-01',
+                'gender' => 'Unspecified',
+                'primary_email' => strtolower(trim($personalEmail)),
+                'organisation_email' => null,
+                'phone_number' => '0700000000',
+                'department_id' => $departmentId,
+                'job_title' => 'Pending assignment',
+                'employment_category' => 'contract',
+                'payroll_scheme' => 'employee',
+                'employment_start_date' => now()->toDateString(),
+                'employment_status' => 'onboarding',
+                'is_profile_locked' => false,
+                'gross_monthly_salary' => 0,
+                'created_by' => $createdBy,
+                'user_id' => $linkUser?->id,
+            ]);
+
+            $this->ensureOnboardingRecord($staff);
+
+            if ($linkUser && ! $linkUser->staff_id) {
+                $linkUser->forceFill(['staff_id' => $staff->id])->save();
+            }
+
+            return $staff;
+        });
+    }
+
+    /**
+     * Ensure invited/provisional staff appear in HR onboarding + are User↔Staff linked.
+     */
+    public function ensureEmployeeIdentity(Staff $staff, ?User $user = null): Staff
+    {
+        $this->ensureOnboardingRecord($staff);
+
+        $user ??= $staff->user_id ? User::query()->find($staff->user_id) : null;
+
+        if ($user) {
+            $staffUpdates = [];
+            if ((int) $staff->user_id !== (int) $user->id) {
+                $staffUpdates['user_id'] = $user->id;
+            }
+            if ($staffUpdates !== []) {
+                $staff->update($staffUpdates);
+            }
+
+            if ((int) $user->staff_id !== (int) $staff->id) {
+                $user->forceFill(['staff_id' => $staff->id])->save();
+            }
+
+            if ($user->user_type !== 'staff' && $user->user_type !== 'admin') {
+                $user->forceFill(['user_type' => 'staff'])->save();
+            }
+        }
+
+        // Never invent @tich.africa here — HR issues organisation email deliberately.
+        return $staff->fresh(['user', 'onboarding']);
+    }
+
+    public function ensureOnboardingRecord(Staff $staff): StaffOnboarding
+    {
+        $existing = StaffOnboarding::query()->where('staff_id', $staff->id)->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return StaffOnboarding::query()->create([
+            'staff_id' => $staff->id,
+            'onboarding_number' => 'ONB-'.strtoupper(Str::random(8)),
+            'current_step' => 'biodata',
+            'status' => 'in_progress',
+            'completed_steps' => ['invite_registered'],
+        ]);
+    }
 }

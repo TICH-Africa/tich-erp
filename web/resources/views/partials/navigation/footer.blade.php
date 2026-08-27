@@ -16,26 +16,26 @@
                 @endif
             </div>
 
-            <div>
-                <h3 class="tich-h3">Site navigation</h3>
+            <nav aria-label="Site navigation">
+                <h2 class="tich-h3">Site navigation</h2>
                 <ul class="tich-footer__list">
                     @foreach ($footerPrimaryMenu as $item)
                         <li><a href="{{ $item['url'] }}">{{ $item['label'] }}</a></li>
                     @endforeach
                 </ul>
-            </div>
+            </nav>
 
-            <div>
-                <h3 class="tich-h3">Quick links</h3>
+            <nav aria-label="Quick links">
+                <h2 class="tich-h3">Quick links</h2>
                 <ul class="tich-footer__list">
                     @foreach ($footerQuickLinks as $item)
                         <li><a href="{{ $item['url'] }}">{{ $item['label'] }}</a></li>
                     @endforeach
                 </ul>
-            </div>
+            </nav>
 
             <div>
-                <h3 class="tich-h3">Contact</h3>
+                <h2 class="tich-h3">Contact</h2>
                 <ul class="tich-footer__list">
                     @foreach ($contactChannels as $channel)
                         <li>

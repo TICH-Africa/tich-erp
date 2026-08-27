@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Blog')
+@section('meta_description', config('tich-seo.pages.blog.description'))
 
 @section('content')
-    <section class="tich-section">
+    <section class="tich-section" aria-labelledby="blog-heading">
         <div class="tich-container">
             <header class="tich-section__intro tich-mb-8">
-                <h1 class="tich-h1">Blog</h1>
+                <h1 id="blog-heading" class="tich-h1">Blog</h1>
                 <p class="tich-text tich-mt-2">News, student stories, and admissions updates from across TICH campuses.</p>
             </header>
 

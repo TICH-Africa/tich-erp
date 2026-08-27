@@ -1,11 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Programs & Courses')
+@section('meta_description', config('tich-seo.pages.programs.description'))
 
 @section('content')
-    <section class="tich-section tich-section--hero-plain">
+    <section class="tich-section tich-section--hero-plain" aria-labelledby="programs-heading">
         <div class="tich-container">
-            <h1 class="tich-h1">Programs &amp; courses</h1>
+            <h1 id="programs-heading" class="tich-h1">Programs &amp; courses</h1>
             <p class="tich-text tich-mt-4" style="max-width: 42rem;">
                 Explore TICH certificate and diploma programmes in community health practice, development, and health technology. Select a programme and start your online application.
             </p>
