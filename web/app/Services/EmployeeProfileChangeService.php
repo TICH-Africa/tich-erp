@@ -145,8 +145,9 @@ class EmployeeProfileChangeService
 
         $before = $staff->only(array_keys($updates));
 
-        DB::transaction(function () use ($staff, $updates) {
+        DB::transaction(function () use ($staff, $user, $updates) {
             $staff->update($updates);
+            app(StaffLifecycleService::class)->ensureEmployeeIdentity($staff, $user);
         });
 
         $this->auditService->log(
@@ -160,7 +161,7 @@ class EmployeeProfileChangeService
             $user->id,
         );
 
-        $this->notifyHrSelfServiceCompletion($staff);
+        $this->notifyHrSelfServiceCompletion($staff->fresh());
 
         return $staff->fresh();
     }
@@ -179,6 +180,12 @@ class EmployeeProfileChangeService
                 StaffProfileChangeRequest::TYPE_QUALIFICATION => $this->applyQualificationChange($staff, $request, $reviewer),
                 default => $staff->update($request->proposed_changes ?? []),
             };
+
+            $requestedBy = $request->requestedBy;
+            app(StaffLifecycleService::class)->ensureEmployeeIdentity(
+                $staff->fresh(),
+                $requestedBy instanceof User ? $requestedBy : null,
+            );
 
             $request->update([
                 'status' => StaffProfileChangeRequest::STATUS_APPROVED,

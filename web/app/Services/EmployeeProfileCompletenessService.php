@@ -122,11 +122,28 @@ class EmployeeProfileCompletenessService
             $normalized = strtolower($trimmed);
 
             // Provisional invite placeholders are not real completed data.
-            if (in_array($normalized, ['0700000000', '0000000000', 'tbd', 'n/a', 'pending', 'invitee'], true)) {
+            if (in_array($normalized, [
+                '0700000000',
+                '0000000000',
+                'tbd',
+                'n/a',
+                'pending',
+                'invitee',
+                'unspecified',
+                'pending assignment',
+            ], true)) {
+                return false;
+            }
+
+            if ($field === 'first_name' && $normalized === 'pending') {
                 return false;
             }
 
             if ($field === 'surname' && $normalized === 'invitee') {
+                return false;
+            }
+
+            if ($field === 'gender' && $normalized === 'unspecified') {
                 return false;
             }
         }

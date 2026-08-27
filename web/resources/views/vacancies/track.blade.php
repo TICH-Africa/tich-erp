@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Track Application')
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-<section class="tich-section tich-careers-page" id="track-application">
+<section class="tich-section tich-careers-page" id="track-application" aria-labelledby="track-heading">
     <div class="tich-container">
         <div class="tich-mb-8">
-            <h1 class="tich-h1">Track Your Application</h1>
+            <h1 id="track-heading" class="tich-h1">Track Your Application</h1>
             <p class="tich-text tich-mt-2">Enter your application number and email to check your status.</p>
         </div>
 

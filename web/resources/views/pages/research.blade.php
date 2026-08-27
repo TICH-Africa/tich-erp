@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Research')
+@section('meta_description', config('tich-seo.pages.research.description'))
 
 @section('content')
-    <section class="tich-section">
+    <section class="tich-section" aria-labelledby="research-heading">
         <div class="tich-container">
             <header class="tich-section__intro tich-mb-8">
-                <h1 class="tich-h1">Research</h1>
+                <h1 id="research-heading" class="tich-h1">Research</h1>
                 <p class="tich-text tich-mt-2">A hub of research excellence linking classrooms to communities and policy.</p>
             </header>
 

@@ -4,12 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="robots" content="noindex,nofollow">
     <title>@yield('title', 'Sign In') - {{ config('app.name', 'TICH ERP') }}</title>
     @include('partials.head-assets')
 </head>
 <body class="tich-body">
     <div class="flex min-h-screen">
-        <aside class="tich-auth-aside">
+        <aside class="tich-auth-aside" aria-label="Brand introduction">
             <div>
                 @include('partials.brand-logo', ['variant' => 'light'])
             </div>
@@ -31,7 +32,7 @@
             <p class="tich-caption" style="color: rgba(255,255,255,0.7);">&copy; {{ date('Y') }} TICH in Africa. All rights reserved.</p>
         </aside>
 
-        <main class="tich-auth-main">
+        <main class="tich-auth-main" id="main-content">
             <div class="tich-auth-main__toolbar">
                 @include('partials.theme-toggle')
             </div>

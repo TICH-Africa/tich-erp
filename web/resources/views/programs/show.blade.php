@@ -1,18 +1,27 @@
 @extends('layouts.app')
 
 @section('title', $program->program_name)
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline ?: $program->entry_requirements ?: $program->program_name), 160, ''))
+
+@php
+    $seo = [
+        'type' => 'website',
+        'image' => $program->cover_image_url ?? null,
+        'url' => route('programs.show', $program->program_code),
+    ];
+@endphp
 
 @section('content')
-    <article class="tich-program-show">
+    <article class="tich-program-show" itemscope itemtype="https://schema.org/Course">
         <header class="tich-program-show__hero">
             <div class="tich-container tich-program-show__hero-content">
                 <p class="tich-program-show__back">
                     <a href="{{ route('programs.index') }}" class="tich-program-show__back-link">← All programmes</a>
                 </p>
                 <p class="tich-program-show__eyebrow">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type ?? 'PROGRAMME')) }}</p>
-                <h1 class="tich-program-show__title">{{ $program->program_name }}</h1>
+                <h1 class="tich-program-show__title" itemprop="name">{{ $program->program_name }}</h1>
                 @if (!empty($program->homepage_tagline))
-                    <p class="tich-program-show__lead">{{ $program->homepage_tagline }}</p>
+                    <p class="tich-program-show__lead" itemprop="description">{{ $program->homepage_tagline }}</p>
                 @endif
             </div>
         </header>
@@ -90,4 +99,26 @@
             </div>
         </div>
     </article>
+@endsection
+
+@section('seo_jsonld')
+    @include('partials.seo-jsonld-organization')
+    @php
+        $courseLd = array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Course',
+            'name' => $program->program_name,
+            'description' => $program->homepage_tagline ?: $program->entry_requirements,
+            'provider' => [
+                '@type' => 'EducationalOrganization',
+                'name' => $siteMeta['institution_name'] ?? 'TICH in Africa',
+                'url' => url('/'),
+            ],
+            'url' => route('programs.show', $program->program_code),
+            'image' => $program->cover_image_url ?? null,
+            'timeRequired' => ! empty($program->duration_months) ? 'P'.(int) $program->duration_months.'M' : null,
+            'educationalCredentialAwarded' => $program->program_type ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+    @endphp
+    <script type="application/ld+json">{!! json_encode($courseLd, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection

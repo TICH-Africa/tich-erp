@@ -56,9 +56,16 @@
                             </td>
                             <td>
                                 <strong>{{ $member->fullName() }}</strong>
-                                <p class="tich-caption">{{ $member->organisation_email }}</p>
-                                @if ($member->primary_email && $member->primary_email !== $member->organisation_email)
-                                    <p class="tich-caption">Personal: {{ $member->primary_email }}</p>
+                                @if ($member->organisation_email)
+                                    <p class="tich-caption">{{ $member->organisation_email }}</p>
+                                @endif
+                                @if ($member->primary_email)
+                                    <p class="tich-caption">{{ $member->organisation_email ? 'Personal: ' : '' }}{{ $member->primary_email }}</p>
+                                @endif
+                                @if (strcasecmp((string) $member->first_name, 'Pending') === 0 && strcasecmp((string) $member->surname, 'Invitee') === 0)
+                                    <p class="tich-caption" style="color:#b45309;">Awaiting employee profile</p>
+                                @elseif ($member->employment_status === 'onboarding')
+                                    <p class="tich-caption">Status: onboarding</p>
                                 @endif
                             </td>
                             <td>{{ $member->department->dept_name ?? '-' }}</td>

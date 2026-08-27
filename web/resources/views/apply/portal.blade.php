@@ -1,13 +1,15 @@
 @extends('layouts.app')
 
 @section('title', 'Online Application')
+@section('meta_description', config('tich-seo.pages.apply.description'))
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-<section class="tich-section">
+<section class="tich-section" aria-labelledby="apply-heading">
     <div class="tich-container" style="max-width: 48rem;">
         <div class="tich-mb-8">
             <a href="{{ route('programs.index') }}" class="tich-link">&larr; Back to programmes</a>
-            <h1 class="tich-h1 tich-mt-4">Online application portal</h1>
+            <h1 id="apply-heading" class="tich-h1 tich-mt-4">Online application portal</h1>
             <p class="tich-text tich-mt-2">Complete all steps to submit your application. Your response will be sent to the academic department for review.</p>
         </div>
 

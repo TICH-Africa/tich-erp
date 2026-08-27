@@ -48,12 +48,16 @@ class SiteSettingsController extends Controller
             'copyright' => ['nullable', 'string', 'max:300'],
             'website' => ['nullable', 'string', 'max:200'],
             'ticker_message' => ['nullable', 'string', 'max:1000'],
+            'meta_description' => ['nullable', 'string', 'max:320'],
             'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'remove_logo' => ['nullable', 'boolean'],
+            'og_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
+            'remove_og_image' => ['nullable', 'boolean'],
         ]);
 
         $userId = (int) $request->user()->id;
         $previousLogo = $this->settings->get('site.logo_path');
+        $previousOgImage = $this->settings->get('site.og_image_path');
 
         $this->settings->set('site.institution_name', $validated['institution_name'], $userId, [
             'group_name' => 'identity',
@@ -83,6 +87,10 @@ class SiteSettingsController extends Controller
             'group_name' => 'identity',
             'label' => 'Homepage ticker message',
         ]);
+        $this->settings->set('site.meta_description', $validated['meta_description'] ?? '', $userId, [
+            'group_name' => 'seo',
+            'label' => 'Default meta description',
+        ]);
         $this->settings->set('site.website', $validated['website'] ?? '', $userId, [
             'group_name' => 'identity',
             'label' => 'Website',
@@ -100,6 +108,22 @@ class SiteSettingsController extends Controller
             $this->settings->set('site.logo_path', $logoPath, $userId, [
                 'group_name' => 'identity',
                 'label' => 'Site logo',
+                'value_type' => 'file_path',
+            ]);
+        }
+
+        if ($request->boolean('remove_og_image') && $previousOgImage) {
+            $this->files->delete($previousOgImage, 'public');
+            $this->settings->set('site.og_image_path', null, $userId, [
+                'group_name' => 'seo',
+                'label' => 'Open Graph image',
+                'value_type' => 'file_path',
+            ]);
+        } elseif ($request->hasFile('og_image')) {
+            $ogPath = $this->files->replace($previousOgImage, $request->file('og_image'), 'site/og', 'public', null, true);
+            $this->settings->set('site.og_image_path', $ogPath, $userId, [
+                'group_name' => 'seo',
+                'label' => 'Open Graph image',
                 'value_type' => 'file_path',
             ]);
         }

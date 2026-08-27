@@ -1,16 +1,27 @@
 @extends('layouts.app')
 
 @section('title', $vacancy->job_title . ' - Careers')
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($vacancy->job_description ?: $vacancy->job_title), 160, ''))
+
+@php
+    $seo = [
+        'type' => 'article',
+        'url' => route('careers.show', $vacancy),
+    ];
+@endphp
 
 @section('content')
-    <section class="tich-section tich-careers-page" id="careers">
+    <section class="tich-section tich-careers-page" id="careers" aria-labelledby="vacancy-heading">
         <div class="tich-container">
             <a href="{{ route('careers.index') }}" class="tich-btn tich-btn-ghost tich-mb-6">&larr; Back to careers</a>
 
-            <article class="tich-card">
+            <article class="tich-card" itemscope itemtype="https://schema.org/JobPosting">
                 <div class="tich-mb-6">
-                    <h1 class="tich-h1">{{ $vacancy->job_title }}</h1>
+                    <h1 id="vacancy-heading" class="tich-h1" itemprop="title">{{ $vacancy->job_title }}</h1>
                     <p class="tich-text tich-text--secondary tich-mt-2">
+                        <span itemprop="hiringOrganization" itemscope itemtype="https://schema.org/Organization">
+                            <meta itemprop="name" content="{{ $siteMeta['institution_name'] ?? 'TICH in Africa' }}">
+                        </span>
                         {{ $vacancy->department->dept_name ?? 'General' }}
                         &middot;
                         {{ ucfirst($vacancy->employment_type) }}
@@ -56,4 +67,36 @@
             </article>
         </div>
     </section>
+@endsection
+
+@section('seo_jsonld')
+    @include('partials.seo-jsonld-organization')
+    @php
+        $jobLd = array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'JobPosting',
+            'title' => $vacancy->job_title,
+            'description' => $vacancy->job_description,
+            'datePosted' => optional($vacancy->published_on ?? $vacancy->created_at)->toAtomString(),
+            'validThrough' => $vacancy->closing_date
+                ? $vacancy->closing_date->copy()->endOfDay()->toAtomString()
+                : null,
+            'employmentType' => strtoupper((string) $vacancy->employment_type),
+            'hiringOrganization' => [
+                '@type' => 'EducationalOrganization',
+                'name' => $siteMeta['institution_name'] ?? 'TICH in Africa',
+                'sameAs' => url('/'),
+            ],
+            'jobLocation' => [
+                '@type' => 'Place',
+                'address' => [
+                    '@type' => 'PostalAddress',
+                    'addressLocality' => 'Kisumu',
+                    'addressCountry' => 'KE',
+                ],
+            ],
+            'url' => route('careers.show', $vacancy),
+        ], fn ($v) => $v !== null && $v !== '');
+    @endphp
+    <script type="application/ld+json">{!! json_encode($jobLd, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection

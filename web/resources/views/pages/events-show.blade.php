@@ -1,18 +1,27 @@
 @extends('layouts.app')
 
 @section('title', $event->title)
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($event->subtitle ?: $event->description ?: $event->title), 160, ''))
+
+@php
+    $seo = [
+        'type' => 'article',
+        'image' => $event->cover_image_url ?? $event->cover_image_path ?? null,
+        'url' => route('events.show', $event),
+    ];
+@endphp
 
 @section('content')
-    <article class="tich-event-show">
+    <article class="tich-event-show" itemscope itemtype="https://schema.org/Event">
         <header class="tich-event-show__hero">
             <div class="tich-container tich-event-show__hero-content">
                 <p class="tich-event-show__back">
                     <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
                 </p>
                 <p class="tich-event-show__eyebrow">{{ strtoupper(str_replace('_', ' ', $event->event_type ?? 'EVENT')) }}</p>
-                <h1 class="tich-event-show__title">{{ $event->title }}</h1>
+                <h1 class="tich-event-show__title" itemprop="name">{{ $event->title }}</h1>
                 @if (!empty($event->subtitle))
-                    <p class="tich-event-show__lead">{{ $event->subtitle }}</p>
+                    <p class="tich-event-show__lead" itemprop="description">{{ $event->subtitle }}</p>
                 @endif
             </div>
         </header>
@@ -75,4 +84,33 @@
             </div>
         </div>
     </article>
+@endsection
+
+@section('seo_jsonld')
+    @include('partials.seo-jsonld-organization')
+    @php
+        $eventLd = array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Event',
+            'name' => $event->title,
+            'description' => $event->subtitle ?: $event->description,
+            'url' => route('events.show', $event),
+            'image' => $event->cover_image_url ?? $event->cover_image_path ?? null,
+            'startDate' => optional($event->start_datetime ?? null)->toAtomString(),
+            'endDate' => optional($event->end_datetime ?? null)->toAtomString(),
+            'eventStatus' => 'https://schema.org/EventScheduled',
+            'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+            'location' => ! empty($event->venue) ? [
+                '@type' => 'Place',
+                'name' => $event->venue,
+                'address' => $event->location ?? $event->venue,
+            ] : null,
+            'organizer' => [
+                '@type' => 'EducationalOrganization',
+                'name' => $siteMeta['institution_name'] ?? 'TICH in Africa',
+                'url' => url('/'),
+            ],
+        ], fn ($v) => $v !== null && $v !== '');
+    @endphp
+    <script type="application/ld+json">{!! json_encode($eventLd, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection

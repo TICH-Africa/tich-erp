@@ -1,2 +1,29 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Transactional / private flows
+Disallow: /apply/pay
+Disallow: /vacancies/track
+Disallow: /vacancies/apply/
+Disallow: /login
+Disallow: /register
+Disallow: /password/
+Disallow: /mfa/
+Disallow: /dashboard
+Disallow: /admin/
+Disallow: /administration/
+Disallow: /hr/
+Disallow: /finance/
+Disallow: /ict/
+Disallow: /employee/
+Disallow: /staff/
+Disallow: /portal/
+Disallow: /sis/
+Disallow: /admissions/
+Disallow: /qa/
+Disallow: /procurement/
+Disallow: /research/dashboard
+Disallow: /site-settings/
+Disallow: /departments/
+
+Sitemap: https://tich.africa/sitemap.xml
