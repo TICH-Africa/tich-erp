@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class ModuleRoleCatalogService
 {
@@ -49,7 +47,7 @@ class ModuleRoleCatalogService
     }
 
     /**
-     * Permission modules applicable when editing a role.
+     * Permission modules applicable when viewing a role.
      *
      * @return list<string>
      */
@@ -67,15 +65,7 @@ class ModuleRoleCatalogService
             return array_values($definition['permission_modules'] ?? []);
         }
 
-        if ($role->module_key) {
-            return array_values(array_unique(array_filter([
-                $role->module_key,
-                $role->module_key === 'admissions' ? 'admin' : null,
-                in_array($role->module_key, ['finance', 'hr', 'procurement', 'qa', 'administration', 'research', 'ict', 'academics', 'monitoring_evaluation'], true) ? 'core' : null,
-            ])));
-        }
-
-        return collect($role->permissions()->pluck('module'))->unique()->filter()->values()->all();
+        return $catalog->permissionModulesForModuleKey($role->module_key);
     }
 
     /**
@@ -85,35 +75,22 @@ class ModuleRoleCatalogService
     {
         $catalog = app(RbacCatalogService::class);
         $modules = $this->permissionModulesForRole($role);
+        $rows = collect($catalog->permissions());
 
-        if ($catalog->hasDefinition($role->role_name) || Permission::query()->doesntExist()) {
-            $rows = collect($catalog->permissions());
-
-            if ($modules !== []) {
-                $rows = $rows->whereIn('module', $modules);
-            }
-
-            return $rows
-                ->sortBy(['module', 'slug'])
-                ->values()
-                ->map(fn (array $permission, int $index) => (object) [
-                    'id' => $index + 1,
-                    'slug' => $permission['slug'],
-                    'module' => $permission['module'],
-                    'category' => $permission['category'],
-                    'permission_name' => $permission['permission_name'],
-                ]);
+        if ($modules !== []) {
+            $rows = $rows->whereIn('module', $modules);
         }
 
-        if ($modules === []) {
-            return Permission::query()->orderBy('module')->orderBy('slug')->get();
-        }
-
-        return Permission::query()
-            ->whereIn('module', $modules)
-            ->orderBy('module')
-            ->orderBy('slug')
-            ->get();
+        return $rows
+            ->sortBy(['module', 'slug'])
+            ->values()
+            ->map(fn (array $permission, int $index) => (object) [
+                'id' => $index + 1,
+                'slug' => $permission['slug'],
+                'module' => $permission['module'],
+                'category' => $permission['category'],
+                'permission_name' => $permission['permission_name'],
+            ]);
     }
 
     /**
@@ -124,14 +101,7 @@ class ModuleRoleCatalogService
         $categoryLabels = config('tich-module-roles.permission_categories', []);
         $permissions = $this->permissionsForRole($role);
         $catalog = app(RbacCatalogService::class);
-        $assignedIds = [];
-        $assignedSlugs = [];
-
-        if ($catalog->hasDefinition($role->role_name)) {
-            $assignedSlugs = $catalog->grantedSlugSetForRole($role->role_name);
-        } else {
-            $assignedIds = $role->permissions()->pluck('permissions.id')->all();
-        }
+        $assignedSlugs = $catalog->grantedSlugSetForRoleRecord($role->role_name, $role->module_key);
 
         $matrix = [];
 
@@ -139,15 +109,11 @@ class ModuleRoleCatalogService
             $categories = [];
 
             foreach ($group as $permission) {
-                $checked = $assignedSlugs !== []
-                    ? isset($assignedSlugs[$permission->slug])
-                    : in_array((int) $permission->id, $assignedIds, true);
-
                 $categories[$permission->category] = [
                     'id' => (int) $permission->id,
                     'slug' => $permission->slug,
                     'label' => $categoryLabels[$permission->category] ?? ucfirst($permission->category),
-                    'checked' => $checked,
+                    'checked' => isset($assignedSlugs[$permission->slug]),
                 ];
             }
 
@@ -162,49 +128,6 @@ class ModuleRoleCatalogService
         usort($matrix, fn ($a, $b) => [$a['module'], $a['label']] <=> [$b['module'], $b['label']]);
 
         return $matrix;
-    }
-
-    /**
-     * @param  array<string, mixed>  $definition
-     */
-    public function syncPredefinedRolePermissions(Role $role, array $definition): void
-    {
-        // Predefined roles resolve permissions from config at runtime — no DB pivot sync.
-    }
-
-    /**
-     * @param  array<string, mixed>  $definition
-     * @return list<int>
-     */
-    public function permissionIdsFromDefinition(array $definition): array
-    {
-        return [];
-    }
-
-    /**
-     * @param  list<int>  $permissionIds
-     */
-    public function syncRolePermissionIds(Role $role, array $permissionIds, ?int $grantedBy = null): void
-    {
-        $catalog = app(RbacCatalogService::class);
-
-        if ($catalog->hasDefinition($role->role_name) || $role->is_system_role) {
-            throw new \RuntimeException('Predefined role permissions are hardcoded and cannot be synced to the database.');
-        }
-
-        $allowedIds = $this->permissionsForRole($role)->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $permissionIds = array_values(array_intersect($permissionIds, $allowedIds));
-
-        DB::table('role_permissions')->where('role_id', $role->id)->delete();
-
-        foreach ($permissionIds as $permissionId) {
-            DB::table('role_permissions')->insert([
-                'role_id' => $role->id,
-                'permission_id' => $permissionId,
-                'granted_at' => now(),
-                'granted_by' => $grantedBy,
-            ]);
-        }
     }
 
     private function actionFromSlug(string $slug): string

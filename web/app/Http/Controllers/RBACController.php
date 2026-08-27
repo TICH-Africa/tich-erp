@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\RBACService;
-use App\Models\User;
 use App\Models\Role;
-use App\Models\Permission;
-use Illuminate\Http\Request;
+use App\Models\User;
+use App\Services\RbacCatalogService;
+use App\Services\RBACService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class RBACController extends Controller
@@ -19,62 +19,48 @@ class RBACController extends Controller
         $this->rbacService = $rbacService;
     }
 
-    /**
-     * Get current user's permissions
-     */
     public function getUserPermissions(): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $permissions = $this->rbacService->getUserPermissions($user);
-
         return response()->json([
-            'permissions' => $permissions
+            'permissions' => $this->rbacService->getUserPermissions($user),
         ]);
     }
 
-    /**
-     * Get current user's roles
-     */
     public function getUserRoles(): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $roles = $this->rbacService->getUserRoles($user);
-
         return response()->json([
-            'roles' => $roles
+            'roles' => $this->rbacService->getUserRoles($user),
         ]);
     }
 
-    /**
-     * Assign role to user
-     */
     public function assignRole(Request $request): JsonResponse
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'role_id' => 'required|exists:roles,id',
             'campus_id' => 'nullable|exists:campuses,id',
-            'department_id' => 'nullable|exists:departments,id'
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         $currentUser = Auth::user();
 
-        if (!$currentUser) {
+        if (! $currentUser) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Check if current user has permission to assign roles
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.assign')) {
+        if (! $this->rbacService->hasPermission($currentUser, 'admin.manage_staff.assign')) {
             return response()->json(['message' => 'You do not have permission to assign roles'], 403);
         }
 
@@ -90,28 +76,24 @@ class RBACController extends Controller
 
         return response()->json([
             'message' => 'Role assigned successfully',
-            'assigned_at' => now()
+            'assigned_at' => now(),
         ]);
     }
 
-    /**
-     * Revoke role from user
-     */
     public function revokeRole(Request $request): JsonResponse
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'role_id' => 'required|exists:roles,id'
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $currentUser = Auth::user();
 
-        if (!$currentUser) {
+        if (! $currentUser) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Check if current user has permission to revoke roles
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.revoke')) {
+        if (! $this->rbacService->hasPermission($currentUser, 'admin.manage_staff.revoke')) {
             return response()->json(['message' => 'You do not have permission to revoke roles'], 403);
         }
 
@@ -121,204 +103,88 @@ class RBACController extends Controller
 
         return response()->json([
             'message' => 'Role revoked successfully',
-            'revoked_at' => now()
+            'revoked_at' => now(),
         ]);
     }
 
-    /**
-     * Assign permission to user
-     */
     public function assignPermission(Request $request): JsonResponse
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'permission_id' => 'required|exists:permissions,id',
-            'campus_id' => 'nullable|exists:campuses,id',
-            'department_id' => 'nullable|exists:departments,id'
-        ]);
-
-        $currentUser = Auth::user();
-
-        if (!$currentUser) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
-        // Check if current user has permission to assign permissions
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.assign')) {
-            return response()->json(['message' => 'You do not have permission to assign permissions'], 403);
-        }
-
-        $targetUser = User::findOrFail($request->user_id);
-
-        $this->rbacService->assignPermissionToUser(
-            $targetUser,
-            $request->permission_id,
-            $request->campus_id,
-            $request->department_id,
-            $currentUser->id
-        );
-
         return response()->json([
-            'message' => 'Permission assigned successfully',
-            'assigned_at' => now()
-        ]);
+            'message' => 'Direct user permissions were removed. Assign a role instead.',
+        ], 422);
     }
 
-    /**
-     * Revoke permission from user
-     */
     public function revokePermission(Request $request): JsonResponse
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'permission_id' => 'required|exists:permissions,id'
-        ]);
-
-        $currentUser = Auth::user();
-
-        if (!$currentUser) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
-        // Check if current user has permission to revoke permissions
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.revoke')) {
-            return response()->json(['message' => 'You do not have permission to revoke permissions'], 403);
-        }
-
-        $targetUser = User::findOrFail($request->user_id);
-
-        $this->rbacService->revokePermissionFromUser($targetUser, $request->permission_id, $currentUser->id);
-
         return response()->json([
-            'message' => 'Permission revoked successfully',
-            'revoked_at' => now()
-        ]);
+            'message' => 'Direct user permissions were removed. Revoke a role instead.',
+        ], 422);
     }
 
-    /**
-     * Get all roles
-     */
     public function getRoles(): JsonResponse
     {
         $currentUser = Auth::user();
 
-        if (!$currentUser) {
+        if (! $currentUser) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Check if current user has permission to view roles
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
+        if (! $this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
             return response()->json(['message' => 'You do not have permission to view roles'], 403);
         }
 
-        $roles = Role::all();
-
         return response()->json([
-            'roles' => $roles
+            'roles' => Role::all(),
         ]);
     }
 
-    /**
-     * Get all permissions
-     */
     public function getPermissions(): JsonResponse
     {
         $currentUser = Auth::user();
 
-        if (!$currentUser) {
+        if (! $currentUser) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Check if current user has permission to view permissions
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
+        if (! $this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
             return response()->json(['message' => 'You do not have permission to view permissions'], 403);
         }
 
-        $permissions = Permission::all();
-
         return response()->json([
-            'permissions' => $permissions
+            'permissions' => app(RbacCatalogService::class)->permissions(),
         ]);
     }
 
-    /**
-     * Get permissions for a specific role
-     */
     public function getRolePermissions(Request $request): JsonResponse
     {
         $request->validate([
-            'role_id' => 'required|exists:roles,id'
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $currentUser = Auth::user();
 
-        if (!$currentUser) {
+        if (! $currentUser) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Check if current user has permission to view permissions
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
+        if (! $this->rbacService->hasPermission($currentUser, 'admin.manage_staff.view')) {
             return response()->json(['message' => 'You do not have permission to view permissions'], 403);
         }
 
         $role = Role::findOrFail($request->role_id);
-        $permissions = $role->permissions;
+        $catalog = app(RbacCatalogService::class);
+        $slugs = array_keys($catalog->grantedSlugSetForRoleRecord($role->role_name, $role->module_key));
 
         return response()->json([
             'role' => $role,
-            'permissions' => $permissions
+            'permissions' => collect($catalog->permissions())->whereIn('slug', $slugs)->values(),
         ]);
     }
 
-    /**
-     * Assign permissions to role
-     */
     public function assignPermissionsToRole(Request $request): JsonResponse
     {
-        $request->validate([
-            'role_id' => 'required|exists:roles,id',
-            'permission_ids' => 'required|array',
-            'permission_ids.*' => 'exists:permissions,id'
-        ]);
-
-        $currentUser = Auth::user();
-
-        if (!$currentUser) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
-        // Check if current user has permission to assign permissions
-        if (!$this->rbacService->hasPermission($currentUser, 'admin.manage_staff.assign')) {
-            return response()->json(['message' => 'You do not have permission to assign permissions'], 403);
-        }
-
-        $role = Role::findOrFail($request->role_id);
-
-        if (app(\App\Services\RbacCatalogService::class)->hasDefinition($role->role_name) || $role->is_system_role) {
-            return response()->json([
-                'message' => 'Predefined role permissions are hardcoded in config and cannot be assigned via the API.',
-            ], 422);
-        }
-
-        $oldPermissionIds = $role->permissions()->pluck('permissions.id')->all();
-
-        $role->permissions()->sync($request->permission_ids);
-
-        app(\App\Services\AuditService::class)->log(
-            'rbac.role.permissions_synced',
-            'roles',
-            $role->id,
-            ['permission_ids' => $oldPermissionIds],
-            ['permission_ids' => $request->permission_ids],
-            null,
-            'success',
-            $currentUser->id,
-            $request
-        );
-
         return response()->json([
-            'message' => 'Permissions assigned to role successfully',
-            'assigned_at' => now()
-        ]);
+            'message' => 'Role permissions are defined in config and cannot be assigned via the API. Assign roles to users instead.',
+        ], 422);
     }
 }

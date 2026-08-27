@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP — production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-08-27 10:09:33 EAT
+-- Generated: 2026-08-27 17:32:04 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5902,37 +5902,6 @@ CALL `tich_ensure_unique`('performance_reviews', 'performance_reviews_review_num
 CALL `tich_ensure_index`('performance_reviews', 'performance_reviews_staff_id_index', '`staff_id`');
 
 -- -----------------------------------------------------------------------------
--- Table: `permissions`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `permissions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `permission_name` varchar(100) NOT NULL,
-  `slug` varchar(100) NOT NULL,
-  `module` varchar(50) NOT NULL,
-  `category` varchar(50) NOT NULL,
-  `description` text DEFAULT NULL,
-  `is_system` tinyint(4) NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `permissions_permission_name_unique` (`permission_name`),
-  UNIQUE KEY `permissions_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `permissions` (add only if missing)
-CALL `tich_ensure_column`('permissions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('permissions', 'permission_name', 'varchar(100) NOT NULL');
-CALL `tich_ensure_column`('permissions', 'slug', 'varchar(100) NOT NULL');
-CALL `tich_ensure_column`('permissions', 'module', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('permissions', 'category', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('permissions', 'description', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('permissions', 'is_system', 'tinyint(4) NOT NULL DEFAULT \'0\'');
-CALL `tich_ensure_column`('permissions', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
-
--- Indexes for `permissions` (add only if missing)
-CALL `tich_ensure_unique`('permissions', 'permissions_permission_name_unique', '`permission_name`');
-CALL `tich_ensure_unique`('permissions', 'permissions_slug_unique', '`slug`');
-
--- -----------------------------------------------------------------------------
 -- Table: `personal_access_tokens`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `personal_access_tokens` (
@@ -7222,33 +7191,6 @@ CALL `tich_ensure_column`('role_categories', 'updated_at', 'timestamp NULL DEFAU
 
 -- Indexes for `role_categories` (add only if missing)
 CALL `tich_ensure_unique`('role_categories', 'role_categories_category_code_unique', '`category_code`');
-
--- -----------------------------------------------------------------------------
--- Table: `role_permissions`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `role_permissions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `role_id` bigint(20) unsigned NOT NULL,
-  `permission_id` bigint(20) unsigned NOT NULL,
-  `granted_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `granted_by` bigint(20) unsigned DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `role_permissions_role_id_permission_id_unique` (`role_id`,`permission_id`),
-  KEY `role_permissions_permission_id_foreign` (`permission_id`),
-  CONSTRAINT `role_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`),
-  CONSTRAINT `role_permissions_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `role_permissions` (add only if missing)
-CALL `tich_ensure_column`('role_permissions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('role_permissions', 'role_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('role_permissions', 'permission_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('role_permissions', 'granted_at', 'datetime NOT NULL DEFAULT current_timestamp()');
-CALL `tich_ensure_column`('role_permissions', 'granted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
-
--- Indexes for `role_permissions` (add only if missing)
-CALL `tich_ensure_index`('role_permissions', 'role_permissions_permission_id_foreign', '`permission_id`');
-CALL `tich_ensure_unique`('role_permissions', 'role_permissions_role_id_permission_id_unique', '`role_id`, `permission_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `rooms`
@@ -9466,39 +9408,6 @@ CALL `tich_ensure_index`('users', 'users_staff_id_foreign', '`staff_id`');
 CALL `tich_ensure_index`('users', 'users_student_id_foreign', '`student_id`');
 
 -- -----------------------------------------------------------------------------
--- Table: `user_permissions`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `user_permissions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `permission_id` bigint(20) unsigned NOT NULL,
-  `campus_id` bigint(20) unsigned DEFAULT NULL,
-  `department_id` bigint(20) unsigned DEFAULT NULL,
-  `granted_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `granted_by` bigint(20) unsigned DEFAULT NULL,
-  `expires_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `user_permissions_unique` (`user_id`,`permission_id`,`campus_id`,`department_id`),
-  KEY `user_permissions_permission_id_foreign` (`permission_id`),
-  CONSTRAINT `user_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`),
-  CONSTRAINT `user_permissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `user_permissions` (add only if missing)
-CALL `tich_ensure_column`('user_permissions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('user_permissions', 'user_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('user_permissions', 'permission_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('user_permissions', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('user_permissions', 'department_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('user_permissions', 'granted_at', 'datetime NOT NULL DEFAULT current_timestamp()');
-CALL `tich_ensure_column`('user_permissions', 'granted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('user_permissions', 'expires_at', 'datetime NULL DEFAULT NULL');
-
--- Indexes for `user_permissions` (add only if missing)
-CALL `tich_ensure_index`('user_permissions', 'user_permissions_permission_id_foreign', '`permission_id`');
-CALL `tich_ensure_unique`('user_permissions', 'user_permissions_unique', '`user_id`, `permission_id`, `campus_id`, `department_id`');
-
--- -----------------------------------------------------------------------------
 -- Table: `user_roles`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `user_roles` (
@@ -10192,10 +10101,6 @@ CALL `tich_ensure_fk`('research_projects', 'research_projects_updated_by_foreign
 CALL `tich_ensure_fk`('research_publications', 'research_publications_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('research_publications', 'research_publications_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 
--- Foreign keys for `role_permissions`
-CALL `tich_ensure_fk`('role_permissions', 'role_permissions_permission_id_foreign', '`permission_id`', 'permissions', '`id`', 'RESTRICT', 'RESTRICT');
-CALL `tich_ensure_fk`('role_permissions', 'role_permissions_role_id_foreign', '`role_id`', 'roles', '`id`', 'RESTRICT', 'RESTRICT');
-
 -- Foreign keys for `rooms`
 CALL `tich_ensure_fk`('rooms', 'rooms_campus_id_foreign', '`campus_id`', 'campuses', '`id`', 'RESTRICT', 'RESTRICT');
 
@@ -10373,10 +10278,6 @@ CALL `tich_ensure_fk`('unit_allocations', 'unit_allocations_unit_id_foreign', '`
 CALL `tich_ensure_fk`('users', 'users_created_by_foreign', '`created_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('users', 'users_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('users', 'users_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'SET NULL');
-
--- Foreign keys for `user_permissions`
-CALL `tich_ensure_fk`('user_permissions', 'user_permissions_permission_id_foreign', '`permission_id`', 'permissions', '`id`', 'RESTRICT', 'RESTRICT');
-CALL `tich_ensure_fk`('user_permissions', 'user_permissions_user_id_foreign', '`user_id`', 'users', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `user_roles`
 CALL `tich_ensure_fk`('user_roles', 'user_roles_assigned_by_foreign', '`assigned_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');

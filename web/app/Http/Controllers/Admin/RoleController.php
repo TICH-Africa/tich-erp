@@ -61,16 +61,11 @@ class RoleController extends Controller
         $roles = $rolesQuery->get();
 
         foreach ($roles as $role) {
-            if ($this->catalog->hasDefinition($role->role_name)) {
-                $role->setAttribute('permissions_count', $this->catalog->catalogPermissionCount($role->role_name));
-                $role->setAttribute('permissions_are_catalog', true);
-            } else {
-                $role->setAttribute(
-                    'permissions_count',
-                    DB::table('role_permissions')->where('role_id', $role->id)->count()
-                );
-                $role->setAttribute('permissions_are_catalog', false);
-            }
+            $role->setAttribute(
+                'permissions_count',
+                $this->catalog->catalogPermissionCount($role->role_name, $role->module_key)
+            );
+            $role->setAttribute('permissions_are_catalog', true);
         }
         $categories = RoleCategory::activeOptions();
         $categoryLabels = RoleCategory::labelMap();
@@ -189,35 +184,9 @@ class RoleController extends Controller
 
     public function updatePermissions(Request $request, Role $role): RedirectResponse
     {
-        if ($this->catalog->hasDefinition($role->role_name) || $role->is_system_role) {
-            return back()->withErrors([
-                'role' => 'Predefined role permissions are hardcoded in config and cannot be edited here.',
-            ]);
-        }
-
-        $validated = $request->validate([
-            'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => ['integer', 'exists:permissions,id'],
+        return back()->withErrors([
+            'role' => 'Role permissions are defined in code (config/tich-module-roles.php) and cannot be edited here.',
         ]);
-
-        $oldPermissionIds = $role->permissions()->pluck('permissions.id')->map(fn ($id) => (int) $id)->all();
-        $newPermissionIds = collect($validated['permission_ids'] ?? [])->map(fn ($id) => (int) $id)->all();
-
-        $this->moduleRoles->syncRolePermissionIds($role, $newPermissionIds, $request->user()->id);
-
-        $this->auditService->log(
-            'rbac.role.permissions_synced',
-            'roles',
-            $role->id,
-            ['permission_ids' => $oldPermissionIds],
-            ['permission_ids' => $newPermissionIds],
-            null,
-            'success',
-            $request->user()->id,
-            $request
-        );
-
-        return back()->with('status', "Permissions updated for {$role->display_name}.");
     }
 
     public function destroy(Request $request, Role $role): RedirectResponse
@@ -237,7 +206,7 @@ class RoleController extends Controller
         $snapshot = $role->only(['role_name', 'display_name', 'role_category', 'module_key']);
         $roleId = $role->id;
 
-        DB::table('role_permissions')->where('role_id', $role->id)->delete();
+        DB::table('user_roles')->where('role_id', $role->id)->delete();
         $role->delete();
 
         $this->auditService->log(

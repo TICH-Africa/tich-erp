@@ -60,22 +60,20 @@
                     <td>{{ $roleItem->is_system_role ? 'Predefined' : 'Custom' }}</td>
                     <td>
                         {{ $roleItem->permissions_count }}
-                        @if ($roleItem->permissions_are_catalog ?? $roleItem->is_system_role)
-                            <span class="tich-caption"> (catalog)</span>
-                        @endif
+                        <span class="tich-caption"> (catalog)</span>
                     </td>
                     <td>{{ $roleItem->users_count }}</td>
                     <td style="white-space: nowrap;">
                         <button
                             type="button"
                             class="tich-squircle-btn role-permissions-trigger"
-                            title="{{ ($roleItem->permissions_are_catalog ?? $roleItem->is_system_role) ? 'View catalog permissions' : 'Manage permissions' }}"
-                            aria-label="{{ ($roleItem->permissions_are_catalog ?? $roleItem->is_system_role) ? 'View' : 'Manage' }} permissions for {{ $roleItem->role_name }}"
+                            title="View catalog permissions"
+                            aria-label="View permissions for {{ $roleItem->role_name }}"
                             data-open-modal="role-permissions-modal"
                             data-role-id="{{ $roleItem->id }}"
                             data-role-name="{{ $roleItem->display_name }}"
-                            data-permissions-url="{{ $access->route('roles.permissions.update', $roleItem) }}"
-                            data-readonly="{{ ($roleItem->permissions_are_catalog ?? $roleItem->is_system_role) ? '1' : '0' }}"
+                            data-permissions-url="#"
+                            data-readonly="1"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>

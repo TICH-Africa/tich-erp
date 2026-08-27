@@ -29,14 +29,4 @@ class Role extends Model
             ->withPivot('campus_id', 'department_id', 'assigned_at', 'assigned_by', 'expires_at')
             ->withTimestamps();
     }
-
-    /**
-     * Get the permissions for the role.
-     */
-    public function permissions()
-    {
-        return $this->belongsToMany(Permission::class, 'role_permissions')
-            ->withPivot('granted_at', 'granted_by')
-            ->withTimestamps();
-    }
 }

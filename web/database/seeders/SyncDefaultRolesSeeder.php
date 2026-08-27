@@ -20,7 +20,6 @@ class SyncDefaultRolesSeeder extends Seeder
 
         if ($principalId) {
             DB::table('user_roles')->where('role_id', $principalId)->delete();
-            DB::table('role_permissions')->where('role_id', $principalId)->delete();
             DB::table('roles')->where('id', $principalId)->delete();
         }
 

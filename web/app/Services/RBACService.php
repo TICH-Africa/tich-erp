@@ -113,21 +113,6 @@ class RBACService
 
         $slug = $this->resolvePermissionSlug($permission);
 
-        $hasDirect = DB::table('user_permissions as up')
-            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
-            ->where('up.user_id', $user->id)
-            ->where('p.slug', $slug)
-            ->whereNull('up.department_id')
-            ->where(function ($query) {
-                $query->whereNull('up.expires_at')
-                    ->orWhere('up.expires_at', '>', now());
-            })
-            ->exists();
-
-        if ($hasDirect) {
-            return true;
-        }
-
         $roleRows = DB::table('user_roles as ur')
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->where('ur.user_id', $user->id)
@@ -136,32 +121,17 @@ class RBACService
                 $query->whereNull('ur.expires_at')
                     ->orWhere('ur.expires_at', '>', now());
             })
-            ->get(['ur.role_id', 'r.role_name']);
+            ->get(['r.role_name', 'r.module_key']);
 
         $catalog = app(RbacCatalogService::class);
-        $customRoleIds = [];
 
         foreach ($roleRows as $row) {
-            if ($catalog->hasDefinition($row->role_name)) {
-                if ($catalog->roleGrantsSlug($row->role_name, $slug)) {
-                    return true;
-                }
-
-                continue;
+            if ($catalog->roleRecordGrantsSlug($row->role_name, $row->module_key, $slug)) {
+                return true;
             }
-
-            $customRoleIds[] = (int) $row->role_id;
         }
 
-        if ($customRoleIds === []) {
-            return false;
-        }
-
-        return DB::table('role_permissions as rp')
-            ->join('permissions as p', 'p.id', '=', 'rp.permission_id')
-            ->whereIn('rp.role_id', $customRoleIds)
-            ->where('p.slug', $slug)
-            ->exists();
+        return false;
     }
 
     public function roleLevel(string $roleName): int
@@ -245,25 +215,19 @@ class RBACService
     {
         $catalog = app(RbacCatalogService::class);
         $bySlug = [];
-        $permissionIndex = null;
+        $permissionIndex = collect($catalog->permissions())->keyBy('slug');
 
-        $roleNames = DB::table('user_roles as ur')
+        $roleRows = DB::table('user_roles as ur')
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->where('ur.user_id', $user->id)
             ->where(function ($query) {
                 $query->whereNull('ur.expires_at')
                     ->orWhere('ur.expires_at', '>', now());
             })
-            ->pluck('r.role_name');
+            ->get(['r.role_name', 'r.module_key']);
 
-        foreach ($roleNames as $roleName) {
-            if (! $catalog->hasDefinition($roleName)) {
-                continue;
-            }
-
-            $permissionIndex ??= collect($catalog->permissions())->keyBy('slug');
-
-            foreach (array_keys($catalog->grantedSlugSetForRole($roleName)) as $slug) {
+        foreach ($roleRows as $row) {
+            foreach (array_keys($catalog->grantedSlugSetForRoleRecord($row->role_name, $row->module_key)) as $slug) {
                 if (isset($bySlug[$slug])) {
                     continue;
                 }
@@ -278,38 +242,6 @@ class RBACService
                         'category' => $permission['category'],
                     ];
                 }
-            }
-        }
-
-        $directPermissions = DB::table('user_permissions')
-            ->where('user_id', $user->id)
-            ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->pluck('permission_id');
-
-        $customRoleIds = DB::table('user_roles as ur')
-            ->join('roles as r', 'ur.role_id', '=', 'r.id')
-            ->where('ur.user_id', $user->id)
-            ->where(function ($query) {
-                $query->whereNull('ur.expires_at')
-                    ->orWhere('ur.expires_at', '>', now());
-            })
-            ->where('r.is_system_role', false)
-            ->pluck('ur.role_id');
-
-        $rolePermissions = $customRoleIds->isEmpty()
-            ? collect()
-            : DB::table('role_permissions')
-                ->whereIn('role_id', $customRoleIds)
-                ->pluck('permission_id');
-
-        $allPermissionIds = $directPermissions->merge($rolePermissions)->unique()->values();
-
-        if ($allPermissionIds->isNotEmpty()) {
-            foreach (DB::table('permissions')->whereIn('id', $allPermissionIds)->get() as $row) {
-                $bySlug[$row->slug] = $row;
             }
         }
 
@@ -355,21 +287,11 @@ class RBACService
             })
             ->pluck('department_id');
 
-        $fromPermissions = DB::table('user_permissions')
-            ->where('user_id', $user->id)
-            ->whereNotNull('department_id')
-            ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->pluck('department_id');
-
         $fromStaff = $user->staff?->department_id
             ? collect([$user->staff->department_id])
             : collect();
 
         return $fromRoles
-            ->merge($fromPermissions)
             ->merge($fromStaff)
             ->unique()
             ->values()
@@ -434,61 +356,20 @@ class RBACService
         );
     }
 
+    /**
+     * @deprecated Direct user permissions were removed; access is role-based only.
+     */
     public function assignPermissionToUser(User $user, int $permissionId, ?int $campusId = null, ?int $departmentId = null, ?int $grantedBy = null): void
     {
-        DB::table('user_permissions')->updateOrInsert(
-            [
-                'user_id' => $user->id,
-                'permission_id' => $permissionId,
-                'campus_id' => $campusId,
-                'department_id' => $departmentId,
-            ],
-            [
-                'granted_at' => now(),
-                'granted_by' => $grantedBy,
-            ]
-        );
-
-        $slug = DB::table('permissions')->where('id', $permissionId)->value('slug');
-
-        $this->auditService->log(
-            'rbac.permission.assigned',
-            'user_permissions',
-            "{$user->id}:{$permissionId}",
-            null,
-            [
-                'target_user_id' => $user->id,
-                'permission_id' => $permissionId,
-                'permission_slug' => $slug,
-                'campus_id' => $campusId,
-                'department_id' => $departmentId,
-                'granted_by' => $grantedBy,
-            ],
-            null,
-            'success',
-            $grantedBy
-        );
+        // no-op — permissions catalog is code-owned; assign roles instead
     }
 
+    /**
+     * @deprecated Direct user permissions were removed; access is role-based only.
+     */
     public function revokePermissionFromUser(User $user, int $permissionId, ?int $revokedBy = null): void
     {
-        $slug = DB::table('permissions')->where('id', $permissionId)->value('slug');
-
-        DB::table('user_permissions')
-            ->where('user_id', $user->id)
-            ->where('permission_id', $permissionId)
-            ->delete();
-
-        $this->auditService->log(
-            'rbac.permission.revoked',
-            'user_permissions',
-            "{$user->id}:{$permissionId}",
-            ['permission_id' => $permissionId, 'permission_slug' => $slug],
-            null,
-            null,
-            'success',
-            $revokedBy
-        );
+        // no-op
     }
 
     /**
@@ -513,38 +394,6 @@ class RBACService
             );
         }
 
-        $moduleSlugs = $this->dashboardModuleSlugMap();
-
-        $modulePermissionIds = DB::table('permissions')
-            ->whereIn('slug', $moduleSlugs->keys()->all())
-            ->pluck('id');
-
-        DB::table('user_permissions')
-            ->where('user_id', $user->id)
-            ->whereIn('permission_id', $modulePermissionIds)
-            ->delete();
-
-        foreach ($permissionGrants as $grant) {
-            if (empty($grant['permission'])) {
-                continue;
-            }
-
-            $slug = $this->resolvePermissionSlug($grant['permission']);
-            $permissionId = DB::table('permissions')->where('slug', $slug)->value('id');
-
-            if (! $permissionId) {
-                continue;
-            }
-
-            $this->assignPermissionToUser(
-                $user,
-                (int) $permissionId,
-                ! empty($grant['campus_id']) ? (int) $grant['campus_id'] : null,
-                ! empty($grant['department_id']) ? (int) $grant['department_id'] : null,
-                $assignedBy
-            );
-        }
-
         $this->auditService->log(
             'rbac.user.access_synced',
             'users',
@@ -552,7 +401,7 @@ class RBACService
             null,
             [
                 'assignments' => $assignments,
-                'permission_grants' => $permissionGrants,
+                'permission_grants' => [],
             ],
             'User platform access updated by administrator',
             'success',
@@ -565,32 +414,7 @@ class RBACService
      */
     public function getUserModulePermissionGrants(User $user): array
     {
-        $slugToPermission = $this->dashboardModuleSlugMap();
-        $slugToLabel = collect(config('tich-dashboards.modules', []))
-            ->keyBy('permission')
-            ->map(fn (array $module) => $module['label']);
-
-        return DB::table('user_permissions as up')
-            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
-            ->where('up.user_id', $user->id)
-            ->whereIn('p.slug', $slugToPermission->keys()->all())
-            ->where(function ($query) {
-                $query->whereNull('up.expires_at')
-                    ->orWhere('up.expires_at', '>', now());
-            })
-            ->get(['p.slug', 'up.department_id', 'up.campus_id'])
-            ->map(function ($row) use ($slugToPermission, $slugToLabel) {
-                $permission = $slugToPermission[$row->slug] ?? $row->slug;
-
-                return [
-                    'permission' => $permission,
-                    'department_id' => $row->department_id ? (int) $row->department_id : null,
-                    'campus_id' => $row->campus_id ? (int) $row->campus_id : null,
-                    'label' => $slugToLabel[$permission] ?? $permission,
-                ];
-            })
-            ->values()
-            ->all();
+        return [];
     }
 
     public function permissionRequiresDepartment(string $permissionKey): bool
@@ -635,29 +459,6 @@ class RBACService
 
     private function userHasPermissionSlug(User $user, string $slug): bool
     {
-        $departmentIds = $this->getUserDepartmentIds($user);
-
-        $hasDirectPermission = DB::table('user_permissions as up')
-            ->join('permissions as p', 'up.permission_id', '=', 'p.id')
-            ->where('up.user_id', $user->id)
-            ->where('p.slug', $slug)
-            ->where(function ($query) use ($departmentIds) {
-                $query->whereNull('up.department_id');
-
-                if ($departmentIds !== []) {
-                    $query->orWhereIn('up.department_id', $departmentIds);
-                }
-            })
-            ->where(function ($query) {
-                $query->whereNull('up.expires_at')
-                    ->orWhere('up.expires_at', '>', now());
-            })
-            ->exists();
-
-        if ($hasDirectPermission) {
-            return true;
-        }
-
         $roleRows = DB::table('user_roles as ur')
             ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->where('ur.user_id', $user->id)
@@ -665,36 +466,21 @@ class RBACService
                 $query->whereNull('ur.expires_at')
                     ->orWhere('ur.expires_at', '>', now());
             })
-            ->get(['ur.role_id', 'r.role_name']);
+            ->get(['r.role_name', 'r.module_key']);
 
         if ($roleRows->isEmpty()) {
             return false;
         }
 
         $catalog = app(RbacCatalogService::class);
-        $customRoleIds = [];
 
         foreach ($roleRows as $row) {
-            if ($catalog->hasDefinition($row->role_name)) {
-                if ($catalog->roleGrantsSlug($row->role_name, $slug)) {
-                    return true;
-                }
-
-                continue;
+            if ($catalog->roleRecordGrantsSlug($row->role_name, $row->module_key, $slug)) {
+                return true;
             }
-
-            $customRoleIds[] = (int) $row->role_id;
         }
 
-        if ($customRoleIds === []) {
-            return false;
-        }
-
-        return DB::table('role_permissions as rp')
-            ->join('permissions as p', 'rp.permission_id', '=', 'p.id')
-            ->whereIn('rp.role_id', $customRoleIds)
-            ->where('p.slug', $slug)
-            ->exists();
+        return false;
     }
 
     private function userHasPermissionPrefix(User $user, string $slug): bool

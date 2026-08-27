@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -22,27 +21,21 @@ class DashboardService
         return collect(config('tich-dashboards.modules', []));
     }
 
+    /**
+     * @deprecated Direct user permission grants were removed with the permissions tables.
+     * @return array<string, string>
+     */
     public function modulePermissionIds(array $permissionKeys): array
     {
-        $slugs = collect($permissionKeys)->map(function ($key) {
-            $aliases = array_merge(
-                config('tich.permission_aliases', []),
-                config('tich-dashboards.permission_aliases', [])
-            );
-
-            return $aliases[$key] ?? str_replace(['.', ':', '-'], '_', $key);
-        });
-
-        return Permission::query()
-            ->whereIn('slug', $slugs->all())
-            ->pluck('id', 'slug')
-            ->all();
+        return [];
     }
 
+    /**
+     * @deprecated Direct user permission grants were removed with the permissions tables.
+     * @return list<string>
+     */
     public function userDirectModulePermissions(User $user): array
     {
-        return $user->permissions()
-            ->pluck('permissions.slug')
-            ->all();
+        return [];
     }
 }

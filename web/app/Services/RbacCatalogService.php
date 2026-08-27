@@ -232,29 +232,90 @@ class RbacCatalogService
         foreach ($obsolete as $role) {
             $this->purgeObsoleteRole($role, $replacements[$role->role_name] ?? null);
         }
-
-        // Catalog roles resolve permissions from config — clear leftover dynamic pivots.
-        if (Schema::hasTable('role_permissions') && $catalogNames !== []) {
-            $catalogRoleIds = Role::query()
-                ->whereIn('role_name', $catalogNames)
-                ->pluck('id');
-
-            if ($catalogRoleIds->isNotEmpty()) {
-                DB::table('role_permissions')->whereIn('role_id', $catalogRoleIds)->delete();
-            }
-        }
     }
 
     /**
-     * Number of permission slugs granted by the hardcoded catalog (not DB pivots).
+     * Number of permission slugs granted for a role (catalog or module-scoped custom).
      */
-    public function catalogPermissionCount(string $roleName): int
+    public function catalogPermissionCount(string $roleName, ?string $moduleKey = null): int
     {
-        if (! $this->hasDefinition($roleName)) {
-            return 0;
+        return count($this->grantedSlugSetForRoleRecord($roleName, $moduleKey));
+    }
+
+    /**
+     * Whether a role row (catalog or custom) grants a permission slug.
+     */
+    public function roleRecordGrantsSlug(string $roleName, ?string $moduleKey, string $slug): bool
+    {
+        if ($this->hasDefinition($roleName)) {
+            return $this->roleGrantsSlug($roleName, $slug);
         }
 
-        return count($this->grantedSlugSetForRole($roleName));
+        return isset($this->grantedSlugSetForRoleRecord($roleName, $moduleKey)[$slug]);
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    public function grantedSlugSetForRoleRecord(string $roleName, ?string $moduleKey = null): array
+    {
+        if ($this->hasDefinition($roleName)) {
+            return $this->grantedSlugSetForRole($roleName);
+        }
+
+        $cacheKey = 'custom:'.($moduleKey ?? '_none');
+
+        if (isset($this->grantedSlugSets[$cacheKey])) {
+            return $this->grantedSlugSets[$cacheKey];
+        }
+
+        $modules = $this->permissionModulesForModuleKey($moduleKey);
+        $categories = config('tich-module-roles.full_ops_categories', ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit']);
+        $set = [];
+
+        foreach ($this->permissions() as $permission) {
+            if ($modules !== [] && ! in_array($permission['module'], $modules, true)) {
+                continue;
+            }
+
+            if ($categories !== [] && ! in_array($permission['category'], $categories, true)) {
+                continue;
+            }
+
+            $set[$permission['slug']] = true;
+        }
+
+        return $this->grantedSlugSets[$cacheKey] = $set;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function permissionModulesForModuleKey(?string $moduleKey): array
+    {
+        if ($moduleKey === null || $moduleKey === '' || $moduleKey === config('tich-module-roles.institution_module_key', '_institution')) {
+            return [];
+        }
+
+        if ($moduleKey === 'admissions') {
+            return ['admin'];
+        }
+
+        $modules = [$moduleKey];
+
+        if (in_array($moduleKey, ['finance', 'hr', 'procurement', 'qa', 'administration', 'research', 'ict', 'academics', 'monitoring_evaluation'], true)) {
+            $modules[] = 'core';
+        }
+
+        if ($moduleKey === 'research') {
+            $modules[] = 'portal';
+        }
+
+        if ($moduleKey === 'ict') {
+            $modules[] = 'site_settings';
+        }
+
+        return array_values(array_unique($modules));
     }
 
     /**
@@ -294,10 +355,6 @@ class RbacCatalogService
 
         if (Schema::hasTable('user_roles')) {
             DB::table('user_roles')->where('role_id', $roleId)->delete();
-        }
-
-        if (Schema::hasTable('role_permissions')) {
-            DB::table('role_permissions')->where('role_id', $roleId)->delete();
         }
 
         $role->delete();

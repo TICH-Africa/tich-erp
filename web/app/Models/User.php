@@ -45,12 +45,6 @@ class User extends Authenticatable
 
     // ─── RBAC Relationships ─────────────────────────────────────────────────
 
-    public function permissions(): BelongsToMany
-    {
-        return $this->belongsToMany(Permission::class, 'user_permissions')
-            ->withPivot(['department_id', 'campus_id', 'granted_at', 'granted_by', 'expires_at']);
-    }
-
     public function sessionTokens(): HasMany
     {
         return $this->hasMany(SessionToken::class);
