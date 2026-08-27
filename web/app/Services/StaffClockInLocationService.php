@@ -48,6 +48,17 @@ class StaffClockInLocationService
         }
 
         if ($latitude === null || $longitude === null) {
+            if (!empty($data['is_off_campus'])) {
+                return [
+                    'latitude' => null,
+                    'longitude' => null,
+                    'accuracy_m' => null,
+                    'location_lat_long' => null,
+                    'location_verification_status' => 'off_campus',
+                    'distance_from_campus_m' => null,
+                ];
+            }
+
             throw new \RuntimeException(self::LOCATION_REQUIRED_MESSAGE);
         }
 
