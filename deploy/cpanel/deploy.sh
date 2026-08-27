@@ -93,21 +93,26 @@ log "Docroot: ${DOCROOT}"
 
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.index.php" "${DOCROOT}/index.php"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.htaccess" "${DOCROOT}/.htaccess"
-log "Copied index.php + .htaccess into docroot"
+/bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-diagnose.php" "${DOCROOT}/tich-diagnose.php"
+log "Copied index.php, .htaccess, tich-diagnose.php into docroot"
+
+# Prefer fresh config from .env over a stale config.php cache after ChatGPT/manual edits.
+rm -f "${WEB}/bootstrap/cache/config.php" "${WEB}/bootstrap/cache/routes-v7.php" "${WEB}/bootstrap/cache/routes.php" "${WEB}/bootstrap/cache/events.php" 2>/dev/null || true
+log "Cleared bootstrap cache files before rebuild"
 
 /bin/bash "${REPO_ROOT}/deploy/cpanel/sync-public-assets.sh" 2>&1 | tee -a "$LOG" || {
   log "WARN: asset sync had issues — index.php can still serve css/js as fallback"
 }
 
-log "Clearing / rebuilding caches…"
+log "Clearing caches (no config:cache — safer on shared hosting until stable)…"
 "$PHP_BIN" artisan config:clear --no-interaction 2>&1 | tee -a "$LOG" || true
 "$PHP_BIN" artisan route:clear --no-interaction 2>&1 | tee -a "$LOG" || true
 "$PHP_BIN" artisan view:clear --no-interaction 2>&1 | tee -a "$LOG" || true
-"$PHP_BIN" artisan config:cache --no-interaction 2>&1 | tee -a "$LOG" || true
-"$PHP_BIN" artisan route:cache --no-interaction 2>&1 | tee -a "$LOG" || true
-"$PHP_BIN" artisan view:cache --no-interaction 2>&1 | tee -a "$LOG" || true
+"$PHP_BIN" artisan event:clear --no-interaction 2>&1 | tee -a "$LOG" || true
+rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/routes.php bootstrap/cache/events.php 2>/dev/null || true
 
 "$PHP_BIN" artisan up 2>&1 | tee -a "$LOG" || true
 
 log "Deploy finished OK"
+log "Next: open https://tich.africa/tich-diagnose.php"
 exit 0
