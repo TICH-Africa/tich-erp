@@ -293,6 +293,13 @@ class RBACController extends Controller
         }
 
         $role = Role::findOrFail($request->role_id);
+
+        if (app(\App\Services\RbacCatalogService::class)->hasDefinition($role->role_name) || $role->is_system_role) {
+            return response()->json([
+                'message' => 'Predefined role permissions are hardcoded in config and cannot be assigned via the API.',
+            ], 422);
+        }
+
         $oldPermissionIds = $role->permissions()->pluck('permissions.id')->all();
 
         $role->permissions()->sync($request->permission_ids);

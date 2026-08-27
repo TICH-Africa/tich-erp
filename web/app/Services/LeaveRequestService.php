@@ -501,24 +501,20 @@ class LeaveRequestService
      */
     private function hrNotifierUserIds(): array
     {
-        $slugs = ['hr.manage_leave', 'hr.staff.view'];
+        $roleNames = ['HR Manager', 'Assistant HR Manager', 'Super Admin', 'CEO'];
 
-        $fromRoles = DB::table('user_roles as ur')
-            ->join('role_permissions as rp', 'rp.role_id', '=', 'ur.role_id')
-            ->join('permissions as p', 'p.id', '=', 'rp.permission_id')
-            ->whereIn('p.slug', $slugs)
+        return DB::table('user_roles as ur')
+            ->join('roles as r', 'r.id', '=', 'ur.role_id')
+            ->whereIn('r.role_name', $roleNames)
+            ->where(function ($query) {
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
+            })
             ->distinct()
             ->pluck('ur.user_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
             ->all();
-
-        $fromDirect = DB::table('user_permissions as up')
-            ->join('permissions as p', 'p.id', '=', 'up.permission_id')
-            ->whereIn('p.slug', $slugs)
-            ->distinct()
-            ->pluck('up.user_id')
-            ->all();
-
-        return array_values(array_unique(array_map('intval', array_merge($fromRoles, $fromDirect))));
     }
 
     /**

@@ -1,14 +1,44 @@
-<div id="tich-offline-banner" class="tich-global-banner tich-global-banner--offline" role="alert" aria-live="assertive">
-    <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-    <span>You are offline. Some features may not be available.</span>
-</div>
+<div class="tich-toast-stack tich-toast-stack--system" id="tich-system-toasts" aria-live="polite">
+    <div
+        id="tich-offline-banner"
+        class="tich-toast tich-toast--warning tich-system-toast"
+        role="alert"
+        aria-live="assertive"
+        hidden
+    >
+        <div class="tich-toast__content">
+            <p class="tich-toast__message">You are offline</p>
+            <p class="tich-toast__detail">Some features may not be available until your connection returns.</p>
+        </div>
+        <button type="button" class="tich-toast__close" data-system-toast-dismiss aria-label="Dismiss notification">&times;</button>
+    </div>
 
-<div id="tich-slow-banner" class="tich-global-banner tich-global-banner--slow" role="status">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <span>Slow connection detected. Pages may load slowly.</span>
-</div>
+    <div
+        id="tich-slow-banner"
+        class="tich-toast tich-toast--warning tich-system-toast"
+        role="status"
+        hidden
+    >
+        <div class="tich-toast__content">
+            <p class="tich-toast__message">Slow connection detected</p>
+            <p class="tich-toast__detail">Pages may load slowly.</p>
+        </div>
+        <button type="button" class="tich-toast__close" data-system-toast-dismiss aria-label="Dismiss notification">&times;</button>
+    </div>
 
-<div id="tich-session-banner" class="tich-global-banner tich-global-banner--session" role="alert" aria-live="assertive">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><path d="M12 17v.01"/></svg>
-    <span>Your session has expired. <a href="{{ route('login') }}" style="color:inherit;text-decoration:underline;font-weight:600;">Sign in again</a></span>
+    <div
+        id="tich-session-banner"
+        class="tich-toast tich-toast--error tich-system-toast"
+        role="alert"
+        aria-live="assertive"
+        hidden
+    >
+        <div class="tich-toast__content">
+            <p class="tich-toast__message">Your session has expired</p>
+            <p class="tich-toast__detail">
+                <a href="{{ route('login') }}" class="tich-toast__link">Sign in again</a>
+            </p>
+        </div>
+        <button type="button" class="tich-toast__close" data-system-toast-dismiss aria-label="Dismiss notification">&times;</button>
+    </div>
 </div>

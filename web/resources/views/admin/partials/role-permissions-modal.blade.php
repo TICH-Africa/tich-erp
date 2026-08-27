@@ -18,19 +18,19 @@
     <div class="tich-modal__backdrop" data-close-modal="role-permissions-modal"></div>
     <div class="tich-modal__dialog" style="max-width: 56rem; width: 95vw;">
         <header class="tich-modal__header">
-            <h2 id="role-permissions-modal-title" class="tich-h3" style="margin: 0;">Manage permissions</h2>
+            <h2 id="role-permissions-modal-title" class="tich-h3" style="margin: 0;">Permissions</h2>
             <button type="button" class="tich-modal__close" data-close-modal="role-permissions-modal" aria-label="Close">&times;</button>
         </header>
         <form id="role-permissions-form" method="POST" action="#" class="tich-modal__body">
             @csrf
             @method('PUT')
-            <p class="tich-caption tich-mb-4">
+            <p id="role-permissions-help" class="tich-caption tich-mb-4">
                 Toggle what this role can view, create, edit, approve, manage, and audit within its module scope.
             </p>
             <div id="role-permissions-matrix" style="overflow-x: auto;"></div>
             <footer class="tich-modal__footer">
-                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="role-permissions-modal">Cancel</button>
-                <button type="submit" class="tich-btn tich-btn-primary">Save permissions</button>
+                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="role-permissions-modal">Close</button>
+                <button type="submit" id="role-permissions-save" class="tich-btn tich-btn-primary">Save permissions</button>
             </footer>
         </form>
     </div>
@@ -44,12 +44,15 @@
     var form = document.getElementById('role-permissions-form');
     var container = document.getElementById('role-permissions-matrix');
     var title = document.getElementById('role-permissions-modal-title');
+    var help = document.getElementById('role-permissions-help');
+    var saveBtn = document.getElementById('role-permissions-save');
 
     if (!form || !container) return;
 
     var matrices = JSON.parse(document.getElementById('role-permission-matrices-data').textContent || '{}');
     var categoryOrder = JSON.parse(document.getElementById('role-permission-category-order').textContent || '[]');
     var categoryLabels = JSON.parse(document.getElementById('role-permission-category-labels').textContent || '{}');
+    var readOnly = false;
 
     function buildMatrix(roleId) {
         var rows = matrices[roleId] || [];
@@ -114,6 +117,7 @@
                     input.name = 'permission_ids[]';
                     input.value = cell.id;
                     input.checked = !!cell.checked;
+                    input.disabled = readOnly;
                     label.appendChild(input);
                     td.appendChild(label);
                 } else {
@@ -134,10 +138,29 @@
         trigger.addEventListener('click', function () {
             var roleId = trigger.getAttribute('data-role-id');
             var roleName = trigger.getAttribute('data-role-name') || 'Role';
-            form.action = trigger.getAttribute('data-permissions-url') || '#';
-            title.textContent = 'Permissions - ' + roleName;
+            readOnly = trigger.getAttribute('data-readonly') === '1';
+            form.action = readOnly ? '#' : (trigger.getAttribute('data-permissions-url') || '#');
+            title.textContent = (readOnly ? 'Catalog permissions - ' : 'Permissions - ') + roleName;
+
+            if (help) {
+                help.textContent = readOnly
+                    ? 'Predefined role permissions are hardcoded in config/tich-module-roles.php and cannot be edited here.'
+                    : 'Toggle what this role can view, create, edit, approve, manage, and audit within its module scope.';
+            }
+
+            if (saveBtn) {
+                saveBtn.hidden = readOnly;
+                saveBtn.disabled = readOnly;
+            }
+
             buildMatrix(roleId);
         });
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (readOnly) {
+            event.preventDefault();
+        }
     });
 })();
 </script>

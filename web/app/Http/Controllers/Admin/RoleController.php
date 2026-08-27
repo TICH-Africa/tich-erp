@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\RoleCategory;
 use App\Services\AuditService;
 use App\Services\ModuleRoleCatalogService;
+use App\Services\RbacCatalogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,15 +22,32 @@ class RoleController extends Controller
     public function __construct(
         protected AuditService $auditService,
         protected ModuleRoleCatalogService $moduleRoles,
+        protected RbacCatalogService $catalog,
     ) {}
 
     public function index(Request $request): View
     {
+        $this->catalog->ensureRolesExist();
+
         $moduleFilter = $request->string('module')->toString();
         $institutionKey = config('tich-module-roles.institution_module_key', '_institution');
+        $catalogNames = array_keys($this->catalog->roleDefinitionsByName());
+        $retired = config('tich-module-roles.retired_roles', []);
 
+        // Predefined roles = config catalog only; custom roles = user-created (never retired leftovers).
         $rolesQuery = Role::query()
-            ->withCount(['users', 'permissions'])
+            ->withCount(['users'])
+            ->where(function ($query) use ($catalogNames, $retired) {
+                $query->whereIn('role_name', $catalogNames)
+                    ->orWhere(function ($custom) use ($catalogNames, $retired) {
+                        $custom->where('is_system_role', false)
+                            ->whereNotIn('role_name', $catalogNames);
+
+                        if ($retired !== []) {
+                            $custom->whereNotIn('role_name', $retired);
+                        }
+                    });
+            })
             ->orderByRaw('module_key IS NULL, module_key')
             ->orderByDesc('is_system_role')
             ->orderBy('role_name');
@@ -41,9 +59,34 @@ class RoleController extends Controller
         }
 
         $roles = $rolesQuery->get();
+
+        foreach ($roles as $role) {
+            if ($this->catalog->hasDefinition($role->role_name)) {
+                $role->setAttribute('permissions_count', $this->catalog->catalogPermissionCount($role->role_name));
+                $role->setAttribute('permissions_are_catalog', true);
+            } else {
+                $role->setAttribute(
+                    'permissions_count',
+                    DB::table('role_permissions')->where('role_id', $role->id)->count()
+                );
+                $role->setAttribute('permissions_are_catalog', false);
+            }
+        }
         $categories = RoleCategory::activeOptions();
         $categoryLabels = RoleCategory::labelMap();
-        $rolesCount = Role::query()->count();
+        $rolesCount = Role::query()
+            ->where(function ($query) use ($catalogNames, $retired) {
+                $query->whereIn('role_name', $catalogNames)
+                    ->orWhere(function ($custom) use ($catalogNames, $retired) {
+                        $custom->where('is_system_role', false)
+                            ->whereNotIn('role_name', $catalogNames);
+
+                        if ($retired !== []) {
+                            $custom->whereNotIn('role_name', $retired);
+                        }
+                    });
+            })
+            ->count();
         $categoriesCount = count(RoleCategory::systemCodes());
         $moduleOptions = $this->moduleRoles->modules();
         $selectedModule = $moduleFilter;
@@ -146,6 +189,12 @@ class RoleController extends Controller
 
     public function updatePermissions(Request $request, Role $role): RedirectResponse
     {
+        if ($this->catalog->hasDefinition($role->role_name) || $role->is_system_role) {
+            return back()->withErrors([
+                'role' => 'Predefined role permissions are hardcoded in config and cannot be edited here.',
+            ]);
+        }
+
         $validated = $request->validate([
             'permission_ids' => ['nullable', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],

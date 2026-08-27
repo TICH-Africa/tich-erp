@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Role;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -186,8 +187,8 @@ class RbacCatalogService
     }
 
     /**
-     * Materialize thin role rows for FK assignment only (no permission / nav seeding).
-     * Always syncs catalog definitions so renames/additions take effect.
+     * Materialize thin role rows for FK assignment only (no permission seeding).
+     * Catalog in config/tich-module-roles.php is the source of truth; obsolete rows are removed.
      */
     public function ensureRolesExist(): void
     {
@@ -196,6 +197,7 @@ class RbacCatalogService
         }
 
         $definitions = $this->roleDefinitionsByName();
+        $catalogNames = array_keys($definitions);
 
         foreach ($definitions as $roleName => $definition) {
             Role::query()->updateOrCreate(
@@ -210,11 +212,95 @@ class RbacCatalogService
             );
         }
 
-        // Demote obsolete catalog roles that are no longer defined (keep rows if assigned).
-        Role::query()
-            ->where('is_system_role', true)
-            ->whereNotIn('role_name', array_keys($definitions))
-            ->update(['is_system_role' => false]);
+        $replacements = config('tich-module-roles.role_replacements', []);
+        $retired = array_values(array_unique(array_merge(
+            array_keys($replacements),
+            config('tich-module-roles.retired_roles', [])
+        )));
+
+        $obsolete = Role::query()
+            ->whereNotIn('role_name', $catalogNames)
+            ->where(function ($query) use ($retired) {
+                $query->where('is_system_role', true);
+
+                if ($retired !== []) {
+                    $query->orWhereIn('role_name', $retired);
+                }
+            })
+            ->get();
+
+        foreach ($obsolete as $role) {
+            $this->purgeObsoleteRole($role, $replacements[$role->role_name] ?? null);
+        }
+
+        // Catalog roles resolve permissions from config — clear leftover dynamic pivots.
+        if (Schema::hasTable('role_permissions') && $catalogNames !== []) {
+            $catalogRoleIds = Role::query()
+                ->whereIn('role_name', $catalogNames)
+                ->pluck('id');
+
+            if ($catalogRoleIds->isNotEmpty()) {
+                DB::table('role_permissions')->whereIn('role_id', $catalogRoleIds)->delete();
+            }
+        }
+    }
+
+    /**
+     * Number of permission slugs granted by the hardcoded catalog (not DB pivots).
+     */
+    public function catalogPermissionCount(string $roleName): int
+    {
+        if (! $this->hasDefinition($roleName)) {
+            return 0;
+        }
+
+        return count($this->grantedSlugSetForRole($roleName));
+    }
+
+    /**
+     * Remove a former catalog role; optionally migrate user assignments to a replacement.
+     */
+    private function purgeObsoleteRole(Role $role, ?string $replacementName): void
+    {
+        $roleId = (int) $role->id;
+        $replacementId = $replacementName
+            ? Role::query()->where('role_name', $replacementName)->value('id')
+            : null;
+
+        if ($replacementId && Schema::hasTable('user_roles')) {
+            $assignments = DB::table('user_roles')->where('role_id', $roleId)->get();
+
+            foreach ($assignments as $assignment) {
+                $exists = DB::table('user_roles')
+                    ->where('user_id', $assignment->user_id)
+                    ->where('role_id', $replacementId)
+                    ->where(function ($query) use ($assignment) {
+                        if (property_exists($assignment, 'campus_id')) {
+                            $query->where('campus_id', $assignment->campus_id);
+                        }
+                        if (property_exists($assignment, 'department_id')) {
+                            $query->where('department_id', $assignment->department_id);
+                        }
+                    })
+                    ->exists();
+
+                if (! $exists) {
+                    DB::table('user_roles')->where('id', $assignment->id)->update([
+                        'role_id' => $replacementId,
+                    ]);
+                }
+            }
+        }
+
+        if (Schema::hasTable('user_roles')) {
+            DB::table('user_roles')->where('role_id', $roleId)->delete();
+        }
+
+        if (Schema::hasTable('role_permissions')) {
+            DB::table('role_permissions')->where('role_id', $roleId)->delete();
+        }
+
+        $role->delete();
     }
 
     public function roleIdByName(string $roleName): ?int

@@ -55,14 +55,19 @@ class ModuleRoleCatalogService
      */
     public function permissionModulesForRole(Role $role): array
     {
-        if ($role->module_key) {
-            $predefined = collect($this->predefinedRolesForModule($role->module_key))
-                ->firstWhere('role_name', $role->role_name);
+        $catalog = app(RbacCatalogService::class);
 
-            if ($predefined) {
-                return $predefined['permission_modules'] ?? [$role->module_key];
+        if ($catalog->hasDefinition($role->role_name)) {
+            $definition = $catalog->definitionForRole($role->role_name) ?? [];
+
+            if (! empty($definition['grants_all'])) {
+                return [];
             }
 
+            return array_values($definition['permission_modules'] ?? []);
+        }
+
+        if ($role->module_key) {
             return array_values(array_unique(array_filter([
                 $role->module_key,
                 $role->module_key === 'admissions' ? 'admin' : null,
@@ -164,9 +169,7 @@ class ModuleRoleCatalogService
      */
     public function syncPredefinedRolePermissions(Role $role, array $definition): void
     {
-        $permissionIds = $this->permissionIdsFromDefinition($definition);
-
-        $this->syncRolePermissionIds($role, $permissionIds);
+        // Predefined roles resolve permissions from config at runtime — no DB pivot sync.
     }
 
     /**
@@ -175,30 +178,7 @@ class ModuleRoleCatalogService
      */
     public function permissionIdsFromDefinition(array $definition): array
     {
-        $modules = $definition['permission_modules'] ?? [];
-        $categories = $definition['permission_categories'] ?? [];
-        $extraSlugs = $definition['extra_slugs'] ?? [];
-
-        $query = Permission::query();
-
-        if ($modules !== []) {
-            $query->where(function ($builder) use ($modules, $categories) {
-                $builder->whereIn('module', $modules);
-
-                if ($categories !== []) {
-                    $builder->whereIn('category', $categories);
-                }
-            });
-        }
-
-        $ids = $query->pluck('id')->map(fn ($id) => (int) $id)->all();
-
-        if ($extraSlugs !== []) {
-            $extraIds = Permission::query()->whereIn('slug', $extraSlugs)->pluck('id')->map(fn ($id) => (int) $id)->all();
-            $ids = array_values(array_unique(array_merge($ids, $extraIds)));
-        }
-
-        return $ids;
+        return [];
     }
 
     /**
@@ -206,6 +186,12 @@ class ModuleRoleCatalogService
      */
     public function syncRolePermissionIds(Role $role, array $permissionIds, ?int $grantedBy = null): void
     {
+        $catalog = app(RbacCatalogService::class);
+
+        if ($catalog->hasDefinition($role->role_name) || $role->is_system_role) {
+            throw new \RuntimeException('Predefined role permissions are hardcoded and cannot be synced to the database.');
+        }
+
         $allowedIds = $this->permissionsForRole($role)->pluck('id')->map(fn ($id) => (int) $id)->all();
         $permissionIds = array_values(array_intersect($permissionIds, $allowedIds));
 

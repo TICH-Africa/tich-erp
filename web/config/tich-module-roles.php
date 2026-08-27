@@ -16,6 +16,26 @@ return [
     /** Shared full operational privilege set for department peer roles. */
     'full_ops_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
 
+    /**
+     * Former catalog role names to remove from the DB on sync.
+     * Predefined roles are code-owned; obsolete rows must not linger in /admin/roles.
+     */
+    'retired_roles' => [
+        'Auditor General',
+        'Research Manager',
+        'Assistant Research Manager',
+        'ICT Manager',
+        'Assistant ICT Manager',
+    ],
+
+    /** When retiring a role, move existing user_roles to this replacement when present. */
+    'role_replacements' => [
+        'Research Manager' => 'Chief Research Officer',
+        'Assistant Research Manager' => 'Research Officer',
+        'ICT Manager' => 'Head of ICT',
+        'Assistant ICT Manager' => 'Technician',
+    ],
+
     'modules' => [
         'academics' => [
             'label' => 'Academics',
