@@ -27,8 +27,8 @@
             'muted' => true,
         ])
         @include('partials.navigation.sidebar-link', [
-            'href' => route('dashboard'),
-            'label' => 'Back to dashboard',
+            'href' => route('employee.dashboard'),
+            'label' => 'Back to my employee portal',
             'icon' => 'arrow-left',
             'muted' => true,
         ])

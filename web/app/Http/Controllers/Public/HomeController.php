@@ -66,7 +66,7 @@ class HomeController extends Controller
         abort_unless($event->is_public, 404);
 
         if (preg_match('#^events/\d+$#', request()->path())) {
-            return redirect()->route('events.show', $event, 301);
+            return redirect()->route('events.show', ['event' => $event->id], 301);
         }
 
         return view('pages.events-show', [

@@ -164,12 +164,7 @@
                             'icon' => 'calendar',
                             'active' => request()->routeIs('departments.academics.calendar.*'),
                         ],
-                        [
-                            'href' => route('admin.departments.index'),
-                            'label' => 'Department budgeting',
-                            'icon' => 'dollar-sign',
-                            'active' => request()->routeIs('admin.departments.*'),
-                        ],
+                        @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
                     ],
                 ])
             @endcan

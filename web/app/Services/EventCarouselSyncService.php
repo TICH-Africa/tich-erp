@@ -109,7 +109,7 @@ class EventCarouselSyncService
             'image_path' => $event->coverImageUrl(),
             'video_url' => null,
             'cta_label' => 'View event',
-            'cta_url' => route('events.show', $event),
+            'cta_url' => $event->slug ? route('events.show', $event) : route('events'),
             'view_url' => null,
             'display_order' => $payload['display_order'],
         ];

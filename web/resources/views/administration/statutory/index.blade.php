@@ -9,6 +9,25 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    <div class="tich-stat-row tich-stat-row--4 tich-mt-8">
+        <div class="tich-stat">
+            <p class="tich-stat__label">Readiness score</p>
+            <p class="tich-stat__value">{{ number_format($readiness['score'], 0) }}%</p>
+        </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Ready items</p>
+            <p class="tich-stat__value">{{ number_format($readiness['ready']) }}</p>
+        </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Gaps / pending</p>
+            <p class="tich-stat__value">{{ number_format($readiness['gaps']) }}</p>
+        </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Certs expiring</p>
+            <p class="tich-stat__value">{{ number_format($readiness['certs_expiring']) }}</p>
+        </div>
+    </div>
+
     <div class="tich-card tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">

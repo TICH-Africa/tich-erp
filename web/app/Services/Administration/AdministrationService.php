@@ -440,26 +440,21 @@ class AdministrationService
         ];
     }
 
-    public function inspectionReadiness(): array
+    public function statutoryReadiness(): array
     {
-        $checks = Schema::hasTable('admin_inspection_checks')
-            ? InspectionCheck::query()->get()
-            : collect();
-
         $certs = Schema::hasTable('admin_statutory_certifications')
             ? StatutoryCertification::query()->get()
             : collect();
 
-        $total = max(1, $checks->count());
-        $ready = $checks->where('status', 'ready')->count();
+        $ready = $certs->where('status', 'active')->count();
+        $expiring = $certs->whereIn('status', ['expiring', 'expired'])->count();
+        $gaps = $certs->whereNull('status')->count();
 
         return [
-            'score' => round(($ready / $total) * 100, 1),
+            'score' => $certs->count() > 0 ? round(($ready / $certs->count()) * 100, 1) : 100,
             'ready' => $ready,
-            'gaps' => $checks->whereIn('status', ['pending', 'gap'])->count(),
-            'certs_active' => $certs->where('status', 'active')->count(),
-            'certs_expiring' => $certs->whereIn('status', ['expiring', 'expired'])->count(),
-            'checks' => $checks,
+            'gaps' => $gaps + $certs->where('status', 'pending')->count(),
+            'certs_expiring' => $expiring,
             'certifications' => $certs,
         ];
     }

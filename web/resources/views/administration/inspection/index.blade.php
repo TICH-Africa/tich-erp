@@ -3,30 +3,14 @@
 @section('title', 'Inspection readiness')
 
 @section('administration-content')
-    <x-page-toolbar title="Inspection readiness" meta="On-demand digital dashboard for regulatory audits and legal compliance verification">
-        <x-slot:actions>
-            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="inspection-create-modal">+ Checklist item</button>
-        </x-slot:actions>
-    </x-page-toolbar>
-
-    <div class="tich-stat-row tich-stat-row--4 tich-mt-8">
-        <div class="tich-stat">
-            <p class="tich-stat__label">Readiness score</p>
-            <p class="tich-stat__value">{{ number_format($readiness['score'], 0) }}%</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Ready items</p>
-            <p class="tich-stat__value">{{ $readiness['ready'] }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Gaps / pending</p>
-            <p class="tich-stat__value">{{ $readiness['gaps'] }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Certs expiring</p>
-            <p class="tich-stat__value">{{ $readiness['certs_expiring'] }}</p>
+    <div class="tich-card tich-table-panel tich-mt-8">
+        <div style="padding: 2rem; text-align: center;">
+            <h2 class="tich-h3">Moved to Statutory tracking</h2>
+            <p class="tich-caption tich-mt-2">Inspection readiness is now managed under compliance within Statutory tracking.</p>
+            <a href="{{ route('administration.statutory.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Go to Statutory tracking</a>
         </div>
     </div>
+@endsection
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">

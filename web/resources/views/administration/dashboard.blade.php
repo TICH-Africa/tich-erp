@@ -31,10 +31,6 @@
             <p class="tich-stat__label">Funds released</p>
             <p class="tich-stat__value">KES {{ number_format($releasedFunds, 0) }}</p>
         </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Inspection readiness</p>
-            <p class="tich-stat__value">{{ number_format($inspectionScore, 0) }}%</p>
-        </div>
     </div>
 
     <div class="tich-mt-8" style="display:grid;gap:1.5rem;">

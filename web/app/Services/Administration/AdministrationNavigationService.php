@@ -60,11 +60,10 @@ class AdministrationNavigationService
                 'label' => 'Compliance',
                 'icon' => 'shield-check',
                 'badgeKey' => 'compliance',
-                'open' => request()->routeIs('administration.statutory.*', 'administration.inspection.*'),
-                'active' => request()->routeIs('administration.statutory.*', 'administration.inspection.*'),
+                'open' => request()->routeIs('administration.statutory.*'),
+                'active' => request()->routeIs('administration.statutory.*'),
                 'items' => [
                     $this->item('Statutory tracking', 'file-text', route('administration.statutory.index'), request()->routeIs('administration.statutory.*'), 'statutory'),
-                    $this->item('Inspection readiness', 'clipboard-check', route('administration.inspection.index'), request()->routeIs('administration.inspection.*'), 'inspection'),
                 ],
             ],
             [

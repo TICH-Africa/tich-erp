@@ -42,33 +42,73 @@ class BudgetAggregationController extends Controller
             'planning_cycle_id' => ['nullable', 'exists:admin_planning_cycles,id'],
             'department_id' => ['required', 'exists:departments,id'],
             'title' => ['required', 'string', 'max:300'],
-            'framework' => ['required', 'in:standard,cbe'],
+            'framework' => ['nullable', 'in:standard,cbe'],
             'budget_type' => ['nullable', 'in:annual,quarterly,monthly,weekly'],
-            'requested_amount' => ['required', 'numeric', 'min:0'],
-            'line_items' => ['nullable', 'json'],
-            'cbe_competencies' => ['nullable', 'string', 'max:5000'],
-            'assessment_hours' => ['nullable', 'numeric', 'min:0'],
-            'consumables_per_cohort' => ['nullable', 'string', 'max:5000'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.item' => ['required', 'string', 'max:255'],
+            'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.description' => ['nullable', 'string', 'max:2000'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'justification' => ['nullable', 'string', 'max:3000'],
+        ], [
+            'lines.required' => 'Add at least one budget line item.',
+            'lines.*.item.required' => 'Each line needs an item name.',
+            'lines.*.quantity.required' => 'Each line needs a quantity.',
+            'lines.*.unit_price.required' => 'Each line needs a price per item.',
         ]);
 
-        $data['standard_line_items'] = $data['framework'] === 'standard' && ! empty($data['line_items'])
-            ? json_decode($data['line_items'], true, 512, JSON_THROW_ON_ERROR)
-            : null;
-        $data['cbe_details'] = $data['framework'] === 'cbe'
-            ? array_filter([
-                'competencies' => $data['cbe_competencies'] ?? null,
-                'assessment_hours' => $data['assessment_hours'] ?? null,
-                'consumables_per_cohort' => $data['consumables_per_cohort'] ?? null,
-            ], static fn ($value) => $value !== null && $value !== '')
-            : null;
+        [$lineItems, $requestedAmount] = $this->normalizeLines($data['lines']);
+
+        if ($requestedAmount <= 0) {
+            return back()->withInput()->withErrors([
+                'lines' => 'The budget total must be greater than zero.',
+            ]);
+        }
+
+        $framework = $data['framework'] ?? 'standard';
+
+        $payload = [
+            'planning_cycle_id' => $data['planning_cycle_id'] ?? null,
+            'title' => $data['title'],
+            'framework' => $framework,
+            'budget_type' => $data['budget_type'] ?? null,
+            'requested_amount' => $requestedAmount,
+            'standard_line_items' => $framework === 'standard' ? $lineItems : null,
+            'cbe_details' => $framework === 'cbe' ? [] : null,
+            'justification' => $data['justification'] ?? null,
+        ];
 
         try {
-            $this->admin->createBudgetRequest($data, $request->user()->id);
+            $this->admin->createBudgetRequest($payload, $request->user()->id);
         } catch (\RuntimeException $e) {
             return back()->withInput()->withErrors(['budget' => $e->getMessage()]);
         }
 
         return back()->with('status', 'Budget request submitted for workflow routing.');
+    }
+
+    private function normalizeLines(array $lines): array
+    {
+        $lineItems = [];
+        $requestedAmount = 0.0;
+
+        foreach ($lines as $line) {
+            $quantity = round((float) $line['quantity'], 4);
+            $unitPrice = round((float) $line['unit_price'], 2);
+            $total = round($quantity * $unitPrice, 2);
+            $requestedAmount += $total;
+
+            $lineItems[] = [
+                'item' => trim((string) $line['item']),
+                'quantity' => $quantity,
+                'description' => trim((string) ($line['description'] ?? '')),
+                'unit_price' => $unitPrice,
+                'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
+                'total' => $total,
+            ];
+        }
+
+        return [$lineItems, $requestedAmount];
     }
 }

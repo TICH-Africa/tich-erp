@@ -4,7 +4,7 @@
 
 @section('hr-content')
     <div class="tich-mb-8">
-        <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">&larr; Back to dashboard</a>
+        <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">&larr; Back to my employee portal</a>
     </div>
 
     <article class="tich-card">

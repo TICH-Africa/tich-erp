@@ -181,8 +181,8 @@ class HomepageService
     {
         if ($slide->event_id) {
             $eventUrl = $slide->event
-                ? route('events.show', $slide->event)
-                : route('events.show', $slide->event_id);
+                ? route('events.show', ['event' => $slide->event->id])
+                : route('events.show', ['event' => $slide->event_id]);
 
             return (object) [
                 'title' => $slide->title,
@@ -449,7 +449,7 @@ class HomepageService
                     ? $event->registration_url_or_form
                     : url($event->registration_url_or_form))
                 : null,
-            'url' => route('events.show', $event),
+            'url' => route('events.show', ['event' => $event->id]),
             'slug' => $event->slug,
         ];
     }

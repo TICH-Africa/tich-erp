@@ -251,16 +251,36 @@ class FinanceController extends Controller
             'fiscal_year' => ['required', 'integer', 'min:2020', 'max:2100'],
             'period_start' => ['required', 'date_format:d/m/Y'],
             'period_end' => ['required', 'date_format:d/m/Y', 'after:period_start'],
-            'allocated_amount' => ['required', 'numeric', 'min:0'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.item' => ['required', 'string', 'max:255'],
+            'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.description' => ['nullable', 'string', 'max:2000'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'notes' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'lines.required' => 'Add at least one budget line item.',
+            'lines.*.item.required' => 'Each line needs an item name.',
+            'lines.*.quantity.required' => 'Each line needs a quantity.',
+            'lines.*.unit_price.required' => 'Each line needs a price per item.',
         ]);
+
+        [$lineItems, $allocatedAmount] = $this->normalizeBudgetLines($validated['lines']);
+
+        if ($allocatedAmount <= 0) {
+            return back()->withInput()->withErrors([
+                'lines' => 'The budget total must be greater than zero.',
+            ]);
+        }
 
         $validated['period_start'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['period_start'])->format('Y-m-d');
         $validated['period_end'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['period_end'])->format('Y-m-d');
 
+        $validated['allocated_amount'] = $allocatedAmount;
         $validated['status'] = 'active';
         $validated['spent_amount'] = 0;
         $validated['committed_amount'] = 0;
+        $validated['notes'] = ($validated['notes'] ?: '') . "\n\nLine items: " . json_encode($lineItems, JSON_HEX_APOS | JSON_HEX_QUOT);
 
         $existing = FinanceBudget::query()
             ->where('budget_code', $validated['budget_code'])
@@ -285,6 +305,30 @@ class FinanceController extends Controller
         }
 
         return redirect()->route('finance.budgeting.index', $department)->with('status', 'Budget created successfully.');
+    }
+
+    private function normalizeBudgetLines(array $lines): array
+    {
+        $lineItems = [];
+        $total = 0.0;
+
+        foreach ($lines as $line) {
+            $quantity = round((float) $line['quantity'], 4);
+            $unitPrice = round((float) $line['unit_price'], 2);
+            $lineTotal = round($quantity * $unitPrice, 2);
+            $total += $lineTotal;
+
+            $lineItems[] = [
+                'item' => trim((string) $line['item']),
+                'quantity' => $quantity,
+                'description' => trim((string) ($line['description'] ?? '')),
+                'unit_price' => $unitPrice,
+                'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
+                'total' => $lineTotal,
+            ];
+        }
+
+        return [$lineItems, $total];
     }
 
     public function budgetingShow(Request $request, Department $department, FinanceBudget $budgeting): View

@@ -38,7 +38,7 @@ class DashboardController extends Controller
         }
 
         $lifecycle = $this->admin->admissionsLifecycleStats();
-        $inspection = $this->admin->inspectionReadiness();
+        $statutory = $this->admin->statutoryReadiness();
         $p2p = $this->admin->procurementToPaySnapshot();
 
         $budgetRequests = Schema::hasTable('admin_budget_requests')
@@ -93,7 +93,7 @@ class DashboardController extends Controller
                 ? (float) FundAllocation::query()->when($department, fn ($query) => $query->where('department_id', $department->id))->where('status', 'released')->sum('amount')
                 : 0,
             'lifecycle' => $lifecycle,
-            'inspectionScore' => $inspection['score'],
+            'statutoryReadiness' => $statutory,
             'p2p' => $p2p,
             'chartData' => $chartData,
             'planningCycles' => $planningCycles,

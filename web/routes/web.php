@@ -350,9 +350,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->gr
         Route::get('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'statutory'])->name('administration.statutory.index');
         Route::post('/statutory', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeStatutory'])->name('administration.statutory.store');
         Route::get('/statutory/{certification}/download', [\App\Http\Controllers\Administration\ComplianceController::class, 'downloadStatutory'])->name('administration.statutory.download');
-        Route::get('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'inspection'])->name('administration.inspection.index');
-        Route::post('/inspection', [\App\Http\Controllers\Administration\ComplianceController::class, 'storeInspectionCheck'])->name('administration.inspection.store');
-        Route::post('/inspection/{check}/status', [\App\Http\Controllers\Administration\ComplianceController::class, 'updateInspectionStatus'])->name('administration.inspection.status');
+        Route::get('/inspection', fn () => redirect()->route('administration.statutory.index'))->name('administration.inspection.index');
+        Route::post('/inspection', fn () => redirect()->route('administration.statutory.index'))->name('administration.inspection.store');
+        Route::post('/inspection/{check}/status', fn () => redirect()->route('administration.statutory.index'))->name('administration.inspection.status');
 
         Route::get('/procurement-pay', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'procurementPay'])->name('administration.procurement-pay.index');
         Route::get('/ledger-sync', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'ledgerSync'])->name('administration.ledger-sync.index');

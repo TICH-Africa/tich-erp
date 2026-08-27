@@ -27,7 +27,17 @@ class ComplianceController extends Controller
             ? StatutoryCertification::query()->orderBy('authority')->orderBy('title')->paginate(20)
             : collect();
 
-        return view('administration.statutory.index', compact('certs'));
+        $readiness = Schema::hasTable('admin_statutory_certifications')
+            ? $this->admin->statutoryReadiness()
+            : [
+                'score' => 100,
+                'ready' => 0,
+                'gaps' => 0,
+                'certs_expiring' => 0,
+                'certifications' => collect(),
+            ];
+
+        return view('administration.statutory.index', compact('certs', 'readiness'));
     }
 
     public function storeStatutory(Request $request): RedirectResponse
