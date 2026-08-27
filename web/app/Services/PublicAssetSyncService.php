@@ -48,12 +48,24 @@ class PublicAssetSyncService
 
         $storageLink = $appPublic.'/storage';
         $storageTarget = storage_path('app/public');
+        File::ensureDirectoryExists($storageTarget);
+
+        if (is_link($storageLink)) {
+            @unlink($storageLink);
+        } elseif (File::exists($storageLink)) {
+            // Replace broken/non-link public/storage so uploads resolve.
+            if (File::isDirectory($storageLink) && ! is_link($storageLink)) {
+                $log('WARN: public/storage is a real directory; leaving it (prefer symlink)');
+            } else {
+                File::delete($storageLink);
+            }
+        }
+
         if (! File::exists($storageLink)) {
-            File::ensureDirectoryExists($storageTarget);
             if (@symlink($storageTarget, $storageLink)) {
                 $log('Created storage link: '.$storageLink.' -> '.$storageTarget);
             } else {
-                $log('WARN: Could not create public/storage symlink — run php artisan storage:link');
+                $log('WARN: Could not create public/storage symlink — index.php bridge still serves uploads from storage/app/public');
             }
         } else {
             $log('Storage link present: '.$storageLink);
@@ -75,10 +87,8 @@ class PublicAssetSyncService
             $this->linkOrCopy($source, $docroot.'/'.$name, $log);
         }
 
-        $storageSource = $appPublic.'/storage';
-        if (File::exists($storageSource)) {
-            $this->linkOrCopy($storageSource, $docroot.'/storage', $log);
-        }
+        // Docroot /storage points at the real upload folder (not nested public/storage).
+        $this->linkOrCopy($storageTarget, $docroot.'/storage', $log);
 
         foreach (['favicon.ico', 'robots.txt'] as $file) {
             $source = $appPublic.'/'.$file;

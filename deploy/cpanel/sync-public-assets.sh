@@ -59,7 +59,7 @@ fi
 
 link_or_copy() {
   local name="$1"
-  local source="${APP_PUBLIC}/${name}"
+  local source="$2"
   local target="${DOCROOT}/${name}"
 
   if [[ ! -e "$source" ]]; then
@@ -84,10 +84,23 @@ link_or_copy() {
   log "Copied ${name}"
 }
 
-link_or_copy css
-link_or_copy js
-link_or_copy images
-link_or_copy storage
+# Ensure Laravel public/storage → storage/app/public
+STORAGE_REAL="${REPO_ROOT}/web/storage/app/public"
+mkdir -p "$STORAGE_REAL"
+if [[ ! -L "${APP_PUBLIC}/storage" || "$(readlink -f "${APP_PUBLIC}/storage" 2>/dev/null || true)" != "$(readlink -f "$STORAGE_REAL" 2>/dev/null || true)" ]]; then
+  rm -rf "${APP_PUBLIC}/storage" 2>/dev/null || true
+  if ln -sfn "$STORAGE_REAL" "${APP_PUBLIC}/storage" 2>/dev/null; then
+    log "Linked web/public/storage -> ${STORAGE_REAL}"
+  else
+    log "WARN: could not symlink web/public/storage (index.php bridge still serves uploads)"
+  fi
+fi
+
+link_or_copy css "${APP_PUBLIC}/css"
+link_or_copy js "${APP_PUBLIC}/js"
+link_or_copy images "${APP_PUBLIC}/images"
+# Link docroot /storage straight at the real upload folder (not nested public/storage).
+link_or_copy storage "$STORAGE_REAL"
 
 for file in favicon.ico robots.txt; do
   if [[ -f "${APP_PUBLIC}/${file}" ]]; then
