@@ -17,7 +17,7 @@
 >
     <div class="tich-modal__backdrop" data-close-modal="department-create-modal"></div>
 
-    <div class="tich-modal__dialog">
+    <div class="tich-modal__dialog tich-modal__dialog--wide">
         <header class="tich-modal__header">
             <h2 id="department-create-modal-title" class="tich-h3" style="margin: 0;">Add department</h2>
             <button type="button" class="tich-modal__close" data-close-modal="department-create-modal" aria-label="Close">&times;</button>

@@ -14,10 +14,11 @@
     <label class="tich-label">Platform modules</label>
     <p class="tich-caption tich-mb-3">
         Assign modules this department can access. Submodules (courses, lesson plans, payroll, etc.) are inherited automatically.
+        For a top-level academic hub, tick <strong>Academics &amp; curriculum</strong>.
     </p>
 
-    <div style="display: grid; gap: 0.75rem;">
-        @foreach ($moduleCatalog as $module)
+    <div class="tich-dept-modules__list" style="display: grid; gap: 0.75rem; max-height: 18rem; overflow-y: auto; padding-right: 0.25rem;">
+        @forelse ($moduleCatalog as $module)
             @php
                 $isChecked = in_array($module['key'], $assignedModules, true);
                 $eligibleCategories = $module['eligible_categories'] ?? [];
@@ -48,7 +49,9 @@
                     </span>
                 </label>
             </div>
-        @endforeach
+        @empty
+            <p class="tich-caption">No platform modules are configured.</p>
+        @endforelse
     </div>
 
     <p class="tich-caption tich-mt-2 tich-dept-modules-empty" style="display: none;">
@@ -71,15 +74,13 @@
 
         options.forEach(function (option) {
             var eligible = (option.getAttribute('data-eligible-categories') || '').split(',').filter(Boolean);
-            var show = eligible.length === 0 || eligible.indexOf(category) !== -1;
+            // If category is empty (form not filled yet), show all options.
+            var show = !category || eligible.length === 0 || eligible.indexOf(category) !== -1;
             option.style.display = show ? '' : 'none';
 
-            if (!show) {
-                var checkbox = option.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.checked = false;
-                }
-            } else {
+            // Keep checked state when hiding so edit→save does not silently wipe modules.
+            // Ineligible keys are filtered server-side by category.
+            if (show) {
                 visibleCount++;
             }
         });
@@ -91,6 +92,11 @@
     }
 
     document.querySelectorAll('[data-dept-modules]').forEach(function (container) {
+        if (container.getAttribute('data-filter-bound') === '1') {
+            return;
+        }
+        container.setAttribute('data-filter-bound', '1');
+
         var form = container.closest('form');
         var categoryField = form ? form.querySelector('[name="dept_category"]') : null;
 

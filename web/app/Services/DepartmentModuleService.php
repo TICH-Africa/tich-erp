@@ -42,6 +42,10 @@ class DepartmentModuleService
      */
     public function assignedModuleKeys(Department $department): array
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
+            return [];
+        }
+
         return DB::table('department_modules')
             ->where('department_id', $department->id)
             ->orderBy('module_key')
@@ -98,6 +102,10 @@ class DepartmentModuleService
      */
     public function departmentIdsHostingLearningDepartments(): array
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
+            return [];
+        }
+
         $rows = DB::table('department_modules')
             ->join('departments', 'departments.id', '=', 'department_modules.department_id')
             ->where('department_modules.module_key', self::ACADEMICS_MODULE_KEY)
@@ -117,10 +125,18 @@ class DepartmentModuleService
         $errors = [];
         $category = (string) ($validated['dept_category'] ?? '');
         $parentId = ! empty($validated['parent_dept_id']) ? (int) $validated['parent_dept_id'] : null;
+        $requestedModules = is_array($validated['module_keys'] ?? null)
+            ? array_values($validated['module_keys'])
+            : ($department ? $this->assignedModuleKeys($department) : []);
+        $hasAcademicsModule = in_array(self::ACADEMICS_MODULE_KEY, $requestedModules, true);
 
         if ($category === 'academic') {
             if ($parentId === null) {
-                $errors['parent_dept_id'] = 'Academic learning departments must belong under a department with the Academics module.';
+                // Top-level academic hub is allowed when Academics module is assigned.
+                if (! $hasAcademicsModule) {
+                    $errors['module_keys'] = 'Assign the Academics module to make this a top-level academic hub, or place it under a parent that already has Academics.';
+                    $errors['parent_dept_id'] = 'Academic learning departments must belong under a department with the Academics module.';
+                }
 
                 return $errors;
             }
@@ -143,9 +159,7 @@ class DepartmentModuleService
         }
 
         if ($department !== null && $department->isMainDepartment()) {
-            $requestedModules = $validated['module_keys'] ?? null;
-
-            if (is_array($requestedModules) && ! in_array(self::ACADEMICS_MODULE_KEY, $requestedModules, true)) {
+            if (is_array($validated['module_keys'] ?? null) && ! $hasAcademicsModule) {
                 $hasLearningChildren = Department::query()
                     ->where('parent_dept_id', $department->id)
                     ->where('dept_category', 'academic')
@@ -158,6 +172,23 @@ class DepartmentModuleService
         }
 
         return $errors;
+    }
+
+    /**
+     * Keep only module keys allowed for the department category.
+     *
+     * @param  list<string>  $moduleKeys
+     * @return list<string>
+     */
+    public function filterKeysForCategory(string $category, array $moduleKeys): array
+    {
+        $allowed = $this->assignableModulesForCategory($category)->pluck('key')->all();
+
+        return collect($moduleKeys)
+            ->filter(fn (string $key) => in_array($key, $allowed, true))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -175,6 +206,10 @@ class DepartmentModuleService
      */
     public function syncModules(Department $department, array $moduleKeys, ?int $assignedBy = null): void
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
+            throw new \RuntimeException('department_modules table is missing. Run migrations / import production.sql.');
+        }
+
         $validKeys = $this->validModuleKeys();
         $moduleKeys = collect($moduleKeys)
             ->filter(fn (string $key) => in_array($key, $validKeys, true))
@@ -222,7 +257,7 @@ class DepartmentModuleService
      */
     public function assignedModulesByDepartmentIds(array $departmentIds): array
     {
-        if ($departmentIds === []) {
+        if ($departmentIds === [] || ! \Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
             return [];
         }
 

@@ -84,12 +84,20 @@ class DepartmentController extends Controller
             'module_keys.*' => ['string', 'in:'.implode(',', $this->departmentModuleService->validModuleKeys())],
         ]);
 
-        $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors($validated);
+        $moduleKeys = $validated['module_keys']
+            ?? $this->departmentModuleService->defaultModulesForCategory($validated['dept_category']);
+        $moduleKeys = $this->departmentModuleService->filterKeysForCategory(
+            $validated['dept_category'],
+            $moduleKeys
+        );
+
+        $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors(
+            array_merge($validated, ['module_keys' => $moduleKeys])
+        );
         if ($hierarchyErrors !== []) {
             return back()->withInput()->withErrors($hierarchyErrors);
         }
 
-        $moduleKeys = $validated['module_keys'] ?? $this->departmentModuleService->defaultModulesForCategory($validated['dept_category']);
         unset($validated['module_keys']);
 
         $department = Department::create([
@@ -138,15 +146,19 @@ class DepartmentController extends Controller
             return back()->withInput()->withErrors(['parent_dept_id' => 'Cannot assign a descendant department as parent.']);
         }
 
+        $moduleKeys = $this->departmentModuleService->filterKeysForCategory(
+            $validated['dept_category'],
+            $validated['module_keys'] ?? []
+        );
+
         $hierarchyErrors = $this->departmentModuleService->learningDepartmentHierarchyErrors(
-            array_merge($validated, ['module_keys' => $validated['module_keys'] ?? []]),
+            array_merge($validated, ['module_keys' => $moduleKeys]),
             $department,
         );
         if ($hierarchyErrors !== []) {
             return back()->withInput()->withErrors($hierarchyErrors);
         }
 
-        $moduleKeys = $validated['module_keys'] ?? [];
         unset($validated['module_keys']);
 
         $old = [

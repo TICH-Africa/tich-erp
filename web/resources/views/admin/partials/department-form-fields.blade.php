@@ -102,4 +102,8 @@
         'fieldIdPrefix' => $fieldIdPrefix,
         'selectedCategory' => old('dept_category', $department->dept_category ?? ''),
     ])
+@else
+    <div class="tich-form-group">
+        <p class="tich-caption">Platform module catalog is missing. Ensure <code>config/tich-department-modules.php</code> is deployed.</p>
+    </div>
 @endif
