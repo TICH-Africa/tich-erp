@@ -7,9 +7,11 @@ use App\Models\Department;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\SafelyBroadcasts;
 
 class PortalSidebarBroadcastService
 {
+    use SafelyBroadcasts;
     public function __construct(
         protected EmployeeSidebarNotificationService $employeeNotifications,
         protected StaffSidebarNotificationService $staffNotifications,
@@ -96,7 +98,9 @@ class PortalSidebarBroadcastService
      */
     private function broadcast(string $channel, array $counts, array $labels): void
     {
-        broadcast(new PortalSidebarCountsUpdated($channel, $counts, $labels));
+        $this->safelyBroadcast(
+            fn () => broadcast(new PortalSidebarCountsUpdated($channel, $counts, $labels))
+        );
     }
 
     private function userForStaff(Staff $staff): ?User

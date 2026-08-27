@@ -14,11 +14,13 @@ use App\Models\StaffDocument;
 use App\Models\StaffOnboarding;
 use App\Models\StaffAttendance;
 use App\Models\StaffProfileChangeRequest;
+use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class HrSidebarNotificationService
 {
+    use SafelyBroadcasts;
     public const CACHE_KEY = 'hr.sidebar.counts';
 
     public const CACHE_TTL_SECONDS = 30;
@@ -71,10 +73,10 @@ class HrSidebarNotificationService
 
         $counts = $this->counts(true);
 
-        broadcast(new HrSidebarCountsUpdated(
+        $this->safelyBroadcast(fn () => broadcast(new HrSidebarCountsUpdated(
             $counts,
             collect($counts)->map(fn (int $count) => $this->formatCount($count))->all()
-        ));
+        )));
     }
 
     private function computeCounts(): array

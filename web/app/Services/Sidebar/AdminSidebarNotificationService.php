@@ -7,11 +7,13 @@ use App\Models\AcademicProgram;
 use App\Models\Campus;
 use App\Models\Department;
 use App\Models\User;
+use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class AdminSidebarNotificationService
 {
+    use SafelyBroadcasts;
     public const CACHE_KEY = 'admin.sidebar.counts';
 
     public const CACHE_TTL_SECONDS = 30;
@@ -55,10 +57,10 @@ class AdminSidebarNotificationService
         Cache::forget(self::CACHE_KEY);
         $counts = $this->counts(true);
 
-        broadcast(new AdminSidebarCountsUpdated(
+        $this->safelyBroadcast(fn () => broadcast(new AdminSidebarCountsUpdated(
             $counts,
             collect($counts)->map(fn (int $count) => $this->formatCount($count))->all()
-        ));
+        )));
     }
 
     private function computeCounts(): array

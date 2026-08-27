@@ -11,12 +11,14 @@ use App\Models\Finance\Refund;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
 use App\Models\PayrollRun;
+use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class FinanceSidebarNotificationService
 {
+    use SafelyBroadcasts;
     public const CACHE_KEY = 'finance.sidebar.counts';
 
     public const CACHE_TTL_SECONDS = 30;
@@ -72,7 +74,7 @@ class FinanceSidebarNotificationService
             ->mapWithKeys(fn (int $count, string $key) => [$key => $this->formatCount($count)])
             ->all();
 
-        broadcast(new FinanceSidebarCountsUpdated($counts, $labels));
+        $this->safelyBroadcast(fn () => broadcast(new FinanceSidebarCountsUpdated($counts, $labels)));
     }
 
     /**

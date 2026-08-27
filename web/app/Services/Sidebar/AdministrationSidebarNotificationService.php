@@ -7,11 +7,13 @@ use App\Models\Administration\BudgetRequest;
 use App\Models\Administration\InspectionCheck;
 use App\Models\Administration\StatutoryCertification;
 use App\Models\Applicant;
+use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class AdministrationSidebarNotificationService
 {
+    use SafelyBroadcasts;
     public const CACHE_KEY = 'administration.sidebar.counts';
 
     public const CACHE_TTL_SECONDS = 30;
@@ -58,10 +60,10 @@ class AdministrationSidebarNotificationService
         Cache::forget(self::CACHE_KEY);
         $counts = $this->counts(true);
 
-        broadcast(new AdministrationSidebarCountsUpdated(
+        $this->safelyBroadcast(fn () => broadcast(new AdministrationSidebarCountsUpdated(
             $counts,
             collect($counts)->map(fn (int $count) => $this->formatCount($count))->all()
-        ));
+        )));
     }
 
     private function computeCounts(): array
