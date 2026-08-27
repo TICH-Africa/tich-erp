@@ -14,11 +14,13 @@
             <div class="tich-grid tich-grid--3">
                 @forelse ($blogPosts as $post)
                     <article class="tich-card tich-blog-card">
-                        @if (!empty($post->featured_image_path))
-                            <img src="{{ $post->featured_image_path }}" alt="{{ $post->title }}" class="tich-blog-card__image">
-                        @else
-                            <div class="tich-blog-card__placeholder" aria-hidden="true"></div>
-                        @endif
+                        <div class="tich-blog-card__media">
+                            @if (!empty($post->featured_image_path))
+                                <img src="{{ $post->featured_image_path }}" alt="{{ $post->title }}" class="tich-blog-card__image">
+                            @else
+                                <div class="tich-blog-card__placeholder" aria-hidden="true"></div>
+                            @endif
+                        </div>
                         <div class="tich-blog-card__body">
                             <p class="tich-caption">{{ $post->formatted_date ?? '' }}
                                 @if (!empty($post->reading_time_minutes))

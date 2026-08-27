@@ -8,9 +8,9 @@
             @endif
         </div>
 
-        <div class="tich-grid tich-grid--3">
+        <div class="tich-grid tich-grid--3" data-home-reveal data-home-reveal-cols="3">
             @foreach ($programs as $program)
-                <article class="tich-card tich-program-card">
+                <article class="tich-card tich-program-card tich-home-reveal">
                     <div class="tich-program-card__media">
                         @include('programs.partials.cover-image', ['program' => $program])
                     </div>

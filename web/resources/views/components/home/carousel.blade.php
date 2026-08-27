@@ -15,7 +15,9 @@
 
             <div class="tich-container tich-hero-carousel__content">
                 <div class="tich-hero-carousel__inner {{ $index === 0 ? 'is-visible' : '' }}" data-carousel-content>
-                    <h2 class="tich-hero-carousel__title">{{ $slide->title }}</h2>
+                    <h2 class="tich-hero-carousel__title" data-typewriter-title="{{ $slide->title }}">
+                        <span data-typewriter-text></span><span class="tich-hero-carousel__cursor" data-typewriter-cursor aria-hidden="true">_</span>
+                    </h2>
                     @if (!empty($slide->subtitle))
                         <p class="tich-hero-carousel__lead">{{ $slide->subtitle }}</p>
                     @endif

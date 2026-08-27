@@ -19,14 +19,20 @@ function initMobileNav() {
         drawer.removeAttribute('hidden');
         header.classList.add('is-nav-open');
         document.body.classList.add('is-nav-open');
+        document.body.style.top = `-${window.scrollY}px`;
+        document.body.dataset.navScrollY = String(window.scrollY);
         toggle.setAttribute('aria-expanded', 'true');
         toggle.setAttribute('aria-label', 'Close menu');
     };
 
     const closeDrawer = () => {
+        const scrollY = Number(document.body.dataset.navScrollY || '0');
         drawer.setAttribute('hidden', 'hidden');
         header.classList.remove('is-nav-open');
         document.body.classList.remove('is-nav-open');
+        document.body.style.top = '';
+        delete document.body.dataset.navScrollY;
+        window.scrollTo(0, scrollY);
         toggle.setAttribute('aria-expanded', 'false');
         toggle.setAttribute('aria-label', 'Open menu');
     };

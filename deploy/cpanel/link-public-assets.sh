@@ -24,6 +24,7 @@ ln -sfn "$APP_PUBLIC/js" js
 ln -sfn "$APP_PUBLIC/images" images
 ln -sfn "$APP_PUBLIC/storage" storage
 ln -sfn "$APP_PUBLIC/favicon.ico" favicon.ico
+ln -sfn "$APP_PUBLIC/favicon.png" favicon.png
 ln -sfn "$APP_PUBLIC/robots.txt" robots.txt
 
 echo "Symlinks created in $DOCROOT"

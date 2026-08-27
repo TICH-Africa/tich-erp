@@ -12,11 +12,11 @@ class FaviconController extends Controller
     {
         $path = $settings->faviconAbsolutePath();
 
-        abort_unless(is_file($path), 404);
+        abort_unless(is_file($path) && filesize($path) > 0, 404);
 
         return response()->file($path, [
             'Content-Type' => $settings->faviconMimeType(),
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'public, max-age=86400',
         ]);
     }
 }

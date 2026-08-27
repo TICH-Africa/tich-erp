@@ -8,25 +8,33 @@
             @endif
         </div>
 
-        <div class="tich-grid tich-grid--3">
+        <div class="tich-grid tich-grid--3" data-home-reveal data-home-reveal-cols="3">
             @foreach ($events as $event)
-                <article class="tich-card tich-event-card">
-                    @if (!empty($event->cover_image_path))
-                        <img src="{{ $event->cover_image_path }}" alt="{{ $event->title }}" class="tich-blog-card__image" style="margin-bottom: 1rem;">
-                    @endif
-                    <p class="tich-caption">{{ strtoupper(str_replace('_', ' ', $event->event_type)) }}</p>
-                    <p class="tich-event-card__date tich-mt-2">{{ $event->formatted_date ?? '' }}</p>
-                    <h3 class="tich-h3 tich-mt-2">{{ $event->title }}</h3>
-                    @if (!empty($event->subtitle))
-                        <p class="tich-text tich-mt-2">{{ $event->subtitle }}</p>
-                    @endif
-                    @if (!empty($event->venue))
-                        <p class="tich-caption tich-mt-4">{{ $event->venue }}</p>
-                    @endif
-                    @if (!empty($event->registration_url_or_form))
-                        <a href="{{ $event->registration_url_or_form }}" class="tich-btn tich-btn-secondary tich-mt-4">Register</a>
-                    @endif
-                    <a href="{{ $event->url ?? route('events') }}" class="tich-btn tich-btn-primary tich-mt-4">View event</a>
+                <article class="tich-card tich-event-card tich-home-reveal">
+                    <div class="tich-event-card__media">
+                        @if (!empty($event->cover_image_path))
+                            <img src="{{ $event->cover_image_path }}" alt="{{ $event->title }}" class="tich-event-card__image">
+                        @else
+                            <div class="tich-event-card__placeholder" aria-hidden="true"></div>
+                        @endif
+                    </div>
+                    <div class="tich-event-card__body">
+                        <p class="tich-caption">{{ strtoupper(str_replace('_', ' ', $event->event_type)) }}</p>
+                        <p class="tich-event-card__date tich-mt-2">{{ $event->formatted_date ?? '' }}</p>
+                        <h3 class="tich-h3 tich-mt-2">{{ $event->title }}</h3>
+                        @if (!empty($event->subtitle))
+                            <p class="tich-text tich-mt-2">{{ $event->subtitle }}</p>
+                        @endif
+                        @if (!empty($event->venue))
+                            <p class="tich-caption tich-mt-4">{{ $event->venue }}</p>
+                        @endif
+                        <div class="tich-flex-wrap tich-mt-4" style="gap: 0.5rem;">
+                            @if (!empty($event->registration_url_or_form))
+                                <a href="{{ $event->registration_url_or_form }}" class="tich-btn tich-btn-secondary">Register</a>
+                            @endif
+                            <a href="{{ $event->url ?? route('events') }}" class="tich-btn tich-btn-primary">View event</a>
+                        </div>
+                    </div>
                 </article>
             @endforeach
         </div>

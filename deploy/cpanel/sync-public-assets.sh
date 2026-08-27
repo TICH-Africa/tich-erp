@@ -102,8 +102,8 @@ link_or_copy images "${APP_PUBLIC}/images"
 # Link docroot /storage straight at the real upload folder (not nested public/storage).
 link_or_copy storage "$STORAGE_REAL"
 
-for file in favicon.ico robots.txt; do
-  if [[ -f "${APP_PUBLIC}/${file}" ]]; then
+for file in favicon.ico favicon.png robots.txt; do
+  if [[ -f "${APP_PUBLIC}/${file}" && -s "${APP_PUBLIC}/${file}" ]]; then
     cp -f "${APP_PUBLIC}/${file}" "${DOCROOT}/${file}" 2>/dev/null \
       && log "Updated ${file}" \
       || log "WARN: could not update ${file}"

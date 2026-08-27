@@ -1,12 +1,19 @@
 @php
     $siteMetaForHead = $siteMeta ?? app(\App\Services\SiteSettingsService::class)->siteMeta();
+    $faviconUrl = $siteMetaForHead['favicon_url'] ?? asset('images/favicon.png');
+    $faviconType = $siteMetaForHead['favicon_type'] ?? 'image/png';
+    $appleIcon = asset('images/favicon-180.png');
+    if (! is_file(public_path('images/favicon-180.png'))) {
+        $appleIcon = $faviconUrl;
+    }
 @endphp
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
 <meta name="color-scheme" content="light dark">
-<link rel="icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
-<link rel="shortcut icon" href="{{ $siteMetaForHead['favicon_url'] }}" type="{{ $siteMetaForHead['favicon_type'] }}">
-<link rel="apple-touch-icon" href="{{ $siteMetaForHead['favicon_url'] }}">
+<link rel="icon" href="{{ $faviconUrl }}" type="{{ $faviconType }}" sizes="any">
+<link rel="icon" href="{{ asset('images/favicon-32.png') }}" type="image/png" sizes="32x32">
+<link rel="shortcut icon" href="{{ url('/favicon.ico') }}">
+<link rel="apple-touch-icon" href="{{ $appleIcon }}" sizes="180x180">
 <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
 @include('partials.theme-init')
 <link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" type="text/css" />

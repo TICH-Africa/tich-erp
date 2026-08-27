@@ -90,9 +90,9 @@ class PublicAssetSyncService
         // Docroot /storage points at the real upload folder (not nested public/storage).
         $this->linkOrCopy($storageTarget, $docroot.'/storage', $log);
 
-        foreach (['favicon.ico', 'robots.txt'] as $file) {
+        foreach (['favicon.ico', 'favicon.png', 'robots.txt'] as $file) {
             $source = $appPublic.'/'.$file;
-            if (File::isFile($source)) {
+            if (File::isFile($source) && filesize($source) > 0) {
                 File::copy($source, $docroot.'/'.$file);
                 $log('Copied '.$file);
             }

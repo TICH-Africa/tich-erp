@@ -14,8 +14,8 @@
 
     @include('components.home.blog-feed', ['blogPosts' => $blogPosts, 'usingFallback' => $usingFallback])
 
-    <section class="tich-section" id="about" aria-labelledby="home-about-heading">
-        <div class="tich-container">
+    <section class="tich-section" id="about" aria-labelledby="home-about-heading" data-home-reveal data-home-reveal-cols="1">
+        <div class="tich-container tich-home-reveal">
             <div class="tich-section__intro">
                 <h2 id="home-about-heading" class="tich-h2">About Us</h2>
                 <p class="tich-text">Learn about our vision, mission, and history.</p>

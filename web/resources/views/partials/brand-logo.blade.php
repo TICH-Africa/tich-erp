@@ -2,17 +2,26 @@
     $siteMeta = $siteMeta ?? app(\App\Services\SiteSettingsService::class)->siteMeta();
     $static = $static ?? false;
     $brandClass = 'tich-brand '.(($variant ?? 'default') === 'light' ? 'tich-brand--light' : '');
+    $hasCircularMark = is_file(public_path('images/logo-mark.png'));
+    $logoSrc = $hasCircularMark
+        ? asset('images/logo-mark.png').'?v='.filemtime(public_path('images/logo-mark.png'))
+        : ($siteMeta['logo_url'] ?? asset('images/logo.png'));
+    $logoClass = 'tich-brand__logo'.($hasCircularMark ? ' tich-brand__logo--circle' : '');
 @endphp
 @if ($static)
     <div class="{{ $brandClass }}" aria-hidden="true">
 @else
     <a href="{{ route('home') }}" class="{{ $brandClass }}">
 @endif
-    @if (!empty($siteMeta['logo_url']))
-        <img src="{{ $siteMeta['logo_url'] }}" alt="{{ $siteMeta['brand_name'] ?? $siteMeta['short_name'] ?? 'Home' }}" class="tich-brand__logo" data-lazy="eager" fetchpriority="high" style="max-height: 40px; max-width: 140px; object-fit: contain;">
-    @else
-        <img src="{{ asset('images/logo.png') }}" alt="{{ $siteMeta['brand_name'] ?? $siteMeta['short_name'] ?? 'TICH ERP' }}" class="tich-brand__logo" data-lazy="eager" fetchpriority="high" style="max-height: 40px; max-width: 140px; object-fit: contain;">
-    @endif
+    <img
+        src="{{ $logoSrc }}"
+        alt="{{ $siteMeta['brand_name'] ?? $siteMeta['short_name'] ?? 'TICH ERP' }}"
+        class="{{ $logoClass }}"
+        data-lazy="eager"
+        fetchpriority="high"
+        width="40"
+        height="40"
+    >
     <div>
         <p class="tich-brand__name">{{ $siteMeta['brand_name'] ?? $siteMeta['short_name'] ?? 'TICH ERP' }}</p>
         @if (!empty($siteMeta['brand_tagline']))

@@ -142,12 +142,28 @@ class SiteSettingsService
 
     public function faviconUrl(): string
     {
-        return $this->publicAssetUrl($this->get('site.logo_path'))
-            ?? asset('images/logo.png');
+        $dedicated = public_path('images/favicon.png');
+
+        if (is_file($dedicated)) {
+            return asset('images/favicon.png').'?v='.filemtime($dedicated);
+        }
+
+        return route('favicon');
     }
 
     public function faviconAbsolutePath(): string
     {
+        foreach ([
+            public_path('images/favicon.png'),
+            public_path('favicon.png'),
+            public_path('favicon.ico'),
+            public_path('images/logo-mark.png'),
+        ] as $candidate) {
+            if (is_file($candidate) && filesize($candidate) > 0) {
+                return $candidate;
+            }
+        }
+
         return $this->logoAbsolutePath() ?? public_path('images/logo.png');
     }
 
@@ -159,7 +175,13 @@ class SiteSettingsService
             return 'image/png';
         }
 
-        return mime_content_type($absolute) ?: 'image/png';
+        $mime = mime_content_type($absolute) ?: null;
+
+        if ($mime) {
+            return $mime;
+        }
+
+        return str_ends_with(strtolower($absolute), '.ico') ? 'image/x-icon' : 'image/png';
     }
 
     public function documentLogoSrc(bool $forPdf = false): ?string
