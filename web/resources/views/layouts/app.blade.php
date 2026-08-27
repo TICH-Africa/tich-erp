@@ -64,6 +64,7 @@
     <x-asset.script path="js/tich-nav.js" />
     <x-asset.script path="js/tich-homepage.js" />
     <x-asset.script path="js/tich-states.js" />
+    <x-asset.script path="js/tich-animations.js" />
     @yield('scripts')
     @stack('scripts')
 </body>

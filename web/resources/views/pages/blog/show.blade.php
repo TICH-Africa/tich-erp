@@ -14,38 +14,46 @@
 @endphp
 
 @section('content')
-    <article class="tich-section" itemscope itemtype="https://schema.org/BlogPosting">
-        <div class="tich-container" style="max-width: 46rem;">
-            <p class="tich-caption">
-                <a href="{{ route('blog') }}" class="tich-link">← Back to blog</a>
-            </p>
+    <x-animated-section animation="fade">
+        <article class="tich-section" itemscope itemtype="https://schema.org/BlogPosting">
+            <div class="tich-container" style="max-width: 46rem;">
+                <x-animated-card animation="left">
+                    <p class="tich-caption">
+                        <a href="{{ route('blog') }}" class="tich-link">← Back to blog</a>
+                    </p>
+                </x-animated-card>
 
-            <header class="tich-mt-6">
-                <p class="tich-caption">{{ $post->formatted_date ?? '' }}
-                    @if (!empty($post->reading_time_minutes))
-                        · {{ $post->reading_time_minutes }} min read
+                <x-animated-card animation="bottom">
+                    <header class="tich-mt-6">
+                        <p class="tich-caption">{{ $post->formatted_date ?? '' }}
+                            @if (!empty($post->reading_time_minutes))
+                                · {{ $post->reading_time_minutes }} min read
+                            @endif
+                        </p>
+                        <h1 class="tich-h1 tich-mt-2" itemprop="headline">{{ $post->title }}</h1>
+                        @if (!empty($post->subtitle))
+                            <p class="tich-text tich-mt-2" itemprop="description">{{ $post->subtitle }}</p>
+                        @endif
+                    </header>
+                </x-animated-card>
+
+                <x-animated-card animation="scale">
+                    @if (!empty($post->featured_image_path))
+                        <figure class="tich-mt-8">
+                            <img
+                                src="{{ $post->featured_image_path }}"
+                                alt="{{ $post->title }}"
+                                itemprop="image"
+                                style="width: 100%; height: auto; max-height: 26rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem);"
+                            >
+                        </figure>
                     @endif
-                </p>
-                <h1 class="tich-h1 tich-mt-2" itemprop="headline">{{ $post->title }}</h1>
-                @if (!empty($post->subtitle))
-                    <p class="tich-text tich-mt-2" itemprop="description">{{ $post->subtitle }}</p>
-                @endif
-            </header>
 
-            @if (!empty($post->featured_image_path))
-                <figure class="tich-mt-8">
-                    <img
-                        src="{{ $post->featured_image_path }}"
-                        alt="{{ $post->title }}"
-                        itemprop="image"
-                        style="width: 100%; height: auto; max-height: 26rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem);"
-                    >
-                </figure>
-            @endif
-
-            <div class="tich-text tich-mt-8" style="white-space: pre-wrap;" itemprop="articleBody">{{ $post->body }}</div>
-        </div>
-    </article>
+                    <div class="tich-text tich-mt-8" style="white-space: pre-wrap;" itemprop="articleBody">{{ $post->body }}</div>
+                </x-animated-card>
+            </div>
+        </article>
+    </x-animated-section>
 @endsection
 
 @section('seo_jsonld')

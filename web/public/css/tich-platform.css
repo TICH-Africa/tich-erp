@@ -7093,3 +7093,68 @@ a.tich-tabs__btn {
     margin-top: 1.5rem;
 }
 
+
+/* Public page entrance animations */
+.tich-animate {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.tich-animate.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tich-animate--left {
+    opacity: 0;
+    transform: translateX(-28px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.tich-animate--left.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.tich-animate--right {
+    opacity: 0;
+    transform: translateX(28px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.tich-animate--right.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.tich-animate--bottom {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.tich-animate--bottom.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tich-animate--fade {
+    opacity: 0;
+    transition: opacity 0.7s ease;
+}
+
+.tich-animate--fade.is-visible {
+    opacity: 1;
+}
+
+.tich-animate--scale {
+    opacity: 0;
+    transform: scale(0.94);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.tich-animate--scale.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}

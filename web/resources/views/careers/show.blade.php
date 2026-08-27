@@ -11,62 +11,68 @@
 @endphp
 
 @section('content')
-    <section class="tich-section tich-careers-page" id="careers" aria-labelledby="vacancy-heading">
-        <div class="tich-container">
-            <a href="{{ route('careers.index') }}" class="tich-btn tich-btn-ghost tich-mb-6">&larr; Back to careers</a>
+    <x-animated-section animation="fade">
+        <section class="tich-section tich-careers-page" id="careers" aria-labelledby="vacancy-heading">
+            <div class="tich-container">
+                <x-animated-card animation="left">
+                    <a href="{{ route('careers.index') }}" class="tich-btn tich-btn-ghost tich-mb-6">&larr; Back to careers</a>
+                </x-animated-card>
 
-            <article class="tich-card" itemscope itemtype="https://schema.org/JobPosting">
-                <div class="tich-mb-6">
-                    <h1 id="vacancy-heading" class="tich-h1" itemprop="title">{{ $vacancy->job_title }}</h1>
-                    <p class="tich-text tich-text--secondary tich-mt-2">
-                        <span itemprop="hiringOrganization" itemscope itemtype="https://schema.org/Organization">
-                            <meta itemprop="name" content="{{ $siteMeta['institution_name'] ?? 'TICH in Africa' }}">
-                        </span>
-                        {{ $vacancy->department->dept_name ?? 'General' }}
-                        &middot;
-                        {{ ucfirst($vacancy->employment_type) }}
-                        &middot;
-                        {{ $vacancy->slots_available }} position{{ $vacancy->slots_available > 1 ? 's' : '' }}
-                    </p>
-                </div>
+                <x-animated-card animation="scale">
+                    <article class="tich-card" itemscope itemtype="https://schema.org/JobPosting">
+                        <div class="tich-mb-6">
+                            <h1 id="vacancy-heading" class="tich-h1" itemprop="title">{{ $vacancy->job_title }}</h1>
+                            <p class="tich-text tich-text--secondary tich-mt-2">
+                                <span itemprop="hiringOrganization" itemscope itemtype="https://schema.org/Organization">
+                                    <meta itemprop="name" content="{{ $siteMeta['institution_name'] ?? 'TICH in Africa' }}">
+                                </span>
+                                {{ $vacancy->department->dept_name ?? 'General' }}
+                                &middot;
+                                {{ ucfirst($vacancy->employment_type) }}
+                                &middot;
+                                {{ $vacancy->slots_available }} position{{ $vacancy->slots_available > 1 ? 's' : '' }}
+                            </p>
+                        </div>
 
-                <div class="tich-grid tich-grid--2 tich-mb-6">
-                    <div>
-                        <h2 class="tich-h3">Description</h2>
-                        <p class="tich-text tich-mt-2">{{ $vacancy->job_description }}</p>
-                    </div>
-                    <div>
-                        <h2 class="tich-h3">Requirements</h2>
-                        <p class="tich-text tich-mt-2">{{ $vacancy->requirements }}</p>
-                    </div>
-                </div>
+                        <div class="tich-grid tich-grid--2 tich-mb-6">
+                            <div>
+                                <h2 class="tich-h3">Description</h2>
+                                <p class="tich-text tich-mt-2">{{ $vacancy->job_description }}</p>
+                            </div>
+                            <div>
+                                <h2 class="tich-h3">Requirements</h2>
+                                <p class="tich-text tich-mt-2">{{ $vacancy->requirements }}</p>
+                            </div>
+                        </div>
 
-                <div class="tich-grid tich-grid--2 tich-mb-6">
-                    <div>
-                        <h2 class="tich-h3">Responsibilities</h2>
-                        <p class="tich-text tich-mt-2">{{ $vacancy->responsibilities }}</p>
-                    </div>
-                    <div>
-                        <h2 class="tich-h3">Details</h2>
-                        <ul class="tich-list">
-                            <li><strong>Minimum Qualification:</strong> {{ $vacancy->min_qualification }}</li>
-                            <li><strong>Closing Date:</strong> {{ $vacancy->closing_date?->format('M j, Y') ?? 'Open until filled' }}</li>
-                            @if ($vacancy->salary_scale)
-                                <li><strong>Salary Scale:</strong> {{ $vacancy->salary_scale }}</li>
-                            @endif
-                            @if ($vacancy->benefits)
-                                <li><strong>Benefits:</strong> {{ $vacancy->benefits }}</li>
-                            @endif
-                        </ul>
-                    </div>
-                </div>
+                        <div class="tich-grid tich-grid--2 tich-mb-6">
+                            <div>
+                                <h2 class="tich-h3">Responsibilities</h2>
+                                <p class="tich-text tich-mt-2">{{ $vacancy->responsibilities }}</p>
+                            </div>
+                            <div>
+                                <h2 class="tich-h3">Details</h2>
+                                <ul class="tich-list">
+                                    <li><strong>Minimum Qualification:</strong> {{ $vacancy->min_qualification }}</li>
+                                    <li><strong>Closing Date:</strong> {{ $vacancy->closing_date?->format('M j, Y') ?? 'Open until filled' }}</li>
+                                    @if ($vacancy->salary_scale)
+                                        <li><strong>Salary Scale:</strong> {{ $vacancy->salary_scale }}</li>
+                                    @endif
+                                    @if ($vacancy->benefits)
+                                        <li><strong>Benefits:</strong> {{ $vacancy->benefits }}</li>
+                                    @endif
+                                </ul>
+                            </div>
+                        </div>
 
-                <div class="tich-mt-6">
-                    <a href="{{ route('vacancies.apply.create', $vacancy) }}" class="tich-btn tich-btn-primary">Apply Now</a>
-                </div>
-            </article>
-        </div>
-    </section>
+                        <div class="tich-mt-6">
+                            <a href="{{ route('vacancies.apply.create', $vacancy) }}" class="tich-btn tich-btn-primary">Apply Now</a>
+                        </div>
+                    </article>
+                </x-animated-card>
+            </div>
+        </section>
+    </x-animated-section>
 @endsection
 
 @section('seo_jsonld')
