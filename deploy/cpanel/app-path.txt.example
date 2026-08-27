@@ -1,0 +1,4 @@
+# Absolute path to the Laravel `web/` directory (one line, no trailing slash).
+# Used by public_html/index.php when auto-detection fails.
+# Example:
+# /home3/tichafri/tich-erp/web

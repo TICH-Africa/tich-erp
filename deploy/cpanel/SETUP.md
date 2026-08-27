@@ -1,52 +1,66 @@
-# TICH ERP - cPanel Git deployment
+# TICH ERP - cPanel / HostPinnacle deployment
 
-Everything needed for production lives in this repo. **No manual File Manager steps.**
+## Correct layout
+
+```
+/home3/tichafri/
+├── tich-erp/                 ← Git repo root (cPanel "Repository Path")
+│   ├── .cpanel.yml
+│   ├── deploy/cpanel/
+│   └── web/                  ← Laravel app (.env lives here)
+│       └── public/           ← css, js, images
+└── public_html/              ← Fixed document root for tich.africa
+    ├── index.php             ← bridge (copied on deploy)
+    ├── .htaccess
+    └── css, js, images, storage  ← symlinks into web/public
+```
+
+Do **not** put a second full Laravel copy inside `public_html`.
 
 ## Deploy
 
-1. Commit and push to GitHub
-2. **cPanel → Git Version Control → Update from Remote → Deploy HEAD Commit**
+1. Push to GitHub `main`
+2. cPanel → **Git Version Control** → repo `/home3/tichafri/tich-erp`
+3. **Update from Remote** → **Deploy HEAD Commit**
+4. Open `deploy/cpanel/last-deploy.log` if anything fails
 
-Each deploy automatically:
+## One-time: `.env`
 
-- Runs Composer, migrations, and Laravel optimize
-- Copies `index.php` + `.htaccess` into `public_html` (from `deploy/cpanel/`)
-- Links `css/`, `js/`, and `images/` from `web/public/` into `public_html`
+In File Manager create `tich-erp/web/.env` (never commit it):
 
-## Paths (committed in git)
+```env
+APP_NAME="TICH ERP"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://tich.africa
+FORCE_HTTPS=true
 
-cPanel shows **Document Root: `/public_html`** - that is relative to your home folder, i.e. **`/home3/tichafri/public_html`** (same pattern as Leysafaris on `leylasaf`).
+APP_KEY=   # generate with: ea-php82 artisan key:generate
 
-| | Leysafaris | TICH |
-|---|------------|------|
-| Document root | `/home2/leylasaf/public_html` | `/home3/tichafri/public_html` |
-| Laravel root | `.../leysafaris/leysafaris` | `.../tich-erp/web` |
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_DATABASE=…
+DB_USERNAME=…
+DB_PASSWORD=…
+```
 
-| File | Purpose |
-|------|---------|
-|------|---------|
-| `deploy/cpanel/docroot.txt` | Document root: `/home3/tichafri/public_html` |
-| `deploy/cpanel/public_html.index.php` | Points Laravel to `/home3/tichafri/tich-erp/web` |
-| `deploy/cpanel/public_html.htaccess` | URL rewriting for Laravel routes |
-| `deploy/cpanel/last-asset-sync.log` | Written on each deploy (check if CSS/JS break) |
+## Verify
 
-If the host ever changes document root, edit **`docroot.txt`** in git and redeploy.
-
-## Verify after deploy
-
-- https://tich.africa/css/tich-platform.css
+- https://tich.africa/ — homepage
+- https://tich.africa/css/tich-platform.css — must be CSS, not HTML
 - https://tich.africa/js/tich-nav.js
-- Ensure `web/.env` has `APP_URL=https://tich.africa` (and optional `ASSET_URL` if using a CDN)
-- Run `php artisan storage:link` once so `/storage` serves uploads
 
-Hard-refresh the homepage (Ctrl+Shift+R).
+If the site shows a **TICH deploy error** page, follow the hint on that page (usually missing `.env` or `vendor`).
 
-## Troubleshooting
+## Troubleshooting HTTP 500
 
-| Problem | Fix |
-|---------|-----|
-| Pages work, CSS/JS 404 | Check `deploy/cpanel/last-asset-sync.log` after deploy |
-| Routes 404 | Redeploy - `.htaccess` is copied from git each time |
-| Wrong document root | Update `deploy/cpanel/docroot.txt`, commit, redeploy |
-| Assets point at localhost | Set `APP_URL=https://tich.africa` and clear config cache (`php artisan config:clear`) |
-| Uploaded images 404 | `php artisan storage:link` then re-run asset sync so `public_html/storage` exists |
+| Cause | Fix |
+|-------|-----|
+| Deploy never ran / old HEAD | Update from Remote → Deploy HEAD |
+| Missing `web/.env` or `APP_KEY` | Create `.env`, `key:generate` |
+| Composer / vendor missing | Re-deploy; check `last-deploy.log` |
+| Wrong PHP version | Need PHP 8.2+ (`ea-php82`) |
+| Blank 500 after ChatGPT edits | Re-deploy so `public_html/index.php` is replaced from git |
+| CSS 404 | Re-deploy (symlinks) — bridge also serves assets as fallback |
+
+Ignore advice that empties `public_html` permanently or rewrites assets via URL-path `.htaccess` rules to `/tich-erp/web/public/…` — that breaks under LiteSpeed/cPanel. Use this repo’s deploy bridge instead.
