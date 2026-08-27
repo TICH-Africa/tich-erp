@@ -74,11 +74,31 @@ class ModuleRoleCatalogService
     }
 
     /**
-     * @return Collection<int, Permission>
+     * @return Collection<int, object{id: int, slug: string, module: string, category: string, permission_name?: string}>
      */
     public function permissionsForRole(Role $role): Collection
     {
+        $catalog = app(RbacCatalogService::class);
         $modules = $this->permissionModulesForRole($role);
+
+        if ($catalog->hasDefinition($role->role_name) || Permission::query()->doesntExist()) {
+            $rows = collect($catalog->permissions());
+
+            if ($modules !== []) {
+                $rows = $rows->whereIn('module', $modules);
+            }
+
+            return $rows
+                ->sortBy(['module', 'slug'])
+                ->values()
+                ->map(fn (array $permission, int $index) => (object) [
+                    'id' => $index + 1,
+                    'slug' => $permission['slug'],
+                    'module' => $permission['module'],
+                    'category' => $permission['category'],
+                    'permission_name' => $permission['permission_name'],
+                ]);
+        }
 
         if ($modules === []) {
             return Permission::query()->orderBy('module')->orderBy('slug')->get();
@@ -92,24 +112,37 @@ class ModuleRoleCatalogService
     }
 
     /**
-     * @return list<array{action: string, label: string, categories: array<string, array{id: int, slug: string, label: string}>}>
+     * @return list<array{action: string, label: string, categories: array<string, array{id: int, slug: string, label: string, checked: bool}>}>
      */
     public function permissionMatrixForRole(Role $role): array
     {
         $categoryLabels = config('tich-module-roles.permission_categories', []);
         $permissions = $this->permissionsForRole($role);
-        $assignedIds = $role->permissions()->pluck('permissions.id')->all();
+        $catalog = app(RbacCatalogService::class);
+        $assignedIds = [];
+        $assignedSlugs = [];
+
+        if ($catalog->hasDefinition($role->role_name)) {
+            $assignedSlugs = $catalog->grantedSlugSetForRole($role->role_name);
+        } else {
+            $assignedIds = $role->permissions()->pluck('permissions.id')->all();
+        }
+
         $matrix = [];
 
-        foreach ($permissions->groupBy(fn (Permission $permission) => $this->actionFromSlug($permission->slug)) as $action => $group) {
+        foreach ($permissions->groupBy(fn ($permission) => $this->actionFromSlug($permission->slug)) as $action => $group) {
             $categories = [];
 
             foreach ($group as $permission) {
+                $checked = $assignedSlugs !== []
+                    ? isset($assignedSlugs[$permission->slug])
+                    : in_array((int) $permission->id, $assignedIds, true);
+
                 $categories[$permission->category] = [
                     'id' => (int) $permission->id,
                     'slug' => $permission->slug,
                     'label' => $categoryLabels[$permission->category] ?? ucfirst($permission->category),
-                    'checked' => in_array($permission->id, $assignedIds, true),
+                    'checked' => $checked,
                 ];
             }
 

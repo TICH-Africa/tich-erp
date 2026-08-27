@@ -44,7 +44,7 @@ class RoleController extends Controller
         $categories = RoleCategory::activeOptions();
         $categoryLabels = RoleCategory::labelMap();
         $rolesCount = Role::query()->count();
-        $categoriesCount = RoleCategory::query()->count();
+        $categoriesCount = count(RoleCategory::systemCodes());
         $moduleOptions = $this->moduleRoles->modules();
         $selectedModule = $moduleFilter;
 
@@ -76,7 +76,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => ['required', 'string', 'max:100', 'unique:roles,role_name'],
             'display_name' => ['required', 'string', 'max:150'],
-            'role_category' => ['required', Rule::exists('role_categories', 'category_code')->where('is_active', true)],
+            'role_category' => ['required', Rule::in(RoleCategory::systemCodes())],
             'module_key' => ['required', Rule::in($moduleKeys)],
             'description' => ['nullable', 'string', 'max:500'],
         ]);
@@ -109,10 +109,10 @@ class RoleController extends Controller
             'display_name' => ['required', 'string', 'max:150'],
             'role_category' => [
                 'required',
-                Rule::exists('role_categories', 'category_code')->where(function ($query) use ($role) {
-                    $query->where('is_active', true)
-                        ->orWhere('category_code', $role->role_category);
-                }),
+                Rule::in(array_unique(array_merge(
+                    RoleCategory::systemCodes(),
+                    [$role->role_category]
+                ))),
             ],
             'description' => ['nullable', 'string', 'max:500'],
         ]);

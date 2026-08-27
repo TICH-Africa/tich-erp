@@ -1,17 +1,13 @@
 <?php
 
-use Database\Seeders\EnsureExtendedModulePermissionsSeeder;
-use Database\Seeders\EnsureSystemRolesSeeder;
-use Database\Seeders\ModuleRolesSeeder;
-use Database\Seeders\PermissionsSeeder;
-use Database\Seeders\RoleCategoriesSeeder;
+use App\Services\RbacCatalogService;
 use Database\Seeders\SyncDefaultRolesSeeder;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Applies module-scoped predefined roles and permissions during migrate,
- * so production deploys do not require running db:seed separately.
+ * Ensures thin role rows from the code catalog after module_key exists.
+ * Permissions / categories / nav / role↔permission templates are config-owned.
  */
 return new class extends Migration
 {
@@ -21,12 +17,8 @@ return new class extends Migration
             return;
         }
 
-        (new PermissionsSeeder)->run();
-        (new EnsureExtendedModulePermissionsSeeder)->run();
-        (new RoleCategoriesSeeder)->run();
-        (new EnsureSystemRolesSeeder)->run();
+        app(RbacCatalogService::class)->ensureRolesExist();
         (new SyncDefaultRolesSeeder)->run();
-        (new ModuleRolesSeeder)->run();
     }
 
     public function down(): void

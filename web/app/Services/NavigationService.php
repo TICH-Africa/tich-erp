@@ -27,7 +27,8 @@ class NavigationService
 
     public function getContactChannels(): array
     {
-        if ($this->tableExists('contact_channels')) {
+        if (filter_var(env('TICH_NAV_USE_DB', false), FILTER_VALIDATE_BOOLEAN)
+            && $this->tableExists('contact_channels')) {
             $channels = ContactChannel::query()
                 ->where('is_active', 1)
                 ->orderByDesc('is_primary')
@@ -54,7 +55,8 @@ class NavigationService
 
     public function getSocialLinks(): array
     {
-        if ($this->tableExists('social_links')) {
+        if (filter_var(env('TICH_NAV_USE_DB', false), FILTER_VALIDATE_BOOLEAN)
+            && $this->tableExists('social_links')) {
             $links = SocialLink::query()
                 ->where('is_active', 1)
                 ->orderBy('display_order')
@@ -126,6 +128,12 @@ class NavigationService
 
     private function resolveMenu(string $location, array $fallback): array
     {
+        // Public navigation is code-owned (config/tich-navigation.php).
+        // Set TICH_NAV_USE_DB=true only if CMS-edited menus should override.
+        if (! filter_var(env('TICH_NAV_USE_DB', false), FILTER_VALIDATE_BOOLEAN)) {
+            return $this->ensureCareersLink($location, $this->normalizeFallback($fallback));
+        }
+
         if (! $this->tableExists('navigation_menus')) {
             return $this->normalizeFallback($fallback);
         }

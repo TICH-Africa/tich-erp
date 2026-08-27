@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(\App\Support\ImageWebpEncoder::class);
         $this->app->singleton(\App\Services\StoredFileService::class);
+        $this->app->singleton(\App\Services\RbacCatalogService::class);
     }
 
     public function boot(): void
@@ -46,6 +47,13 @@ class AppServiceProvider extends ServiceProvider
 
             return app(RBACService::class)->hasPermission($user, $ability) ? true : null;
         });
+
+        // Materialize thin role rows from code catalog (FK for user_roles only).
+        try {
+            app(\App\Services\RbacCatalogService::class)->ensureRolesExist();
+        } catch (\Throwable) {
+            // DB may be unavailable during early install / migrate.
+        }
 
         Route::bind('budgetRequest', function ($value) {
             return \App\Models\Administration\BudgetRequest::query()->findOrFail($value);

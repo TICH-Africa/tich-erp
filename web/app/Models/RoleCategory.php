@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\RbacCatalogService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class RoleCategory extends Model
 {
@@ -28,18 +30,32 @@ class RoleCategory extends Model
 
     public static function activeOptions(): Collection
     {
-        return static::query()
+        $fromCode = collect(app(RbacCatalogService::class)->categoryOptions());
+
+        if (! Schema::hasTable((new static)->getTable())) {
+            return $fromCode;
+        }
+
+        $fromDb = static::query()
             ->where('is_active', true)
             ->orderBy('display_order')
             ->orderBy('category_name')
             ->pluck('category_name', 'category_code');
+
+        // Code-owned system categories win; DB may add custom codes.
+        return $fromCode->union($fromDb);
     }
 
     public static function labelMap(): Collection
     {
-        return static::query()
-            ->orderBy('display_order')
-            ->orderBy('category_name')
-            ->pluck('category_name', 'category_code');
+        return static::activeOptions();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function systemCodes(): array
+    {
+        return array_keys(app(RbacCatalogService::class)->categoryOptions());
     }
 }

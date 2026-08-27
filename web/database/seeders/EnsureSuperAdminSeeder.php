@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
 use App\Models\User;
 use App\Services\RBACService;
 use Illuminate\Database\Seeder;
@@ -31,7 +30,7 @@ class EnsureSuperAdminSeeder extends Seeder
 
     public function run(): void
     {
-        $roleId = Role::query()->where('role_name', 'Super Admin')->value('id');
+        $roleId = app(\App\Services\RbacCatalogService::class)->roleIdByName('Super Admin');
 
         if (! $roleId) {
             return;

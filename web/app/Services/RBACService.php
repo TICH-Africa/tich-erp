@@ -128,16 +128,39 @@ class RBACService
             return true;
         }
 
-        return DB::table('user_roles as ur')
-            ->join('role_permissions as rp', 'rp.role_id', '=', 'ur.role_id')
-            ->join('permissions as p', 'p.id', '=', 'rp.permission_id')
+        $roleRows = DB::table('user_roles as ur')
+            ->join('roles as r', 'ur.role_id', '=', 'r.id')
             ->where('ur.user_id', $user->id)
-            ->where('p.slug', $slug)
             ->whereNull('ur.department_id')
             ->where(function ($query) {
                 $query->whereNull('ur.expires_at')
                     ->orWhere('ur.expires_at', '>', now());
             })
+            ->get(['ur.role_id', 'r.role_name']);
+
+        $catalog = app(RbacCatalogService::class);
+        $customRoleIds = [];
+
+        foreach ($roleRows as $row) {
+            if ($catalog->hasDefinition($row->role_name)) {
+                if ($catalog->roleGrantsSlug($row->role_name, $slug)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            $customRoleIds[] = (int) $row->role_id;
+        }
+
+        if ($customRoleIds === []) {
+            return false;
+        }
+
+        return DB::table('role_permissions as rp')
+            ->join('permissions as p', 'p.id', '=', 'rp.permission_id')
+            ->whereIn('rp.role_id', $customRoleIds)
+            ->where('p.slug', $slug)
             ->exists();
     }
 
@@ -220,6 +243,44 @@ class RBACService
 
     public function getUserPermissions(User $user): array
     {
+        $catalog = app(RbacCatalogService::class);
+        $bySlug = [];
+        $permissionIndex = null;
+
+        $roleNames = DB::table('user_roles as ur')
+            ->join('roles as r', 'ur.role_id', '=', 'r.id')
+            ->where('ur.user_id', $user->id)
+            ->where(function ($query) {
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
+            })
+            ->pluck('r.role_name');
+
+        foreach ($roleNames as $roleName) {
+            if (! $catalog->hasDefinition($roleName)) {
+                continue;
+            }
+
+            $permissionIndex ??= collect($catalog->permissions())->keyBy('slug');
+
+            foreach (array_keys($catalog->grantedSlugSetForRole($roleName)) as $slug) {
+                if (isset($bySlug[$slug])) {
+                    continue;
+                }
+
+                $permission = $permissionIndex->get($slug);
+
+                if ($permission) {
+                    $bySlug[$slug] = (object) [
+                        'slug' => $permission['slug'],
+                        'permission_name' => $permission['permission_name'],
+                        'module' => $permission['module'],
+                        'category' => $permission['category'],
+                    ];
+                }
+            }
+        }
+
         $directPermissions = DB::table('user_permissions')
             ->where('user_id', $user->id)
             ->where(function ($query) {
@@ -228,25 +289,31 @@ class RBACService
             })
             ->pluck('permission_id');
 
-        $userRoleIds = DB::table('user_roles')
-            ->where('user_id', $user->id)
+        $customRoleIds = DB::table('user_roles as ur')
+            ->join('roles as r', 'ur.role_id', '=', 'r.id')
+            ->where('ur.user_id', $user->id)
             ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
             })
-            ->pluck('role_id');
+            ->where('r.is_system_role', false)
+            ->pluck('ur.role_id');
 
-        $rolePermissions = DB::table('role_permissions')
-            ->whereIn('role_id', $userRoleIds)
-            ->pluck('permission_id');
+        $rolePermissions = $customRoleIds->isEmpty()
+            ? collect()
+            : DB::table('role_permissions')
+                ->whereIn('role_id', $customRoleIds)
+                ->pluck('permission_id');
 
         $allPermissionIds = $directPermissions->merge($rolePermissions)->unique()->values();
 
-        return DB::table('permissions')
-            ->whereIn('id', $allPermissionIds)
-            ->select('slug', 'permission_name', 'module', 'category')
-            ->get()
-            ->toArray();
+        if ($allPermissionIds->isNotEmpty()) {
+            foreach (DB::table('permissions')->whereIn('id', $allPermissionIds)->get() as $row) {
+                $bySlug[$row->slug] = $row;
+            }
+        }
+
+        return array_values($bySlug);
     }
 
     public function getUserRoles(User $user): array
@@ -559,7 +626,7 @@ class RBACService
             return;
         }
 
-        $roleId = Role::query()->where('role_name', $roleName)->value('id');
+        $roleId = app(RbacCatalogService::class)->roleIdByName($roleName);
 
         if ($roleId) {
             $this->assignRoleToUser($user, $roleId);
@@ -591,21 +658,41 @@ class RBACService
             return true;
         }
 
-        $userRoleIds = DB::table('user_roles')
-            ->where('user_id', $user->id)
+        $roleRows = DB::table('user_roles as ur')
+            ->join('roles as r', 'ur.role_id', '=', 'r.id')
+            ->where('ur.user_id', $user->id)
             ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
             })
-            ->pluck('role_id');
+            ->get(['ur.role_id', 'r.role_name']);
 
-        if ($userRoleIds->isEmpty()) {
+        if ($roleRows->isEmpty()) {
+            return false;
+        }
+
+        $catalog = app(RbacCatalogService::class);
+        $customRoleIds = [];
+
+        foreach ($roleRows as $row) {
+            if ($catalog->hasDefinition($row->role_name)) {
+                if ($catalog->roleGrantsSlug($row->role_name, $slug)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            $customRoleIds[] = (int) $row->role_id;
+        }
+
+        if ($customRoleIds === []) {
             return false;
         }
 
         return DB::table('role_permissions as rp')
             ->join('permissions as p', 'rp.permission_id', '=', 'p.id')
-            ->whereIn('rp.role_id', $userRoleIds)
+            ->whereIn('rp.role_id', $customRoleIds)
             ->where('p.slug', $slug)
             ->exists();
     }
