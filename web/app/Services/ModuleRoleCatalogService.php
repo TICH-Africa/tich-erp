@@ -66,7 +66,7 @@ class ModuleRoleCatalogService
             return array_values(array_unique(array_filter([
                 $role->module_key,
                 $role->module_key === 'admissions' ? 'admin' : null,
-                in_array($role->module_key, ['finance', 'hr', 'procurement', 'qa', 'administration', 'research', 'ict', 'academics'], true) ? 'core' : null,
+                in_array($role->module_key, ['finance', 'hr', 'procurement', 'qa', 'administration', 'research', 'ict', 'academics', 'monitoring_evaluation'], true) ? 'core' : null,
             ])));
         }
 

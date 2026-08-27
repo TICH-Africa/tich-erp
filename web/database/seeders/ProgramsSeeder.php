@@ -108,6 +108,7 @@ class ProgramsSeeder extends Seeder
             ['code' => 'FIN', 'name' => 'Finance', 'group' => 'IDM', 'order' => 2],
             ['code' => 'PRC', 'name' => 'Procurement & Logistics', 'group' => 'IDM', 'order' => 3],
             ['code' => 'QA', 'name' => 'Quality Assurance', 'group' => 'IDM', 'order' => 4],
+            ['code' => 'MNE', 'name' => 'Monitoring & Evaluation', 'group' => 'IDM', 'order' => 5],
             ['code' => 'RES', 'name' => 'Research', 'group' => 'OTH', 'order' => 1],
             ['code' => 'ICTO', 'name' => 'ICT', 'group' => 'OTH', 'order' => 2],
             ['code' => 'ACAD', 'name' => 'Academics', 'group' => 'OTH', 'order' => 3],

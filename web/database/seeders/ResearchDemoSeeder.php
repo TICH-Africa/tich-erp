@@ -16,7 +16,7 @@ class ResearchDemoSeeder extends ModuleDemoSeeder
 
     protected function roleName(): string
     {
-        return 'Research Manager';
+        return 'Chief Research Officer';
     }
 
     protected function managerProfile(): array
@@ -25,7 +25,7 @@ class ResearchDemoSeeder extends ModuleDemoSeeder
             'employee_number' => 'EMP-RES-001',
             'first_name' => 'Daniel',
             'surname' => 'Omondi',
-            'job_title' => 'Research Manager',
+            'job_title' => 'Chief Research Officer',
             'gross_monthly_salary' => 98000,
         ];
     }

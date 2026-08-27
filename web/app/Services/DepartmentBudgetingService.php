@@ -62,6 +62,12 @@ class DepartmentBudgetingService
             'content_section' => 'research-content',
             'dashboard_route' => 'research.dashboard',
         ],
+        'monitoring_evaluation' => [
+            'dept_code' => 'MNE',
+            'layout' => 'layouts.monitoring-evaluation',
+            'content_section' => 'monitoring-evaluation-content',
+            'dashboard_route' => 'monitoring_evaluation.dashboard',
+        ],
         'academics' => [
             'dept_code' => 'ACAD',
             'layout' => 'layouts.academics',

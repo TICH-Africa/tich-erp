@@ -342,7 +342,7 @@ class FinanceController extends Controller
 
     public function budgetingCycleStore(Request $request, Department $department, FinanceBudget $budget): RedirectResponse
     {
-        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'CEO', 'Super Admin']), 403);
+        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
         $validated = $request->validate([
             'cycle_type' => ['required', 'in:annual,quarterly,monthly,weekly'],
@@ -360,7 +360,7 @@ class FinanceController extends Controller
 
     public function budgetingCycleUpdate(Request $request, Department $department, FinanceBudget $budget, FinanceBudgetCycle $cycle): RedirectResponse
     {
-        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'CEO', 'Super Admin']), 403);
+        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:200'],
@@ -396,7 +396,7 @@ class FinanceController extends Controller
 
     public function budgetingCycleDestroy(Request $request, Department $department, FinanceBudget $budget, FinanceBudgetCycle $cycle): RedirectResponse
     {
-        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'CEO', 'Super Admin']), 403);
+        abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
         $cycle->delete();
 

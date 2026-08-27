@@ -16,7 +16,7 @@ class IctDemoSeeder extends ModuleDemoSeeder
 
     protected function roleName(): string
     {
-        return 'ICT Manager';
+        return 'Head of ICT';
     }
 
     protected function managerProfile(): array
@@ -25,7 +25,7 @@ class IctDemoSeeder extends ModuleDemoSeeder
             'employee_number' => 'EMP-ICT-001',
             'first_name' => 'Brian',
             'surname' => 'Kariuki',
-            'job_title' => 'ICT Manager',
+            'job_title' => 'Head of ICT',
             'gross_monthly_salary' => 102000,
         ];
     }

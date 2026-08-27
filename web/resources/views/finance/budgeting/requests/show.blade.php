@@ -134,7 +134,7 @@
         @endif
     </div>
 
-    @if (in_array($budgetRequest->status, ['finance_review', 'submitted']) && auth()->user()->hasAnyRole(['Finance Manager', 'CEO', 'Super Admin']))
+    @if (in_array($budgetRequest->status, ['finance_review', 'submitted']) && auth()->user()->hasAnyRole(['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']))
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Finance review</h2>
             <p class="tich-caption tich-mt-2">Divide the budget into groups (annual, quarterly, monthly, weekly) and set the allocated amount. Then approve and forward to Executive/CEO for final authorization, or reject.</p>
@@ -257,7 +257,7 @@
             @endif
         </div>
 
-        @if (auth()->user()->hasAnyRole(['Finance Manager', 'CEO', 'Super Admin']))
+        @if (auth()->user()->hasAnyRole(['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']))
             <div class="tich-card tich-mt-6">
                 <h2 class="tich-h3">Mark as disbursed</h2>
                 <p class="tich-caption tich-mt-2">Confirm that funds have been disbursed to the department. Enter receipt details and disbursement date.</p>

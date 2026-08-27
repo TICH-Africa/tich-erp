@@ -62,6 +62,7 @@ return [
         'roles.assign' => 'admin_manage_staff_manage',
         'audit_logs.read' => 'core_manage_campuses_audit',
         'dashboard.access' => 'core_manage_campuses_view',
+        'monitoring_evaluation.read' => 'monitoring_evaluation_manage_frameworks_view',
     ],
 
 ];

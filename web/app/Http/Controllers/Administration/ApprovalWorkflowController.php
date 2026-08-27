@@ -51,7 +51,7 @@ class ApprovalWorkflowController extends Controller
 
     public function review(Request $httpRequest, BudgetRequest $budgetRequest): RedirectResponse
     {
-        $this->requireRole(['Administration Manager', 'Finance Manager', 'Super Admin', 'CEO']);
+        $this->requireRole(['Administration Manager', 'Assistant Administrator', 'Finance Manager', 'Assistant Finance Manager', 'Super Admin', 'CEO']);
 
         $data = $httpRequest->validate([
             'notes' => ['required', 'string', 'max:2000'],
@@ -68,7 +68,7 @@ class ApprovalWorkflowController extends Controller
 
     public function routeToFinance(BudgetRequest $budgetRequest): RedirectResponse
     {
-        $this->requireRole(['Administration Manager', 'Finance Manager', 'Super Admin', 'CEO']);
+        $this->requireRole(['Administration Manager', 'Assistant Administrator', 'Finance Manager', 'Assistant Finance Manager', 'Super Admin', 'CEO']);
 
         try {
             $this->admin->routeBudgetToFinance($budgetRequest, auth()->id());
@@ -83,7 +83,7 @@ class ApprovalWorkflowController extends Controller
 
     public function returnToSender(Request $httpRequest, BudgetRequest $budgetRequest): RedirectResponse
     {
-        $this->requireRole(['Administration Manager', 'Finance Manager', 'Super Admin', 'CEO']);
+        $this->requireRole(['Administration Manager', 'Assistant Administrator', 'Finance Manager', 'Assistant Finance Manager', 'Super Admin', 'CEO']);
 
         $data = $httpRequest->validate([
             'notes' => ['required', 'string', 'max:2000'],
@@ -102,7 +102,7 @@ class ApprovalWorkflowController extends Controller
 
     public function reject(Request $httpRequest, BudgetRequest $budgetRequest): RedirectResponse
     {
-        $this->requireRole(['Administration Manager', 'Finance Manager', 'Super Admin', 'CEO']);
+        $this->requireRole(['Administration Manager', 'Assistant Administrator', 'Finance Manager', 'Assistant Finance Manager', 'Super Admin', 'CEO']);
 
         $data = $httpRequest->validate([
             'notes' => ['nullable', 'string', 'max:1000'],
