@@ -13,6 +13,9 @@ use App\View\Composers\HrSidebarComposer;
 use App\View\Composers\PublicLayoutComposer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -62,6 +65,19 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['academics.partials.sidebar', 'layouts.academics'], AcademicsSidebarComposer::class);
         View::composer(['admin.partials.sidebar', 'layouts.admin'], AdminSidebarComposer::class);
         View::composer(['administration.partials.sidebar', 'layouts.administration'], AdministrationSidebarComposer::class);
+
+        // Keep deploy/production.sql in sync whenever migrations finish successfully (local/dev).
+        Event::listen(MigrationsEnded::class, function (): void {
+            if (app()->environment('production')) {
+                return;
+            }
+
+            try {
+                Artisan::call('tich:export-production-schema');
+            } catch (\Throwable) {
+                // Never fail a migration run because the SQL export could not write.
+            }
+        });
     }
 
     /**
