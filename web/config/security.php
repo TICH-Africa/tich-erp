@@ -29,7 +29,7 @@ return [
 
         'permissions_policy' => env(
             'SECURITY_PERMISSIONS_POLICY',
-            'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
+            'camera=(), microphone=(), payment=(), usb=()'
         ),
 
         /*

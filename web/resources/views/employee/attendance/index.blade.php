@@ -63,14 +63,17 @@
                         @csrf
                         <div class="tich-form-stack">
                             @if ($requireLocation)
-                                <div id="clock-in-location-panel" class="tich-card" style="padding: 0.875rem 1rem; background: var(--tich-surface-muted, #f8fafc); border-style: dashed;">
-                                    <p class="tich-caption" style="margin: 0 0 0.35rem;">Location check</p>
-                                    <p class="tich-text" id="clock-in-location-status" style="margin: 0;">Waiting for your device location…</p>
-                                    <p class="tich-caption tich-mt-2" style="margin-bottom: 0;">
+                                <div id="clock-in-location-panel" class="tich-card" style="padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-style: solid;">
+                                    <p class="tich-caption" style="margin: 0 0 0.35rem; color: #991b1b; font-weight: 600;">Location check</p>
+                                    <p class="tich-text" id="clock-in-location-status" style="margin: 0 0 0.5rem; color: #991b1b;">Location is required to clock in. Click the button below and allow location access when prompted.</p>
+                                    <p class="tich-caption tich-mt-2" style="margin-bottom: 0.5rem;">
                                         On-campus clock-ins must be within {{ number_format($campusGeofence['radius_meters']) }} m of {{ $campusGeofence['name'] }}.
                                     </p>
-                                    <button type="button" class="tich-btn tich-btn-ghost tich-mt-2" id="clock-in-refresh-location" style="font-size:0.8125rem;">
-                                        Refresh location
+                                    <button type="button" class="tich-btn tich-btn-primary" id="clock-in-refresh-location" style="font-size:0.8125rem; background: #dc2626; border-color: #dc2626;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.35rem;">
+                                            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                                        </svg>
+                                        Detect My Location
                                     </button>
                                 </div>
                             @endif
@@ -170,27 +173,27 @@
                 var campusName = @json($campusGeofence['name']);
                 var maxAccuracy = @json($maxLocationAccuracy ?? 2000);
                 var allowRemoteClockIn = {{ ($needsLocationVerification ?? false) ? 'true' : 'false' }};
-                var shouldPromptLocation = {{ ($promptLocation ?? false) ? 'true' : 'false' }};
-                var latestPosition = null;
-                var locating = false;
-                var submitAllowed = false;
-                var pendingSubmit = false;
+                var detecting = false;
+                var locationReady = false;
 
-                function setSubmitAllowed(allowed) {
-                    submitAllowed = allowed;
+                console.log('[ClockIn] Script loaded, form found:', !!form);
+
+                function setLocationReady(ready) {
+                    locationReady = ready;
+                    console.log('[ClockIn] Location ready:', ready);
                     if (!submitButton) {
                         return;
                     }
 
-                    submitButton.setAttribute('aria-disabled', allowed ? 'false' : 'true');
-                    submitButton.style.opacity = allowed ? '' : '0.55';
-                    submitButton.style.cursor = allowed ? '' : 'not-allowed';
+                    submitButton.setAttribute('aria-disabled', ready ? 'false' : 'true');
+                    submitButton.style.opacity = ready ? '' : '0.55';
+                    submitButton.style.cursor = ready ? '' : 'not-allowed';
                 }
 
                 if (offCampus && fieldDetails) {
                     offCampus.addEventListener('change', function () {
                         fieldDetails.hidden = !offCampus.checked;
-                        updateStatusMessage();
+                        updateStatus();
                     });
                 }
 
@@ -218,54 +221,33 @@
                     return accuracy <= maxAccuracy;
                 }
 
-                function setLocation(position) {
-                    locating = false;
-                    latestPosition = position;
-                    var lat = position.coords.latitude;
-                    var lng = position.coords.longitude;
-                    var accuracy = position.coords.accuracy;
-
-                    latInput.value = lat;
-                    lngInput.value = lng;
-                    accuracyInput.value = accuracy ?? '';
-                    legacyInput.value = lat + ',' + lng;
-
-                    updateStatusMessage();
-
-                    if (pendingSubmit) {
-                        if (submitAllowed) {
-                            form.requestSubmit();
-                        }
-                        pendingSubmit = false;
-                    }
-                }
-
-                function updateStatusMessage() {
+                function updateStatus() {
+                    console.log('[ClockIn] updateStatus called, detecting:', detecting, 'lat:', latInput.value, 'lng:', lngInput.value);
                     if (!statusEl || !submitButton) {
                         return;
                     }
 
-                    if (locating) {
+                    if (detecting) {
                         statusEl.textContent = 'Detecting your location…';
-                        setSubmitAllowed(false);
+                        setLocationReady(false);
                         return;
                     }
 
-                    if (!latestPosition) {
-                        statusEl.textContent = 'Waiting for your device location. Click "Refresh location" if this takes too long.';
-                        setSubmitAllowed(false);
+                    if (!latInput.value || !lngInput.value) {
+                        statusEl.textContent = 'Location is required to clock in. Click "Detect My Location" below.';
+                        setLocationReady(false);
                         return;
                     }
 
-                    var lat = latestPosition.coords.latitude;
-                    var lng = latestPosition.coords.longitude;
-                    var accuracy = latestPosition.coords.accuracy;
+                    var lat = parseFloat(latInput.value);
+                    var lng = parseFloat(lngInput.value);
+                    var accuracy = accuracyInput.value ? parseFloat(accuracyInput.value) : null;
                     var distance = Math.round(distanceMeters(lat, lng, campusLat, campusLng));
                     var offCampusChecked = offCampus && offCampus.checked;
 
                     if (!accuracyIsAcceptable(accuracy)) {
-                        statusEl.textContent = 'Location accuracy is ±' + Math.round(accuracy) + ' m. Move to an open area for a clearer GPS reading, then refresh.';
-                        setSubmitAllowed(false);
+                        statusEl.textContent = 'Location accuracy is ±' + Math.round(accuracy) + ' m. Move to an open area and retry.';
+                        setLocationReady(false);
                         return;
                     }
 
@@ -274,72 +256,111 @@
                             ? 'Location captured for re-verification'
                             : 'Off-campus location captured';
                         statusEl.textContent = prefix + ' (±' + (accuracy ? Math.round(accuracy) : '?') + ' m, ' + distance + ' m from ' + campusName + '). You may clock in.';
-                        setSubmitAllowed(true);
+                        setLocationReady(true);
                         return;
                     }
 
                     if (distance <= campusRadius) {
                         statusEl.textContent = 'On campus verified (±' + (accuracy ? Math.round(accuracy) : '?') + ' m, ' + distance + ' m from ' + campusName + '). You may clock in.';
-                        setSubmitAllowed(true);
+                        setLocationReady(true);
                         return;
                     }
 
-                    statusEl.textContent = 'You appear to be ' + distance + ' m from ' + campusName + '. Tick "Off-campus / field work" if you are working away from campus, then clock in again.';
-                    setSubmitAllowed(false);
+                    statusEl.textContent = 'You appear to be ' + distance + ' m from ' + campusName + '. Tick "Off-campus / field work" if you are working away from campus.';
+                    setLocationReady(false);
+                }
+
+                function setLocation(position) {
+                    detecting = false;
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    var accuracy = position.coords.accuracy;
+
+                    console.log('[ClockIn] Location captured:', lat, lng, 'accuracy:', accuracy);
+
+                    latInput.value = lat;
+                    lngInput.value = lng;
+                    accuracyInput.value = accuracy ?? '';
+                    legacyInput.value = lat + ',' + lng;
+
+                    var distance = Math.round(distanceMeters(lat, lng, campusLat, campusLng));
+
+                    if (distance > campusRadius && offCampus && !offCampus.checked) {
+                        offCampus.checked = true;
+                        if (fieldDetails) {
+                            fieldDetails.hidden = false;
+                        }
+                    }
+
+                    updateStatus();
                 }
 
                 function locationError(message) {
-                    locating = false;
+                    detecting = false;
                     if (statusEl) {
                         statusEl.textContent = message;
                     }
-                    setSubmitAllowed(false);
+                    setLocationReady(false);
                 }
 
-                function requestLocation(fromUserAction) {
+                function requestLocation() {
+                    console.log('[ClockIn] requestLocation called');
                     if (!navigator.geolocation) {
+                        console.log('[ClockIn] Geolocation not supported');
                         locationError('This browser does not support location services. Use a device with GPS to clock in.');
-                        pendingSubmit = false;
                         return;
                     }
 
-                    locating = true;
-                    updateStatusMessage();
+                    if (!window.isSecureContext) {
+                        console.log('[ClockIn] Not secure context:', window.location.protocol);
+                        locationError('Location services require a secure connection (HTTPS) or localhost.');
+                        return;
+                    }
 
-                    navigator.geolocation.getCurrentPosition(setLocation, function (error) {
-                        pendingSubmit = false;
+                    detecting = true;
+                    updateStatus();
+                    console.log('[ClockIn] Calling getCurrentPosition...');
 
-                        if (error.code === error.PERMISSION_DENIED) {
-                            if (fromUserAction) {
-                                locationError('Location access was denied. Enable location for this site in your browser settings, then try again.');
-                            } else {
-                                statusEl.textContent = 'Location permission needed. Click Clock in to allow access.';
+                    try {
+                        navigator.geolocation.getCurrentPosition(setLocation, function (error) {
+                            console.log('[ClockIn] Geolocation error:', error.code, error.message);
+                            detecting = false;
+
+                            switch (error.code) {
+                                case error.PERMISSION_DENIED:
+                                    locationError('Location permission denied. Click the lock icon in your address bar, set Location to Allow, then refresh.');
+                                    break;
+
+                                case error.POSITION_UNAVAILABLE:
+                                    locationError('Location signal unavailable. Check GPS/location services and try again.');
+                                    break;
+
+                                case error.TIMEOUT:
+                                    locationError('Location request timed out. Move to an open area and try again.');
+                                    break;
+
+                                default:
+                                    locationError('Could not detect your location. Check GPS/location services and click Refresh location.');
                             }
-                            setSubmitAllowed(false);
-                            return;
-                        }
-
-                        locationError('Could not detect your location. Check GPS/location services and click Refresh location.');
-                    }, {
-                        enableHighAccuracy: true,
-                        timeout: 20000,
-                        maximumAge: 0,
-                    });
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: 30000,
+                            maximumAge: 0,
+                        });
+                    } catch (e) {
+                        locationError('Location services could not be started. Check browser permissions and try again.');
+                        detecting = false;
+                    }
                 }
 
                 if (refreshButton) {
                     refreshButton.addEventListener('click', function () {
-                        requestLocation(true);
+                        requestLocation();
                     });
                 }
 
-                if (!shouldPromptLocation) {
-                    requestLocation(false);
-                } else {
-                    statusEl.textContent = 'Location permission needed. Click Clock in to allow access.';
-                }
-
                 form.addEventListener('submit', function (event) {
+                    console.log('[ClockIn] Form submit, offCampus:', !!offCampus && offCampus.checked, 'lat:', latInput.value, 'lng:', lngInput.value, 'ready:', locationReady);
                     if (!navigator.geolocation) {
                         event.preventDefault();
                         locationError('Location services are required to clock in.');
@@ -348,20 +369,22 @@
 
                     var offCampusChecked = offCampus && offCampus.checked;
 
-                    if ((latInput.value && lngInput.value && (submitAllowed || offCampusChecked)) || offCampusChecked) {
+                    if (offCampusChecked) {
+                        return;
+                    }
+
+                    if (latInput.value && lngInput.value && locationReady) {
                         return;
                     }
 
                     event.preventDefault();
 
-                    if (!latInput.value || !lngInput.value || shouldPromptLocation) {
-                        shouldPromptLocation = false;
-                        pendingSubmit = true;
-                        requestLocation(true);
+                    if (!latInput.value || !lngInput.value) {
+                        locationError('Location is required. Click "Detect My Location" first.');
                         return;
                     }
 
-                    if (!submitAllowed && !offCampusChecked) {
+                    if (!locationReady) {
                         locationError('Your current location does not meet the clock-in rules shown above.');
                     }
                 });
