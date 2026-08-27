@@ -93,23 +93,7 @@
     }
 
     // --- Session expiry detection ---
-    var sessionCheckInterval = 60000; // 1 minute
-    var sessionCheckUrl = '/api/session-check';
-
-    function checkSession() {
-        if (!sessionBanner || !navigator.onLine) return;
-        fetch(sessionCheckUrl, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-        }).then(function (response) {
-            if (response.status === 401 || response.status === 419) {
-                sessionBanner.classList.add('is-visible');
-            }
-        }).catch(function () {
-            // Network error, offline banner handles this
-        });
-    }
-
-    setInterval(checkSession, sessionCheckInterval);
+    // Session banner is shown by the 419 error page / redirect feedback.
+    // Proactive polling is removed so guests do not see false session-expired
+    // banners on public pages.
 })();
