@@ -58,7 +58,7 @@
                                     <input type="checkbox" name="fields[]" value="{{ $key }}" @checked(in_array($key, $selectedFields, true))>
                                     <span>{{ $fieldLabels[$key] }}</span>
                                 </label>
-                            @endforeach
+                            @endif
                         @endforeach
                     </div>
                 @endforeach
