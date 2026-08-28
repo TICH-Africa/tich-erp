@@ -73,7 +73,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | When true (default in production), route() and asset() always use APP_URL
-    | as the root — required behind cPanel / reverse proxies with odd Host headers.
+    | as the root - required behind cPanel / reverse proxies with odd Host headers.
     |
     */
 

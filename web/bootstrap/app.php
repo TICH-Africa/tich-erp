@@ -156,7 +156,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'url' => $request->fullUrl(),
                 ]);
             } catch (\Throwable) {
-                // Logging itself may need the DB — ignore.
+                // Logging itself may need the DB - ignore.
             }
 
             if ($request->expectsJson()) {

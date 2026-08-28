@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(HmdCcUnitsSeeder::class);
         $this->call(AcademicCalendarDemoSeeder::class);
 
-        // Demo / sample data — local and staging only.
+        // Demo / sample data - local and staging only.
         if (! app()->environment('production')) {
             $this->call(LecturerSeeder::class);
             $this->call(HrDemoSeeder::class);
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             $this->call(FinanceDemoSeeder::class);
         }
 
-        // Demo users — local and staging only.
+        // Demo users - local and staging only.
         if (! app()->environment('production')) {
             $rbac = app(RBACService::class);
 

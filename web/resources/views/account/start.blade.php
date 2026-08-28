@@ -41,7 +41,7 @@
         </div>
     @else
         <div class="tich-alert tich-alert--warning tich-mt-6" role="status">
-            <strong>Account created — access not assigned yet.</strong>
+            <strong>Account created - access not assigned yet.</strong>
             Sign-in works, but no employee record or module roles are linked to this account yet. Ask ICT or HR to link your staff profile and assign a department role.
         </div>
         <p class="tich-caption tich-mt-4">

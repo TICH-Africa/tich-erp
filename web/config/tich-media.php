@@ -2,7 +2,7 @@
 
 return [
 
-    /** WebP encode quality (0–100). Lower = smaller files. */
+    /** WebP encode quality (0-100). Lower = smaller files. */
     'webp_quality' => (int) env('MEDIA_WEBP_QUALITY', 78),
 
     /** Longest edge in pixels after resize (0 = no resize). */

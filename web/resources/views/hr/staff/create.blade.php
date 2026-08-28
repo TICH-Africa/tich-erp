@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <label for="organisation_email" class="tich-label">Organisation email</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Optional — set when issued (e.g. name@tich.africa)">
+                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Optional - set when issued (e.g. name@tich.africa)">
                     <p class="tich-caption tich-mt-1">Leave blank to auto-generate an @tich.africa address.</p>
                 </div>
                 <div>
@@ -75,7 +75,7 @@
                 <div>
                     <label for="department_id" class="tich-label">Department</label>
                     <select id="department_id" name="department_id" class="tich-input">
-                        <option value="">Unassigned — assign via Users &amp; access or HR later</option>
+                        <option value="">Unassigned - assign via Users &amp; access or HR later</option>
                         @foreach ($departments as $department)
                             <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>
                                 {{ $department->dept_name }}

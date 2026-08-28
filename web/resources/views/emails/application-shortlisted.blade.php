@@ -34,7 +34,7 @@
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;background:#f5f6f6;border:1px solid #e2e4e5;">
                                 <tr>
                                     <td style="padding:16px 18px;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#494c50;">
-                                        <strong>Status:</strong> Academically validated — payment required<br>
+                                        <strong>Status:</strong> Academically validated - payment required<br>
                                         <strong>Application fee:</strong> KES {{ number_format($feeAmount, 2) }}<br>
                                         <strong>Payment reference:</strong> {{ $accountReference ?: $applicant->application_number }}
                                     </td>

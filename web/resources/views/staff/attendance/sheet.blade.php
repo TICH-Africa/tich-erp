@@ -34,7 +34,7 @@
         <p class="tracking">Tracking ID: {{ $tracking_id }}</p>
         <p><strong>Unit:</strong> {{ $unit?->unit_code }} - {{ $unit?->unit_name }}</p>
         <p><strong>Date:</strong> {{ $session->session_date?->format('d M Y') }}</p>
-        <p><strong>Time:</strong> {{ substr((string) $session->start_time, 0, 5) }} – {{ substr((string) $session->end_time, 0, 5) }}</p>
+        <p><strong>Time:</strong> {{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</p>
         <p><strong>Venue:</strong> {{ $session->venue ?? 'TBC' }}</p>
         <p><strong>Tutor:</strong> {{ $tutor?->fullName() }}</p>
         <p><strong>Intake:</strong> {{ $intake_label ?? '-' }}</p>

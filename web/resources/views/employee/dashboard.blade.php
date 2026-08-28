@@ -339,7 +339,7 @@
                 <h2 class="tich-h3">Recent performance reviews</h2>
                 @foreach ($staff->performanceReviews as $review)
                     <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
-                        <strong>{{ $review->review_period_start?->format('d M Y') ?? 'Review' }}@if($review->review_period_end) – {{ $review->review_period_end->format('d M Y') }}@endif</strong>
+                        <strong>{{ $review->review_period_start?->format('d M Y') ?? 'Review' }}@if($review->review_period_end) - {{ $review->review_period_end->format('d M Y') }}@endif</strong>
                         <span class="tich-caption"> · {{ ucfirst(str_replace('_', ' ', $review->overall_rating ?? 'completed')) }}</span>
                         <p class="tich-caption tich-mt-2">{{ $review->review_date?->format('d M Y') ?? '-' }}</p>
                     </div>

@@ -41,9 +41,9 @@
     >
     <p class="tich-caption tich-mt-2">
         @if ($requireCoverImage)
-            Upload a file (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. Shown on the programmes catalogue and homepage.
+            Upload a file (JPG, PNG, GIF, or WebP) - not a link. Compressed and saved as WebP. Shown on the programmes catalogue and homepage.
         @else
-            Optional — leave empty to keep the current cover image. JPG, PNG, GIF, or WebP; compressed and saved as WebP when uploaded.
+            Optional - leave empty to keep the current cover image. JPG, PNG, GIF, or WebP; compressed and saved as WebP when uploaded.
         @endif
     </p>
 </div>

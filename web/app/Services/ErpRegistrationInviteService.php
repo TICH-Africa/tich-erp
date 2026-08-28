@@ -120,7 +120,7 @@ class ErpRegistrationInviteService
 
         abort_if($staff?->user_id, 422, 'This employee already has an ERP account.');
 
-        // Invited accounts are employees — ensure a staff record exists so they can open My Employee Portal.
+        // Invited accounts are employees - ensure a staff record exists so they can open My Employee Portal.
         if (! $staff) {
             try {
                 $staff = app(StaffLifecycleService::class)->createProvisionalInviteStaff(

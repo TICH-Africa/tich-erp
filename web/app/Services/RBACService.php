@@ -392,7 +392,7 @@ class RBACService
      */
     public function assignPermissionToUser(User $user, int $permissionId, ?int $campusId = null, ?int $departmentId = null, ?int $grantedBy = null): void
     {
-        // no-op — permissions catalog is code-owned; assign roles instead
+        // no-op - permissions catalog is code-owned; assign roles instead
     }
 
     /**
@@ -447,7 +447,7 @@ class RBACService
     }
 
     /**
-     * Align HR staff.department_id with platform role assignments — never invent a default.
+     * Align HR staff.department_id with platform role assignments - never invent a default.
      */
     public function reconcileStaffEmploymentDepartment(User $user): void
     {

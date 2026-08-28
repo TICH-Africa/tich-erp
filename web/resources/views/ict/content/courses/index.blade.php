@@ -34,13 +34,13 @@
                             @if ($program->coverImageUrl())
                                 <img src="{{ $program->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
                             @else
-                                <span class="tich-caption">—</span>
+                                <span class="tich-caption">-</span>
                             @endif
                         </td>
                         <td>{{ $program->program_code }}</td>
                         <td>{{ $program->program_name }}</td>
-                        <td>{{ $program->department?->dept_name ?? '—' }}</td>
-                        <td>{{ $program->is_featured_on_homepage ? 'Yes' : '—' }}</td>
+                        <td>{{ $program->department?->dept_name ?? '-' }}</td>
+                        <td>{{ $program->is_featured_on_homepage ? 'Yes' : '-' }}</td>
                         <td>
                             <button
                                 type="button"

@@ -42,15 +42,15 @@
                             <td>{{ $item->title }}</td>
                             <td>KES {{ number_format((float) $item->requested_amount, 2) }}</td>
                             <td class="tich-caption">{{ $lineCount }} {{ \Illuminate\Support\Str::plural('line', $lineCount) }}</td>
-                            <td class="tich-caption">{{ $item->planningCycle?->cycle_code ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->planningCycle?->cycle_code ?? '-' }}</td>
                             <td><span class="tich-badge">{{ match($item->status) {
                                 'submitted' => 'Awaiting Administration',
-                                'returned' => 'Returned — revise',
+                                'returned' => 'Returned - revise',
                                 'finance_review' => 'Finance review',
                                 'executive_review' => 'Executive review',
                                 default => str_replace('_', ' ', ucfirst($item->status)),
                             } }}</span></td>
-                            <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '-' }}</td>
                             <td>
                                 @if ($item->status === 'returned')
                                     <a href="{{ route($editRoute, $item->id) }}" class="tich-btn tich-btn-primary">Revise</a>

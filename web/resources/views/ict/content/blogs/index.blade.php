@@ -33,12 +33,12 @@
                             @if ($post->imageUrl())
                                 <img src="{{ $post->imageUrl() }}" alt="" class="tich-program-admin-thumb">
                             @else
-                                <span class="tich-caption">—</span>
+                                <span class="tich-caption">-</span>
                             @endif
                         </td>
                         <td>{{ $post->title }}</td>
                         <td>{{ ucfirst($post->status) }}</td>
-                        <td>{{ $post->published_at?->format('d M Y') ?? '—' }}</td>
+                        <td>{{ $post->published_at?->format('d M Y') ?? '-' }}</td>
                         <td style="display:flex;gap:0.35rem;">
                             <button
                                 type="button"

@@ -95,7 +95,7 @@
                                 <td><strong>{{ $event->title }}</strong></td>
                                 <td>{{ $event->starts_on?->format('d/m/Y') }}</td>
                                 <td>{{ $event->ends_on?->format('d/m/Y') }}</td>
-                                <td>{{ $event->notes ?: '—' }}</td>
+                                <td>{{ $event->notes ?: '-' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -173,7 +173,7 @@
                         @forelse ($adminTasks as $task)
                             <tr>
                                 <td><strong>{{ $task->title }}</strong></td>
-                                <td>{{ $task->owner_id ?: '—' }}</td>
+                                <td>{{ $task->owner_id ?: '-' }}</td>
                                 <td>{{ $task->due_on?->format('d/m/Y') }}</td>
                                 <td>KES {{ number_format($task->budget_implication, 2) }}</td>
                                 <td><span class="tich-badge">{{ ucfirst($task->status) }}</span></td>
@@ -294,13 +294,13 @@
                     <tbody>
                         @forelse ($variances as $variance)
                             <tr>
-                                <td><strong>{{ $variance->department?->dept_name ?? '—' }}</strong></td>
+                                <td><strong>{{ $variance->department?->dept_name ?? '-' }}</strong></td>
                                 <td>{{ $variance->fiscal_year }} / {{ str_pad((string) $variance->month, 2, '0', STR_PAD_LEFT) }}</td>
                                 <td>KES {{ number_format($variance->planned_amount, 2) }}</td>
                                 <td>KES {{ number_format($variance->actual_amount, 2) }}</td>
                                 <td>KES {{ number_format($variance->planned_amount - $variance->actual_amount, 2) }}</td>
-                                <td>{{ $variance->explanation ?: '—' }}</td>
-                                <td>{{ $variance->lessons ?: '—' }}</td>
+                                <td>{{ $variance->explanation ?: '-' }}</td>
+                                <td>{{ $variance->lessons ?: '-' }}</td>
                             </tr>
                         @empty
                             <tr>

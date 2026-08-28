@@ -28,16 +28,16 @@
             <div class="tich-kv-grid tich-mt-4">
                 <div>
                     <span class="tich-kv-grid__label">Name</span>
-                    <span class="tich-kv-grid__value">{{ $suggestion->student?->fullName() ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $suggestion->student?->fullName() ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Registration</span>
-                    <span class="tich-kv-grid__value">{{ $suggestion->student?->registration_number ?? '—' }}</span>
+                    <span class="tich-kv-grid__value">{{ $suggestion->student?->registration_number ?? '-' }}</span>
                 </div>
                 <div>
                     <span class="tich-kv-grid__label">Programme</span>
                     <span class="tich-kv-grid__value">
-                        {{ $suggestion->student?->program?->program_code ?? '—' }}
+                        {{ $suggestion->student?->program?->program_code ?? '-' }}
                         @if ($suggestion->student?->program?->program_name)
                             · {{ $suggestion->student->program->program_name }}
                         @endif

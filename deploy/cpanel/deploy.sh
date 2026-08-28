@@ -78,10 +78,10 @@ if [[ ! -f vendor/autoload.php ]]; then
   exit 1
 fi
 if [[ -d vendor/mockery ]]; then
-  log "WARN: vendor/mockery present — production should not include require-dev packages"
+  log "WARN: vendor/mockery present - production should not include require-dev packages"
 fi
 if grep -R "mockery/mockery" vendor/composer/autoload_files.php >/dev/null 2>&1; then
-  log "ERROR: autoload still references mockery — removing vendor and reinstalling"
+  log "ERROR: autoload still references mockery - removing vendor and reinstalling"
   rm -rf vendor
   "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"
   "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG"
@@ -90,7 +90,7 @@ fi
 log "artisan down / migrate / storage:link…"
 "$PHP_BIN" artisan down --retry=120 2>&1 | tee -a "$LOG" || true
 "$PHP_BIN" artisan migrate --force --no-interaction 2>&1 | tee -a "$LOG" || {
-  log "WARN: migrate failed — check DB_* in .env (site may still boot)"
+  log "WARN: migrate failed - check DB_* in .env (site may still boot)"
 }
 "$PHP_BIN" artisan storage:link --force 2>&1 | tee -a "$LOG" || true
 
@@ -113,7 +113,7 @@ rm -f "${WEB}/bootstrap/cache/config.php" "${WEB}/bootstrap/cache/routes-v7.php"
 log "Cleared bootstrap cache files before rebuild"
 
 /bin/bash "${REPO_ROOT}/deploy/cpanel/sync-public-assets.sh" 2>&1 | tee -a "$LOG" || {
-  log "WARN: asset sync had issues — index.php can still serve css/js as fallback"
+  log "WARN: asset sync had issues - index.php can still serve css/js as fallback"
 }
 
 log "Clearing caches…"

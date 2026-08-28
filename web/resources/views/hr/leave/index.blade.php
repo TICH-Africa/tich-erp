@@ -49,7 +49,7 @@
                                 <p class="tich-caption">{{ $leaveRequest->staff->employee_number }}</p>
                             </td>
                             <td>{{ $leaveRequest->leaveType?->leave_name }}</td>
-                            <td>{{ $leaveRequest->start_date->format('d M Y') }} – {{ $leaveRequest->end_date->format('d M Y') }}</td>
+                            <td>{{ $leaveRequest->start_date->format('d M Y') }} - {{ $leaveRequest->end_date->format('d M Y') }}</td>
                             <td>{{ (int) $leaveRequest->days_requested }}</td>
                             <td>{{ $leaveRequest->statusLabel() }}</td>
                             <td>{{ $leaveRequest->created_at?->format('d M Y') }}</td>

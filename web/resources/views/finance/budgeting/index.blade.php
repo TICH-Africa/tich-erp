@@ -77,7 +77,7 @@
                                 <p class="tich-caption">{{ $budget->budget_code }}</p>
                             </td>
                             <td>
-                                {{ $budget->period_start?->format('M Y') }} – {{ $budget->period_end?->format('M Y') }}
+                                {{ $budget->period_start?->format('M Y') }} - {{ $budget->period_end?->format('M Y') }}
                                 <p class="tich-caption">FY {{ $budget->fiscal_year }}</p>
                             </td>
                             <td>{{ $budget->department?->dept_name ?? 'Institution-wide' }}</td>

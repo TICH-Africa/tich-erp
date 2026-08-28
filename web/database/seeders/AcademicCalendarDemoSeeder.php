@@ -46,6 +46,6 @@ class AcademicCalendarDemoSeeder extends Seeder
             );
         }
 
-        $this->command?->info('Demo academic calendar seeded (2025/2026, semesters 1–6).');
+        $this->command?->info('Demo academic calendar seeded (2025/2026, semesters 1-6).');
     }
 }

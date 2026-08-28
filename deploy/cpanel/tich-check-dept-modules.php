@@ -31,7 +31,7 @@ try {
     $catalog = app(App\Services\DepartmentModuleService::class)->validModuleKeys();
     $configPath = $appPath.'/config/tich-department-modules.php';
 
-    echo 'department_modules table: '.($hasTable ? 'YES' : 'NO — THIS IS THE PROBLEM')."\n";
+    echo 'department_modules table: '.($hasTable ? 'YES' : 'NO - THIS IS THE PROBLEM')."\n";
     echo 'config file exists: '.(is_file($configPath) ? 'YES' : 'NO')."\n";
     echo 'catalog module count: '.count($catalog)."\n";
     echo 'catalog keys: '.implode(', ', $catalog)."\n";

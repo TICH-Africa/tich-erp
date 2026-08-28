@@ -11,7 +11,7 @@
 
     @include('site-settings.partials.sortable-styles')
 
-    <x-page-toolbar title="About Us" meta="Public About Us sections — drag to reorder, edit content and optional image">
+    <x-page-toolbar title="About Us" meta="Public About Us sections - drag to reorder, edit content and optional image">
         <x-slot:actions>
             <a href="{{ route('about') }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">View public page</a>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="about-create-modal">Add section</button>
@@ -43,7 +43,7 @@
                             @if ($block->imageUrl())
                                 <img src="{{ $block->imageUrl() }}" alt="" class="tich-program-admin-thumb">
                             @else
-                                <span class="tich-caption">—</span>
+                                <span class="tich-caption">-</span>
                             @endif
                         </td>
                         <td>

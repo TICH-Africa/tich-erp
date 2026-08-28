@@ -1,5 +1,5 @@
 -- =============================================================================
--- TICH ERP — production schema sync (idempotent, non-destructive)
+-- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
 -- Generated: 2026-08-28 09:42:25 EAT
 -- Source DB: tich_erp

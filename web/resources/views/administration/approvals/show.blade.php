@@ -3,7 +3,7 @@
 @section('title', 'Review budget request')
 
 @section('administration-content')
-    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} — {{ $budgetRequest->title }}">
+    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} - {{ $budgetRequest->title }}">
         <x-slot:actions>
             <a href="{{ route('administration.approvals.index') }}" class="tich-btn tich-btn-ghost">Back to queue</a>
         </x-slot:actions>
@@ -40,11 +40,11 @@
             </div>
             <div>
                 <p class="tich-caption">Budget type</p>
-                <p>{{ $budgetRequest->budget_type ? ucfirst($budgetRequest->budget_type) : '—' }}</p>
+                <p>{{ $budgetRequest->budget_type ? ucfirst($budgetRequest->budget_type) : '-' }}</p>
             </div>
             <div>
                 <p class="tich-caption">Planning cycle</p>
-                <p>{{ $budgetRequest->planningCycle?->cycle_code ?? '—' }} {{ $budgetRequest->planningCycle?->title ? '— '.$budgetRequest->planningCycle->title : '' }}</p>
+                <p>{{ $budgetRequest->planningCycle?->cycle_code ?? '-' }} {{ $budgetRequest->planningCycle?->title ? '- '.$budgetRequest->planningCycle->title : '' }}</p>
             </div>
             <div>
                 <p class="tich-caption">Submitted by</p>
@@ -57,7 +57,7 @@
             </div>
             <div>
                 <p class="tich-caption">Submitted at</p>
-                <p>{{ $budgetRequest->submitted_at?->format('d M Y H:i') ?? '—' }}</p>
+                <p>{{ $budgetRequest->submitted_at?->format('d M Y H:i') ?? '-' }}</p>
             </div>
         </div>
 
@@ -92,11 +92,11 @@
                     <tbody>
                         @foreach ($lines as $line)
                             <tr>
-                                <td>{{ $line['item'] ?? '—' }}</td>
-                                <td>{{ $line['quantity'] ?? '—' }}</td>
-                                <td class="tich-caption">{{ $line['description'] ?? '—' }}</td>
+                                <td>{{ $line['item'] ?? '-' }}</td>
+                                <td>{{ $line['quantity'] ?? '-' }}</td>
+                                <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
                                 <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                <td class="tich-caption">{{ $line['unit_of_measure'] ?? '—' }}</td>
+                                <td class="tich-caption">{{ $line['unit_of_measure'] ?? '-' }}</td>
                                 <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
                             </tr>
                         @endforeach
@@ -143,7 +143,7 @@
                 <form method="POST" action="{{ route('administration.approvals.return', $budgetRequest) }}" class="tich-form-stack" onsubmit="return confirm('Return this request to the submitting department?')">
                     @csrf
                     <div class="tich-form-group">
-                        <label class="tich-label" for="return_notes">Return to sender — reason <span class="tich-text--danger">*</span></label>
+                        <label class="tich-label" for="return_notes">Return to sender - reason <span class="tich-text--danger">*</span></label>
                         <textarea id="return_notes" name="notes" class="tich-input" rows="3" maxlength="2000" required placeholder="What should the department revise?"></textarea>
                     </div>
                     <button type="submit" class="tich-btn tich-btn-secondary">Send back to sender</button>
@@ -159,7 +159,7 @@
                     <form method="POST" action="{{ route('administration.approvals.reject', $budgetRequest) }}" class="tich-mt-4" onsubmit="return confirm('Reject this request permanently?')">
                         @csrf
                         <div class="tich-form-group">
-                            <label class="tich-label" for="reject_notes">Reject — notes (optional)</label>
+                            <label class="tich-label" for="reject_notes">Reject - notes (optional)</label>
                             <textarea id="reject_notes" name="notes" class="tich-input" rows="2" maxlength="1000"></textarea>
                         </div>
                         <button type="submit" class="tich-btn tich-btn-danger">Reject</button>

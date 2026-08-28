@@ -56,7 +56,7 @@ class HrLeaveOverviewService
                     'staff' => $leaveRequest->staff,
                     'leave_type_name' => $leaveRequest->leaveType?->leave_name ?? '-',
                     'reason' => $leaveRequest->reason,
-                    'period_label' => $leaveRequest->start_date->format('d M Y').' – '.$leaveRequest->end_date->format('d M Y'),
+                    'period_label' => $leaveRequest->start_date->format('d M Y').' - '.$leaveRequest->end_date->format('d M Y'),
                     'accrued_days' => (int) ($balance->entitled_days ?? 0),
                     'days_taken' => (int) ($balance->days_taken ?? 0),
                     'balance_days' => (int) ($balance->balance_days ?? 0),
@@ -140,7 +140,7 @@ class HrLeaveOverviewService
                 'on_leave' => $leaveRequest !== null,
                 'current_leave_type' => $leaveRequest?->leaveType?->leave_name,
                 'current_leave_period' => $leaveRequest
-                    ? $leaveRequest->start_date->format('d M Y').' – '.$leaveRequest->end_date->format('d M Y')
+                    ? $leaveRequest->start_date->format('d M Y').' - '.$leaveRequest->end_date->format('d M Y')
                     : null,
                 'accrued_days' => (int) ($balance->accrued_days ?? 0),
                 'days_taken' => (int) ($balance->days_taken ?? 0),

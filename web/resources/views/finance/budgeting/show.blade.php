@@ -32,7 +32,7 @@
         <dl style="display:grid; gap:0.85rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));">
             <div><dt class="tich-caption">Type</dt><dd>{{ ucfirst($budget->budget_type) }}</dd></div>
             <div><dt class="tich-caption">Department</dt><dd>{{ $budget->department?->dept_name ?? 'Institution-wide' }}</dd></div>
-            <div><dt class="tich-caption">Period</dt><dd>{{ $budget->period_start?->format('d M Y') }} – {{ $budget->period_end?->format('d M Y') }}</dd></div>
+            <div><dt class="tich-caption">Period</dt><dd>{{ $budget->period_start?->format('d M Y') }} - {{ $budget->period_end?->format('d M Y') }}</dd></div>
             <div><dt class="tich-caption">Status</dt><dd>{{ ucfirst($budget->status) }}</dd></div>
             <div><dt class="tich-caption">Approved by</dt><dd>{{ $budget->approver?->fullName() ?? '-' }}</dd></div>
         </dl>
@@ -68,7 +68,7 @@
                         <tr>
                             <td><span class="tich-badge">{{ ucfirst($cycle->cycle_type) }}</span></td>
                             <td>{{ $cycle->label }}</td>
-                            <td>{{ $cycle->period_start?->format('d M Y') }} – {{ $cycle->period_end?->format('d M Y') }}</td>
+                            <td>{{ $cycle->period_start?->format('d M Y') }} - {{ $cycle->period_end?->format('d M Y') }}</td>
                             <td>KES {{ number_format((float) $cycle->allocated_amount, 2) }}</td>
                             <td>KES {{ number_format((float) $cycle->spent_amount, 2) }}</td>
                             <td>KES {{ number_format((float) $cycle->committed_amount, 2) }}</td>

@@ -36,9 +36,9 @@
                             <td>
                                 @if ($submitter)
                                     <strong>{{ $submitter['name'] }}</strong>
-                                    <p class="tich-caption">{{ $submitter['email'] ?? '—' }}</p>
+                                    <p class="tich-caption">{{ $submitter['email'] ?? '-' }}</p>
                                 @else
-                                    <span class="tich-caption">—</span>
+                                    <span class="tich-caption">-</span>
                                 @endif
                             </td>
                             <td>

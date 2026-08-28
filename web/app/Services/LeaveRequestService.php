@@ -445,7 +445,7 @@ class LeaveRequestService
 
         $title = $resubmitted ? 'Leave request resubmitted' : 'New leave request';
         $body = sprintf(
-            '%s (%s) %s leave request %s for %s–%s (%s days).',
+            '%s (%s) %s leave request %s for %s-%s (%s days).',
             $staff->fullName(),
             $staff->employee_number,
             $resubmitted ? 'resubmitted' : 'submitted',

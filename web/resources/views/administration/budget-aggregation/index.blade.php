@@ -141,7 +141,7 @@
                         <select id="planning_cycle_id" name="planning_cycle_id" class="tich-input">
                             <option value="">Optional</option>
                             @foreach ($cycles as $cycle)
-                                <option value="{{ $cycle->id }}">{{ $cycle->cycle_code }} — {{ $cycle->title }}</option>
+                                <option value="{{ $cycle->id }}">{{ $cycle->cycle_code }} - {{ $cycle->title }}</option>
                             @endforeach
                         </select>
                     </div>

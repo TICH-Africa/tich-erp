@@ -81,7 +81,7 @@ class PreventDuplicateFormSubmission
                     Cache::forget($cacheKey);
                 }
             } else {
-                // Unexpected failure — allow retry with same form nonce.
+                // Unexpected failure - allow retry with same form nonce.
                 Cache::forget($cacheKey);
             }
             throw $e;

@@ -46,8 +46,8 @@ DB_PASSWORD=…
 
 ## Verify
 
-- https://tich.africa/ — homepage
-- https://tich.africa/css/tich-platform.css — must be CSS, not HTML
+- https://tich.africa/ - homepage
+- https://tich.africa/css/tich-platform.css - must be CSS, not HTML
 - https://tich.africa/js/tich-nav.js
 
 If the site shows a **TICH deploy error** page, follow the hint on that page (usually missing `.env` or `vendor`).
@@ -61,6 +61,6 @@ If the site shows a **TICH deploy error** page, follow the hint on that page (us
 | Composer / vendor missing | Re-deploy; check `last-deploy.log` |
 | Wrong PHP version | Need PHP 8.2+ (`ea-php82`) |
 | Blank 500 after ChatGPT edits | Re-deploy so `public_html/index.php` is replaced from git |
-| CSS 404 | Re-deploy (symlinks) — bridge also serves assets as fallback |
+| CSS 404 | Re-deploy (symlinks) - bridge also serves assets as fallback |
 
-Ignore advice that empties `public_html` permanently or rewrites assets via URL-path `.htaccess` rules to `/tich-erp/web/public/…` — that breaks under LiteSpeed/cPanel. Use this repo’s deploy bridge instead.
+Ignore advice that empties `public_html` permanently or rewrites assets via URL-path `.htaccess` rules to `/tich-erp/web/public/…` - that breaks under LiteSpeed/cPanel. Use this repo’s deploy bridge instead.

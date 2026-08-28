@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Role categories — source of truth in code.
+ * Role categories - source of truth in code.
  */
 return [
     [

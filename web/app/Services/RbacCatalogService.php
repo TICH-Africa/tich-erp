@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Code-owned RBAC catalog (permissions, categories, system/module roles).
- * Runtime permission checks for predefined roles resolve here — not from seeded DB rows.
+ * Runtime permission checks for predefined roles resolve here - not from seeded DB rows.
  * Only thin `roles` rows are materialized so `user_roles.role_id` FKs work.
  */
 class RbacCatalogService

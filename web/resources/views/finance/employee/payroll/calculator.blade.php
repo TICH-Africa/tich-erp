@@ -14,7 +14,7 @@
             <div class="tich-form-group">
                 <label class="tich-label">Staff member</label>
                 <select name="staff_id" class="tich-input">
-                    <option value="">— or calculate manually below —</option>
+                    <option value="">- or calculate manually below -</option>
                     @php
                         $staffList = \App\Models\Staff::query()
                             ->orderBy('surname')
@@ -23,7 +23,7 @@
                     @endphp
                     @foreach ($staffList as $member)
                         <option value="{{ $member->id }}" {{ request('staff_id') == $member->id ? 'selected' : '' }}>
-                            {{ $member->fullName() }} ({{ $member->employee_number }}) — KES {{ number_format((float) $member->gross_monthly_salary, 2) }}
+                            {{ $member->fullName() }} ({{ $member->employee_number }}) - KES {{ number_format((float) $member->gross_monthly_salary, 2) }}
                         </option>
                     @endforeach
                 </select>

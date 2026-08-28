@@ -14,11 +14,11 @@ return [
     'pages' => [
         'home' => [
             'title' => 'Home',
-            'description' => 'Tropical Institute of Community Health and Development in Africa (TICH) — community health education, academic programmes, research, and careers across Africa.',
+            'description' => 'Tropical Institute of Community Health and Development in Africa (TICH) - community health education, academic programmes, research, and careers across Africa.',
         ],
         'about' => [
             'title' => 'About Us',
-            'description' => 'Learn about TICH in Africa — our mission, history, and commitment to community health education and sustainable development.',
+            'description' => 'Learn about TICH in Africa - our mission, history, and commitment to community health education and sustainable development.',
         ],
         'research' => [
             'title' => 'Research',
@@ -26,7 +26,7 @@ return [
         ],
         'support' => [
             'title' => 'Support Us',
-            'description' => 'Support TICH Fund — donate to academic and vocational training, community health leadership, and sustainable development programmes.',
+            'description' => 'Support TICH Fund - donate to academic and vocational training, community health leadership, and sustainable development programmes.',
         ],
         'contact' => [
             'title' => 'Contact Us',
@@ -34,7 +34,7 @@ return [
         ],
         'events' => [
             'title' => 'Events',
-            'description' => 'Upcoming and past events at TICH in Africa — workshops, conferences, graduations, and community engagement.',
+            'description' => 'Upcoming and past events at TICH in Africa - workshops, conferences, graduations, and community engagement.',
         ],
         'blog' => [
             'title' => 'Blog',
@@ -46,7 +46,7 @@ return [
         ],
         'careers' => [
             'title' => 'Careers',
-            'description' => 'Join TICH in Africa — view open vacancies and career opportunities in community health education and institutional services.',
+            'description' => 'Join TICH in Africa - view open vacancies and career opportunities in community health education and institutional services.',
         ],
         'apply' => [
             'title' => 'Apply',

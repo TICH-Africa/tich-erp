@@ -1,6 +1,6 @@
 @if ($carousel->isNotEmpty())
 <section class="tich-hero-carousel" id="home-hero" data-carousel aria-roledescription="carousel" aria-label="Featured highlights">
-    <h1 class="tich-sr-only">{{ $siteMeta['institution_name'] ?? 'TICH in Africa' }} — {{ $siteMeta['tagline'] ?? 'Community health education for Africa' }}</h1>
+    <h1 class="tich-sr-only">{{ $siteMeta['institution_name'] ?? 'TICH in Africa' }} - {{ $siteMeta['tagline'] ?? 'Community health education for Africa' }}</h1>
 
     @foreach ($carousel as $index => $slide)
         <article class="tich-hero-carousel__slide {{ $index === 0 ? 'is-active' : '' }}" data-carousel-slide @if($index !== 0) aria-hidden="true" @endif>

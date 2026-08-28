@@ -28,7 +28,7 @@ class PrintDocumentService
             return '';
         }
 
-        return str_replace(['-', '–', '−'], '-', $text);
+        return str_replace(['-', '-', '−'], '-', $text);
     }
 
     public function normalizeDocumentHtml(string $html): string

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Permission catalog — source of truth in code (not seeded into DB for runtime checks).
+ * Permission catalog - source of truth in code (not seeded into DB for runtime checks).
  *
  * Slug format: {module}_{action}_{category}
  * Example: finance_manage_student_accounts_view

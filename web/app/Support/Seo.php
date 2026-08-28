@@ -39,7 +39,7 @@ class Seo
 
         $description = trim((string) ($overrides['description'] ?? $metaDescription));
         if ($description === '') {
-            $description = $institution.' — community health education for Africa.';
+            $description = $institution.' - community health education for Africa.';
         }
         $description = Str::limit(preg_replace('/\s+/', ' ', strip_tags($description)) ?? $description, 160, '');
 

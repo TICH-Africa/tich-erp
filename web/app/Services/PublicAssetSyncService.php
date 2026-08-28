@@ -65,7 +65,7 @@ class PublicAssetSyncService
             if (@symlink($storageTarget, $storageLink)) {
                 $log('Created storage link: '.$storageLink.' -> '.$storageTarget);
             } else {
-                $log('WARN: Could not create public/storage symlink — index.php bridge still serves uploads from storage/app/public');
+                $log('WARN: Could not create public/storage symlink - index.php bridge still serves uploads from storage/app/public');
             }
         } else {
             $log('Storage link present: '.$storageLink);

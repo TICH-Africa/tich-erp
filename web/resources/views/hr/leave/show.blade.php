@@ -20,7 +20,7 @@
         <div class="tich-grid tich-grid--2 tich-mt-4">
             <div>
                 <strong>Annual Leave</strong>
-                <p class="tich-caption tich-mt-1">21 working days per year. Accrues monthly at 1.75 days/month. Counts working days only (Mon–Fri, excludes public holidays). Carry forward max 10 days.</p>
+                <p class="tich-caption tich-mt-1">21 working days per year. Accrues monthly at 1.75 days/month. Counts working days only (Mon-Fri, excludes public holidays). Carry forward max 10 days.</p>
             </div>
             <div>
                 <strong>Sick Leave</strong>

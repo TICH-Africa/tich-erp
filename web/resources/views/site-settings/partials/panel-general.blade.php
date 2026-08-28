@@ -251,12 +251,12 @@
                     </div>
                     <div class="tich-form-group" style="grid-column: 1 / -1;">
                         <label for="ticker_message" class="tich-label">Homepage ticker message</label>
-                        <textarea id="ticker_message" name="ticker_message" class="tich-input" rows="2" placeholder="e.g. TICH 18th Graduation — 9th to 11th September at Mama Grace Social Hall">{{ old('ticker_message', $siteMeta['ticker_message'] ?? '') }}</textarea>
+                        <textarea id="ticker_message" name="ticker_message" class="tich-input" rows="2" placeholder="e.g. TICH 18th Graduation - 9th to 11th September at Mama Grace Social Hall">{{ old('ticker_message', $siteMeta['ticker_message'] ?? '') }}</textarea>
                         <p class="tich-caption tich-mt-2">Shown as a scrolling marquee at the bottom of the homepage hero. Leave blank to hide.</p>
                     </div>
                     <div class="tich-form-group" style="grid-column: 1 / -1;">
                         <label for="meta_description" class="tich-label">Default SEO description</label>
-                        <textarea id="meta_description" name="meta_description" class="tich-input" rows="2" maxlength="320" placeholder="Short summary for search engines (≈150–160 characters)">{{ old('meta_description', $siteMeta['meta_description'] ?? '') }}</textarea>
+                        <textarea id="meta_description" name="meta_description" class="tich-input" rows="2" maxlength="320" placeholder="Short summary for search engines (≈150-160 characters)">{{ old('meta_description', $siteMeta['meta_description'] ?? '') }}</textarea>
                         <p class="tich-caption tich-mt-2">Used as the fallback meta description and Open Graph text when a page does not set its own.</p>
                     </div>
                     <div class="tich-form-group">

@@ -1,6 +1,6 @@
 @extends('layouts.hr')
 
-@section('title', 'Review attendance — ' . $attendance->staff->fullName())
+@section('title', 'Review attendance - ' . $attendance->staff->fullName())
 
 @section('hr-content')
     @php

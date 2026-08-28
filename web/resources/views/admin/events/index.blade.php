@@ -43,9 +43,9 @@
                         </td>
                         <td>{{ $event->title }}</td>
                         <td>{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</td>
-                        <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '—' }}</td>
+                        <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '-' }}</td>
                         <td>{{ $event->is_public ? 'Yes' : 'No' }}</td>
-                        <td>{{ $event->is_featured ? 'Hero' : '—' }}</td>
+                        <td>{{ $event->is_featured ? 'Hero' : '-' }}</td>
                         <td style="display:flex;gap:0.35rem;">
                             <button
                                 type="button"

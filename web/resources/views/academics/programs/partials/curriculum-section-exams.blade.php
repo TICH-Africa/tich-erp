@@ -42,7 +42,7 @@
                     <span class="tich-page-toolbar__meta">
                         Semester {{ $examTeachingPeriod }} · {{ $examPeriod->scheduleLabel() }}
                         @if ($examPeriod->exam_start_date || $examPeriod->effectiveExamEnd())
-                            · Exams: {{ $examPeriod->exam_start_date?->format('d M Y') ?? '-' }} – {{ $examPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}
+                            · Exams: {{ $examPeriod->exam_start_date?->format('d M Y') ?? '-' }} - {{ $examPeriod->effectiveExamEnd()?->format('d M Y') ?? '-' }}
                         @endif
                     </span>
                 @endif
@@ -569,7 +569,7 @@
                                         <td>
                                             @if ($unitRow->exam_date)
                                                 {{ \Illuminate\Support\Carbon::parse($unitRow->exam_date)->format('d M Y') }}
-                                                {{ substr((string) $unitRow->start_time, 0, 5) }}–{{ substr((string) $unitRow->end_time, 0, 5) }}
+                                                {{ substr((string) $unitRow->start_time, 0, 5) }}-{{ substr((string) $unitRow->end_time, 0, 5) }}
                                                 <span class="tich-caption" style="display:block;">{{ $unitRow->venue ?? '-' }}</span>
                                             @else
                                                 Not scheduled

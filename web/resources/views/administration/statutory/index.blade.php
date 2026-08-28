@@ -61,7 +61,7 @@
                                 @if ($cert->document_path)
                                     <a href="{{ route('administration.statutory.download', $cert) }}" class="tich-link">Download</a>
                                 @else
-                                    <span class="tich-caption">—</span>
+                                    <span class="tich-caption">-</span>
                                 @endif
                             </td>
                         </tr>

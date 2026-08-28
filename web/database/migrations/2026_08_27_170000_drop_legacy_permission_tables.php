@@ -18,6 +18,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Intentionally empty — permission tables are not restored.
+        // Intentionally empty - permission tables are not restored.
     }
 };

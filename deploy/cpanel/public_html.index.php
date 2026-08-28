@@ -1,7 +1,7 @@
 <?php
 
 /**
- * public_html/index.php — bridge to Laravel at tich-erp/web
+ * public_html/index.php - bridge to Laravel at tich-erp/web
  * Paste this file into /home3/tichafri/public_html/index.php
  *
  * Serves static assets (css/js/images) and uploaded media (/storage/…)

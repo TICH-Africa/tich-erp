@@ -1,5 +1,5 @@
 -- =============================================================================
--- TICH ERP — production schema PATCHES (intentional alters / drops)
+-- TICH ERP - production schema PATCHES (intentional alters / drops)
 -- =============================================================================
 -- Run AFTER deploy/production.sql on production when localhost migrations included
 -- DROP TABLE or MODIFY COLUMN changes that production.sql cannot apply.

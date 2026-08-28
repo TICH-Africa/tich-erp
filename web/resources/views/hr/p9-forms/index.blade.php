@@ -46,7 +46,7 @@
                         @include('partials.states.table-empty', [
                             'colspan' => 5,
                             'title' => 'No payroll data for ' . $year,
-                            'description' => 'Create a payroll run for this tax year first. Your current runs may be under a different year — use the Tax year filter above.',
+                            'description' => 'Create a payroll run for this tax year first. Your current runs may be under a different year - use the Tax year filter above.',
                             'icon' => 'inbox',
                         ])
                     @endforelse

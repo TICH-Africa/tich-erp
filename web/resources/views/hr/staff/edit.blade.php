@@ -66,7 +66,7 @@
                 </div>
                 <div>
                     <label for="organisation_email" class="tich-label">Organisation email</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email', $staff->organisation_email) }}" class="tich-input" pattern=".+@tich\.africa$" title="If set, must use @tich.africa" placeholder="Optional — e.g. name@tich.africa">
+                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email', $staff->organisation_email) }}" class="tich-input" pattern=".+@tich\.africa$" title="If set, must use @tich.africa" placeholder="Optional - e.g. name@tich.africa">
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>
@@ -75,7 +75,7 @@
                 <div>
                     <label for="department_id" class="tich-label">Department</label>
                     <select id="department_id" name="department_id" class="tich-input">
-                        <option value="">Unassigned — assign via Users &amp; access or HR later</option>
+                        <option value="">Unassigned - assign via Users &amp; access or HR later</option>
                         @foreach ($departments as $department)
                             <option value="{{ $department->id }}" {{ old('department_id', $staff->department_id) == $department->id ? 'selected' : '' }}>
                                 {{ $department->dept_name }}

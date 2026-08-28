@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Throwable;
 
 /**
- * Builds deploy/production.sql — an idempotent, data-safe schema sync script
+ * Builds deploy/production.sql - an idempotent, data-safe schema sync script
  * for HostPinnacle / production MariaDB-MySQL (Africa/Nairobi = GMT+3).
  *
  * Rules encoded in the SQL:
@@ -74,7 +74,7 @@ class ExportProductionSchemaCommand extends Command
 
         $lines = [];
         $lines[] = '-- =============================================================================';
-        $lines[] = '-- TICH ERP — production schema sync (idempotent, non-destructive)';
+        $lines[] = '-- TICH ERP - production schema sync (idempotent, non-destructive)';
         $lines[] = '-- =============================================================================';
         $lines[] = '-- Generated: '.$generatedAt;
         $lines[] = '-- Source DB: '.$database;
@@ -311,7 +311,7 @@ SQL;
                 $parts[] = 'DEFAULT '.$this->quoteDefault($default);
             }
         } elseif (($col->IS_NULLABLE ?? 'YES') === 'YES' && ! str_contains($extra, 'auto_increment')) {
-            // Explicit NULL default omitted — engine default is fine.
+            // Explicit NULL default omitted - engine default is fine.
         }
 
         if (str_contains($extra, 'auto_increment')) {

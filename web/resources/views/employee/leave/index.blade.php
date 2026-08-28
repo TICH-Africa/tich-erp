@@ -75,7 +75,7 @@
                             </div>
                             <p class="tich-leave-request-item__meta">
                                 <span>{{ $request->leave_number }}</span>
-                                · {{ $request->start_date->format('d M Y') }} – {{ $request->end_date->format('d M Y') }}
+                                · {{ $request->start_date->format('d M Y') }} - {{ $request->end_date->format('d M Y') }}
                                 · {{ (int) $request->days_requested }} day(s)
                             </p>
                             @if ($request->hr_review_notes && $request->overall_status === 'returned')

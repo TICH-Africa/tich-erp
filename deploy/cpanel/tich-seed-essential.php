@@ -3,7 +3,7 @@
 /**
  * Ensure thin RBAC role rows from code catalog (no Terminal).
  *
- * Permissions / categories / nav / role↔permission templates are NOT seeded —
+ * Permissions / categories / nav / role↔permission templates are NOT seeded -
  * they live in config and are resolved at runtime.
  *
  * Upload to: public_html/tich-seed-essential.php
@@ -34,7 +34,7 @@ try {
 
     Illuminate\Support\Facades\Artisan::call('tich:ensure-rbac-roles');
     echo htmlspecialchars(Illuminate\Support\Facades\Artisan::output());
-    echo "\nOK — role rows ensured from code. Permissions/nav are config-owned.\n";
+    echo "\nOK - role rows ensured from code. Permissions/nav are config-owned.\n";
 } catch (Throwable $e) {
     echo 'ERROR: '.htmlspecialchars($e->getMessage())."\n";
     echo htmlspecialchars($e->getFile().':'.$e->getLine())."\n";

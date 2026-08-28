@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * MFA columns on users. Permission catalog tables were removed — roles/permissions
+ * MFA columns on users. Permission catalog tables were removed - roles/permissions
  * are code-owned (config/tich-permissions.php, config/tich-module-roles.php).
  */
 return new class extends Migration

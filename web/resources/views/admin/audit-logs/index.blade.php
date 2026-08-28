@@ -123,7 +123,7 @@
 
             <div class="tich-mt-4" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
                 <p class="tich-caption" style="margin:0;">
-                    Showing {{ $logs->firstItem() ?? 0 }}–{{ $logs->lastItem() ?? 0 }} of {{ $logs->total() }}
+                    Showing {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }} of {{ $logs->total() }}
                 </p>
                 {{ $logs->withQueryString()->links() }}
             </div>

@@ -5,7 +5,7 @@
 @section($moduleContext['content_section'])
     <x-page-toolbar
         :title="$pageTitle"
-        meta="List line items with quantities and unit prices — totals calculate automatically"
+        meta="List line items with quantities and unit prices - totals calculate automatically"
     >
         <x-slot:actions>
             <a href="{{ route($indexRoute) }}" class="tich-btn tich-btn-ghost">Back to budgeting</a>
@@ -62,7 +62,7 @@
                 <select id="planning_cycle_id" name="planning_cycle_id" class="tich-input">
                     <option value="">Optional</option>
                     @foreach ($cycles as $cycle)
-                        <option value="{{ $cycle->id }}" @selected(old('planning_cycle_id', $budgetRequest?->planning_cycle_id) == $cycle->id)>{{ $cycle->cycle_code }} — {{ $cycle->title }}</option>
+                        <option value="{{ $cycle->id }}" @selected(old('planning_cycle_id', $budgetRequest?->planning_cycle_id) == $cycle->id)>{{ $cycle->cycle_code }} - {{ $cycle->title }}</option>
                     @endforeach
                 </select>
             </div>

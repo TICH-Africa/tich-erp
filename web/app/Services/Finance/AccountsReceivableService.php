@@ -66,10 +66,10 @@ class AccountsReceivableService
     public function bucketLabel(string $bucket): string
     {
         return match ($bucket) {
-            'current' => 'Current (0–13 days)',
-            'days_14' => '14–29 days',
-            'days_30' => '30–59 days',
-            'days_60' => '60–89 days',
+            'current' => 'Current (0-13 days)',
+            'days_14' => '14-29 days',
+            'days_30' => '30-59 days',
+            'days_60' => '60-89 days',
             'days_90_plus' => '90+ days',
             default => ucfirst($bucket),
         };

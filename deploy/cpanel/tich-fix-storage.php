@@ -96,7 +96,7 @@ if ($sample) {
     echo "Via public/storage: ".(is_file($publicStorage.'/'.$rel) ? 'YES' : 'NO')."\n";
     echo "Via docroot/storage: ".(is_file($docrootStorage.'/'.$rel) ? 'YES' : 'NO')."\n";
 } else {
-    echo "No uploaded files yet — upload an image in admin, then re-run this check.\n";
+    echo "No uploaded files yet - upload an image in admin, then re-run this check.\n";
 }
 
 echo "\nAlso ensure web/.env has:\n";

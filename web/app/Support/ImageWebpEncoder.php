@@ -19,7 +19,7 @@ class ImageWebpEncoder
     }
 
     /**
-     * Raster images that must be stored as .webp (upload only — no remote URLs).
+     * Raster images that must be stored as .webp (upload only - no remote URLs).
      */
     public function isRasterImageUpload(UploadedFile $file): bool
     {

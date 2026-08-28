@@ -226,7 +226,7 @@ class AuthService
                 ->with('warning', 'Complete your employee profile before using the ERP. This is required for accountability and emergency contact records.');
         }
 
-        // Do not honour an intended /dashboard URL for new employees — send them to the portal first.
+        // Do not honour an intended /dashboard URL for new employees - send them to the portal first.
         if ($this->shouldPreferEmployeeHome($user)) {
             return redirect()->to($home);
         }
@@ -276,7 +276,7 @@ class AuthService
             return route('portal.dashboard');
         }
 
-        // Platform admins use the full dashboard — never force employee profile completion.
+        // Platform admins use the full dashboard - never force employee profile completion.
         if ($this->rbacService->isPlatformAdministrator($user)) {
             return route('dashboard');
         }
@@ -288,7 +288,7 @@ class AuthService
         $isEmployee = $user->user_type === 'staff'
             || $employeePortal->hasEmployeeProfile($user);
 
-        // Invited users and staff are employees — home depends on profile + department assignment.
+        // Invited users and staff are employees - home depends on profile + department assignment.
         if ($isEmployee) {
             if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
                 return route('employee.profile.edit');

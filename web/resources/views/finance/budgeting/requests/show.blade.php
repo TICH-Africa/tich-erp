@@ -3,7 +3,7 @@
 @section('title', 'Review budget request')
 
 @section('finance-content')
-    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} — {{ $budgetRequest->title }}">
+    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} - {{ $budgetRequest->title }}">
         <x-slot:actions>
             <a href="{{ route('finance.budgeting.requests.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
@@ -79,11 +79,11 @@
                             <tbody>
                                 @foreach ($lines as $line)
                                     <tr>
-                                        <td>{{ $line['item'] ?? '—' }}</td>
-                                        <td>{{ $line['quantity'] ?? '—' }}</td>
-                                        <td class="tich-caption">{{ $line['description'] ?? '—' }}</td>
+                                        <td>{{ $line['item'] ?? '-' }}</td>
+                                        <td>{{ $line['quantity'] ?? '-' }}</td>
+                                        <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
                                         <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                        <td class="tich-caption">{{ $line['unit_of_measure'] ?? '—' }}</td>
+                                        <td class="tich-caption">{{ $line['unit_of_measure'] ?? '-' }}</td>
                                         <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
                                     </tr>
                                 @endforeach
@@ -342,7 +342,7 @@
                     '</td>' +
                     '<td>' +
                         '<input type="hidden" name="group_allocations[' + index + '][label]" value="' + labelInput.value.replace(/"/g, '&quot;') + '">' +
-                        (labelInput.value || '—') +
+                        (labelInput.value || '-') +
                     '</td>' +
                     '<td>' +
                         '<input type="hidden" name="group_allocations[' + index + '][amount]" value="' + parseFloat(amountInput.value || '0').toFixed(2) + '">' +

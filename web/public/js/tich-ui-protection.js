@@ -1,6 +1,6 @@
 /**
  * Client UI protection: hide context menu (incl. Inspect) and block common
- * DevTools shortcuts. Deterrent only — it cannot fully prevent inspection.
+ * DevTools shortcuts. Deterrent only - it cannot fully prevent inspection.
  * Opt out: set window.TICH_ALLOW_INSPECT = true before this script loads,
  * or data-allow-inspect on <html>/<body>.
  */

@@ -17,7 +17,7 @@
                         <div>
                             <h2 class="tich-h2">Research excellence</h2>
                             <p class="tich-text tich-mt-4">
-                                From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice—translating research into action and policy.
+                                From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
                             </p>
                             <p class="tich-text tich-mt-4">
                                 Through partnership with local and global organizations, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.

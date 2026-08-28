@@ -36,7 +36,7 @@
             <div class="tich-form-group">
                 <label class="tich-label" for="admission_letter">{{ $letterExists ? 'Replace admission letter' : 'Upload admission letter' }}</label>
                 <input type="file" id="admission_letter" name="admission_letter" class="tich-input" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf">
-                <p class="tich-caption tich-mt-1">PDF, Word, or image — max 10 MB</p>
+                <p class="tich-caption tich-mt-1">PDF, Word, or image - max 10 MB</p>
             </div>
             <button type="submit" class="tich-btn tich-btn-primary">{{ $letterExists ? 'Replace letter' : 'Upload letter' }}</button>
         </form>

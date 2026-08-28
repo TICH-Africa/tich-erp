@@ -72,8 +72,8 @@
                     @forelse ($suggestions as $item)
                         <tr>
                             <td>
-                                <strong>{{ $item->student?->fullName() ?? '—' }}</strong>
-                                <p class="tich-caption">{{ $item->student?->registration_number ?? '—' }}</p>
+                                <strong>{{ $item->student?->fullName() ?? '-' }}</strong>
+                                <p class="tich-caption">{{ $item->student?->registration_number ?? '-' }}</p>
                             </td>
                             <td class="tich-caption">{{ $item->categoryLabel() }}</td>
                             <td class="tich-caption">{{ $item->subject ?: \Illuminate\Support\Str::limit($item->body, 60) }}</td>

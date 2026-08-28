@@ -355,7 +355,7 @@ class P9FormService
         $sheet->getStyle('A8:R27')->getBorders()->getAllBorders()
             ->setBorderStyle(Border::BORDER_THIN);
 
-        // Fixed widths — autoSize balloons columns from long header/footer text.
+        // Fixed widths - autoSize balloons columns from long header/footer text.
         $widths = [
             'A' => 12,
             'B' => 11,

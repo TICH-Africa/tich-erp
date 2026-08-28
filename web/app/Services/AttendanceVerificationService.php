@@ -43,7 +43,7 @@ class AttendanceVerificationService
                 'action' => 'Clears the student for exam card generation once fees are fully paid.',
             ],
             [
-                'bound' => '75% – 89%',
+                'bound' => '75% - 89%',
                 'flag' => self::FLAG_AMBER,
                 'label' => 'AMBER: AT RISK',
                 'action' => 'Automated warning to the Student Portal, assigned tutor, and HOD panel.',

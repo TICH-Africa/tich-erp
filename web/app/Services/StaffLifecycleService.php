@@ -385,7 +385,7 @@ class StaffLifecycleService
         return DB::transaction(function () use ($personalEmail, $createdBy, $linkUser) {
             $staff = Staff::query()->create([
                 'employee_number' => $this->generateEmployeeNumber(),
-                // Placeholders only — completeness treats these as incomplete.
+                // Placeholders only - completeness treats these as incomplete.
                 'first_name' => 'Pending',
                 'surname' => 'Invitee',
                 'date_of_birth' => '1990-01-01',
@@ -442,7 +442,7 @@ class StaffLifecycleService
             }
         }
 
-        // Never invent @tich.africa here — HR issues organisation email deliberately.
+        // Never invent @tich.africa here - HR issues organisation email deliberately.
         if ($user) {
             app(RBACService::class)->reconcileStaffEmploymentDepartment($user);
         }
