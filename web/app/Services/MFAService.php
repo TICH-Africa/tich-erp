@@ -299,7 +299,7 @@ class MFAService
         try {
             $otp = TOTP::create($secret);
             $otp->setLabel($user->email);
-            $otp->setIssuer(config('app.name', 'TICH ERP'));
+            $otp->setIssuer(\App\Support\SiteBrand::shortName());
 
             return $otp->getProvisioningUri();
         } catch (\Throwable) {

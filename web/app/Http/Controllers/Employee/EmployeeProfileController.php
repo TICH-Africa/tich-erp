@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\StaffProfileChangeRequest;
 use App\Services\AuthService;
 use App\Services\EmployeePortalService;
-use App\Services\EmployeeProfileChangeService;
 use App\Services\EmployeeProfileCompletenessService;
+use App\Services\EmployeeProfileChangeService;
+use App\Services\EmployeeProfileUpdatePromptService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,6 +19,7 @@ class EmployeeProfileController extends Controller
         protected EmployeePortalService $employeePortal,
         protected EmployeeProfileChangeService $profileChanges,
         protected EmployeeProfileCompletenessService $completeness,
+        protected EmployeeProfileUpdatePromptService $profilePrompts,
         protected AuthService $authService,
     ) {}
 
@@ -32,6 +34,9 @@ class EmployeeProfileController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $profileUpdatePrompt = $this->profilePrompts->findActiveForStaff($staff, $request->string('prompt')->toString() ?: null);
+        $highlightFields = $profileUpdatePrompt?->requested_fields ?? [];
+
         return view('employee.profile.edit', [
             'portalTitle' => $mustComplete ? 'Complete your profile' : 'Update my profile',
             'staff' => $staff,
@@ -40,6 +45,8 @@ class EmployeeProfileController extends Controller
             'missingProfileLabels' => $this->completeness->missingLabels($staff),
             'requiredProfileFields' => EmployeeProfileCompletenessService::REQUIRED_FIELDS,
             'editableFields' => EmployeeProfileChangeService::EDITABLE_FIELDS,
+            'profileUpdatePrompt' => $profileUpdatePrompt,
+            'highlightFields' => $highlightFields,
             'qualificationTypes' => [
                 'certificate' => 'Certificate',
                 'diploma' => 'Diploma',
@@ -75,6 +82,7 @@ class EmployeeProfileController extends Controller
             'emergency_contact_phone' => ($mustComplete ? 'required' : 'nullable').'|string|max:30',
             'emergency_contact_relationship' => ($mustComplete ? 'required' : 'nullable').'|string|max:100',
             'employee_notes' => 'nullable|string|max:2000',
+            'profile_photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:6144',
             'cropped_photo' => 'nullable|string',
             'qualification_type' => 'nullable|string|in:certificate,diploma,degree,masters,phd,professional_cert,trade_test',
             'qualification_name' => 'nullable|required_with:qualification_type|string|max:300',
@@ -97,6 +105,7 @@ class EmployeeProfileController extends Controller
         try {
             if ($mustComplete) {
                 $staff = $this->profileChanges->applySelfServiceCompletion($staff, $request->user(), $validated);
+                $this->profilePrompts->fulfillForStaff($staff);
 
                 if (! $this->completeness->isComplete($staff)) {
                     return back()
@@ -123,19 +132,28 @@ class EmployeeProfileController extends Controller
 
                 return redirect()
                     ->intended($this->authService->authenticatedHome($request->user()))
-                    ->with('success', 'Profile saved. You can now use the ERP. Later changes will be reviewed by HR.');
+                    ->with('success', $this->mustCompleteSuccessMessage($validated));
             }
 
             $created = $this->profileChanges->submitUpdates($staff, $request->user(), $validated);
+            $this->profilePrompts->fulfillForStaff($staff);
         } catch (\InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['form' => $exception->getMessage()]);
         }
 
         $count = count($created);
+        $hasPhotoRequest = collect($created)->contains(
+            fn (StaffProfileChangeRequest $request) => $request->request_type === StaffProfileChangeRequest::TYPE_PHOTO
+        );
+
+        $message = "Submitted {$count} change request(s) for HR review. Your current details remain active until approved.";
+        if ($hasPhotoRequest) {
+            $message .= ' Your new profile photo will appear after HR approves the photo update.';
+        }
 
         return redirect()
             ->route('employee.profile.edit')
-            ->with('success', "Submitted {$count} change request(s) for HR review. Your current details remain active until approved.");
+            ->with('success', $message);
     }
 
     private function staff(Request $request): \App\Models\Staff
@@ -146,5 +164,19 @@ class EmployeeProfileController extends Controller
         abort_unless($staff, 403);
 
         return $staff;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function mustCompleteSuccessMessage(array $validated): string
+    {
+        $message = 'Profile saved. You can now use the ERP. Later changes will be reviewed by HR.';
+
+        if ($validated['profile_photo'] ?? null) {
+            $message .= ' Your profile photo has been saved.';
+        }
+
+        return $message;
     }
 }

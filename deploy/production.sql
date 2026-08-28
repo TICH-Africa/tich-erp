@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-08-28 09:42:25 EAT
+-- Generated: 2026-08-28 14:35:44 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -15,6 +15,9 @@
 --   php artisan migrate
 --   php artisan tich:export-production-schema
 -- (Also auto-refreshed when migrations finish successfully.)
+--
+-- For DROP TABLE / MODIFY COLUMN changes, also run deploy/production-patches.sql
+-- after this file on production (see deploy/PRODUCTION_SQL.md).
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -8553,6 +8556,51 @@ CALL `tich_ensure_index`('staff_profile_change_requests', 'staff_profile_change_
 CALL `tich_ensure_index`('staff_profile_change_requests', 'staff_profile_change_requests_status_created_at_index', '`status`, `created_at`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `staff_profile_update_prompts`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_profile_update_prompts` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `requested_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `requested_via_module` varchar(32) NOT NULL DEFAULT 'hr',
+  `requested_fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`requested_fields`)),
+  `notes` text DEFAULT NULL,
+  `token` varchar(64) NOT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'pending',
+  `emailed_at` timestamp NULL DEFAULT NULL,
+  `fulfilled_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `staff_profile_update_prompts_token_unique` (`token`),
+  KEY `staff_profile_update_prompts_requested_by_user_id_foreign` (`requested_by_user_id`),
+  KEY `staff_profile_update_prompts_staff_id_status_index` (`staff_id`,`status`),
+  CONSTRAINT `staff_profile_update_prompts_requested_by_user_id_foreign` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_profile_update_prompts_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `staff_profile_update_prompts` (add only if missing)
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'requested_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'requested_via_module', 'varchar(32) NOT NULL DEFAULT \'\\\'hr\\\'\'');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'requested_fields', 'longtext NOT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'token', 'varchar(64) NOT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'status', 'varchar(32) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'emailed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'fulfilled_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'expires_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_profile_update_prompts', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `staff_profile_update_prompts` (add only if missing)
+CALL `tich_ensure_index`('staff_profile_update_prompts', 'staff_profile_update_prompts_requested_by_user_id_foreign', '`requested_by_user_id`');
+CALL `tich_ensure_index`('staff_profile_update_prompts', 'staff_profile_update_prompts_staff_id_status_index', '`staff_id`, `status`');
+CALL `tich_ensure_unique`('staff_profile_update_prompts', 'staff_profile_update_prompts_token_unique', '`token`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `staff_qualifications`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `staff_qualifications` (
@@ -10205,6 +10253,10 @@ CALL `tich_ensure_fk`('staff_professional_licenses', 'staff_professional_license
 CALL `tich_ensure_fk`('staff_profile_change_requests', 'staff_profile_change_requests_requested_by_user_id_foreign', '`requested_by_user_id`', 'users', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('staff_profile_change_requests', 'staff_profile_change_requests_reviewed_by_staff_id_foreign', '`reviewed_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_profile_change_requests', 'staff_profile_change_requests_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `staff_profile_update_prompts`
+CALL `tich_ensure_fk`('staff_profile_update_prompts', 'staff_profile_update_prompts_requested_by_user_id_foreign', '`requested_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('staff_profile_update_prompts', 'staff_profile_update_prompts_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `staff_qualifications`
 CALL `tich_ensure_fk`('staff_qualifications', 'staff_qualifications_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');

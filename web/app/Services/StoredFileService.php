@@ -102,9 +102,13 @@ class StoredFileService
     {
         $relative = $this->relativePath($path) ?? ltrim($path, '/');
 
-        if ($webp = $this->webp->encodeFromBinary($contents)) {
-            $contents = $webp;
-            $relative = $this->webpPathForTarget($relative);
+        if ($this->webp->shouldConvertBinary($contents)) {
+            if ($webp = $this->webp->encodeFromBinary($contents)) {
+                $contents = $webp;
+                $relative = $this->webpPathForTarget($relative);
+            } elseif (preg_match('/\.webp$/i', $relative)) {
+                $relative = preg_replace('/\.webp$/i', '.jpg', $relative) ?? $relative.'.jpg';
+            }
         }
 
         $directory = dirname($relative);

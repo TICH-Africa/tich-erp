@@ -85,6 +85,7 @@
                             </td>
                             <td>
                                 <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('hr.staff.show', $member) }}#request-profile-update" class="tich-btn tich-btn-ghost tich-btn--compact">Request update</a>
                             </td>
                         </tr>
                     @empty
@@ -100,4 +101,8 @@
             </div>
         @endif
     </div>
+
+    @include('partials.staff-profile-update-prompt-form', [
+        'action' => route('hr.profile-update-prompts.store'),
+    ])
 @endsection

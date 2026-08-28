@@ -45,8 +45,8 @@ return [
             "object-src 'none'; ".
             "img-src 'self' data: blob: https:; ".
             "font-src 'self' data: https://fonts.bunny.net; ".
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.tailwindcss.com; ".
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; ".
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; ".
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; ".
             "connect-src 'self' wss: ws: https:; ".
             "media-src 'self' blob:; ".
             'upgrade-insecure-requests'

@@ -16,7 +16,7 @@ class EmailBrandComposer
         $fallback = public_path('images/logo.png');
 
         $view->with('emailBrand', [
-            'institution_name' => $meta['institution_name'] ?? config('app.name', 'TICH'),
+            'institution_name' => $meta['institution_name'] ?? 'Tropical Institute of Community Health and Development in Africa',
             'short_name' => $meta['short_name'] ?? 'TICH in Africa',
             'logo_url' => $meta['logo_url'] ?: asset('images/logo.png'),
             'logo_path' => is_file((string) $absolute) ? $absolute : (is_file($fallback) ? $fallback : null),

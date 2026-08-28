@@ -43,5 +43,33 @@ WHERE s.employment_status = 'onboarding'
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
 
+-- -----------------------------------------------------------------------------
+-- 3. Staff profile update prompts (HR / ICT request employee profile updates)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_profile_update_prompts` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `staff_id` bigint(20) unsigned NOT NULL,
+    `requested_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `requested_via_module` varchar(32) NOT NULL DEFAULT 'hr',
+    `requested_fields` json NOT NULL,
+    `notes` text DEFAULT NULL,
+    `token` varchar(64) NOT NULL,
+    `status` varchar(32) NOT NULL DEFAULT 'pending',
+    `emailed_at` timestamp NULL DEFAULT NULL,
+    `fulfilled_at` timestamp NULL DEFAULT NULL,
+    `expires_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `staff_profile_update_prompts_token_unique` (`token`),
+    KEY `staff_profile_update_prompts_staff_id_status_index` (`staff_id`, `status`),
+    KEY `staff_profile_update_prompts_staff_id_foreign` (`staff_id`),
+    KEY `staff_profile_update_prompts_requested_by_user_id_foreign` (`requested_by_user_id`),
+    CONSTRAINT `staff_profile_update_prompts_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `staff_profile_update_prompts_requested_by_user_id_foreign` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET time_zone = '+03:00';
+
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

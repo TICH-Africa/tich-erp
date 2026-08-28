@@ -383,6 +383,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
+        Route::post('/profile-update-prompts', [\App\Http\Controllers\Ict\StaffProfileUpdatePromptController::class, 'store'])->name('ict.profile-update-prompts.store');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');
@@ -429,12 +430,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
         $registerModuleBudgeting('hr');
         Route::post('/registration-invites', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'store'])->name('hr.registration-invites.store');
+        Route::post('/profile-update-prompts', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'storeByEmail'])->name('hr.profile-update-prompts.store');
 
         Route::middleware('permission:hr.staff.view')->group(function () {
             Route::get('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'index'])->name('hr.staff.index');
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'store'])->name('hr.staff.profile-update-prompt.store');
             Route::get('/profile-changes', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'index'])->name('hr.profile-changes.index');
             Route::get('/profile-changes/{profileChange}', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'show'])->name('hr.profile-changes.show');
             Route::post('/profile-changes/{profileChange}/approve', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'approve'])->name('hr.profile-changes.approve');

@@ -7,14 +7,14 @@
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
     @include('emails.partials.brand-header')
     <div style="background: #1f2937; color: white; padding: 20px; text-align: center;">
-        <h1>{{ config('app.name', 'TICH ERP') }}</h1>
+        <h1>{{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</h1>
         <p>Human Resources Department</p>
     </div>
 
     <div style="padding: 30px; background: #f9fafb;">
         <h2 style="color: #1f2937;">Dear {{ $staff->fullName() }},</h2>
 
-        <p>Welcome to {{ config('app.name', 'TICH ERP') }}! We are pleased to offer you the position of <strong>{{ $staff->job_title }}</strong>.</p>
+        <p>Welcome to {{ $emailBrand['short_name'] ?? 'TICH in Africa' }}! We are pleased to offer you the position of <strong>{{ $staff->job_title }}</strong>.</p>
 
         <p>To complete your onboarding and activate your employee account, please click the button below:</p>
 
@@ -35,7 +35,7 @@
 
         <p>Best regards,<br>
         <strong>Human Resources Department</strong><br>
-        {{ config('app.name', 'TICH ERP') }}</p>
+        {{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</p>
     </div>
 
     <div style="background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px;">

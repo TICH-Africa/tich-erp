@@ -158,7 +158,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', env('MAIL_NOTIFICATION_ADDRESS', 'notification@tich.africa')),
-        'name' => env('MAIL_FROM_NAME', env('MAIL_NOTIFICATION_NAME', 'TICH ERP')),
+        'name' => env('MAIL_FROM_NAME', env('MAIL_NOTIFICATION_NAME', 'TICH in Africa')),
     ],
 
 ];

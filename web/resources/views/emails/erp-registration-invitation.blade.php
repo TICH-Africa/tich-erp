@@ -7,7 +7,7 @@
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
     @include('emails.partials.brand-header')
     <div style="background: #1f2937; color: white; padding: 20px; text-align: center;">
-        <h1>{{ config('app.name', 'TICH ERP') }}</h1>
+        <h1>{{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</h1>
         <p>{{ $departmentLabel }}</p>
     </div>
 
@@ -35,7 +35,7 @@
 
         <p>Best regards,<br>
         <strong>{{ $departmentLabel }}</strong><br>
-        {{ config('app.name', 'TICH ERP') }}</p>
+        {{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</p>
     </div>
 
     <div style="background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px;">

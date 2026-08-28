@@ -39,7 +39,32 @@ class EmployeeProfileCompletenessService
         'emergency_contact_name' => 'Emergency contact name',
         'emergency_contact_phone' => 'Emergency contact phone',
         'emergency_contact_relationship' => 'Emergency contact relationship',
+        'middle_name' => 'Middle name',
+        'alt_phone_number' => 'Alternative phone',
+        'postal_address' => 'Postal address',
+        'postal_code' => 'Postal code',
+        'home_county' => 'Home county',
+        'photo' => 'Profile photo',
+        'qualification' => 'Qualification / certificate',
     ];
+
+    /**
+     * Fields HR / ICT can ask employees to update in My Employee Portal.
+     *
+     * @return array<string, string>
+     */
+    public static function requestableFieldLabels(): array
+    {
+        return self::FIELD_LABELS;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function requestableFieldKeys(): array
+    {
+        return array_keys(self::FIELD_LABELS);
+    }
 
     public function __construct(
         protected EmployeePortalService $employeePortal,

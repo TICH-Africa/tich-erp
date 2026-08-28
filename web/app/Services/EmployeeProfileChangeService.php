@@ -63,17 +63,19 @@ class EmployeeProfileChangeService
             );
         }
 
-        if (! empty($input['cropped_photo'])) {
-            $path = $this->storeCroppedPhoto($staff, (string) $input['cropped_photo']);
-            $created[] = $this->createRequest(
-                $staff,
-                $user,
-                StaffProfileChangeRequest::TYPE_PHOTO,
-                ['photo_path' => $staff->photo_path],
-                ['photo_path' => $path],
-                $path,
-                $input['employee_notes'] ?? null,
-            );
+        if (! empty($input['profile_photo']) || ! empty($input['cropped_photo'])) {
+            $path = $this->resolvePhotoPathFromInput($staff, $input);
+            if ($path) {
+                $created[] = $this->createRequest(
+                    $staff,
+                    $user,
+                    StaffProfileChangeRequest::TYPE_PHOTO,
+                    ['photo_path' => $staff->photo_path],
+                    ['photo_path' => $path],
+                    $path,
+                    $input['employee_notes'] ?? null,
+                );
+            }
         }
 
         if (! empty($input['qualification_type']) && ! empty($input['qualification_name'])) {
@@ -135,8 +137,9 @@ class EmployeeProfileChangeService
             $updates[$field] = $value === '' ? null : $value;
         }
 
-        if (! empty($input['cropped_photo'])) {
-            $updates['photo_path'] = $this->storeCroppedPhoto($staff, (string) $input['cropped_photo']);
+        $photoPath = $this->resolvePhotoPathFromInput($staff, $input);
+        if ($photoPath) {
+            $updates['photo_path'] = $photoPath;
         }
 
         if ($updates === []) {
@@ -312,6 +315,31 @@ class EmployeeProfileChangeService
             ->exists();
 
         if ($pendingExists && $type !== StaffProfileChangeRequest::TYPE_QUALIFICATION) {
+            if ($type === StaffProfileChangeRequest::TYPE_PHOTO) {
+                $existing = StaffProfileChangeRequest::query()
+                    ->where('staff_id', $staff->id)
+                    ->where('request_type', StaffProfileChangeRequest::TYPE_PHOTO)
+                    ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
+                    ->first();
+
+                if ($existing) {
+                    $oldAttachment = $existing->attachment_path;
+                    $newAttachment = $attachmentPath ?? ($proposedChanges['photo_path'] ?? null);
+
+                    if ($oldAttachment && $oldAttachment !== $newAttachment) {
+                        $this->files->delete($oldAttachment, 'public');
+                    }
+
+                    $existing->update([
+                        'proposed_changes' => $proposedChanges,
+                        'attachment_path' => $newAttachment,
+                        'employee_notes' => $employeeNotes ?? $existing->employee_notes,
+                    ]);
+
+                    return $existing->fresh();
+                }
+            }
+
             throw new InvalidArgumentException('You already have a pending '.$this->typeLabel($type).' request. Wait for HR review before submitting another.');
         }
 
@@ -378,8 +406,42 @@ class EmployeeProfileChangeService
         ]);
     }
 
+    private function resolvePhotoPathFromInput(Staff $staff, array $input): ?string
+    {
+        if ($input['profile_photo'] instanceof UploadedFile) {
+            return $this->storeProfilePhotoUpload($staff, $input['profile_photo']);
+        }
+
+        if (! empty($input['cropped_photo'])) {
+            return $this->storeCroppedPhoto($staff, (string) $input['cropped_photo']);
+        }
+
+        return null;
+    }
+
+    private function storeProfilePhotoUpload(Staff $staff, UploadedFile $file): string
+    {
+        $this->assertStaffPhotoDirectory($staff);
+
+        return $this->files->store(
+            $file,
+            "staff/{$staff->employee_number}/photos",
+            'public',
+            'pending_'.time(),
+        );
+    }
+
+    private function assertStaffPhotoDirectory(Staff $staff): void
+    {
+        if (trim((string) $staff->employee_number) === '') {
+            throw new InvalidArgumentException('Your staff record is missing an employee number. Contact HR before uploading a photo.');
+        }
+    }
+
     private function storeCroppedPhoto(Staff $staff, string $base64): string
     {
+        $this->assertStaffPhotoDirectory($staff);
+
         $base64 = preg_replace('#^data:image/\w+;base64,#i', '', $base64) ?? '';
         $binary = base64_decode($base64, true);
 
