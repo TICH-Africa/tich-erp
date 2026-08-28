@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP — production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-08-27 17:32:04 EAT
+-- Generated: 2026-08-28 09:42:25 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -7843,7 +7843,7 @@ CALL `tich_ensure_column`('staff', 'emergency_contact_name', 'varchar(300) NULL 
 CALL `tich_ensure_column`('staff', 'emergency_contact_phone', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'emergency_contact_relationship', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'photo_path', 'varchar(500) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('staff', 'department_id', 'bigint(20) unsigned DEFAULT NULL');
+CALL `tich_ensure_column`('staff', 'department_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'line_manager_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'job_title', 'varchar(200) NOT NULL');
