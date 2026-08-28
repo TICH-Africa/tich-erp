@@ -437,7 +437,7 @@ class StaffLifecycleService
                 $user->forceFill(['staff_id' => $staff->id])->save();
             }
 
-            if ($user->user_type !== 'staff' && $user->user_type !== 'admin') {
+            if ($user->user_type !== 'staff' && $user->user_type !== 'admin' && $user->user_type !== 'super_admin') {
                 $user->forceFill(['user_type' => 'staff'])->save();
             }
         }

@@ -42,7 +42,7 @@ class EnsureSuperAdminSeeder extends Seeder
             $user = User::query()->firstOrCreate(
                 ['email' => $data['email']],
                 [
-                    'user_type' => 'admin',
+                    'user_type' => 'super_admin',
                     'password_hash' => Hash::make($data['password']),
                     'is_active' => 1,
                     'mfa_enabled' => $data['mfa_enabled'] ?? true,
@@ -52,7 +52,7 @@ class EnsureSuperAdminSeeder extends Seeder
             );
 
             $user->update([
-                'user_type' => 'admin',
+                'user_type' => 'super_admin',
                 'password_hash' => Hash::make($data['password']),
                 'is_active' => 1,
                 'mfa_enabled' => $data['mfa_enabled'] ?? true,

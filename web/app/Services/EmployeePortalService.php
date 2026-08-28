@@ -6,6 +6,7 @@ use App\Models\ProfessionalDevelopment;
 use App\Models\Staff;
 use App\Models\StaffProfileChangeRequest;
 use App\Models\User;
+use App\Support\UserType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -32,7 +33,7 @@ class EmployeePortalService
      */
     public function ensureStaffProfile(User $user): ?Staff
     {
-        if (! in_array($user->user_type, ['staff', 'admin'], true)) {
+        if (UserType::isSuperAdmin((string) $user->user_type) || ! in_array($user->user_type, ['staff', 'admin'], true)) {
             return $this->staffForUser($user);
         }
 

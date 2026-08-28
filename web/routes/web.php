@@ -383,7 +383,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
-        Route::post('/profile-update-prompts', [\App\Http\Controllers\Ict\StaffProfileUpdatePromptController::class, 'store'])->name('ict.profile-update-prompts.store');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');
@@ -409,7 +408,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::middleware(['permission:users.access.manage'])->group(function () {
             Route::get('/users', [\App\Http\Controllers\Ict\UserAccessController::class, 'index'])->name('ict.users.index');
+            Route::get('/users/{user}', [\App\Http\Controllers\Ict\UserAccessController::class, 'show'])->name('ict.users.show');
             Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');
+            Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\Ict\StaffProfileUpdatePromptController::class, 'store'])->name('ict.staff.profile-update-prompt.store');
 
             Route::get('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'index'])->name('ict.roles.index');
             Route::post('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'store'])->name('ict.roles.store');

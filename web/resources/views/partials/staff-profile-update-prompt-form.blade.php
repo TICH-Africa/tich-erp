@@ -9,6 +9,7 @@
         'Qualifications' => ['qualification'],
     ];
     $selectedFields = old('fields', $selectedFields ?? []);
+    $promptStaff = $promptStaff ?? null;
 @endphp
 
 <article class="tich-card tich-mt-8" id="request-profile-update">
@@ -17,14 +18,14 @@
         Email the employee a link to <strong>My Employee Portal</strong> with the selected items highlighted for them to update.
     </p>
 
-    @if ($staff ?? null)
-        <p class="tich-text tich-mt-2"><strong>{{ $staff->fullName() }}</strong> · {{ $staff->employee_number }}</p>
+    @if ($promptStaff)
+        <p class="tich-text tich-mt-2"><strong>{{ $promptStaff->fullName() }}</strong> · {{ $promptStaff->employee_number }}</p>
     @endif
 
     <form method="POST" action="{{ $action }}" class="tich-mt-6">
         @csrf
 
-        @unless ($staff ?? null)
+        @unless ($promptStaff)
             <div class="tich-form-group tich-mb-4">
                 <label for="profile_prompt_email" class="tich-label">Employee email</label>
                 <input

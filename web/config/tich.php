@@ -7,7 +7,7 @@ return [
         'lockout_minutes' => 15,
         'mfa_session_minutes' => 30,
         'mfa_enabled' => (bool) env('MFA_ENABLED', true),
-        'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external'],
+        'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external', 'super_admin'],
     ],
 
     'erp_registration' => [
@@ -36,6 +36,7 @@ return [
         'staff' => 'Staff',
         'external' => 'Applicant',
         'admin' => 'Staff',
+        'super_admin' => 'Super Admin',
     ],
 
     'permission_aliases' => [

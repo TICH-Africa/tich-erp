@@ -9,10 +9,6 @@
         'action' => route('ict.registration-invites.store'),
     ])
 
-    @include('partials.staff-profile-update-prompt-form', [
-        'action' => route('ict.profile-update-prompts.store'),
-    ])
-
     @if ($recentInvitations->isNotEmpty())
         <article class="tich-card tich-mt-8">
             <h2 class="tich-h3">Recent invitations</h2>

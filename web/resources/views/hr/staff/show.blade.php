@@ -168,6 +168,6 @@
     </div>
     @include('partials.staff-profile-update-prompt-form', [
         'action' => route('hr.staff.profile-update-prompt.store', $staff),
-        'staff' => $staff,
+        'promptStaff' => $staff,
     ])
 @endsection

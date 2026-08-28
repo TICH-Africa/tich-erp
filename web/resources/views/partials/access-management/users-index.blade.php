@@ -17,6 +17,15 @@
                 Students
                 <span class="tich-caption">({{ $studentCount }})</span>
             </a>
+            @if ($access->prefix === 'ict')
+                <a
+                    href="{{ $access->route('users.index', ['audience' => 'super_admins']) }}"
+                    class="tich-tabs__btn{{ $audience === 'super_admins' ? ' is-active' : '' }}"
+                >
+                    Super admins
+                    <span class="tich-caption">({{ $superAdminCount ?? 0 }})</span>
+                </a>
+            @endif
         </div>
         @if ($audience === 'staff')
             <a href="{{ $access->route('roles.index') }}" class="tich-btn tich-btn-secondary">Manage roles</a>
@@ -53,7 +62,7 @@
                             <strong>{{ $user->displayName() }}</strong><br>
                             <span class="tich-caption">{{ $user->email }}</span>
                         </td>
-                        <td>{{ ucfirst($user->user_type) }}</td>
+                        <td>{{ \App\Support\UserType::label($user->user_type) }}</td>
                         <td>
                             @forelse ($user->roles as $role)
                                 {{ $role->role_name }}
@@ -67,7 +76,10 @@
                                 <span class="tich-caption">Not assigned</span>
                             @endforelse
                         </td>
-                        <td>
+                        <td style="white-space:nowrap;">
+                            @if ($access->prefix === 'ict')
+                                <a href="{{ $access->route('users.show', $user) }}" class="tich-btn tich-btn-ghost tich-btn--compact">View</a>
+                            @endif
                             <button
                                 type="button"
                                 class="tich-squircle-btn staff-access-trigger"
@@ -108,6 +120,49 @@
     ])
 
     @include('admin.partials.tich-modal-assets')
+@elseif ($audience === 'super_admins')
+    <p class="tich-text tich-mb-4">
+        Platform super admins have full ERP access and do not use employee HR records. They are managed here for visibility only.
+    </p>
+
+    <div class="tich-card tich-table-panel">
+        <table class="tich-admin-table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th>Account type</th>
+                    <th>Roles</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($users as $user)
+                    <tr>
+                        <td>
+                            <strong>{{ $user->displayName() }}</strong><br>
+                            <span class="tich-caption">{{ $user->email }}</span>
+                        </td>
+                        <td>{{ \App\Support\UserType::label($user->user_type) }}</td>
+                        <td>
+                            @forelse ($user->roles as $role)
+                                {{ $role->role_name }}@if (!$loop->last)<br>@endif
+                            @empty
+                                <span class="tich-caption">Super Admin (by account type)</span>
+                            @endforelse
+                        </td>
+                        <td>
+                            <a href="{{ $access->route('users.show', $user) }}" class="tich-btn tich-btn-ghost tich-btn--compact">View</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="tich-table-empty">No super admin accounts found.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+        <div class="tich-mt-4">{{ $users->links() }}</div>
+    </div>
 @else
     <p class="tich-text tich-mb-4">
         Student accounts are created through admissions and enrolment. Full records live in the Student Information System.

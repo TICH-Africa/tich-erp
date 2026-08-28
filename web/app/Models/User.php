@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UserType;
 use App\Models\Staff;
 use App\Models\Student;
 use Database\Factories\UserFactory;
@@ -54,6 +55,17 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class, 'user_roles')
             ->withPivot(['department_id', 'campus_id', 'assigned_at', 'assigned_by', 'expires_at']);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return UserType::isSuperAdmin((string) $this->user_type);
+    }
+
+    public function isPlatformOperator(): bool
+    {
+        return UserType::isPlatformOperator((string) $this->user_type)
+            || $this->hasRole('Super Admin');
     }
 
     // ─── Staff relationship (optional) ──────────────────────────────────────

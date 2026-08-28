@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS `staff_profile_update_prompts` (
     CONSTRAINT `staff_profile_update_prompts_requested_by_user_id_foreign` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- 4. Add super_admin user type (platform operators without HR staff records)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `users` MODIFY COLUMN `user_type` ENUM('student', 'staff', 'admin', 'external', 'super_admin') NOT NULL DEFAULT 'student';
+
+UPDATE `users` u
+INNER JOIN `user_roles` ur ON ur.user_id = u.id
+INNER JOIN `roles` r ON r.id = ur.role_id
+SET u.user_type = 'super_admin'
+WHERE r.role_name = 'Super Admin' AND u.user_type = 'admin';
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-08-28 14:35:44 EAT
+-- Generated: 2026-08-28 15:28:25 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -9390,7 +9390,7 @@ CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_unit_id_semester_
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `users` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_type` enum('student','staff','admin','external') NOT NULL DEFAULT 'student',
+  `user_type` enum('student','staff','admin','external','super_admin') NOT NULL DEFAULT 'student',
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
@@ -9425,7 +9425,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- Columns for `users` (add only if missing)
 CALL `tich_ensure_column`('users', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('users', 'user_type', 'enum(\'student\',\'staff\',\'admin\',\'external\') NOT NULL DEFAULT \'\\\'student\\\'\'');
+CALL `tich_ensure_column`('users', 'user_type', 'enum(\'student\',\'staff\',\'admin\',\'external\',\'super_admin\') NOT NULL DEFAULT \'\\\'student\\\'\'');
 CALL `tich_ensure_column`('users', 'email', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('users', 'password_hash', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('users', 'remember_token', 'varchar(100) NULL DEFAULT NULL');

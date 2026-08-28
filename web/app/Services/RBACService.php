@@ -75,7 +75,7 @@ class RBACService
      */
     public function isPlatformAdministrator(User $user): bool
     {
-        return $user->user_type === 'admin'
+        return \App\Support\UserType::isPlatformOperator((string) $user->user_type)
             || $this->hasRole($user, 'Super Admin');
     }
 

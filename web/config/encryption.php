@@ -11,7 +11,7 @@ return [
         'max_login_attempts' => 5,
         'lockout_minutes' => 15,
         'mfa_session_minutes' => 30,
-        'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external'],
+        'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external', 'super_admin'],
     ],
 
     /*

@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\DepartmentModuleService;
 use App\Services\RBACService;
+use App\Support\UserType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -24,7 +25,7 @@ class UserAccessController extends Controller
 
     private const STUDENT_ROLES = ['Student', 'Applicant', 'Alumni'];
 
-    private const STAFF_USER_TYPES = ['staff', 'admin', 'external'];
+    private const STAFF_USER_TYPES = UserType::EMPLOYEE_ACCOUNT_TYPES;
 
     public function __construct(
         protected RBACService $rbacService,
@@ -44,6 +45,7 @@ class UserAccessController extends Controller
             ])
             ->where('is_active', 1)
             ->when($audience === 'students', fn ($query) => $query->where('user_type', 'student'))
+            ->when($audience === 'super_admins', fn ($query) => $query->where('user_type', UserType::SUPER_ADMIN))
             ->when($audience === 'staff', fn ($query) => $query->whereIn('user_type', self::STAFF_USER_TYPES))
             ->orderBy('email')
             ->paginate(20)
@@ -59,11 +61,17 @@ class UserAccessController extends Controller
             ->where('user_type', 'student')
             ->count();
 
+        $superAdminCount = User::query()
+            ->where('is_active', 1)
+            ->where('user_type', UserType::SUPER_ADMIN)
+            ->count();
+
         $viewData = [
             'users' => $users,
             'audience' => $audience,
             'staffCount' => $staffCount,
             'studentCount' => $studentCount,
+            'superAdminCount' => $superAdminCount,
             'departmentNames' => Department::query()->pluck('dept_name', 'id'),
             'openStaffAccessUserId' => $audience === 'staff' && old('_method') === 'PUT'
                 ? (int) old('edit_user_id')
@@ -104,8 +112,32 @@ class UserAccessController extends Controller
         ]));
     }
 
+    public function show(User $user): View
+    {
+        abort_unless(
+            in_array($user->user_type, self::STAFF_USER_TYPES, true) || $user->user_type === UserType::SUPER_ADMIN,
+            404
+        );
+
+        $user->load([
+            'roles' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
+            'staff.department:id,dept_name',
+            'staff.campus:id,campus_name',
+        ]);
+
+        return view($this->accessContext()->prefix.'.users.show', [
+            'access' => $this->accessContext(),
+            'user' => $user,
+            'departmentNames' => Department::query()->pluck('dept_name', 'id'),
+        ]);
+    }
+
     public function update(Request $request, User $user): RedirectResponse
     {
+        if ($user->user_type === UserType::SUPER_ADMIN) {
+            abort(403, 'Super admin accounts are managed separately.');
+        }
+
         $audience = $this->resolveAudience($request, $user);
 
         if ($audience === 'students') {
@@ -215,6 +247,10 @@ class UserAccessController extends Controller
         $audience = $request->string('audience')->toString();
 
         if ($user !== null) {
+            if ($user->user_type === UserType::SUPER_ADMIN) {
+                return 'super_admins';
+            }
+
             if ($user->user_type === 'student') {
                 return 'students';
             }
@@ -224,7 +260,7 @@ class UserAccessController extends Controller
             }
         }
 
-        return in_array($audience, ['staff', 'students'], true) ? $audience : 'staff';
+        return in_array($audience, ['staff', 'students', 'super_admins'], true) ? $audience : 'staff';
     }
 
     /**

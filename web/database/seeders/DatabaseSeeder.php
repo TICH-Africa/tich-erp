@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
             $users = [
                 [
                     'email' => 'admin@tich.ac.ke',
-                    'user_type' => 'admin',
+                    'user_type' => 'super_admin',
                     'password' => 'Password123!',
                     'role' => 'Super Admin',
                     'mfa_enabled' => true,
@@ -59,7 +59,7 @@ class DatabaseSeeder extends Seeder
                 ],
                 [
                     'email' => 'osumbaevans21@gmail.com',
-                    'user_type' => 'admin',
+                    'user_type' => 'super_admin',
                     'password' => 'Password123!',
                     'role' => 'Super Admin',
                     'mfa_enabled' => true,
