@@ -29,7 +29,7 @@ class EnsureStaffPortalAccess
             abort(403, 'Staff portal access requires a linked staff profile. Contact HR or your administrator.');
         }
 
-        $teachingRoles = ['Lecturer/Tutor', 'HOD', 'Dean', 'Academic Registrar', 'Super Admin'];
+        $teachingRoles = ['Lecturer/Tutor', 'HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'];
         $hasTeachingRole = collect($teachingRoles)->contains(fn (string $role) => $this->rbac->hasRole($user, $role));
         $hasAcademicAccess = $this->rbac->hasPermission($user, 'academics.read');
 

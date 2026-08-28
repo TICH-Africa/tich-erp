@@ -118,7 +118,7 @@ class StaffPortalDashboardController extends Controller
         }
 
         $hodManagement = null;
-        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin'])) {
+        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])) {
             $hodManagement = [
                 'lesson_plans' => $this-> hodLessonPlans($staff),
                 'allocations' => $this-> hodUnitAllocations($staff),

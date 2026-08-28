@@ -80,6 +80,35 @@ INNER JOIN `roles` r ON r.id = ur.role_id
 SET u.user_type = 'super_admin'
 WHERE r.role_name = 'Super Admin' AND u.user_type = 'admin';
 
+-- -----------------------------------------------------------------------------
+-- 5. Retire legacy "Dean" role → academics "Dean of Students"
+-- -----------------------------------------------------------------------------
+UPDATE `roles`
+SET
+    `display_name` = 'Dean of Students',
+    `description` = 'Administrator who oversees student services, campus life, counseling, and student discipline; responds to student issues.',
+    `module_key` = 'academics',
+    `role_category` = 'academic'
+WHERE `role_name` = 'Dean of Students';
+
+INSERT INTO `user_roles` (`user_id`, `role_id`, `department_id`, `campus_id`, `assigned_at`, `assigned_by`, `expires_at`)
+SELECT ur.`user_id`, dos.`id`, ur.`department_id`, ur.`campus_id`, ur.`assigned_at`, ur.`assigned_by`, ur.`expires_at`
+FROM `user_roles` ur
+INNER JOIN `roles` dean ON dean.`id` = ur.`role_id` AND dean.`role_name` = 'Dean'
+INNER JOIN `roles` dos ON dos.`role_name` = 'Dean of Students'
+WHERE NOT EXISTS (
+    SELECT 1 FROM `user_roles` ur2
+    WHERE ur2.`user_id` = ur.`user_id`
+      AND ur2.`role_id` = dos.`id`
+      AND (ur2.`department_id` <=> ur.`department_id`)
+      AND (ur2.`campus_id` <=> ur.`campus_id`)
+);
+
+DELETE ur FROM `user_roles` ur
+INNER JOIN `roles` dean ON dean.`id` = ur.`role_id` AND dean.`role_name` = 'Dean';
+
+DELETE FROM `roles` WHERE `role_name` = 'Dean';
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

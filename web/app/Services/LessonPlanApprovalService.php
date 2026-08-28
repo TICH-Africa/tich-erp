@@ -296,7 +296,7 @@ class LessonPlanApprovalService
 
     public function hodCanReview(LessonPlan $plan, Staff $hod, User $user): bool
     {
-        if ($user->hasAnyRole(['Super Admin', 'Dean'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Dean of Students'])) {
             return true;
         }
 

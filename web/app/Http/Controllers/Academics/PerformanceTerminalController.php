@@ -21,7 +21,7 @@ class PerformanceTerminalController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeHub($request, $department);
-        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin'])
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])
             || $request->user()->hasPermission('academics.approve'), 403);
 
         $learningDepartmentId = $request->integer('learning_department') ?: null;

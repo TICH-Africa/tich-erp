@@ -64,7 +64,7 @@ Broadcast::channel('staff.sidebar.{userId}', function ($user, $userId) {
     }
 
     $rbac = app(RBACService::class);
-    $teachingRoles = ['Lecturer/Tutor', 'HOD', 'Dean', 'Academic Registrar', 'Super Admin'];
+    $teachingRoles = ['Lecturer/Tutor', 'HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'];
     $hasTeachingRole = collect($teachingRoles)->contains(fn (string $role) => $rbac->hasRole($user, $role));
 
     return $staff->is_teaching_staff

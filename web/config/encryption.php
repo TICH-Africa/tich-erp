@@ -31,7 +31,7 @@ return [
         'HR Manager' => 60,
         'Finance Manager' => 65,
         'Academic Registrar' => 70,
-        'Dean' => 75,
+        'Dean of Students' => 75,
         'CEO' => 90,
         'Super Admin' => 100,
     ],

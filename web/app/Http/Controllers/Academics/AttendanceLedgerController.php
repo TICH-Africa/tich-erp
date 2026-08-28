@@ -34,7 +34,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'sessions' => $this->verification->ledgerForDepartment($departmentId, $status),
             'selectedStatus' => $status,
-            'canVerifyHod' => $request->user()->hasAnyRole(['HOD', 'Dean', 'Super Admin']),
+            'canVerifyHod' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
             'canVerifyRegistrar' => $request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']),
         ]);
     }
@@ -42,7 +42,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function verifyHod(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $this->authorizeHub($request, $department);
-        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Super Admin']), 403);
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
@@ -68,7 +68,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function verifyRoster(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $this->authorizeHub($request, $department);
-        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']), 403);
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
@@ -81,7 +81,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function examEligibilityCheck(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $this->authorizeHub($request, $department);
-        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']), 403);
+        abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);

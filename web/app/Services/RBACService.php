@@ -187,7 +187,7 @@ class RBACService
 
     public function canAccessDepartment(User $user, int $departmentId): bool
     {
-        if ($this->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean', 'HR Manager', 'Finance Manager'])) {
+        if ($this->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean of Students', 'HR Manager', 'Finance Manager'])) {
             return true;
         }
 

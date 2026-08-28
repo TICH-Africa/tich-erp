@@ -106,7 +106,7 @@ class AcademicsSidebarNotificationService
             return 'attendance-ledger.registrar';
         }
 
-        if ($user->hasAnyRole(['HOD', 'Dean', 'Super Admin'])) {
+        if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin'])) {
             return 'attendance-ledger.hod';
         }
 
@@ -199,7 +199,7 @@ class AcademicsSidebarNotificationService
             return $registrarCount + $incompleteCount;
         }
 
-        if ($user->hasAnyRole(['HOD', 'Dean', 'Super Admin'])) {
+        if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin'])) {
             return $hodCount + $incompleteCount;
         }
 

@@ -95,7 +95,7 @@ class StaffSidebarNotificationService
             'hod-management' => 0,
         ];
 
-        if ($user->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin'])) {
+        if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])) {
             $counts['hod-management'] = $this->hodLessonPlansPending($staff) + $this->hodAttendancePending($staff);
         }
 

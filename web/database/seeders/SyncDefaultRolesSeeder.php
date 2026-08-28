@@ -29,5 +29,43 @@ class SyncDefaultRolesSeeder extends Seeder
                 'role_name' => 'Lecturer/Tutor',
                 'display_name' => 'Lecturer / Tutor',
             ]);
+
+        $deanId = DB::table('roles')->where('role_name', 'Dean')->value('id');
+        $deanOfStudentsId = DB::table('roles')->where('role_name', 'Dean of Students')->value('id');
+
+        if ($deanId && $deanOfStudentsId) {
+            $assignments = DB::table('user_roles')->where('role_id', $deanId)->get();
+
+            foreach ($assignments as $assignment) {
+                $exists = DB::table('user_roles')
+                    ->where('user_id', $assignment->user_id)
+                    ->where('role_id', $deanOfStudentsId)
+                    ->where(function ($query) use ($assignment) {
+                        if ($assignment->department_id) {
+                            $query->where('department_id', $assignment->department_id);
+                        } else {
+                            $query->whereNull('department_id');
+                        }
+                    })
+                    ->where(function ($query) use ($assignment) {
+                        if ($assignment->campus_id) {
+                            $query->where('campus_id', $assignment->campus_id);
+                        } else {
+                            $query->whereNull('campus_id');
+                        }
+                    })
+                    ->exists();
+
+                if (! $exists) {
+                    DB::table('user_roles')->where('id', $assignment->id)->update([
+                        'role_id' => $deanOfStudentsId,
+                    ]);
+                } else {
+                    DB::table('user_roles')->where('id', $assignment->id)->delete();
+                }
+            }
+
+            DB::table('roles')->where('id', $deanId)->delete();
+        }
     }
 }

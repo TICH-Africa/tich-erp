@@ -76,6 +76,6 @@ class StaffPortalNavigationService
     {
         $user = Auth::user();
 
-        return $user && $user->hasAnyRole(['HOD', 'Dean', 'Academic Registrar', 'Super Admin']);
+        return $user && $user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']);
     }
 }

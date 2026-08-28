@@ -35,7 +35,7 @@ class LessonPlanController extends DepartmentAcademicsController
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'plans' => $this->lessonPlans->inboxForDepartment($departmentId, $status),
             'selectedStatus' => $status,
-            'canReview' => $request->user()->hasAnyRole(['HOD', 'Dean', 'Super Admin']),
+            'canReview' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
         ]);
     }
 
@@ -72,7 +72,7 @@ class LessonPlanController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless(
-            $request->user()->hasAnyRole(['Academic Registrar', 'HOD', 'Super Admin', 'CEO', 'Dean']),
+            $request->user()->hasAnyRole(['Academic Registrar', 'HOD', 'Super Admin', 'CEO', 'Dean of Students']),
             403
         );
 
@@ -88,7 +88,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $plans = $this->lessonPlans->auditRepository($departmentIds, $status, $semesterId);
 
         $staff = $this->staffPortal->staffForUser($request->user());
-        $canReview = $staff && $plans->isNotEmpty() && $request->user()->hasAnyRole(['HOD', 'Super Admin', 'CEO', 'Dean']);
+        $canReview = $staff && $plans->isNotEmpty() && $request->user()->hasAnyRole(['HOD', 'Super Admin', 'CEO', 'Dean of Students']);
 
         return view('academics.lesson-plans.audit', [
             'department' => $hub,

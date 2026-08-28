@@ -33,6 +33,6 @@ class StaffPortalService
         $rbac = app(RBACService::class);
 
         return $staff->is_teaching_staff
-            || $rbac->hasAnyRole($user, ['Lecturer/Tutor', 'HOD', 'Dean', 'Academic Registrar', 'Super Admin']);
+            || $rbac->hasAnyRole($user, ['Lecturer/Tutor', 'HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']);
     }
 }

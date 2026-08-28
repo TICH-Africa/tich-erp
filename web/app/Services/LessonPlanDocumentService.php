@@ -81,7 +81,7 @@ class LessonPlanDocumentService
             return true;
         }
 
-        if ($this->rbac->hasAnyRole($user, ['Super Admin', 'CEO', 'Dean', 'Academic Registrar', 'QA Officer', 'Assistant QA Officer', 'HOD'])) {
+        if ($this->rbac->hasAnyRole($user, ['Super Admin', 'CEO', 'Dean of Students', 'Academic Registrar', 'QA Officer', 'Assistant QA Officer', 'HOD'])) {
             return in_array($plan->status, ['submitted', 'approved', 'modified', 'rejected'], true)
                 || (bool) $plan->registrar_visible;
         }

@@ -26,6 +26,7 @@ return [
         'Assistant Research Manager',
         'ICT Manager',
         'Assistant ICT Manager',
+        'Dean',
     ],
 
     /** When retiring a role, move existing user_roles to this replacement when present. */
@@ -34,6 +35,7 @@ return [
         'Assistant Research Manager' => 'Research Officer',
         'ICT Manager' => 'Head of ICT',
         'Assistant ICT Manager' => 'Technician',
+        'Dean' => 'Dean of Students',
     ],
 
     'modules' => [
@@ -61,7 +63,7 @@ return [
                     'role_name' => 'Dean of Students',
                     'display_name' => 'Dean of Students',
                     'role_category' => 'academic',
-                    'description' => 'Student welfare lead - receives and handles student complaints, requests, and comments.',
+                    'description' => 'Administrator who oversees student services, campus life, counseling, and student discipline; responds to student issues.',
                     'permission_modules' => ['core', 'academics', 'portal', 'admin'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export'],
                 ],
@@ -323,14 +325,6 @@ return [
                         'administration', 'procurement', 'research', 'ict', 'monitoring_evaluation',
                     ],
                     'permission_categories' => ['approve', 'view', 'manage', 'audit', 'export'],
-                ],
-                [
-                    'role_name' => 'Dean',
-                    'display_name' => 'Dean',
-                    'role_category' => 'academic',
-                    'description' => 'Faculty head with academic oversight.',
-                    'permission_modules' => ['core', 'academics', 'hr', 'portal'],
-                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export'],
                 ],
                 [
                     'role_name' => 'Staff',
