@@ -1,4 +1,4 @@
-@if (auth()->user()->hasEmployeeProfile())
+@if (auth()->user()->hasEmployeeProfile() && ! app(\App\Services\EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment(auth()->user()))
     @unless ($mobile ?? false)
         <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
@@ -43,7 +43,9 @@
     @endunless
 @else
     @php
+        $awaitingDepartmentAssignment = app(\App\Services\EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment(auth()->user());
         $dashboardRoute = match (true) {
+            $awaitingDepartmentAssignment => route('dashboard'),
             auth()->user()->hasRole('Super Admin') => route('dashboard'),
             auth()->user()->hasPermission('finance.read') => route('finance.dashboard'),
             auth()->user()->hasPermission('hr.read') => route('hr.dashboard'),

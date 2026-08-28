@@ -7761,7 +7761,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `emergency_contact_phone` varchar(30) DEFAULT NULL,
   `emergency_contact_relationship` varchar(50) DEFAULT NULL,
   `photo_path` varchar(500) DEFAULT NULL,
-  `department_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   `campus_id` bigint(20) unsigned DEFAULT NULL,
   `line_manager_id` bigint(20) unsigned DEFAULT NULL,
   `job_title` varchar(200) NOT NULL,
@@ -7843,7 +7843,7 @@ CALL `tich_ensure_column`('staff', 'emergency_contact_name', 'varchar(300) NULL 
 CALL `tich_ensure_column`('staff', 'emergency_contact_phone', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'emergency_contact_relationship', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'photo_path', 'varchar(500) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('staff', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff', 'department_id', 'bigint(20) unsigned DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'line_manager_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'job_title', 'varchar(200) NOT NULL');

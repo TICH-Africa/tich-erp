@@ -55,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff.portal' => \App\Http\Middleware\EnsureStaffPortalAccess::class,
             'employee.portal' => \App\Http\Middleware\EnsureEmployeePortalAccess::class,
             'employee.profile.complete' => \App\Http\Middleware\EnsureEmployeeProfileComplete::class,
+            'employee.unassigned.restrict' => \App\Http\Middleware\RestrictUnassignedEmployeeAccess::class,
             'resolve.academics.hub' => \App\Http\Middleware\ResolveAcademicsHub::class,
             'redirect.legacy.academics' => \App\Http\Middleware\RedirectLegacyAcademicsUrls::class,
         ]);

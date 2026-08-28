@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete'])->group(function () {
+Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'employee.unassigned.restrict'])->group(function () {
     Route::get('/start', \App\Http\Controllers\AccountStartController::class)->name('account.start');
 
     Route::get('/dashboard', DashboardController::class)

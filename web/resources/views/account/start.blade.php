@@ -20,6 +20,15 @@
         <p class="tich-mt-6">
             <a href="{{ route('employee.profile.edit') }}" class="tich-btn tich-btn-primary">Complete my profile</a>
         </p>
+    @elseif ($awaitingDepartmentAssignment ?? false)
+        <p class="tich-text tich-mt-6">
+            Your profile is ready. Open the main dashboard to browse departments while HR or ICT assigns you to a unit.
+        </p>
+        <div class="tich-flex tich-mt-6" style="gap: 0.75rem; flex-wrap: wrap;">
+            @if ($canOpenDashboard)
+                <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-primary">Open department dashboard</a>
+            @endif
+        </div>
     @elseif ($canOpenEmployeePortal)
         <p class="tich-text tich-mt-6">
             Your account is active. Open My Employee Portal to view your details, or wait for ICT/HR to assign department module access if you need the main dashboard.

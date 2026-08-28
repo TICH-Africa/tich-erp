@@ -262,6 +262,10 @@ class AuthService
             return false;
         }
 
+        if (app(EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment($user)) {
+            return false;
+        }
+
         return $user->user_type === 'staff'
             || app(EmployeePortalService::class)->hasEmployeeProfile($user);
     }
@@ -284,10 +288,14 @@ class AuthService
         $isEmployee = $user->user_type === 'staff'
             || $employeePortal->hasEmployeeProfile($user);
 
-        // Invited users and staff are employees — send them to My Employee Portal.
+        // Invited users and staff are employees — home depends on profile + department assignment.
         if ($isEmployee) {
             if (app(EmployeeProfileCompletenessService::class)->mustCompleteProfile($user)) {
                 return route('employee.profile.edit');
+            }
+
+            if (app(EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment($user)) {
+                return route('dashboard');
             }
 
             if ($employeePortal->hasEmployeeProfile($user)) {

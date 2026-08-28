@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Applicant;
 use App\Models\Campus;
-use App\Models\Department;
 use App\Models\RecruitmentApplication;
 use App\Models\Staff;
 use App\Models\StaffAllowance;
@@ -383,22 +382,7 @@ class StaffLifecycleService
      */
     public function createProvisionalInviteStaff(string $personalEmail, ?int $createdBy = null, ?User $linkUser = null): Staff
     {
-        $departmentId = Department::query()
-            ->where('is_active', true)
-            ->whereNull('parent_dept_id')
-            ->where('dept_code', 'HR')
-            ->value('id')
-            ?? Department::query()
-                ->where('is_active', true)
-                ->whereNull('parent_dept_id')
-                ->orderBy('id')
-                ->value('id');
-
-        if (! $departmentId) {
-            throw new \RuntimeException('Cannot create employee profile: no top-level department exists.');
-        }
-
-        return DB::transaction(function () use ($personalEmail, $createdBy, $linkUser, $departmentId) {
+        return DB::transaction(function () use ($personalEmail, $createdBy, $linkUser) {
             $staff = Staff::query()->create([
                 'employee_number' => $this->generateEmployeeNumber(),
                 // Placeholders only — completeness treats these as incomplete.
@@ -409,7 +393,7 @@ class StaffLifecycleService
                 'primary_email' => strtolower(trim($personalEmail)),
                 'organisation_email' => null,
                 'phone_number' => '0700000000',
-                'department_id' => $departmentId,
+                'department_id' => null,
                 'job_title' => 'Pending assignment',
                 'employment_category' => 'contract',
                 'payroll_scheme' => 'employee',

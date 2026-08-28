@@ -16,6 +16,12 @@
                         @endforeach
                     @endif
                 </p>
+                @if ($awaitingDepartmentAssignment ?? false)
+                    <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
+                        <strong>Department assignment pending.</strong>
+                        Browse institutional departments below. HR or ICT will assign you to a unit before module tools unlock.
+                    </div>
+                @endif
             </div>
 
             <div class="tich-grid tich-grid--3">
@@ -38,14 +44,29 @@
                 @endcan
 
                 @forelse ($departments as $department)
+                    @php
+                        $notificationCount = (int) ($departmentNotificationCounts[$department->id] ?? 0);
+                        $notificationLabel = $formatNotificationCount($notificationCount);
+                        $awaiting = $awaitingDepartmentAssignment ?? false;
+                    @endphp
                     <article class="tich-card">
-                        <p class="tich-caption">{{ $categoryLabel($department) }}</p>
+                        <div class="tich-flex" style="justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                            <p class="tich-caption">{{ $categoryLabel($department) }}</p>
+                            @if ($notificationLabel)
+                                <span class="tich-notification-badge" aria-label="{{ $notificationCount }} pending notifications">{{ $notificationLabel }}</span>
+                            @endif
+                        </div>
                         <h3 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h3>
                         <p class="tich-text tich-mt-2">{{ $cardDescription($department) }}</p>
                         @if ($department->group)
                             <p class="tich-caption tich-mt-2">{{ $department->group->group_name }}</p>
                         @endif
-                        <a href="{{ $entryUrl($department) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open department</a>
+                        @if ($awaiting)
+                            <p class="tich-caption tich-mt-4" style="color: #b45309;">Open after HR assigns you to this department.</p>
+                            <span class="tich-btn tich-btn-secondary tich-mt-4" aria-disabled="true">{{ $cardActionLabel }}</span>
+                        @else
+                            <a href="{{ $entryUrl($department) }}" class="tich-btn tich-btn-secondary tich-mt-4">{{ $cardActionLabel }}</a>
+                        @endif
                     </article>
                 @empty
                     @unless (auth()->user()->can('admin.access'))

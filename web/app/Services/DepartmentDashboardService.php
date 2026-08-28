@@ -34,6 +34,7 @@ class DepartmentDashboardService
     public function __construct(
         protected RBACService $rbacService,
         protected DepartmentModuleService $departmentModuleService,
+        protected EmployeeAssignmentService $employeeAssignment,
     ) {}
 
     public function mainDepartmentsForUser(User $user): Collection
@@ -47,6 +48,10 @@ class DepartmentDashboardService
             ->orderBy('dept_name');
 
         if ($this->rbacService->hasRole($user, 'Super Admin')) {
+            return $query->get();
+        }
+
+        if ($this->employeeAssignment->isAwaitingDepartmentAssignment($user)) {
             return $query->get();
         }
 
@@ -70,6 +75,10 @@ class DepartmentDashboardService
     {
         if ($this->rbacService->hasRole($user, 'Super Admin')) {
             return true;
+        }
+
+        if ($this->employeeAssignment->isAwaitingDepartmentAssignment($user)) {
+            return false;
         }
 
         $userDepartmentIds = $this->rbacService->getUserDepartmentIds($user);
@@ -407,6 +416,10 @@ class DepartmentDashboardService
 
     public function entryUrlForDepartment(User $user, Department $department): string
     {
+        if ($this->employeeAssignment->isAwaitingDepartmentAssignment($user)) {
+            return route('dashboard');
+        }
+
         $moduleHome = app(DepartmentBudgetingService::class)->moduleHomeUrlForDepartment($department);
         if ($moduleHome) {
             return $moduleHome;
@@ -427,6 +440,13 @@ class DepartmentDashboardService
         }
 
         return route('dashboard');
+    }
+
+    public function cardActionLabel(User $user): string
+    {
+        return $this->employeeAssignment->isAwaitingDepartmentAssignment($user)
+            ? 'Awaiting assignment'
+            : 'Open department';
     }
 
     public function cardDescription(Department $department): string
