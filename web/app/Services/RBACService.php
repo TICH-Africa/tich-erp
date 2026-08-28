@@ -362,6 +362,8 @@ class RBACService
                 ],
             ], $assignedBy);
         }
+
+        $this->reconcileStaffEmploymentDepartment($user);
     }
 
     public function revokeRoleFromUser(User $user, int $roleId, ?int $revokedBy = null): void
@@ -439,6 +441,39 @@ class RBACService
 
         if ($assignments !== []) {
             $this->notifyUserOfAccessAssignment($user, $assignments, $assignedBy);
+        }
+
+        $this->reconcileStaffEmploymentDepartment($user);
+    }
+
+    /**
+     * Align HR staff.department_id with platform role assignments — never invent a default.
+     */
+    public function reconcileStaffEmploymentDepartment(User $user): void
+    {
+        $staff = $user->relationLoaded('staff') ? $user->staff : $user->staff()->first();
+
+        if (! $staff) {
+            return;
+        }
+
+        $departmentIds = DB::table('user_roles')
+            ->where('user_id', $user->id)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->whereNotNull('department_id')
+            ->pluck('department_id')
+            ->unique()
+            ->values();
+
+        $targetDepartmentId = $departmentIds->isEmpty()
+            ? null
+            : (int) $departmentIds->first();
+
+        if ((int) ($staff->department_id ?? 0) !== ($targetDepartmentId ?? 0)) {
+            $staff->update(['department_id' => $targetDepartmentId]);
         }
     }
 

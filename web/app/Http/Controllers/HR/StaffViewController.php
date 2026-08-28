@@ -90,7 +90,7 @@ class StaffViewController extends Controller
             'emergency_contact_name' => 'nullable|string|max:300',
             'emergency_contact_phone' => 'nullable|string|max:30',
             'emergency_contact_relationship' => 'nullable|string|max:50',
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'required|string|max:200',
             'job_grade' => 'nullable|string|max:20',
@@ -216,7 +216,7 @@ class StaffViewController extends Controller
             'emergency_contact_name' => 'nullable|string|max:300',
             'emergency_contact_phone' => 'nullable|string|max:30',
             'emergency_contact_relationship' => 'nullable|string|max:50',
-            'department_id' => 'sometimes|exists:departments,id',
+            'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'sometimes|string|max:200',
             'job_grade' => 'nullable|string|max:20',
@@ -291,6 +291,10 @@ class StaffViewController extends Controller
     {
         if (array_key_exists('organisation_email', $validated) && $validated['organisation_email'] === '') {
             $validated['organisation_email'] = null;
+        }
+
+        if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
+            $validated['department_id'] = null;
         }
 
         return $validated;

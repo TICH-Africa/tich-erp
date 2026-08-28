@@ -29,6 +29,17 @@ DROP TABLE IF EXISTS `permissions`;
 -- -----------------------------------------------------------------------------
 ALTER TABLE `staff` MODIFY COLUMN `department_id` bigint(20) unsigned NULL DEFAULT NULL;
 
+-- Clear auto-assigned HR departments on provisional invite staff (no role department yet).
+UPDATE `staff` s
+INNER JOIN `users` u ON u.staff_id = s.id
+SET s.department_id = NULL
+WHERE s.employment_status = 'onboarding'
+  AND s.job_title = 'Pending assignment'
+  AND NOT EXISTS (
+      SELECT 1 FROM `user_roles` ur
+      WHERE ur.user_id = u.id AND ur.department_id IS NOT NULL
+  );
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
 

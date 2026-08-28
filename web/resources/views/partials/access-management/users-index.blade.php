@@ -36,7 +36,6 @@
                     <th>Employee</th>
                     <th>Account type</th>
                     <th>Roles &amp; departments</th>
-                    <th>Staff department</th>
                     <th style="width: 4rem;"></th>
                 </tr>
             </thead>
@@ -69,13 +68,6 @@
                             @endforelse
                         </td>
                         <td>
-                            @if ($user->staff?->department)
-                                {{ $user->staff->department->dept_name }}
-                            @else
-                                <span class="tich-caption">Not linked</span>
-                            @endif
-                        </td>
-                        <td>
                             <button
                                 type="button"
                                 class="tich-squircle-btn staff-access-trigger"
@@ -97,7 +89,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="tich-table-empty">No staff accounts found.</td>
+                        <td colspan="4" class="tich-table-empty">No staff accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>

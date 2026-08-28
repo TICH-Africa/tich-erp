@@ -73,9 +73,9 @@
                     <input type="text" id="phone_number" name="phone_number" value="{{ old('phone_number', $staff->phone_number) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label for="department_id" class="tich-label">Department *</label>
-                    <select id="department_id" name="department_id" required class="tich-input">
-                        <option value="">Select department</option>
+                    <label for="department_id" class="tich-label">Department</label>
+                    <select id="department_id" name="department_id" class="tich-input">
+                        <option value="">Unassigned — assign via Users &amp; access or HR later</option>
                         @foreach ($departments as $department)
                             <option value="{{ $department->id }}" {{ old('department_id', $staff->department_id) == $department->id ? 'selected' : '' }}>
                                 {{ $department->dept_name }}

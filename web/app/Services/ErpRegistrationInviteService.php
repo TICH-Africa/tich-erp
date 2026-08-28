@@ -160,6 +160,8 @@ class ErpRegistrationInviteService
 
         app(RBACService::class)->assignDefaultRole($user);
 
+        app(RBACService::class)->reconcileStaffEmploymentDepartment($user->fresh(['staff']));
+
         $invitation->update(['used_at' => now()]);
 
         app(AuditService::class)->log(

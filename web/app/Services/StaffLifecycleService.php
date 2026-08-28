@@ -443,6 +443,10 @@ class StaffLifecycleService
         }
 
         // Never invent @tich.africa here — HR issues organisation email deliberately.
+        if ($user) {
+            app(RBACService::class)->reconcileStaffEmploymentDepartment($user);
+        }
+
         return $staff->fresh(['user', 'onboarding']);
     }
 

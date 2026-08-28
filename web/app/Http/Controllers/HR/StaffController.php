@@ -107,7 +107,7 @@ class StaffController extends Controller
             'emergency_contact_phone' => 'nullable|string|max:30',
             'emergency_contact_relationship' => 'nullable|string|max:50',
             'photo_path' => 'nullable|string|max:500',
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'required|string|max:200',
             'job_grade' => 'nullable|string|max:20',
@@ -145,6 +145,10 @@ class StaffController extends Controller
 
             if (array_key_exists('organisation_email', $validated) && $validated['organisation_email'] === '') {
                 $validated['organisation_email'] = null;
+            }
+
+            if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
+                $validated['department_id'] = null;
             }
 
             $staff = Staff::create($validated);
@@ -195,7 +199,7 @@ class StaffController extends Controller
             'emergency_contact_phone' => 'nullable|string|max:30',
             'emergency_contact_relationship' => 'nullable|string|max:50',
             'photo_path' => 'nullable|string|max:500',
-            'department_id' => 'sometimes|exists:departments,id',
+            'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'sometimes|string|max:200',
             'job_grade' => 'nullable|string|max:20',
@@ -224,6 +228,10 @@ class StaffController extends Controller
             'incremental_date' => 'nullable|date',
             'project_code' => 'nullable|string|max:100',
         ]);
+
+        if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
+            $validated['department_id'] = null;
+        }
 
         $oldValues = $staff->only(array_keys($validated));
 
