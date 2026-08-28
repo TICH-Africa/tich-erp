@@ -2931,9 +2931,17 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     background: var(--tich-blue-light);
     color: var(--tich-blue);
     text-decoration: none;
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 0.75rem;
+}
+
+.tich-footer__social-link svg {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+}
+
+.tich-footer__social-link:hover {
+    background: var(--tich-blue);
+    color: #fff;
 }
 
 .tich-footer__newsletter-row {
@@ -6675,7 +6683,7 @@ a.tich-tabs__btn {
     color: #93c5fd;
 }
 
-/* System status toasts (offline / slow / session) ó bottom-right popups */
+/* System status toasts (offline / slow / session) ù bottom-right popups */
 .tich-toast-stack--system {
     z-index: 1210;
 }

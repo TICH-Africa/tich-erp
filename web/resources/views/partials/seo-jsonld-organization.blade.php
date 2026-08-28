@@ -1,7 +1,11 @@
 @php
+    use App\Support\PublicAsset;
+    use App\Support\Seo;
+
     $orgName = $siteMeta['institution_name'] ?? 'TICH in Africa';
-    $orgUrl = rtrim((string) config('app.url'), '/') ?: url('/');
-    $logo = $siteMeta['logo_url'] ?? \App\Support\PublicAsset::url('images/logo.png');
+    $orgUrl = Seo::absoluteUrl(rtrim((string) config('app.url'), '/') ?: url('/')) ?? url('/');
+    $logoUrl = $siteMeta['search_icon_url'] ?? $siteMeta['logo_url'] ?? PublicAsset::url('images/logo-mark.png');
+    $logoObject = Seo::imageObject($logoUrl, $orgName);
     $sameAs = collect($socialLinks ?? [])
         ->pluck('url')
         ->filter()
@@ -14,7 +18,8 @@
         'name' => $orgName,
         'alternateName' => $siteMeta['short_name'] ?? 'TICH',
         'url' => $orgUrl,
-        'logo' => $logo,
+        'logo' => $logoObject,
+        'image' => $logoObject,
         'description' => $siteMeta['meta_description'] ?? $siteMeta['tagline'] ?? null,
         'sameAs' => $sameAs !== [] ? $sameAs : null,
     ];
@@ -24,10 +29,11 @@
         '@type' => 'WebSite',
         'name' => $siteMeta['short_name'] ?? $orgName,
         'url' => $orgUrl,
-        'publisher' => [
+        'publisher' => array_filter([
             '@type' => 'EducationalOrganization',
             'name' => $orgName,
-        ],
+            'logo' => $logoObject,
+        ]),
     ];
 
     $organization = array_filter($organization, fn ($v) => $v !== null && $v !== []);

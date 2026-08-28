@@ -11,6 +11,7 @@ use App\Services\ProgramCarouselSyncService;
 use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProgramController extends Controller
@@ -108,7 +109,13 @@ class ProgramController extends Controller
             'entry_requirements' => ['nullable', 'string', 'max:2000'],
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
-            'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
+            'cover_image' => [
+                Rule::requiredIf(fn () => ! $program->cover_image_path),
+                'nullable',
+                'file',
+                'image',
+                'mimes:jpeg,jpg,png,gif,webp',
+            ],
         ]);
 
         $department = Department::query()->find($validated['department_id']);

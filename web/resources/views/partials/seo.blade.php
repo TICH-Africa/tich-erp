@@ -36,6 +36,13 @@
 <meta property="og:description" content="{{ $seo['description'] }}">
 <meta property="og:url" content="{{ $seo['url'] }}">
 <meta property="og:image" content="{{ $seo['image'] }}">
+@if (! empty($seo['image_width']) && ! empty($seo['image_height']))
+    <meta property="og:image:width" content="{{ $seo['image_width'] }}">
+    <meta property="og:image:height" content="{{ $seo['image_height'] }}">
+@endif
+@if (! empty($seo['image_alt']))
+    <meta property="og:image:alt" content="{{ $seo['image_alt'] }}">
+@endif
 @if (! empty($seo['published_time']))
     <meta property="article:published_time" content="{{ $seo['published_time'] }}">
 @endif

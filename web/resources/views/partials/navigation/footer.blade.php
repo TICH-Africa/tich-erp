@@ -9,7 +9,11 @@
                     <div class="tich-footer__social tich-mt-4">
                         @foreach ($socialLinks as $social)
                             <a href="{{ $social['url'] }}" class="tich-footer__social-link" target="_blank" rel="noopener noreferrer" title="{{ $social['display_name'] }}">
-                                {{ strtoupper(substr($social['icon_name'] ?? $social['platform'], 0, 1)) }}
+                                @include('partials.navigation.social-icon', [
+                                    'name' => $social['icon_name'] ?? null,
+                                    'platform' => $social['platform'] ?? null,
+                                ])
+                                <span class="tich-sr-only">{{ $social['display_name'] }}</span>
                             </a>
                         @endforeach
                     </div>

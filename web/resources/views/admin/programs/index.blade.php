@@ -119,6 +119,7 @@
                     'programTypes' => $programTypes,
                     'programStatuses' => $programStatuses,
                     'fieldIdPrefix' => 'program-create-',
+                    'requireCoverImage' => true,
                 ])
                 <footer class="tich-modal__footer">
                     <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="program-create-modal">Cancel</button>
@@ -168,6 +169,7 @@
                     'programStatuses' => $programStatuses,
                     'program' => $editProgram,
                     'fieldIdPrefix' => 'program-edit-',
+                    'requireCoverImage' => false,
                 ])
                 <footer class="tich-modal__footer">
                     <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="program-edit-modal">Cancel</button>
@@ -226,6 +228,12 @@
                     coverPreview.removeAttribute('src');
                     coverPreview.hidden = true;
                 }
+            }
+
+            var coverInput = document.getElementById('program-edit-cover_image');
+            if (coverInput) {
+                coverInput.removeAttribute('required');
+                coverInput.value = '';
             }
         }
 

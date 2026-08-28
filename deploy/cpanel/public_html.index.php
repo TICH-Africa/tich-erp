@@ -15,6 +15,27 @@ $storagePublic = $appPath.'/storage/app/public';
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $requestPath = rawurldecode((string) (parse_url($requestUri, PHP_URL_PATH) ?: '/'));
 
+// Google Search crawls /favicon.ico directly; serve a static file even when docroot copy is missing.
+if (strcasecmp($requestPath, '/favicon.ico') === 0) {
+    foreach ([
+        $laravelPublic.'/favicon.ico',
+        $laravelPublic.'/images/favicon-48.png',
+        $laravelPublic.'/images/favicon.png',
+    ] as $faviconFile) {
+        if (! is_file($faviconFile) || filesize($faviconFile) <= 0) {
+            continue;
+        }
+
+        $faviconExt = strtolower(pathinfo($faviconFile, PATHINFO_EXTENSION));
+        header('Content-Type: '.($faviconExt === 'ico' ? 'image/x-icon' : 'image/png'));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: public, max-age=604800');
+        header('Content-Length: '.(string) filesize($faviconFile));
+        readfile($faviconFile);
+        exit;
+    }
+}
+
 if ($requestPath !== '/' && strpos($requestPath, '..') === false) {
     $relative = ltrim($requestPath, '/');
 

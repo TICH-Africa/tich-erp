@@ -78,6 +78,8 @@ class SiteSettingsService
             'site.meta_description',
             $this->get('site.tagline', $defaults['tagline'] ?? '')
         );
+        $logoUrl = $this->resolvedLogoUrl($logoPath);
+        $ogImageUrl = $this->resolvedPublicAssetUrl($ogImagePath) ?? $logoUrl;
 
         return [
             'institution_name' => $this->get('site.institution_name', $defaults['institution_name'] ?? $shortName),
@@ -87,10 +89,12 @@ class SiteSettingsService
             'copyright' => $this->get('site.copyright', $defaults['copyright'] ?? $shortName),
             'website' => $this->get('site.website', $defaults['website'] ?? ''),
             'logo_path' => $logoPath,
-            'logo_url' => $this->publicAssetUrl($logoPath),
+            'logo_url' => $logoUrl,
+            'search_icon_url' => $this->searchIconUrl(),
             'og_image_path' => $ogImagePath,
-            'og_image_url' => $this->publicAssetUrl($ogImagePath),
+            'og_image_url' => $ogImageUrl,
             'favicon_url' => $this->faviconUrl(),
+            'favicon_ico_url' => $this->faviconIcoUrl(),
             'favicon_type' => $this->faviconMimeType(),
             'brand_name' => $this->get('site.brand_name', $shortName),
             'brand_tagline' => $this->get('site.brand_tagline', $tagline),
@@ -144,11 +148,39 @@ class SiteSettingsService
     {
         $dedicated = public_path('images/favicon.png');
 
-        if (is_file($dedicated)) {
-            return asset('images/favicon.png').'?v='.filemtime($dedicated);
+        if (is_file($dedicated) && filesize($dedicated) > 0) {
+            return \App\Support\PublicAsset::url('images/favicon.png');
         }
 
         return route('favicon');
+    }
+
+    public function faviconIcoUrl(): string
+    {
+        $ico = public_path('favicon.ico');
+
+        if (is_file($ico) && filesize($ico) > 0) {
+            return \App\Support\PublicAsset::url('favicon.ico');
+        }
+
+        if (is_file(public_path('images/favicon-48.png'))) {
+            return \App\Support\PublicAsset::url('images/favicon-48.png');
+        }
+
+        return $this->faviconUrl();
+    }
+
+    public function searchIconUrl(): string
+    {
+        if (is_file(public_path('images/logo-mark.png'))) {
+            return \App\Support\PublicAsset::url('images/logo-mark.png');
+        }
+
+        if (is_file(public_path('images/favicon-48.png'))) {
+            return \App\Support\PublicAsset::url('images/favicon-48.png');
+        }
+
+        return $this->faviconUrl();
     }
 
     public function faviconAbsolutePath(): string
@@ -200,6 +232,53 @@ class SiteSettingsService
         }
 
         return $this->publicAssetUrl($this->get('site.logo_path'));
+    }
+
+    private function resolvedLogoUrl(?string $logoPath): string
+    {
+        $custom = $this->resolvedPublicAssetUrl($logoPath);
+
+        if ($custom !== null && $this->logoAbsolutePath() !== null) {
+            return $custom;
+        }
+
+        return \App\Support\PublicAsset::url('images/logo.png');
+    }
+
+    private function resolvedPublicAssetUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        $url = $this->publicAssetUrl($path);
+
+        if ($url === null) {
+            return null;
+        }
+
+        return $this->storedPublicAssetExists($path) ? $url : null;
+    }
+
+    private function storedPublicAssetExists(?string $path): bool
+    {
+        if (! $path) {
+            return false;
+        }
+
+        $relative = str_starts_with($path, 'storage/')
+            ? substr($path, 8)
+            : ltrim($path, '/');
+
+        if ($relative === '') {
+            return false;
+        }
+
+        if (Storage::disk('public')->exists($relative)) {
+            return true;
+        }
+
+        return is_file(public_path($relative));
     }
 
     private function primaryPhysicalAddress(): string

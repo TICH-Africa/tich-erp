@@ -4,7 +4,12 @@
     'programStatuses',
     'program' => null,
     'fieldIdPrefix' => '',
+    'requireCoverImage' => null,
 ])
+
+@php
+    $requireCoverImage = $requireCoverImage ?? ! $program;
+@endphp
 
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}cover_image" @endif>Cover image</label>
@@ -32,9 +37,15 @@
         @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}cover_image" @endif
         class="tich-input"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        @if (! $program) required @endif
+        @if ($requireCoverImage) required @endif
     >
-    <p class="tich-caption tich-mt-2">Upload a file only (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. Shown on the programmes catalogue and homepage.</p>
+    <p class="tich-caption tich-mt-2">
+        @if ($requireCoverImage)
+            Upload a file (JPG, PNG, GIF, or WebP) — not a link. Compressed and saved as WebP. Shown on the programmes catalogue and homepage.
+        @else
+            Optional — leave empty to keep the current cover image. JPG, PNG, GIF, or WebP; compressed and saved as WebP when uploaded.
+        @endif
+    </p>
 </div>
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}program_code" @endif>Programme code</label>

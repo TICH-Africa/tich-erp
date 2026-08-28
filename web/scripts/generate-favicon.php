@@ -111,7 +111,7 @@ foreach ([
     imagepng($dst, $path, 6);
 }
 
-foreach ([32, 180] as $px) {
+foreach ([32, 48, 180] as $px) {
     $small = imagecreatetruecolor($px, $px);
     imagealphablending($small, false);
     imagesavealpha($small, true);
@@ -124,9 +124,20 @@ foreach ([32, 180] as $px) {
     imagedestroy($small);
 }
 
-$png32 = file_get_contents(__DIR__.'/../public/images/favicon-32.png');
-$dir = pack('vvv', 0, 1, 1);
-$entry = pack('CCCCvvVV', 32, 32, 0, 0, 1, 32, strlen($png32), 22);
-file_put_contents(__DIR__.'/../public/favicon.ico', $dir.$entry.$png32);
+$icoSizes = [32, 48];
+$icoCount = count($icoSizes);
+$icoDir = pack('vvv', 0, 1, $icoCount);
+$icoEntries = '';
+$icoData = '';
+$icoOffset = 6 + ($icoCount * 16);
+
+foreach ($icoSizes as $px) {
+    $png = file_get_contents(__DIR__.'/../public/images/favicon-'.$px.'.png');
+    $icoEntries .= pack('CCCCvvVV', $px, $px, 0, 0, 1, 32, strlen($png), $icoOffset);
+    $icoData .= $png;
+    $icoOffset += strlen($png);
+}
+
+file_put_contents(__DIR__.'/../public/favicon.ico', $icoDir.$icoEntries.$icoData);
 
 echo 'Wrote favicon.ico ('.filesize(__DIR__.'/../public/favicon.ico')." bytes)\n";
