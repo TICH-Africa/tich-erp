@@ -164,9 +164,10 @@
                             'icon' => 'calendar',
                             'active' => request()->routeIs('departments.academics.calendar.*'),
                         ],
-                        @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
                     ],
                 ])
+
+                @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
             @endcan
 
             <p class="tich-admin-sidebar__section">Navigation</p>
