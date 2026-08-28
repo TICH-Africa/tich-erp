@@ -38,7 +38,6 @@ class UserAccessController extends Controller
         $users = User::query()
             ->with([
                 'roles' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
-                'permissions' => fn ($query) => $query->withPivot('department_id', 'campus_id'),
                 'staff.department:id,dept_name',
                 'student.program:id,program_code,program_name',
                 'student.applicant:id,first_name,surname',
@@ -49,13 +48,6 @@ class UserAccessController extends Controller
             ->orderBy('email')
             ->paginate(20)
             ->withQueryString();
-
-        $slugToPermission = $this->rbacService->dashboardModuleSlugMap();
-        $moduleLabelsBySlug = $slugToPermission->map(function (string $permissionKey) {
-            $module = collect(config('tich-dashboards.modules', []))->firstWhere('permission', $permissionKey);
-
-            return $module['label'] ?? $permissionKey;
-        });
 
         $staffCount = User::query()
             ->where('is_active', 1)
@@ -73,8 +65,6 @@ class UserAccessController extends Controller
             'staffCount' => $staffCount,
             'studentCount' => $studentCount,
             'departmentNames' => Department::query()->pluck('dept_name', 'id'),
-            'slugToPermission' => $slugToPermission,
-            'moduleLabelsBySlug' => $moduleLabelsBySlug,
             'openStaffAccessUserId' => $audience === 'staff' && old('_method') === 'PUT'
                 ? (int) old('edit_user_id')
                 : null,
@@ -99,15 +89,7 @@ class UserAccessController extends Controller
                 'roleNamesById' => Role::query()->pluck('role_name', 'id'),
                 'campuses' => Campus::query()->where('is_active', 1)->orderBy('campus_name')->get(['id', 'campus_name']),
                 'departments' => $departments,
-                'assignableModules' => collect(config('tich-dashboards.modules', []))
-                    ->reject(fn (array $module) => ($module['key'] ?? '') === 'dashboard')
-                    ->unique('permission')
-                    ->values(),
-                'moduleCatalog' => $this->departmentModuleService->catalog(),
                 'departmentModuleAssignments' => $this->departmentModuleService->assignedModulesByDepartmentIds(
-                    $departments->pluck('id')->all()
-                ),
-                'departmentPermissionMap' => $this->departmentModuleService->dashboardPermissionsByDepartmentIds(
                     $departments->pluck('id')->all()
                 ),
             ]);
@@ -180,10 +162,6 @@ class UserAccessController extends Controller
             'assignments.*.role_id' => ['nullable', 'exists:roles,id'],
             'assignments.*.campus_id' => ['nullable', 'exists:campuses,id'],
             'assignments.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
-            'permission_grants' => ['nullable', 'array'],
-            'permission_grants.*.permission' => ['nullable', 'string'],
-            'permission_grants.*.campus_id' => ['nullable', 'exists:campuses,id'],
-            'permission_grants.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
         ], $this->accessContext()->route('users.index', ['audience' => 'staff']));
 
         $staffRoleIds = Role::query()->whereNotIn('role_name', self::STUDENT_ROLES)->pluck('id')->all();
@@ -220,49 +198,10 @@ class UserAccessController extends Controller
             }
         }
 
-        $permissionGrants = collect($validated['permission_grants'] ?? [])
-            ->filter(fn (array $row) => ! empty($row['permission']))
-            ->map(fn (array $row) => [
-                'permission' => $row['permission'],
-                'campus_id' => ! empty($row['campus_id']) ? (int) $row['campus_id'] : null,
-                'department_id' => ! empty($row['department_id']) ? (int) $row['department_id'] : null,
-            ])
-            ->unique(fn (array $row) => implode(':', [
-                $row['permission'],
-                $row['department_id'] ?? 'all',
-                $row['campus_id'] ?? 'all',
-            ]))
-            ->values()
-            ->all();
-
-        foreach ($permissionGrants as $index => $grant) {
-            if ($this->rbacService->permissionRequiresDepartment($grant['permission']) && empty($grant['department_id'])) {
-                return redirect()
-                    ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
-                    ->withInput()
-                    ->withErrors([
-                        "permission_grants.{$index}.department_id" => 'Select which department this module access applies to.',
-                    ]);
-            }
-
-            if (! empty($grant['department_id'])) {
-                $department = Department::query()->find($grant['department_id']);
-
-                if ($department && ! $this->departmentModuleService->departmentSupportsDashboardPermission($department, $grant['permission'])) {
-                    return redirect()
-                        ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
-                        ->withInput()
-                        ->withErrors([
-                            "permission_grants.{$index}.permission" => 'This module is not enabled for the selected department. Enable it under Admin → Departments first.',
-                        ]);
-                }
-            }
-        }
-
         $this->rbacService->syncUserAccess(
             $user,
             $assignments,
-            $permissionGrants,
+            [],
             $request->user()->id
         );
 

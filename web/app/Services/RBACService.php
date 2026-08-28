@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
-    public function __construct(protected AuditService $auditService) {}
+    public function __construct(
+        protected AuditService $auditService,
+        protected PlatformNotificationService $notificationService,
+    ) {}
     public function resolvePermissionSlug(string $permission): string
     {
         $aliases = config('tich.permission_aliases', []);
@@ -309,8 +312,14 @@ class RBACService
             ->all();
     }
 
-    public function assignRoleToUser(User $user, int $roleId, ?int $campusId = null, ?int $departmentId = null, ?int $assignedBy = null): void
-    {
+    public function assignRoleToUser(
+        User $user,
+        int $roleId,
+        ?int $campusId = null,
+        ?int $departmentId = null,
+        ?int $assignedBy = null,
+        bool $sendNotification = false,
+    ): void {
         DB::table('user_roles')->updateOrInsert(
             [
                 'user_id' => $user->id,
@@ -343,6 +352,16 @@ class RBACService
             'success',
             $assignedBy
         );
+
+        if ($sendNotification) {
+            $this->notifyUserOfAccessAssignment($user, [
+                [
+                    'role_id' => $roleId,
+                    'campus_id' => $campusId,
+                    'department_id' => $departmentId,
+                ],
+            ], $assignedBy);
+        }
     }
 
     public function revokeRoleFromUser(User $user, int $roleId, ?int $revokedBy = null): void
@@ -417,6 +436,10 @@ class RBACService
             'success',
             $assignedBy
         );
+
+        if ($assignments !== []) {
+            $this->notifyUserOfAccessAssignment($user, $assignments, $assignedBy);
+        }
     }
 
     /**
@@ -538,5 +561,60 @@ class RBACService
         }
 
         return false;
+    }
+
+    /**
+     * @param  list<array{role_id: int, department_id?: int|null, campus_id?: int|null}>  $assignments
+     */
+    private function notifyUserOfAccessAssignment(User $user, array $assignments, ?int $assignedBy): void
+    {
+        $roleIds = collect($assignments)->pluck('role_id')->filter()->unique()->values();
+        $departmentIds = collect($assignments)->pluck('department_id')->filter()->unique()->values();
+        $campusIds = collect($assignments)->pluck('campus_id')->filter()->unique()->values();
+
+        $roleNames = DB::table('roles')->whereIn('id', $roleIds)->pluck('role_name', 'id');
+        $departmentNames = DB::table('departments')->whereIn('id', $departmentIds)->pluck('dept_name', 'id');
+        $campusNames = DB::table('campuses')->whereIn('id', $campusIds)->pluck('campus_name', 'id');
+
+        $lines = [];
+        foreach ($assignments as $assignment) {
+            $roleId = (int) ($assignment['role_id'] ?? 0);
+            $line = $roleNames[$roleId] ?? 'Assigned role';
+
+            $departmentId = $assignment['department_id'] ?? null;
+            if ($departmentId) {
+                $line .= ' · '.($departmentNames[$departmentId] ?? 'Department #'.$departmentId);
+            } else {
+                $line .= ' · Institution-wide';
+            }
+
+            $campusId = $assignment['campus_id'] ?? null;
+            if ($campusId) {
+                $line .= ' · '.($campusNames[$campusId] ?? 'Campus #'.$campusId);
+            }
+
+            $lines[] = $line;
+        }
+
+        $body = 'You have been assigned the following department and role access on TICH ERP:'."\n\n"
+            .implode("\n", $lines)
+            ."\n\nSign in to open your department dashboards and tools.";
+
+        if ($assignedBy) {
+            $assigner = User::query()->with('staff')->find($assignedBy);
+            if ($assigner) {
+                $body .= "\n\nAssigned by: ".$assigner->displayName();
+            }
+        }
+
+        $this->notificationService->notifyUser(
+            $user->id,
+            'Your ERP access has been updated',
+            $body,
+            'user_roles',
+            (string) $user->id,
+            'normal',
+            route('dashboard'),
+        );
     }
 }

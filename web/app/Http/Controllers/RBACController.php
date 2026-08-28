@@ -71,7 +71,8 @@ class RBACController extends Controller
             $request->role_id,
             $request->campus_id,
             $request->department_id,
-            $currentUser->id
+            $currentUser->id,
+            true,
         );
 
         return response()->json([
