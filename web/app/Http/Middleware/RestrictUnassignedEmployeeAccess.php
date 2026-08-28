@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\EmployeeAssignmentService;
+use App\Services\RBACService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,11 +26,18 @@ class RestrictUnassignedEmployeeAccess
         'mfa.resend',
     ];
 
-    public function __construct(protected EmployeeAssignmentService $assignment) {}
+    public function __construct(
+        protected EmployeeAssignmentService $assignment,
+        protected RBACService $rbacService,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+
+        if ($user && $this->rbacService->isPlatformAdministrator($user)) {
+            return $next($request);
+        }
 
         if (! $user || $this->assignment->canAccessBeyondDepartmentPicker($user)) {
             return $next($request);

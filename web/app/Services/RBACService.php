@@ -22,7 +22,7 @@ class RBACService
 
     public function hasPermission(User $user, string $permission): bool
     {
-        if ($this->hasRole($user, 'Super Admin')) {
+        if ($this->isPlatformAdministrator($user)) {
             return true;
         }
 
@@ -64,6 +64,16 @@ class RBACService
         }
 
         return true;
+    }
+
+    /**
+     * Platform operators: Super Admin role or users.user_type = admin.
+     * Distinct from job roles in the roles table (HR Manager, Staff, etc.).
+     */
+    public function isPlatformAdministrator(User $user): bool
+    {
+        return $user->user_type === 'admin'
+            || $this->hasRole($user, 'Super Admin');
     }
 
     public function hasRole(User $user, string $roleName, ?int $departmentId = null): bool

@@ -47,7 +47,7 @@ class DepartmentDashboardService
             ->orderBy('display_order')
             ->orderBy('dept_name');
 
-        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+        if ($this->rbacService->isPlatformAdministrator($user)) {
             return $query->get();
         }
 
@@ -73,7 +73,7 @@ class DepartmentDashboardService
 
     public function userCanAccessDepartment(User $user, Department $department): bool
     {
-        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+        if ($this->rbacService->isPlatformAdministrator($user)) {
             return true;
         }
 
@@ -111,7 +111,7 @@ class DepartmentDashboardService
     {
         $children = $department->children()->active()->orderBy('display_order')->orderBy('dept_name')->get();
 
-        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+        if ($this->rbacService->isPlatformAdministrator($user)) {
             return $children;
         }
 

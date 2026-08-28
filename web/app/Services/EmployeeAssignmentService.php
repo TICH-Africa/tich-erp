@@ -15,7 +15,7 @@ class EmployeeAssignmentService
 
     public function isAwaitingDepartmentAssignment(User $user, ?Staff $staff = null): bool
     {
-        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+        if ($this->rbacService->isPlatformAdministrator($user)) {
             return false;
         }
 

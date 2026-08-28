@@ -56,7 +56,7 @@ class EmployeeProfileCompletenessService
 
     public function mustCompleteProfile(User $user): bool
     {
-        if ($user->hasRole('Super Admin')) {
+        if (app(RBACService::class)->isPlatformAdministrator($user)) {
             return false;
         }
 

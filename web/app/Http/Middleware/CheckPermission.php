@@ -30,6 +30,10 @@ class CheckPermission
             return redirect()->guest(route('login'));
         }
 
+        if ($this->rbacService->isPlatformAdministrator($user)) {
+            return $next($request);
+        }
+
         $allowed = count($permissions) > 1
             ? $this->rbacService->hasAnyPermission($user, $permissions)
             : $this->rbacService->hasPermission($user, $permissions[0] ?? '');

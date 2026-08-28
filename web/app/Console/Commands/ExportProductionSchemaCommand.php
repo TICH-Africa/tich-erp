@@ -90,6 +90,9 @@ class ExportProductionSchemaCommand extends Command
         $lines[] = '--   php artisan migrate';
         $lines[] = '--   php artisan tich:export-production-schema';
         $lines[] = '-- (Also auto-refreshed when migrations finish successfully.)';
+        $lines[] = '--';
+        $lines[] = '-- For DROP TABLE / MODIFY COLUMN changes, also run deploy/production-patches.sql';
+        $lines[] = '-- after this file on production (see deploy/PRODUCTION_SQL.md).';
         $lines[] = '-- =============================================================================';
         $lines[] = '';
         $lines[] = 'SET NAMES utf8mb4;';

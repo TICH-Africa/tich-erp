@@ -35,7 +35,7 @@ class DashboardController extends Controller
             'categoryLabel' => fn ($department) => $departmentDashboard->categoryLabel($department),
             'entryUrl' => fn ($department) => $departmentDashboard->entryUrlForDepartment($user, $department),
             'cardActionLabel' => $departmentDashboard->cardActionLabel($user),
-            'isSuperAdmin' => $user->hasRole('Super Admin'),
+            'isSuperAdmin' => app(\App\Services\RBACService::class)->isPlatformAdministrator($user),
         ]);
     }
 }

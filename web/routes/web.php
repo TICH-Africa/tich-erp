@@ -95,11 +95,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::get('/start', \App\Http\Controllers\AccountStartController::class)->name('account.start');
 
     Route::get('/dashboard', DashboardController::class)
-        ->middleware('permission:dashboard.access')
         ->name('dashboard');
 
     Route::get('/departments/{department}', [DepartmentDashboardController::class, 'show'])
-        ->middleware('permission:dashboard.access')
         ->where('department', '[0-9]+(-[0-9]+)?')
         ->name('departments.show');
 

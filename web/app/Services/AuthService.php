@@ -213,7 +213,7 @@ class AuthService
             return redirect()->to($this->mfaEntryRoute($user));
         }
 
-        if (! $this->rbacService->hasRole($user, 'Super Admin')) {
+        if (! $this->rbacService->isPlatformAdministrator($user)) {
             app(EmployeePortalService::class)->ensureStaffProfile($user);
             $user->refresh();
         }
@@ -236,7 +236,7 @@ class AuthService
 
     public function redirectAfterMfa(User $user, Request $request): RedirectResponse
     {
-        if (! $this->rbacService->hasRole($user, 'Super Admin')) {
+        if (! $this->rbacService->isPlatformAdministrator($user)) {
             app(EmployeePortalService::class)->ensureStaffProfile($user);
             $user->refresh();
         }
@@ -258,7 +258,7 @@ class AuthService
 
     private function shouldPreferEmployeeHome(User $user): bool
     {
-        if ($this->isEnrolledStudent($user) || $this->rbacService->hasRole($user, 'Super Admin')) {
+        if ($this->isEnrolledStudent($user) || $this->rbacService->isPlatformAdministrator($user)) {
             return false;
         }
 
@@ -276,8 +276,8 @@ class AuthService
             return route('portal.dashboard');
         }
 
-        // Super Admins use the full platform — never force employee profile completion.
-        if ($this->rbacService->hasRole($user, 'Super Admin')) {
+        // Platform admins use the full dashboard — never force employee profile completion.
+        if ($this->rbacService->isPlatformAdministrator($user)) {
             return route('dashboard');
         }
 
