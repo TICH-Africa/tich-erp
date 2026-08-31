@@ -159,6 +159,31 @@ Artisan::command('sis:backfill-admitted', function () {
     return 0;
 })->purpose('Create student records and portal invites for already-admitted applicants');
 
+Artisan::command('applications:revert-fee-payment {application_number}', function (string $application_number) {
+    $applicant = \App\Models\Applicant::query()
+        ->where('application_number', $application_number)
+        ->first();
+
+    if (! $applicant) {
+        $this->error("No applicant found for {$application_number}.");
+
+        return 1;
+    }
+
+    if (! $applicant->application_fee_paid) {
+        $this->info("{$application_number} has no recorded application fee payment.");
+
+        return 0;
+    }
+
+    $feeService = app(\App\Services\ApplicationFeeService::class);
+    $applicant = $feeService->revertApplicationFeePayment($applicant);
+
+    $this->info("Reverted application fee for {$applicant->application_number}. Status: {$applicant->status}, fee paid: ".($applicant->application_fee_paid ? 'yes' : 'no'));
+
+    return 0;
+})->purpose('Undo a recorded application fee payment for STK retesting');
+
 Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
 Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');
 Schedule::command('finance:send-invoice-reminders')->dailyAt('09:00');

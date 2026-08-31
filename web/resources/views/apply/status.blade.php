@@ -55,7 +55,7 @@
                             <li><span class="tich-caption">Application fee</span> Paid{{ $applicant->application_fee_payment_ref ? ' · '.$applicant->application_fee_payment_ref : '' }}</li>
                         @endif
                     </ul>
-                    @if ($applicant->status === 'fee_pending' && ! $applicant->application_fee_paid)
+                    @if ($applicant->canPayApplicationFee())
                         <a href="{{ route('apply.pay', ['application_number' => $applicant->application_number, 'email' => $applicant->email]) }}" class="tich-btn tich-btn-primary tich-mt-4">Pay application fee</a>
                     @endif
                 </div>

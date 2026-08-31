@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-08-28 15:28:25 EAT
+-- Generated: 2026-08-31 08:32:21 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -872,6 +872,9 @@ CREATE TABLE IF NOT EXISTS `applicants` (
   `next_of_kin_phone` varchar(30) DEFAULT NULL,
   `next_of_kin_address` varchar(500) DEFAULT NULL,
   `entry_qualification` varchar(50) DEFAULT NULL,
+  `kcse_grade` varchar(20) DEFAULT NULL,
+  `kcse_year` smallint(5) unsigned DEFAULT NULL,
+  `previous_institution` varchar(200) DEFAULT NULL,
   `sponsorship_type` varchar(50) DEFAULT NULL,
   `sponsor_organization` varchar(200) DEFAULT NULL,
   `sponsor_address` varchar(500) DEFAULT NULL,
@@ -934,6 +937,9 @@ CALL `tich_ensure_column`('applicants', 'next_of_kin_relationship', 'varchar(50)
 CALL `tich_ensure_column`('applicants', 'next_of_kin_phone', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'next_of_kin_address', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'entry_qualification', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'kcse_grade', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'kcse_year', 'smallint(5) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'previous_institution', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'sponsorship_type', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'sponsor_organization', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'sponsor_address', 'varchar(500) NULL DEFAULT NULL');

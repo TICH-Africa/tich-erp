@@ -54,6 +54,7 @@ return [
         'callback_url' => env('MPESA_CALLBACK_URL'),
         'transaction_type' => env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
         'account_reference_prefix' => env('MPESA_ACCOUNT_REFERENCE_PREFIX', 'TICH'),
+        'allow_local_simulate' => (bool) env('MPESA_ALLOW_LOCAL_SIMULATE', false),
     ],
 
     'invoice_due_days' => (int) env('FINANCE_INVOICE_DUE_DAYS', 30),

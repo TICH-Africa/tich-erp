@@ -82,17 +82,17 @@ class ApplicationPaymentController extends Controller
         ];
 
         if (! $this->feeService->mpesaEnabled()) {
-            if (! app()->environment('local')) {
+            if (config('finance.mpesa.allow_local_simulate') && app()->environment('local')) {
+                $this->feeService->simulateLocalPayment($applicant);
+
                 return redirect()
                     ->route('apply.pay', $payQuery)
-                    ->withErrors(['phone_number' => 'Online M-Pesa is not active yet. If you have already paid, Finance can confirm the receipt manually.']);
+                    ->with('status', 'Test payment recorded. Your application fee is verified.');
             }
-
-            $this->feeService->simulateLocalPayment($applicant);
 
             return redirect()
                 ->route('apply.pay', $payQuery)
-                ->with('status', 'Payment recorded. Your application fee is verified.');
+                ->withErrors(['phone_number' => 'M-Pesa is not enabled. Configure MPESA_ENABLED and sandbox credentials in .env to test STK push.']);
         }
 
         try {

@@ -158,12 +158,12 @@ class StudentEnrollmentService
             ->whereYear('date_of_admission', (int) $year)
             ->count() + 1;
 
-        $campusCode = strtoupper((string) ($applicant->preferredCampus?->campus_code ?? 'THC'));
+        $prefix = strtoupper((string) config('tich-sis.registration_prefix', 'TICH'));
         $examBodyToken = substr(preg_replace('/[^A-Z0-9]/', '', strtoupper((string) ($applicant->program?->regulatory_body ?? 'N'))) ?: 'N', 0, 1);
 
         return sprintf(
             '%s/%s/%s%02d/%s',
-            $campusCode,
+            $prefix,
             $examBodyToken,
             $month,
             $sequence,

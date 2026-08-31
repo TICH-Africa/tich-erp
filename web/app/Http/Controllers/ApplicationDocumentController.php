@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationDocument;
+use App\Models\Department;
 use App\Services\AdmissionsReviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,7 +13,7 @@ class ApplicationDocumentController extends Controller
 {
     public function __construct(protected AdmissionsReviewService $reviewService) {}
 
-    public function show(Request $request, int $applicationId, int $documentId): StreamedResponse
+    public function show(Request $request, ?Department $department, int $applicationId, int $documentId): StreamedResponse
     {
         $document = $this->resolveDocument($request, $applicationId, $documentId);
 
@@ -28,7 +29,7 @@ class ApplicationDocumentController extends Controller
         );
     }
 
-    public function download(Request $request, int $applicationId, int $documentId): StreamedResponse
+    public function download(Request $request, ?Department $department, int $applicationId, int $documentId): StreamedResponse
     {
         $document = $this->resolveDocument($request, $applicationId, $documentId);
 

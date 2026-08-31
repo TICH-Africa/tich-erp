@@ -34,7 +34,7 @@
                         <th>Applicant</th>
                         <th>Programme</th>
                         <th>Status</th>
-                        <th>Fee paid</th>
+                        <th>Application Fee Paid</th>
                         <th></th>
                     </tr>
                 </thead>

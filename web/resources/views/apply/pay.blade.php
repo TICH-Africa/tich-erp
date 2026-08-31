@@ -9,6 +9,7 @@
         <h1 id="pay-heading" class="tich-h1">Pay application fee</h1>
         <p class="tich-text tich-mt-4">Use your application number as the M-Pesa account reference. Payment is confirmed automatically after a successful STK prompt.</p>
 
+        @if (! $applicant)
         <div class="tich-card tich-mt-8">
             <form method="GET" action="{{ route('apply.pay') }}">
                 <div class="tich-form-group">
@@ -22,17 +23,12 @@
                 <button type="submit" class="tich-btn tich-btn-secondary">Look up application</button>
             </form>
         </div>
+        @endif
 
         @if (! empty($lookedUp))
             @if (! $applicant)
                 <p class="tich-field-error tich-mt-4">No application found for those details.</p>
             @else
-                @php
-                    $canPay = in_array($applicant->status, ['fee_pending'], true)
-                        && $applicant->academic_review_status === 'shortlisted'
-                        && ! $applicant->application_fee_paid;
-                @endphp
-
                 <div class="tich-card tich-mt-6">
                     <h2 class="tich-h3">{{ $applicant->application_number }}</h2>
                     <p class="tich-text tich-mt-2">{{ $applicant->fullName() }}</p>
@@ -55,10 +51,19 @@
                     @endif
 
                     @if ($applicant->application_fee_paid || $applicant->status === 'paid')
-                        <p class="tich-text tich-mt-4">Application fee is verified. Admissions can now complete onboarding.</p>
+                        <p class="tich-text tich-mt-4">Your application fee is verified. You will receive further updates by email.</p>
                         <a href="{{ route('apply.status', ['application_number' => $applicant->application_number, 'email' => $applicant->email]) }}" class="tich-btn tich-btn-primary tich-mt-4">Check application status</a>
-                    @elseif (! $canPay)
-                        <p class="tich-text tich-mt-4">This application is not yet at the payment stage.</p>
+                    @elseif (! $applicant->canPayApplicationFee())
+                        <p class="tich-text tich-mt-4">
+                            @if ($applicant->status === 'academic_review')
+                                Your application is still under academic review. You can pay the application fee after it is approved.
+                            @elseif (in_array($applicant->status, ['submitted_admin', 'submitted'], true))
+                                Your application is with Administration. Payment opens after academics approve your application.
+                            @else
+                                This application is not at the payment stage yet.
+                            @endif
+                        </p>
+                        <a href="{{ route('apply.status', ['application_number' => $applicant->application_number, 'email' => $applicant->email]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Check application status</a>
                     @else
                         @if ($stkRequest)
                             <div
@@ -73,21 +78,32 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('apply.pay.store') }}" class="tich-mt-6">
-                            @csrf
-                            <input type="hidden" name="application_number" value="{{ $applicant->application_number }}">
-                            <input type="hidden" name="email" value="{{ $applicant->email }}">
-                            <div class="tich-form-group">
-                                <label for="phone_number" class="tich-label">M-Pesa phone number</label>
-                                <input type="text" id="phone_number" name="phone_number" class="tich-input" value="{{ old('phone_number', $applicant->phone_number) }}" required>
-                            </div>
-                            @if (! $mpesaEnabled && ! app()->environment('local'))
-                                <p class="tich-caption">Online M-Pesa is not active yet. Pay using the account reference above, then wait for Finance to confirm.</p>
-                            @endif
-                            <button type="submit" class="tich-btn tich-btn-primary" @disabled(! $mpesaEnabled && ! app()->environment('local'))>
-                                {{ $mpesaEnabled ? 'Pay with M-Pesa' : (app()->environment('local') ? 'Record test payment' : 'M-Pesa unavailable') }}
-                            </button>
-                        </form>
+                        <div class="tich-mt-6">
+                            <h3 class="tich-h4">Pay with M-Pesa</h3>
+                            <p class="tich-text tich-mt-2">Enter your M-Pesa phone number and tap the button below. You will receive a payment prompt on your phone — enter your PIN to complete payment.</p>
+
+                            <form method="POST" action="{{ route('apply.pay.store') }}" class="tich-mt-4">
+                                @csrf
+                                <input type="hidden" name="application_number" value="{{ $applicant->application_number }}">
+                                <input type="hidden" name="email" value="{{ $applicant->email }}">
+                                <div class="tich-form-group">
+                                    <label for="phone_number" class="tich-label">M-Pesa phone number</label>
+                                    <input type="text" id="phone_number" name="phone_number" class="tich-input" value="{{ old('phone_number', $applicant->phone_number) }}" placeholder="e.g. 0712345678" required>
+                                </div>
+                                @if (! $mpesaEnabled && ! config('finance.mpesa.allow_local_simulate'))
+                                    <p class="tich-caption">M-Pesa is not configured. Set MPESA_ENABLED=true and sandbox credentials in .env, and expose the callback URL (e.g. via ngrok).</p>
+                                @endif
+                                <button type="submit" class="tich-btn tich-btn-primary" @disabled(! $mpesaEnabled && ! config('finance.mpesa.allow_local_simulate'))>
+                                    @if ($mpesaEnabled)
+                                        Send M-Pesa payment prompt
+                                    @elseif (config('finance.mpesa.allow_local_simulate'))
+                                        Record test payment
+                                    @else
+                                        M-Pesa not configured
+                                    @endif
+                                </button>
+                            </form>
+                        </div>
                     @endif
                 </div>
             @endif

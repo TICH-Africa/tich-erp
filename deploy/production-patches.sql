@@ -122,6 +122,14 @@ ALTER TABLE `applicants`
     ADD COLUMN IF NOT EXISTS `kcse_year` SMALLINT UNSIGNED NULL AFTER `kcse_grade`,
     ADD COLUMN IF NOT EXISTS `previous_institution` VARCHAR(200) NULL AFTER `kcse_year`;
 
+-- -----------------------------------------------------------------------------
+-- 8. Student registration numbers: prefix must be TICH (not campus code)
+-- -----------------------------------------------------------------------------
+UPDATE `students`
+SET `registration_number` = CONCAT('TICH', SUBSTRING(`registration_number`, LOCATE('/', `registration_number`)))
+WHERE `registration_number` NOT LIKE 'TICH/%'
+  AND `registration_number` LIKE '%/%';
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

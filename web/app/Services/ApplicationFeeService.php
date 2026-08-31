@@ -131,6 +131,12 @@ class ApplicationFeeService
 
     public function simulateLocalPayment(Applicant $applicant): Applicant
     {
+        if (! config('finance.mpesa.allow_local_simulate')) {
+            throw ValidationException::withMessages([
+                'phone_number' => 'Local payment simulation is disabled. Enable M-Pesa sandbox credentials to test STK push.',
+            ]);
+        }
+
         $this->assertPayable($applicant);
 
         return $this->markPaid(
@@ -138,6 +144,57 @@ class ApplicationFeeService
             'SIM-APP-'.strtoupper(substr(sha1((string) microtime(true)), 0, 8)),
             'simulated'
         );
+    }
+
+    /**
+     * Undo a recorded application fee payment so STK testing can be repeated.
+     */
+    public function revertApplicationFeePayment(Applicant $applicant, ?int $actorId = null): Applicant
+    {
+        if (! $applicant->application_fee_paid && $applicant->status === 'fee_pending') {
+            return $applicant;
+        }
+
+        if ($applicant->status === 'rejected') {
+            throw ValidationException::withMessages([
+                'application' => 'Cannot revert payment on a rejected application.',
+            ]);
+        }
+
+        $previousStatus = $applicant->status;
+        $previousRef = $applicant->application_fee_payment_ref;
+
+        $payload = [
+            'status' => 'fee_pending',
+            'application_fee_paid' => false,
+            'application_fee_paid_at' => null,
+            'reviewed_at' => $applicant->reviewed_at,
+        ];
+
+        if (Schema::hasColumn('applicants', 'application_fee_payment_ref')) {
+            $payload['application_fee_payment_ref'] = null;
+        }
+
+        $applicant->update($payload);
+
+        $this->auditService->log(
+            'admissions.application.fee_reverted',
+            'applicants',
+            $applicant->id,
+            [
+                'status' => $previousStatus,
+                'payment_reference' => $previousRef,
+            ],
+            [
+                'status' => 'fee_pending',
+                'application_fee_paid' => false,
+            ],
+            'Application fee payment reverted for retesting',
+            'success',
+            $actorId
+        );
+
+        return $applicant->fresh(['program.department', 'handlingDepartment']);
     }
 
     public function markPaidFromMpesa(Applicant $applicant, string $receipt, ?float $amount = null): Applicant

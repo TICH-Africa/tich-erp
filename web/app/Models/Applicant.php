@@ -113,4 +113,14 @@ class Applicant extends Model
     {
         return in_array($this->status, ['admitted', 'rejected'], true);
     }
+
+    public function canPayApplicationFee(): bool
+    {
+        if ($this->application_fee_paid || $this->isFinalized()) {
+            return false;
+        }
+
+        return $this->status === 'fee_pending'
+            && in_array($this->academic_review_status, ['approved', 'shortlisted'], true);
+    }
 }
