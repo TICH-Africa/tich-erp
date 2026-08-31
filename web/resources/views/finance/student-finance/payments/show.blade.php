@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Payment" meta="Payment details">
 <x-slot:actions>
-            <a href="{{ route('finance.student-finance.payments.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.payments.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -43,7 +43,7 @@
             @if ($payment->receipt)
                 <p class="tich-text"><strong>Receipt:</strong> {{ $payment->receipt->receipt_number }}</p>
                 <p class="tich-text"><strong>Issued:</strong> {{ $payment->receipt->issued_at?->format('d M Y H:i') }}</p>
-                <a href="{{ route('finance.student-finance.receipts.show', ['department' => $department->id, 'id' => $payment->receipt->id]) }}" class="tich-btn tich-btn-primary">Download Receipt</a>
+                <a href="{{ route('finance.student-finance.receipts.show', ['id' => $payment->receipt->id]) }}" class="tich-btn tich-btn-primary">Download Receipt</a>
             @else
                 <p class="tich-table-empty">No receipt generated yet.</p>
             @endif

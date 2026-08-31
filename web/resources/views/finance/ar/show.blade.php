@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Accounts Receivable" meta="Invoice details">
         <x-slot:actions>
-            <a href="{{ route('finance.ar.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.ar.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 

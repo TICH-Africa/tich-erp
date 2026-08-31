@@ -102,8 +102,33 @@ class StudentAccountService
 
     private function currentAcademicYearId(): int
     {
-        return (int) (AcademicYear::query()->where('is_current', 1)->value('id')
-            ?? AcademicYear::query()->orderByDesc('start_date')->value('id')
-            ?? 1);
+        $existing = AcademicYear::query()->where('is_current', 1)->value('id')
+            ?? AcademicYear::query()->orderByDesc('start_date')->value('id');
+
+        if ($existing) {
+            return (int) $existing;
+        }
+
+        // Local/dev databases may have students before any academic year is configured.
+        $start = now()->month >= 9
+            ? now()->copy()->month(9)->startOfMonth()
+            : now()->copy()->subYear()->month(9)->startOfMonth();
+        $end = $start->copy()->addYear()->subDay();
+        $label = $start->format('Y').'/'.$end->format('Y');
+
+        $year = AcademicYear::query()->firstOrCreate(
+            ['year_label' => $label],
+            [
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'is_current' => 1,
+            ]
+        );
+
+        if (! $year->is_current) {
+            AcademicYear::query()->whereKey($year->id)->update(['is_current' => 1]);
+        }
+
+        return (int) $year->id;
     }
 }

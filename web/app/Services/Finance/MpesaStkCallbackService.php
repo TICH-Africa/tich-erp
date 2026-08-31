@@ -221,9 +221,15 @@ class MpesaStkCallbackService
 
         app(ApplicationFeeService::class)->markPaidFromMpesa($applicant, $receipt, $amount);
 
+        $paymentId = \App\Models\Payment::query()
+            ->where('payment_reference', $receipt !== '' ? $receipt : null)
+            ->where('status', 'SUCCESS')
+            ->value('id');
+
         $stkRequest->update([
             'status' => MpesaStkRequest::STATUS_SUCCESS,
             'mpesa_receipt_number' => $receipt !== '' ? $receipt : null,
+            'payment_id' => $paymentId,
             'completed_at' => now(),
         ]);
     }

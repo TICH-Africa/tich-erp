@@ -5,12 +5,12 @@
 @section('finance-content')
     <x-page-toolbar title="New Fee Structure" meta="Create a new fee structure for a program, academic year, and semester">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.fee-structures.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.fee-structures.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
     <article class="tich-card">
-        <form method="POST" action="{{ route('finance.student-finance.fee-structures.store', ['department' => $department->id]) }}" class="tich-mt-4">
+        <form method="POST" action="{{ route('finance.student-finance.fee-structures.store') }}" class="tich-mt-4">
             @csrf
             <div class="tich-form-grid tich-form-grid--2">
                 <div class="tich-form-group">
@@ -105,7 +105,7 @@
 
             <div class="tich-form-group tich-mt-4">
                 <button type="submit" class="tich-btn tich-btn-primary">Create fee structure</button>
-                <a href="{{ route('finance.student-finance.fee-structures.index', $department) }}" class="tich-btn tich-btn-ghost">Cancel</a>
+                <a href="{{ route('finance.student-finance.fee-structures.index') }}" class="tich-btn tich-btn-ghost">Cancel</a>
             </div>
         </form>
     </article>

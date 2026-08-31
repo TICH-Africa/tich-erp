@@ -5,11 +5,11 @@
 @section('finance-content')
     <x-page-toolbar title="Payroll Integration" meta="Sync approved payroll data from HR/Payroll">
         <x-slot:actions>
-            <a href="{{ route('finance.payroll-integration.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.payroll-integration.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
-    <form method="POST" action="{{ route('finance.payroll-integration.sync', $department) }}" class="tich-card tich-form-grid">
+    <form method="POST" action="{{ route('finance.payroll-integration.sync') }}" class="tich-card tich-form-grid">
         @csrf
         <div class="tich-form-row">
             <label class="tich-label" for="period">Payroll period <span class="tich-text--danger">*</span></label>
@@ -29,7 +29,7 @@
         </div>
         <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Sync payroll</button>
-            <a href="{{ route('finance.payroll-integration.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+            <a href="{{ route('finance.payroll-integration.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
         </div>
     </form>
 @endsection

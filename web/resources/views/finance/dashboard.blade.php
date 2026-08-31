@@ -75,7 +75,7 @@
     </div>
 
     <div class="tich-grid tich-grid--3 tich-mb-8">
-        <a href="{{ route('finance.student-finance.hub') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+        <a href="{{ route('finance.student-finance.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h3">Student Finance</h3>
             <p class="tich-text tich-mt-2">Accounts, fee structures, invoices, payments, receipts, adjustments, refunds, and clearance.</p>
         </a>

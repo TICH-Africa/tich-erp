@@ -8,8 +8,8 @@
             @if (in_array($invoice->status, ['issued', 'partial', 'overdue']) && $invoice->balance > 0)
                 <a href="{{ route('finance.payments.create', ['invoice_id' => $invoice->id]) }}" class="tich-btn tich-btn-primary">+ Record payment</a>
             @endif
-            <a href="{{ route('finance.student-finance.invoices.download', ['department' => $department->id, 'id' => $invoice->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
-            <a href="{{ route('finance.student-finance.invoices.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.invoices.download', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
+            <a href="{{ route('finance.student-finance.invoices.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -123,7 +123,7 @@
                             <td>KES {{ number_format($payment->amount, 2) }}</td>
                             <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.payments.show', ['department' => $department->id, 'id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.payments.show', ['id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

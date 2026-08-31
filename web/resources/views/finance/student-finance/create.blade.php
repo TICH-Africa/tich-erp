@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Student Finance" meta="Create student invoice">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('finance.student-finance.store', $department) }}" class="tich-card tich-form-grid">
+    <form method="POST" action="{{ route('finance.student-finance.store') }}" class="tich-card tich-form-grid">
         @csrf
         <div class="tich-form-row">
             <label class="tich-label" for="student_id">Student <span class="tich-text--danger">*</span></label>
@@ -47,7 +47,7 @@
         </div>
         <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Create invoice</button>
-            <a href="{{ route('finance.student-finance.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
         </div>
     </form>
 @endsection

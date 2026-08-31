@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Accounts Payable" meta="Create supplier invoice">
         <x-slot:actions>
-            <a href="{{ route('finance.ap.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.ap.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('finance.ap.store', $department) }}" class="tich-card tich-form-grid" id="ap-create-form">
+    <form method="POST" action="{{ route('finance.ap.store') }}" class="tich-card tich-form-grid" id="ap-create-form">
         @csrf
         <div class="tich-form-row">
             <label class="tich-label" for="supplier-search">Supplier <span class="tich-text--danger">*</span></label>
@@ -54,7 +54,7 @@
         </div>
         <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Create invoice</button>
-            <a href="{{ route('finance.ap.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+            <a href="{{ route('finance.ap.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
         </div>
     </form>
 

@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar :title="'Milestone ' . ucfirst(str_replace('_', ' ', $milestone->milestone_type))" :meta="'#'.$milestone->id">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.milestones.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back to Milestones</a>
+            <a href="{{ route('finance.student-finance.milestones.index') }}" class="tich-btn tich-btn-ghost">Back to Milestones</a>
         </x-slot:actions>
     </x-page-toolbar>
 

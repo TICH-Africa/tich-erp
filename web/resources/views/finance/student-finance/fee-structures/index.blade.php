@@ -5,8 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Fee Structures" meta="Define fees applicable to a program, academic year, and semester">
 <x-slot:actions>
-            <a href="{{ route('finance.student-finance.fee-structures.create', ['department' => $department->id]) }}" class="tich-btn tich-btn-primary">+ New fee structure</a>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.fee-structures.create') }}" class="tich-btn tich-btn-primary">+ New fee structure</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -36,7 +36,7 @@
                             </td>
                             <td class="tich-caption">{{ $structure->effective_from?->format('d M Y') }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.fee-structures.show', ['department' => $department->id, 'id' => $structure->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.fee-structures.show', ['id' => $structure->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

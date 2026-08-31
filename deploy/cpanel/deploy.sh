@@ -105,8 +105,9 @@ log "Docroot: ${DOCROOT}"
 
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.index.php" "${DOCROOT}/index.php"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.htaccess" "${DOCROOT}/.htaccess"
+/bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-mpesa-stk-callback.php" "${DOCROOT}/tich-mpesa-stk-callback.php"
 rm -f "${DOCROOT}/tich-diagnose.php" 2>/dev/null || true
-log "Copied index.php + .htaccess into docroot"
+log "Copied index.php, .htaccess, and tich-mpesa-stk-callback.php into docroot"
 
 # Prefer fresh config from .env over a stale config.php cache after ChatGPT/manual edits.
 rm -f "${WEB}/bootstrap/cache/config.php" "${WEB}/bootstrap/cache/routes-v7.php" "${WEB}/bootstrap/cache/routes.php" "${WEB}/bootstrap/cache/events.php" 2>/dev/null || true

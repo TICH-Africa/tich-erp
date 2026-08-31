@@ -5,8 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Receipt" meta="Receipt details">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.receipts.download', ['department' => $department->id, 'id' => $receipt->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
-            <a href="{{ route('finance.student-finance.receipts.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.receipts.download', ['id' => $receipt->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
+            <a href="{{ route('finance.student-finance.receipts.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 

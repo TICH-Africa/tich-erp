@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="{{ $project->project_name }}" meta="{{ $project->project_code }} · {{ $project->donor_name }}">
         <x-slot:actions>
-            <a href="{{ route('finance.projects-donors.index', $department) }}" class="tich-btn tich-btn-ghost">Back to projects</a>
+            <a href="{{ route('finance.projects-donors.index') }}" class="tich-btn tich-btn-ghost">Back to projects</a>
         </x-slot:actions>
     </x-page-toolbar>
 

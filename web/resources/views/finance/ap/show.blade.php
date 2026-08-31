@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="{{ $payable->invoice_number }}" meta="Supplier invoice details">
         <x-slot:actions>
-            <a href="{{ route('finance.ap.index', $department) }}" class="tich-btn tich-btn-ghost">Back to AP</a>
+            <a href="{{ route('finance.ap.index') }}" class="tich-btn tich-btn-ghost">Back to AP</a>
         </x-slot:actions>
     </x-page-toolbar>
 

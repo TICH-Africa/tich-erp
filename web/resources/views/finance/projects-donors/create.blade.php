@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Projects & Donors" meta="Create project">
         <x-slot:actions>
-            <a href="{{ route('finance.projects-donors.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.projects-donors.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('finance.projects-donors.store', $department) }}" class="tich-card tich-form-grid">
+    <form method="POST" action="{{ route('finance.projects-donors.store') }}" class="tich-card tich-form-grid">
         @csrf
         <div class="tich-form-row">
             <label class="tich-label" for="name">Project name <span class="tich-text--danger">*</span></label>
@@ -49,7 +49,7 @@
         </div>
         <div class="tich-form-row">
             <button type="submit" class="tich-btn tich-btn-primary">Create project</button>
-            <a href="{{ route('finance.projects-donors.index', $department) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+            <a href="{{ route('finance.projects-donors.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
         </div>
     </form>
 

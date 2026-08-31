@@ -3,7 +3,6 @@
 @section('title', 'Payroll → GL Integration')
 
 @section('finance-content')
-    @php($dept = $departmentParams ?? ['department' => $department->id])
 
     <x-page-toolbar title="Payroll → GL integration" meta="Post approved HR payroll runs to the general ledger">
         <x-slot:actions>
@@ -39,7 +38,7 @@
                         <td>{{ $run->gl_reference ?? '-' }}</td>
                         <td>{{ $run->posted_at?->format('d M Y H:i') ?? '-' }}</td>
                         <td>
-                            <a href="{{ route('finance.payroll-integration.show', array_merge($dept, ['payrollRun' => $run->id])) }}" class="tich-btn tich-btn-ghost">Open</a>
+                            <a href="{{ route('finance.payroll-integration.show', ['payrollRun' => $run->id]) }}" class="tich-btn tich-btn-ghost">Open</a>
                         </td>
                     </tr>
                 @empty

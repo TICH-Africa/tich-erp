@@ -56,7 +56,7 @@ class FinanceController extends Controller
         //
     }
 
-    public function studentFinanceShow(Request $request, Department $department, $id): View
+    public function studentFinanceShow(Request $request, $id, Department $department): View
     {
         return $this->departmentView($request, 'finance.student-finance.show', $department);
     }
@@ -76,7 +76,7 @@ class FinanceController extends Controller
         //
     }
 
-    public function arShow(Request $request, Department $department, $id): View
+    public function arShow(Request $request, $id, Department $department): View
     {
         return $this->departmentView($request, 'finance.ar.show', $department);
     }
@@ -150,11 +150,11 @@ class FinanceController extends Controller
         $payable->save();
 
         return redirect()
-            ->route('finance.ap.show', [$department, $payable])
+            ->route('finance.ap.show', [$payable])
             ->with('success', 'Supplier invoice created successfully.');
     }
 
-    public function apShow(Request $request, Department $department, AccountsPayable $ap): View
+    public function apShow(Request $request, AccountsPayable $ap, Department $department): View
     {
         $ap->load(['supplier', 'purchaseOrder']);
 
@@ -199,7 +199,7 @@ class FinanceController extends Controller
         //
     }
 
-    public function glShow(Request $request, Department $department, AccountLedger $gl): View
+    public function glShow(Request $request, AccountLedger $gl, Department $department): View
     {
         $gl->load('recorder');
 
@@ -289,7 +289,7 @@ class FinanceController extends Controller
 
         if ($existing) {
             return redirect()
-                ->route('finance.budgeting.index', $department)
+                ->route('finance.budgeting.index')
                 ->with('status', 'Budget already exists for that code and fiscal year. No duplicate was created.');
         }
 
@@ -298,13 +298,13 @@ class FinanceController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             if (\App\Support\SafeWrite::isUniqueViolation($e)) {
                 return redirect()
-                    ->route('finance.budgeting.index', $department)
+                    ->route('finance.budgeting.index')
                     ->with('status', 'Budget already exists. No duplicate was created.');
             }
             throw $e;
         }
 
-        return redirect()->route('finance.budgeting.index', $department)->with('status', 'Budget created successfully.');
+        return redirect()->route('finance.budgeting.index')->with('status', 'Budget created successfully.');
     }
 
     private function normalizeBudgetLines(array $lines): array
@@ -331,7 +331,7 @@ class FinanceController extends Controller
         return [$lineItems, $total];
     }
 
-    public function budgetingShow(Request $request, Department $department, FinanceBudget $budgeting): View
+    public function budgetingShow(Request $request, FinanceBudget $budgeting, Department $department): View
     {
         $budgeting->load(['department', 'approver', 'cycles']);
 
@@ -340,7 +340,7 @@ class FinanceController extends Controller
         ]);
     }
 
-    public function budgetingCycleStore(Request $request, Department $department, FinanceBudget $budget): RedirectResponse
+    public function budgetingCycleStore(Request $request, FinanceBudget $budget, Department $department): RedirectResponse
     {
         abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
@@ -358,7 +358,7 @@ class FinanceController extends Controller
         return back()->with('status', 'Budget cycle added successfully.');
     }
 
-    public function budgetingCycleUpdate(Request $request, Department $department, FinanceBudget $budget, FinanceBudgetCycle $cycle): RedirectResponse
+    public function budgetingCycleUpdate(Request $request, FinanceBudget $budget, FinanceBudgetCycle $cycle, Department $department): RedirectResponse
     {
         abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
@@ -394,7 +394,7 @@ class FinanceController extends Controller
         return back()->with('status', 'Budget cycle updated successfully.');
     }
 
-    public function budgetingCycleDestroy(Request $request, Department $department, FinanceBudget $budget, FinanceBudgetCycle $cycle): RedirectResponse
+    public function budgetingCycleDestroy(Request $request, FinanceBudget $budget, FinanceBudgetCycle $cycle, Department $department): RedirectResponse
     {
         abort_unless($this->rbac->hasAnyRole($request->user(), ['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']), 403);
 
@@ -426,7 +426,7 @@ class FinanceController extends Controller
         return $this->departmentView($request, 'finance.budgeting.requests.index', $department, compact('requests', 'status', 'search'));
     }
 
-    public function budgetingRequestShow(Request $request, Department $department, $id): View
+    public function budgetingRequestShow(Request $request, $id, Department $department): View
     {
         $budgetRequest = BudgetRequest::query()->with(['department', 'planningCycle'])->findOrFail($id);
 
@@ -435,7 +435,7 @@ class FinanceController extends Controller
         ]);
     }
 
-    public function budgetingRequestReview(Request $request, Department $department, $id, AdministrationService $admin): RedirectResponse
+    public function budgetingRequestReview(Request $request, $id, Department $department, AdministrationService $admin): RedirectResponse
     {
         $budgetRequest = BudgetRequest::query()->findOrFail($id);
 
@@ -460,7 +460,7 @@ class FinanceController extends Controller
         return back()->with('status', 'Budget reviewed, divided into groups, and forwarded to Executive/CEO.');
     }
 
-    public function budgetingRequestReject(Request $request, Department $department, $id, AdministrationService $admin): RedirectResponse
+    public function budgetingRequestReject(Request $request, $id, Department $department, AdministrationService $admin): RedirectResponse
     {
         $budgetRequest = BudgetRequest::query()->findOrFail($id);
 
@@ -477,7 +477,7 @@ class FinanceController extends Controller
         return back()->with('status', 'Budget request rejected.');
     }
 
-    public function ceoApprove(Request $request, Department $department, $id, AdministrationService $admin): RedirectResponse
+    public function ceoApprove(Request $request, $id, Department $department, AdministrationService $admin): RedirectResponse
     {
         $budgetRequest = BudgetRequest::query()->findOrFail($id);
 
@@ -495,7 +495,7 @@ class FinanceController extends Controller
         return back()->with('status', 'Budget approved. Funds can now be disbursed.');
     }
 
-    public function markAsDisbursed(Request $request, Department $department, $id, AdministrationService $admin): RedirectResponse
+    public function markAsDisbursed(Request $request, $id, Department $department, AdministrationService $admin): RedirectResponse
     {
         $budgetRequest = BudgetRequest::query()->findOrFail($id);
 
@@ -551,7 +551,7 @@ class FinanceController extends Controller
         //
     }
 
-    public function projectsDonorsShow(Request $request, Department $department, DonorProject $projectDonor): View
+    public function projectsDonorsShow(Request $request, DonorProject $projectDonor, Department $department): View
     {
         $projectDonor->load(['leader', 'disbursements' => fn ($query) => $query->orderByDesc('receipt_date')]);
 
@@ -575,7 +575,7 @@ class FinanceController extends Controller
         //
     }
 
-    public function payrollIntegrationShow(Request $request, Department $department, $id): View
+    public function payrollIntegrationShow(Request $request, $id, Department $department): View
     {
         return $this->departmentView($request, 'finance.payroll-integration.show', $department);
     }

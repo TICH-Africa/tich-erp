@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Student Accounts" meta="Automatic financial accounts for active students">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -43,7 +43,7 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('finance.student-finance.accounts.show', ['department' => $department->id, 'id' => $account->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.accounts.show', ['id' => $account->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Student Finance" meta="Invoice details">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 

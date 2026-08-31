@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} - {{ $budgetRequest->title }}">
         <x-slot:actions>
-            <a href="{{ route('finance.budgeting.requests.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.budgeting.requests.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -139,7 +139,7 @@
             <h2 class="tich-h3">Finance review</h2>
             <p class="tich-caption tich-mt-2">Divide the budget into groups (annual, quarterly, monthly, weekly) and set the allocated amount. Then approve and forward to Executive/CEO for final authorization, or reject.</p>
 
-            <form method="POST" action="{{ route('finance.budgeting.requests.review', [$department, $budgetRequest->id]) }}" class="tich-form-grid tich-mt-6">
+            <form method="POST" action="{{ route('finance.budgeting.requests.review', [$budgetRequest->id]) }}" class="tich-form-grid tich-mt-6">
                 @csrf
                 <div class="tich-form-row">
                     <label class="tich-label">Allocated amount (KES)</label>
@@ -218,7 +218,7 @@
 
                 <div class="tich-flex-wrap" style="gap:0.75rem; justify-content:flex-end; margin-top:1rem;">
                     <button type="submit" class="tich-btn tich-btn-primary">Approve and forward to CEO</button>
-                    <button type="submit" formaction="{{ route('finance.budgeting.requests.reject', [$department, $budgetRequest->id]) }}" formmethod="POST" class="tich-btn tich-btn-danger" onclick="return confirm('Reject this budget request?')">Reject</button>
+                    <button type="submit" formaction="{{ route('finance.budgeting.requests.reject', [$budgetRequest->id]) }}" formmethod="POST" class="tich-btn tich-btn-danger" onclick="return confirm('Reject this budget request?')">Reject</button>
                 </div>
             </form>
         </div>
@@ -229,7 +229,7 @@
             <h2 class="tich-h3">Executive/CEO approval</h2>
             <p class="tich-caption tich-mt-2">Review the verified budget and finalize the approved amount.</p>
 
-            <form method="POST" action="{{ route('finance.budgeting.requests.ceo-approve', [$department, $budgetRequest->id]) }}" class="tich-form-grid tich-mt-6">
+            <form method="POST" action="{{ route('finance.budgeting.requests.ceo-approve', [$budgetRequest->id]) }}" class="tich-form-grid tich-mt-6">
                 @csrf
                 <div class="tich-form-row">
                     <label class="tich-label">Approved amount (KES)</label>
@@ -243,7 +243,7 @@
 
                 <div class="tich-flex-wrap" style="gap:0.75rem; justify-content:flex-end; margin-top:1rem;">
                     <button type="submit" class="tich-btn tich-btn-primary">CEO Approve</button>
-                    <button type="submit" formaction="{{ route('finance.budgeting.requests.reject', [$department, $budgetRequest->id]) }}" formmethod="POST" class="tich-btn tich-btn-danger" onclick="return confirm('Reject this budget request?')">Reject</button>
+                    <button type="submit" formaction="{{ route('finance.budgeting.requests.reject', [$budgetRequest->id]) }}" formmethod="POST" class="tich-btn tich-btn-danger" onclick="return confirm('Reject this budget request?')">Reject</button>
                 </div>
             </form>
         </div>
@@ -262,7 +262,7 @@
                 <h2 class="tich-h3">Mark as disbursed</h2>
                 <p class="tich-caption tich-mt-2">Confirm that funds have been disbursed to the department. Enter receipt details and disbursement date.</p>
 
-                <form method="POST" action="{{ route('finance.budgeting.requests.disburse', [$department, $budgetRequest->id]) }}" class="tich-form-grid tich-mt-4">
+                <form method="POST" action="{{ route('finance.budgeting.requests.disburse', [$budgetRequest->id]) }}" class="tich-form-grid tich-mt-4">
                     @csrf
                     <div class="tich-form-row">
                         <label class="tich-label" for="receipt_number">Receipt number <span class="tich-text--danger">*</span></label>

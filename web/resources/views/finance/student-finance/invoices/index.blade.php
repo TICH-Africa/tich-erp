@@ -5,8 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Invoices" meta="Student invoices for tuition, application, supplementary, graduation, hostel, and other charges">
 <x-slot:actions>
-            <a href="{{ route('finance.student-finance.invoices.create', ['department' => $department->id]) }}" class="tich-btn tich-btn-primary">+ New invoice</a>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.invoices.create') }}" class="tich-btn tich-btn-primary">+ New invoice</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -52,7 +52,7 @@
                             </td>
                             <td class="tich-caption">{{ $invoice->due_date?->format('d M Y') }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.invoices.show', ['department' => $department->id, 'id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.invoices.show', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

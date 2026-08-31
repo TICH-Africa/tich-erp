@@ -6,7 +6,7 @@
     <x-page-toolbar title="General Ledger (GL)" meta="Chart of Accounts, journal entries, debits, credits, account balances, Trial Balance, P&amp;L, Balance Sheet and Cash Flow">
         <x-slot:actions>
             <a href="{{ route('finance.reports.index', ['report' => 'trial_balance']) }}" class="tich-btn tich-btn-secondary">Financial reports</a>
-            <a href="{{ route('finance.gl.journal.create', $department) }}" class="tich-btn tich-btn-primary">+ New journal entry</a>
+            <a href="{{ route('finance.gl.journal.create') }}" class="tich-btn tich-btn-primary">+ New journal entry</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -81,7 +81,7 @@
                             <td>KES {{ number_format(max((float) $entry->debit_amount, (float) $entry->credit_amount), 2) }}</td>
                             <td>{{ $entry->narration }}</td>
                             <td>
-                                <a href="{{ route('finance.gl.show', [$department, $entry]) }}" class="tich-link">View</a>
+                                <a href="{{ route('finance.gl.show', [$entry]) }}" class="tich-link">View</a>
                             </td>
                         </tr>
                     @empty

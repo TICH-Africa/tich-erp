@@ -159,6 +159,15 @@ Artisan::command('sis:backfill-admitted', function () {
     return 0;
 })->purpose('Create student records and portal invites for already-admitted applicants');
 
+Artisan::command('mpesa:clear-cache', function () {
+    app(\App\Services\Finance\MpesaSettingsService::class)->clearOAuthCache();
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+
+    $this->info('M-Pesa OAuth token cache cleared. Config cache cleared.');
+
+    return 0;
+})->purpose('Clear cached Safaricom OAuth tokens after credential changes');
+
 Artisan::command('applications:revert-fee-payment {application_number}', function (string $application_number) {
     $applicant = \App\Models\Applicant::query()
         ->where('application_number', $application_number)
@@ -183,6 +192,13 @@ Artisan::command('applications:revert-fee-payment {application_number}', functio
 
     return 0;
 })->purpose('Undo a recorded application fee payment for STK retesting');
+
+Artisan::command('mpesa:clear-token-cache', function () {
+    app(\App\Services\Finance\MpesaSettingsService::class)->clearOAuthCache();
+    $this->info('M-Pesa OAuth token cache cleared.');
+
+    return 0;
+})->purpose('Clear cached Safaricom Daraja OAuth tokens after credential changes');
 
 Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
 Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');

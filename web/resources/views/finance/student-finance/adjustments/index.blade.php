@@ -5,8 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Financial Adjustments" meta="Scholarships, bursaries, and waivers">
 <x-slot:actions>
-            <a href="{{ route('finance.student-finance.adjustments.create', ['department' => $department->id]) }}" class="tich-btn tich-btn-primary">+ New adjustment</a>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.adjustments.create') }}" class="tich-btn tich-btn-primary">+ New adjustment</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -48,7 +48,7 @@
                                 <td class="tich-caption">{{ $adjustment->requestedBy?->fullName() ?? ($adjustment->requested_by ?? 'N/A') }}</td>
                                 <td class="tich-caption">{{ $adjustment->created_at?->format('d M Y') }}</td>
                                 <td>
-                                    <a href="{{ route('finance.student-finance.adjustments.show', ['department' => $department->id, 'id' => $adjustment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                    <a href="{{ route('finance.student-finance.adjustments.show', ['id' => $adjustment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                                 </td>
                             </tr>
                         @empty

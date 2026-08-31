@@ -32,7 +32,7 @@ class PayrollIntegrationController extends Controller
         ]);
     }
 
-    public function show(Request $request, Department $department, PayrollRun $payrollRun): View
+    public function show(Request $request, PayrollRun $payrollRun, Department $department): View
     {
         $payrollRun->load(['items.staff', 'creator', 'approver', 'poster']);
 
@@ -43,14 +43,14 @@ class PayrollIntegrationController extends Controller
         ]);
     }
 
-    public function post(Request $request, Department $department, PayrollRun $payrollRun): RedirectResponse
+    public function post(Request $request, PayrollRun $payrollRun, Department $department): RedirectResponse
     {
         $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
 
         $this->payrollRuns->postToGeneralLedger($payrollRun, $staffId);
 
         return redirect()
-            ->route('finance.payroll-integration.show', ['department' => $department->id, 'payrollRun' => $payrollRun->id])
+            ->route('finance.payroll-integration.show', ['payrollRun' => $payrollRun->id])
             ->with('success', "Payroll run {$payrollRun->run_number} posted to the general ledger.");
     }
 }

@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Student Account" meta="Financial account details">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.accounts.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.accounts.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -105,7 +105,7 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('finance.student-finance.invoices.show', ['department' => $department->id, 'id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.invoices.show', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty
@@ -141,7 +141,7 @@
                             <td>KES {{ number_format($payment->amount, 2) }}</td>
                             <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.payments.show', ['department' => $department->id, 'id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.payments.show', ['id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty
@@ -230,7 +230,7 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('finance.student-finance.installment-plans.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.installment-plans.index') }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

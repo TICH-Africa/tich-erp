@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Issue credit memo" meta="Reduce invoice balance with a formal credit document" />
 
-    <form method="post" action="{{ route('finance.ar.credit-memos.store', $departmentParams) }}" class="tich-card tich-form-grid tich-mt-8">
+    <form method="post" action="{{ route('finance.ar.credit-memos.store') }}" class="tich-card tich-form-grid tich-mt-8">
         @csrf
 
         <div class="tich-form-row">

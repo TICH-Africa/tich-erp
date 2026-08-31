@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Installment Plan" meta="{{ $plan->plan_number }} - {{ $plan->student->fullName() ?? 'N/A' }}">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.installment-plans.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.installment-plans.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -171,7 +171,7 @@
                                     <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                                     <td>
                                         @if ($payment->receipt)
-                                            <a href="{{ route('finance.student-finance.receipts.show', ['department' => $department->id, 'id' => $payment->receipt->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                            <a href="{{ route('finance.student-finance.receipts.show', ['id' => $payment->receipt->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                                         @else
                                             <span class="tich-caption">-</span>
                                         @endif

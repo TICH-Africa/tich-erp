@@ -73,9 +73,7 @@ class MpesaDarajaService
             ]);
 
             throw new RuntimeException(
-                $response->json('errorMessage')
-                ?? $response->json('ResponseDescription')
-                ?? 'M-Pesa STK push request failed.'
+                $this->formatStkFailureMessage($response)
             );
         }
 
@@ -166,5 +164,21 @@ class MpesaDarajaService
 
             return $token;
         });
+    }
+
+    private function formatStkFailureMessage(\Illuminate\Http\Client\Response $response): string
+    {
+        $message = $response->json('errorMessage')
+            ?? $response->json('ResponseDescription')
+            ?? 'M-Pesa STK push request failed.';
+
+        if (stripos($message, 'wrong credentials') !== false) {
+            $message .= ' Check that shortcode, passkey, consumer key, and consumer secret all come from the same Daraja app and environment (sandbox vs production). '
+                .'In sandbox use shortcode 174379 and the Lipa Na M-Pesa passkey from your Daraja Test Credentials page. '
+                .'If you use .env, disable Finance → M-Pesa settings or enable it with the full matching set. '
+                .'Then run: php artisan cache:clear';
+        }
+
+        return $message;
     }
 }

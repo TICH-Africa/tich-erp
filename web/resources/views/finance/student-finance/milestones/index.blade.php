@@ -5,12 +5,12 @@
 @section('finance-content')
     <x-page-toolbar title="Payment Milestones" meta="Student fee payment milestones: 50% registration, 75% mid-semester, 100% before final exams">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mb-8">
-        <form method="get" action="{{ route('finance.student-finance.milestones.index', $department) }}" class="tich-flex tich-items-center tich-gap-2 flex-wrap">
+        <form method="get" action="{{ route('finance.student-finance.milestones.index') }}" class="tich-flex tich-items-center tich-gap-2 flex-wrap">
             <div class="tich-flex-1" style="max-width: 260px;">
                 <div class="relative">
                     <input type="text" name="search" value="{{ $search }}" placeholder="Search student..." class="tich-input pl-8" style="padding: 8px 12px 8px 32px; font-size: 14px;">
@@ -38,7 +38,7 @@
                 Filter
             </button>
             @if ($search !== '' || $semesterId > 0 || $academicYearId > 0)
-                <a href="{{ route('finance.student-finance.milestones.index', $department) }}" class="tich-btn tich-btn-ghost" style="padding: 8px 16px; font-size: 14px;">
+                <a href="{{ route('finance.student-finance.milestones.index') }}" class="tich-btn tich-btn-ghost" style="padding: 8px 16px; font-size: 14px;">
                     <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -87,7 +87,7 @@
                             </td>
                             <td class="tich-caption">{{ $milestone->due_date?->format('d M Y') }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.milestones.show', ['department' => $department->id, 'id' => $milestone->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.milestones.show', ['id' => $milestone->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Projects & Donors" meta="Donor profiles, project profiles, project budgets, donor invoices, donor disbursements, USD-to-KES conversion and donor accountability reports">
         <x-slot:actions>
-            <a href="{{ route('finance.projects-donors.create', $department) }}" class="tich-btn tich-btn-primary">+ New project</a>
+            <a href="{{ route('finance.projects-donors.create') }}" class="tich-btn tich-btn-primary">+ New project</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -32,7 +32,7 @@
                     @forelse ($projects as $project)
                         <tr>
                             <td>
-                                <a href="{{ route('finance.projects-donors.show', [$department, $project]) }}">
+                                <a href="{{ route('finance.projects-donors.show', [$project]) }}">
                                     <strong>{{ $project->project_name }}</strong>
                                 </a>
                                 <p class="tich-caption">{{ $project->project_code }}</p>
@@ -48,7 +48,7 @@
                             <td>{{ $project->end_date?->format('d M Y') ?? '-' }}</td>
                             <td>{{ ucfirst($project->status) }}</td>
                             <td>
-                                <a href="{{ route('finance.projects-donors.show', [$department, $project]) }}" class="tich-link">View</a>
+                                <a href="{{ route('finance.projects-donors.show', [$project]) }}" class="tich-link">View</a>
                             </td>
                         </tr>
                     @empty

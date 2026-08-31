@@ -222,9 +222,86 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Finance\SidebarNotificationController::class)->name('finance.sidebar-notifications');
         $registerModuleBudgeting('finance');
-        Route::get('/student-finance', [\App\Http\Controllers\Finance\FinanceHubController::class, 'studentFinance'])->name('finance.student-finance.hub');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
+
+        Route::middleware([\App\Http\Middleware\BindFinanceDepartment::class])->group(function () {
+            Route::get('/student-finance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'index'])->name('finance.student-finance.index');
+            Route::get('/student-finance/accounts', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'accounts'])->name('finance.student-finance.accounts.index');
+            Route::get('/student-finance/accounts/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'accountShow'])->name('finance.student-finance.accounts.show');
+            Route::get('/student-finance/fee-structures', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructures'])->name('finance.student-finance.fee-structures.index');
+            Route::get('/student-finance/fee-structures/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureCreate'])->name('finance.student-finance.fee-structures.create');
+            Route::post('/student-finance/fee-structures', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureStore'])->name('finance.student-finance.fee-structures.store');
+            Route::get('/student-finance/fee-structures/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureShow'])->name('finance.student-finance.fee-structures.show');
+            Route::get('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoices'])->name('finance.student-finance.invoices.index');
+            Route::get('/student-finance/invoices/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceCreate'])->name('finance.student-finance.invoices.create');
+            Route::post('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceStore'])->name('finance.student-finance.invoices.store');
+            Route::get('/student-finance/invoices/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceShow'])->name('finance.student-finance.invoices.show');
+            Route::get('/student-finance/invoices/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceDownload'])->name('finance.student-finance.invoices.download');
+            Route::get('/student-finance/payments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'payments'])->name('finance.student-finance.payments.index');
+            Route::get('/student-finance/payments/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'paymentShow'])->name('finance.student-finance.payments.show');
+            Route::get('/student-finance/receipts', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receipts'])->name('finance.student-finance.receipts.index');
+            Route::get('/student-finance/receipts/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptShow'])->name('finance.student-finance.receipts.show');
+            Route::get('/student-finance/receipts/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptDownload'])->name('finance.student-finance.receipts.download');
+            Route::get('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustments'])->name('finance.student-finance.adjustments.index');
+            Route::get('/student-finance/adjustments/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentCreate'])->name('finance.student-finance.adjustments.create');
+            Route::post('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentStore'])->name('finance.student-finance.adjustments.store');
+            Route::get('/student-finance/adjustments/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentShow'])->name('finance.student-finance.adjustments.show');
+            Route::post('/student-finance/adjustments/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentApprove'])->name('finance.student-finance.adjustments.approve');
+            Route::get('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlans'])->name('finance.student-finance.installment-plans.index');
+            Route::get('/student-finance/installment-plans/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanCreate'])->name('finance.student-finance.installment-plans.create');
+            Route::post('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanStore'])->name('finance.student-finance.installment-plans.store');
+            Route::get('/student-finance/installment-plans/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanShow'])->name('finance.student-finance.installment-plans.show');
+            Route::get('/student-finance/clearance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearance'])->name('finance.student-finance.clearance.index');
+            Route::post('/student-finance/clearance/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceApprove'])->name('finance.student-finance.clearance.approve');
+            Route::post('/student-finance/clearance/{id}/reject', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceReject'])->name('finance.student-finance.clearance.reject');
+            Route::get('/student-finance/milestones', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestones'])->name('finance.student-finance.milestones.index');
+            Route::get('/student-finance/milestones/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestoneShow'])->name('finance.student-finance.milestones.show');
+
+            Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'index'])->name('finance.ar.index');
+            Route::get('/ar/aging/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportAgingPdf'])->name('finance.ar.aging.export.pdf');
+            Route::post('/ar/remind-bulk', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendBulkReminders'])->name('finance.ar.remind.bulk');
+            Route::post('/ar/invoices/{invoice}/remind', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendReminder'])->name('finance.ar.invoices.remind');
+            Route::post('/ar/statements/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportStatementsPdf'])->name('finance.ar.statements.export.pdf');
+            Route::get('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemosIndex'])->name('finance.ar.credit-memos.index');
+            Route::get('/ar/credit-memos/create', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoCreate'])->name('finance.ar.credit-memos.create');
+            Route::post('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoStore'])->name('finance.ar.credit-memos.store');
+            Route::get('/ar/credit-memos/{creditMemo}', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoShow'])->name('finance.ar.credit-memos.show');
+
+            Route::get('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apIndex'])->name('finance.ap.index');
+            Route::get('/ap/create', [\App\Http\Controllers\Finance\FinanceController::class, 'apCreate'])->name('finance.ap.create');
+            Route::post('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apStore'])->name('finance.ap.store');
+            Route::get('/ap/{ap}', [\App\Http\Controllers\Finance\FinanceController::class, 'apShow'])->name('finance.ap.show');
+            Route::get('/suppliers', [\App\Http\Controllers\Finance\FinanceController::class, 'suppliersWorkflow'])->name('finance.suppliers.index');
+
+            Route::get('/gl', [\App\Http\Controllers\Finance\FinanceController::class, 'glIndex'])->name('finance.gl.index');
+            Route::get('/gl/journal/create', [\App\Http\Controllers\Finance\FinanceController::class, 'glJournalCreate'])->name('finance.gl.journal.create');
+            Route::post('/gl/journal', [\App\Http\Controllers\Finance\FinanceController::class, 'glJournalStore'])->name('finance.gl.journal.store');
+            Route::get('/gl/{gl}', [\App\Http\Controllers\Finance\FinanceController::class, 'glShow'])->name('finance.gl.show');
+
+            Route::get('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingIndex'])->name('finance.budgeting.index');
+            Route::get('/budgeting/create', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCreate'])->name('finance.budgeting.create');
+            Route::post('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingStore'])->name('finance.budgeting.store');
+            Route::get('/budgeting/requests', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestsIndex'])->name('finance.budgeting.requests.index');
+            Route::get('/budgeting/requests/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestShow'])->name('finance.budgeting.requests.show');
+            Route::post('/budgeting/requests/{id}/review', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReview'])->name('finance.budgeting.requests.review');
+            Route::post('/budgeting/requests/{id}/reject', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReject'])->name('finance.budgeting.requests.reject');
+            Route::post('/budgeting/requests/{id}/ceo-approve', [\App\Http\Controllers\Finance\FinanceController::class, 'ceoApprove'])->name('finance.budgeting.requests.ceo-approve');
+            Route::post('/budgeting/requests/{id}/disburse', [\App\Http\Controllers\Finance\FinanceController::class, 'markAsDisbursed'])->name('finance.budgeting.requests.disburse');
+            Route::get('/budgeting/{budgeting}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingShow'])->name('finance.budgeting.show');
+            Route::post('/budgeting/{budget}/cycles', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleStore'])->name('finance.budgeting.cycles.store');
+            Route::put('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleUpdate'])->name('finance.budgeting.cycles.update');
+            Route::delete('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleDestroy'])->name('finance.budgeting.cycles.destroy');
+
+            Route::get('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsIndex'])->name('finance.projects-donors.index');
+            Route::get('/projects-donors/create', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsCreate'])->name('finance.projects-donors.create');
+            Route::post('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsStore'])->name('finance.projects-donors.store');
+            Route::get('/projects-donors/{projectDonor}', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsShow'])->name('finance.projects-donors.show');
+
+            Route::get('/payroll-integration', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'index'])->name('finance.payroll-integration.index');
+            Route::get('/payroll-integration/{payrollRun}', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'show'])->name('finance.payroll-integration.show');
+            Route::post('/payroll-integration/{payrollRun}/post', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'post'])->name('finance.payroll-integration.post');
+        });
 
         Route::prefix('employee/payroll')->name('finance.employee.payroll.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Finance\PayrollController::class, 'index'])->name('index');
@@ -245,8 +322,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::put('/settings', [\App\Http\Controllers\Finance\PayrollController::class, 'updateSettings'])->name('settings.update');
             });
         });
-
-        Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'indexGlobal'])->name('finance.ar.hub');
 
         Route::get('/fee-structures', [\App\Http\Controllers\Finance\FeeStructureController::class, 'index'])->name('finance.fee-structures.index');
         Route::middleware('permission:finance.fee_structures.manage')->group(function () {
@@ -596,88 +671,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/suppliers', [\App\Http\Controllers\Finance\FinanceController::class, 'apiSuppliers'])->name('suppliers');
         });
 
+    // Legacy department-scoped finance URLs → /finance/...
     Route::prefix('departments/{department}/finance')
         ->where(['department' => '[0-9]+(-[0-9]+)?'])
         ->middleware(['permission:finance.read'])
-        ->name('finance.')
         ->group(function () {
-            Route::get('/student-finance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'index'])->name('student-finance.index');
-            Route::get('/student-finance/accounts', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'accounts'])->name('student-finance.accounts.index');
-            Route::get('/student-finance/accounts/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'accountShow'])->name('student-finance.accounts.show');
-            Route::get('/student-finance/fee-structures', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructures'])->name('student-finance.fee-structures.index');
-            Route::get('/student-finance/fee-structures/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureCreate'])->name('student-finance.fee-structures.create');
-            Route::post('/student-finance/fee-structures', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureStore'])->name('student-finance.fee-structures.store');
-            Route::get('/student-finance/fee-structures/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'feeStructureShow'])->name('student-finance.fee-structures.show');
-            Route::get('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoices'])->name('student-finance.invoices.index');
-            Route::get('/student-finance/invoices/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceCreate'])->name('student-finance.invoices.create');
-            Route::post('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceStore'])->name('student-finance.invoices.store');
-            Route::get('/student-finance/invoices/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceShow'])->name('student-finance.invoices.show');
-            Route::get('/student-finance/invoices/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceDownload'])->name('student-finance.invoices.download');
-            Route::get('/student-finance/payments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'payments'])->name('student-finance.payments.index');
-            Route::get('/student-finance/payments/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'paymentShow'])->name('student-finance.payments.show');
-            Route::get('/student-finance/receipts', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receipts'])->name('student-finance.receipts.index');
-            Route::get('/student-finance/receipts/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptShow'])->name('student-finance.receipts.show');
-            Route::get('/student-finance/receipts/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'receiptDownload'])->name('student-finance.receipts.download');
-            Route::get('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustments'])->name('student-finance.adjustments.index');
-            Route::get('/student-finance/adjustments/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentCreate'])->name('student-finance.adjustments.create');
-            Route::post('/student-finance/adjustments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentStore'])->name('student-finance.adjustments.store');
-            Route::get('/student-finance/adjustments/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentShow'])->name('student-finance.adjustments.show');
-            Route::post('/student-finance/adjustments/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'adjustmentApprove'])->name('student-finance.adjustments.approve');
-            Route::get('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlans'])->name('student-finance.installment-plans.index');
-            Route::get('/student-finance/installment-plans/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanCreate'])->name('student-finance.installment-plans.create');
-            Route::post('/student-finance/installment-plans', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanStore'])->name('student-finance.installment-plans.store');
-            Route::get('/student-finance/installment-plans/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'installmentPlanShow'])->name('student-finance.installment-plans.show');
-            Route::get('/student-finance/clearance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearance'])->name('student-finance.clearance.index');
-            Route::post('/student-finance/clearance/{id}/approve', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceApprove'])->name('student-finance.clearance.approve');
-            Route::post('/student-finance/clearance/{id}/reject', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'clearanceReject'])->name('student-finance.clearance.reject');
-            Route::get('/student-finance/milestones', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestones'])->name('student-finance.milestones.index');
-            Route::get('/student-finance/milestones/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'milestoneShow'])->name('student-finance.milestones.show');
+            Route::any('{path?}', function (string $path = '') {
+                $target = '/finance'.($path !== '' ? '/'.$path : '');
+                $query = request()->getQueryString();
 
-            Route::get('/ar', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'index'])->name('ar.index');
-            Route::get('/ar/aging/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportAgingPdf'])->name('ar.aging.export.pdf');
-            Route::post('/ar/remind-bulk', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendBulkReminders'])->name('ar.remind.bulk');
-            Route::post('/ar/invoices/{invoice}/remind', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'sendReminder'])->name('ar.invoices.remind');
-            Route::post('/ar/statements/export/pdf', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'exportStatementsPdf'])->name('ar.statements.export.pdf');
-            Route::get('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemosIndex'])->name('ar.credit-memos.index');
-            Route::get('/ar/credit-memos/create', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoCreate'])->name('ar.credit-memos.create');
-            Route::post('/ar/credit-memos', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoStore'])->name('ar.credit-memos.store');
-            Route::get('/ar/credit-memos/{creditMemo}', [\App\Http\Controllers\Finance\AccountsReceivableController::class, 'creditMemoShow'])->name('ar.credit-memos.show');
-
-            Route::get('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apIndex'])->name('ap.index');
-            Route::get('/ap/create', [\App\Http\Controllers\Finance\FinanceController::class, 'apCreate'])->name('ap.create');
-            Route::post('/ap', [\App\Http\Controllers\Finance\FinanceController::class, 'apStore'])->name('ap.store');
-            Route::get('/ap/{ap}', [\App\Http\Controllers\Finance\FinanceController::class, 'apShow'])->name('ap.show');
-            Route::get('/suppliers', [\App\Http\Controllers\Finance\FinanceController::class, 'suppliersWorkflow'])->name('suppliers.index');
-
-            Route::get('/gl', [\App\Http\Controllers\Finance\FinanceController::class, 'glIndex'])->name('gl.index');
-            Route::get('/gl/journal/create', [\App\Http\Controllers\Finance\FinanceController::class, 'glJournalCreate'])->name('gl.journal.create');
-            Route::post('/gl/journal', [\App\Http\Controllers\Finance\FinanceController::class, 'glJournalStore'])->name('gl.journal.store');
-            Route::get('/gl/{gl}', [\App\Http\Controllers\Finance\FinanceController::class, 'glShow'])->name('gl.show');
-
-            Route::get('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingIndex'])->name('budgeting.index');
-            Route::get('/budgeting/create', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCreate'])->name('budgeting.create');
-            Route::post('/budgeting', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingStore'])->name('budgeting.store');
-
-            Route::get('/budgeting/requests', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestsIndex'])->name('budgeting.requests.index');
-            Route::get('/budgeting/requests/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestShow'])->name('budgeting.requests.show');
-            Route::post('/budgeting/requests/{id}/review', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReview'])->name('budgeting.requests.review');
-            Route::post('/budgeting/requests/{id}/reject', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingRequestReject'])->name('budgeting.requests.reject');
-            Route::post('/budgeting/requests/{id}/ceo-approve', [\App\Http\Controllers\Finance\FinanceController::class, 'ceoApprove'])->name('budgeting.requests.ceo-approve');
-            Route::post('/budgeting/requests/{id}/disburse', [\App\Http\Controllers\Finance\FinanceController::class, 'markAsDisbursed'])->name('budgeting.requests.disburse');
-
-            Route::get('/budgeting/{budgeting}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingShow'])->name('budgeting.show');
-            Route::post('/budgeting/{budget}/cycles', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleStore'])->name('budgeting.cycles.store');
-            Route::put('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleUpdate'])->name('budgeting.cycles.update');
-            Route::delete('/budgeting/{budget}/cycles/{cycle}', [\App\Http\Controllers\Finance\FinanceController::class, 'budgetingCycleDestroy'])->name('budgeting.cycles.destroy');
-
-            Route::get('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsIndex'])->name('projects-donors.index');
-            Route::get('/projects-donors/create', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsCreate'])->name('projects-donors.create');
-            Route::post('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsStore'])->name('projects-donors.store');
-            Route::get('/projects-donors/{projectDonor}', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsShow'])->name('projects-donors.show');
-
-            Route::get('/payroll-integration', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'index'])->name('payroll-integration.index');
-            Route::get('/payroll-integration/{payrollRun}', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'show'])->name('payroll-integration.show');
-            Route::post('/payroll-integration/{payrollRun}/post', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'post'])->name('payroll-integration.post');
+                return redirect()->to($target.($query ? '?'.$query : ''), 301);
+            })->where('path', '.*');
         });
 
     $registerAcademicsRoutes = require __DIR__.'/includes/academics.php';

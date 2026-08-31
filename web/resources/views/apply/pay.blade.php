@@ -90,16 +90,24 @@
                                     <label for="phone_number" class="tich-label">M-Pesa phone number</label>
                                     <input type="text" id="phone_number" name="phone_number" class="tich-input" value="{{ old('phone_number', $applicant->phone_number) }}" placeholder="e.g. 0712345678" required>
                                 </div>
-                                @if (! $mpesaEnabled && ! config('finance.mpesa.allow_local_simulate'))
-                                    <p class="tich-caption">M-Pesa is not configured. Set MPESA_ENABLED=true and sandbox credentials in .env, and expose the callback URL (e.g. via ngrok).</p>
+                                @if (! empty($mpesaStkBlockers))
+                                    @foreach ($mpesaStkBlockers as $blocker)
+                                        <p class="tich-field-error tich-mt-2">{{ $blocker }}</p>
+                                    @endforeach
+                                @elseif (! $mpesaEnabled && ! config('finance.mpesa.allow_local_simulate'))
+                                    <p class="tich-caption">M-Pesa is not configured. Add settings to <strong>.env</strong> (not .env.example) or Finance → M-Pesa settings.</p>
                                 @endif
-                                <button type="submit" class="tich-btn tich-btn-primary" @disabled(! $mpesaEnabled && ! config('finance.mpesa.allow_local_simulate'))>
-                                    @if ($mpesaEnabled)
+                                @php
+                                    $canSubmitPayment = $mpesaEnabled && empty($mpesaStkBlockers);
+                                    $canSimulate = ! $mpesaEnabled && config('finance.mpesa.allow_local_simulate');
+                                @endphp
+                                <button type="submit" class="tich-btn tich-btn-primary" @disabled(! $canSubmitPayment && ! $canSimulate)>
+                                    @if ($canSubmitPayment)
                                         Send M-Pesa payment prompt
-                                    @elseif (config('finance.mpesa.allow_local_simulate'))
+                                    @elseif ($canSimulate)
                                         Record test payment
                                     @else
-                                        M-Pesa not configured
+                                        M-Pesa not ready
                                     @endif
                                 </button>
                             </form>

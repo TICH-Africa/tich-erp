@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Financial Clearance" meta="Student balance clearance status">
 <x-slot:actions>
-            <a href="{{ route('finance.student-finance.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -56,14 +56,14 @@
                             </td>
                             <td class="tich-caption">{{ $account->last_payment_date?->format('d M Y') }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.accounts.show', ['department' => $department->id, 'id' => $account->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.accounts.show', ['id' => $account->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                                 @if (!$account->is_cleared)
-                                    <form method="POST" action="{{ route('finance.student-finance.clearance.approve', ['department' => $department->id, 'id' => $account->id]) }}" class="tich-inline" onsubmit="return confirm('Clear this student financially?')">
+                                    <form method="POST" action="{{ route('finance.student-finance.clearance.approve', ['id' => $account->id]) }}" class="tich-inline" onsubmit="return confirm('Clear this student financially?')">
                                         @csrf
                                         <button type="submit" class="tich-btn tich-btn-success">Clear</button>
                                     </form>
                                 @else
-                                    <form method="POST" action="{{ route('finance.student-finance.clearance.reject', ['department' => $department->id, 'id' => $account->id]) }}" class="tich-inline" onsubmit="return confirm('Revoke clearance for this student?')">
+                                    <form method="POST" action="{{ route('finance.student-finance.clearance.reject', ['id' => $account->id]) }}" class="tich-inline" onsubmit="return confirm('Revoke clearance for this student?')">
                                         @csrf
                                         <button type="submit" class="tich-btn tich-btn-danger">Revoke</button>
                                     </form>

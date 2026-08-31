@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="{{ $budget->budget_name }}" meta="{{ $budget->budget_code }} · FY {{ $budget->fiscal_year }}">
         <x-slot:actions>
-            <a href="{{ route('finance.budgeting.index', $department) }}" class="tich-btn tich-btn-ghost">Back to budgets</a>
+            <a href="{{ route('finance.budgeting.index') }}" class="tich-btn tich-btn-ghost">Back to budgets</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -93,7 +93,7 @@
                 <h2 class="tich-h3" style="margin:0;">Add budget cycle</h2>
                 <button type="button" class="tich-modal__close" data-close-modal="cycle-create-modal">&times;</button>
             </header>
-            <form method="POST" action="{{ route('finance.budgeting.cycles.store', [$department, $budget]) }}" class="tich-modal__body">
+            <form method="POST" action="{{ route('finance.budgeting.cycles.store', [$budget]) }}" class="tich-modal__body">
                 @csrf
                 <div class="tich-form-stack">
                     <div class="tich-form-group">
@@ -139,7 +139,7 @@
                     <h2 class="tich-h3" style="margin:0;">Edit budget cycle</h2>
                     <button type="button" class="tich-modal__close" data-close-modal="cycle-edit-modal-{{ $cycle->id }}">&times;</button>
                 </header>
-                <form method="POST" action="{{ route('finance.budgeting.cycles.update', [$department, $budget, $cycle]) }}" class="tich-modal__body">
+                <form method="POST" action="{{ route('finance.budgeting.cycles.update', [$budget, $cycle]) }}" class="tich-modal__body">
                     @csrf
                     @method('PUT')
                     <div class="tich-form-stack">

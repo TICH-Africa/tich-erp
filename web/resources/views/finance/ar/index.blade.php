@@ -3,13 +3,13 @@
 @section('title', 'Accounts Receivable')
 
 @section('finance-content')
-    @php($dept = $departmentParams)
+    @php($dept = [])
 
     <x-page-toolbar title="Accounts Receivable" meta="Student invoices, ageing (14/30/60/90 days), reminders, and collections">
         <x-slot:actions>
-            <a href="{{ route('finance.ar.credit-memos.create', $dept) }}" class="tich-btn tich-btn-secondary">Issue credit memo</a>
-            <a href="{{ route('finance.ar.aging.export.pdf', $dept) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Export ageing PDF</a>
-            <form method="post" action="{{ route('finance.ar.remind.bulk', $dept) }}" style="display:inline;">
+            <a href="{{ route('finance.ar.credit-memos.create') }}" class="tich-btn tich-btn-secondary">Issue credit memo</a>
+            <a href="{{ route('finance.ar.aging.export.pdf') }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Export ageing PDF</a>
+            <form method="post" action="{{ route('finance.ar.remind.bulk') }}" style="display:inline;">
                 @csrf
                 <button type="submit" class="tich-btn tich-btn-primary">Send due reminders</button>
             </form>
@@ -49,7 +49,7 @@
             <button type="submit" class="tich-btn tich-btn-secondary">Search</button>
         </form>
 
-        <form method="post" action="{{ route('finance.ar.statements.export.pdf', $dept) }}" id="ar-statements-form">
+        <form method="post" action="{{ route('finance.ar.statements.export.pdf') }}" id="ar-statements-form">
             @csrf
             <div class="tich-card tich-table-panel">
                 <table class="tich-admin-table">

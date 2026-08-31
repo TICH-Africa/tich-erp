@@ -49,6 +49,7 @@ DB_PASSWORD=…
 - https://tich.africa/ - homepage
 - https://tich.africa/css/tich-platform.css - must be CSS, not HTML
 - https://tich.africa/js/tich-nav.js
+- https://tich.africa/tich-mpesa-stk-callback.php - POST only (405 on GET is normal); M-Pesa STK callback bridge
 
 If the site shows a **TICH deploy error** page, follow the hint on that page (usually missing `.env` or `vendor`).
 
@@ -64,3 +65,18 @@ If the site shows a **TICH deploy error** page, follow the hint on that page (us
 | CSS 404 | Re-deploy (symlinks) - bridge also serves assets as fallback |
 
 Ignore advice that empties `public_html` permanently or rewrites assets via URL-path `.htaccess` rules to `/tich-erp/web/public/…` - that breaks under LiteSpeed/cPanel. Use this repo’s deploy bridge instead.
+
+## M-Pesa STK callback (no ngrok)
+
+Safaricom requires a **public HTTPS** callback URL before it will send an STK prompt. This repo deploys a bridge file:
+
+| Item | Value |
+|------|--------|
+| File | `public_html/tich-mpesa-stk-callback.php` |
+| URL | `https://tich.africa/tich-mpesa-stk-callback.php` |
+| `.env` | `MPESA_CALLBACK_URL=https://tich.africa/tich-mpesa-stk-callback.php` |
+
+The file is copied automatically on deploy. **One-time manual upload** (before next deploy): copy `deploy/cpanel/tich-mpesa-stk-callback.php` into `public_html/` via File Manager.
+
+**Local dev on XAMPP:** set the same `MPESA_CALLBACK_URL` in local `web/.env`. STK prompts will send. Callbacks hit production DB; local payment confirmation still works via pay-page status polling (`stkQuery`). For instant callback settlement while testing locally, test on https://tich.africa or share the production database.
+

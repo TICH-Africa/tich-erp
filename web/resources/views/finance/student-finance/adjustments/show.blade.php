@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Financial Adjustment" meta="Adjustment request details">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.adjustments.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.adjustments.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 

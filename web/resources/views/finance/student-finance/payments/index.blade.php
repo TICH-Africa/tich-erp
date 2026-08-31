@@ -6,12 +6,12 @@
     <x-page-toolbar title="Payments" meta="Student payment records">
         <x-slot:actions>
             <a href="{{ route('finance.payments.create') }}" class="tich-btn tich-btn-primary">+ Record payment</a>
-            <a href="{{ route('finance.student-finance.invoices.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back to invoices</a>
+            <a href="{{ route('finance.student-finance.invoices.index') }}" class="tich-btn tich-btn-ghost">Back to invoices</a>
         </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mb-8">
-        <form method="get" action="{{ route('finance.student-finance.payments.index', $department) }}" class="tich-flex tich-items-center tich-gap-2 flex-wrap">
+        <form method="get" action="{{ route('finance.student-finance.payments.index') }}" class="tich-flex tich-items-center tich-gap-2 flex-wrap">
             <div class="tich-flex-1" style="max-width: 260px;">
                 <div class="relative">
                     <input type="text" name="search" value="{{ $search }}" placeholder="Search student or payment..." class="tich-input pl-8" style="padding: 8px 12px 8px 32px; font-size: 14px;">
@@ -47,7 +47,7 @@
                 Filter
             </button>
             @if ($search !== '' || $semesterId > 0 || $academicYearId > 0 || ($programId ?? 0) > 0)
-                <a href="{{ route('finance.student-finance.payments.index', $department) }}" class="tich-btn tich-btn-ghost" style="padding: 8px 16px; font-size: 14px;">
+                <a href="{{ route('finance.student-finance.payments.index') }}" class="tich-btn tich-btn-ghost" style="padding: 8px 16px; font-size: 14px;">
                     <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -77,7 +77,7 @@
                     @forelse ($payments as $payment)
                         @php
                             $student = $payment->student ?? $payment->invoice?->student;
-                            $program = $student?->program;
+                            $program = data_get($student, 'program');
                         @endphp
                         <tr>
                             <td><strong>{{ $payment->payment_number }}</strong></td>
@@ -97,7 +97,7 @@
                             <td>KES {{ number_format($payment->amount, 2) }}</td>
                             <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                             <td>
-                                <a href="{{ route('finance.student-finance.payments.show', ['department' => $department->id, 'id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                <a href="{{ route('finance.student-finance.payments.show', ['id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

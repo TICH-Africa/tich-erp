@@ -64,10 +64,10 @@ class AccountsReceivableController extends Controller
         $dept = $this->navigation->financeDepartment();
         abort_if(! $dept, 404, 'Finance department is not configured.');
 
-        return redirect()->route('finance.ar.index', ['department' => $dept->id]);
+        return redirect()->route('finance.ar.index');
     }
 
-    public function sendReminder(Request $request, Department $department, Invoice $invoice): RedirectResponse
+    public function sendReminder(Request $request, Invoice $invoice, Department $department): RedirectResponse
     {
         abort_unless((float) $invoice->balance > 0, 422, 'Invoice has no balance due.');
 
@@ -155,11 +155,11 @@ class AccountsReceivableController extends Controller
         );
 
         return redirect()
-            ->route('finance.ar.credit-memos.index', ['department' => $department->id])
+            ->route('finance.ar.credit-memos.index')
             ->with('success', 'Credit memo '.$memo->credit_memo_number.' issued.');
     }
 
-    public function creditMemoShow(Request $request, Department $department, CreditMemo $creditMemo): View
+    public function creditMemoShow(Request $request, CreditMemo $creditMemo, Department $department): View
     {
         $creditMemo->load(['student.applicant', 'student.program', 'invoice', 'issuer']);
 

@@ -5,8 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Budgeting" meta="Annual, departmental and project budgets, budget requests, approvals and budget vs actual tracking">
         <x-slot:actions>
-            <a href="{{ route('finance.budgeting.create', $department) }}" class="tich-btn tich-btn-primary">+ New budget</a>
-            <a href="{{ route('finance.budgeting.requests.index', $department) }}" class="tich-btn tich-btn-secondary">Review budget requests</a>
+            <a href="{{ route('finance.budgeting.create') }}" class="tich-btn tich-btn-primary">+ New budget</a>
+            <a href="{{ route('finance.budgeting.requests.index') }}" class="tich-btn tich-btn-secondary">Review budget requests</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -39,7 +39,7 @@
                                 <td>KES {{ number_format($item->requested_amount, 0) }}</td>
                                 <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
                                 <td>
-                                    <a href="{{ route('finance.budgeting.requests.show', [$department, $item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
+                                    <a href="{{ route('finance.budgeting.requests.show', [$item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
                                 </td>
                             </tr>
                         @empty
@@ -71,7 +71,7 @@
                     @forelse ($budgets as $budget)
                         <tr>
                             <td>
-                                <a href="{{ route('finance.budgeting.show', [$department, $budget]) }}">
+                                <a href="{{ route('finance.budgeting.show', [$budget]) }}">
                                     <strong>{{ $budget->budget_name }}</strong>
                                 </a>
                                 <p class="tich-caption">{{ $budget->budget_code }}</p>
@@ -87,7 +87,7 @@
                             <td>KES {{ number_format($budget->availableAmount(), 2) }}</td>
                             <td>{{ ucfirst($budget->status) }}</td>
                             <td>
-                                <a href="{{ route('finance.budgeting.show', [$department, $budget]) }}" class="tich-link">View</a>
+                                <a href="{{ route('finance.budgeting.show', [$budget]) }}" class="tich-link">View</a>
                             </td>
                         </tr>
                     @empty

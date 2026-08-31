@@ -3,17 +3,16 @@
 @section('title', 'Payroll Run ' . $run->run_number)
 
 @section('finance-content')
-    @php($dept = $departmentParams ?? ['department' => $department->id])
 
     <x-page-toolbar :title="'GL: ' . $run->run_number" :meta="$run->periodLabel() . ' · ' . ucfirst($run->status)">
         <x-slot:actions>
             @if ($run->canPostToGl())
-                <form method="post" action="{{ route('finance.payroll-integration.post', array_merge($dept, ['payrollRun' => $run->id])) }}" style="display:inline;" onsubmit="return confirm('Post this payroll run to the general ledger?');">
+                <form method="post" action="{{ route('finance.payroll-integration.post', $run) }}" style="display:inline;" onsubmit="return confirm('Post this payroll run to the general ledger?');">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-primary">Post to general ledger</button>
                 </form>
             @endif
-            <a href="{{ route('finance.payroll-integration.index', $dept) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.payroll-integration.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 

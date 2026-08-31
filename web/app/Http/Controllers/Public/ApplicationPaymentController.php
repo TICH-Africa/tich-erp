@@ -52,6 +52,7 @@ class ApplicationPaymentController extends Controller
             'lookedUp' => (bool) ($applicationNumber && $email),
             'instructions' => $applicant ? $this->feeService->paymentInstructions($applicant) : null,
             'mpesaEnabled' => $this->feeService->mpesaEnabled(),
+            'mpesaStkBlockers' => $this->feeService->mpesaStkBlockers(),
             'stkRequest' => $stkRequest,
         ]);
     }
@@ -92,7 +93,16 @@ class ApplicationPaymentController extends Controller
 
             return redirect()
                 ->route('apply.pay', $payQuery)
-                ->withErrors(['phone_number' => 'M-Pesa is not enabled. Configure MPESA_ENABLED and sandbox credentials in .env to test STK push.']);
+                ->withErrors(['phone_number' => 'M-Pesa is not enabled. Add MPESA_* settings to .env (not .env.example) or enable under Finance → M-Pesa settings.']);
+        }
+
+        $stkBlockers = $this->feeService->mpesaStkBlockers();
+
+        if ($stkBlockers !== []) {
+            return redirect()
+                ->route('apply.pay', $payQuery)
+                ->withInput()
+                ->withErrors(['phone_number' => $stkBlockers[0]]);
         }
 
         try {

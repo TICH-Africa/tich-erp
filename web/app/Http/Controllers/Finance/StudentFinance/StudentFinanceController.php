@@ -139,7 +139,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function accountShow(Request $request, Department $department, int $id): View
+    public function accountShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('student_accounts') || StudentAccount::count() === 0) {
             $mockStudent1 = new class {
@@ -371,7 +371,7 @@ class StudentFinanceController extends Controller
 
         FeeStructure::create($validated);
 
-        return redirect()->route('finance.student-finance.fee-structures.index', ['department' => $department->id])->with('success', 'Fee structure created successfully.');
+        return redirect()->route('finance.student-finance.fee-structures.index')->with('success', 'Fee structure created successfully.');
     }
 
     public function invoices(Request $request, Department $department): View
@@ -506,10 +506,10 @@ class StudentFinanceController extends Controller
             ], $staffId);
         }
 
-        return redirect()->route('finance.student-finance.invoices.index', ['department' => $department->id])->with('success', 'Invoice created and posted to the ledger.');
+        return redirect()->route('finance.student-finance.invoices.index')->with('success', 'Invoice created and posted to the ledger.');
     }
 
-    public function invoiceShow(Request $request, Department $department, int $id): View
+    public function invoiceShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('invoices') || Invoice::count() === 0) {
             $mockStudent = new class {
@@ -578,7 +578,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function invoiceDownload(Request $request, Department $department, int $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function invoiceDownload(Request $request, int $id, Department $department): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $invoice = Schema::hasTable('invoices') && Invoice::count() > 0
             ? Invoice::with(['student', 'items', 'payments'])->findOrFail($id)
@@ -616,15 +616,30 @@ class StudentFinanceController extends Controller
         $programId = (int) ($request->query('program_id', 0) ?: 0);
 
         if (! Schema::hasTable('payments') || Payment::count() === 0) {
-            $mockStudent1 = new class {
+            $mockProgram1 = new class {
+                public $program_code = 'BSC-CS';
+                public $program_name = 'Bachelor of Science in Computer Science';
+            };
+            $mockProgram2 = new class {
+                public $program_code = 'BBA';
+                public $program_name = 'Bachelor of Business Administration';
+            };
+            $mockProgram3 = new class {
+                public $program_code = 'DIP-IT';
+                public $program_name = 'Diploma in Information Technology';
+            };
+            $mockStudent1 = new class($mockProgram1) {
+                public function __construct(public $program) {}
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
                 public $registration_number = 'STU/2024/001';
             };
-            $mockStudent2 = new class {
+            $mockStudent2 = new class($mockProgram2) {
+                public function __construct(public $program) {}
                 public function fullName(): string { return 'Otieno Daniel'; }
                 public $registration_number = 'STU/2024/045';
             };
-            $mockStudent3 = new class {
+            $mockStudent3 = new class($mockProgram3) {
+                public function __construct(public $program) {}
                 public function fullName(): string { return 'Achieng Faith'; }
                 public $registration_number = 'STU/2024/102';
             };
@@ -719,7 +734,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function paymentShow(Request $request, Department $department, int $id): View
+    public function paymentShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('payments') || Payment::count() === 0) {
             $mockStudent = new class {
@@ -974,7 +989,7 @@ class StudentFinanceController extends Controller
             return $adjustment;
         });
 
-        return redirect()->route('finance.student-finance.adjustments.index', ['department' => $department->id])->with('success', 'Adjustment request submitted successfully.');
+        return redirect()->route('finance.student-finance.adjustments.index')->with('success', 'Adjustment request submitted successfully.');
     }
 
     public function installmentPlans(Request $request, Department $department): View
@@ -1158,10 +1173,10 @@ class StudentFinanceController extends Controller
             return $plan;
         });
 
-        return redirect()->route('finance.student-finance.installment-plans.index', ['department' => $department->id])->with('success', 'Installment plan created successfully.');
+        return redirect()->route('finance.student-finance.installment-plans.index')->with('success', 'Installment plan created successfully.');
     }
 
-    public function milestoneShow(Request $request, Department $department, int $id): View
+    public function milestoneShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('payment_milestones') || PaymentMilestone::count() === 0) {
             $student = new class {
@@ -1189,7 +1204,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function installmentPlanShow(Request $request, Department $department, int $id): View
+    public function installmentPlanShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('installment_plans') || InstallmentPlan::count() === 0) {
             $mockStudent = new class {
@@ -1427,7 +1442,7 @@ class StudentFinanceController extends Controller
             ]);
         });
 
-        return redirect()->route('finance.student-finance.refunds.index', ['department' => $department->id])->with('success', 'Refund request submitted successfully.');
+        return redirect()->route('finance.student-finance.refunds.index')->with('success', 'Refund request submitted successfully.');
     }
 
     public function clearance(Request $request, Department $department): View
@@ -1508,7 +1523,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function clearanceApprove(Request $request, Department $department, int $id): \Illuminate\Http\RedirectResponse
+    public function clearanceApprove(Request $request, int $id, Department $department): \Illuminate\Http\RedirectResponse
     {
         $account = Schema::hasTable('student_accounts') && StudentAccount::count() > 0
             ? StudentAccount::findOrFail($id)
@@ -1524,7 +1539,7 @@ class StudentFinanceController extends Controller
         return back()->with('success', 'Student cleared successfully.');
     }
 
-    public function clearanceReject(Request $request, Department $department, int $id): \Illuminate\Http\RedirectResponse
+    public function clearanceReject(Request $request, int $id, Department $department): \Illuminate\Http\RedirectResponse
     {
         $account = Schema::hasTable('student_accounts') && StudentAccount::count() > 0
             ? StudentAccount::findOrFail($id)
@@ -1706,7 +1721,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function adjustmentApprove(Request $request, Department $department, int $id)
+    public function adjustmentApprove(Request $request, int $id, Department $department)
     {
         $adjustment = Schema::hasTable('financial_adjustments') && FinancialAdjustment::count() > 0
             ? FinancialAdjustment::findOrFail($id)
@@ -1717,7 +1732,7 @@ class StudentFinanceController extends Controller
         return back()->with('success', 'Adjustment approved successfully.');
     }
 
-    public function refundApprove(Request $request, Department $department, int $id)
+    public function refundApprove(Request $request, int $id, Department $department)
     {
         $refund = Schema::hasTable('refunds') && Refund::count() > 0
             ? Refund::findOrFail($id)
@@ -1728,7 +1743,7 @@ class StudentFinanceController extends Controller
         return back()->with('success', 'Refund approved successfully.');
     }
 
-    public function refundProcess(Request $request, Department $department, int $id)
+    public function refundProcess(Request $request, int $id, Department $department)
     {
         $refund = Schema::hasTable('refunds') && Refund::count() > 0
             ? Refund::findOrFail($id)
@@ -1739,7 +1754,7 @@ class StudentFinanceController extends Controller
         return back()->with('success', 'Refund processed successfully.');
     }
 
-    public function feeStructureShow(Request $request, Department $department, int $id): View
+    public function feeStructureShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('fee_structures') || FeeStructure::count() === 0) {
             $feeStructure = (object) [
@@ -1770,7 +1785,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function receiptShow(Request $request, Department $department, int $id): View
+    public function receiptShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('receipts') || Receipt::count() === 0) {
             $mockStudent = new class {
@@ -1797,7 +1812,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function receiptDownload(Request $request, Department $department, int $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function receiptDownload(Request $request, int $id, Department $department): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $receipt = Schema::hasTable('receipts') && Receipt::count() > 0
             ? Receipt::with(['student', 'invoice', 'payment'])->findOrFail($id)
@@ -1822,7 +1837,7 @@ class StudentFinanceController extends Controller
         );
     }
 
-    public function adjustmentShow(Request $request, Department $department, int $id): View
+    public function adjustmentShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('financial_adjustments') || FinancialAdjustment::count() === 0) {
             $mockStudent = new class {
@@ -1853,7 +1868,7 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function refundShow(Request $request, Department $department, int $id): View
+    public function refundShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('refunds') || Refund::count() === 0) {
             $mockStudent = new class {

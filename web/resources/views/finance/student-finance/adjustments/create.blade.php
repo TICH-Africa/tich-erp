@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="New Adjustment" meta="Create a scholarship, bursary, or waiver adjustment">
         <x-slot:actions>
-            <a href="{{ route('finance.student-finance.adjustments.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.student-finance.adjustments.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('finance.student-finance.adjustments.store', ['department' => $department->id]) }}" class="tich-card tich-form-grid tich-form-grid--2">
+    <form method="POST" action="{{ route('finance.student-finance.adjustments.store') }}" class="tich-card tich-form-grid tich-form-grid--2">
         @csrf
         <div class="tich-form-group">
             <label class="tich-label" for="student_id">Student <span class="tich-text--danger">*</span></label>
@@ -53,7 +53,7 @@
 
         <div class="tich-form-group" style="grid-column: 1 / -1;">
             <button type="submit" class="tich-btn tich-btn-primary">Submit adjustment</button>
-            <a href="{{ route('finance.student-finance.adjustments.index', ['department' => $department->id]) }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
+            <a href="{{ route('finance.student-finance.adjustments.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
         </div>
     </form>
 

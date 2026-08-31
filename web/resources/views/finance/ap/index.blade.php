@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Accounts Payable (AP)" meta="Supplier accounts, supplier invoices, verification, approval, payment and the supplier ledger. Uses the three-way match">
         <x-slot:actions>
-            <a href="{{ route('finance.ap.create', $department) }}" class="tich-btn tich-btn-primary">+ New invoice</a>
+            <a href="{{ route('finance.ap.create') }}" class="tich-btn tich-btn-primary">+ New invoice</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -49,7 +49,7 @@
                     @forelse ($payables as $payable)
                         <tr>
                             <td>
-                                <a href="{{ route('finance.ap.show', [$department, $payable]) }}">{{ $payable->invoice_number }}</a>
+                                <a href="{{ route('finance.ap.show', [$payable]) }}">{{ $payable->invoice_number }}</a>
                             </td>
                             <td>{{ $payable->supplier?->supplier_name ?? '-' }}</td>
                             <td>KES {{ number_format((float) $payable->total_amount, 2) }}</td>
@@ -59,7 +59,7 @@
                             <td>{{ ucfirst($payable->payment_status) }}</td>
                             <td>{{ $payable->due_date?->format('d M Y') ?? '-' }}</td>
                             <td>
-                                <a href="{{ route('finance.ap.show', [$department, $payable]) }}" class="tich-link">View</a>
+                                <a href="{{ route('finance.ap.show', [$payable]) }}" class="tich-link">View</a>
                             </td>
                         </tr>
                     @empty

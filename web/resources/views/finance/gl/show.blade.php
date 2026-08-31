@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Journal entry" meta="{{ $entry->narration }}">
         <x-slot:actions>
-            <a href="{{ route('finance.gl.index', $department) }}" class="tich-btn tich-btn-ghost">Back to GL</a>
+            <a href="{{ route('finance.gl.index') }}" class="tich-btn tich-btn-ghost">Back to GL</a>
         </x-slot:actions>
     </x-page-toolbar>
 

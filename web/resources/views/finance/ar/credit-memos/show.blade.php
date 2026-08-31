@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar :title="$memo->credit_memo_number" meta="Credit memo details">
         <x-slot:actions>
-            <a href="{{ route('finance.ar.credit-memos.index', $departmentParams) }}" class="tich-btn tich-btn-secondary">All credit memos</a>
+            <a href="{{ route('finance.ar.credit-memos.index') }}" class="tich-btn tich-btn-secondary">All credit memos</a>
         </x-slot:actions>
     </x-page-toolbar>
 

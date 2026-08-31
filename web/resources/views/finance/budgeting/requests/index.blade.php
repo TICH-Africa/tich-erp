@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Budget requests" meta="All budget requests from Administration">
         <x-slot:actions>
-            <a href="{{ route('finance.budgeting.index', $department) }}" class="tich-btn tich-btn-ghost">Back to budgets</a>
+            <a href="{{ route('finance.budgeting.index') }}" class="tich-btn tich-btn-ghost">Back to budgets</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -60,7 +60,7 @@
                                 default => str_replace('_', ' ', ucfirst($item->status)),
                             } }}</span></td>
                             <td>
-                                <a href="{{ route('finance.budgeting.requests.show', [$department, $item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
+                                <a href="{{ route('finance.budgeting.requests.show', [$item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
                             </td>
                         </tr>
                     @empty

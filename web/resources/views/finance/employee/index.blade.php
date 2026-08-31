@@ -94,12 +94,10 @@
                     </a>
                 @endcan
 
-                @if ($dept !== [])
-                    <a href="{{ route('finance.payroll-integration.index', $dept) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                <a href="{{ route('finance.payroll-integration.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
                         <h3 class="tich-h4">Payroll → GL integration</h3>
                         <p class="tich-caption tich-mt-2">Post approved payroll batches to the general ledger.</p>
                     </a>
-                @endif
             </div>
         </div>
     </div>

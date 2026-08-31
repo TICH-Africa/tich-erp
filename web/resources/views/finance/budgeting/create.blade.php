@@ -5,7 +5,7 @@
 @section('finance-content')
     <x-page-toolbar title="Create budget" meta="Set up a new budget for a department">
         <x-slot:actions>
-            <a href="{{ route('finance.budgeting.index', $department) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('finance.budgeting.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('finance.budgeting.store', $department) }}" class="tich-mt-6" id="finance-budget-form">
+    <form method="POST" action="{{ route('finance.budgeting.store') }}" class="tich-mt-6" id="finance-budget-form">
         @csrf
         <div class="tich-card tich-form-stack">
             <div class="tich-form-group">
@@ -115,7 +115,7 @@
         </div>
 
         <div class="tich-flex-wrap tich-mt-6" style="gap:0.75rem; justify-content:flex-end;">
-            <a href="{{ route('finance.budgeting.index', $department) }}" class="tich-btn tich-btn-secondary">Cancel</a>
+            <a href="{{ route('finance.budgeting.index') }}" class="tich-btn tich-btn-secondary">Cancel</a>
             <button type="submit" class="tich-btn tich-btn-primary">Create budget</button>
         </div>
     </form>

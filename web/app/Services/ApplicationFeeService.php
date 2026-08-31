@@ -6,8 +6,13 @@ use App\Models\Applicant;
 use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
+use App\Models\Staff;
+use App\Models\Student;
+use App\Services\Finance\InvoiceService;
 use App\Services\Finance\MpesaDarajaService;
 use App\Services\Finance\MpesaSettingsService;
+use App\Services\Finance\PaymentService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -67,6 +72,14 @@ class ApplicationFeeService
     public function mpesaEnabled(): bool
     {
         return $this->mpesaSettings->isEnabled();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function mpesaStkBlockers(): array
+    {
+        return $this->mpesaSettings->stkPushBlockers();
     }
 
     public function initiateStk(Applicant $applicant, string $phoneNumber): MpesaStkRequest
@@ -240,6 +253,23 @@ class ApplicationFeeService
                 $this->writePaidFlags($applicant, $reference, $notes);
             }
 
+            if ($source !== 'invoice') {
+                try {
+                    $this->ensureFinancePaymentRecord(
+                        $applicant->fresh(),
+                        $reference,
+                        $source === 'simulated' ? 'cash' : ($source === 'mpesa' ? 'mpesa' : 'manual'),
+                        $amount ?? $this->amountDue($applicant),
+                    );
+                } catch (Throwable $e) {
+                    Log::warning('Finalized applicant fee finance posting failed', [
+                        'applicant_id' => $applicant->id,
+                        'reference' => $reference,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return $applicant->fresh(['program.department', 'handlingDepartment']);
         }
 
@@ -276,9 +306,109 @@ class ApplicationFeeService
 
         if (! $alreadyPaid) {
             app(AdmissionsReviewService::class)->finalizeAfterPayment($applicant);
+            $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
+        }
+
+        // Keep applicant STK payments visible in Finance (invoice + payment + receipt).
+        // Skip when Finance already recorded the payment against an application invoice.
+        if ($source !== 'invoice') {
+            try {
+                $this->ensureFinancePaymentRecord(
+                    $applicant,
+                    $reference,
+                    $source === 'simulated' ? 'cash' : ($source === 'mpesa' ? 'mpesa' : 'manual'),
+                    $amount ?? $this->amountDue($applicant),
+                );
+            } catch (Throwable $e) {
+                Log::warning('Application fee marked paid but finance payment posting failed', [
+                    'applicant_id' => $applicant->id,
+                    'reference' => $reference,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $applicant->fresh(['program.department', 'handlingDepartment']);
+    }
+
+    /**
+     * Create (or reuse) an application invoice and a matching Payment so Finance can see the fee.
+     */
+    public function ensureFinancePaymentRecord(
+        Applicant $applicant,
+        string $reference,
+        string $paymentMethod = 'mpesa',
+        ?float $amount = null,
+        ?int $recordedByStaffId = null,
+    ): ?\App\Models\Payment {
+        $amount = round($amount ?? $this->amountDue($applicant), 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $student = Student::query()->where('application_id', $applicant->id)->first();
+
+        if (! $student) {
+            $student = app(StudentEnrollmentService::class)
+                ->enrollFromAdmittedApplicant($applicant, $recordedByStaffId);
+        }
+
+        $existing = \App\Models\Payment::query()
+            ->where('payment_reference', $reference)
+            ->where('status', 'SUCCESS')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $invoiceService = app(InvoiceService::class);
+        $paymentService = app(PaymentService::class);
+        $staffId = $recordedByStaffId ?? (int) (Staff::query()->value('id') ?? 1);
+
+        $invoice = Invoice::query()
+            ->where('student_id', $student->id)
+            ->where('invoice_type', 'application')
+            ->whereIn('status', ['issued', 'partial', 'overdue', 'paid'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $invoice) {
+            $feeStructure = null;
+            if ($applicant->program_id && Schema::hasTable('fee_structures')) {
+                $feeStructure = FeeStructure::query()
+                    ->where('program_id', $applicant->program_id)
+                    ->where('is_active', 1)
+                    ->orderByDesc('is_approved')
+                    ->orderByDesc('effective_from')
+                    ->first();
+            }
+
+            if ($feeStructure && (float) $feeStructure->application_fee > 0) {
+                $invoice = $invoiceService->generateApplicationInvoice($student, $feeStructure, $staffId);
+            } else {
+                $invoice = $invoiceService->generateForStudent($student, [
+                    'invoice_type' => 'application',
+                    'description' => 'Application fee - '.$applicant->application_number,
+                    'amount' => $amount,
+                ], $staffId, false);
+            }
+        }
+
+        if ((float) $invoice->balance <= 0 && $invoice->status === 'paid') {
+            return \App\Models\Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('status', 'SUCCESS')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        return $paymentService->recordPayment($invoice, [
+            'amount' => min($amount, (float) $invoice->balance ?: $amount),
+            'payment_method' => $paymentMethod,
+            'payment_reference' => $reference,
+            'payment_date' => optional($applicant->application_fee_paid_at)?->toDateString() ?? now()->toDateString(),
+        ], $staffId, false);
     }
 
     private function writePaidFlags(Applicant $applicant, string $reference, ?string $notes): void
