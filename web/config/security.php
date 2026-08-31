@@ -91,6 +91,6 @@ return [
     |
     */
 
-    'block_inspect_ui' => (bool) env('SECURITY_BLOCK_INSPECT_UI', true),
+    'block_inspect_ui' => (bool) env('SECURITY_BLOCK_INSPECT_UI', false),
 
 ];

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('campus_code', 20)->unique();
             $table->string('campus_name', 200);
-            $table->string('campus_type', 50); // main, community_college, sub_county_hub
+            $table->string('campus_type', 50); // main, campus, community_college
             $table->unsignedBigInteger('parent_campus_id')->nullable();
             $table->string('county', 100)->nullable();
             $table->string('sub_county', 100)->nullable();

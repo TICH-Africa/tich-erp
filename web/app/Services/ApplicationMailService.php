@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Mail\ApplicationAcademicApprovedMail;
 use App\Mail\ApplicationShortlistedMail;
 use App\Mail\ApplicationStaffReviewMail;
 use App\Mail\ApplicationStatusUpdatedMail;
 use App\Mail\ApplicationSubmittedMail;
 use App\Models\Applicant;
 use App\Models\AuditLog;
+use App\Models\FeeStructure;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\MailConfig;
@@ -108,6 +110,78 @@ class ApplicationMailService
     }
 
     /**
+     * @param  array{amount?: float, account_reference?: string, pay_url?: string}|null  $paymentInstructions
+     * @return array{sent: bool, error: ?string}
+     */
+    public function sendAcademicApprovalPackage(Applicant $applicant, ?Request $request = null, ?array $paymentInstructions = null): array
+    {
+        $applicant = $this->prepareApplicant($applicant);
+        $instructions = $paymentInstructions ?? app(ApplicationFeeService::class)->paymentInstructions($applicant);
+
+        return $this->deliverToApplicant(
+            $applicant,
+            new ApplicationAcademicApprovedMail(
+                $applicant,
+                $applicant->program?->program_name ?? 'Selected programme',
+                $this->statusCheckUrl($applicant),
+                config('tich-application.admission_fee_notice'),
+                (float) ($instructions['amount'] ?? 0),
+                (string) ($instructions['account_reference'] ?? $applicant->application_number),
+                (string) ($instructions['pay_url'] ?? $this->statusCheckUrl($applicant)),
+                $this->feeStructureLinesFor($applicant),
+                $this->applicationLetterAttachmentFor($applicant),
+            ),
+            'admissions.application.approval_package_sent',
+            'Academic approval package email sent',
+            $request
+        );
+    }
+
+    /**
+     * @return array{
+     *     email_sent: bool,
+     *     last_sent_at: ?\Illuminate\Support\Carbon,
+     *     last_recipient: ?string,
+     *     can_resend: bool
+     * }
+     */
+    public function approvalPackageEmailStatus(Applicant $applicant): array
+    {
+        $lastSent = AuditLog::query()
+            ->where('entity_type', 'applicants')
+            ->where('entity_id', (string) $applicant->id)
+            ->where('status', 'success')
+            ->where('action', 'admissions.application.approval_package_sent')
+            ->orderByDesc('created_at')
+            ->first();
+
+        $canResend = $applicant->academic_review_status === 'approved'
+            && ! in_array($applicant->status, ['admitted', 'rejected'], true);
+
+        return [
+            'email_sent' => $lastSent !== null,
+            'last_sent_at' => $lastSent?->created_at,
+            'last_recipient' => $lastSent?->new_value['recipient'] ?? null,
+            'can_resend' => $canResend,
+        ];
+    }
+
+    /**
+     * @return array{sent: bool, error: ?string}
+     */
+    public function resendApprovalPackageEmail(Applicant $applicant, ?Request $request = null): array
+    {
+        if ($applicant->academic_review_status !== 'approved') {
+            return [
+                'sent' => false,
+                'error' => 'Approval package email is only available after academic approval.',
+            ];
+        }
+
+        return $this->sendAcademicApprovalPackage($applicant, $request);
+    }
+
+    /**
      * @return array{sent: bool, error: ?string}
      */
     public function sendStatusUpdate(Applicant $applicant, ?Request $request = null): array
@@ -159,6 +233,54 @@ class ApplicationMailService
         $student = Student::query()->where('application_id', $applicant->id)->first();
 
         return $student?->portalActivationUrl();
+    }
+
+    /**
+     * @return array{path: string, filename: string}|null
+     */
+    private function applicationLetterAttachmentFor(Applicant $applicant): ?array
+    {
+        return app(\App\Services\Administration\AdmissionLetterTemplateService::class)->attachment();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function feeStructureLinesFor(Applicant $applicant): array
+    {
+        if (! $applicant->program_id || ! Schema::hasTable('fee_structures')) {
+            return [];
+        }
+
+        $structure = FeeStructure::query()
+            ->where('program_id', $applicant->program_id)
+            ->where('is_active', 1)
+            ->orderByDesc('is_approved')
+            ->orderByDesc('effective_from')
+            ->first();
+
+        if (! $structure) {
+            return [];
+        }
+
+        $lines = $structure->semesterChargeLines(true);
+
+        if ((float) $structure->application_fee > 0) {
+            $lines = array_merge(
+                ['Application fee: KES '.number_format((float) $structure->application_fee, 2)],
+                $lines
+            );
+        }
+
+        if ((float) $structure->qa_annual_fee > 0) {
+            $lines[] = 'QA annual fee: KES '.number_format((float) $structure->qa_annual_fee, 2);
+        }
+
+        if ((float) $structure->graduation_fee > 0) {
+            $lines[] = 'Graduation fee: KES '.number_format((float) $structure->graduation_fee, 2);
+        }
+
+        return $lines;
     }
 
     /**
@@ -311,7 +433,7 @@ class ApplicationMailService
             ->where('is_active', 1)
             ->get()
             ->filter(function (User $user) use ($departmentId) {
-                if (! $user->hasPermission('admissions.read')) {
+                if (! $user->hasPermission('academics.read')) {
                     return false;
                 }
 
@@ -352,7 +474,7 @@ class ApplicationMailService
      */
     private function deliverToApplicant(
         Applicant $applicant,
-        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationShortlistedMail $mailable,
+        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationShortlistedMail|ApplicationAcademicApprovedMail $mailable,
         string $auditAction,
         string $auditDescription,
         ?Request $request = null,
@@ -394,7 +516,7 @@ class ApplicationMailService
                 $reviewer,
                 $applicant->program?->program_name ?? 'Selected programme',
                 $departmentName,
-                route('admissions.applications.show', $applicant->id),
+                route('departments.academics.applications.show', ['id' => $applicant->id]),
             ),
             'admissions.application.staff_notified',
             'Staff review notification sent',
@@ -411,7 +533,7 @@ class ApplicationMailService
      */
     private function sendMail(
         string $email,
-        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationStaffReviewMail|ApplicationShortlistedMail $mailable,
+        ApplicationSubmittedMail|ApplicationStatusUpdatedMail|ApplicationStaffReviewMail|ApplicationShortlistedMail|ApplicationAcademicApprovedMail $mailable,
         string $auditAction,
         string $auditDescription,
         Applicant $applicant,

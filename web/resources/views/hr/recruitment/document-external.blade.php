@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $document['label'] }} - {{ $application->full_name }}</title>
     <x-asset.stylesheet path="css/tich-platform.css" />
-    @if (config('security.block_inspect_ui', true))
+    @if (config('security.block_inspect_ui', false))
         <x-asset.script path="js/tich-ui-protection.js" />
     @endif
     <style>

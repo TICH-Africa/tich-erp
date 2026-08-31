@@ -14,6 +14,7 @@
                     <th>Code</th>
                     <th>Department</th>
                     <th>Profile</th>
+                    <th>Pending applications</th>
                     <th>Status</th>
                     <th></th>
                 </tr>
@@ -28,6 +29,17 @@
                             </a>
                         </td>
                         <td>{{ $profiles[$learningDepartmentRow->curriculum_profile ?? 'standard'] ?? ucfirst($learningDepartmentRow->curriculum_profile ?? 'standard') }}</td>
+                        <td>
+                            @php($pendingCount = $pendingApplicationsByDepartment[$learningDepartmentRow->id] ?? 0)
+                            @if ($pendingCount > 0)
+                                <a href="{{ route('departments.academics.applications.index', array_merge($hub, ['learning_department' => $learningDepartmentRow->id, 'status' => 'pending'])) }}"
+                                   class="tich-notification-badge"
+                                   title="Review pending applications"
+                                   aria-label="{{ $pendingCount }} pending applications">{{ $pendingCount }}</a>
+                            @else
+                                <span class="tich-caption">-</span>
+                            @endif
+                        </td>
                         <td>
                             @if ($learningDepartmentRow->is_active)
                                 <span class="tich-caption">Active</span>
@@ -52,7 +64,7 @@
                         </td>
                     </tr>
                 @empty
-                    @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No learning departments under this academics hub', 'icon' => 'inbox'])
+                    @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No learning departments under this academics hub', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

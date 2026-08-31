@@ -317,8 +317,12 @@ class AuthService
             return route('hr.dashboard');
         }
 
+        if ($this->rbacService->hasPermission($user, 'administration.read')) {
+            return route('administration.applications.index');
+        }
+
         if ($this->rbacService->hasPermission($user, 'admissions.read')) {
-            return route('admissions.dashboard');
+            return route('administration.applications.index');
         }
 
         if ($this->rbacService->hasPermission($user, 'academics.read')) {

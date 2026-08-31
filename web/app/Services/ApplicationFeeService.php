@@ -187,10 +187,10 @@ class ApplicationFeeService
         }
 
         if (! in_array($source, ['mpesa', 'invoice', 'simulated'], true)
-            && $applicant->academic_review_status !== 'shortlisted'
+            && $applicant->academic_review_status !== 'approved'
             && $applicant->status !== 'fee_pending') {
             throw ValidationException::withMessages([
-                'application' => 'Application fee can only be confirmed after academic shortlisting.',
+                'application' => 'Application fee can only be confirmed after academic approval.',
             ]);
         }
 
@@ -218,10 +218,10 @@ class ApplicationFeeService
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
 
         if (! $alreadyPaid) {
-            $this->mailService->sendStatusUpdate($applicant);
+            app(AdmissionsReviewService::class)->finalizeAfterPayment($applicant);
         }
 
-        return $applicant;
+        return $applicant->fresh(['program.department', 'handlingDepartment']);
     }
 
     private function writePaidFlags(Applicant $applicant, string $reference, ?string $notes): void
@@ -258,9 +258,9 @@ class ApplicationFeeService
             ]);
         }
 
-        if ($applicant->academic_review_status !== 'shortlisted' && $applicant->status !== 'fee_pending') {
+        if ($applicant->academic_review_status !== 'approved' && $applicant->status !== 'fee_pending') {
             throw ValidationException::withMessages([
-                'application' => 'Pay the application fee only after academic validation.',
+                'application' => 'Pay the application fee only after academic approval.',
             ]);
         }
     }

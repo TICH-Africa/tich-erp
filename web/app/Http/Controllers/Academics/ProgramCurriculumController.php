@@ -82,7 +82,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'pendingApplicationsByProgram' => $this->departmentDashboard->pendingApplicationsCountByProgram(
                 $programs->pluck('id')->all()
             ),
-            'canViewApplications' => $request->user()->hasPermission('admissions.read'),
+            'canViewApplications' => $request->user()->hasPermission('academics.read'),
         ]);
     }
 
@@ -217,7 +217,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'enrolledSummaries' => $enrolledSummaries,
             'expandedStudentRecord' => $expandedStudentRecord,
             'enrollmentStatusFilter' => $enrollmentStatusFilter,
-            'canViewApplications' => $request->user()->hasPermission('admissions.read'),
+            'canViewApplications' => $request->user()->hasPermission('academics.read'),
             'timetableTemplate' => $section === 'timetable'
                 ? $this->timetableTemplates->templateForProgram($program->id)
                 : null,

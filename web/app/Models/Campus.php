@@ -26,4 +26,31 @@ class Campus extends Model
     {
         return $this->hasMany(Department::class);
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function typeOptions(): array
+    {
+        return [
+            'main' => 'Main',
+            'campus' => 'Campus',
+            'community_college' => 'Community College',
+        ];
+    }
+
+  /** @return list<string> */
+    public static function typeKeys(): array
+    {
+        return array_keys(self::typeOptions());
+    }
+
+    public static function typeLabel(?string $type): string
+    {
+        if ($type === null || $type === '') {
+            return '-';
+        }
+
+        return self::typeOptions()[$type] ?? ucwords(str_replace('_', ' ', $type));
+    }
 }

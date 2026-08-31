@@ -49,7 +49,7 @@
         <article class="tich-card tich-card--highlight">
             <h3 class="tich-h3">Approval dashboard</h3>
             <p class="tich-text">Verify, accept, and reject student onboarding applications by department.</p>
-            <a href="{{ route('admissions.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open approval dashboard</a>
+            <a href="{{ route('administration.applications.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open applications</a>
         </article>
         @endcan
 

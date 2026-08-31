@@ -29,8 +29,7 @@ use App\Http\Controllers\Staff\StaffLessonPlanDocumentController;
 use App\Http\Controllers\Staff\StaffPortalActionController;
 use App\Http\Controllers\Staff\StaffPortalDashboardController;
 use App\Http\Controllers\Staff\StaffPortalTimetableController;
-use App\Http\Controllers\Admissions\ApprovalController;
-use App\Http\Controllers\Admissions\ApplicationDocumentController;
+use App\Http\Controllers\ApplicationDocumentController;
 use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
 use App\Http\Controllers\HR\EssOnboardingController;
 use Illuminate\Support\Facades\Route;
@@ -202,33 +201,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         });
     });
 
-    Route::prefix('admissions')->middleware(['permission:admin_manage_admissions_view'])->group(function () {
-        Route::get('/', [ApprovalController::class, 'dashboard'])->name('admissions.dashboard');
-        Route::get('/applications', [ApprovalController::class, 'index'])->name('admissions.applications.index');
-        Route::get('/applications/{id}', [ApprovalController::class, 'show'])->name('admissions.applications.show');
-        Route::get('/applications/{applicationId}/documents/{documentId}', [ApplicationDocumentController::class, 'show'])
-            ->name('admissions.applications.documents.show');
-        Route::get('/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'])
-            ->name('admissions.applications.documents.download');
-        Route::post('/applications/{id}/shortlist', [ApprovalController::class, 'shortlist'])
-            ->middleware('permission:admin_manage_admissions_manage')
-            ->name('admissions.applications.shortlist');
-        Route::post('/applications/{id}/handoff-academics', [ApprovalController::class, 'handoffToAcademics'])
-            ->middleware('permission:admin_manage_admissions_manage')
-            ->name('admissions.applications.handoff-academics');
-        Route::post('/applications/{id}/confirm-payment', [ApprovalController::class, 'confirmPayment'])
-            ->middleware('permission:admin_manage_admissions_manage')
-            ->name('admissions.applications.confirm-payment');
-        Route::post('/applications/{id}/approve', [ApprovalController::class, 'approve'])
-            ->middleware('permission:admin_manage_admissions_approve')
-            ->name('admissions.applications.approve');
-        Route::post('/applications/{id}/reject', [ApprovalController::class, 'reject'])
-            ->middleware('permission:admin_manage_admissions_approve')
-            ->name('admissions.applications.reject');
-        Route::post('/applications/{id}/resend-portal-signup', [ApprovalController::class, 'resendPortalSignup'])
-            ->middleware('permission:admin_manage_admissions_manage')
-            ->name('admissions.applications.resend-portal-signup');
-    });
+    Route::redirect('/admissions', '/administration/applications')->name('admissions.dashboard');
+    Route::redirect('/admissions/applications', '/administration/applications')->name('admissions.applications.index');
+    Route::get('/admissions/applications/{id}', fn (int $id) => redirect()->route('administration.applications.show', $id))
+        ->middleware('permission:admin_manage_admissions_view')
+        ->name('admissions.applications.show');
 
     Route::redirect('/sis', '/sis/students')
         ->middleware('permission:students.read')
@@ -340,6 +317,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/fund-distribution/allocations/{allocation}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAllocationAsDisbursed'])->name('administration.fund-distribution.disburse');
 
         Route::get('/applications', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'applications'])->name('administration.applications.index');
+        Route::get('/applications/{id}', [\App\Http\Controllers\Administration\ApplicationController::class, 'show'])->name('administration.applications.show');
+        Route::post('/applications/{id}/handoff-to-academics', [\App\Http\Controllers\Administration\ApplicationController::class, 'handoffToAcademics'])
+            ->name('administration.applications.handoff-to-academics');
+        Route::post('/applications/{id}/resend-approval-package', [\App\Http\Controllers\Administration\ApplicationController::class, 'resendApprovalPackage'])
+            ->name('administration.applications.resend-approval-package');
+        Route::get('/applications/{applicationId}/documents/{documentId}', [ApplicationDocumentController::class, 'show'])
+            ->name('administration.applications.documents.show');
+        Route::get('/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'])
+            ->name('administration.applications.documents.download');
         Route::get('/lifecycle', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'lifecycle'])->name('administration.lifecycle.index');
         Route::get('/admission-packages', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'packages'])->name('administration.admission-packages.index');
         Route::post('/admission-packages/letter', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'storeAdmissionLetter'])->name('administration.admission-packages.letter.store');

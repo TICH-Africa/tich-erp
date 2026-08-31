@@ -46,10 +46,12 @@ class AdmissionsReviewService
         $base = $this->scopedQuery($user);
 
         return [
-            'pending' => (clone $base)->whereIn('status', ['submitted_admin', 'submitted', 'academic_review', 'fee_pending', 'paid'])
-                ->whereIn('academic_review_status', ['pending', 'under_review'])
+            'pending' => (clone $base)->where('status', 'academic_review')
+                ->where('academic_review_status', 'under_review')
                 ->count(),
-            'shortlisted' => (clone $base)->where('academic_review_status', 'shortlisted')->count(),
+            'approved_pending_payment' => (clone $base)->whereIn('status', ['fee_pending', 'paid'])
+                ->where('academic_review_status', 'approved')
+                ->count(),
             'admitted' => (clone $base)->where('status', 'admitted')->count(),
             'rejected' => (clone $base)->where('status', 'rejected')->count(),
             'total' => (clone $base)->count(),
@@ -68,7 +70,7 @@ class AdmissionsReviewService
                 'd.dept_name',
                 'd.dept_code',
                 DB::raw('COUNT(*) as total'),
-                DB::raw("SUM(CASE WHEN a.status IN ('submitted_admin','submitted','academic_review','fee_pending','paid') AND a.academic_review_status IN ('pending','under_review') THEN 1 ELSE 0 END) as pending_count")
+                DB::raw("SUM(CASE WHEN a.status = 'academic_review' AND a.academic_review_status = 'under_review' THEN 1 ELSE 0 END) as pending_count")
             )
             ->groupBy('d.id', 'd.dept_name', 'd.dept_code')
             ->orderBy('d.dept_name');
@@ -84,6 +86,37 @@ class AdmissionsReviewService
         }
 
         return $query->get();
+    }
+
+    public function listForAdministration(?string $status = null): Collection
+    {
+        $this->backfillMissingHandlingDepartments();
+
+        $query = Applicant::query()
+            ->with([
+                'program:id,program_code,program_name,department_id',
+                'program.department:id,dept_name,dept_code',
+                'preferredCampus:id,campus_name',
+                'handlingDepartment:id,dept_name,dept_code',
+            ])
+            ->orderByDesc('created_at');
+
+        $this->applyStatusFilter($query, $status);
+
+        return $query->get();
+    }
+
+    public function findForAdministration(int $id): Applicant
+    {
+        return Applicant::query()
+            ->with([
+                'program.department',
+                'preferredCampus',
+                'documents',
+                'handlingDepartment',
+                'student',
+            ])
+            ->findOrFail($id);
     }
 
     public function listApplications(User $user, ?int $departmentId = null, ?string $status = null, ?int $programId = null): Collection
@@ -110,17 +143,7 @@ class AdmissionsReviewService
             $query->where('program_id', $programId);
         }
 
-        if ($status === 'pending') {
-            $query->whereIn('status', ['submitted_admin', 'submitted', 'academic_review', 'fee_pending', 'paid'])
-                ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted']);
-        } elseif ($status === 'payment_pending') {
-            $query->whereIn('status', ['fee_pending', 'paid'])
-                ->where('academic_review_status', 'shortlisted');
-        } elseif ($status === 'admitted') {
-            $query->where('status', 'admitted');
-        } elseif ($status === 'rejected') {
-            $query->where('status', 'rejected');
-        }
+        $this->applyStatusFilter($query, $status);
 
         return $query->get();
     }
@@ -151,24 +174,56 @@ class AdmissionsReviewService
             && in_array($departmentId, $this->visibleDepartmentIds($user) ?? [], true);
     }
 
-    public function shortlist(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    public function handoffFromAdministration(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    {
+        $this->assertNotFinalized($applicant);
+
+        if (! in_array($applicant->status, ['submitted_admin', 'submitted'], true)) {
+            throw ValidationException::withMessages([
+                'application' => 'Only newly submitted applications can be forwarded to academics.',
+            ]);
+        }
+
+        $applicant->update([
+            'status' => 'academic_review',
+            'academic_review_status' => 'under_review',
+            'review_notes' => $notes,
+            'reviewed_at' => now(),
+        ]);
+
+        $this->logDecision($user, $applicant, 'admissions.application.handed_off_to_academics', 'Application forwarded from Administration to academic review');
+
+        return $applicant->fresh(['program.department', 'handlingDepartment']);
+    }
+
+    public function approveAcademically(User $user, Applicant $applicant, ?string $notes = null): Applicant
     {
         $this->assertCanReview($user, $applicant);
+        $this->assertNotFinalized($applicant);
         $this->assertAcademicReviewStage($applicant);
+
+        if (! $user->hasPermission('academics.approve') && ! $user->hasRole('Super Admin')) {
+            throw ValidationException::withMessages([
+                'approve' => 'You do not have permission to approve applications academically.',
+            ]);
+        }
 
         $applicant->update([
             'status' => 'fee_pending',
-            'academic_review_status' => 'shortlisted',
+            'academic_review_status' => 'approved',
             'review_notes' => $notes,
+            'rejection_reason' => null,
             'academic_reviewer_id' => $user->staff_id,
             'reviewed_at' => now(),
         ]);
 
-        $this->logDecision($user, $applicant, 'admissions.application.shortlisted', 'Application shortlisted');
+        $this->logDecision($user, $applicant, 'admissions.application.academically_approved', 'Application academically approved');
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
+        app(StudentEnrollmentService::class)->registerFromAcademicallyApprovedApplicant($applicant, $user->id);
+
         $instructions = $this->feeService->paymentInstructions($applicant);
-        $mailResult = $this->mailService->sendShortlistNotification($applicant, null, $instructions);
+        $mailResult = $this->mailService->sendAcademicApprovalPackage($applicant, null, $instructions);
 
         if (! $mailResult['sent']) {
             session()->flash('application_mail_error', $mailResult['error']);
@@ -177,28 +232,32 @@ class AdmissionsReviewService
         return $applicant;
     }
 
-    public function handoffToAcademicReview(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    public function rejectAcademically(User $user, Applicant $applicant, string $reason, ?string $notes = null): Applicant
     {
         $this->assertCanReview($user, $applicant);
         $this->assertNotFinalized($applicant);
 
-        if (! in_array($applicant->status, ['submitted_admin', 'submitted'], true)) {
+        if (! $user->hasPermission('academics.approve') && ! $user->hasRole('Super Admin')) {
             throw ValidationException::withMessages([
-                'application' => 'Only newly submitted applications can be handed off to academics.',
+                'reject' => 'You do not have permission to reject applications.',
             ]);
         }
 
         $applicant->update([
-            'status' => 'academic_review',
-            'academic_review_status' => 'under_review',
+            'status' => 'rejected',
+            'academic_review_status' => 'rejected',
+            'rejection_reason' => $reason,
             'review_notes' => $notes,
             'academic_reviewer_id' => $user->staff_id,
             'reviewed_at' => now(),
         ]);
 
-        $this->logDecision($user, $applicant, 'admissions.application.handed_off_to_academics', 'Application handed off from intake to academic review');
+        $this->logDecision($user, $applicant, 'admissions.application.rejected', 'Application rejected by academics');
 
-        return $applicant->fresh(['program.department', 'handlingDepartment']);
+        $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
+        $this->mailService->sendStatusUpdate($applicant);
+
+        return $applicant;
     }
 
     public function confirmApplicationFee(User $user, Applicant $applicant, ?string $notes = null): Applicant
@@ -215,70 +274,37 @@ class AdmissionsReviewService
         );
     }
 
-    public function approve(User $user, Applicant $applicant, ?string $notes = null): Applicant
+    public function finalizeAfterPayment(Applicant $applicant, ?int $actorId = null): Applicant
     {
-        $this->assertCanReview($user, $applicant);
-        $this->assertNotFinalized($applicant);
-
-        if (! $user->hasPermission('admissions.approve') && ! $user->hasRole('Super Admin')) {
-            throw ValidationException::withMessages([
-                'approve' => 'You do not have permission to approve applications.',
-            ]);
+        if ($applicant->status === 'admitted' || $applicant->status === 'rejected') {
+            return $applicant;
         }
 
-        if (! $applicant->application_fee_paid) {
-            throw ValidationException::withMessages([
-                'approve' => 'Cannot finalize admission before application fee payment is verified.',
-            ]);
-        }
-
-        if ($applicant->academic_review_status !== 'shortlisted') {
-            throw ValidationException::withMessages([
-                'approve' => 'Application must be academically shortlisted before final approval.',
-            ]);
+        if ($applicant->academic_review_status !== 'approved' || ! $applicant->application_fee_paid) {
+            return $applicant;
         }
 
         $applicant->update([
             'status' => 'admitted',
-            'academic_review_status' => 'approved',
-            'review_notes' => $notes,
-            'rejection_reason' => null,
-            'academic_reviewer_id' => $user->staff_id,
             'reviewed_at' => now(),
         ]);
 
-        $this->logDecision($user, $applicant, 'admissions.application.approved', 'Application approved - student admitted');
+        $this->auditService->log(
+            'admissions.application.admitted',
+            'applicants',
+            $applicant->id,
+            null,
+            [
+                'application_number' => $applicant->application_number,
+                'status' => 'admitted',
+            ],
+            'Application admitted after fee payment',
+            'success',
+            $actorId
+        );
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
-        app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $user->id);
-        $this->mailService->sendStatusUpdate($applicant);
-
-        return $applicant;
-    }
-
-    public function reject(User $user, Applicant $applicant, string $reason, ?string $notes = null): Applicant
-    {
-        $this->assertCanReview($user, $applicant);
-        $this->assertNotFinalized($applicant);
-
-        if (! $user->hasPermission('admissions.approve') && ! $user->hasRole('Super Admin')) {
-            throw ValidationException::withMessages([
-                'reject' => 'You do not have permission to reject applications.',
-            ]);
-        }
-
-        $applicant->update([
-            'status' => 'rejected',
-            'academic_review_status' => 'rejected',
-            'rejection_reason' => $reason,
-            'review_notes' => $notes,
-            'academic_reviewer_id' => $user->staff_id,
-            'reviewed_at' => now(),
-        ]);
-
-        $this->logDecision($user, $applicant, 'admissions.application.rejected', 'Application rejected');
-
-        $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
+        app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $actorId);
         $this->mailService->sendStatusUpdate($applicant);
 
         return $applicant;
@@ -364,14 +390,31 @@ class AdmissionsReviewService
     {
         if (in_array($applicant->status, ['submitted_admin', 'submitted'], true)) {
             throw ValidationException::withMessages([
-                'application' => 'Hand off this application to academics before shortlisting.',
+                'application' => 'Administration must forward this application to academics before review.',
             ]);
         }
 
         if ($applicant->status !== 'academic_review') {
             throw ValidationException::withMessages([
-                'application' => 'This application is not in an academic review stage.',
+                'application' => 'This application is not awaiting academic review.',
             ]);
+        }
+    }
+
+    private function applyStatusFilter(Builder $query, ?string $status): void
+    {
+        if ($status === 'new') {
+            $query->whereIn('status', ['submitted_admin', 'submitted']);
+        } elseif ($status === 'pending') {
+            $query->where('status', 'academic_review')
+                ->where('academic_review_status', 'under_review');
+        } elseif ($status === 'payment_pending') {
+            $query->whereIn('status', ['fee_pending', 'paid'])
+                ->where('academic_review_status', 'approved');
+        } elseif ($status === 'admitted') {
+            $query->where('status', 'admitted');
+        } elseif ($status === 'rejected') {
+            $query->where('status', 'rejected');
         }
     }
 

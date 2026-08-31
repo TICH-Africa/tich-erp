@@ -86,7 +86,7 @@ Artisan::command('mail:test-all {email?}', function (?string $email = null) {
             $reviewer,
             $programName,
             $applicant->handlingDepartment?->dept_name ?? $applicant->program?->department?->dept_name ?? 'Health and Social Sciences',
-            route('admissions.applications.index')
+            route('administration.applications.index')
         )],
         'Application shortlisted' => [ModuleMail::ACADEMICS, new \App\Mail\ApplicationShortlistedMail(
             $applicant,

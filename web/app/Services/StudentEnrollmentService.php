@@ -13,6 +13,60 @@ class StudentEnrollmentService
 {
     public function __construct(protected AuditService $auditService) {}
 
+    public function registerFromAcademicallyApprovedApplicant(Applicant $applicant, ?int $createdBy = null): Student
+    {
+        $existing = Student::query()->where('application_id', $applicant->id)->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $applicant->loadMissing(['program', 'preferredCampus']);
+
+        return DB::transaction(function () use ($applicant, $createdBy) {
+            Applicant::query()->whereKey($applicant->id)->lockForUpdate()->firstOrFail();
+
+            $existing = Student::query()->where('application_id', $applicant->id)->first();
+            if ($existing) {
+                return $existing;
+            }
+
+            $student = Student::create([
+                'registration_number' => $this->generateRegistrationNumber($applicant),
+                'application_id' => $applicant->id,
+                'program_id' => $applicant->program_id,
+                'cohort_intake' => $this->cohortIntakeFromApplicant($applicant),
+                'enrollment_campus_id' => $this->resolveCampusId($applicant),
+                'enrollment_status' => 'pending',
+                'entry_pathway' => $this->mapEntryPathway($applicant->entry_qualification),
+                'date_of_admission' => now()->toDateString(),
+                'fee_clearance_status' => 'pending',
+                'overall_balance' => 0,
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => $createdBy,
+            ]);
+
+            $this->auditService->log(
+                'sis.student.registered_from_application',
+                'students',
+                $student->id,
+                null,
+                [
+                    'application_id' => $applicant->id,
+                    'application_number' => $applicant->application_number,
+                    'registration_number' => $student->registration_number,
+                ],
+                'Student record opened after academic approval (finance visibility)',
+                'success',
+                $createdBy
+            );
+
+            return $student;
+        }, 3);
+    }
+
     public function enrollFromAdmittedApplicant(Applicant $applicant, ?int $createdBy = null): Student
     {
         $existing = Student::query()->where('application_id', $applicant->id)->first();

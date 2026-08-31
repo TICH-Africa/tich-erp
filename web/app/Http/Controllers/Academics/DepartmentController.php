@@ -29,6 +29,9 @@ class DepartmentController extends DepartmentAcademicsController
             'departments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'profiles' => ProgramCurriculumService::curriculumProfiles(),
             'canApproveCeo' => $this->access->canApproveCeo($request->user()),
+            'pendingApplicationsByDepartment' => collect($this->access->learningDepartmentsInScope($request->user(), $hub))
+                ->mapWithKeys(fn (Department $dept) => [$dept->id => $this->departmentDashboard->pendingApplicationsCount($dept)])
+                ->all(),
         ]);
     }
 

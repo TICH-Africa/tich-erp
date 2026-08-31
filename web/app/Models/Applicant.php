@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\CurriculumVersion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +31,9 @@ class Applicant extends Model
         'phone_number',
         'home_county',
         'entry_qualification',
+        'kcse_grade',
+        'kcse_year',
+        'previous_institution',
         'sponsorship_type',
         'sponsor_organization',
         'sponsor_address',
@@ -86,6 +90,17 @@ class Applicant extends Model
     public function fullName(): string
     {
         return trim(collect([$this->first_name, $this->middle_name, $this->surname])->filter()->implode(' '));
+    }
+
+    public function intakeLabel(): string
+    {
+        if ($this->intake_year && $this->intake_month) {
+            $month = CurriculumVersion::intakeMonths()[(int) $this->intake_month] ?? (string) $this->intake_month;
+
+            return "{$month} {$this->intake_year}";
+        }
+
+        return 'Not specified';
     }
 
     public function isPendingReview(): bool

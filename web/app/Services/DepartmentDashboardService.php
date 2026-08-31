@@ -23,11 +23,10 @@ class DepartmentDashboardService
         'qa.dashboard',
         'procurement.dashboard',
         'research.dashboard',
-        'admissions.dashboard',
         'sis.dashboard',
         'sis.students.index',
         'departments.academics.dashboard',
-        'admissions.applications.index',
+        'departments.academics.applications.index',
         'departments.academics.programs.index',
     ];
 
@@ -373,8 +372,8 @@ class DepartmentDashboardService
                 $query->where('handling_department_id', $department->id)
                     ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $department->id));
             })
-            ->whereIn('status', ['submitted', 'academic_review'])
-            ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
+            ->where('status', 'academic_review')
+            ->where('academic_review_status', 'under_review')
             ->count();
     }
 
@@ -390,8 +389,8 @@ class DepartmentDashboardService
 
         return Applicant::query()
             ->whereIn('program_id', $programIds)
-            ->whereIn('status', ['submitted', 'academic_review'])
-            ->whereIn('academic_review_status', ['pending', 'under_review', 'shortlisted'])
+            ->where('status', 'academic_review')
+            ->where('academic_review_status', 'under_review')
             ->groupBy('program_id')
             ->selectRaw('program_id, COUNT(*) as aggregate')
             ->pluck('aggregate', 'program_id')
@@ -501,8 +500,9 @@ class DepartmentDashboardService
         }
 
         if ($department->isLearningDepartment()) {
-            if ($route === 'admissions.applications.index') {
-                $params['department'] = $department->id;
+            if ($route === 'departments.academics.applications.index') {
+                $params['learning_department'] = $department->id;
+                $params['status'] = 'pending';
             } else {
                 $params['learning_department'] = $department->id;
             }

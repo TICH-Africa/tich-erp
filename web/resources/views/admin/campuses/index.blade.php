@@ -36,7 +36,7 @@
                     <tr>
                         <td>{{ $campus->campus_code }}</td>
                         <td>{{ $campus->campus_name }}</td>
-                        <td>{{ str_replace('_', ' ', ucfirst($campus->campus_type)) }}</td>
+                        <td>{{ \App\Models\Campus::typeLabel($campus->campus_type) }}</td>
                         <td>{{ $campus->parentCampus?->campus_name ?? '-' }}</td>
                         <td>{{ $campus->county ?? '-' }}</td>
                         <td>{{ $campus->is_active ? 'Active' : 'Inactive' }}</td>

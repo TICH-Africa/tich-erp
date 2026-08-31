@@ -109,6 +109,19 @@ INNER JOIN `roles` dean ON dean.`id` = ur.`role_id` AND dean.`role_name` = 'Dean
 
 DELETE FROM `roles` WHERE `role_name` = 'Dean';
 
+-- -----------------------------------------------------------------------------
+-- 6. Campus type: sub_county_hub → campus (UI labels: Main, Campus, Community College)
+-- -----------------------------------------------------------------------------
+UPDATE `campuses` SET `campus_type` = 'campus' WHERE `campus_type` = 'sub_county_hub';
+
+-- -----------------------------------------------------------------------------
+-- 7. Applicant academic qualification fields (KCSE grade, year, previous institution)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `applicants`
+    ADD COLUMN IF NOT EXISTS `kcse_grade` VARCHAR(20) NULL AFTER `entry_qualification`,
+    ADD COLUMN IF NOT EXISTS `kcse_year` SMALLINT UNSIGNED NULL AFTER `kcse_grade`,
+    ADD COLUMN IF NOT EXISTS `previous_institution` VARCHAR(200) NULL AFTER `kcse_year`;
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

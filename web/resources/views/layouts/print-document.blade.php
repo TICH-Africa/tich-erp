@@ -6,7 +6,7 @@
     <title>{{ $documentTitle ?? 'Official document' }} - {{ $institution['short_name'] ?? 'TICH' }}</title>
     @if (empty($forPdf))
         <x-asset.stylesheet path="css/tich-print-documents.css" />
-        @if (config('security.block_inspect_ui', true))
+        @if (config('security.block_inspect_ui', false))
             <x-asset.script path="js/tich-ui-protection.js" />
         @endif
     @else

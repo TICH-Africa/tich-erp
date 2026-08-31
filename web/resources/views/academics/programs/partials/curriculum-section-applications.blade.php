@@ -56,9 +56,9 @@
                             </td>
                             <td>{{ $application->preferredCampus?->campus_name ?? '-' }}</td>
                             <td>{{ $application->created_at?->format('d M Y') ?? '-' }}</td>
-                            <td>@include('admissions.partials.status-badge', ['applicant' => $application])</td>
+                            <td>@include('applications.partials.status-badge', ['applicant' => $application])</td>
                             <td>
-                                <a href="{{ route('admissions.applications.show', $application->id) }}" class="tich-link">Review</a>
+                                <a href="{{ route('departments.academics.applications.show', array_merge($hub, ['id' => $application->id])) }}" class="tich-link">Review</a>
                             </td>
                         </tr>
                     @empty

@@ -77,7 +77,7 @@
                     @forelse ($performance['campus_breakdown'] as $row)
                         <tr>
                             <td>{{ $row->campus_name }}</td>
-                            <td>{{ str_replace('_', ' ', $row->campus_type) }}</td>
+                            <td>{{ \App\Models\Campus::typeLabel($row->campus_type) }}</td>
                             <td>{{ $row->sub_county ?? $row->county ?? '-' }}</td>
                             <td>{{ $row->student_count }}</td>
                             <td>{{ $row->avg_score }}%</td>

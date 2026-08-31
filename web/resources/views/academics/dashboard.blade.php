@@ -33,6 +33,13 @@
             <p class="tich-stat__value">{{ $stats['draft_versions'] }}</p>
         </article>
         <article class="tich-card tich-stat">
+            <p class="tich-caption">Pending applications</p>
+            <p class="tich-stat__value">{{ $stats['pending_applications'] }}</p>
+            @if ($stats['pending_applications'] > 0)
+                <a href="{{ route('departments.academics.applications.index', array_merge($hub, ['status' => 'pending'])) }}" class="tich-link tich-mt-2">Review now</a>
+            @endif
+        </article>
+        <article class="tich-card tich-stat">
             <p class="tich-caption">Published versions</p>
             <p class="tich-stat__value">{{ $stats['published_versions'] }}</p>
         </article>

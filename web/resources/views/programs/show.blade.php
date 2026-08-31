@@ -16,7 +16,7 @@
         <header class="tich-program-show__hero">
             <div class="tich-container tich-program-show__hero-content">
                 <p class="tich-program-show__back">
-                    <a href="{{ route('programs.index') }}" class="tich-program-show__back-link">← All programmes</a>
+                    <a href="{{ route('programs.index') }}" class="tich-program-show__back-link"><i class="tich-icon-arrow-left"></i> All programmes</a>
                 </p>
                 <p class="tich-program-show__eyebrow">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type ?? 'PROGRAMME')) }}</p>
                 <h1 class="tich-program-show__title" itemprop="name">{{ $program->program_name }}</h1>
@@ -57,10 +57,7 @@
                 <aside class="tich-program-show__aside">
                     <h2 class="tich-h3">Details</h2>
                     <dl class="tich-program-show__meta">
-                        <div>
-                            <dt>Code</dt>
-                            <dd>{{ strtoupper($program->program_code) }}</dd>
-                        </div>
+                       
                         <div>
                             <dt>Type</dt>
                             <dd>{{ ucfirst(str_replace('_', ' ', $program->program_type ?? 'programme')) }}</dd>

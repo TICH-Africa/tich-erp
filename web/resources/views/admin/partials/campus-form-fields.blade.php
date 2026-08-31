@@ -31,9 +31,9 @@
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}campus_type" @endif>Type</label>
     <select name="campus_type" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}campus_type" @endif class="tich-input" required>
-        @foreach ($campusTypes as $type)
-            <option value="{{ $type }}" @selected(old('campus_type', $campus->campus_type ?? '') === $type)>
-                {{ str_replace('_', ' ', ucfirst($type)) }}
+        @foreach ($campusTypes as $value => $label)
+            <option value="{{ $value }}" @selected(old('campus_type', $campus->campus_type ?? '') === $value)>
+                {{ $label }}
             </option>
         @endforeach
     </select>

@@ -571,17 +571,16 @@ class AdministrationService
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        $submission = (int) ($statuses['draft'] ?? 0) + (int) ($statuses['submitted'] ?? 0);
-        $academic = (int) ($statuses['academic_review'] ?? 0) + (int) ($statuses['under_review'] ?? 0);
-        $payment = (int) ($statuses['awaiting_payment'] ?? 0) + (int) ($statuses['payment_pending'] ?? 0);
-        $approval = (int) ($statuses['shortlisted'] ?? 0) + (int) ($statuses['recommended'] ?? 0);
-        $letters = (int) ($statuses['approved'] ?? 0) + (int) ($statuses['admitted'] ?? 0);
+        $submission = (int) ($statuses['submitted_admin'] ?? 0) + (int) ($statuses['submitted'] ?? 0);
+        $academic = (int) ($statuses['academic_review'] ?? 0);
+        $payment = (int) ($statuses['fee_pending'] ?? 0) + (int) ($statuses['paid'] ?? 0);
+        $letters = (int) ($statuses['admitted'] ?? 0);
 
         return [
             'submission' => $submission,
             'academic_verification' => $academic,
             'payment' => $payment,
-            'admin_approval' => $approval,
+            'admin_approval' => $letters,
             'letter_generation' => $letters,
             'total' => (int) $statuses->sum(),
         ];

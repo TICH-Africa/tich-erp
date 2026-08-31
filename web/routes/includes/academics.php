@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\ApplicationDocumentController;
 use App\Http\Controllers\Academics\AcademicClearanceController;
+use App\Http\Controllers\Academics\ApplicationReviewController;
 use App\Http\Controllers\Academics\AttendanceLedgerController;
 use App\Http\Controllers\Academics\CalendarController as AcademicsCalendarController;
 use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardController;
@@ -39,6 +41,10 @@ return function (bool $named = true): void {
         };
 
         $register('get', '/sidebar-notifications', AcademicsSidebarNotificationController::class, 'departments.academics.sidebar-notifications');
+        $register('get', '/applications', [ApplicationReviewController::class, 'index'], 'departments.academics.applications.index');
+        $register('get', '/applications/{id}', [ApplicationReviewController::class, 'show'], 'departments.academics.applications.show');
+        $register('get', '/applications/{applicationId}/documents/{documentId}', [ApplicationDocumentController::class, 'show'], 'departments.academics.applications.documents.show');
+        $register('get', '/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'], 'departments.academics.applications.documents.download');
         $register('get', '/departments', [AcademicsDepartmentController::class, 'index'], 'departments.academics.departments.index');
         $register('get', '/units', [AcademicsUnitController::class, 'index'], 'departments.academics.units.index');
         $register('get', '/programs', [ProgramCurriculumController::class, 'index'], 'departments.academics.programs.index');
@@ -56,14 +62,20 @@ return function (bool $named = true): void {
     });
 
     Route::middleware('permission:academics.write')->group(function () use ($named) {
-        $register = static function (string $method, string $uri, array|string $action, string $name) use ($named) {
+        $register = static function (string $method, string $uri, array|string $action, string $name, array $middleware = []) use ($named) {
             $route = Route::{$method}($uri, $action);
+
+            foreach ($middleware as $item) {
+                $route->middleware($item);
+            }
 
             if ($named) {
                 $route->name($name);
             }
         };
 
+        $register('post', '/applications/{id}/approve', [ApplicationReviewController::class, 'approve'], 'departments.academics.applications.approve', ['permission:academics.approve']);
+        $register('post', '/applications/{id}/reject', [ApplicationReviewController::class, 'reject'], 'departments.academics.applications.reject', ['permission:academics.approve']);
         $register('post', '/programs/{program}/allocations', [ProgramCurriculumController::class, 'storeAllocation'], 'departments.academics.programs.allocations.store');
         $register('delete', '/programs/{program}/allocations/{allocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');

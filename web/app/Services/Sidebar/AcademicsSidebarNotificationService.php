@@ -2,6 +2,7 @@
 
 namespace App\Services\Sidebar;
 
+use App\Models\Applicant;
 use App\Models\AttendanceSession;
 use App\Models\CurriculumVersion;
 use App\Models\Department;
@@ -30,6 +31,7 @@ class AcademicsSidebarNotificationService
         'attendance-ledger.hod' => 'Attendance ledger',
         'attendance-ledger.registrar' => 'Attendance ledger',
         'suggestions.open' => 'Suggestion box',
+        'applications.pending' => 'Application review',
     ];
 
     public function __construct(
@@ -91,6 +93,7 @@ class AcademicsSidebarNotificationService
             str_contains($routeName, 'departments.academics.lesson-plans.show') => 'lesson-plans.review',
             str_contains($routeName, 'departments.academics.attendance-ledger.') => $this->attendanceLedgerBadgeKey(),
             str_contains($routeName, 'departments.academics.suggestions.') => 'suggestions.open',
+            str_contains($routeName, 'departments.academics.applications.') => 'applications.pending',
             default => null,
         };
     }
@@ -175,6 +178,15 @@ class AcademicsSidebarNotificationService
             $attendanceIncomplete,
         );
 
+        $applicationsPending = Applicant::query()
+            ->where(function ($query) use ($departmentIds) {
+                $query->whereIn('handling_department_id', $departmentIds)
+                    ->orWhereHas('program', fn ($programQuery) => $programQuery->whereIn('department_id', $departmentIds));
+            })
+            ->where('status', 'academic_review')
+            ->where('academic_review_status', 'under_review')
+            ->count();
+
         return [
             'units.pending-registry' => $unitsPending,
             'curriculum.workflow' => $curriculumWorkflow,
@@ -184,7 +196,8 @@ class AcademicsSidebarNotificationService
             'suggestions.open' => Schema::hasTable('student_suggestions')
                 ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
                 : 0,
-            'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount + $attendanceForUser,
+            'applications.pending' => $applicationsPending,
+            'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount + $attendanceForUser + $applicationsPending,
         ];
     }
 

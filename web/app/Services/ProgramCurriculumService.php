@@ -268,7 +268,7 @@ class ProgramCurriculumService
             ['type' => 'heading', 'label' => $program->program_code],
         ];
 
-        $canViewApplications = $this->rbacService->hasPermission($user, 'admissions.read');
+        $canViewApplications = $this->rbacService->hasPermission($user, 'academics.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');
         $canViewAcademics = $this->rbacService->hasPermission($user, 'academics.read');
 

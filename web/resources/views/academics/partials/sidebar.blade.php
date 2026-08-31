@@ -47,6 +47,14 @@
                 ])
 
                 @include('partials.navigation.sidebar-link', [
+                    'href' => route('departments.academics.applications.index', $hub),
+                    'label' => 'Application review',
+                    'icon' => 'clipboard-list',
+                    'active' => request()->routeIs('departments.academics.applications.*'),
+                    'badgeKey' => 'applications.pending',
+                ])
+
+                @include('partials.navigation.sidebar-link', [
                     'href' => route('departments.academics.departments.index', $hub),
                     'label' => 'Learning Departments',
                     'icon' => 'building-2',

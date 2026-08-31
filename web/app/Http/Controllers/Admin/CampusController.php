@@ -23,7 +23,7 @@ class CampusController extends Controller
         return view('admin.campuses.index', [
             'campuses' => $campuses,
             'parentCampuses' => Campus::query()->orderBy('campus_name')->get(['id', 'campus_name']),
-            'campusTypes' => ['main', 'community_college', 'sub_county_hub'],
+            'campusTypes' => Campus::typeOptions(),
         ]);
     }
 
@@ -32,7 +32,7 @@ class CampusController extends Controller
         $validated = $request->validate([
             'campus_code' => ['required', 'string', 'max:20', 'unique:campuses,campus_code'],
             'campus_name' => ['required', 'string', 'max:200'],
-            'campus_type' => ['required', 'in:main,community_college,sub_county_hub'],
+            'campus_type' => ['required', 'in:'.implode(',', Campus::typeKeys())],
             'parent_campus_id' => ['nullable', 'exists:campuses,id'],
             'county' => ['nullable', 'string', 'max:100'],
             'sub_county' => ['nullable', 'string', 'max:100'],
@@ -65,7 +65,7 @@ class CampusController extends Controller
         $validated = $request->validate([
             'campus_code' => ['required', 'string', 'max:20', 'unique:campuses,campus_code,'.$campus->id],
             'campus_name' => ['required', 'string', 'max:200'],
-            'campus_type' => ['required', 'in:main,community_college,sub_county_hub'],
+            'campus_type' => ['required', 'in:'.implode(',', Campus::typeKeys())],
             'parent_campus_id' => ['nullable', 'exists:campuses,id'],
             'county' => ['nullable', 'string', 'max:100'],
             'sub_county' => ['nullable', 'string', 'max:100'],

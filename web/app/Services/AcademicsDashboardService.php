@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AcademicProgram;
+use App\Models\Applicant;
 use App\Models\CurriculumVersion;
 use App\Models\Department;
 use App\Models\Unit;
@@ -42,6 +43,14 @@ class AcademicsDashboardService
             'published_versions' => CurriculumVersion::query()
                 ->whereHas('program', fn ($q) => $q->whereIn('department_id', $departmentIds))
                 ->where('status', 'published')
+                ->count(),
+            'pending_applications' => Applicant::query()
+                ->where(function ($builder) use ($departmentIds) {
+                    $builder->whereIn('handling_department_id', $departmentIds)
+                        ->orWhereHas('program', fn ($q) => $q->whereIn('department_id', $departmentIds));
+                })
+                ->where('status', 'academic_review')
+                ->where('academic_review_status', 'under_review')
                 ->count(),
             'chart' => $this->chartData($departmentIds),
         ];

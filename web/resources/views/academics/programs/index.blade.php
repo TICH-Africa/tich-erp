@@ -46,7 +46,7 @@
                         @if ($canViewApplications)
                             <td>
                                 @if ($pendingApplications > 0)
-                                    <a href="{{ route('admissions.applications.index', ['department' => $program->department_id, 'program' => $program->id, 'status' => 'pending']) }}"
+                                    <a href="{{ route('departments.academics.applications.index', array_merge($hub, ['learning_department' => $program->department_id, 'program' => $program->id, 'status' => 'pending'])) }}"
                                        class="tich-notification-badge"
                                        title="Review pending applications"
                                        aria-label="{{ $pendingApplications }} pending applications">{{ $pendingApplications }}</a>

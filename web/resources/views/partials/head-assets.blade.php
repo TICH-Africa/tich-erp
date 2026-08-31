@@ -29,7 +29,7 @@
 <x-asset.script path="js/tich-toasts.js" />
 <x-asset.script path="js/tich-lazy-load.js" />
 <x-asset.script path="js/tich-form-submit-once.js" />
-@if (config('security.block_inspect_ui', true))
+@if (config('security.block_inspect_ui', false))
     <x-asset.script path="js/tich-ui-protection.js" />
 @endif
 <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>

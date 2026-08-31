@@ -30,7 +30,6 @@ class AdmissionsOpsController extends Controller
         return view('administration.applications.index', [
             'applications' => $applications,
             'applyUrl' => route('apply.index'),
-            'admissionsUrl' => route('admissions.applications.index'),
         ]);
     }
 
@@ -38,7 +37,7 @@ class AdmissionsOpsController extends Controller
     {
         return view('administration.lifecycle.index', [
             'stats' => $this->admin->admissionsLifecycleStats(),
-            'admissionsUrl' => route('admissions.dashboard'),
+            'admissionsUrl' => route('administration.applications.index'),
         ]);
     }
 
@@ -54,7 +53,7 @@ class AdmissionsOpsController extends Controller
 
         return view('administration.admission-packages.index', [
             'students' => $students,
-            'admissionsUrl' => route('admissions.applications.index', ['status' => 'approved']),
+            'admissionsUrl' => route('administration.applications.index', ['status' => 'admitted']),
             'letterExists' => $this->admissionLetters->exists(),
             'letterFilename' => $this->admissionLetters->originalFilename(),
         ]);
