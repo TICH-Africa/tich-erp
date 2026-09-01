@@ -87,6 +87,7 @@ return [
         // SIS
         'sis.student.enrolled' => ['module' => 'sis', 'sensitive' => false],
         'sis.portal.activated' => ['module' => 'sis', 'sensitive' => false],
+        'sis.student.account_linked' => ['module' => 'sis', 'sensitive' => false],
         'sis.transcript.generated' => ['module' => 'sis', 'sensitive' => false],
 
         // Admissions
@@ -98,6 +99,7 @@ return [
         'admissions.application.shortlist_email_sent' => ['module' => 'admissions', 'sensitive' => false],
         'admissions.application.status_email_sent' => ['module' => 'admissions', 'sensitive' => false],
         'admissions.application.portal_signup_email_sent' => ['module' => 'admissions', 'sensitive' => false],
+        'admissions.application.admission_confirmation_email_sent' => ['module' => 'admissions', 'sensitive' => false],
         'admissions.application.staff_notified' => ['module' => 'admissions', 'sensitive' => false],
 
         // Academics - units & programs

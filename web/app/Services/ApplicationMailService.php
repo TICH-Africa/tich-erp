@@ -10,6 +10,7 @@ use App\Mail\ApplicationSubmittedMail;
 use App\Models\Applicant;
 use App\Models\AuditLog;
 use App\Models\FeeStructure;
+use App\Models\Payment;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\MailConfig;
@@ -190,17 +191,7 @@ class ApplicationMailService
 
         return $this->deliverToApplicant(
             $applicant,
-            new ApplicationStatusUpdatedMail(
-                $applicant,
-                $applicant->program?->program_name ?? 'Selected programme',
-                $this->formatStatus($applicant->status),
-                $this->formatStatus($applicant->academic_review_status),
-                $this->statusCheckUrl($applicant),
-                $applicant->rejection_reason,
-                $applicant->review_notes,
-                $this->portalActivationUrlForApplicant($applicant),
-                $this->admissionLetterAttachmentFor($applicant),
-            ),
+            $this->buildStatusUpdatedMail($applicant),
             'admissions.application.status_email_sent',
             'Application status update email sent',
             $request
@@ -310,6 +301,113 @@ class ApplicationMailService
      *     can_resend: bool
      * }
      */
+    /**
+     * @return array{
+     *     fee_paid: bool,
+     *     is_admitted: bool,
+     *     portal_activated: bool,
+     *     portal_activated_at: ?\Illuminate\Support\Carbon,
+     *     student_registered: bool,
+     *     registration_number: ?string,
+     *     invite_pending: bool,
+     *     invite_expires_at: ?\Illuminate\Support\Carbon,
+     *     email_sent: bool,
+     *     last_sent_at: ?\Illuminate\Support\Carbon,
+     *     last_recipient: ?string,
+     *     can_resend: bool
+     * }
+     */
+    public function admissionConfirmationEmailStatus(Applicant $applicant): array
+    {
+        $portalStatus = $this->portalSignupEmailStatus($applicant);
+
+        $lastSent = AuditLog::query()
+            ->where('entity_type', 'applicants')
+            ->where('entity_id', (string) $applicant->id)
+            ->where('status', 'success')
+            ->whereIn('action', [
+                'admissions.application.admission_confirmation_email_sent',
+                'admissions.application.portal_signup_email_sent',
+                'admissions.application.status_email_sent',
+            ])
+            ->orderByDesc('created_at')
+            ->get()
+            ->first(function (AuditLog $log) {
+                if (in_array($log->action, [
+                    'admissions.application.admission_confirmation_email_sent',
+                    'admissions.application.portal_signup_email_sent',
+                ], true)) {
+                    return true;
+                }
+
+                return ($log->new_value['status'] ?? null) === 'admitted'
+                    || ($log->new_value['fee_paid'] ?? false) === true;
+            });
+
+        return [
+            'fee_paid' => (bool) $applicant->application_fee_paid,
+            'is_admitted' => $portalStatus['is_admitted'],
+            'portal_activated' => $portalStatus['portal_activated'],
+            'portal_activated_at' => $portalStatus['portal_activated_at'],
+            'student_registered' => $portalStatus['student_registered'],
+            'registration_number' => $portalStatus['registration_number'],
+            'invite_pending' => $portalStatus['invite_pending'],
+            'invite_expires_at' => $portalStatus['invite_expires_at'],
+            'email_sent' => $lastSent !== null,
+            'last_sent_at' => $lastSent?->created_at,
+            'last_recipient' => $lastSent?->new_value['recipient'] ?? null,
+            'can_resend' => (bool) $applicant->application_fee_paid,
+        ];
+    }
+
+    /**
+     * @return array{sent: bool, error: ?string}
+     */
+    public function resendAdmissionConfirmationEmail(Applicant $applicant, ?Request $request = null): array
+    {
+        if (! $applicant->application_fee_paid) {
+            return [
+                'sent' => false,
+                'error' => 'Admission confirmation email is only available after the application fee is paid.',
+            ];
+        }
+
+        $portalUrl = null;
+
+        if ($applicant->status === 'admitted') {
+            $enrollmentService = app(StudentEnrollmentService::class);
+            $student = Student::query()->where('application_id', $applicant->id)->first();
+
+            if ($student === null) {
+                $student = $enrollmentService->enrollFromAdmittedApplicant(
+                    $applicant,
+                    $request?->user()?->id
+                );
+            } elseif ($student->portal_activated_at === null && $student->user_id === null && ! $student->hasActivePortalInvite()) {
+                $student = $enrollmentService->refreshPortalInvite($student);
+            }
+
+            $applicantForLink = $this->prepareApplicant($applicant);
+            app(StudentPortalService::class)->ensureStudentAccountForApplicant($applicantForLink, $student->fresh());
+            $student = $student->fresh();
+
+            if ($student->portal_activated_at === null && $student->user_id === null) {
+                $portalUrl = $student->portalActivationUrl();
+            }
+        }
+
+        $applicant = $this->prepareApplicant($applicant);
+
+        return $this->deliverToApplicant(
+            $applicant,
+            $this->buildStatusUpdatedMail($applicant, $portalUrl),
+            'admissions.application.admission_confirmation_email_sent',
+            'Admission and payment confirmation email sent',
+            $request,
+            ['fee_paid' => true, 'status' => $applicant->status]
+        );
+    }
+
     public function portalSignupEmailStatus(Applicant $applicant): array
     {
         $student = Student::query()->where('application_id', $applicant->id)->first();
@@ -384,20 +482,73 @@ class ApplicationMailService
 
         return $this->deliverToApplicant(
             $applicant,
-            new ApplicationStatusUpdatedMail(
-                $applicant,
-                $applicant->program?->program_name ?? 'Selected programme',
-                $this->formatStatus($applicant->status),
-                $this->formatStatus($applicant->academic_review_status),
-                $this->statusCheckUrl($applicant),
-                $applicant->rejection_reason,
-                $applicant->review_notes,
-                $student->portalActivationUrl(),
-                $this->admissionLetterAttachmentFor($applicant),
-            ),
+            $this->buildStatusUpdatedMail($applicant, $student->portalActivationUrl()),
             'admissions.application.portal_signup_email_sent',
             'Student portal signup email sent',
             $request
+        );
+    }
+
+    /**
+     * @return array{amount: float, reference: string, method: string, paid_at: ?string, payment_number: ?string}|null
+     */
+    public function paymentConfirmationForApplicant(Applicant $applicant): ?array
+    {
+        if (! $applicant->application_fee_paid) {
+            return null;
+        }
+
+        $student = Student::query()->where('application_id', $applicant->id)->first();
+        $payment = null;
+
+        if ($student) {
+            $payment = Payment::query()
+                ->where('student_id', $student->id)
+                ->where('status', 'SUCCESS')
+                ->whereHas('invoice', fn ($query) => $query->where('invoice_type', 'application'))
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $payment && $applicant->application_fee_payment_ref) {
+            $payment = Payment::query()
+                ->where('payment_reference', $applicant->application_fee_payment_ref)
+                ->where('status', 'SUCCESS')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        $amount = $payment
+            ? (float) $payment->amount
+            : (float) app(ApplicationFeeService::class)->amountDue($applicant);
+
+        $methodKey = $payment?->payment_method ?? 'mpesa';
+        $paidAt = $applicant->application_fee_paid_at ?? $payment?->payment_date;
+
+        return [
+            'amount' => $amount,
+            'reference' => $applicant->application_fee_payment_ref
+                ?? $payment?->payment_reference
+                ?? $applicant->application_number,
+            'method' => (string) config('finance.payment_methods.'.$methodKey, ucfirst($methodKey)),
+            'paid_at' => $paidAt?->format('d M Y'),
+            'payment_number' => $payment?->payment_number,
+        ];
+    }
+
+    private function buildStatusUpdatedMail(Applicant $applicant, ?string $portalActivationUrl = null): ApplicationStatusUpdatedMail
+    {
+        return new ApplicationStatusUpdatedMail(
+            $applicant,
+            $applicant->program?->program_name ?? 'Selected programme',
+            $this->formatStatus($applicant->status),
+            $this->formatStatus($applicant->academic_review_status),
+            $this->statusCheckUrl($applicant),
+            $applicant->rejection_reason,
+            $applicant->review_notes,
+            $portalActivationUrl ?? $this->portalActivationUrlForApplicant($applicant),
+            $this->admissionLetterAttachmentFor($applicant),
+            $this->paymentConfirmationForApplicant($applicant),
         );
     }
 
@@ -478,6 +629,7 @@ class ApplicationMailService
         string $auditAction,
         string $auditDescription,
         ?Request $request = null,
+        array $auditExtra = [],
     ): array {
         if (empty($applicant->email)) {
             return [
@@ -492,7 +644,8 @@ class ApplicationMailService
             $auditAction,
             $auditDescription,
             $applicant,
-            $request
+            $request,
+            $auditExtra,
         );
     }
 

@@ -46,6 +46,26 @@
                                 </tr>
                             </table>
 
+                            @if (! empty($paymentConfirmation))
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;background:#f5f6f6;border:1px solid #e2e4e5;">
+                                    <tr>
+                                        <td style="padding:16px 18px;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#494c50;">
+                                            <strong style="color:#1669a6;">Application fee payment confirmed</strong><br>
+                                            We have received your application fee payment. Thank you.
+                                            <br><strong>Amount:</strong> KES {{ number_format((float) $paymentConfirmation['amount'], 2) }}
+                                            <br><strong>Reference:</strong> {{ $paymentConfirmation['reference'] }}
+                                            @if (! empty($paymentConfirmation['payment_number']))
+                                                <br><strong>Payment no.:</strong> {{ $paymentConfirmation['payment_number'] }}
+                                            @endif
+                                            <br><strong>Method:</strong> {{ $paymentConfirmation['method'] }}
+                                            @if (! empty($paymentConfirmation['paid_at']))
+                                                <br><strong>Date:</strong> {{ $paymentConfirmation['paid_at'] }}
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            @endif
+
                             @if ($portalActivationUrl)
                                 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 16px;">
                                     <tr>

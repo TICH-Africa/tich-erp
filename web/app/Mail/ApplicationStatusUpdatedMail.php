@@ -18,6 +18,7 @@ class ApplicationStatusUpdatedMail extends Mailable
 
     /**
      * @param  array{path: string, filename: string}|null  $admissionLetter
+     * @param  array{amount: float, reference: string, method: string, paid_at: ?string, payment_number: ?string}|null  $paymentConfirmation
      */
     public function __construct(
         public Applicant $applicant,
@@ -29,6 +30,7 @@ class ApplicationStatusUpdatedMail extends Mailable
         public ?string $reviewNotes = null,
         public ?string $portalActivationUrl = null,
         public ?array $admissionLetter = null,
+        public ?array $paymentConfirmation = null,
     ) {}
 
     protected function mailModule(): string
@@ -38,7 +40,13 @@ class ApplicationStatusUpdatedMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return $this->moduleEnvelope('TICH - Application update ('.$this->applicant->application_number.')');
+        $subject = $this->paymentConfirmation !== null && $this->portalActivationUrl !== null
+            ? 'TICH - Payment received & student portal access ('.$this->applicant->application_number.')'
+            : ($this->paymentConfirmation !== null
+                ? 'TICH - Application fee payment received ('.$this->applicant->application_number.')'
+                : 'TICH - Application update ('.$this->applicant->application_number.')');
+
+        return $this->moduleEnvelope($subject);
     }
 
     public function content(): Content

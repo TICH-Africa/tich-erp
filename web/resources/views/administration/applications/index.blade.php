@@ -9,6 +9,19 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if (session('status'))
+        <p class="tich-text tich-mt-4" style="color: var(--tich-green);">{{ session('status') }}</p>
+    @endif
+
+    @if (session('application_mail_error'))
+        <p class="tich-text tich-mt-4" style="color: #c0392b;">
+            The applicant notification email could not be sent.
+            @if (config('app.debug'))
+                {{ session('application_mail_error') }}
+            @endif
+        </p>
+    @endif
+
     <div class="tich-grid tich-grid--3 tich-mt-8">
         <article class="tich-card">
             <h3 class="tich-h4">View & forward</h3>
@@ -36,6 +49,7 @@
                         <th>Status</th>
                         <th>Application Fee Paid</th>
                         <th></th>
+                        <th>Email</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,9 +63,20 @@
                             <td>
                                 <a href="{{ route('administration.applications.show', $application->id) }}" class="tich-link">View</a>
                             </td>
+                            <td>
+                                @if (! empty($application->application_fee_paid))
+                                    <form method="POST" action="{{ route('administration.applications.resend-admission-confirmation', $application->id) }}" style="display: inline;">
+                                        @csrf
+                                        <input type="hidden" name="from_index" value="1">
+                                        <button type="submit" class="tich-link" style="background: none; border: none; padding: 0; cursor: pointer;">
+                                            Resend confirmation email
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No applications found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No applications found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

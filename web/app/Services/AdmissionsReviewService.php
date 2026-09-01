@@ -304,7 +304,8 @@ class AdmissionsReviewService
         );
 
         $applicant = $applicant->fresh(['program.department', 'handlingDepartment']);
-        app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $actorId);
+        $student = app(StudentEnrollmentService::class)->enrollFromAdmittedApplicant($applicant, $actorId);
+        app(StudentPortalService::class)->ensureStudentAccountForApplicant($applicant, $student);
         $this->mailService->sendStatusUpdate($applicant);
 
         return $applicant;

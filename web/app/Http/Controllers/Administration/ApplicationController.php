@@ -26,6 +26,9 @@ class ApplicationController extends Controller
             'approvalPackageEmail' => $applicant->academic_review_status === 'approved'
                 ? $this->mailService->approvalPackageEmailStatus($applicant)
                 : null,
+            'admissionConfirmationEmail' => $applicant->application_fee_paid
+                ? $this->mailService->admissionConfirmationEmailStatus($applicant)
+                : null,
             'documentRoutePrefix' => 'administration.applications',
         ]);
     }
@@ -62,5 +65,23 @@ class ApplicationController extends Controller
         return redirect()
             ->route('administration.applications.show', $id)
             ->with('application_mail_error', $result['error'] ?? 'Unable to send approval package email.');
+    }
+
+    public function resendAdmissionConfirmation(Request $request, int $id): RedirectResponse
+    {
+        $applicant = $this->reviewService->findForAdministration($id);
+        $result = $this->mailService->resendAdmissionConfirmationEmail($applicant, $request);
+
+        $redirectTo = $request->boolean('from_index')
+            ? route('administration.applications.index')
+            : route('administration.applications.show', $id);
+
+        if ($result['sent']) {
+            return redirect($redirectTo)
+                ->with('status', 'Payment confirmation and admission email sent to '.$applicant->email.'.');
+        }
+
+        return redirect($redirectTo)
+            ->with('application_mail_error', $result['error'] ?? 'Unable to send admission confirmation email.');
     }
 }

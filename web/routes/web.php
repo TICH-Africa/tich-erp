@@ -397,6 +397,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('administration.applications.handoff-to-academics');
         Route::post('/applications/{id}/resend-approval-package', [\App\Http\Controllers\Administration\ApplicationController::class, 'resendApprovalPackage'])
             ->name('administration.applications.resend-approval-package');
+        Route::post('/applications/{id}/resend-admission-confirmation', [\App\Http\Controllers\Administration\ApplicationController::class, 'resendAdmissionConfirmation'])
+            ->name('administration.applications.resend-admission-confirmation');
         Route::get('/applications/{applicationId}/documents/{documentId}', [ApplicationDocumentController::class, 'show'])
             ->name('administration.applications.documents.show');
         Route::get('/applications/{applicationId}/documents/{documentId}/download', [ApplicationDocumentController::class, 'download'])

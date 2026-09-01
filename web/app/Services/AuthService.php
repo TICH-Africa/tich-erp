@@ -213,6 +213,10 @@ class AuthService
             return redirect()->to($this->mfaEntryRoute($user));
         }
 
+        if ($this->isEnrolledStudent($user)) {
+            return redirect()->intended(route('portal.dashboard'));
+        }
+
         if (! $this->rbacService->isPlatformAdministrator($user)) {
             app(EmployeePortalService::class)->ensureStaffProfile($user);
             $user->refresh();
@@ -236,6 +240,10 @@ class AuthService
 
     public function redirectAfterMfa(User $user, Request $request): RedirectResponse
     {
+        if ($this->isEnrolledStudent($user)) {
+            return redirect()->intended(route('portal.dashboard'));
+        }
+
         if (! $this->rbacService->isPlatformAdministrator($user)) {
             app(EmployeePortalService::class)->ensureStaffProfile($user);
             $user->refresh();
