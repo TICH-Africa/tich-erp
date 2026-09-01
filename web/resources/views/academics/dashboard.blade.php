@@ -53,7 +53,7 @@
     </div>
 
     <section class="tich-dashboard-charts tich-mt-8" aria-label="Academics analytics">
-        <div class="tich-grid tich-grid--3" style="gap: 1.5rem; align-items: start;">
+        <div class="tich-grid tich-grid--3" style="align-items: start;">
             <article class="tich-card tich-chart-card">
                 <h3 class="tich-h3">Programmes by department</h3>
                 <p class="tich-chart-card__meta">Distribution of academic programmes across learning departments</p>
@@ -80,8 +80,8 @@
         </div>
     </section>
 
-    <div class="tich-mt-8" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; align-items: start;">
-        <article class="tich-card" style="grid-column: span 2;">
+    <div class="tich-grid tich-grid--2 tich-mt-8" style="gap: 1.5rem; align-items: start;">
+        <article class="tich-card tich-grid--2-span-full">
             <h2 class="tich-h3">Quick links</h2>
             <div class="tich-grid tich-grid--3 tich-mt-4" style="gap: 1rem;">
                 <a href="{{ route('departments.academics.departments.index', $hub) }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;padding:1rem;">

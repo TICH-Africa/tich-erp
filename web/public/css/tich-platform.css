@@ -1439,7 +1439,7 @@ select.tich-select:focus {
 
 .tich-chart-card__canvas-wrap {
     position: relative;
-    height: 15rem;
+    height: 18rem;
     margin-top: 1rem;
 }
 
@@ -1468,6 +1468,12 @@ select.tich-select:focus {
 @media (min-width: 768px) {
     .tich-dashboard-charts {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .tich-dashboard-charts {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
