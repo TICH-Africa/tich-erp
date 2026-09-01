@@ -53,7 +53,7 @@
     </div>
 
     <section class="tich-dashboard-charts tich-mt-8" aria-label="Academics analytics">
-        <div class="tich-grid tich-grid--3" style="align-items: start;">
+        <div class="tich-grid tich-grid--3">
             <article class="tich-card tich-chart-card">
                 <h3 class="tich-h3">Programmes by department</h3>
                 <p class="tich-chart-card__meta">Distribution of academic programmes across learning departments</p>

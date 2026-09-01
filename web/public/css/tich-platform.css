@@ -1421,9 +1421,7 @@ select.tich-select:focus {
 }
 
 .tich-dashboard-charts {
-    display: grid;
     gap: 1rem;
-    grid-template-columns: 1fr;
 }
 
 .tich-dashboard-charts__wide {
@@ -1441,6 +1439,12 @@ select.tich-select:focus {
     position: relative;
     height: 18rem;
     margin-top: 1rem;
+    width: 100%;
+}
+
+.tich-chart-card__canvas-wrap canvas {
+    width: 100%;
+    height: 100%;
 }
 
 .tich-chart-card__canvas-wrap--line {
@@ -1463,18 +1467,6 @@ select.tich-select:focus {
     color: var(--tich-grey);
     text-align: center;
     padding: 0 1rem;
-}
-
-@media (min-width: 768px) {
-    .tich-dashboard-charts {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1280px) {
-    .tich-dashboard-charts {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
 }
 
 /* ??? Layout ??????????????????????????????????????????????????????????? */
