@@ -5,6 +5,8 @@
     'campuses',
     'departments',
     'departmentModuleAssignments',
+    'academicsHostDepartmentIds' => [],
+    'learningDepartmentsByParent' => [],
     'openUserId' => null,
 ])
 
@@ -97,6 +99,13 @@
                 @endforeach
             </select>
         </div>
+        <div class="tich-form-group staff-learning-dept-wrap" style="margin: 0; display: none;">
+            <label class="tich-label">Learning / training department <span class="staff-learning-dept-required" style="color: #c0392b;">*</span></label>
+            <select name="assignments[__INDEX__][learning_department_id]" class="tich-input staff-learning-dept-select">
+                <option value="">Select learning department…</option>
+            </select>
+            <p class="tich-caption tich-mt-1">Required for Head of Department — choose the school or training unit they lead.</p>
+        </div>
         <div class="tich-form-group" style="margin: 0;">
             <label class="tich-label">Campus (optional)</label>
             <select name="assignments[__INDEX__][campus_id]" class="tich-input">
@@ -114,6 +123,9 @@
 (function () {
     var institutionWideRoles = @json($institutionWideRoles);
     var departmentModuleAssignments = @json($departmentModuleAssignments);
+    var academicsHostDepartmentIds = @json($academicsHostDepartmentIds);
+    var learningDepartmentsByParent = @json($learningDepartmentsByParent);
+    var hodRoleName = 'HOD';
 
     var form = document.getElementById('staff-access-form');
     var assignmentContainer = document.getElementById('staff-assignment-rows');
@@ -178,6 +190,59 @@
 
         roleSelect.value = selectedStillVisible ? String(currentValue) : '';
         updateDepartmentRequirementForRole(row);
+        updateLearningDepartmentField(row);
+    }
+
+    function isAcademicsHostDepartment(departmentId) {
+        return academicsHostDepartmentIds.indexOf(Number(departmentId)) !== -1;
+    }
+
+    function isHodRoleSelect(roleSelect) {
+        if (!roleSelect || !roleSelect.value) {
+            return false;
+        }
+
+        var option = roleSelect.options[roleSelect.selectedIndex];
+
+        return option && option.getAttribute('data-role-name') === hodRoleName;
+    }
+
+    function updateLearningDepartmentField(row, preferredLearningDepartmentId) {
+        var wrap = row.querySelector('.staff-learning-dept-wrap');
+        var deptSelect = row.querySelector('.staff-dept-select');
+        var roleSelect = row.querySelector('.staff-role-select');
+        var learningSelect = row.querySelector('.staff-learning-dept-select');
+
+        if (!wrap || !learningSelect || !deptSelect || !roleSelect) {
+            return;
+        }
+
+        var show = isAcademicsHostDepartment(deptSelect.value) && isHodRoleSelect(roleSelect);
+        wrap.style.display = show ? '' : 'none';
+        learningSelect.required = show;
+
+        if (!show) {
+            learningSelect.value = '';
+            return;
+        }
+
+        var parentId = String(deptSelect.value);
+        var options = learningDepartmentsByParent[parentId] || [];
+        var currentValue = preferredLearningDepartmentId || learningSelect.value || '';
+
+        learningSelect.innerHTML = '<option value="">Select learning department…</option>';
+        options.forEach(function (department) {
+            var option = document.createElement('option');
+            option.value = String(department.id);
+            option.textContent = department.dept_name;
+            learningSelect.appendChild(option);
+        });
+
+        var stillValid = options.some(function (department) {
+            return String(department.id) === String(currentValue);
+        });
+
+        learningSelect.value = stillValid ? String(currentValue) : '';
     }
 
     function updateDepartmentRequirementForRole(row) {
@@ -204,12 +269,14 @@
         if (deptSelect) {
             deptSelect.addEventListener('change', function () {
                 syncRoleOptionsForDepartment(row);
+                updateLearningDepartmentField(row);
             });
         }
 
         if (roleSelect) {
             roleSelect.addEventListener('change', function () {
                 updateDepartmentRequirementForRole(row);
+                updateLearningDepartmentField(row);
             });
         }
 
@@ -234,9 +301,11 @@
         assignmentContainer.appendChild(row);
 
         var preferredRoleId = '';
+        var preferredLearningDepartmentId = '';
         if (data) {
             row.querySelector('.staff-dept-select').value = data.department_id || '';
             preferredRoleId = data.role_id || '';
+            preferredLearningDepartmentId = data.learning_department_id || '';
             row.querySelector('[name*="[campus_id]"]').value = data.campus_id || '';
         }
 
@@ -244,6 +313,7 @@
         if (preferredRoleId) {
             syncRoleOptionsForDepartment(row, preferredRoleId);
         }
+        updateLearningDepartmentField(row, preferredLearningDepartmentId);
     }
 
     function fillForm(assignments) {

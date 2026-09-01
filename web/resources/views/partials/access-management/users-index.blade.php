@@ -51,11 +51,26 @@
             <tbody>
                 @forelse ($users as $user)
                     @php
-                        $assignmentsPayload = $user->roles->map(fn ($role) => [
-                            'role_id' => $role->id,
-                            'department_id' => $role->pivot->department_id ? (int) $role->pivot->department_id : null,
-                            'campus_id' => $role->pivot->campus_id ? (int) $role->pivot->campus_id : null,
-                        ])->values()->all();
+                        $assignmentsPayload = $user->roles->map(function ($role) {
+                            $departmentId = $role->pivot->department_id ? (int) $role->pivot->department_id : null;
+                            $hubDepartmentId = $departmentId;
+                            $learningDepartmentId = null;
+
+                            if ($role->role_name === 'HOD' && $departmentId) {
+                                $assignedDepartment = \App\Models\Department::query()->find($departmentId);
+                                if ($assignedDepartment?->parent_dept_id) {
+                                    $hubDepartmentId = (int) $assignedDepartment->parent_dept_id;
+                                    $learningDepartmentId = $departmentId;
+                                }
+                            }
+
+                            return [
+                                'role_id' => $role->id,
+                                'department_id' => $hubDepartmentId,
+                                'learning_department_id' => $learningDepartmentId,
+                                'campus_id' => $role->pivot->campus_id ? (int) $role->pivot->campus_id : null,
+                            ];
+                        })->values()->all();
                     @endphp
                     <tr>
                         <td>
@@ -116,6 +131,8 @@
         'campuses' => $campuses,
         'departments' => $departments,
         'departmentModuleAssignments' => $departmentModuleAssignments,
+        'academicsHostDepartmentIds' => $academicsHostDepartmentIds,
+        'learningDepartmentsByParent' => $learningDepartmentsByParent,
         'openUserId' => $openStaffAccessUserId,
     ])
 

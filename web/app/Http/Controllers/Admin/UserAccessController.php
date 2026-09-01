@@ -25,6 +25,8 @@ class UserAccessController extends Controller
 
     private const STUDENT_ROLES = ['Student', 'Applicant', 'Alumni'];
 
+    private const HOD_LEARNING_DEPARTMENT_ROLE = 'HOD';
+
     private const STAFF_USER_TYPES = UserType::EMPLOYEE_ACCOUNT_TYPES;
 
     public function __construct(
@@ -88,6 +90,19 @@ class UserAccessController extends Controller
                 ->orderBy('dept_name')
                 ->get(['id', 'dept_name', 'dept_code', 'campus_id', 'dept_category']);
 
+            $academicsHostDepartmentIds = $this->departmentModuleService->departmentIdsHostingLearningDepartments();
+
+            $learningDepartments = Department::query()
+                ->validLearningDepartments()
+                ->when(
+                    $academicsHostDepartmentIds !== [],
+                    fn ($query) => $query->whereIn('parent_dept_id', $academicsHostDepartmentIds),
+                    fn ($query) => $query->whereRaw('0 = 1'),
+                )
+                ->orderBy('display_order')
+                ->orderBy('dept_name')
+                ->get(['id', 'dept_name', 'dept_code', 'parent_dept_id']);
+
             $viewData = array_merge($viewData, [
                 'roles' => Role::query()
                     ->whereNotIn('role_name', self::STUDENT_ROLES)
@@ -100,6 +115,15 @@ class UserAccessController extends Controller
                 'departmentModuleAssignments' => $this->departmentModuleService->assignedModulesByDepartmentIds(
                     $departments->pluck('id')->all()
                 ),
+                'academicsHostDepartmentIds' => $academicsHostDepartmentIds,
+                'learningDepartmentsByParent' => $learningDepartments
+                    ->groupBy('parent_dept_id')
+                    ->map(fn ($group) => $group->map(fn (Department $department) => [
+                        'id' => $department->id,
+                        'dept_name' => $department->dept_name,
+                        'dept_code' => $department->dept_code,
+                    ])->values()->all())
+                    ->all(),
             ]);
         }
 
@@ -194,10 +218,12 @@ class UserAccessController extends Controller
             'assignments.*.role_id' => ['nullable', 'exists:roles,id'],
             'assignments.*.campus_id' => ['nullable', 'exists:campuses,id'],
             'assignments.*.department_id' => ['nullable', $this->mainDepartmentExistsRule()],
+            'assignments.*.learning_department_id' => ['nullable', $this->learningDepartmentExistsRule()],
         ], $this->accessContext()->route('users.index', ['audience' => 'staff']));
 
         $staffRoleIds = Role::query()->whereNotIn('role_name', self::STUDENT_ROLES)->pluck('id')->all();
         $roleNamesById = Role::query()->pluck('role_name', 'id');
+        $academicsHostDepartmentIds = $this->departmentModuleService->departmentIdsHostingLearningDepartments();
 
         $assignments = collect($validated['assignments'] ?? [])
             ->filter(fn (array $row) => ! empty($row['role_id']))
@@ -205,6 +231,7 @@ class UserAccessController extends Controller
                 'role_id' => (int) $row['role_id'],
                 'campus_id' => ! empty($row['campus_id']) ? (int) $row['campus_id'] : null,
                 'department_id' => ! empty($row['department_id']) ? (int) $row['department_id'] : null,
+                'learning_department_id' => ! empty($row['learning_department_id']) ? (int) $row['learning_department_id'] : null,
             ])
             ->filter(fn (array $row) => in_array($row['role_id'], $staffRoleIds, true))
             ->values()
@@ -219,8 +246,10 @@ class UserAccessController extends Controller
 
         foreach ($assignments as $index => $assignment) {
             $roleName = $roleNamesById[$assignment['role_id']] ?? null;
+            $hubDepartmentId = $assignment['department_id'];
+            $learningDepartmentId = $assignment['learning_department_id'];
 
-            if ($roleName && ! $this->rbacService->roleAllowsInstitutionWideAssignment($roleName) && empty($assignment['department_id'])) {
+            if ($roleName && ! $this->rbacService->roleAllowsInstitutionWideAssignment($roleName) && empty($hubDepartmentId)) {
                 return redirect()
                     ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
                     ->withInput()
@@ -228,6 +257,39 @@ class UserAccessController extends Controller
                         "assignments.{$index}.department_id" => "Select a department for the {$roleName} role.",
                     ]);
             }
+
+            if ($roleName === self::HOD_LEARNING_DEPARTMENT_ROLE
+                && $hubDepartmentId
+                && in_array($hubDepartmentId, $academicsHostDepartmentIds, true)) {
+                if (! $learningDepartmentId) {
+                    return redirect()
+                        ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
+                        ->withInput()
+                        ->withErrors([
+                            "assignments.{$index}.learning_department_id" => 'Select the learning/training department this HOD will head.',
+                        ]);
+                }
+
+                $learningDepartment = Department::query()->find($learningDepartmentId);
+                if (! $learningDepartment
+                    || (int) $learningDepartment->parent_dept_id !== $hubDepartmentId
+                    || ! $learningDepartment->isValidLearningDepartment()) {
+                    return redirect()
+                        ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
+                        ->withInput()
+                        ->withErrors([
+                            "assignments.{$index}.learning_department_id" => 'The selected learning department is not under the chosen academics unit.',
+                        ]);
+                }
+
+                $assignment['department_id'] = $learningDepartmentId;
+            }
+
+            $assignments[$index] = [
+                'role_id' => $assignment['role_id'],
+                'campus_id' => $assignment['campus_id'],
+                'department_id' => $assignment['department_id'],
+            ];
         }
 
         $this->rbacService->syncUserAccess(
@@ -284,5 +346,22 @@ class UserAccessController extends Controller
         return Rule::exists('departments', 'id')->where(
             fn ($query) => $query->whereNull('parent_dept_id')->where('is_active', 1)
         );
+    }
+
+    private function learningDepartmentExistsRule(): Exists
+    {
+        $hostIds = $this->departmentModuleService->departmentIdsHostingLearningDepartments();
+
+        return Rule::exists('departments', 'id')->where(function ($query) use ($hostIds) {
+            $query->where('dept_category', 'academic')
+                ->whereNotNull('parent_dept_id')
+                ->where('is_active', 1);
+
+            if ($hostIds !== []) {
+                $query->whereIn('parent_dept_id', $hostIds);
+            } else {
+                $query->whereRaw('0 = 1');
+            }
+        });
     }
 }
