@@ -3,7 +3,7 @@
 @section('title', $portalTitle ?? 'Student portal')
 
 @section('content')
-<div class="tich-admin">
+<div class="tich-admin tich-admin--student-portal">
     @include('portal.partials.sidebar', [
         'student' => $student,
         'biodata' => $biodata,

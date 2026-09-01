@@ -724,6 +724,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.transcript.print');
         Route::get('/transcript/pdf', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'pdf'])
             ->name('portal.transcript.pdf');
+        Route::get('/exam-card/print', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'print'])
+            ->name('portal.exam-card.print');
+        Route::get('/exam-card/pdf', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'pdf'])
+            ->name('portal.exam-card.pdf');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Portal\FinancePaymentController::class, 'store'])
             ->name('portal.invoices.pay');
         Route::get('/mpesa/stk/{stkRequest}/status', [\App\Http\Controllers\Portal\MpesaPaymentStatusController::class, '__invoke'])

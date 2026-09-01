@@ -15,7 +15,6 @@ class StudentPortalNavigationService
         return [
             'overview' => 'Overview',
             'profile' => 'My profile',
-            'application' => 'Application',
             'enrolment' => 'Enrolment',
             'documents' => 'Documents',
             'academics' => 'Academics',
@@ -101,11 +100,6 @@ class StudentPortalNavigationService
             ],
             [
                 'type' => 'link',
-                'label' => 'Application',
-                'section' => 'application',
-            ],
-            [
-                'type' => 'link',
                 'label' => 'Enrolment',
                 'section' => 'enrolment',
             ],
@@ -184,12 +178,6 @@ class StudentPortalNavigationService
                 'label' => 'My profile',
                 'description' => 'Personal details, contact information, and programme enrolment summary.',
                 'section' => 'profile',
-                'group' => 'services',
-            ],
-            [
-                'label' => 'Application',
-                'description' => 'Track your admission application, review status, and decision notes.',
-                'section' => 'application',
                 'group' => 'services',
             ],
             [

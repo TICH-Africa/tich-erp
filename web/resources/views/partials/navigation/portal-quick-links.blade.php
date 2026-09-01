@@ -7,7 +7,7 @@
 
     $employeeHref = route('login');
     $employeeActive = false;
-    if ($user && $user->hasEmployeeProfile() && ! $assignmentService->isAwaitingDepartmentAssignment($user)) {
+    if ($user && $user->hasEmployeeProfile() && ! $user->isEnrolledStudent() && ! $assignmentService->isAwaitingDepartmentAssignment($user)) {
         $employeeHref = route('employee.dashboard');
         $employeeActive = request()->routeIs('employee.*');
     }
@@ -21,31 +21,39 @@
 
     $staffHref = route('login');
     $staffActive = false;
-    if ($user && $user->isTeachingStaff()) {
+    if ($user && $user->isTeachingStaff() && ! $user->isEnrolledStudent()) {
         $staffHref = route('staff.dashboard');
         $staffActive = request()->routeIs('staff.*');
     }
 
-    $portalLinks = [
-        [
+    $portalLinks = [];
+
+    if ($user && $user->hasEmployeeProfile() && ! $user->isEnrolledStudent() && ! $assignmentService->isAwaitingDepartmentAssignment($user)) {
+        $portalLinks[] = [
             'label' => 'My Employee Portal',
             'href' => $employeeHref,
             'icon' => 'user',
             'active' => $employeeActive,
-        ],
-        [
+        ];
+    }
+
+    if ($user && $user->isEnrolledStudent()) {
+        $portalLinks[] = [
             'label' => 'Student portal',
             'href' => $studentHref,
             'icon' => 'graduation-cap',
             'active' => $studentActive,
-        ],
-        [
+        ];
+    }
+
+    if ($user && $user->isTeachingStaff() && ! $user->isEnrolledStudent()) {
+        $portalLinks[] = [
             'label' => 'Staff portal',
             'href' => $staffHref,
             'icon' => 'book-open',
             'active' => $staffActive,
-        ],
-    ];
+        ];
+    }
 
     if ($user && ! $user->isEnrolledStudent() && ! $user->isTeachingStaff()) {
         $awaitingAssignment = $user->hasEmployeeProfile()

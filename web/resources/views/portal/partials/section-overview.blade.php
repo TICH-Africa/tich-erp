@@ -29,18 +29,8 @@
         <h2 class="tich-h2 tich-dept-panel__title">At a glance</h2>
     </div>
 
-    <div class="tich-grid tich-grid--2 tich-mt-4" style="gap: 1.5rem;">
-        <article class="tich-card">
-            <h3 class="tich-h3">Application</h3>
-            <p class="tich-text tich-mt-2">
-                <strong>{{ $biodata['application']['application_number'] ?? '-' }}</strong><br>
-                Status: {{ $stats['application_status'] ?: '-' }}<br>
-                Review: {{ ucwords(str_replace('_', ' ', (string) ($biodata['application']['academic_review_status'] ?? ''))) ?: '-' }}
-            </p>
-            <a href="{{ route('portal.dashboard', ['section' => 'application']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View application</a>
-        </article>
-
-        <article class="tich-card">
+    <div class="tich-grid tich-grid--2 tich-mt-4 tich-portal-overview-grid" style="gap: 1.5rem;">
+        <article class="tich-card tich-portal-summary-card">
             <h3 class="tich-h3">Enrolment</h3>
             <p class="tich-text tich-mt-2">
                 Campus: {{ $biodata['enrollment']['campus'] ?? '-' }}<br>
@@ -50,7 +40,7 @@
             <a href="{{ route('portal.dashboard', ['section' => 'enrolment']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View enrolment</a>
         </article>
 
-        <article class="tich-card">
+        <article class="tich-card tich-portal-summary-card">
             <h3 class="tich-h3">Academics</h3>
             <p class="tich-text tich-mt-2">
                 Programme units: {{ $stats['curriculum_unit_count'] }}<br>
@@ -60,7 +50,7 @@
             <a href="{{ route('portal.dashboard', ['section' => 'academics']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View academics</a>
         </article>
 
-        <article class="tich-card">
+        <article class="tich-card tich-portal-summary-card">
             <h3 class="tich-h3">Finance</h3>
             <p class="tich-text tich-mt-2">
                 Outstanding: KES {{ number_format($stats['outstanding_balance'], 2) }}<br>
@@ -80,9 +70,9 @@
         <p class="tich-text">Open a service from the sidebar or choose a module below.</p>
     </div>
 
-    <div class="tich-grid tich-grid--3 tich-dept-cards tich-mt-4">
+    <div class="tich-grid tich-grid--3 tich-dept-cards tich-mt-4 tich-portal-module-grid">
         @foreach ($modules as $module)
-            <article class="tich-card tich-dept-card">
+            <article class="tich-card tich-dept-card tich-portal-module-card">
                 <h3 class="tich-h3">{{ $module['label'] }}</h3>
                 <p class="tich-text tich-mt-2">{{ $module['description'] }}</p>
                 <a href="{{ route('portal.dashboard', ['section' => $module['section']]) }}" class="tich-btn tich-btn-secondary tich-mt-4">Open</a>

@@ -65,6 +65,8 @@ class StudentAcademicRecordService
             ? Semester::query()->with('academicYear')->find($student->current_semester_id)
             : Semester::query()->with('academicYear')->where('is_current', 1)->first();
 
+        $examPortal = app(StudentExamCardService::class)->portalData($student);
+
         return [
             'curriculum' => $curriculum,
             'curriculum_is_published' => $curriculum?->isPublished() ?? false,
@@ -83,6 +85,7 @@ class StudentAcademicRecordService
             'exam_results' => $examResults,
             'attendance' => $attendance,
             'current_semester' => $currentSemester,
+            'exam_portal' => $examPortal,
         ];
     }
 

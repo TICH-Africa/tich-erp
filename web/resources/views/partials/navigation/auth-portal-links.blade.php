@@ -1,4 +1,4 @@
-@if (auth()->user()->hasEmployeeProfile() && ! app(\App\Services\EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment(auth()->user()))
+@if (auth()->user()->hasEmployeeProfile() && ! auth()->user()->isEnrolledStudent() && ! app(\App\Services\EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment(auth()->user()))
     @unless ($mobile ?? false)
         <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
