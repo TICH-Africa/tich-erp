@@ -65,8 +65,9 @@
                     <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', $staff->primary_email) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label for="organisation_email" class="tich-label">Organisation email</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email', $staff->organisation_email) }}" class="tich-input" pattern=".+@tich\.africa$" title="If set, must use @tich.africa" placeholder="Optional - e.g. name@tich.africa">
+                    <label class="tich-label">Organisation email</label>
+                    <p class="tich-input" style="background:var(--tich-surface-muted,#f8fafc);">{{ $staff->organisation_email ?: '—' }}</p>
+                    <p class="tich-caption tich-mt-1">Assigned by ICT. Contact ICT to issue or change an @tich.africa address.</p>
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>

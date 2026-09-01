@@ -472,6 +472,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/users/{user}', [\App\Http\Controllers\Ict\UserAccessController::class, 'show'])->name('ict.users.show');
             Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\Ict\StaffProfileUpdatePromptController::class, 'store'])->name('ict.staff.profile-update-prompt.store');
+            Route::put('/staff/{staff}/organisation-email', [\App\Http\Controllers\Ict\StaffOrganisationEmailController::class, 'update'])->name('ict.staff.organisation-email.update');
 
             Route::get('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'index'])->name('ict.roles.index');
             Route::post('/roles', [\App\Http\Controllers\Ict\RoleController::class, 'store'])->name('ict.roles.store');
@@ -499,6 +500,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::get('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'create'])->name('hr.staff.profile-update-prompt.create');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'store'])->name('hr.staff.profile-update-prompt.store');
             Route::get('/profile-changes', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'index'])->name('hr.profile-changes.index');
             Route::get('/profile-changes/{profileChange}', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'show'])->name('hr.profile-changes.show');

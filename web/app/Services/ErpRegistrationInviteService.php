@@ -152,9 +152,6 @@ class ErpRegistrationInviteService
         }
 
         // Never invent organisation (@tich.africa) email on invite registration.
-        if ($staff->organisation_email) {
-            $staff->update(['organisation_email' => null]);
-        }
 
         $invitation->update(['staff_id' => $staff->id]);
 

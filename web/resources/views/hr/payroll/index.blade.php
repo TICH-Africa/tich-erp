@@ -3,6 +3,8 @@
 @section('title', 'Payroll')
 
 @section('hr-content')
+    @include('partials.financial-privacy')
+
     @php
         $deductionAmount = function (?array $breakdown, string $code): ?float {
             if (! $breakdown) {
@@ -49,15 +51,15 @@
                         <th>Job title</th>
                         <th>Status</th>
                         <th>Payroll</th>
-                        <th>Consolidated Gross Pay (KES)</th>
-                        <th>PAYE</th>
-                        <th>WHT</th>
-                        <th>NSSF</th>
-                        <th>SHA/SHIF</th>
-                        <th>AHL</th>
-                        <th>Total deductions</th>
-                        <th>Net (KES)</th>
-                        <th>Employer cost</th>
+                        <th data-financial-col="gross">Consolidated Gross Pay (KES)</th>
+                        <th data-financial-col="paye">PAYE</th>
+                        <th data-financial-col="wht">WHT</th>
+                        <th data-financial-col="nssf">NSSF</th>
+                        <th data-financial-col="sha">SHA/SHIF</th>
+                        <th data-financial-col="ahl">AHL</th>
+                        <th data-financial-col="deductions">Total deductions</th>
+                        <th data-financial-col="net">Net (KES)</th>
+                        <th data-financial-col="employer">Employer cost</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -83,15 +85,15 @@
                                         <span class="tich-caption">({{ rtrim(rtrim(number_format($withholdingRate, 2), '0'), '.') }}%)</span>
                                     @endif
                                 </td>
-                                <td>{{ number_format($breakdown['gross_salary'], 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? number_format($deductionAmount($breakdown, 'withholding_tax') ?? 0, 2) : '-' }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</td>
-                                <td>{{ number_format($breakdown['total_deductions'], 2) }}</td>
-                                <td><strong>{{ number_format($breakdown['net_salary'], 2) }}</strong></td>
-                                <td>{{ number_format($breakdown['total_employer_cost'], 2) }}</td>
+                                <td data-financial-col="gross"><span class="tich-financial-cell">{{ number_format($breakdown['gross_salary'], 2) }}</span></td>
+                                <td data-financial-col="paye"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="wht"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? number_format($deductionAmount($breakdown, 'withholding_tax') ?? 0, 2) : '-' }}</span></td>
+                                <td data-financial-col="nssf"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="sha"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="ahl"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="deductions"><span class="tich-financial-cell">{{ number_format($breakdown['total_deductions'], 2) }}</span></td>
+                                <td data-financial-col="net"><strong><span class="tich-financial-cell">{{ number_format($breakdown['net_salary'], 2) }}</span></strong></td>
+                                <td data-financial-col="employer"><span class="tich-financial-cell">{{ number_format($breakdown['total_employer_cost'], 2) }}</span></td>
                                 <td style="white-space: nowrap;">
                                     <button
                                         type="button"
@@ -115,15 +117,15 @@
                     <tfoot>
                         <tr>
                             <td colspan="6"><strong>Totals</strong></td>
-                            <td><strong>{{ number_format($totals['gross_salary'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['paye'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['wht'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['nssf'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['sha'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['ahl'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['total_deductions'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['net_salary'], 2) }}</strong></td>
-                            <td><strong>{{ number_format($totals['employer_cost'], 2) }}</strong></td>
+                            <td data-financial-col="gross"><strong><span class="tich-financial-cell">{{ number_format($totals['gross_salary'], 2) }}</span></strong></td>
+                            <td data-financial-col="paye"><strong><span class="tich-financial-cell">{{ number_format($totals['paye'], 2) }}</span></strong></td>
+                            <td data-financial-col="wht"><strong><span class="tich-financial-cell">{{ number_format($totals['wht'], 2) }}</span></strong></td>
+                            <td data-financial-col="nssf"><strong><span class="tich-financial-cell">{{ number_format($totals['nssf'], 2) }}</span></strong></td>
+                            <td data-financial-col="sha"><strong><span class="tich-financial-cell">{{ number_format($totals['sha'], 2) }}</span></strong></td>
+                            <td data-financial-col="ahl"><strong><span class="tich-financial-cell">{{ number_format($totals['ahl'], 2) }}</span></strong></td>
+                            <td data-financial-col="deductions"><strong><span class="tich-financial-cell">{{ number_format($totals['total_deductions'], 2) }}</span></strong></td>
+                            <td data-financial-col="net"><strong><span class="tich-financial-cell">{{ number_format($totals['net_salary'], 2) }}</span></strong></td>
+                            <td data-financial-col="employer"><strong><span class="tich-financial-cell">{{ number_format($totals['employer_cost'], 2) }}</span></strong></td>
                             <td></td>
                         </tr>
                     </tfoot>

@@ -57,6 +57,24 @@
                     <p><strong>Organisation email:</strong> {{ $staff->organisation_email ?? '-' }}</p>
                     <p><strong>Phone:</strong> {{ $staff->phone_number ?? '-' }}</p>
                 </div>
+                @if ($access->prefix === 'ict')
+                    <form method="POST" action="{{ route('ict.staff.organisation-email.update', $staff) }}" class="tich-mt-4" style="padding-top:1rem;border-top:1px solid var(--tich-neutral-border);">
+                        @csrf
+                        @method('PUT')
+                        <label for="organisation_email" class="tich-label">Assign organisation email</label>
+                        <input
+                            type="email"
+                            id="organisation_email"
+                            name="organisation_email"
+                            value="{{ old('organisation_email', $staff->organisation_email) }}"
+                            class="tich-input"
+                            pattern=".+@tich\.africa$"
+                            placeholder="name@tich.africa"
+                        >
+                        <p class="tich-caption tich-mt-1">Leave blank and save to clear. Must use @tich.africa.</p>
+                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-2">Save organisation email</button>
+                    </form>
+                @endif
             @else
                 <p class="tich-text tich-mt-4">No staff record is linked to this account.</p>
             @endif

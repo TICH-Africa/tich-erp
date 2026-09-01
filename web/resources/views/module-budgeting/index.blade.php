@@ -3,6 +3,10 @@
 @section('title', $department->dept_name.' · Budgeting')
 
 @section($moduleContext['content_section'])
+    @if (($moduleContext['layout'] ?? '') === 'layouts.hr')
+        @include('partials.financial-privacy')
+    @endif
+
     <x-page-toolbar
         title="Budgeting"
         meta="Create department budget requests and send them to Administration for aggregation"
@@ -24,7 +28,7 @@
                     <tr>
                         <th>Code</th>
                         <th>Title</th>
-                        <th>Amount</th>
+                        <th data-financial-col="amount">Amount</th>
                         <th>Items</th>
                         <th>Cycle</th>
                         <th>Status</th>
@@ -40,7 +44,7 @@
                         <tr>
                             <td><strong>{{ $item->request_code }}</strong></td>
                             <td>{{ $item->title }}</td>
-                            <td>KES {{ number_format((float) $item->requested_amount, 2) }}</td>
+                            <td data-financial-col="amount"><span class="tich-financial-cell">KES {{ number_format((float) $item->requested_amount, 2) }}</span></td>
                             <td class="tich-caption">{{ $lineCount }} {{ \Illuminate\Support\Str::plural('line', $lineCount) }}</td>
                             <td class="tich-caption">{{ $item->planningCycle?->cycle_code ?? '-' }}</td>
                             <td><span class="tich-badge">{{ match($item->status) {

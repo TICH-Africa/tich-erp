@@ -354,6 +354,9 @@ class StaffLifecycleService
             $employmentDetails['organisation_email'] = null;
         }
 
+        // Organisation email is assigned manually by ICT, not during HR onboarding conversion.
+        unset($employmentDetails['organisation_email']);
+
         return $employmentDetails;
     }
 

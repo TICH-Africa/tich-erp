@@ -337,11 +337,7 @@ class ContractService
             return;
         }
 
-        $organisationEmail = $contract->organisation_email
-            ?: $contract->staff->organisation_email
-            ?: ($contract->staff->user ? $contract->staff->user->email : null);
-
-        $contract->staff->update([
+        $updates = [
             'job_title' => $contract->job_title,
             'department_id' => $contract->department_id,
             'campus_id' => $contract->campus_id,
@@ -349,13 +345,19 @@ class ContractService
             'payroll_scheme' => $contract->payroll_scheme ?: $contract->staff->payroll_scheme ?: 'employee',
             'salary_scale' => $contract->salary_scale,
             'line_manager_id' => $contract->line_manager_id,
-            'organisation_email' => $organisationEmail,
             'gross_monthly_salary' => $contract->gross_salary,
             'employment_start_date' => $contract->start_date,
             'contract_end_date' => $contract->end_date,
             'employment_category' => $contract->contract_type,
             'probation_end_date' => $contract->probation_end_date,
             'is_on_probation' => $contract->probation_status === 'active',
-        ]);
+        ];
+
+        // Organisation email is issued manually by ICT only — never copy from login/user email.
+        if (filled($contract->organisation_email)) {
+            $updates['organisation_email'] = $contract->organisation_email;
+        }
+
+        $contract->staff->update($updates);
     }
 }

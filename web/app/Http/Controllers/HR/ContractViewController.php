@@ -24,7 +24,7 @@ class ContractViewController extends Controller
     public function create(): View
     {
         $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
-        $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
+        $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
 
         return view('hr.contracts.create', [
@@ -85,7 +85,7 @@ class ContractViewController extends Controller
     {
         $contract = StaffContract::findOrFail($id);
         $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
-        $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
+        $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
 
         return view('hr.contracts.edit', [

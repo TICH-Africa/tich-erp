@@ -22,7 +22,7 @@
             <h3 class="tich-h3">Contact Information</h3>
             <div class="tich-mt-4">
                 <p><strong>Primary Email:</strong> {{ $onboarding->staff->primary_email }}</p>
-                <p><strong>Organisation Email:</strong> {{ $onboarding->staff->organisation_email }}</p>
+                <p><strong>Organisation Email:</strong> {{ $onboarding->staff->organisation_email ?: '— (assigned by ICT)' }}</p>
                 <p><strong>Phone:</strong> {{ $onboarding->staff->phone_number }}</p>
                 <p><strong>Postal Address:</strong> {{ $onboarding->staff->postal_address ?? '-' }}</p>
                 <p><strong>Physical Address:</strong> {{ $onboarding->staff->physical_address ?? '-' }}</p>

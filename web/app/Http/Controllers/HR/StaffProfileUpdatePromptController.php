@@ -34,7 +34,40 @@ class StaffProfileUpdatePromptController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        return back()->with('success', 'Profile update request sent to '.$staff->fullName().'.');
+        return redirect()
+            ->route('hr.staff.show', $staff)
+            ->with('success', 'Profile update request sent to '.$staff->fullName().'.');
+    }
+
+    public function create(Staff $staff): \Illuminate\View\View
+    {
+        $staff->load(['qualifications', 'department']);
+
+        return view('hr.staff.profile-update-prompt', [
+            'staff' => $staff,
+            'currentValues' => $this->currentFieldValues($staff),
+        ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function currentFieldValues(Staff $staff): array
+    {
+        $values = [];
+
+        foreach (\App\Services\EmployeeProfileCompletenessService::requestableFieldKeys() as $key) {
+            $values[$key] = match ($key) {
+                'photo' => $staff->photoUrl() ? 'Photo on file' : 'No photo uploaded',
+                'date_of_birth' => $staff->date_of_birth?->format('d M Y') ?? '—',
+                'qualification' => $staff->qualifications->isNotEmpty()
+                    ? $staff->qualifications->map(fn ($q) => trim(($q->qualification_name ?? 'Qualification').($q->institution ? ' · '.$q->institution : '')))->join('; ')
+                    : 'No qualifications on file',
+                default => filled($staff->{$key}) ? (string) $staff->{$key} : '—',
+            };
+        }
+
+        return $values;
     }
 
     public function storeByEmail(Request $request): RedirectResponse

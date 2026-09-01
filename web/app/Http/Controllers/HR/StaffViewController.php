@@ -21,7 +21,7 @@ class StaffViewController extends Controller
 
     public function index(): View
     {
-        $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
+        $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $query = Staff::with(['department', 'campus', 'lineManager']);
 
         if ($search = request('search')) {
@@ -53,7 +53,7 @@ class StaffViewController extends Controller
 
     public function create(): View
     {
-        $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
+        $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
         $lineManagers = Staff::whereIn('employment_status', ['active', 'onboarding'])
             ->orderBy('first_name')
@@ -81,7 +81,6 @@ class StaffViewController extends Controller
             'nationality' => 'nullable|string|max:100|default:Kenyan',
             'home_county' => 'nullable|string|max:100',
             'primary_email' => 'required|email|max:255',
-            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email',
             'phone_number' => 'required|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -175,7 +174,7 @@ class StaffViewController extends Controller
     public function edit(int $id): View
     {
         $staff = Staff::findOrFail($id);
-        $departments = Department::orderBy('dept_name')->get(['id', 'dept_name']);
+        $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
         $lineManagers = Staff::where('id', '!=', $id)
             ->whereIn('employment_status', ['active', 'onboarding'])
@@ -207,7 +206,6 @@ class StaffViewController extends Controller
             'nationality' => 'nullable|string|max:100',
             'home_county' => 'nullable|string|max:100',
             'primary_email' => 'sometimes|email|max:255',
-            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
             'phone_number' => 'sometimes|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -289,9 +287,8 @@ class StaffViewController extends Controller
 
     private function prepareStaffEmails(array $validated, ?Staff $staff = null): array
     {
-        if (array_key_exists('organisation_email', $validated) && $validated['organisation_email'] === '') {
-            $validated['organisation_email'] = null;
-        }
+        // Organisation email is assigned manually by ICT only.
+        unset($validated['organisation_email']);
 
         if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
             $validated['department_id'] = null;

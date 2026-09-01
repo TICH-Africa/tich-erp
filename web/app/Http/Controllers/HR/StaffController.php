@@ -97,7 +97,6 @@ class StaffController extends Controller
             'nationality' => 'nullable|string|max:100|default:Kenyan',
             'home_county' => 'nullable|string|max:100',
             'primary_email' => 'required|email|max:255',
-            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email',
             'phone_number' => 'required|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -143,13 +142,11 @@ class StaffController extends Controller
                 $validated['employee_number'] = $this->lifecycleService->generateEmployeeNumber();
             }
 
-            if (array_key_exists('organisation_email', $validated) && $validated['organisation_email'] === '') {
-                $validated['organisation_email'] = null;
-            }
-
             if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
                 $validated['department_id'] = null;
             }
+
+            unset($validated['organisation_email']);
 
             $staff = Staff::create($validated);
             $staff->syncLinkedUserEmail();
@@ -189,7 +186,6 @@ class StaffController extends Controller
             'nationality' => 'nullable|string|max:100',
             'home_county' => 'nullable|string|max:100',
             'primary_email' => 'sometimes|email|max:255',
-            'organisation_email' => 'nullable|email|max:255|regex:/@tich\.africa$/i|unique:staff,organisation_email,'.$staff->id,
             'phone_number' => 'sometimes|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',
@@ -232,6 +228,8 @@ class StaffController extends Controller
         if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
             $validated['department_id'] = null;
         }
+
+        unset($validated['organisation_email']);
 
         $oldValues = $staff->only(array_keys($validated));
 

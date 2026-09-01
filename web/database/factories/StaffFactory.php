@@ -25,10 +25,7 @@ class StaffFactory extends Factory
             'nationality' => 'Kenyan',
             'home_county' => fake()->optional()->city(),
             'primary_email' => fake()->unique()->safeEmail(),
-            'organisation_email' => fn (array $attributes) => Staff::organisationEmailFromName(
-                $attributes['first_name'],
-                $attributes['surname']
-            ),
+            'organisation_email' => null,
             'phone_number' => fake()->phoneNumber(),
             'alt_phone_number' => fake()->optional()->phoneNumber(),
             'postal_address' => fake()->optional()->streetAddress(),

@@ -62,11 +62,7 @@
                 <div>
                     <label for="primary_email" class="tich-label">Primary email *</label>
                     <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email') }}" required class="tich-input" placeholder="Personal email address">
-                </div>
-                <div>
-                    <label for="organisation_email" class="tich-label">Organisation email</label>
-                    <input type="email" id="organisation_email" name="organisation_email" value="{{ old('organisation_email') }}" class="tich-input" placeholder="Optional - set when issued (e.g. name@tich.africa)">
-                    <p class="tich-caption tich-mt-1">Leave blank to auto-generate an @tich.africa address.</p>
+                    <p class="tich-caption tich-mt-1">Organisation email (@tich.africa) is assigned separately by ICT when issued.</p>
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>

@@ -255,6 +255,10 @@ class Staff extends Model
         return trim(implode(' ', array_filter([$this->title, $this->first_name, $this->middle_name, $this->surname])));
     }
 
+    /**
+     * Suggest an available @tich.africa address (ICT manual assignment helper only).
+     * Must not be called automatically when creating staff records.
+     */
     public static function organisationEmailFromName(string $firstName, string $surname, ?int $ignoreStaffId = null): string
     {
         $base = Str::slug(strtolower(trim($firstName).'.'.trim($surname)), '.');

@@ -151,6 +151,17 @@ class Department extends Model
             ->whereNotNull('parent_dept_id');
     }
 
+    /**
+     * Departments suitable for HR staff/contract assignment (excludes learning units under Academics).
+     */
+    public function scopeAssignableForHr(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder) {
+            $builder->where('dept_category', '!=', 'academic')
+                ->orWhereNull('parent_dept_id');
+        });
+    }
+
     public function scopeValidLearningDepartments(Builder $query): Builder
     {
         $hostIds = app(\App\Services\DepartmentModuleService::class)->departmentIdsHostingLearningDepartments();

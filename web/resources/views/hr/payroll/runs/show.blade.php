@@ -3,6 +3,8 @@
 @section('title', 'Payroll Run ' . $run->run_number)
 
 @section('hr-content')
+    @include('partials.financial-privacy')
+
     <x-page-toolbar :title="$run->run_number" :meta="$run->periodLabel() . ' · ' . $run->staff_count . ' staff · ' . ucfirst($run->status)">
         <x-slot:actions>
             @if ($run->isEditable())
@@ -35,19 +37,19 @@
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-8">
         <article class="tich-card tich-stat">
             <p class="tich-caption">Gross pay</p>
-            <p class="tich-stat__value" style="font-size:1rem;">KES {{ number_format((float) $run->total_gross, 2) }}</p>
+            <p class="tich-stat__value" style="font-size:1rem;"><x-financial-value :value="number_format((float) $run->total_gross, 2)" prefix="KES " /></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Net pay</p>
-            <p class="tich-stat__value" style="font-size:1rem;">KES {{ number_format((float) $run->total_net, 2) }}</p>
+            <p class="tich-stat__value" style="font-size:1rem;"><x-financial-value :value="number_format((float) $run->total_net, 2)" prefix="KES " /></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">PAYE / WHT</p>
-            <p class="tich-stat__value" style="font-size:1rem;">KES {{ number_format((float) $run->total_paye, 2) }}</p>
+            <p class="tich-stat__value" style="font-size:1rem;"><x-financial-value :value="number_format((float) $run->total_paye, 2)" prefix="KES " /></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Employer cost</p>
-            <p class="tich-stat__value" style="font-size:1rem;">KES {{ number_format((float) $run->total_employer_cost, 2) }}</p>
+            <p class="tich-stat__value" style="font-size:1rem;"><x-financial-value :value="number_format((float) $run->total_employer_cost, 2)" prefix="KES " /></p>
         </article>
     </div>
 
@@ -74,9 +76,9 @@
                     <tr>
                         <th>Employee</th>
                         <th>Department</th>
-                        <th>Gross</th>
-                        <th>Deductions</th>
-                        <th>Net</th>
+                        <th data-financial-col="gross">Gross</th>
+                        <th data-financial-col="deductions">Deductions</th>
+                        <th data-financial-col="net">Net</th>
                         <th>Payslip</th>
                         <th></th>
                     </tr>
@@ -89,9 +91,9 @@
                                 <p class="tich-caption">{{ $item->staff?->employee_number }}</p>
                             </td>
                             <td>{{ $item->staff?->department?->dept_name ?? '-' }}</td>
-                            <td>KES {{ number_format((float) $item->gross_salary, 2) }}</td>
-                            <td>KES {{ number_format((float) $item->total_deductions, 2) }}</td>
-                            <td><strong>KES {{ number_format((float) $item->net_salary, 2) }}</strong></td>
+                            <td data-financial-col="gross"><span class="tich-financial-cell">KES {{ number_format((float) $item->gross_salary, 2) }}</span></td>
+                            <td data-financial-col="deductions"><span class="tich-financial-cell">KES {{ number_format((float) $item->total_deductions, 2) }}</span></td>
+                            <td data-financial-col="net"><strong><span class="tich-financial-cell">KES {{ number_format((float) $item->net_salary, 2) }}</span></strong></td>
                             <td class="tich-caption">{{ $item->payslip_number }}</td>
                             <td style="white-space:nowrap;">
                                 <a href="{{ route('hr.payroll.runs.item.payslip', $item) }}" class="tich-btn tich-btn-ghost" target="_blank" rel="noopener">View</a>
