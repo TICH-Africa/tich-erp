@@ -406,7 +406,7 @@ class EmployeeProfileChangeService
         ]);
     }
 
-    private function resolvePhotoPathFromInput(Staff $staff, array $input): ?string
+    public function resolvePhotoPathFromInput(Staff $staff, array $input): ?string
     {
         if ($input['profile_photo'] instanceof UploadedFile) {
             return $this->storeProfilePhotoUpload($staff, $input['profile_photo']);

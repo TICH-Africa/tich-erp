@@ -282,7 +282,7 @@
                                 {{ $training->is_completed ? 'Completed' : 'In Progress' }}
                             </span>
                             @if ($training->is_completed)
-                                <a href="{{ route('staff.documents.create') }}" class="tich-btn tich-btn-primary tich-ml-2" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
+                                <a href="{{ route('employee.documents.create') }}" class="tich-btn tich-btn-primary tich-ml-2" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
                                     Submit Certification
                                 </a>
                             @endif

@@ -24,8 +24,6 @@ class StaffPortalNavigationService
             'grading' => 'Marks & assessments',
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
-            'leave' => 'Leave',
-            'documents' => 'My Documents',
         ];
 
         if ($this->userIsHod()) {
@@ -61,8 +59,6 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'],
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
-            ['type' => 'link', 'label' => 'Leave', 'section' => 'leave', 'icon' => 'calendar-off'],
-            ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents', 'icon' => 'folder'],
         ];
 
         if ($this->userIsHod()) {

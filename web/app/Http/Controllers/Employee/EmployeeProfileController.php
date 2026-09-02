@@ -101,6 +101,15 @@ class EmployeeProfileController extends Controller
         }
 
         $validated['certificate_file'] = $request->file('certificate_file');
+        $validated['profile_photo'] = $request->file('profile_photo');
+
+        if ($request->hasFile('profile_photo') || ! empty($validated['cropped_photo'])) {
+            $photoPath = $this->profileChanges->resolvePhotoPathFromInput($staff, $validated);
+            if ($photoPath) {
+                $staff->update(['photo_path' => $photoPath]);
+                app(\App\Services\StaffLifecycleService::class)->ensureEmployeeIdentity($staff->fresh(), $request->user());
+            }
+        }
 
         try {
             if ($mustComplete) {

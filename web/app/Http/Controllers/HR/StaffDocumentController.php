@@ -145,6 +145,78 @@ $validated = $request->validate([
         return Storage::disk('public')->download($document->file_path, $document->original_filename);
     }
 
+    public function employeeIndex(): View
+    {
+        $staff = auth()->user()->staff;
+
+        abort_unless($staff, 403);
+
+        $staffDocuments = $staff->documents()->orderByDesc('created_at')->get();
+
+        return view('employee.documents.index', ['staff' => $staff, 'staffDocuments' => $staffDocuments]);
+    }
+
+    public function employeeCreate(): View
+    {
+        $staff = auth()->user()->staff;
+
+        abort_unless($staff, 403);
+
+        return view('employee.documents.create', ['staff' => $staff]);
+    }
+
+    public function employeeStore(Request $request)
+    {
+        $staff = $request->user()->staff;
+
+        if (! $staff) {
+            abort(403, 'No staff profile linked to your account.');
+        }
+
+        $validated = $request->validate([
+            'document_type' => 'required|string|in:cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other',
+            'document_name' => 'required|string|max:300',
+            'file' => 'required|file|max:10240',
+            'issue_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:2000',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
+
+        $this->lifecycleService->addDocument($staff->id, [
+            'document_type' => $validated['document_type'],
+            'document_name' => $validated['document_name'],
+            'file_path' => $path,
+            'original_filename' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'file_size' => $file->getSize(),
+            'issue_date' => $validated['issue_date'],
+            'expiry_date' => $validated['expiry_date'],
+            'notes' => $validated['notes'],
+        ], $request->user()->staff_id ?? $staff->id);
+
+        return back()->with('success', 'Document uploaded successfully.');
+    }
+
+    public function employeeDownload(int $documentId): StreamedResponse
+    {
+        $staff = request()->user()->staff;
+
+        if (! $staff) {
+            abort(403);
+        }
+
+        $document = StaffDocument::where('staff_id', $staff->id)->findOrFail($documentId);
+
+        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->original_filename);
+    }
+
     public function download(int $staffId, int $documentId): StreamedResponse
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);

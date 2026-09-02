@@ -768,6 +768,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('policies.view');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('policies.download');
 
+        Route::get('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeIndex'])->name('employee.documents.index');
+        Route::get('/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeCreate'])->name('employee.documents.create');
+        Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeStore'])->name('employee.documents.store');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeDownload'])->name('employee.documents.download');
+
         Route::get('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'index'])->name('employee.concerns.index');
         Route::get('/concerns/create', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'create'])->name('employee.concerns.create');
         Route::post('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'store'])->name('employee.concerns.store');
