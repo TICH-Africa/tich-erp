@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Role;
+use App\Models\Staff;
 use App\Models\User;
 use App\Services\RBACService;
 use Illuminate\Database\Seeder;
@@ -125,19 +126,94 @@ class DatabaseSeeder extends Seeder
 
                 $roleId = Role::query()->where('role_name', $data['role'])->value('id');
 
-                if ($roleId) {
-                    $hasDefaultRole = DB::table('user_roles')
-                        ->where('user_id', $user->id)
-                        ->where('role_id', $roleId)
-                        ->exists();
+                if (! $roleId) {
+                    continue;
+                }
 
-                    if (! $hasDefaultRole) {
-                        $rbac->assignRoleToUser($user, $roleId);
+                $departmentId = $this->resolveDepartmentForRole($data['role']);
+
+                if ($data['user_type'] === 'staff') {
+                    $staff = Staff::query()->where('user_id', $user->id)->first();
+
+                    if (! $staff) {
+                        $name = $this->staffNameForRole($data['role']);
+                        $staff = Staff::create([
+                            'employee_number' => 'EMP-'.$data['role'].'-'.strtoupper(substr($user->email, 0, 3)).'-'.$user->id,
+                            'title' => 'Mr.',
+                            'first_name' => $name['first'],
+                            'surname' => $name['surname'],
+                            'gender' => 'male',
+                            'nationality' => 'Kenyan',
+                            'organisation_email' => $user->email,
+                            'primary_email' => $user->email,
+                            'department_id' => $departmentId,
+                            'employment_category' => 'permanent',
+                            'employment_start_date' => now()->toDateString(),
+                            'employment_status' => 'active',
+                            'is_teaching_staff' => in_array($data['role'], ['HOD', 'Lecturer/Tutor'], true),
+                            'user_id' => $user->id,
+                        ]);
+                    } elseif ($departmentId && ! $staff->department_id) {
+                        $staff->update(['department_id' => $departmentId]);
                     }
+
+                    $user->update(['staff_id' => $staff->id]);
+                }
+
+                $hasDefaultRole = DB::table('user_roles')
+                    ->where('user_id', $user->id)
+                    ->where('role_id', $roleId)
+                    ->exists();
+
+                if (! $hasDefaultRole) {
+                    $rbac->assignRoleToUser($user, $roleId, null, $departmentId);
                 }
             }
 
             $this->call(EnsureSuperAdminSeeder::class);
         }
+    }
+
+    private function staffNameForRole(string $roleName): array
+    {
+        return match ($roleName) {
+            'HOD' => ['first' => 'John', 'surname' => 'Ochieng'],
+            'Academic Registrar' => ['first' => 'Sarah', 'surname' => 'Wanjiru'],
+            'Admissions Officer' => ['first' => 'Michael', 'surname' => 'Kariuki'],
+            'Lecturer/Tutor' => ['first' => 'Grace', 'surname' => 'Mutiso'],
+            default => ['first' => 'Demo', 'surname' => 'Staff'],
+        };
+    }
+
+    private function resolveDepartmentForRole(string $roleName): ?int
+    {
+        $isAcademicRole = in_array($roleName, ['HOD', 'Lecturer/Tutor', 'Academic Registrar'], true);
+        $isAdmissionsRole = $roleName === 'Admissions Officer';
+
+        if ($isAcademicRole) {
+            return DB::table('departments')
+                ->where('dept_code', 'CHS')
+                ->orWhere(function ($query) {
+                    $query->where('dept_category', 'academic')
+                        ->whereNotNull('parent_dept_id')
+                        ->where('is_active', 1);
+                })
+                ->orderBy('dept_name')
+                ->value('id');
+        }
+
+        if ($isAdmissionsRole) {
+            return DB::table('departments')
+                ->whereIn('dept_code', ['ADM', 'ADMISSIONS'])
+                ->orWhere(function ($query) {
+                    $query->where('dept_category', 'administrative')
+                        ->whereNull('parent_dept_id')
+                        ->where('is_active', 1);
+                })
+                ->orderBy('dept_name')
+                ->value('id');
+        }
+
+        return null;
     }
 }
