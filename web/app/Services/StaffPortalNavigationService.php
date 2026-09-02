@@ -25,13 +25,16 @@ class StaffPortalNavigationService
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
             'leave' => 'Leave',
-            'employee-relations' => 'Employee Relations',
             'documents' => 'My Documents',
-            'policies' => 'HR Policies',
         ];
 
         if ($this->userIsHod()) {
             $sections['hod-management'] = 'HOD management';
+            $sections['hod-lesson-plans'] = 'Lesson plans';
+            $sections['hod-unit-allocations'] = 'Unit allocations';
+            $sections['hod-attendance'] = 'Attendance review';
+            $sections['hod-leave'] = 'Department leave';
+            $sections['hod-performance'] = 'Performance';
         }
 
         return $sections;
@@ -59,14 +62,24 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
             ['type' => 'link', 'label' => 'Leave', 'section' => 'leave', 'icon' => 'calendar-off'],
-            ['type' => 'link', 'label' => 'Employee Relations', 'section' => 'employee-relations', 'icon' => 'users'],
             ['type' => 'link', 'label' => 'My Documents', 'section' => 'documents', 'icon' => 'folder'],
-            ['type' => 'link', 'label' => 'HR Policies', 'section' => 'policies', 'icon' => 'shield-check'],
         ];
 
         if ($this->userIsHod()) {
             $items[] = ['type' => 'heading', 'label' => 'Management'];
-            $items[] = ['type' => 'link', 'label' => 'HOD management', 'section' => 'hod-management', 'icon' => 'users-cog'];
+            $items[] = [
+                'type' => 'dropdown',
+                'label' => 'HOD management',
+                'icon' => 'users-cog',
+                'children' => [
+                    ['type' => 'link', 'label' => 'Overview', 'section' => 'hod-management', 'icon' => 'layout-grid'],
+                    ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'hod-lesson-plans', 'icon' => 'notebook'],
+                    ['type' => 'link', 'label' => 'Unit allocations', 'section' => 'hod-unit-allocations', 'icon' => 'users'],
+                    ['type' => 'link', 'label' => 'Attendance review', 'section' => 'hod-attendance', 'icon' => 'clipboard-check'],
+                    ['type' => 'link', 'label' => 'Department leave', 'section' => 'hod-leave', 'icon' => 'calendar-off'],
+                    ['type' => 'link', 'label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],
+                ],
+            ];
         }
 
         return $items;

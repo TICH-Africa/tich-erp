@@ -5,6 +5,7 @@ namespace App\Services\Sidebar;
 use App\Models\Feedback;
 use App\Models\Grievance;
 use App\Models\LeaveRequest;
+use App\Models\PolicyAcknowledgement;
 use App\Models\Staff;
 use App\Models\StaffProfileChangeRequest;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
@@ -25,6 +26,7 @@ class EmployeeSidebarNotificationService
         'leave.returned' => 'Apply for leave',
         'concerns' => 'Concerns & issues',
         'feedback' => 'My feedback',
+        'policies' => 'HR Policies',
     ];
 
     /**
@@ -64,6 +66,7 @@ class EmployeeSidebarNotificationService
             'leave.returned' => $this->returnedLeaveRequests($staff),
             'concerns' => $this->openConcerns($staff),
             'feedback' => $this->openFeedback($staff),
+            'policies' => $this->unacknowledgedPolicies($staff),
         ];
     }
 
@@ -109,6 +112,18 @@ class EmployeeSidebarNotificationService
         return Feedback::query()
             ->where('staff_id', $staff->id)
             ->whereIn('status', ['open', 'under_review'])
+            ->count();
+    }
+
+    private function unacknowledgedPolicies(Staff $staff): int
+    {
+        if (! Schema::hasTable('policy_acknowledgements')) {
+            return 0;
+        }
+
+        return PolicyAcknowledgement::query()
+            ->where('staff_id', $staff->id)
+            ->where('is_acknowledged', false)
             ->count();
     }
 }

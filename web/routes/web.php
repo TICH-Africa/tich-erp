@@ -813,14 +813,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/grading/objective', [StaffPortalActionController::class, 'storeObjectiveAssessment'])->name('staff.grading.objective.store');
         Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
-        Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
+Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
 Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
             Route::get('/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffCreate'])->name('staff.documents.create');
             Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
-        Route::get('/policies/{policy}/download', [\App\Http\Controllers\HR\HrPolicyController::class, 'download'])->name('staff.policies.download');
-        Route::get('/policies/{policy}/view', [\App\Http\Controllers\HR\HrPolicyController::class, 'view'])->name('staff.policies.view');
-        Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('staff.policies.acknowledge');
-        Route::post('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledge'])->name('staff.policies.acknowledge.store');
     });
 });
 

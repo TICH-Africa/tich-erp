@@ -17,19 +17,14 @@ class LecturerSeeder extends Seeder
     public function run(): void
     {
         $departmentId = DB::table('departments')
-            ->where('dept_code', 'CHS')
+            ->whereIn('dept_code', ['HMD-CC', 'CHS', 'BUS', 'ICT', 'TEC'])
+            ->orWhere(function ($query) {
+                $query->where('dept_category', 'academic')
+                    ->whereNotNull('parent_dept_id')
+                    ->where('is_active', 1);
+            })
+            ->orderBy('dept_name')
             ->value('id');
-
-        if (! $departmentId) {
-            $departmentId = DB::table('departments')
-                ->where('dept_category', 'academic')
-                ->whereNotNull('parent_dept_id')
-                ->value('id');
-        }
-
-        if (! $departmentId) {
-            $departmentId = DB::table('departments')->value('id');
-        }
 
         if (! $departmentId) {
             return;
@@ -133,7 +128,7 @@ class LecturerSeeder extends Seeder
 
         $roleId = Role::query()->where('role_name', 'Lecturer/Tutor')->value('id');
         if ($roleId) {
-            app(RBACService::class)->assignRoleToUser($user, $roleId);
+            app(RBACService::class)->assignRoleToUser($user, $roleId, null, $departmentId);
         }
 
         return $staff;

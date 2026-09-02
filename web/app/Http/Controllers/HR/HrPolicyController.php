@@ -229,6 +229,8 @@ class HrPolicyController extends Controller
         return view('employee.policies.assigned', [
             'staff' => $staff,
             'acknowledgements' => $acknowledgements,
+            'portalTitle' => 'HR Policies',
+            'hideTeachingCard' => true,
         ]);
     }
 
@@ -250,6 +252,7 @@ class HrPolicyController extends Controller
             'staff' => $staff,
             'acknowledgement' => $acknowledgement,
             'policy' => $policy,
+            'hideTeachingCard' => true,
         ]);
     }
 
@@ -287,7 +290,7 @@ class HrPolicyController extends Controller
         $policy = HrPolicy::findOrFail($id);
         $routeName = request()->route()->getName();
 
-        if (in_array($routeName, ['staff.policies.download', 'policies.download'], true) && ! $policy->is_active) {
+        if (in_array($routeName, ['policies.download'], true) && ! $policy->is_active) {
             abort(404);
         }
 
@@ -303,7 +306,7 @@ class HrPolicyController extends Controller
         $policy = HrPolicy::findOrFail($id);
         $routeName = request()->route()->getName();
 
-        if (in_array($routeName, ['staff.policies.view', 'policies.view'], true) && ! $policy->is_active) {
+        if (in_array($routeName, ['policies.view'], true) && ! $policy->is_active) {
             abort(404);
         }
 

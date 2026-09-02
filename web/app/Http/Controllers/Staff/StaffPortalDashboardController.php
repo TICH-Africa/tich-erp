@@ -124,16 +124,8 @@ class StaffPortalDashboardController extends Controller
                 'allocations' => $this-> hodUnitAllocations($staff),
                 'attendance' => $this-> hodAttendance($staff),
                 'performance' => $this-> hodPerformance($staff),
+                'leave' => $this-> hodDepartmentLeave($staff),
             ];
-        }
-
-        $policies = null;
-        if ($section === 'policies') {
-            $policies = \App\Models\PolicyAcknowledgement::query()
-                ->where('staff_id', $staff->id)
-                ->with('policy')
-                ->orderByDesc('created_at')
-                ->get();
         }
 
         $staffDocuments = null;
@@ -172,7 +164,6 @@ class StaffPortalDashboardController extends Controller
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
             'hodManagement' => $hodManagement,
-            'policies' => $policies,
             'staffDocuments' => $staffDocuments,
             'leaveBalances' => $leaveBalances,
             'leaveRequests' => $leaveRequests,
@@ -191,7 +182,7 @@ class StaffPortalDashboardController extends Controller
             ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->join('staff as st', 'st.id', '=', 'lp.prepared_by')
-            ->where('u.department_id', $departmentId)
+            ->where('st.department_id', $departmentId)
             ->whereIn('lp.status', ['submitted', 'modified'])
             ->orderByDesc('lp.updated_at')
             ->select([
@@ -216,7 +207,7 @@ class StaffPortalDashboardController extends Controller
 
         return UnitAllocation::query()
             ->with(['unit', 'staff'])
-            ->whereHas('unit', fn ($query) => $query->where('department_id', $departmentId))
+            ->whereHas('staff', fn ($query) => $query->where('department_id', $departmentId))
             ->where('is_active', 1)
             ->orderByDesc('semester_id')
             ->get();
@@ -233,7 +224,7 @@ class StaffPortalDashboardController extends Controller
             ->join('unit_allocations as ua', 'ua.id', '=', 's.unit_allocation_id')
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->join('staff as tutor', 'tutor.id', '=', 's.recorded_by')
-            ->where('u.department_id', $departmentId)
+            ->where('tutor.department_id', $departmentId)
             ->where('s.is_locked', 1)
             ->orderByDesc('s.session_date')
             ->select([
@@ -265,5 +256,40 @@ class StaffPortalDashboardController extends Controller
         }
 
         return app(DepartmentPerformanceService::class)->dashboard($departmentId, $semesterId);
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function hodDepartmentLeave(Staff $staff): Collection
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+        if ($departmentId <= 0) {
+            return collect();
+        }
+
+        return DB::table('leave_requests as lr')
+            ->join('staff as s', 's.id', '=', 'lr.staff_id')
+            ->join('leave_types as lt', 'lt.id', '=', 'lr.leave_type_id')
+            ->where('s.department_id', $departmentId)
+            ->where('lr.is_cancelled', false)
+            ->orderByDesc('lr.start_date')
+            ->select([
+                'lr.id',
+                'lr.leave_number',
+                'lr.start_date',
+                'lr.end_date',
+                'lr.return_date',
+                'lr.days_requested',
+                'lr.overall_status',
+                'lr.hod_approval_status',
+                'lr.hr_approval_status',
+                'lr.is_completed',
+                's.employee_number',
+                's.job_title',
+                DB::raw("CONCAT(COALESCE(s.first_name,''), ' ', COALESCE(s.surname,'')) as tutor_name"),
+                'lt.leave_name as leave_type_name',
+            ])
+            ->get();
     }
 }

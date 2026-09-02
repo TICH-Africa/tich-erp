@@ -229,6 +229,7 @@
                                         </tr>
                                     </thead>
                                     <tbody @if ($intakeEditable) data-unit-sortable @endif>
+                                        @php $mappingIndex = -1; @endphp
                                         @foreach ($periodMappings as $map)
                                             @php($mappingIndex++)
                                             <tr @if ($intakeEditable) data-sortable-row @endif>

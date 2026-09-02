@@ -277,7 +277,7 @@ class JamesOchiengAcademicCycleSeeder extends Seeder
                 'planned_date' => '2026-02-10',
                 'teaching_methods' => 'Lecture, group discussion, case study',
                 'resources_required' => 'Projector, flip charts, community profile handout',
-                'status' => 'approved',
+                'status' => 'submitted',
                 'hod_id' => $staff->id,
                 'hod_action_at' => now()->subDays(3),
                 'registrar_visible' => 1,

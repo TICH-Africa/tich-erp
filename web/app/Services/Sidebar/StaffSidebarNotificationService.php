@@ -3,7 +3,6 @@
 namespace App\Services\Sidebar;
 
 use App\Models\LeaveRequest;
-use App\Models\PolicyAcknowledgement;
 use App\Models\Staff;
 use App\Models\StaffDocument;
 use App\Models\User;
@@ -27,8 +26,12 @@ class StaffSidebarNotificationService
         'attendance.incomplete' => 'Attendance',
         'leave.returned' => 'Leave',
         'documents' => 'My Documents',
-        'policies' => 'HR Policies',
         'hod-management' => 'HOD management',
+        'hod-lesson-plans' => 'Lesson plans',
+        'hod-unit-allocations' => 'Unit allocations',
+        'hod-attendance' => 'Attendance review',
+        'hod-leave' => 'Department leave',
+        'hod-performance' => 'Performance',
     ];
 
     public function __construct(
@@ -69,8 +72,10 @@ class StaffSidebarNotificationService
             'attendance' => 'attendance.incomplete',
             'leave' => 'leave.returned',
             'documents' => 'documents',
-            'policies' => 'policies',
             'hod-management' => 'hod-management',
+            'hod-lesson-plans' => 'hod-lesson-plans',
+            'hod-attendance' => 'hod-attendance',
+            'hod-leave' => 'hod-leave',
             default => null,
         };
     }
@@ -91,12 +96,17 @@ class StaffSidebarNotificationService
             'attendance.incomplete' => $this->incompleteAttendanceSessions($allocationIds),
             'leave.returned' => $this->returnedLeaveRequests($staff),
             'documents' => $this->unverifiedDocuments($staff),
-            'policies' => $this->unacknowledgedPolicies($staff),
             'hod-management' => 0,
+            'hod-lesson-plans' => 0,
+            'hod-attendance' => 0,
+            'hod-leave' => 0,
         ];
 
         if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])) {
             $counts['hod-management'] = $this->hodLessonPlansPending($staff) + $this->hodAttendancePending($staff);
+            $counts['hod-lesson-plans'] = $this->hodLessonPlansPending($staff);
+            $counts['hod-attendance'] = $this->hodAttendancePending($staff);
+            $counts['hod-leave'] = $this->hodDepartmentLeavePending($staff);
         }
 
         return $counts;
@@ -155,18 +165,6 @@ class StaffSidebarNotificationService
             ->count();
     }
 
-    private function unacknowledgedPolicies(Staff $staff): int
-    {
-        if (! Schema::hasTable('policy_acknowledgements')) {
-            return 0;
-        }
-
-        return PolicyAcknowledgement::query()
-            ->where('staff_id', $staff->id)
-            ->where('is_acknowledged', false)
-            ->count();
-    }
-
     private function hodLessonPlansPending(Staff $staff): int
     {
         $departmentId = (int) ($staff->department_id ?? 0);
@@ -177,7 +175,8 @@ class StaffSidebarNotificationService
         return (int) DB::table('lesson_plans as lp')
             ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
-            ->where('u.department_id', $departmentId)
+            ->join('staff as st', 'st.id', '=', 'lp.prepared_by')
+            ->where('st.department_id', $departmentId)
             ->whereIn('lp.status', ['submitted', 'modified'])
             ->count();
     }
@@ -192,9 +191,25 @@ class StaffSidebarNotificationService
         return (int) DB::table('attendance_sessions as s')
             ->join('unit_allocations as ua', 'ua.id', '=', 's.unit_allocation_id')
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
-            ->where('u.department_id', $departmentId)
+            ->join('staff as tutor', 'tutor.id', '=', 's.recorded_by')
+            ->where('tutor.department_id', $departmentId)
             ->where('s.is_locked', 1)
             ->where('s.verification_status', 'submitted')
+            ->count();
+    }
+
+    private function hodDepartmentLeavePending(Staff $staff): int
+    {
+        $departmentId = (int) ($staff->department_id ?? 0);
+        if ($departmentId <= 0) {
+            return 0;
+        }
+
+        return (int) LeaveRequest::query()
+            ->where('staff_id', '!=', $staff->id)
+            ->where('is_cancelled', false)
+            ->whereIn('overall_status', ['pending_hod', 'pending_hr'])
+            ->whereHas('staff', fn ($query) => $query->where('department_id', $departmentId))
             ->count();
     }
 }

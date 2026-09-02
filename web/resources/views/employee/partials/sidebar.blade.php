@@ -36,6 +36,13 @@
                 'active' => request()->routeIs('employee.relations.feedback.*'),
                 'badgeKey' => 'feedback',
             ])
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('policies.assigned'),
+                'label' => 'HR Policies',
+                'icon' => 'shield-check',
+                'active' => request()->routeIs('policies.*'),
+                'badgeKey' => 'policies',
+            ])
 
             @if (auth()->user()->isTeachingStaff())
                 @include('partials.navigation.sidebar-link', ['href' => route('staff.dashboard'), 'label' => 'Staff portal', 'icon' => 'book-open'])
