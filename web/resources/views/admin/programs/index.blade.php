@@ -18,70 +18,86 @@
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
-        <h2 class="tich-h3">All programmes ({{ $programs->count() }})</h2>
-        <table class="tich-admin-table tich-mt-4">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>Department</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th style="width: 4rem;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($programs as $program)
+        <div class="tich-table-panel__head">
+            <h2 class="tich-table-panel__title">All programmes</h2>
+            <p class="tich-table-panel__meta">{{ $programs->count() }} total</p>
+        </div>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
                     <tr>
-                        <td>
-                            @if ($program->coverImageUrl())
-                                <img src="{{ $program->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
-                            @else
-                                <span class="tich-caption">No image</span>
-                            @endif
-                        </td>
-                        <td>{{ $program->program_code }}</td>
-                        <td>{{ $program->program_name }}</td>
-                        <td>{{ $program->department?->dept_name ?? '-' }}</td>
-                        <td>{{ ucfirst(str_replace('_', ' ', $program->program_type)) }}</td>
-                        <td>{{ ucfirst(str_replace('_', ' ', $program->status)) }}</td>
-                        <td>
-                            <button
-                                type="button"
-                                class="tich-squircle-btn program-edit-trigger"
-                                title="Edit programme"
-                                aria-label="Edit {{ $program->program_name }}"
-                                data-open-modal="program-edit-modal"
-                                data-update-url="{{ route('admin.programs.update', $program) }}"
-                                data-program-id="{{ $program->id }}"
-                                data-program-code="{{ $program->program_code }}"
-                                data-program-name="{{ $program->program_name }}"
-                                data-department-id="{{ $program->department_id }}"
-                                data-program-type="{{ $program->program_type }}"
-                                data-regulatory-body="{{ $program->regulatory_body }}"
-                                data-duration-months="{{ $program->duration_months }}"
-                                data-status="{{ $program->status }}"
-                                data-homepage-tagline="{{ $program->homepage_tagline }}"
-                                data-entry-requirements="{{ $program->entry_requirements }}"
-                                data-homepage-display-order="{{ $program->homepage_display_order ?? 0 }}"
-                                data-is-featured="{{ $program->is_featured_on_homepage ? '1' : '0' }}"
-                                data-cover-image-url="{{ $program->coverImageUrl() ?? '' }}"
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M12 20h9"/>
-                                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                                </svg>
-                            </button>
-                        </td>
+                        <th>Image</th>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th class="tich-admin-table__actions"></th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="7">No programmes yet. Add academic departments under Academics first.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($programs as $program)
+                        <tr>
+                            <td>
+                                @if ($program->coverImageUrl())
+                                    <img src="{{ $program->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
+                                @else
+                                    <span class="tich-caption">No image</span>
+                                @endif
+                            </td>
+                            <td><strong>{{ $program->program_code }}</strong></td>
+                            <td>{{ $program->program_name }}</td>
+                            <td>{{ $program->department?->dept_name ?? '—' }}</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $program->program_type)) }}</td>
+                            <td>
+                                @php
+                                    $status = strtolower((string) $program->status);
+                                    $statusBadge = match (true) {
+                                        in_array($status, ['active', 'published', 'approved'], true) => 'tich-badge--success',
+                                        in_array($status, ['draft', 'pending'], true) => 'tich-badge--warning',
+                                        in_array($status, ['inactive', 'archived', 'rejected'], true) => 'tich-badge--danger',
+                                        default => 'tich-badge--info',
+                                    };
+                                @endphp
+                                <span class="tich-badge {{ $statusBadge }}">{{ ucfirst(str_replace('_', ' ', $program->status)) }}</span>
+                            </td>
+                            <td class="tich-admin-table__actions">
+                                <button
+                                    type="button"
+                                    class="tich-squircle-btn program-edit-trigger"
+                                    title="Edit programme"
+                                    aria-label="Edit {{ $program->program_name }}"
+                                    data-open-modal="program-edit-modal"
+                                    data-update-url="{{ route('admin.programs.update', $program) }}"
+                                    data-program-id="{{ $program->id }}"
+                                    data-program-code="{{ $program->program_code }}"
+                                    data-program-name="{{ $program->program_name }}"
+                                    data-department-id="{{ $program->department_id }}"
+                                    data-program-type="{{ $program->program_type }}"
+                                    data-regulatory-body="{{ $program->regulatory_body }}"
+                                    data-duration-months="{{ $program->duration_months }}"
+                                    data-status="{{ $program->status }}"
+                                    data-homepage-tagline="{{ $program->homepage_tagline }}"
+                                    data-entry-requirements="{{ $program->entry_requirements }}"
+                                    data-homepage-display-order="{{ $program->homepage_display_order ?? 0 }}"
+                                    data-is-featured="{{ $program->is_featured_on_homepage ? '1' : '0' }}"
+                                    data-cover-image-url="{{ $program->coverImageUrl() ?? '' }}"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 20h9"/>
+                                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="tich-table-empty">No programmes yet. Add academic departments under Academics first.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <p class="tich-caption tich-mt-6">

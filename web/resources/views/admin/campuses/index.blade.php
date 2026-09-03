@@ -18,58 +18,69 @@
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
-        <h2 class="tich-h3">All campuses ({{ $campuses->count() }})</h2>
-        <table class="tich-admin-table tich-mt-4">
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Parent</th>
-                    <th>County</th>
-                    <th>Status</th>
-                    <th style="width: 4rem;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($campuses as $campus)
+        <div class="tich-table-panel__head">
+            <h2 class="tich-table-panel__title">All campuses</h2>
+            <p class="tich-table-panel__meta">{{ $campuses->count() }} total</p>
+        </div>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
                     <tr>
-                        <td>{{ $campus->campus_code }}</td>
-                        <td>{{ $campus->campus_name }}</td>
-                        <td>{{ \App\Models\Campus::typeLabel($campus->campus_type) }}</td>
-                        <td>{{ $campus->parentCampus?->campus_name ?? '-' }}</td>
-                        <td>{{ $campus->county ?? '-' }}</td>
-                        <td>{{ $campus->is_active ? 'Active' : 'Inactive' }}</td>
-                        <td>
-                            <button
-                                type="button"
-                                class="tich-squircle-btn campus-edit-trigger"
-                                title="Edit campus"
-                                aria-label="Edit {{ $campus->campus_name }}"
-                                data-open-modal="campus-edit-modal"
-                                data-update-url="{{ route('admin.campuses.update', $campus) }}"
-                                data-campus-id="{{ $campus->id }}"
-                                data-campus-code="{{ $campus->campus_code }}"
-                                data-campus-name="{{ $campus->campus_name }}"
-                                data-campus-type="{{ $campus->campus_type }}"
-                                data-parent-campus-id="{{ $campus->parent_campus_id }}"
-                                data-county="{{ $campus->county }}"
-                                data-sub-county="{{ $campus->sub_county }}"
-                                data-physical-address="{{ $campus->physical_address }}"
-                                data-is-active="{{ $campus->is_active ? '1' : '0' }}"
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M12 20h9"/>
-                                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                                </svg>
-                            </button>
-                        </td>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Parent</th>
+                        <th>County</th>
+                        <th>Status</th>
+                        <th class="tich-admin-table__actions"></th>
                     </tr>
-                @empty
-                    @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No campuses yet', 'icon' => 'inbox'])
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($campuses as $campus)
+                        <tr>
+                            <td><strong>{{ $campus->campus_code }}</strong></td>
+                            <td>{{ $campus->campus_name }}</td>
+                            <td>{{ \App\Models\Campus::typeLabel($campus->campus_type) }}</td>
+                            <td>{{ $campus->parentCampus?->campus_name ?? '—' }}</td>
+                            <td>{{ $campus->county ?? '—' }}</td>
+                            <td>
+                                @if ($campus->is_active)
+                                    <span class="tich-badge tich-badge--success">Active</span>
+                                @else
+                                    <span class="tich-badge tich-badge--danger">Inactive</span>
+                                @endif
+                            </td>
+                            <td class="tich-admin-table__actions">
+                                <button
+                                    type="button"
+                                    class="tich-squircle-btn campus-edit-trigger"
+                                    title="Edit campus"
+                                    aria-label="Edit {{ $campus->campus_name }}"
+                                    data-open-modal="campus-edit-modal"
+                                    data-update-url="{{ route('admin.campuses.update', $campus) }}"
+                                    data-campus-id="{{ $campus->id }}"
+                                    data-campus-code="{{ $campus->campus_code }}"
+                                    data-campus-name="{{ $campus->campus_name }}"
+                                    data-campus-type="{{ $campus->campus_type }}"
+                                    data-parent-campus-id="{{ $campus->parent_campus_id }}"
+                                    data-county="{{ $campus->county }}"
+                                    data-sub-county="{{ $campus->sub_county }}"
+                                    data-physical-address="{{ $campus->physical_address }}"
+                                    data-is-active="{{ $campus->is_active ? '1' : '0' }}"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 20h9"/>
+                                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No campuses yet', 'icon' => 'inbox'])
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     @include('admin.partials.campus-create-modal', [

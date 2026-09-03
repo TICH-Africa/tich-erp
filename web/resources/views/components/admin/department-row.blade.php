@@ -9,27 +9,35 @@
 @endphp
 
 <tr>
-    <td style="padding-left: {{ $depth * 1.25 }}rem;">
+    <td style="padding-left: {{ 1.25 + ($depth * 1.1) }}rem;">
         @if ($depth > 0)
             <span class="tich-caption">↳</span>
         @endif
-        {{ $department->dept_code }}
+        <strong>{{ $department->dept_code }}</strong>
     </td>
     <td>{{ $department->dept_name }}</td>
     <td>{{ $deptCategories[$department->dept_category] ?? ucfirst($department->dept_category) }}</td>
     <td>
         @if ($assignedLabels !== [])
-            @foreach ($assignedLabels as $label)
-                <span class="tich-caption" style="display: inline-block; margin: 0 0.35rem 0.35rem 0; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--tich-neutral-bg, #f3f4f6);">{{ $label }}</span>
-            @endforeach
+            <div class="tich-admin-table__action-group" style="justify-content: flex-start; flex-wrap: wrap;">
+                @foreach ($assignedLabels as $label)
+                    <span class="tich-badge tich-badge--sm tich-badge--info">{{ $label }}</span>
+                @endforeach
+            </div>
         @else
             <span class="tich-caption">None assigned</span>
         @endif
     </td>
-    <td>{{ $department->parent?->dept_name ?? '-' }}</td>
-    <td>{{ $department->campus?->campus_name ?? '-' }}</td>
-    <td>{{ $department->is_active ? 'Active' : 'Inactive' }}</td>
+    <td>{{ $department->parent?->dept_name ?? '—' }}</td>
+    <td>{{ $department->campus?->campus_name ?? '—' }}</td>
     <td>
+        @if ($department->is_active)
+            <span class="tich-badge tich-badge--success">Active</span>
+        @else
+            <span class="tich-badge tich-badge--danger">Inactive</span>
+        @endif
+    </td>
+    <td class="tich-admin-table__actions">
         <button
             type="button"
             class="tich-squircle-btn department-edit-trigger"

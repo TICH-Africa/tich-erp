@@ -39,13 +39,18 @@
     </p>
 
     <div class="tich-card tich-table-panel">
+        <div class="tich-table-panel__head">
+            <h2 class="tich-table-panel__title">Employees &amp; staff</h2>
+            <p class="tich-table-panel__meta">{{ $staffCount }} accounts</p>
+        </div>
+        <div class="tich-table-wrap">
         <table class="tich-admin-table">
             <thead>
                 <tr>
                     <th>Employee</th>
                     <th>Account type</th>
                     <th>Roles &amp; departments</th>
-                    <th style="width: 4rem;"></th>
+                    <th class="tich-admin-table__actions"></th>
                 </tr>
             </thead>
             <tbody>
@@ -77,21 +82,23 @@
                             <strong>{{ $user->displayName() }}</strong><br>
                             <span class="tich-caption">{{ $user->email }}</span>
                         </td>
-                        <td>{{ \App\Support\UserType::label($user->user_type) }}</td>
+                        <td><span class="tich-badge tich-badge--sm">{{ \App\Support\UserType::label($user->user_type) }}</span></td>
                         <td>
                             @forelse ($user->roles as $role)
-                                {{ $role->role_name }}
-                                @if ($role->pivot->department_id)
-                                    <span class="tich-caption">· {{ $departmentNames[$role->pivot->department_id] ?? 'Dept #'.$role->pivot->department_id }}</span>
-                                @else
-                                    <span class="tich-caption">· Institution-wide</span>
-                                @endif
-                                @if (!$loop->last)<br>@endif
+                                <div style="margin-bottom: {{ $loop->last ? '0' : '0.35rem' }};">
+                                    <span class="tich-badge tich-badge--sm tich-badge--info">{{ $role->display_name ?: $role->role_name }}</span>
+                                    @if ($role->pivot->department_id)
+                                        <span class="tich-caption">{{ $departmentNames[$role->pivot->department_id] ?? 'Dept #'.$role->pivot->department_id }}</span>
+                                    @else
+                                        <span class="tich-caption">Institution-wide</span>
+                                    @endif
+                                </div>
                             @empty
                                 <span class="tich-caption">Not assigned</span>
                             @endforelse
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td class="tich-admin-table__actions">
+                            <div class="tich-admin-table__action-group">
                             @if ($access->prefix === 'ict')
                                 <a href="{{ $access->route('users.show', $user) }}" class="tich-btn tich-btn-ghost tich-btn--compact">View</a>
                             @endif
@@ -112,6 +119,7 @@
                                     <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                                 </svg>
                             </button>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -121,7 +129,8 @@
                 @endforelse
             </tbody>
         </table>
-        <div class="tich-mt-4">{{ $users->links() }}</div>
+        </div>
+        <div class="tich-mt-4" style="padding: 0 1.25rem 1rem;">{{ $users->links() }}</div>
     </div>
 
     @include('admin.partials.staff-access-modal', [

@@ -18,77 +18,96 @@
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel">
-        <h2 class="tich-h3">All events ({{ $events->count() }})</h2>
-        <table class="tich-admin-table tich-mt-4">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Title</th>
-                    <th>Type</th>
-                    <th>Starts</th>
-                    <th>Public</th>
-                    <th>Featured</th>
-                    <th style="width: 6rem;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($events as $event)
+        <div class="tich-table-panel__head">
+            <h2 class="tich-table-panel__title">All events</h2>
+            <p class="tich-table-panel__meta">{{ $events->count() }} total</p>
+        </div>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
                     <tr>
-                        <td>
-                            @if ($event->coverImageUrl())
-                                <img src="{{ $event->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
-                            @else
-                                <span class="tich-caption">No image</span>
-                            @endif
-                        </td>
-                        <td>{{ $event->title }}</td>
-                        <td>{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</td>
-                        <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '-' }}</td>
-                        <td>{{ $event->is_public ? 'Yes' : 'No' }}</td>
-                        <td>{{ $event->is_featured ? 'Hero' : '-' }}</td>
-                        <td style="display:flex;gap:0.35rem;">
-                            <button
-                                type="button"
-                                class="tich-squircle-btn event-edit-trigger"
-                                title="Edit event"
-                                aria-label="Edit {{ $event->title }}"
-                                data-open-modal="event-edit-modal"
-                                data-update-url="{{ route('admin.events.update', $event) }}"
-                                data-event-id="{{ $event->id }}"
-                                data-title="{{ $event->title }}"
-                                data-subtitle="{{ $event->subtitle }}"
-                                data-event-type="{{ $event->event_type }}"
-                                data-description="{{ $event->description }}"
-                                data-start-datetime="{{ $event->start_datetime?->format('Y-m-d\\TH:i') }}"
-                                data-end-datetime="{{ $event->end_datetime?->format('Y-m-d\\TH:i') }}"
-                                data-venue="{{ $event->venue }}"
-                                data-registration="{{ $event->registration_url_or_form }}"
-                                data-is-public="{{ $event->is_public ? '1' : '0' }}"
-                                data-is-featured="{{ $event->is_featured ? '1' : '0' }}"
-                                data-cover-image-url="{{ $event->coverImageUrl() ?? '' }}"
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                                </svg>
-                            </button>
-                            <form method="POST" action="{{ route('admin.events.destroy', $event) }}" onsubmit="return confirm('Delete this event?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="tich-squircle-btn" title="Delete" aria-label="Delete {{ $event->title }}">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Starts</th>
+                        <th>Public</th>
+                        <th>Featured</th>
+                        <th class="tich-admin-table__actions"></th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="7">No events yet. Add one to populate the public events feed and optional hero slides.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($events as $event)
+                        <tr>
+                            <td>
+                                @if ($event->coverImageUrl())
+                                    <img src="{{ $event->coverImageUrl() }}" alt="" class="tich-program-admin-thumb">
+                                @else
+                                    <span class="tich-caption">No image</span>
+                                @endif
+                            </td>
+                            <td><strong>{{ $event->title }}</strong></td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</td>
+                            <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '—' }}</td>
+                            <td>
+                                @if ($event->is_public)
+                                    <span class="tich-badge tich-badge--success">Yes</span>
+                                @else
+                                    <span class="tich-badge">No</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($event->is_featured)
+                                    <span class="tich-badge tich-badge--info">Hero</span>
+                                @else
+                                    <span class="tich-caption">—</span>
+                                @endif
+                            </td>
+                            <td class="tich-admin-table__actions">
+                                <div class="tich-admin-table__action-group">
+                                    <button
+                                        type="button"
+                                        class="tich-squircle-btn event-edit-trigger"
+                                        title="Edit event"
+                                        aria-label="Edit {{ $event->title }}"
+                                        data-open-modal="event-edit-modal"
+                                        data-update-url="{{ route('admin.events.update', $event) }}"
+                                        data-event-id="{{ $event->id }}"
+                                        data-title="{{ $event->title }}"
+                                        data-subtitle="{{ $event->subtitle }}"
+                                        data-event-type="{{ $event->event_type }}"
+                                        data-description="{{ $event->description }}"
+                                        data-start-datetime="{{ $event->start_datetime?->format('Y-m-d\\TH:i') }}"
+                                        data-end-datetime="{{ $event->end_datetime?->format('Y-m-d\\TH:i') }}"
+                                        data-venue="{{ $event->venue }}"
+                                        data-registration="{{ $event->registration_url_or_form }}"
+                                        data-is-public="{{ $event->is_public ? '1' : '0' }}"
+                                        data-is-featured="{{ $event->is_featured ? '1' : '0' }}"
+                                        data-cover-image-url="{{ $event->coverImageUrl() ?? '' }}"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                        </svg>
+                                    </button>
+                                    <form method="POST" action="{{ route('admin.events.destroy', $event) }}" onsubmit="return confirm('Delete this event?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tich-squircle-btn" title="Delete" aria-label="Delete {{ $event->title }}">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="tich-table-empty">No events yet. Add one to populate the public events feed and optional hero slides.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div

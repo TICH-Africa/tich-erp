@@ -27,72 +27,78 @@
     @endif
 
     <div class="tich-card tich-table-panel">
-        <h2 class="tich-h3">All departments</h2>
+        <div class="tich-table-panel__head">
+            <h2 class="tich-table-panel__title">All departments</h2>
+        </div>
 
         @forelse ($groups as $group)
-            <h4 class="tich-h3 tich-mt-6" style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.04em;">{{ $group->group_name }}</h4>
-            <table class="tich-admin-table tich-mt-2">
-                <thead>
-                    <tr>
-                        <th>Code</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Modules</th>
-                        <th>Parent</th>
-                        <th>Campus</th>
-                        <th>Status</th>
-                        <th style="width: 4rem;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($group->departments as $dept)
-                        <x-admin.department-row
-                            :department="$dept"
-                            :campuses="$campuses"
-                            :department-groups="$departmentGroups"
-                            :parent-departments="$parentDepartments"
-                            :dept-categories="$deptCategories"
-                            :module-assignments="$moduleAssignments"
-                            :module-catalog="$moduleCatalog"
-                        />
-                    @empty
-                        <tr><td colspan="8" class="tich-caption">No departments in this group.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <h4 class="tich-table-panel__section">{{ $group->group_name }}</h4>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Modules</th>
+                            <th>Parent</th>
+                            <th>Campus</th>
+                            <th>Status</th>
+                            <th class="tich-admin-table__actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($group->departments as $dept)
+                            <x-admin.department-row
+                                :department="$dept"
+                                :campuses="$campuses"
+                                :department-groups="$departmentGroups"
+                                :parent-departments="$parentDepartments"
+                                :dept-categories="$deptCategories"
+                                :module-assignments="$moduleAssignments"
+                                :module-catalog="$moduleCatalog"
+                            />
+                        @empty
+                            <tr><td colspan="8" class="tich-table-empty">No departments in this group.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         @empty
-            <p class="tich-caption tich-mt-4">No department groups defined yet. <a href="{{ route('admin.department-groups.index') }}" class="tich-link">Create groups first</a>.</p>
+            <p class="tich-caption">No department groups defined yet. <a href="{{ route('admin.department-groups.index') }}" class="tich-link">Create groups first</a>.</p>
         @endforelse
 
         @if ($ungrouped->isNotEmpty())
-            <h4 class="tich-h3 tich-mt-6" style="font-size: 1rem;">Ungrouped</h4>
-            <table class="tich-admin-table tich-mt-2">
-                <thead>
-                    <tr>
-                        <th>Code</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Modules</th>
-                        <th>Parent</th>
-                        <th>Campus</th>
-                        <th>Status</th>
-                        <th style="width: 4rem;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($ungrouped as $dept)
-                        <x-admin.department-row
-                            :department="$dept"
-                            :campuses="$campuses"
-                            :department-groups="$departmentGroups"
-                            :parent-departments="$parentDepartments"
-                            :dept-categories="$deptCategories"
-                            :module-assignments="$moduleAssignments"
-                            :module-catalog="$moduleCatalog"
-                        />
-                    @endforeach
-                </tbody>
-            </table>
+            <h4 class="tich-table-panel__section">Ungrouped</h4>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Modules</th>
+                            <th>Parent</th>
+                            <th>Campus</th>
+                            <th>Status</th>
+                            <th class="tich-admin-table__actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($ungrouped as $dept)
+                            <x-admin.department-row
+                                :department="$dept"
+                                :campuses="$campuses"
+                                :department-groups="$departmentGroups"
+                                :parent-departments="$parentDepartments"
+                                :dept-categories="$deptCategories"
+                                :module-assignments="$moduleAssignments"
+                                :module-catalog="$moduleCatalog"
+                            />
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @endif
     </div>
 

@@ -36,6 +36,11 @@
 @endif
 
 <div class="tich-card tich-table-panel">
+    <div class="tich-table-panel__head">
+        <h2 class="tich-table-panel__title">User roles</h2>
+        <p class="tich-table-panel__meta">{{ $roles->count() }} shown</p>
+    </div>
+    <div class="tich-table-wrap">
     <table class="tich-admin-table">
         <thead>
             <tr>
@@ -45,7 +50,7 @@
                 <th>Type</th>
                 <th>Permissions</th>
                 <th>Users</th>
-                <th style="width: 8rem;"></th>
+                <th class="tich-admin-table__actions"></th>
             </tr>
         </thead>
         <tbody>
@@ -57,13 +62,20 @@
                     </td>
                     <td>{{ app(\App\Services\ModuleRoleCatalogService::class)->moduleLabel($roleItem->module_key) }}</td>
                     <td>{{ $categoryLabels[$roleItem->role_category] ?? ucfirst(str_replace('_', ' ', $roleItem->role_category)) }}</td>
-                    <td>{{ $roleItem->is_system_role ? 'Predefined' : 'Custom' }}</td>
+                    <td>
+                        @if ($roleItem->is_system_role)
+                            <span class="tich-badge tich-badge--sm tich-badge--info">Predefined</span>
+                        @else
+                            <span class="tich-badge tich-badge--sm">Custom</span>
+                        @endif
+                    </td>
                     <td>
                         {{ $roleItem->permissions_count }}
                         <span class="tich-caption"> (catalog)</span>
                     </td>
                     <td>{{ $roleItem->users_count }}</td>
-                    <td style="white-space: nowrap;">
+                    <td class="tich-admin-table__actions">
+                        <div class="tich-admin-table__action-group">
                         <button
                             type="button"
                             class="tich-squircle-btn role-permissions-trigger"
@@ -112,6 +124,7 @@
                                 </button>
                             </form>
                         @endunless
+                        </div>
                     </td>
                 </tr>
             @empty
@@ -119,6 +132,7 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
 <div id="role-create-modal" class="tich-modal{{ $openCreateModal ? ' is-open' : '' }}" aria-hidden="{{ $openCreateModal ? 'false' : 'true' }}" role="dialog" aria-modal="true">
