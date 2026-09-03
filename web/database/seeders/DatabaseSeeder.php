@@ -99,6 +99,7 @@ class DatabaseSeeder extends Seeder
                     'role' => 'Student',
                     'mfa_enabled' => false,
                     'mfa_method' => null,
+                    'mfa_verified' => true,
                 ],
             ];
 
