@@ -27,6 +27,8 @@
     $academicsTab = $academicsTab ?? 'units';
     $tabTitles = [
         'units' => 'My Units',
+        'content' => 'Learning Content',
+        'assessments' => 'Assessments',
         'exams' => 'Exams & Grades',
         'attendance' => 'Attendance',
     ];
@@ -57,6 +59,10 @@
 
 @if ($academicsTab === 'units')
     @include('portal.partials.academics.units')
+@elseif ($academicsTab === 'content')
+    @include('portal.partials.academics.content')
+@elseif ($academicsTab === 'assessments')
+    @include('portal.assessments.index')
 @elseif ($academicsTab === 'exams')
     @include('portal.partials.academics.exams-grades')
 @elseif ($academicsTab === 'attendance')

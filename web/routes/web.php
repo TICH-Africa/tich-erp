@@ -728,6 +728,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.exam-card.print');
         Route::get('/exam-card/pdf', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'pdf'])
             ->name('portal.exam-card.pdf');
+        Route::get('/assessments', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'index'])
+            ->name('portal.assessments.index');
+        Route::get('/assessments/{assessment}/take', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'take'])
+            ->name('portal.assessments.take');
+        Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'submit'])
+            ->name('portal.assessments.submit');
+        Route::get('/assessments/{assessment}/result', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'result'])
+            ->name('portal.assessments.result');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Portal\FinancePaymentController::class, 'store'])
             ->name('portal.invoices.pay');
         Route::get('/mpesa/stk/{stkRequest}/status', [\App\Http\Controllers\Portal\MpesaPaymentStatusController::class, '__invoke'])
@@ -818,7 +826,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/grading/objective', [StaffPortalActionController::class, 'storeObjectiveAssessment'])->name('staff.grading.objective.store');
         Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
-Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
+        Route::post('/grading/objective/manual-grade', [StaffPortalActionController::class, 'manualGradeObjectiveSubmission'])->name('staff.grading.objective.manual-grade');
+        Route::patch('/grading/objective/{objective_assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
+        Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
 Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
             Route::get('/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffCreate'])->name('staff.documents.create');
             Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');

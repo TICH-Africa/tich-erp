@@ -7,6 +7,7 @@ use App\Models\ProgramTimetableSession;
 use App\Models\Semester;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use App\Models\UnitContent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -226,10 +227,10 @@ class StaffPortalDashboardService
             return collect();
         }
 
-        return DB::table('media_attachments')
-            ->where('entity_type', 'unit')
-            ->whereIn('entity_id', $unitIds)
-            ->orderByDesc('uploaded_at')
+        return UnitContent::query()
+            ->with(['unit', 'unitAllocation'])
+            ->whereIn('unit_id', $unitIds)
+            ->orderByDesc('created_at')
             ->get();
     }
 

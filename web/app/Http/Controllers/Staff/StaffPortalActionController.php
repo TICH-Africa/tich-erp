@@ -7,6 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\ObjectiveAssessment;
 use App\Models\UnitAllocation;
+use App\Models\UnitContent;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\LessonPlanApprovalService;
@@ -376,8 +377,14 @@ class StaffPortalActionController extends Controller
         $validated = $request->validate([
             'allocation_id' => ['required', 'integer'],
             'name' => ['required', 'string', 'max:200'],
-            'assessment_type' => ['required', 'string', 'in:mcq,true_false,matching'],
+            'assessment_type' => ['required', 'string', 'in:mcq,true_false,matching,essay,long_answer'],
             'max_score' => ['required', 'numeric', 'min:1'],
+            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
+            'available_from' => ['nullable', 'date'],
+            'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
+            'show_results_immediately' => ['nullable', 'boolean'],
+            'allow_multiple_attempts' => ['nullable', 'boolean'],
+            'max_attempts' => ['nullable', 'integer', 'min:1'],
             'questions' => ['required', 'array'],
             'questions.*.question_text' => ['nullable', 'string'],
             'questions.*.question_type' => ['nullable', 'string'],
@@ -437,6 +444,88 @@ class StaffPortalActionController extends Controller
         ])->with('status', "Auto-graded {$count} submission(s). Scores synced to cumulative performance sheet.");
     }
 
+    public function manualGradeObjectiveSubmission(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+        $assessment = ObjectiveAssessment::query()->with(['questions'])->findOrFail($request->integer('objective_assessment_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'objective_assessment_id' => ['required', 'integer'],
+            'student_id' => ['required', 'integer'],
+            'submission_id' => ['required', 'integer'],
+            'marks' => ['nullable', 'array'],
+            'marks.*' => ['nullable', 'numeric', 'min:0'],
+            'score_obtained' => ['required', 'numeric', 'min:0'],
+            'feedback' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $submission = \App\Models\ObjectiveSubmission::query()
+            ->where('id', $validated['submission_id'])
+            ->where('student_id', $validated['student_id'])
+            ->where('objective_assessment_id', $assessment->id)
+            ->firstOrFail();
+
+        $totalScore = 0.0;
+        if (! empty($validated['marks'])) {
+            foreach ($validated['marks'] as $questionId => $mark) {
+                $totalScore += (float) ($mark ?? 0);
+            }
+        }
+
+        $score = $totalScore > 0 ? $totalScore : (float) ($validated['score_obtained'] ?? 0);
+        $percentage = $assessment->max_score > 0 ? round((($score / $assessment->max_score) * 100), 2) : 0;
+
+        $submission->update([
+            'score_obtained' => $score,
+            'percentage_score' => $percentage,
+            'correct_count' => 0,
+            'question_count' => $assessment->questions->count(),
+            'updated_at' => now(),
+        ]);
+
+        \App\Models\CatScore::query()->updateOrCreate(
+            [
+                'student_id' => $submission->student_id,
+                'unit_id' => $assessment->unit_id,
+                'semester_id' => $assessment->semester_id,
+                'assessment_name' => $assessment->name,
+            ],
+            [
+                'assessment_type' => 'objective_'.$assessment->assessment_type,
+                'max_score' => $assessment->max_score,
+                'score_obtained' => $score,
+                'percentage_score' => $percentage,
+                'weight_in_final' => $this->assessments->weightForAssessmentType('cat', $assessment->unit),
+                'recorded_by' => $staff->id,
+                'recorded_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        $this->portalService->auditService->log(
+            'staff.grading.objective_manual_grade',
+            'objective_submissions',
+            $submission->id,
+            null,
+            [
+                'score_obtained' => $score,
+                'feedback' => $validated['feedback'],
+            ],
+            'Objective assessment manually graded',
+            'success',
+            $staff->user_id ?? $request->user()->id,
+            $request
+        );
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', 'Submission graded successfully.');
+    }
+
     public function storeContent(Request $request): RedirectResponse
     {
         $staff = $this->portalService->staffForUser($request->user());
@@ -444,20 +533,51 @@ class StaffPortalActionController extends Controller
         $validated = $request->validate([
             'unit_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:300'],
-            'caption' => ['nullable', 'string', 'max:500'],
-            'file' => ['required', 'file', 'max:20480'],
+            'content_text' => ['nullable', 'string', 'max:5000'],
+            'file' => ['nullable', 'file', 'max:20480'],
+            'available_from' => ['nullable', 'date'],
+            'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
         ]);
 
-        $path = $this->files->store($request->file('file'), 'learning-content', 'public');
+        $filePath = null;
+        $originalFilename = null;
+        $mimeType = null;
+        $fileSize = null;
 
-        $this->teaching->storeLearningContent($staff, (int) $validated['unit_id'], [
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $filePath = $this->files->store($file, 'learning-content', 'public');
+            $originalFilename = $file->getClientOriginalName();
+            $mimeType = $file->getMimeType();
+            $fileSize = $file->getSize();
+        }
+
+        $allocation = UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->where('unit_id', (int) $validated['unit_id'])
+            ->where('is_active', 1)
+            ->first();
+
+        UnitContent::query()->create([
+            'unit_id' => (int) $validated['unit_id'],
+            'unit_allocation_id' => $allocation?->id,
+            'created_by' => $staff->id,
             'title' => $validated['title'],
-            'caption' => $validated['caption'] ?? null,
-            'file_type' => $request->file('file')->getClientOriginalExtension(),
-        ], $path);
+            'content_type' => $filePath ? 'document' : 'lesson_note',
+            'content_text' => $validated['content_text'],
+            'file_path' => $filePath,
+            'original_filename' => $originalFilename,
+            'mime_type' => $mimeType,
+            'file_size' => $fileSize,
+            'status' => 'published',
+            'published_at' => now(),
+            'available_from' => isset($validated['available_from']) ? now()->parse($validated['available_from']) : null,
+            'available_until' => isset($validated['available_until']) ? now()->parse($validated['available_until']) : null,
+            'display_order' => 0,
+        ]);
 
         return redirect()->route('staff.dashboard', ['section' => 'content'])
-            ->with('status', 'Learning material uploaded.');
+            ->with('status', 'Learning material posted to students.');
     }
 
     /**
@@ -484,5 +604,34 @@ class StaffPortalActionController extends Controller
         return $request->header('X-Auto-Save') === '1'
             || $request->expectsJson()
             || $request->ajax();
+    }
+
+    public function updateObjectiveAvailability(Request $request, ObjectiveAssessment $assessment): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $allocation = UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->where('unit_id', $assessment->unit_id)
+            ->where('is_active', 1)
+            ->firstOrFail();
+
+        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+
+        $validated = $request->validate([
+            'available_from' => ['nullable', 'date'],
+            'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
+        ]);
+
+        $assessment->update([
+            'available_from' => isset($validated['available_from']) ? now()->parse($validated['available_from']) : null,
+            'available_until' => isset($validated['available_until']) ? now()->parse($validated['available_until']) : null,
+        ]);
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', 'Assessment availability updated.');
     }
 }

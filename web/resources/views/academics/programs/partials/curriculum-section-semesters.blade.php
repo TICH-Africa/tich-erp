@@ -1,6 +1,58 @@
 @if (! $selectedIntake)
     <article class="tich-card">
-        <p class="tich-text">Select or <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'intakes'])) }}" class="tich-link">create an intake</a> first.</p>
+        <h2 class="tich-h3">Semester units</h2>
+        <p class="tich-text">Select an existing intake to view and manage its semester units, or <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'intakes'])) }}" class="tich-link">create a new intake</a>.</p>
+
+        @if ($intakes->isNotEmpty())
+            <div class="tich-table-panel tich-mt-6">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Intake</th>
+                            <th>Format</th>
+                            <th>Units</th>
+                            <th>Status</th>
+                            <th>Timeline</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($intakes as $intakeOption)
+                            @php
+                                $intakeMappings = $intakeOption->relationLoaded('items') ? $intakeOption->items : collect();
+                                $unitCount = $intakeMappings->count();
+                            @endphp
+                            <tr>
+                                <td>
+                                    <strong>{{ $intakeOption->intakeLabel() }}</strong>
+                                </td>
+                                <td>{{ $formats[$intakeOption->curriculum_format] ?? $intakeOption->curriculum_format }}</td>
+                                <td>{{ $unitCount }}</td>
+                                <td>{{ ucwords(str_replace('_', ' ', $intakeOption->status)) }}</td>
+                                <td class="tich-caption">
+                                    @if ($intakeOption->published_at)
+                                        Published {{ $intakeOption->published_at->format('d M Y') }}
+                                    @elseif ($intakeOption->submitted_at)
+                                        Submitted {{ $intakeOption->submitted_at->format('d M Y') }}
+                                    @elseif ($intakeOption->created_at)
+                                        Created {{ $intakeOption->created_at->format('d M Y') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'intake' => $intakeOption->id, 'section' => 'semesters'])) }}" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">
+                                        Open units
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="tich-text tich-mt-4">No intakes created yet. Use the intakes tab to create one.</p>
+        @endif
     </article>
 @elseif ($periods->isEmpty())
     <article class="tich-card">
@@ -17,6 +69,7 @@
         ];
         $expandedSemester = request()->integer('semester') ?: null;
         $expandedBlockId = request()->has('block_id') ? request()->integer('block_id') : null;
+        $defaultCampusId = $allocationCampuses->first()?->id;
     @endphp
 
     <style>
@@ -226,12 +279,15 @@
                                             <th>Contact hrs</th>
                                             <th>Total learning hrs</th>
                                             <th>Core</th>
+                                            @can('academics.write')
+                                                <th>Lecturer</th>
+                                            @endcan
                                         </tr>
                                     </thead>
                                     <tbody @if ($intakeEditable) data-unit-sortable @endif>
                                         @php $mappingIndex = -1; @endphp
                                         @foreach ($periodMappings as $map)
-                                            @php($mappingIndex++)
+                                            @php $mappingIndex++; @endphp
                                             <tr @if ($intakeEditable) data-sortable-row @endif>
                                                 @if ($intakeEditable)
                                                     <td class="tich-drag-handle" title="Drag to reorder">⋮⋮</td>
@@ -271,6 +327,73 @@
                                                         {{ $map->is_compulsory ? 'Yes' : 'No' }}
                                                     @endif
                                                 </td>
+                                                @can('academics.write')
+                                                    @php
+                                                        $unitAllocations = ($catalogAllocations[$map->unit_id] ?? collect());
+                                                        $currentAllocation = $unitAllocations->first();
+                                                    @endphp
+                                                    <td>
+                                                        @if ($currentAllocation)
+                                                            <div class="tich-catalog-alloc-card">
+                                                                <div class="tich-catalog-alloc-card__name">{{ $currentAllocation->staff?->fullName() }}</div>
+                                                                <div class="tich-catalog-alloc-card__meta">
+                                                                    {{ $currentAllocation->semester?->displayLabel() }}
+                                                                    · {{ $currentAllocation->campus?->campus_name }}
+                                                                    @if ($currentAllocation->is_coordinator)
+                                                                        · <strong>Coordinator</strong>
+                                                                    @endif
+                                                                </div>
+                                                                <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($hub, ['program' => $program->id, 'allocation' => $currentAllocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                                                                    <input type="hidden" name="section" value="semesters">
+                                                                    <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+                                                                    <button type="submit" class="tich-link" style="font-size:0.8125rem;">Remove</button>
+                                                                </form>
+                                                            </div>
+                                                        @else
+                                                            <span class="tich-caption">No lecturer assigned</span>
+                                                        @endif
+                                                        <details class="tich-catalog-assign">
+                                                            <summary>{{ $currentAllocation ? 'Change lecturer' : '+ Assign lecturer' }}</summary>
+                                                            <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-catalog-assign__body">
+                                                                @csrf
+                                                                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                                                                <input type="hidden" name="unit_id" value="{{ $map->unit_id }}">
+                                                                <input type="hidden" name="teaching_period" value="{{ $period['semester'] ?? $map->semester }}">
+                                                                <input type="hidden" name="section" value="semesters">
+                                                                @if ($learningDepartment)
+                                                                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                                                                @endif
+                                                                <div class="tich-form-group" style="margin:0;">
+                                                                    <label class="tich-label">Lecturer</label>
+                                                                    <select name="staff_id" class="tich-input" required>
+                                                                        @forelse ($allocationStaffList as $member)
+                                                                            <option value="{{ $member->id }}" @selected($currentAllocation?->staff_id === $member->id)>{{ $member->fullName() }}</option>
+                                                                        @empty
+                                                                            <option value="" disabled>No teaching staff found</option>
+                                                                        @endforelse
+                                                                    </select>
+                                                                </div>
+                                                                <div class="tich-form-group" style="margin:0;">
+                                                                    <label class="tich-label">Campus</label>
+                                                                    <select name="campus_id" class="tich-input" required>
+                                                                        @foreach ($allocationCampuses as $campus)
+                                                                            <option value="{{ $campus->id }}" @selected($defaultCampusId == $campus->id)>{{ $campus->campus_name }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="tich-form-group" style="margin:0;">
+                                                                    <label class="tich-label">Contact hours</label>
+                                                                    <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ $map->contact_hours ?: 4 }}" min="0">
+                                                                </div>
+                                                                <label class="tich-label"><input type="checkbox" name="is_coordinator" value="1" @checked($currentAllocation?->is_coordinator)> Unit coordinator</label>
+                                                                <button type="submit" class="tich-btn tich-btn-primary" @disabled($allocationStaffList->isEmpty())>Save allocation</button>
+                                                            </form>
+                                                        </details>
+                                                    </td>
+                                                @endcan
                                             </tr>
                                         @endforeach
                                     </tbody>

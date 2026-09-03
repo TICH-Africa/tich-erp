@@ -32,6 +32,8 @@ class StudentPortalNavigationService
     {
         return [
             'units' => 'My Units',
+            'content' => 'Learning Content',
+            'assessments' => 'Assessments',
             'exams' => 'Exams & Grades',
             'attendance' => 'Attendance',
         ];
@@ -118,6 +120,16 @@ class StudentPortalNavigationService
                         'label' => 'My Units',
                         'tab' => 'units',
                         'icon' => 'book-open',
+                    ],
+                    [
+                        'label' => 'Learning Content',
+                        'tab' => 'content',
+                        'icon' => 'layers',
+                    ],
+                    [
+                        'label' => 'Assessments',
+                        'tab' => 'assessments',
+                        'icon' => 'clipboard-check',
                     ],
                     [
                         'label' => 'Exams & Grades',

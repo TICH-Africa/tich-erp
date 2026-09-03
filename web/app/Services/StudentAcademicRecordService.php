@@ -5,8 +5,12 @@ namespace App\Services;
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionPeriod;
+use App\Models\ObjectiveAssessment;
+use App\Models\ObjectiveSubmission;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\UnitAllocation;
+use App\Models\UnitContent;
 use App\Support\IntakeIdentity;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +71,45 @@ class StudentAcademicRecordService
 
         $examPortal = app(StudentExamCardService::class)->portalData($student);
 
+        $assessments = collect();
+        $mySubmissions = collect();
+        $unitContent = collect();
+        if ($student->program_id) {
+            $allocationIds = UnitAllocation::query()
+                ->whereHas('unit', fn ($q) => $q->where('department_id', $student->program->department_id))
+                ->where('is_active', 1)
+                ->pluck('id');
+
+            if ($allocationIds->isNotEmpty()) {
+                $assessments = ObjectiveAssessment::query()
+                    ->with(['allocation.unit', 'questions'])
+                    ->whereIn('unit_allocation_id', $allocationIds)
+                    ->whereIn('status', ['ready', 'graded'])
+                    ->orderByDesc('created_at')
+                    ->get();
+
+                $mySubmissions = ObjectiveSubmission::query()
+                    ->where('student_id', $student->id)
+                    ->whereIn('objective_assessment_id', $assessments->pluck('id'))
+                    ->get()
+                    ->keyBy('objective_assessment_id');
+            }
+
+            $unitIds = $curriculumUnits->pluck('unit_id')->filter()->unique()->values()->merge(
+                $registeredUnits->pluck('unit_id')->filter()->unique()->values()->all()
+            )->unique()->values()->all();
+
+            if ($unitIds !== []) {
+                $unitContent = UnitContent::query()
+                    ->with(['unit', 'unitAllocation'])
+                    ->whereIn('unit_id', $unitIds)
+                    ->where('status', 'published')
+                    ->orderByDesc('display_order')
+                    ->orderByDesc('created_at')
+                    ->get();
+            }
+        }
+
         return [
             'curriculum' => $curriculum,
             'curriculum_is_published' => $curriculum?->isPublished() ?? false,
@@ -86,6 +129,9 @@ class StudentAcademicRecordService
             'attendance' => $attendance,
             'current_semester' => $currentSemester,
             'exam_portal' => $examPortal,
+            'assessments' => $assessments,
+            'my_submissions' => $mySubmissions,
+            'unit_content' => $unitContent,
         ];
     }
 

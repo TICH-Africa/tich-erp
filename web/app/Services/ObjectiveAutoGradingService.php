@@ -70,6 +70,12 @@ class ObjectiveAutoGradingService
             'created_by' => $staff->id,
             'status' => 'ready',
             'created_at' => now(),
+            'time_limit_minutes' => $data['time_limit_minutes'] ?? 30,
+            'available_from' => $data['available_from'] ? now()->parse($data['available_from']) : null,
+            'available_until' => $data['available_until'] ? now()->parse($data['available_until']) : null,
+            'show_results_immediately' => (bool) ($data['show_results_immediately'] ?? true),
+            'allow_multiple_attempts' => (bool) ($data['allow_multiple_attempts'] ?? false),
+            'max_attempts' => $data['max_attempts'] ?? null,
         ]);
 
         $this->syncQuestions($assessment, $questions);
@@ -269,7 +275,7 @@ class ObjectiveAutoGradingService
         }
     }
 
-    private function answersMatch(ObjectiveQuestion $question, mixed $given): bool
+    public function answersMatch(ObjectiveQuestion $question, mixed $given): bool
     {
         if ($given === null || $given === '') {
             return false;

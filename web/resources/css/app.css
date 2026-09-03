@@ -9,3 +9,76 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+.tich-assessment-footer {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.25rem;
+    margin-top: 2rem;
+}
+
+.tich-question-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #111827;
+}
+
+.tich-question-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.tich-question-card__number {
+    font-weight: 700;
+    color: #4f46e5;
+}
+
+.tich-question-card__points {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.tich-question-card__body {
+    padding-top: 0.25rem;
+}
+
+.tich-question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tich-option-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tich-option-label:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.tich-option-label input[type="radio"] {
+    accent-color: #4f46e5;
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.tich-option-box {
+    font-size: 1rem;
+    color: #111827;
+}
+
+.tich-textarea {
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+}

@@ -22,6 +22,10 @@ class ObjectiveSubmission extends Model
         'auto_graded_at',
         'created_at',
         'updated_at',
+        'student_started_at',
+        'student_submitted_at',
+        'time_taken_seconds',
+        'attempt_number',
     ];
 
     protected $casts = [
@@ -31,6 +35,10 @@ class ObjectiveSubmission extends Model
         'auto_graded_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'student_started_at' => 'datetime',
+        'student_submitted_at' => 'datetime',
+        'time_taken_seconds' => 'integer',
+        'attempt_number' => 'integer',
     ];
 
     public function assessment(): BelongsTo

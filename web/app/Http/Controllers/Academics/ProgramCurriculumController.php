@@ -107,7 +107,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $intakes = $this->versions->intakesForProgram($program->id);
         $section = $this->curriculum->resolveSection($request);
 
-        if ($section === 'intakes') {
+        if (in_array($section, ['intakes', 'semesters'], true)) {
             $intakes->load(['items.unit']);
         }
 
@@ -275,17 +275,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'examStaff' => $section === 'exams'
                 ? Staff::query()->orderBy('surname')->limit(200)->get()
                 : collect(),
-            'catalogAllocations' => ($section === 'catalog' && $selectedIntake)
+            'catalogAllocations' => in_array($section, ['catalog', 'semesters'], true) && $selectedIntake
                 ? $this->unitAllocations->forUnitsInIntake(
                     $this->unitCatalog->listForHub($hub, (int) $program->department_id)->pluck('id')->all(),
                     $selectedIntake,
                     $program,
                 )
                 : collect(),
-            'allocationStaffList' => $section === 'catalog'
+            'allocationStaffList' => in_array($section, ['catalog', 'semesters'], true)
                 ? Staff::query()->where('is_teaching_staff', 1)->where('employment_status', 'active')->orderBy('surname')->get()
                 : collect(),
-            'allocationCampuses' => $section === 'catalog'
+            'allocationCampuses' => in_array($section, ['catalog', 'semesters'], true)
                 ? Campus::query()->where('is_active', 1)->orderBy('campus_name')->get()
                 : collect(),
         ]);
@@ -895,12 +895,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'is_coordinator' => ! empty($validated['is_coordinator']),
         ]);
 
+        $section = $request->string('section')->toString() ?: 'catalog';
+
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
                 'program' => $program->id,
                 'learning_department' => $validated['learning_department'] ?? null,
                 'intake' => $intake->id,
-                'section' => 'catalog',
+                'section' => $section,
             ]))
             ->with('status', 'Lecturer assigned to unit.');
     }
@@ -914,12 +916,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $this->unitAllocations->assertAllocationInProgramDepartment($allocation, $program);
         $this->unitAllocations->remove($allocation);
 
+        $section = $request->string('section')->toString() ?: 'catalog';
+
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
                 'program' => $program->id,
                 'learning_department' => $request->integer('learning_department') ?: null,
                 'intake' => $request->integer('intake') ?: null,
-                'section' => 'catalog',
+                'section' => $section,
             ]))
             ->with('status', 'Lecturer allocation removed.');
     }
