@@ -43,7 +43,13 @@ class AcademicsSidebarNotificationService
      */
     public function countsFor(User $user, Department $hub, bool $fresh = false): array
     {
-        return $this->countsForHub($hub, $fresh);
+        $counts = $this->countsForHub($hub, $fresh);
+
+        if ($this->access->isSuggestionsOnly($user)) {
+            return array_intersect_key($counts, array_flip(['suggestions.open']));
+        }
+
+        return $counts;
     }
 
     /**
@@ -66,7 +72,7 @@ class AcademicsSidebarNotificationService
      */
     public function formattedCountsFor(User $user, Department $hub, bool $fresh = false): array
     {
-        return $this->formattedCounts($this->countsForHub($hub, $fresh));
+        return $this->formattedCounts($this->countsFor($user, $hub, $fresh));
     }
 
     public function forget(User $user, Department $hub): void

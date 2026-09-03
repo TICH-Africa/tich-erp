@@ -11,6 +11,16 @@ use Illuminate\Support\Collection;
 
 class AcademicsAccessService
 {
+    /** Roles in the academics module that unlock the full academics hub (beyond Dean suggestion-box access). */
+    public const FULL_ACADEMICS_ROLES = [
+        'Super Admin',
+        'CEO',
+        'Head of Academics',
+        'Academic Registrar',
+        'HOD',
+        'Lecturer/Tutor',
+    ];
+
     public function __construct(
         protected RBACService $rbacService,
         protected DepartmentDashboardService $departmentDashboard,
@@ -18,7 +28,28 @@ class AcademicsAccessService
 
     public function canAccessAll(User $user): bool
     {
-        return $this->rbacService->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Dean of Students']);
+        return $this->rbacService->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Head of Academics']);
+    }
+
+    /**
+     * Dean of Students with no other academics role may only use Student Voice → Suggestion box.
+     */
+    public function isSuggestionsOnly(User $user): bool
+    {
+        if (! $this->rbacService->hasRole($user, 'Dean of Students')) {
+            return false;
+        }
+
+        if ($this->rbacService->isPlatformAdministrator($user)) {
+            return false;
+        }
+
+        return ! $this->rbacService->hasAnyRole($user, self::FULL_ACADEMICS_ROLES);
+    }
+
+    public function canAccessFullAcademics(User $user): bool
+    {
+        return ! $this->isSuggestionsOnly($user);
     }
 
     public function canApproveRegistry(User $user): bool

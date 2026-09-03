@@ -334,6 +334,10 @@ class AuthService
         }
 
         if ($this->rbacService->hasPermission($user, 'academics.read')) {
+            if (app(AcademicsAccessService::class)->isSuggestionsOnly($user)) {
+                return route('departments.academics.suggestions.index');
+            }
+
             return route('departments.academics.dashboard');
         }
 

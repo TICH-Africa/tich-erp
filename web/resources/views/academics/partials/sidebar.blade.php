@@ -36,117 +36,120 @@
 
                 $programsQuery = app(\App\Services\AcademicsAccessService::class)->programsQueryForHub(auth()->user(), $department);
                 $sidebarProgram = $programsQuery->first();
+                $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
             @endphp
 
             @can('academics.read')
-                @include('partials.navigation.sidebar-link', [
-                    'href' => route('departments.academics.dashboard', $hub),
-                    'label' => 'Overview',
-                    'icon' => 'dashboard',
-                    'active' => request()->routeIs('departments.academics.dashboard'),
-                ])
+                @unless ($suggestionsOnly)
+                    @include('partials.navigation.sidebar-link', [
+                        'href' => route('departments.academics.dashboard', $hub),
+                        'label' => 'Overview',
+                        'icon' => 'dashboard',
+                        'active' => request()->routeIs('departments.academics.dashboard'),
+                    ])
 
-                @include('partials.navigation.sidebar-link', [
-                    'href' => route('departments.academics.applications.index', $hub),
-                    'label' => 'Application review',
-                    'icon' => 'clipboard-list',
-                    'active' => request()->routeIs('departments.academics.applications.*'),
-                    'badgeKey' => 'applications.pending',
-                ])
+                    @include('partials.navigation.sidebar-link', [
+                        'href' => route('departments.academics.applications.index', $hub),
+                        'label' => 'Application review',
+                        'icon' => 'clipboard-list',
+                        'active' => request()->routeIs('departments.academics.applications.*'),
+                        'badgeKey' => 'applications.pending',
+                    ])
 
-                @include('partials.navigation.sidebar-link', [
-                    'href' => route('departments.academics.departments.index', $hub),
-                    'label' => 'Learning Departments',
-                    'icon' => 'building-2',
-                    'active' => request()->routeIs('departments.academics.departments.*'),
-                ])
+                    @include('partials.navigation.sidebar-link', [
+                        'href' => route('departments.academics.departments.index', $hub),
+                        'label' => 'Learning Departments',
+                        'icon' => 'building-2',
+                        'active' => request()->routeIs('departments.academics.departments.*'),
+                    ])
 
-                @php
-                    $curriculumItems = [
-                        [
-                            'href' => route('departments.academics.units.index', $hub),
-                            'label' => 'Unit catalog',
-                            'icon' => 'library',
-                            'active' => request()->routeIs('departments.academics.units.*'),
-                            'badgeKey' => 'units.pending-registry',
-                        ],
-                    ];
-
-                    if ($sidebarProgram) {
-                        $curriculumItems[] = [
-                            'type' => 'subgroup',
-                            'label' => 'Programme curriculum',
-                            'icon' => 'book-open',
-                            'open' => request()->routeIs('departments.academics.programs.*'),
-                            'active' => request()->routeIs('departments.academics.programs.*'),
-                            'badgeKey' => 'curriculum.workflow',
-                            'items' => collect(\App\Services\ProgramCurriculumService::curriculumSections())->map(function ($sectionLabel, $sectionKey) use ($hub, $sidebarProgram) {
-                                return [
-                                    'href' => route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $sidebarProgram->id, 'section' => $sectionKey])),
-                                    'label' => $sectionLabel,
-                                    'icon' => 'circle',
-                                    'active' => request()->routeIs('departments.academics.programs.curriculum') && request()->query('section') === $sectionKey,
-                                ];
-                            })->values()->all(),
+                    @php
+                        $curriculumItems = [
+                            [
+                                'href' => route('departments.academics.units.index', $hub),
+                                'label' => 'Unit catalog',
+                                'icon' => 'library',
+                                'active' => request()->routeIs('departments.academics.units.*'),
+                                'badgeKey' => 'units.pending-registry',
+                            ],
                         ];
-                    }
 
-                    $curriculumItems[] = [
-                        'href' => route('departments.academics.lesson-plans.index', $hub),
-                        'label' => 'Lesson plan approval',
-                        'icon' => 'notebook',
-                        'active' => request()->routeIs('departments.academics.lesson-plans.index') || request()->routeIs('departments.academics.lesson-plans.show'),
-                        'badgeKey' => 'lesson-plans.review',
-                    ];
-                    $curriculumItems[] = [
-                        'href' => route('departments.academics.lesson-plans.audit', $hub),
-                        'label' => 'Lesson plan audit',
-                        'icon' => 'search',
-                        'active' => request()->routeIs('departments.academics.lesson-plans.audit'),
-                    ];
-                @endphp
+                        if ($sidebarProgram) {
+                            $curriculumItems[] = [
+                                'type' => 'subgroup',
+                                'label' => 'Programme curriculum',
+                                'icon' => 'book-open',
+                                'open' => request()->routeIs('departments.academics.programs.*'),
+                                'active' => request()->routeIs('departments.academics.programs.*'),
+                                'badgeKey' => 'curriculum.workflow',
+                                'items' => collect(\App\Services\ProgramCurriculumService::curriculumSections())->map(function ($sectionLabel, $sectionKey) use ($hub, $sidebarProgram) {
+                                    return [
+                                        'href' => route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $sidebarProgram->id, 'section' => $sectionKey])),
+                                        'label' => $sectionLabel,
+                                        'icon' => 'circle',
+                                        'active' => request()->routeIs('departments.academics.programs.curriculum') && request()->query('section') === $sectionKey,
+                                    ];
+                                })->values()->all(),
+                            ];
+                        }
 
-                @include('partials.navigation.sidebar-group', [
-                    'label' => 'Curriculum & Teaching',
-                    'icon' => 'book-open',
-                    'open' => $curriculumActive,
-                    'active' => $curriculumActive,
-                    'badgeKey' => 'curriculum',
-                    'items' => $curriculumItems,
-                ])
+                        $curriculumItems[] = [
+                            'href' => route('departments.academics.lesson-plans.index', $hub),
+                            'label' => 'Lesson plan approval',
+                            'icon' => 'notebook',
+                            'active' => request()->routeIs('departments.academics.lesson-plans.index') || request()->routeIs('departments.academics.lesson-plans.show'),
+                            'badgeKey' => 'lesson-plans.review',
+                        ];
+                        $curriculumItems[] = [
+                            'href' => route('departments.academics.lesson-plans.audit', $hub),
+                            'label' => 'Lesson plan audit',
+                            'icon' => 'search',
+                            'active' => request()->routeIs('departments.academics.lesson-plans.audit'),
+                        ];
+                    @endphp
 
-                @include('partials.navigation.sidebar-group', [
-                    'label' => 'Assessment & Exams',
-                    'icon' => 'clipboard-check',
-                    'open' => $assessmentActive,
-                    'active' => $assessmentActive,
-                    'badgeKey' => 'attendance-ledger.registrar',
-                    'items' => [
-                        [
-                            'href' => route('departments.academics.attendance-ledger.index', $hub),
-                            'label' => 'Attendance ledger',
-                            'icon' => 'clipboard-check',
-                            'active' => request()->routeIs('departments.academics.attendance-ledger.*'),
+                    @include('partials.navigation.sidebar-group', [
+                        'label' => 'Curriculum & Teaching',
+                        'icon' => 'book-open',
+                        'open' => $curriculumActive,
+                        'active' => $curriculumActive,
+                        'badgeKey' => 'curriculum',
+                        'items' => $curriculumItems,
+                    ])
+
+                    @include('partials.navigation.sidebar-group', [
+                        'label' => 'Assessment & Exams',
+                        'icon' => 'clipboard-check',
+                        'open' => $assessmentActive,
+                        'active' => $assessmentActive,
+                        'badgeKey' => 'attendance-ledger.registrar',
+                        'items' => [
+                            [
+                                'href' => route('departments.academics.attendance-ledger.index', $hub),
+                                'label' => 'Attendance ledger',
+                                'icon' => 'clipboard-check',
+                                'active' => request()->routeIs('departments.academics.attendance-ledger.*'),
+                            ],
+                            [
+                                'href' => route('departments.academics.clearance.index', $hub),
+                                'label' => 'Academic clearance',
+                                'icon' => 'check-circle',
+                                'active' => request()->routeIs('departments.academics.clearance.*'),
+                            ],
+                            [
+                                'href' => route('departments.academics.performance.index', $hub),
+                                'label' => 'Performance terminal',
+                                'icon' => 'bar-chart',
+                                'active' => request()->routeIs('departments.academics.performance.*'),
+                            ],
                         ],
-                        [
-                            'href' => route('departments.academics.clearance.index', $hub),
-                            'label' => 'Academic clearance',
-                            'icon' => 'check-circle',
-                            'active' => request()->routeIs('departments.academics.clearance.*'),
-                        ],
-                        [
-                            'href' => route('departments.academics.performance.index', $hub),
-                            'label' => 'Performance terminal',
-                            'icon' => 'bar-chart',
-                            'active' => request()->routeIs('departments.academics.performance.*'),
-                        ],
-                    ],
-                ])
+                    ])
+                @endunless
 
                 @include('partials.navigation.sidebar-group', [
                     'label' => 'Student voice',
                     'icon' => 'clipboard-list',
-                    'open' => $studentVoiceActive,
+                    'open' => $studentVoiceActive || $suggestionsOnly,
                     'active' => $studentVoiceActive,
                     'badgeKey' => 'suggestions.open',
                     'items' => [
@@ -160,26 +163,35 @@
                     ],
                 ])
 
-                @include('partials.navigation.sidebar-group', [
-                    'label' => 'Planning',
-                    'icon' => 'calendar',
-                    'open' => $planningActive,
-                    'active' => $planningActive,
-                    'items' => [
-                        [
-                            'href' => route('departments.academics.calendar.index', $hub),
-                            'label' => 'Academic calendar',
-                            'icon' => 'calendar',
-                            'active' => request()->routeIs('departments.academics.calendar.*'),
+                @unless ($suggestionsOnly)
+                    @include('partials.navigation.sidebar-group', [
+                        'label' => 'Planning',
+                        'icon' => 'calendar',
+                        'open' => $planningActive,
+                        'active' => $planningActive,
+                        'items' => [
+                            [
+                                'href' => route('departments.academics.calendar.index', $hub),
+                                'label' => 'Academic calendar',
+                                'icon' => 'calendar',
+                                'active' => request()->routeIs('departments.academics.calendar.*'),
+                            ],
                         ],
-                    ],
-                ])
+                    ])
 
-                @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
+                    @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
+                @endunless
             @endcan
 
             <p class="tich-admin-sidebar__section">Navigation</p>
-            @include('partials.navigation.sidebar-link', ['href' => route('departments.academics.dashboard', $hub), 'label' => $department->dept_name.' hub', 'icon' => 'layout-grid', 'muted' => true])
+            @include('partials.navigation.sidebar-link', [
+                'href' => $suggestionsOnly
+                    ? route('departments.academics.suggestions.index', $hub)
+                    : route('departments.academics.dashboard', $hub),
+                'label' => $department->dept_name.' hub',
+                'icon' => 'layout-grid',
+                'muted' => true,
+            ])
         </nav>
     </aside>
 @endif

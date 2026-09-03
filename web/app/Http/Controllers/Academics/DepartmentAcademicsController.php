@@ -15,7 +15,7 @@ abstract class DepartmentAcademicsController extends Controller
         protected DepartmentDashboardService $departmentDashboard,
     ) {}
 
-    protected function authorizeHub(Request $request, Department $department): Department
+    protected function authorizeHub(Request $request, Department $department, bool $allowSuggestionsOnly = false): Department
     {
         if (! $department->is_active) {
             abort(404);
@@ -32,6 +32,10 @@ abstract class DepartmentAcademicsController extends Controller
         }
 
         abort_unless($department->isAcademicsHub(), 404);
+
+        if ($this->access->isSuggestionsOnly($request->user()) && ! $allowSuggestionsOnly) {
+            abort(403, 'Dean of Students access in Academics is limited to the suggestion box.');
+        }
 
         return $department;
     }

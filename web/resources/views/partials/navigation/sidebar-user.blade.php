@@ -14,6 +14,11 @@
         <div class="tich-admin-sidebar__user-meta">
             <p class="tich-admin-sidebar__user-name">{{ $sidebarUser->name }}</p>
             <p class="tich-admin-sidebar__user-email">{{ $sidebarUser->email }}</p>
+            @if ($sidebarUser->roles !== [])
+                <p class="tich-admin-sidebar__user-roles" title="{{ implode(' · ', $sidebarUser->roles) }}">
+                    {{ implode(' · ', $sidebarUser->roles) }}
+                </p>
+            @endif
         </div>
     </div>
 @endif

@@ -13,7 +13,7 @@ class SuggestionBoxController extends DepartmentAcademicsController
 {
     public function index(Request $request, Department $department): View
     {
-        $hub = $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
         $category = (string) $request->query('category', '');
@@ -63,7 +63,7 @@ class SuggestionBoxController extends DepartmentAcademicsController
 
     public function show(Request $request, Department $department, StudentSuggestion $suggestion): View
     {
-        $hub = $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
         $suggestion->load(['student.applicant', 'student.program', 'reviewer']);
 
         return view('academics.suggestions.show', [
@@ -75,7 +75,7 @@ class SuggestionBoxController extends DepartmentAcademicsController
 
     public function update(Request $request, Department $department, StudentSuggestion $suggestion): RedirectResponse
     {
-        $hub = $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
 
         $validated = $request->validate([
             'status' => 'required|in:open,under_review,resolved,closed',

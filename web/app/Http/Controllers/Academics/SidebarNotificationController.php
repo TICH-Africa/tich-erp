@@ -15,7 +15,7 @@ class SidebarNotificationController extends DepartmentAcademicsController
         Department $department,
         AcademicsSidebarNotificationService $notifications,
     ): JsonResponse {
-        $hub = $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
 
         return response()->json([
             'counts' => $notifications->countsFor($request->user(), $hub, true),

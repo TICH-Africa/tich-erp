@@ -8,9 +8,11 @@
     @endphp
 
     <x-page-toolbar title="Suggestion box" meta="Student suggestions, comments, and complaints from the portal">
-        <x-slot:actions>
-            <a href="{{ route('departments.academics.dashboard', $hub) }}" class="tich-btn tich-btn-ghost">Back</a>
-        </x-slot:actions>
+        @unless (app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user()))
+            <x-slot:actions>
+                <a href="{{ route('departments.academics.dashboard', $hub) }}" class="tich-btn tich-btn-ghost">Back</a>
+            </x-slot:actions>
+        @endunless
     </x-page-toolbar>
 
     <div class="tich-stat-row tich-mb-8">
