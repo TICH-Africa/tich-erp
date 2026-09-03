@@ -5,35 +5,34 @@
     @endphp
 
     <div class="tich-tabs__panel" data-panel="objective">
-        <article class="tich-card">
-            <h2 class="tich-h3">Objective auto-grading</h2>
-            <p class="tich-caption">Build MCQ, true/false, or matching assessments with answer keys. Enter student responses, then run auto-grade to push scores into the competency spreadsheet.</p>
-
-            <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
-                <input type="hidden" name="section" value="grading">
-                <input type="hidden" name="allocation" value="{{ $allocation->id }}">
-                <div class="tich-form-group" style="margin:0;">
-                    <label class="tich-label">Existing assessment</label>
-                    <select name="objective_assessment" class="tich-input" onchange="this.form.submit()">
-                        <option value="">Create new…</option>
-                        @foreach ($objectiveTerminal['assessments'] as $assessment)
-                            <option value="{{ $assessment->id }}" @selected($selected?->id === $assessment->id)>
-                                {{ $assessment->name }} ({{ ucfirst($assessment->status) }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </form>
-        </article>
-
         @if ($selected)
-            <article class="tich-card tich-mt-6">
-                <h3 class="tich-h3">{{ $selected->name }}</h3>
-                <p class="tich-caption">{{ $objectiveTerminal['question_types'][$selected->assessment_type] ?? $selected->assessment_type }} · Max {{ number_format($selected->max_score, 0) }} marks · {{ $selected->questions->count() }} questions</p>
-
-                @if ($selected->status === 'graded')
-                    <p class="tich-text tich-mt-2">Auto-graded {{ $selected->auto_graded_at?->format('d M Y H:i') }}. Scores synced to cumulative sheet.</p>
-                @endif
+            <article class="tich-card tich-mb-6">
+                <div class="tich-flex tich-flex--between tich-flex--start" style="gap:1rem; flex-wrap:wrap;">
+                    <div>
+                        <h2 class="tich-h3">{{ $selected->name }}</h2>
+                        <p class="tich-caption tich-mt-1">
+                            {{ $objectiveTerminal['question_types'][$selected->assessment_type] ?? $selected->assessment_type }}
+                            · Max {{ number_format($selected->max_score, 0) }} marks
+                            · {{ $selected->questions->count() }} questions
+                            · {{ $selected->submissions->where('student_submitted_at', '!=', null)->count() }} submissions
+                        </p>
+                        @if ($selected->status === 'graded')
+                            <p class="tich-text tich-mt-2" style="color:#059669;">
+                                Auto-graded {{ $selected->auto_graded_at?->format('d M Y H:i') }}. Scores synced to cumulative sheet.
+                            </p>
+                        @endif
+                    </div>
+                    <div style="text-align:right;">
+                        @if ($selected->status !== 'graded')
+                            <form method="POST" action="{{ route('staff.grading.objective.grade') }}" class="tich-mt-2">
+                                @csrf
+                                <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                                <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
+                                <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Mark all submissions now? This will overwrite existing scores.')">Mark</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
 
                 <form method="POST" action="{{ route('staff.grading.objective.availability', $selected) }}" class="tich-mt-4">
                     @csrf
@@ -52,8 +51,71 @@
                             <button type="submit" class="tich-btn tich-btn-secondary">Update availability</button>
                         </div>
                     </div>
-                    <p class="tich-caption tich-mt-2">Extend or change the dates to re-open this assessment for students.</p>
                 </form>
+            </article>
+
+            <article class="tich-card tich-mb-6">
+                <h3 class="tich-h3">Answer key</h3>
+                <p class="tich-caption tich-mt-1">Edit correct answers below, then click Save answer key. After that, click Mark to grade all students.</p>
+                <form method="POST" action="{{ route('staff.grading.objective.answers.update', $selected) }}" class="tich-mt-4" id="answer-key-form">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                    <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
+                    <div class="tich-answer-key">
+                        <table class="tich-admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:3rem;">Q</th>
+                                    <th>Question</th>
+                                    <th style="width:12rem;">Correct answer</th>
+                                    <th style="width:6rem;">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($selected->questions as $question)
+                                    <tr>
+                                        <td>{{ $question->sort_order }}</td>
+                                        <td>{{ $question->question_text }}</td>
+                                        <td>
+                                            @if ($question->question_type === 'mcq' && is_array($question->options) && $question->options !== [])
+                                                <select name="correct_answers[{{ $question->id }}]" class="tich-input">
+                                                    <option value="">Select correct answer</option>
+                                                    @foreach ($question->options as $option)
+                                                        <option value="{{ $option }}" @selected((string) $question->correct_answer === (string) $option)>{{ $option }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @elseif ($question->question_type === 'true_false')
+                                                <select name="correct_answers[{{ $question->id }}]" class="tich-input">
+                                                    <option value="">Select correct answer</option>
+                                                    <option value="true" @selected((string) $question->correct_answer === 'true')>True</option>
+                                                    <option value="false" @selected((string) $question->correct_answer === 'false')>False</option>
+                                                </select>
+                                            @else
+                                                <input type="text"
+                                                       name="correct_answers[{{ $question->id }}]"
+                                                       value="{{ old('correct_answers.'.$question->id, $question->correct_answer) }}"
+                                                       class="tich-input"
+                                                       style="min-width:10rem;"
+                                                       placeholder="Correct answer">
+                                            @endif
+                                        </td>
+                                        <td>{{ $question->points }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tich-flex tich-flex--between tich-mt-4" style="align-items:center;">
+                        <span class="tich-caption">Save the answer key before marking.</span>
+                        <button type="submit" class="tich-btn tich-btn-secondary">Save answer key</button>
+                    </div>
+                </form>
+            </article>
+
+            <article class="tich-card">
+                <h3 class="tich-h3">Student responses</h3>
+                <p class="tich-caption tich-mt-1">Review and edit responses before marking. Changes save automatically.</p>
 
                 <form method="POST" action="{{ route('staff.grading.objective.responses') }}" class="tich-mt-4" data-autosave="grading-objective-responses">
                     @csrf
@@ -61,7 +123,6 @@
                     <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
 
                     <div class="tich-form-toolbar tich-mb-4">
-                        <p class="tich-caption">Enter student responses below. They save automatically; you can also use the buttons at the bottom.</p>
                         <span class="tich-autosave-status" data-autosave-status="grading-objective-responses" data-state="idle" aria-live="polite">Changes save automatically</span>
                     </div>
 
@@ -69,10 +130,11 @@
                         <table class="tich-competency-grid">
                             <thead>
                                 <tr>
-                                    <th class="tich-competency-grid__sticky">Reg. no.</th>
-                                    <th class="tich-competency-grid__sticky">Student</th>
+                                    <th class="tich-competency-grid__sticky" style="width:6rem;">Reg. no.</th>
+                                    <th class="tich-competency-grid__sticky" style="width:14rem;">Student</th>
+                                    <th class="tich-competency-grid__sticky" style="width:5rem;">Status</th>
                                     @foreach ($selected->questions as $question)
-                                        <th title="{{ $question->question_text }}">
+                                        <th title="{{ $question->question_text }}" style="min-width:7rem;">
                                             Q{{ $question->sort_order }}
                                             <span class="tich-caption">({{ $question->points }}pt)</span>
                                         </th>
@@ -84,13 +146,21 @@
                                     @php
                                         $responses = $objectiveTerminal['response_matrix'][$student->student_id] ?? [];
                                         $submission = $selected->submissions->firstWhere('student_id', $student->student_id);
+                                        $hasSubmitted = $submission && $submission->student_submitted_at;
                                     @endphp
                                     <tr>
                                         <td class="tich-competency-grid__sticky">{{ $student->registration_number }}</td>
                                         <td class="tich-competency-grid__sticky">
                                             {{ trim($student->student_name) }}
-                                            @if ($submission?->auto_graded_at)
+                                            @if ($hasSubmitted)
                                                 <br><span class="tich-caption">{{ number_format($submission->score_obtained, 1) }}/{{ number_format($selected->max_score, 0) }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($hasSubmitted)
+                                                <span class="tich-badge tich-badge--success">Submitted</span>
+                                            @else
+                                                <span class="tich-badge tich-badge--warning">Pending</span>
                                             @endif
                                         </td>
                                         @foreach ($selected->questions as $question)
@@ -127,116 +197,117 @@
                     </div>
 
                     @if ($objectiveTerminal['roster']->isNotEmpty())
-                        <div style="display:flex; gap:1rem; flex-wrap:wrap;" class="tich-mt-4">
+                        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem; align-items:center;">
                             <button type="submit" class="tich-btn tich-btn-secondary">Save responses</button>
+                            <span class="tich-caption">Edit any response above, then save before marking.</span>
                         </div>
                     @endif
                 </form>
+            </article>
 
-                @if ($objectiveTerminal['roster']->isNotEmpty() && $selected->status !== 'graded')
-                    <form method="POST" action="{{ route('staff.grading.objective.grade') }}" class="tich-mt-4">
+            @php
+                $hasSubjective = $selected->questions->contains(fn ($q) => in_array($q->question_type, ['essay', 'long_answer']));
+            @endphp
+
+            @if ($hasSubjective && $objectiveTerminal['roster']->isNotEmpty())
+                <article class="tich-card tich-mt-6">
+                    <h3 class="tich-h3">Manual grading</h3>
+                    <p class="tich-caption">Grade long answer submissions individually. Objective questions are auto-graded when you click Mark.</p>
+
+                    <form method="POST" action="{{ route('staff.grading.objective.manual-grade') }}" class="tich-mt-4">
                         @csrf
                         <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                         <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
-                        <button type="submit" class="tich-btn tich-btn-primary">Run auto-grade &amp; sync to cumulative scores</button>
-                    </form>
-                @endif
 
-                @php
-                    $hasSubjective = $selected->questions->contains(fn ($q) => in_array($q->question_type, ['essay', 'long_answer']));
-                @endphp
+                        <div class="tich-form-group">
+                            <label class="tich-label">Select student</label>
+                            <select name="student_id" class="tich-input" required onchange="this.form.submit()">
+                                <option value="">Choose student…</option>
+                                @foreach ($objectiveTerminal['roster'] as $student)
+                                    @php
+                                        $submission = $selected->submissions->firstWhere('student_id', $student->student_id);
+                                    @endphp
+                                    <option value="{{ $student->student_id }}" @selected($submission && $submission->student_submitted_at)>
+                                        {{ trim($student->student_name) }} ({{ $student->registration_number }})
+                                        @if ($submission && $submission->student_submitted_at)
+                                            - {{ $submission->percentage_score }}%
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                @if ($hasSubjective && $objectiveTerminal['roster']->isNotEmpty())
-                    <article class="tich-card tich-mt-6">
-                        <h3 class="tich-h3">Manual grading</h3>
-                        <p class="tich-caption">Grade long answer submissions individually. Objective questions are auto-graded above.</p>
+                        @if ($selectedStudent = $objectiveTerminal['roster']->firstWhere('student_id', request()->integer('student_id')))
+                            @php
+                                $selectedSubmission = $selected->submissions->firstWhere('student_id', $selectedStudent->student_id);
+                            @endphp
+                            @if ($selectedSubmission && $selectedSubmission->student_submitted_at)
+                                <div class="tich-mt-4">
+                                    <h4 class="tich-h4">{{ trim($selectedStudent->student_name) }} - {{ $selectedStudent->registration_number }}</h4>
 
-                        <form method="POST" action="{{ route('staff.grading.objective.manual-grade') }}" class="tich-mt-4">
-                            @csrf
-                            <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
-                            <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
-
-                            <div class="tich-form-group">
-                                <label class="tich-label">Select student</label>
-                                <select name="student_id" class="tich-input" required onchange="this.form.submit()">
-                                    <option value="">Choose student…</option>
-                                    @foreach ($objectiveTerminal['roster'] as $student)
-                                        @php
-                                            $submission = $selected->submissions->firstWhere('student_id', $student->student_id);
-                                        @endphp
-                                        <option value="{{ $student->student_id }}" @selected($submission && $submission->student_submitted_at)>
-                                            {{ trim($student->student_name) }} ({{ $student->registration_number }})
-                                            @if ($submission && $submission->student_submitted_at)
-                                                - {{ $submission->percentage_score }}%
-                                            @endif
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            @if ($selectedStudent = $objectiveTerminal['roster']->firstWhere('student_id', request()->integer('student_id')))
-                                @php
-                                    $selectedSubmission = $selected->submissions->firstWhere('student_id', $selectedStudent->student_id);
-                                @endphp
-                                @if ($selectedSubmission && $selectedSubmission->student_submitted_at)
-                                    <div class="tich-mt-4">
-                                        <h4 class="tich-h4">{{ trim($selectedStudent->student_name) }} - {{ $selectedStudent->registration_number }}</h4>
-
-                                        @foreach ($selected->questions as $question)
-                                            @if (in_array($question->question_type, ['essay', 'long_answer']))
-                                                @php
-                                                    $answer = $selectedSubmission->responses[$question->id] ?? $selectedSubmission->responses[(string) $question->id] ?? '';
-                                                @endphp
-                                                <div class="tich-card tich-mt-4">
-                                                    <p class="tich-h4">{{ $question->question_text }}</p>
-                                                    <div class="tich-card__body" style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem;">
-                                                        <p>{{ $answer ?: 'No answer provided' }}</p>
-                                                    </div>
-                                                    <div class="tich-form-group tich-mt-4">
-                                                        <label class="tich-label">Mark (max {{ $question->points }})</label>
-                                                        <input type="number" name="marks[{{ $question->id }}]" class="tich-input" value="{{ $selectedSubmission->score_obtained ?? 0 }}" min="0" max="{{ $question->points }}" step="0.01" style="max-width: 8rem;">
-                                                    </div>
+                                    @foreach ($selected->questions as $question)
+                                        @if (in_array($question->question_type, ['essay', 'long_answer']))
+                                            @php
+                                                $answer = $selectedSubmission->responses[$question->id] ?? $selectedSubmission->responses[(string) $question->id] ?? '';
+                                            @endphp
+                                            <div class="tich-card tich-mt-4">
+                                                <p class="tich-h4">{{ $question->question_text }}</p>
+                                                <div class="tich-card__body" style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem;">
+                                                    <p>{{ $answer ?: 'No answer provided' }}</p>
                                                 </div>
-                                            @endif
-                                        @endforeach
+                                                <div class="tich-form-group tich-mt-4">
+                                                    <label class="tich-label">Mark (max {{ $question->points }})</label>
+                                                    <input type="number" name="marks[{{ $question->id }}]" class="tich-input" value="{{ $selectedSubmission->score_obtained ?? 0 }}" min="0" max="{{ $question->points }}" step="0.01" style="max-width: 8rem;">
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endforeach
 
-                                        <div class="tich-grid tich-grid--2 tich-mt-4">
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Total score</label>
-                                                <input type="number" name="score_obtained" class="tich-input" value="{{ $selectedSubmission->score_obtained ?? 0 }}" min="0" max="{{ $selected->max_score }}" step="0.01" required>
-                                            </div>
-                                            <div class="tich-form-group">
-                                                <label class="tich-label">Feedback</label>
-                                                <textarea name="feedback" class="tich-input" rows="3">{{ $selectedSubmission->feedback ?? '' }}</textarea>
-                                            </div>
+                                    <div class="tich-grid tich-grid--2 tich-mt-4">
+                                        <div class="tich-form-group">
+                                            <label class="tich-label">Total score</label>
+                                            <input type="number" name="score_obtained" class="tich-input" value="{{ $selectedSubmission->score_obtained ?? 0 }}" min="0" max="{{ $selected->max_score }}" step="0.01" required>
                                         </div>
-
-                                        <input type="hidden" name="submission_id" value="{{ $selectedSubmission->id }}">
-                                        <input type="hidden" name="student_id" value="{{ $selectedStudent->student_id }}">
-
-                                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save grade</button>
+                                        <div class="tich-form-group">
+                                            <label class="tich-label">Feedback</label>
+                                            <textarea name="feedback" class="tich-input" rows="3">{{ $selectedSubmission->feedback ?? '' }}</textarea>
+                                        </div>
                                     </div>
-                                @else
-                                    <p class="tich-text tich-mt-4">This student has not submitted yet.</p>
-                                @endif
-                            @endif
-                        </form>
-                    </article>
-                @endif
 
-                <details class="tich-grading-details tich-mt-6">
-                    <summary class="tich-h3 tich-grading-details__summary">Answer key</summary>
-                    <ol class="tich-mt-4">
-                        @foreach ($selected->questions as $question)
-                            <li class="tich-text tich-mt-2">
-                                <strong>{{ $question->question_text }}</strong>
-                                <br><span class="tich-caption">Correct: {{ $question->correct_answer }} · {{ $question->points }} pts</span>
-                            </li>
-                        @endforeach
-                    </ol>
-                </details>
-            </article>
+                                    <input type="hidden" name="submission_id" value="{{ $selectedSubmission->id }}">
+                                    <input type="hidden" name="student_id" value="{{ $selectedStudent->student_id }}">
+
+                                    <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save grade</button>
+                                </div>
+                            @else
+                                <p class="tich-text tich-mt-4">This student has not submitted yet.</p>
+                            @endif
+                        @endif
+                    </form>
+                </article>
+            @endif
         @else
+            <article class="tich-card">
+                <h2 class="tich-h3">Objective auto-grading</h2>
+                <p class="tich-caption">Build MCQ, true/false, or matching assessments with answer keys. Enter student responses, then run auto-grade to push scores into the competency spreadsheet.</p>
+
+                <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
+                    <input type="hidden" name="section" value="grading">
+                    <input type="hidden" name="allocation" value="{{ $allocation->id }}">
+                    <div class="tich-form-group" style="margin:0;">
+                        <label class="tich-label">Existing assessment</label>
+                        <select name="objective_assessment" class="tich-input" onchange="this.form.submit()">
+                            <option value="">Create new…</option>
+                            @foreach ($objectiveTerminal['assessments'] as $assessment)
+                                <option value="{{ $assessment->id }}" @selected($selected?->id === $assessment->id)>
+                                    {{ $assessment->name }} ({{ ucfirst($assessment->status) }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </article>
+
             <article class="tich-card tich-mt-6">
                 <h3 class="tich-h3">New objective assessment</h3>
                 <form method="POST" action="{{ route('staff.grading.objective.store') }}" class="tich-mt-4">
@@ -290,15 +361,19 @@
                                         <option value="mcq">Multiple choice</option>
                                         <option value="true_false">True / False</option>
                                         <option value="essay">Essay / Long answer</option>
+                                        <option value="short_answer">Short answer</option>
                                     </select>
                                 </div>
-                                <div class="tich-form-group question-options-field">
+                                <div class="tich-form-group question-options-field" data-options-field>
                                     <label class="tich-label">Options (pipe-separated)</label>
-                                    <input type="text" name="questions[{{ $i }}][options]" class="tich-input" placeholder="A|B|C">
+                                    <input type="text" name="questions[{{ $i }}][options]" class="tich-input question-options-input" placeholder="A|B|C" oninput="updateCorrectAnswerOptions(this)">
                                 </div>
-                                <div class="tich-form-group question-options-field">
+                                <div class="tich-form-group question-correct-field" data-correct-field>
                                     <label class="tich-label">Correct answer</label>
-                                    <input type="text" name="questions[{{ $i }}][correct_answer]" class="tich-input" placeholder="A or true">
+                                    <select name="questions[{{ $i }}][correct_answer]" class="tich-input question-correct-select" style="display:none;">
+                                        <option value="">Select correct answer</option>
+                                    </select>
+                                    <input type="text" name="questions[{{ $i }}][correct_answer]" class="tich-input question-correct-text" placeholder="A or true" style="display:none;">
                                 </div>
                             </div>
                             <div class="tich-form-group">
@@ -311,12 +386,53 @@
                     <script>
                     function toggleQuestionOptions(select) {
                         var card = select.closest('.tich-grading-question-card');
-                        var isObjective = select.value === 'mcq' || select.value === 'true_false';
-                        var fields = card.querySelectorAll('.question-options-field');
-                        fields.forEach(function(field) {
-                            field.style.display = isObjective ? '' : 'none';
+                        var type = select.value;
+                        var optionsField = card.querySelector('[data-options-field]');
+                        var correctField = card.querySelector('[data-correct-field]');
+                        var correctSelect = card.querySelector('.question-correct-select');
+                        var correctText = card.querySelector('.question-correct-text');
+
+                        if (type === 'mcq') {
+                            optionsField.style.display = '';
+                            correctField.style.display = '';
+                            correctSelect.style.display = '';
+                            correctText.style.display = 'none';
+                            updateCorrectAnswerOptions(card.querySelector('.question-options-input'));
+                        } else if (type === 'true_false') {
+                            optionsField.style.display = 'none';
+                            correctField.style.display = '';
+                            correctSelect.style.display = '';
+                            correctText.style.display = 'none';
+                            correctSelect.innerHTML = '<option value="">Select correct answer</option>' +
+                                '<option value="true">True</option>' +
+                                '<option value="false">False</option>';
+                        } else {
+                            optionsField.style.display = 'none';
+                            correctField.style.display = '';
+                            correctSelect.style.display = 'none';
+                            correctText.style.display = '';
+                        }
+                    }
+
+                    function updateCorrectAnswerOptions(input) {
+                        var card = input.closest('.tich-grading-question-card');
+                        var select = card.querySelector('.question-correct-select');
+                        var current = select.value;
+                        var raw = input.value || '';
+                        var options = raw.split('|').map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+
+                        select.innerHTML = '<option value="">Select correct answer</option>';
+                        options.forEach(function(opt) {
+                            var option = document.createElement('option');
+                            option.value = opt;
+                            option.textContent = opt;
+                            if (opt === current) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
                         });
                     }
+
                     document.querySelectorAll('.tich-grading-question-card select').forEach(function(select) {
                         toggleQuestionOptions(select);
                     });

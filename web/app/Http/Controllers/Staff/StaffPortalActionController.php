@@ -634,4 +634,37 @@ class StaffPortalActionController extends Controller
             'objective_assessment' => $assessment->id,
         ])->with('status', 'Assessment availability updated.');
     }
+
+    public function updateObjectiveAnswers(Request $request, ObjectiveAssessment $assessment): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        $allocation = UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->where('unit_id', $assessment->unit_id)
+            ->where('is_active', 1)
+            ->firstOrFail();
+
+        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'objective_assessment_id' => ['required', 'integer'],
+            'correct_answers' => ['nullable', 'array'],
+            'correct_answers.*' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        foreach ($validated['correct_answers'] ?? [] as $questionId => $answer) {
+            \App\Models\ObjectiveQuestion::query()
+                ->where('objective_assessment_id', $assessment->id)
+                ->where('id', (int) $questionId)
+                ->update(['correct_answer' => (string) $answer]);
+        }
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', 'Answer key updated. You can now click Mark to grade all students.');
+    }
 }
