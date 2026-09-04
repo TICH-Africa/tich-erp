@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-04 10:37:28 EAT
+-- Generated: 2026-09-04 11:58:34 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -8013,34 +8013,46 @@ CALL `tich_ensure_column`('social_links', 'updated_at', 'datetime NULL DEFAULT N
 CREATE TABLE IF NOT EXISTS `special_exam_requests` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `student_id` bigint(20) unsigned NOT NULL,
-  `exam_result_id` bigint(20) unsigned NOT NULL,
+  `exam_result_id` bigint(20) unsigned DEFAULT NULL,
+  `unit_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
   `reason` text NOT NULL,
+  `student_notes` text DEFAULT NULL,
   `supporting_docs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`supporting_docs`)),
   `status` varchar(50) NOT NULL DEFAULT 'pending',
   `reviewed_by` bigint(20) unsigned DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
+  `reviewed_notes` text DEFAULT NULL,
   `scheduled_exam_id` bigint(20) unsigned DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `special_exam_requests_student_id_foreign` (`student_id`),
-  KEY `special_exam_requests_exam_result_id_foreign` (`exam_result_id`),
   KEY `special_exam_requests_reviewed_by_foreign` (`reviewed_by`),
   KEY `special_exam_requests_scheduled_exam_id_foreign` (`scheduled_exam_id`),
+  KEY `special_exam_requests_exam_result_id_foreign` (`exam_result_id`),
+  KEY `special_exam_requests_unit_id_foreign` (`unit_id`),
+  KEY `special_exam_requests_semester_id_foreign` (`semester_id`),
   CONSTRAINT `special_exam_requests_exam_result_id_foreign` FOREIGN KEY (`exam_result_id`) REFERENCES `exam_results` (`id`),
   CONSTRAINT `special_exam_requests_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `special_exam_requests_scheduled_exam_id_foreign` FOREIGN KEY (`scheduled_exam_id`) REFERENCES `exam_schedules` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `special_exam_requests_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+  CONSTRAINT `special_exam_requests_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `special_exam_requests_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`),
+  CONSTRAINT `special_exam_requests_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `special_exam_requests` (add only if missing)
 CALL `tich_ensure_column`('special_exam_requests', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('special_exam_requests', 'student_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('special_exam_requests', 'exam_result_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('special_exam_requests', 'exam_result_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('special_exam_requests', 'unit_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('special_exam_requests', 'semester_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'reason', 'text NOT NULL');
+CALL `tich_ensure_column`('special_exam_requests', 'student_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'supporting_docs', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending\\\'\'');
 CALL `tich_ensure_column`('special_exam_requests', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'reviewed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('special_exam_requests', 'reviewed_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'scheduled_exam_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('special_exam_requests', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
@@ -8048,7 +8060,9 @@ CALL `tich_ensure_column`('special_exam_requests', 'created_at', 'datetime NOT N
 CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_exam_result_id_foreign', '`exam_result_id`');
 CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_reviewed_by_foreign', '`reviewed_by`');
 CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_scheduled_exam_id_foreign', '`scheduled_exam_id`');
+CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_semester_id_foreign', '`semester_id`');
 CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_student_id_foreign', '`student_id`');
+CALL `tich_ensure_index`('special_exam_requests', 'special_exam_requests_unit_id_foreign', '`unit_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `staff`
@@ -9622,43 +9636,64 @@ CALL `tich_ensure_index`('student_transcript_requests', 'student_transcript_requ
 CREATE TABLE IF NOT EXISTS `supplementary_requests` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `student_id` bigint(20) unsigned NOT NULL,
-  `exam_result_id` bigint(20) unsigned NOT NULL,
+  `exam_result_id` bigint(20) unsigned DEFAULT NULL,
+  `unit_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
   `supplementary_type` varchar(50) NOT NULL,
   `fee_amount` decimal(12,2) NOT NULL,
   `fee_paid` tinyint(4) NOT NULL DEFAULT 0,
   `fee_payment_ref` varchar(100) DEFAULT NULL,
   `fee_paid_at` datetime DEFAULT NULL,
   `application_status` varchar(50) NOT NULL DEFAULT 'pending_fee',
+  `student_notes` text DEFAULT NULL,
+  `reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `reviewed_notes` text DEFAULT NULL,
   `scheduled_exam_id` bigint(20) unsigned DEFAULT NULL,
   `new_score` decimal(5,2) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `supplementary_requests_student_id_foreign` (`student_id`),
-  KEY `supplementary_requests_exam_result_id_foreign` (`exam_result_id`),
   KEY `supplementary_requests_scheduled_exam_id_foreign` (`scheduled_exam_id`),
+  KEY `supplementary_requests_exam_result_id_foreign` (`exam_result_id`),
+  KEY `supplementary_requests_unit_id_foreign` (`unit_id`),
+  KEY `supplementary_requests_semester_id_foreign` (`semester_id`),
+  KEY `supplementary_requests_reviewed_by_foreign` (`reviewed_by`),
   CONSTRAINT `supplementary_requests_exam_result_id_foreign` FOREIGN KEY (`exam_result_id`) REFERENCES `exam_results` (`id`),
+  CONSTRAINT `supplementary_requests_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `supplementary_requests_scheduled_exam_id_foreign` FOREIGN KEY (`scheduled_exam_id`) REFERENCES `exam_schedules` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `supplementary_requests_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+  CONSTRAINT `supplementary_requests_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `supplementary_requests_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`),
+  CONSTRAINT `supplementary_requests_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `supplementary_requests` (add only if missing)
 CALL `tich_ensure_column`('supplementary_requests', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('supplementary_requests', 'student_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('supplementary_requests', 'exam_result_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'exam_result_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'unit_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'semester_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'supplementary_type', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'fee_amount', 'decimal(12,2) NOT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'fee_paid', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('supplementary_requests', 'fee_payment_ref', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'fee_paid_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'application_status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending_fee\\\'\'');
+CALL `tich_ensure_column`('supplementary_requests', 'student_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'reviewed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'reviewed_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'scheduled_exam_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'new_score', 'decimal(5,2) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
 -- Indexes for `supplementary_requests` (add only if missing)
 CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_exam_result_id_foreign', '`exam_result_id`');
+CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_reviewed_by_foreign', '`reviewed_by`');
 CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_scheduled_exam_id_foreign', '`scheduled_exam_id`');
+CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_semester_id_foreign', '`semester_id`');
 CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_student_id_foreign', '`student_id`');
+CALL `tich_ensure_index`('supplementary_requests', 'supplementary_requests_unit_id_foreign', '`unit_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `suppliers`
@@ -10845,7 +10880,9 @@ CALL `tich_ensure_fk`('sms_gateway_logs', 'sms_gateway_logs_notification_id_fore
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_exam_result_id_foreign', '`exam_result_id`', 'exam_results', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_scheduled_exam_id_foreign', '`scheduled_exam_id`', 'exam_schedules', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `staff`
 CALL `tich_ensure_fk`('staff', 'staff_bank_id_foreign', '`bank_id`', 'staff_bank_accounts', '`id`', 'RESTRICT', 'SET NULL');
@@ -10984,8 +11021,11 @@ CALL `tich_ensure_fk`('student_transcript_requests', 'student_transcript_request
 
 -- Foreign keys for `supplementary_requests`
 CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_exam_result_id_foreign', '`exam_result_id`', 'exam_results', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_scheduled_exam_id_foreign', '`scheduled_exam_id`', 'exam_schedules', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('supplementary_requests', 'supplementary_requests_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `three_way_matches`
 CALL `tich_ensure_fk`('three_way_matches', 'three_way_matches_accepted_by_foreign', '`accepted_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');

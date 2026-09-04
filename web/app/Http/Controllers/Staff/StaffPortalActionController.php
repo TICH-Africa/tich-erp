@@ -667,4 +667,86 @@ class StaffPortalActionController extends Controller
             'objective_assessment' => $assessment->id,
         ])->with('status', 'Answer key updated. You can now click Mark to grade all students.');
     }
+
+    public function storeExamPaper(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $validated = $request->validate([
+            'unit_id' => ['required', 'integer'],
+            'semester_id' => ['required', 'integer'],
+            'exam_type' => ['required', 'in:main,supplementary,special'],
+            'version' => ['required', 'in:A,B'],
+            'draft_file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx'],
+            'auto_table' => ['nullable', 'boolean'],
+        ]);
+
+        $paper = app(\App\Services\ExaminationPaperService::class)->submitDraft(
+            $staff,
+            $validated,
+            $request->file('draft_file'),
+            $request->boolean('auto_table', true),
+        );
+
+        return redirect()->route('staff.dashboard', ['section' => 'exam-papers'])
+            ->with('status', $paper->status === 'tabled'
+                ? 'Exam paper submitted and tabled for moderation.'
+                : 'Exam paper saved as draft.');
+    }
+
+    public function tableExamPaper(Request $request, \App\Models\ExaminationPaper $examinationPaper): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        app(\App\Services\ExaminationPaperService::class)->tableForModeration($examinationPaper, $staff);
+
+        return redirect()->route('staff.dashboard', ['section' => 'exam-papers'])
+            ->with('status', 'Exam paper tabled for moderation.');
+    }
+
+    public function moderateExamPaper(Request $request, \App\Models\ExaminationPaper $examinationPaper): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $validated = $request->validate([
+            'moderated_file' => ['nullable', 'file', 'max:20480', 'mimes:pdf,doc,docx'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        app(\App\Services\ExaminationPaperService::class)->moderate(
+            $examinationPaper,
+            $staff,
+            $request->file('moderated_file'),
+            $validated['notes'] ?? null,
+        );
+
+        return redirect()->route('staff.dashboard', ['section' => 'exam-papers'])
+            ->with('status', 'Exam paper moderated.');
+    }
+
+    public function downloadExamPaper(Request $request, \App\Models\ExaminationPaper $examinationPaper, string $kind = 'draft'): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+        abort_unless(in_array($kind, ['draft', 'moderated', 'approved'], true), 404);
+
+        $papers = app(\App\Services\ExaminationPaperService::class);
+        $canAccess = (int) $examinationPaper->prepared_by === (int) $staff->id
+            || $papers->userCanModerate($staff)
+            || \App\Models\UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->where('unit_id', $examinationPaper->unit_id)
+                ->where('is_active', 1)
+                ->exists();
+
+        abort_unless($canAccess, 403);
+
+        $path = $this->files->relativePath($examinationPaper->filePathFor($kind));
+        abort_unless($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->download($path, basename($path));
+    }
 }

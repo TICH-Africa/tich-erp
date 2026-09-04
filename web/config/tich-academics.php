@@ -24,4 +24,9 @@ return [
         'exam_eligibility' => 'exam_eligibility_matrix',
     ],
 
+    'workload_limits' => [
+        'max_contact_hours' => (int) env('TICH_WORKLOAD_MAX_HOURS', 18),
+        'max_units' => (int) env('TICH_WORKLOAD_MAX_UNITS', 4),
+    ],
+
 ];

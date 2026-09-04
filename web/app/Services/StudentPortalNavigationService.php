@@ -18,6 +18,7 @@ class StudentPortalNavigationService
             'enrolment' => 'Enrolment',
             'documents' => 'Documents',
             'requests' => 'Lifecycle requests',
+            'exam-requests' => 'Exam sitting requests',
             'evaluations' => 'Course evaluations',
             'notifications' => 'Notifications',
             'clearance' => 'Clearance',
@@ -122,6 +123,11 @@ class StudentPortalNavigationService
                 'type' => 'link',
                 'label' => 'Lifecycle requests',
                 'section' => 'requests',
+            ],
+            [
+                'type' => 'link',
+                'label' => 'Exam sitting requests',
+                'section' => 'exam-requests',
             ],
             [
                 'type' => 'link',
@@ -256,6 +262,12 @@ class StudentPortalNavigationService
                 'label' => 'Lifecycle requests',
                 'description' => 'Request deferment, withdrawal, or readmission.',
                 'section' => 'requests',
+                'group' => 'services',
+            ],
+            [
+                'label' => 'Exam sitting requests',
+                'description' => 'Apply for special or supplementary exam sittings.',
+                'section' => 'exam-requests',
                 'group' => 'services',
             ],
             [

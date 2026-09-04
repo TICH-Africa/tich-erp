@@ -440,6 +440,10 @@
         @endcan
 
     @elseif ($examTab === 'papers')
+        @php
+            $canModeratePapers = auth()->user()?->hasAnyRole(['Academic Registrar', 'HOD', 'Super Admin', 'Head of Academics']);
+            $paperHub = \App\Support\AcademicsRouteParams::fromRequest(request());
+        @endphp
         <article class="tich-card">
             <h2 class="tich-h3">Examination papers - Semester {{ $examTeachingPeriod }}</h2>
             <p class="tich-text tich-mt-2">Draft, moderated, and approved exam papers for units taught this semester.</p>
@@ -453,6 +457,7 @@
                             <th>Version</th>
                             <th>Status</th>
                             <th>Approved</th>
+                            <th>Files / actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -464,9 +469,34 @@
                                 <td>{{ $paper->version }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $paper->status)) }}</td>
                                 <td>{{ $paper->approved_at ? \Illuminate\Support\Carbon::parse($paper->approved_at)->format('d M Y') : '-' }}</td>
+                                <td style="display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center;">
+                                    @if ($paper->draft_file_path)
+                                        <a href="{{ route('departments.academics.examination-papers.download', array_merge($paperHub, ['examinationPaper' => $paper->id, 'kind' => 'draft'])) }}" class="tich-btn tich-btn-ghost">Draft</a>
+                                    @endif
+                                    @if ($paper->moderated_file_path)
+                                        <a href="{{ route('departments.academics.examination-papers.download', array_merge($paperHub, ['examinationPaper' => $paper->id, 'kind' => 'moderated'])) }}" class="tich-btn tich-btn-ghost">Moderated</a>
+                                    @endif
+                                    @if ($paper->approved_file_path)
+                                        <a href="{{ route('departments.academics.examination-papers.download', array_merge($paperHub, ['examinationPaper' => $paper->id, 'kind' => 'approved'])) }}" class="tich-btn tich-btn-ghost">Approved</a>
+                                    @endif
+                                    @if ($canModeratePapers && $paper->status === 'tabled')
+                                        <form method="POST" action="{{ route('departments.academics.examination-papers.moderate', array_merge($paperHub, ['examinationPaper' => $paper->id])) }}" enctype="multipart/form-data" style="display:flex; gap:0.35rem; align-items:center;">
+                                            @csrf
+                                            <input type="file" name="moderated_file" class="tich-input" style="max-width:9rem;" accept=".pdf,.doc,.docx">
+                                            <button type="submit" class="tich-btn tich-btn-secondary">Moderate</button>
+                                        </form>
+                                    @endif
+                                    @if ($canModeratePapers && $paper->status === 'moderated')
+                                        <form method="POST" action="{{ route('departments.academics.examination-papers.approve', array_merge($paperHub, ['examinationPaper' => $paper->id])) }}" enctype="multipart/form-data" style="display:flex; gap:0.35rem; align-items:center;">
+                                            @csrf
+                                            <input type="file" name="approved_file" class="tich-input" style="max-width:9rem;" accept=".pdf,.doc,.docx">
+                                            <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6">No examination papers for Semester {{ $examTeachingPeriod }} units yet.</td></tr>
+                            <tr><td colspan="7">No examination papers for Semester {{ $examTeachingPeriod }} units yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

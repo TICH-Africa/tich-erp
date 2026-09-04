@@ -30,7 +30,13 @@
                 ]);
 
                 $curriculumActive = request()->routeIs('departments.academics.units.*', 'departments.academics.programs.*', 'departments.academics.lesson-plans.*');
-                $assessmentActive = request()->routeIs('departments.academics.attendance-ledger.*', 'departments.academics.clearance.*', 'departments.academics.performance.*');
+                $assessmentActive = request()->routeIs(
+                    'departments.academics.attendance-ledger.*',
+                    'departments.academics.clearance.*',
+                    'departments.academics.performance.*',
+                    'departments.academics.special-exam-requests.*',
+                    'departments.academics.supplementary-requests.*'
+                );
                 $studentVoiceActive = request()->routeIs('departments.academics.suggestions.*');
                 $studentServicesActive = request()->routeIs(
                     'departments.academics.profile-changes.*',
@@ -149,6 +155,18 @@
                                 'label' => 'Performance terminal',
                                 'icon' => 'bar-chart',
                                 'active' => request()->routeIs('departments.academics.performance.*'),
+                            ],
+                            [
+                                'href' => route('departments.academics.special-exam-requests.index', $hub),
+                                'label' => 'Special exam requests',
+                                'icon' => 'file-text',
+                                'active' => request()->routeIs('departments.academics.special-exam-requests.*'),
+                            ],
+                            [
+                                'href' => route('departments.academics.supplementary-requests.index', $hub),
+                                'label' => 'Supplementary requests',
+                                'icon' => 'refresh-cw',
+                                'active' => request()->routeIs('departments.academics.supplementary-requests.*'),
                             ],
                         ],
                     ])

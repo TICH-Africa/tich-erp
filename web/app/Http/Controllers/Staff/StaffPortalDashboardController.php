@@ -144,6 +144,31 @@ class StaffPortalDashboardController extends Controller
             $leaveRequests = app(\App\Services\LeaveRequestService::class)->requestsForStaff($staff);
         }
 
+        $examPapers = collect();
+        $canModerateExamPapers = false;
+        if ($section === 'exam-papers') {
+            $examPaperService = app(\App\Services\ExaminationPaperService::class);
+            $examPapers = $examPaperService->papersForStaff($staff);
+            $canModerateExamPapers = $examPaperService->userCanModerate($staff);
+        }
+
+        $hodWorkload = null;
+        if ($section === 'hod-workload') {
+            abort_unless(
+                $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']),
+                403
+            );
+            $departmentId = (int) ($staff->department_id ?? 0);
+            $semesterId = $request->integer('semester') ?: null;
+            $hodWorkload = [
+                'rows' => app(\App\Services\UnitAllocationService::class)->workloadMatrix($departmentId, $semesterId ?: null),
+                'semester_id' => $semesterId,
+                'semesters' => Semester::query()->orderByDesc('id')->limit(12)->get(),
+                'max_hours' => (int) config('tich-academics.workload_limits.max_contact_hours', 18),
+                'max_units' => (int) config('tich-academics.workload_limits.max_units', 4),
+            ];
+        }
+
         return view('staff.dashboard', [
             'staff' => $staff,
             'portalData' => $portalData,
@@ -168,6 +193,9 @@ class StaffPortalDashboardController extends Controller
             'leaveBalances' => $leaveBalances,
             'leaveRequests' => $leaveRequests,
             'leaveTypes' => $leaveTypes,
+            'examPapers' => $examPapers,
+            'canModerateExamPapers' => $canModerateExamPapers,
+            'hodWorkload' => $hodWorkload,
         ]);
     }
 

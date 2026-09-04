@@ -462,6 +462,97 @@ CREATE TABLE IF NOT EXISTS `student_notifications` (
     CONSTRAINT `student_notifications_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- 14. Special / supplementary exam sitting request enhancements
+--     (2026_09_04_120000_enhance_exam_sitting_requests)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `special_exam_requests`
+    MODIFY COLUMN `exam_result_id` bigint(20) unsigned NULL DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS `unit_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `exam_result_id`,
+    ADD COLUMN IF NOT EXISTS `semester_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `unit_id`,
+    ADD COLUMN IF NOT EXISTS `student_notes` text NULL DEFAULT NULL AFTER `reason`,
+    ADD COLUMN IF NOT EXISTS `reviewed_notes` text NULL DEFAULT NULL AFTER `reviewed_at`;
+
+ALTER TABLE `supplementary_requests`
+    MODIFY COLUMN `exam_result_id` bigint(20) unsigned NULL DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS `unit_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `exam_result_id`,
+    ADD COLUMN IF NOT EXISTS `semester_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `unit_id`,
+    ADD COLUMN IF NOT EXISTS `student_notes` text NULL DEFAULT NULL AFTER `application_status`,
+    ADD COLUMN IF NOT EXISTS `reviewed_by` bigint(20) unsigned NULL DEFAULT NULL AFTER `student_notes`,
+    ADD COLUMN IF NOT EXISTS `reviewed_at` datetime NULL DEFAULT NULL AFTER `reviewed_by`,
+    ADD COLUMN IF NOT EXISTS `reviewed_notes` text NULL DEFAULT NULL AFTER `reviewed_at`;
+
+-- Indexes / FKs (ignore errors if already present when re-run without IF NOT EXISTS helpers)
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'special_exam_requests'
+              AND CONSTRAINT_NAME = 'special_exam_requests_unit_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `special_exam_requests` ADD CONSTRAINT `special_exam_requests_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'special_exam_requests'
+              AND CONSTRAINT_NAME = 'special_exam_requests_semester_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `special_exam_requests` ADD CONSTRAINT `special_exam_requests_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'supplementary_requests'
+              AND CONSTRAINT_NAME = 'supplementary_requests_unit_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `supplementary_requests` ADD CONSTRAINT `supplementary_requests_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'supplementary_requests'
+              AND CONSTRAINT_NAME = 'supplementary_requests_semester_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `supplementary_requests` ADD CONSTRAINT `supplementary_requests_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'supplementary_requests'
+              AND CONSTRAINT_NAME = 'supplementary_requests_reviewed_by_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `supplementary_requests` ADD CONSTRAINT `supplementary_requests_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

@@ -24,12 +24,14 @@ class StaffPortalNavigationService
             'grading' => 'Marks & assessments',
             'lesson-plans' => 'Lesson plans',
             'content' => 'Learning content',
+            'exam-papers' => 'Exam papers',
         ];
 
         if ($this->userIsHod()) {
             $sections['hod-management'] = 'HOD management';
             $sections['hod-lesson-plans'] = 'Lesson plans';
             $sections['hod-unit-allocations'] = 'Unit allocations';
+            $sections['hod-workload'] = 'Workload matrix';
             $sections['hod-attendance'] = 'Attendance review';
             $sections['hod-leave'] = 'Department leave';
             $sections['hod-performance'] = 'Performance';
@@ -59,6 +61,7 @@ class StaffPortalNavigationService
             ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'],
             ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
             ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
+            ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'],
         ];
 
         if ($this->userIsHod()) {
@@ -71,6 +74,7 @@ class StaffPortalNavigationService
                     ['type' => 'link', 'label' => 'Overview', 'section' => 'hod-management', 'icon' => 'layout-grid'],
                     ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'hod-lesson-plans', 'icon' => 'notebook'],
                     ['type' => 'link', 'label' => 'Unit allocations', 'section' => 'hod-unit-allocations', 'icon' => 'users'],
+                    ['type' => 'link', 'label' => 'Workload matrix', 'section' => 'hod-workload', 'icon' => 'bar-chart'],
                     ['type' => 'link', 'label' => 'Attendance review', 'section' => 'hod-attendance', 'icon' => 'clipboard-check'],
                     ['type' => 'link', 'label' => 'Department leave', 'section' => 'hod-leave', 'icon' => 'calendar-off'],
                     ['type' => 'link', 'label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],

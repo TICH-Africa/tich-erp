@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\CourseEvaluation;
 use App\Models\CourseEvaluationWindow;
+use App\Models\SpecialExamRequest;
 use App\Models\StudentDocumentRequest;
 use App\Models\StudentLifecycleRequest;
 use App\Models\StudentNotification;
 use App\Models\StudentProfileChangeRequest;
 use App\Models\StudentTranscriptRequest;
+use App\Models\SupplementaryExamRequest;
 use App\Services\StudentClearanceService;
 use App\Services\StudentPortalDashboardService;
 use App\Services\StudentPortalNavigationService;
@@ -48,6 +50,8 @@ class PortalDashboardController extends Controller
         $myEvaluations = collect();
         $notifications = collect();
         $clearanceItems = collect();
+        $specialExamRequests = collect();
+        $supplementaryExamRequests = collect();
 
         if (Schema::hasTable('student_profile_change_requests') && $section === 'profile') {
             $profileChangeRequests = StudentProfileChangeRequest::query()
@@ -63,6 +67,25 @@ class PortalDashboardController extends Controller
                 ->orderByDesc('created_at')
                 ->limit(30)
                 ->get();
+        }
+
+        if ($section === 'exam-requests') {
+            if (Schema::hasTable('special_exam_requests')) {
+                $specialExamRequests = SpecialExamRequest::query()
+                    ->with(['unit', 'semester'])
+                    ->where('student_id', $student->id)
+                    ->orderByDesc('created_at')
+                    ->limit(30)
+                    ->get();
+            }
+            if (Schema::hasTable('supplementary_requests')) {
+                $supplementaryExamRequests = SupplementaryExamRequest::query()
+                    ->with(['unit', 'semester'])
+                    ->where('student_id', $student->id)
+                    ->orderByDesc('created_at')
+                    ->limit(30)
+                    ->get();
+            }
         }
 
         if (Schema::hasTable('student_transcript_requests') && $section === 'academics' && $tab === 'exams') {
@@ -128,6 +151,8 @@ class PortalDashboardController extends Controller
             'myEvaluations' => $myEvaluations,
             'notifications' => $notifications,
             'clearanceItems' => $clearanceItems,
+            'specialExamRequests' => $specialExamRequests,
+            'supplementaryExamRequests' => $supplementaryExamRequests,
             'lifecycleTypes' => StudentLifecycleRequest::TYPES,
             'documentTypes' => StudentDocumentRequest::TYPES,
         ]);

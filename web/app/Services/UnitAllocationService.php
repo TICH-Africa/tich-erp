@@ -113,6 +113,64 @@ class UnitAllocationService
     }
 
     /**
+     * Workload rows with unit lists and overload flags for HOD matrix.
+     *
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    public function workloadMatrix(int $departmentId, ?int $semesterId = null)
+    {
+        $maxHours = (int) config('tich-academics.workload_limits.max_contact_hours', 18);
+        $maxUnits = (int) config('tich-academics.workload_limits.max_units', 4);
+        $summary = $this->workloadSummary($departmentId, $semesterId);
+        $staffIds = $summary->pluck('id')->all();
+
+        if ($staffIds === []) {
+            return collect();
+        }
+
+        $unitsByStaff = DB::table('unit_allocations as ua')
+            ->join('units as u', 'u.id', '=', 'ua.unit_id')
+            ->where('u.department_id', $departmentId)
+            ->where('ua.is_active', 1)
+            ->whereIn('ua.staff_id', $staffIds)
+            ->when($semesterId, fn ($query) => $query->where('ua.semester_id', $semesterId))
+            ->orderBy('u.unit_code')
+            ->select([
+                'ua.staff_id',
+                'u.id as unit_id',
+                'u.unit_code',
+                'u.unit_name',
+                'ua.contact_hours_assigned',
+                'ua.semester_id',
+            ])
+            ->get()
+            ->groupBy('staff_id');
+
+        return $summary->map(function ($row) use ($unitsByStaff, $maxHours, $maxUnits) {
+            $units = $unitsByStaff->get($row->id, collect());
+            $totalHours = (float) $row->total_hours;
+            $unitCount = (int) $row->unit_count;
+            $hoursOver = $totalHours > $maxHours;
+            $unitsOver = $unitCount > $maxUnits;
+
+            return (object) [
+                'id' => (int) $row->id,
+                'first_name' => $row->first_name,
+                'surname' => $row->surname,
+                'employee_number' => $row->employee_number,
+                'unit_count' => $unitCount,
+                'total_hours' => $totalHours,
+                'units' => $units,
+                'is_overloaded' => $hoursOver || $unitsOver,
+                'overload_hours' => $hoursOver,
+                'overload_units' => $unitsOver,
+                'max_hours' => $maxHours,
+                'max_units' => $maxUnits,
+            ];
+        });
+    }
+
+    /**
      * Active lecturer allocations for catalog units within an intake's teaching periods.
      *
      * @param  list<int>  $unitIds

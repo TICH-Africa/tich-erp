@@ -26,9 +26,11 @@ class StaffSidebarNotificationService
         'attendance.incomplete' => 'Attendance',
         'leave.returned' => 'Leave',
         'documents' => 'My Documents',
+        'exam-papers' => 'Exam papers',
         'hod-management' => 'HOD management',
         'hod-lesson-plans' => 'Lesson plans',
         'hod-unit-allocations' => 'Unit allocations',
+        'hod-workload' => 'Workload matrix',
         'hod-attendance' => 'Attendance review',
         'hod-leave' => 'Department leave',
         'hod-performance' => 'Performance',
@@ -72,6 +74,7 @@ class StaffSidebarNotificationService
             'attendance' => 'attendance.incomplete',
             'leave' => 'leave.returned',
             'documents' => 'documents',
+            'exam-papers' => 'exam-papers',
             'hod-management' => 'hod-management',
             'hod-lesson-plans' => 'hod-lesson-plans',
             'hod-attendance' => 'hod-attendance',
@@ -96,14 +99,17 @@ class StaffSidebarNotificationService
             'attendance.incomplete' => $this->incompleteAttendanceSessions($allocationIds),
             'leave.returned' => $this->returnedLeaveRequests($staff),
             'documents' => $this->unverifiedDocuments($staff),
+            'exam-papers' => 0,
             'hod-management' => 0,
             'hod-lesson-plans' => 0,
             'hod-attendance' => 0,
             'hod-leave' => 0,
         ];
 
-        if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])) {
-            $counts['hod-management'] = $this->hodLessonPlansPending($staff) + $this->hodAttendancePending($staff);
+        if ($user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin', 'Head of Academics'])) {
+            $examPaperPending = app(\App\Services\ExaminationPaperService::class)->pendingModerationCount($staff);
+            $counts['exam-papers'] = $examPaperPending;
+            $counts['hod-management'] = $this->hodLessonPlansPending($staff) + $this->hodAttendancePending($staff) + $examPaperPending;
             $counts['hod-lesson-plans'] = $this->hodLessonPlansPending($staff);
             $counts['hod-attendance'] = $this->hodAttendancePending($staff);
             $counts['hod-leave'] = $this->hodDepartmentLeavePending($staff);

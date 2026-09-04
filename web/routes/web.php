@@ -746,6 +746,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.fee-statement.pdf');
         Route::post('/document-requests', [\App\Http\Controllers\Portal\PortalDocumentRequestController::class, 'store'])
             ->name('portal.document-requests.store');
+        Route::post('/exam-sitting-requests', [\App\Http\Controllers\Portal\PortalExamSittingRequestController::class, 'store'])
+            ->name('portal.exam-sitting-requests.store');
         Route::get('/exam-card/print', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'print'])
             ->name('portal.exam-card.print');
         Route::get('/exam-card/pdf', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'pdf'])
@@ -852,7 +854,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::patch('/grading/objective/{objective_assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
         Route::patch('/grading/objective/{objective_assessment}/answers', [StaffPortalActionController::class, 'updateObjectiveAnswers'])->name('staff.grading.objective.answers.update');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
-Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
+        Route::post('/exam-papers', [StaffPortalActionController::class, 'storeExamPaper'])->name('staff.exam-papers.store');
+        Route::post('/exam-papers/{examinationPaper}/table', [StaffPortalActionController::class, 'tableExamPaper'])->name('staff.exam-papers.table');
+        Route::post('/exam-papers/{examinationPaper}/moderate', [StaffPortalActionController::class, 'moderateExamPaper'])->name('staff.exam-papers.moderate');
+        Route::get('/exam-papers/{examinationPaper}/download/{kind?}', [StaffPortalActionController::class, 'downloadExamPaper'])->name('staff.exam-papers.download');
+        Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffStore'])->name('staff.documents.store');
             Route::get('/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffCreate'])->name('staff.documents.create');
             Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'staffDownload'])->name('staff.documents.download');
     });

@@ -232,9 +232,11 @@ class StudentAcademicRecordService
             ->select([
                 'ssr.student_id',
                 'ru.id',
+                'ru.unit_id',
                 'ru.is_additional',
                 'u.unit_code',
                 'u.unit_name',
+                'ssr.semester_id',
                 's.semester_label',
                 's.semester_number',
                 'ssr.status as registration_status',
