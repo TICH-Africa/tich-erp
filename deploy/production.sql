@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-04 11:58:34 EAT
+-- Generated: 2026-09-04 22:05:36 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -9344,9 +9344,19 @@ CREATE TABLE IF NOT EXISTS `student_lifecycle_requests` (
   `requested_by_user_id` bigint(20) unsigned NOT NULL,
   `request_type` varchar(50) NOT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `registrar_status` varchar(30) NOT NULL DEFAULT 'pending',
+  `dean_status` varchar(30) NOT NULL DEFAULT 'pending',
   `effective_date` date DEFAULT NULL,
+  `deferment_months` smallint(5) unsigned DEFAULT NULL,
   `reason` text DEFAULT NULL,
+  `attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attachments`)),
   `reviewer_notes` text DEFAULT NULL,
+  `registrar_notes` text DEFAULT NULL,
+  `dean_notes` text DEFAULT NULL,
+  `registrar_reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `dean_reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `registrar_reviewed_at` timestamp NULL DEFAULT NULL,
+  `dean_reviewed_at` timestamp NULL DEFAULT NULL,
   `reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
   `reviewed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -9366,9 +9376,19 @@ CALL `tich_ensure_column`('student_lifecycle_requests', 'student_id', 'bigint(20
 CALL `tich_ensure_column`('student_lifecycle_requests', 'requested_by_user_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'request_type', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'registrar_status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'dean_status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'effective_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'deferment_months', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'reason', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'attachments', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'reviewer_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'registrar_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'dean_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'registrar_reviewed_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'dean_reviewed_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'registrar_reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_lifecycle_requests', 'dean_reviewed_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'reviewed_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'reviewed_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_lifecycle_requests', 'created_at', 'timestamp NULL DEFAULT NULL');

@@ -31,9 +31,17 @@
             </dl>
         </article>
 
-        @if ($specialExamRequest->status === 'pending')
+        @if (in_array($specialExamRequest->status, ['pending', 'on_hold'], true))
             <article class="tich-card">
                 <h2 class="tich-h3">Review</h2>
+                @if (! empty($specialExamRequest->supporting_docs))
+                    <div class="tich-mt-4">
+                        <p class="tich-caption">Attachments</p>
+                        @foreach ($specialExamRequest->supporting_docs as $i => $file)
+                            <p class="tich-text">{{ is_array($file) ? ($file['original_name'] ?? 'File '.($i + 1)) : $file }}</p>
+                        @endforeach
+                    </div>
+                @endif
                 <form method="POST" action="{{ route('departments.academics.special-exam-requests.approve', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-4">
                     @csrf
                     <div>
@@ -41,6 +49,14 @@
                         <textarea id="reviewed_notes" name="reviewed_notes" rows="3" class="tich-input"></textarea>
                     </div>
                     <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
+                </form>
+                <form method="POST" action="{{ route('departments.academics.special-exam-requests.hold', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-6">
+                    @csrf
+                    <div>
+                        <label for="hold_notes" class="tich-label">Hold notes</label>
+                        <textarea id="hold_notes" name="reviewed_notes" rows="3" class="tich-input" required></textarea>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Put on hold</button>
                 </form>
                 <form method="POST" action="{{ route('departments.academics.special-exam-requests.reject', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-6">
                     @csrf

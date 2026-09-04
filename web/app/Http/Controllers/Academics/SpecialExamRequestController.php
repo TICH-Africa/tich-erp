@@ -71,7 +71,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
             'reviewed_notes' => 'nullable|string|max:2000',
         ]);
 
-        abort_unless($specialExamRequest->status === 'pending', 422);
+        abort_unless($specialExamRequest->status === 'pending' || $specialExamRequest->status === 'on_hold', 422);
 
         $specialExamRequest->fill([
             'status' => 'approved',
@@ -88,6 +88,33 @@ class SpecialExamRequestController extends DepartmentAcademicsController
             ->with('success', 'Special exam request approved.');
     }
 
+    public function hold(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse
+    {
+        $this->authorizeReviewer($request, $department);
+        $staff = $this->staffPortal->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $validated = $request->validate([
+            'reviewed_notes' => 'required|string|max:2000',
+        ]);
+
+        abort_unless(in_array($specialExamRequest->status, ['pending', 'on_hold'], true), 422);
+
+        $specialExamRequest->fill([
+            'status' => 'on_hold',
+            'reviewed_notes' => $validated['reviewed_notes'],
+            'reviewed_by' => $staff->id,
+            'reviewed_at' => now(),
+        ])->save();
+
+        return redirect()
+            ->route('departments.academics.special-exam-requests.show', array_merge(
+                \App\Support\AcademicsRouteParams::fromRequest($request),
+                ['specialExamRequest' => $specialExamRequest->id]
+            ))
+            ->with('success', 'Special exam request put on hold.');
+    }
+
     public function reject(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
@@ -98,7 +125,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
             'reviewed_notes' => 'required|string|max:2000',
         ]);
 
-        abort_unless($specialExamRequest->status === 'pending', 422);
+        abort_unless(in_array($specialExamRequest->status, ['pending', 'on_hold'], true), 422);
 
         $specialExamRequest->fill([
             'status' => 'rejected',

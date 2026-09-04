@@ -3,7 +3,7 @@
 @section('academics-content')
     @php $hub = \App\Support\AcademicsRouteParams::for(['learning_department' => request()->integer('learning_department') ?: null]); @endphp
 
-    <x-page-toolbar title="Lifecycle requests" meta="Deferment, withdrawal, and readmission">
+    <x-page-toolbar title="Deferment requests" meta="Requires Academic Registrar and Dean of Students approval">
         <x-slot:actions>
             <a href="{{ route('departments.academics.dashboard', $hub) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
@@ -14,7 +14,7 @@
             <div class="tich-form-group" style="margin:0;">
                 <label for="status" class="tich-label">Status</label>
                 <select id="status" name="status" class="tich-select">
-                    @foreach (['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected', 'all' => 'All'] as $value => $label)
+                    @foreach (['pending' => 'Open / pending', 'approved' => 'Approved', 'rejected' => 'Rejected', 'on_hold' => 'On hold', 'all' => 'All'] as $value => $label)
                         <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -29,8 +29,10 @@
                 <thead>
                     <tr>
                         <th>Student</th>
-                        <th>Type</th>
+                        <th>Period</th>
                         <th>Status</th>
+                        <th>Registrar</th>
+                        <th>Dean</th>
                         <th>Submitted</th>
                         <th></th>
                     </tr>
@@ -42,15 +44,17 @@
                                 <strong>{{ $item->student?->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $item->student?->registration_number ?? '-' }}</p>
                             </td>
-                            <td>{{ $item->typeLabel() }}</td>
-                            <td>{{ ucfirst($item->status) }}</td>
+                            <td>{{ $item->deferment_months ? $item->deferment_months.' mo' : '-' }}</td>
+                            <td>{{ $item->statusLabel() }}</td>
+                            <td>{{ \App\Models\StudentLifecycleRequest::REVIEW_STATUSES[$item->registrar_status ?? 'pending'] ?? '-' }}</td>
+                            <td>{{ \App\Models\StudentLifecycleRequest::REVIEW_STATUSES[$item->dean_status ?? 'pending'] ?? '-' }}</td>
                             <td class="tich-caption">{{ $item->created_at?->format('d M Y H:i') }}</td>
                             <td>
                                 <a href="{{ route('departments.academics.lifecycle-requests.show', array_merge($hub, ['lifecycleRequest' => $item->id])) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No lifecycle requests', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No deferment requests', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

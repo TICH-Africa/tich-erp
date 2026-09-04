@@ -37,7 +37,10 @@
                     'departments.academics.special-exam-requests.*',
                     'departments.academics.supplementary-requests.*'
                 );
-                $studentVoiceActive = request()->routeIs('departments.academics.suggestions.*');
+                $studentVoiceActive = request()->routeIs(
+                    'departments.academics.suggestions.*',
+                    'departments.academics.lifecycle-requests.*'
+                );
                 $studentServicesActive = request()->routeIs(
                     'departments.academics.profile-changes.*',
                     'departments.academics.transcript-requests.*',
@@ -51,6 +54,7 @@
                 $sidebarProgram = $programsQuery->first();
                 $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
                 $canManageStudentServices = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
+                $canReviewDeferments = auth()->user()?->hasAnyRole(['Academic Registrar', 'Dean of Students', 'Super Admin', 'Head of Academics']);
             @endphp
 
             @can('academics.read')
@@ -178,7 +182,7 @@
                     'open' => $studentVoiceActive || $suggestionsOnly,
                     'active' => $studentVoiceActive,
                     'badgeKey' => 'suggestions.open',
-                    'items' => [
+                    'items' => array_values(array_filter([
                         [
                             'href' => route('departments.academics.suggestions.index', $hub),
                             'label' => 'Suggestion box',
@@ -186,7 +190,14 @@
                             'active' => request()->routeIs('departments.academics.suggestions.*'),
                             'badgeKey' => 'suggestions.open',
                         ],
-                    ],
+                        $canReviewDeferments ? [
+                            'href' => route('departments.academics.lifecycle-requests.index', $hub),
+                            'label' => 'Deferment requests',
+                            'icon' => 'refresh-cw',
+                            'active' => request()->routeIs('departments.academics.lifecycle-requests.*'),
+                            'badgeKey' => 'lifecycle.pending',
+                        ] : null,
+                    ])),
                 ])
 
                 @unless ($suggestionsOnly)
@@ -194,8 +205,8 @@
                         @include('partials.navigation.sidebar-group', [
                             'label' => 'Student services',
                             'icon' => 'users',
-                            'open' => $studentServicesActive,
-                            'active' => $studentServicesActive,
+                            'open' => $studentServicesActive && ! request()->routeIs('departments.academics.lifecycle-requests.*'),
+                            'active' => $studentServicesActive && ! request()->routeIs('departments.academics.lifecycle-requests.*'),
                             'items' => [
                                 [
                                     'href' => route('departments.academics.profile-changes.index', $hub),
@@ -208,12 +219,6 @@
                                     'label' => 'Transcript requests',
                                     'icon' => 'file-text',
                                     'active' => request()->routeIs('departments.academics.transcript-requests.*'),
-                                ],
-                                [
-                                    'href' => route('departments.academics.lifecycle-requests.index', $hub),
-                                    'label' => 'Lifecycle',
-                                    'icon' => 'refresh-cw',
-                                    'active' => request()->routeIs('departments.academics.lifecycle-requests.*'),
                                 ],
                                 [
                                     'href' => route('departments.academics.document-requests.index', $hub),

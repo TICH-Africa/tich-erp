@@ -17,8 +17,8 @@ class StudentPortalNavigationService
             'profile' => 'My profile',
             'enrolment' => 'Enrolment',
             'documents' => 'Documents',
-            'requests' => 'Lifecycle requests',
-            'exam-requests' => 'Exam sitting requests',
+            'requests' => 'Deferment',
+            'exam-requests' => 'Supplementary & Special Exams',
             'evaluations' => 'Course evaluations',
             'notifications' => 'Notifications',
             'clearance' => 'Clearance',
@@ -40,6 +40,7 @@ class StudentPortalNavigationService
             'content' => 'Learning Content',
             'assessments' => 'Assessments',
             'exams' => 'Exams & Grades',
+            'exam-requests' => 'Supplementary & Special Exams',
             'progress' => 'Academic progress',
             'eligibility' => 'Exam eligibility',
             'calendar' => 'Academic calendar',
@@ -63,12 +64,21 @@ class StudentPortalNavigationService
     {
         $section = $request->string('section')->toString() ?: 'overview';
 
+        // Legacy top-level exam-requests URL → academics tab
+        if ($section === 'exam-requests') {
+            return 'academics';
+        }
+
         return array_key_exists($section, $this->sections()) ? $section : 'overview';
     }
 
     public function resolveTab(Request $request, string $section): ?string
     {
         $tab = $request->string('tab')->toString();
+
+        if ($request->string('section')->toString() === 'exam-requests') {
+            return 'exam-requests';
+        }
 
         return match ($section) {
             'academics' => array_key_exists($tab, $this->academicsTabs()) ? $tab : 'units',
@@ -121,16 +131,6 @@ class StudentPortalNavigationService
             ],
             [
                 'type' => 'link',
-                'label' => 'Lifecycle requests',
-                'section' => 'requests',
-            ],
-            [
-                'type' => 'link',
-                'label' => 'Exam sitting requests',
-                'section' => 'exam-requests',
-            ],
-            [
-                'type' => 'link',
                 'label' => 'Clearance',
                 'section' => 'clearance',
             ],
@@ -164,6 +164,11 @@ class StudentPortalNavigationService
                         'label' => 'Exams & Grades',
                         'tab' => 'exams',
                         'icon' => 'award',
+                    ],
+                    [
+                        'label' => 'Supplementary & Special Exams',
+                        'tab' => 'exam-requests',
+                        'icon' => 'file-text',
                     ],
                     [
                         'label' => 'Academic progress',
@@ -225,6 +230,11 @@ class StudentPortalNavigationService
                 'label' => 'Suggestion box',
                 'section' => 'suggestions',
             ],
+            [
+                'type' => 'link',
+                'label' => 'Deferment',
+                'section' => 'requests',
+            ],
             ['type' => 'heading', 'label' => 'Account'],
             [
                 'type' => 'link',
@@ -259,16 +269,16 @@ class StudentPortalNavigationService
                 'group' => 'services',
             ],
             [
-                'label' => 'Lifecycle requests',
-                'description' => 'Request deferment, withdrawal, or readmission.',
+                'label' => 'Deferment',
+                'description' => 'Request academic deferment for a defined period.',
                 'section' => 'requests',
                 'group' => 'services',
             ],
             [
-                'label' => 'Exam sitting requests',
-                'description' => 'Apply for special or supplementary exam sittings.',
-                'section' => 'exam-requests',
-                'group' => 'services',
+                'label' => 'Supplementary & Special Exams',
+                'description' => 'Apply for supplementary or special exam sittings.',
+                'section' => 'academics',
+                'group' => 'learning',
             ],
             [
                 'label' => 'Clearance',

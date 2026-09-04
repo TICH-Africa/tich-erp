@@ -10,6 +10,7 @@ class SupplementaryExamRequest extends Model
     public const STATUSES = [
         'pending_review' => 'Pending review',
         'pending_fee' => 'Pending fee',
+        'on_hold' => 'On hold',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'scheduled' => 'Scheduled',

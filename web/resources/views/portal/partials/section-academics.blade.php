@@ -30,6 +30,7 @@
         'content' => 'Learning Content',
         'assessments' => 'Assessments',
         'exams' => 'Exams & Grades',
+        'exam-requests' => 'Supplementary & Special Exams',
         'progress' => 'Academic progress',
         'eligibility' => 'Exam eligibility',
         'calendar' => 'Academic calendar',
@@ -69,6 +70,8 @@
     @include('portal.assessments.index')
 @elseif ($academicsTab === 'exams')
     @include('portal.partials.academics.exams-grades')
+@elseif ($academicsTab === 'exam-requests')
+    @include('portal.partials.section-exam-requests')
 @elseif ($academicsTab === 'progress')
     @include('portal.partials.academics.progress')
 @elseif ($academicsTab === 'eligibility')

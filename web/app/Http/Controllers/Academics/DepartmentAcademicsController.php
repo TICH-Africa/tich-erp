@@ -34,7 +34,7 @@ abstract class DepartmentAcademicsController extends Controller
         abort_unless($department->isAcademicsHub(), 404);
 
         if ($this->access->isSuggestionsOnly($request->user()) && ! $allowSuggestionsOnly) {
-            abort(403, 'Dean of Students access in Academics is limited to the suggestion box.');
+            abort(403, 'Dean of Students access in Academics is limited to the suggestion box and deferment requests.');
         }
 
         return $department;

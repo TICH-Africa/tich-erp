@@ -32,7 +32,7 @@ class AcademicsAccessService
     }
 
     /**
-     * Dean of Students with no other academics role may only use Student Voice → Suggestion box.
+     * Dean of Students with no other academics role may only use Suggestion box + Deferment requests.
      */
     public function isSuggestionsOnly(User $user): bool
     {

@@ -353,20 +353,34 @@ CREATE TABLE IF NOT EXISTS `student_lifecycle_requests` (
     `requested_by_user_id` bigint(20) unsigned NOT NULL,
     `request_type` varchar(50) NOT NULL,
     `status` varchar(30) NOT NULL DEFAULT 'pending',
+    `registrar_status` varchar(30) NOT NULL DEFAULT 'pending',
+    `dean_status` varchar(30) NOT NULL DEFAULT 'pending',
     `effective_date` date DEFAULT NULL,
+    `deferment_months` smallint(5) unsigned DEFAULT NULL,
     `reason` text DEFAULT NULL,
+    `attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attachments`)),
     `reviewer_notes` text DEFAULT NULL,
+    `registrar_notes` text DEFAULT NULL,
+    `dean_notes` text DEFAULT NULL,
     `reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `registrar_reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `dean_reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
     `reviewed_at` timestamp NULL DEFAULT NULL,
+    `registrar_reviewed_at` timestamp NULL DEFAULT NULL,
+    `dean_reviewed_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY `student_lifecycle_requests_student_id_status_index` (`student_id`, `status`),
     KEY `student_lifecycle_requests_requested_by_user_id_foreign` (`requested_by_user_id`),
     KEY `student_lifecycle_requests_reviewed_by_user_id_foreign` (`reviewed_by_user_id`),
+    KEY `student_lifecycle_requests_registrar_reviewed_by_user_id_foreign` (`registrar_reviewed_by_user_id`),
+    KEY `student_lifecycle_requests_dean_reviewed_by_user_id_foreign` (`dean_reviewed_by_user_id`),
     CONSTRAINT `student_lifecycle_requests_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `student_lifecycle_requests_requested_by_user_id_foreign` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`),
-    CONSTRAINT `student_lifecycle_requests_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `student_lifecycle_requests_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `student_lifecycle_requests_registrar_reviewed_by_user_id_foreign` FOREIGN KEY (`registrar_reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `student_lifecycle_requests_dean_reviewed_by_user_id_foreign` FOREIGN KEY (`dean_reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `course_evaluation_windows` (
@@ -549,6 +563,62 @@ SET @tich_fk_sql := (
         ),
         'SELECT 1',
         'ALTER TABLE `supplementary_requests` ADD CONSTRAINT `supplementary_requests_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+-- -----------------------------------------------------------------------------
+-- 15. Deferment dual-approval + attachments
+--     (2026_09_04_220000_enhance_deferment_and_exam_request_reviews)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `student_lifecycle_requests`
+    ADD COLUMN IF NOT EXISTS `registrar_status` varchar(30) NOT NULL DEFAULT 'pending' AFTER `status`,
+    ADD COLUMN IF NOT EXISTS `dean_status` varchar(30) NOT NULL DEFAULT 'pending' AFTER `registrar_status`,
+    ADD COLUMN IF NOT EXISTS `deferment_months` smallint(5) unsigned NULL DEFAULT NULL AFTER `effective_date`,
+    ADD COLUMN IF NOT EXISTS `attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL CHECK (json_valid(`attachments`)) AFTER `reason`,
+    ADD COLUMN IF NOT EXISTS `registrar_notes` text NULL DEFAULT NULL AFTER `reviewer_notes`,
+    ADD COLUMN IF NOT EXISTS `dean_notes` text NULL DEFAULT NULL AFTER `registrar_notes`,
+    ADD COLUMN IF NOT EXISTS `registrar_reviewed_by_user_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `dean_notes`,
+    ADD COLUMN IF NOT EXISTS `dean_reviewed_by_user_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `registrar_reviewed_by_user_id`,
+    ADD COLUMN IF NOT EXISTS `registrar_reviewed_at` timestamp NULL DEFAULT NULL AFTER `dean_reviewed_by_user_id`,
+    ADD COLUMN IF NOT EXISTS `dean_reviewed_at` timestamp NULL DEFAULT NULL AFTER `registrar_reviewed_at`;
+
+-- Backfill review lanes for existing open deferment rows
+UPDATE `student_lifecycle_requests`
+SET `registrar_status` = CASE
+        WHEN `status` IN ('approved', 'rejected') THEN `status`
+        ELSE COALESCE(NULLIF(`registrar_status`, ''), 'pending')
+    END,
+    `dean_status` = CASE
+        WHEN `status` IN ('approved', 'rejected') THEN `status`
+        ELSE COALESCE(NULLIF(`dean_status`, ''), 'pending')
+    END
+WHERE `request_type` = 'deferment';
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'student_lifecycle_requests'
+              AND CONSTRAINT_NAME = 'student_lifecycle_requests_registrar_reviewed_by_user_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `student_lifecycle_requests` ADD CONSTRAINT `student_lifecycle_requests_registrar_reviewed_by_user_id_foreign` FOREIGN KEY (`registrar_reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'student_lifecycle_requests'
+              AND CONSTRAINT_NAME = 'student_lifecycle_requests_dean_reviewed_by_user_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `student_lifecycle_requests` ADD CONSTRAINT `student_lifecycle_requests_dean_reviewed_by_user_id_foreign` FOREIGN KEY (`dean_reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL'
     )
 );
 PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;

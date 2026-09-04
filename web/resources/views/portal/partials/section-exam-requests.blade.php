@@ -2,59 +2,20 @@
     $specialExamRequests = $specialExamRequests ?? collect();
     $supplementaryExamRequests = $supplementaryExamRequests ?? collect();
     $registeredUnits = $portalData['academics']['registered_units'] ?? collect();
+    $applyType = request()->query('apply');
+    $prefillUnitId = (string) request()->query('unit_id', old('unit_id', ''));
+    $prefillSemesterId = (string) request()->query('semester_id', old('semester_id', ''));
+    $openExamRequestModal = ($errors->any() && old('_form') === 'exam-sitting')
+        || in_array($applyType, ['supplementary', 'special_exam'], true);
 @endphp
 
-<x-page-toolbar title="Exam sitting requests" meta="Special and supplementary exam applications" />
-
-<article class="tich-card tich-mt-8">
-    <h2 class="tich-h3">Submit a request</h2>
-    <form method="POST" action="{{ route('portal.exam-sitting-requests.store') }}" class="tich-form-stack tich-mt-4">
-        @csrf
-        <div>
-            <label for="request_type" class="tich-label">Request type</label>
-            <select id="request_type" name="request_type" class="tich-select" required>
-                <option value="special_exam" @selected(old('request_type') === 'special_exam')>Special exam</option>
-                <option value="supplementary" @selected(old('request_type') === 'supplementary')>Supplementary exam</option>
-            </select>
-        </div>
-        <div>
-            <label for="unit_semester" class="tich-label">Unit</label>
-            @if ($registeredUnits->isEmpty())
-                <p class="tich-caption">No registered units found. You can still enter IDs if known, or register units first.</p>
-                <div class="tich-grid tich-grid--2" style="gap:0.75rem;">
-                    <input type="number" name="unit_id" class="tich-input" placeholder="Unit ID" value="{{ old('unit_id') }}" required>
-                    <input type="number" name="semester_id" class="tich-input" placeholder="Semester ID" value="{{ old('semester_id') }}" required>
-                </div>
-            @else
-                <select id="unit_semester" name="unit_semester" class="tich-select" required>
-                    @foreach ($registeredUnits as $unit)
-                        <option
-                            value="{{ $unit->unit_id }}:{{ $unit->semester_id }}"
-                            @selected(old('unit_id') == $unit->unit_id && old('semester_id') == $unit->semester_id)
-                        >
-                            {{ $unit->unit_code }} — {{ $unit->unit_name }} ({{ $unit->semester_label }})
-                        </option>
-                    @endforeach
-                </select>
-                <input type="hidden" name="unit_id" id="exam-req-unit-id" value="{{ old('unit_id', $registeredUnits->first()->unit_id ?? '') }}">
-                <input type="hidden" name="semester_id" id="exam-req-semester-id" value="{{ old('semester_id', $registeredUnits->first()->semester_id ?? '') }}">
-            @endif
-        </div>
-        <div id="supplementary-type-wrap">
-            <label for="supplementary_type" class="tich-label">Supplementary type</label>
-            <select id="supplementary_type" name="supplementary_type" class="tich-select">
-                @foreach (\App\Models\SupplementaryExamRequest::TYPES as $value => $label)
-                    <option value="{{ $value }}" @selected(old('supplementary_type', 'theory') === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label for="reason" class="tich-label">Reason</label>
-            <textarea id="reason" name="reason" rows="5" class="tich-input" required>{{ old('reason') }}</textarea>
-        </div>
-        <button type="submit" class="tich-btn tich-btn-primary">Submit request</button>
-    </form>
-</article>
+<x-page-toolbar title="Supplementary &amp; Special Exams" meta="Apply for supplementary or special exam sittings">
+    <x-slot:actions>
+        <button type="button" class="tich-btn tich-btn-primary" data-open-modal="exam-sitting-request-modal">
+            New application
+        </button>
+    </x-slot:actions>
+</x-page-toolbar>
 
 <section class="tich-portal-panel tich-mt-8">
     <div class="tich-portal-panel__head">
@@ -98,7 +59,6 @@
                 <thead>
                     <tr>
                         <th>Unit</th>
-                        <th>Type</th>
                         <th>Status</th>
                         <th>Submitted</th>
                     </tr>
@@ -107,12 +67,11 @@
                     @forelse ($supplementaryExamRequests as $item)
                         <tr>
                             <td>{{ $item->unit?->unit_code ?? '-' }} {{ $item->unit?->unit_name }}</td>
-                            <td>{{ $item->typeLabel() }}</td>
                             <td>{{ $item->statusLabel() }}</td>
                             <td class="tich-caption">{{ $item->created_at?->format('d M Y') }}</td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 4, 'title' => 'No supplementary requests', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 3, 'title' => 'No supplementary requests', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>
@@ -120,30 +79,128 @@
     </div>
 </section>
 
-@if ($registeredUnits->isNotEmpty())
+<div
+    id="exam-sitting-request-modal"
+    class="tich-modal{{ $openExamRequestModal ? ' is-open' : '' }}"
+    aria-hidden="{{ $openExamRequestModal ? 'false' : 'true' }}"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="exam-sitting-request-modal-title"
+>
+    <div class="tich-modal__backdrop" data-close-modal="exam-sitting-request-modal"></div>
+    <div class="tich-modal__dialog" style="max-width: 32rem;">
+        <header class="tich-modal__header">
+            <h2 id="exam-sitting-request-modal-title" class="tich-h3" style="margin:0;">Exam application</h2>
+            <button type="button" class="tich-modal__close" data-close-modal="exam-sitting-request-modal" aria-label="Close">&times;</button>
+        </header>
+        <form method="POST" action="{{ route('portal.exam-sitting-requests.store') }}" enctype="multipart/form-data" class="tich-modal__body">
+            @csrf
+            <input type="hidden" name="_form" value="exam-sitting">
+
+            @if ($errors->any() && old('_form') === 'exam-sitting')
+                <div class="tich-modal__errors tich-mb-4">
+                    <ul style="margin:0; padding-left:1.25rem;">
+                        @foreach ($errors->all() as $error)
+                            <li class="tich-text">{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div style="display:grid; gap:1rem; margin-top:0.25rem;">
+                <div class="tich-form-group" style="margin:0;">
+                    <label for="exam_request_type" class="tich-label">Application type</label>
+                    <select id="exam_request_type" name="request_type" class="tich-select" required>
+                        <option value="supplementary" @selected(old('request_type', $applyType === 'special_exam' ? 'special_exam' : 'supplementary') === 'supplementary')>Supplementary exam</option>
+                        <option value="special_exam" @selected(old('request_type', $applyType) === 'special_exam')>Special exam</option>
+                    </select>
+                </div>
+
+                <div class="tich-form-group" style="margin:0;">
+                    <label for="exam_unit_semester" class="tich-label">Unit</label>
+                    @if ($registeredUnits->isEmpty())
+                        <p class="tich-caption">No registered units found. Enter unit and semester IDs.</p>
+                        <div class="tich-grid tich-grid--2" style="gap:0.75rem;">
+                            <input type="number" name="unit_id" class="tich-input" placeholder="Unit ID" value="{{ old('unit_id', $prefillUnitId) }}" required>
+                            <input type="number" name="semester_id" class="tich-input" placeholder="Semester ID" value="{{ old('semester_id', $prefillSemesterId) }}" required>
+                        </div>
+                    @else
+                        <select id="exam_unit_semester" name="unit_semester" class="tich-select" required>
+                            @foreach ($registeredUnits as $unit)
+                                @php
+                                    $selected = (string) old('unit_id', $prefillUnitId) === (string) $unit->unit_id
+                                        && (string) old('semester_id', $prefillSemesterId) === (string) $unit->semester_id;
+                                @endphp
+                                <option value="{{ $unit->unit_id }}:{{ $unit->semester_id }}" @selected($selected)>
+                                    {{ $unit->unit_code }} — {{ $unit->unit_name }} ({{ $unit->semester_label }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="unit_id" id="exam-req-unit-id" value="{{ old('unit_id', $prefillUnitId ?: ($registeredUnits->first()->unit_id ?? '')) }}">
+                        <input type="hidden" name="semester_id" id="exam-req-semester-id" value="{{ old('semester_id', $prefillSemesterId ?: ($registeredUnits->first()->semester_id ?? '')) }}">
+                    @endif
+                </div>
+
+                <div class="tich-form-group" id="exam-special-reason-wrap" style="margin:0;">
+                    <label for="exam_reason" class="tich-label">Reason for missing the exam</label>
+                    <textarea id="exam_reason" name="reason" rows="4" class="tich-input">{{ old('reason') }}</textarea>
+                </div>
+
+                <div class="tich-form-group" id="exam-special-attachments-wrap" style="margin:0;">
+                    <label for="exam_attachments" class="tich-label">Supporting document(s)</label>
+                    <input id="exam_attachments" name="attachments[]" type="file" class="tich-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
+                    <p class="tich-caption">Required for special exams. PDF, Word, or image. Max 10&nbsp;MB each.</p>
+                </div>
+            </div>
+
+            <footer class="tich-modal__footer">
+                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="exam-sitting-request-modal">Cancel</button>
+                <button type="submit" class="tich-btn tich-btn-primary">Submit application</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+@include('admin.partials.tich-modal-assets')
+
 <script>
     (function () {
-        const select = document.getElementById('unit_semester');
+        const typeSelect = document.getElementById('exam_request_type');
+        const reasonWrap = document.getElementById('exam-special-reason-wrap');
+        const attachWrap = document.getElementById('exam-special-attachments-wrap');
+        const reasonInput = document.getElementById('exam_reason');
+        const attachInput = document.getElementById('exam_attachments');
+        const select = document.getElementById('exam_unit_semester');
         const unitInput = document.getElementById('exam-req-unit-id');
         const semesterInput = document.getElementById('exam-req-semester-id');
-        const typeSelect = document.getElementById('request_type');
-        const suppWrap = document.getElementById('supplementary-type-wrap');
-        if (select) {
-            const sync = () => {
+
+        const syncType = () => {
+            const isSpecial = typeSelect && typeSelect.value === 'special_exam';
+            if (reasonWrap) reasonWrap.style.display = isSpecial ? '' : 'none';
+            if (attachWrap) attachWrap.style.display = isSpecial ? '' : 'none';
+            if (reasonInput) reasonInput.required = !!isSpecial;
+            if (attachInput) attachInput.required = !!isSpecial;
+        };
+
+        if (typeSelect) {
+            typeSelect.addEventListener('change', syncType);
+            syncType();
+        }
+
+        if (select && unitInput && semesterInput) {
+            const syncUnit = () => {
                 const [unitId, semesterId] = (select.value || '').split(':');
                 unitInput.value = unitId || '';
                 semesterInput.value = semesterId || '';
             };
-            select.addEventListener('change', sync);
-            sync();
-        }
-        if (typeSelect && suppWrap) {
-            const syncType = () => {
-                suppWrap.style.display = typeSelect.value === 'supplementary' ? '' : 'none';
-            };
-            typeSelect.addEventListener('change', syncType);
-            syncType();
+            select.addEventListener('change', syncUnit);
+            if (!unitInput.value || !semesterInput.value) {
+                syncUnit();
+            } else {
+                const match = Array.from(select.options).find((opt) => opt.value === `${unitInput.value}:${semesterInput.value}`);
+                if (match) select.value = match.value;
+                else syncUnit();
+            }
         }
     })();
 </script>
-@endif

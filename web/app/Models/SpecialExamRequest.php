@@ -9,6 +9,7 @@ class SpecialExamRequest extends Model
 {
     public const STATUSES = [
         'pending' => 'Pending',
+        'on_hold' => 'On hold',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
     ];

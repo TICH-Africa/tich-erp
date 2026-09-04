@@ -29,12 +29,13 @@ class StudentSidebarNotificationService
         'notifications' => 'Notifications',
         'profile' => 'My profile',
         'documents' => 'Documents',
-        'requests' => 'Lifecycle requests',
+        'requests' => 'Deferment',
         'clearance' => 'Clearance',
         'evaluations' => 'Course evaluations',
         'finance' => 'Finance',
         'academics' => 'Academics',
         'academics.exams' => 'Exams & Grades',
+        'academics.exam-requests' => 'Supplementary & Special Exams',
         'academics.assessments' => 'Assessments',
         'academics.eligibility' => 'Exam eligibility',
         'suggestions' => 'Suggestion box',
@@ -90,6 +91,7 @@ class StudentSidebarNotificationService
     {
         return match ($tab) {
             'exams' => 'academics.exams',
+            'exam-requests' => 'academics.exam-requests',
             'assessments' => 'academics.assessments',
             'eligibility' => 'academics.eligibility',
             default => null,

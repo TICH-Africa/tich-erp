@@ -324,13 +324,19 @@ class StudentAcademicRecordService
             ->whereIn('er.student_id', $studentIds)
             ->orderByDesc('er.created_at')
             ->select([
+                'er.id',
                 'er.student_id',
+                'er.unit_id',
+                'er.semester_id',
                 'er.cat_total',
                 'er.practical_total',
                 'er.final_exam_score',
                 'er.final_total_score',
                 'er.grade_letter',
                 'er.grade_points',
+                'er.theory_pass_check',
+                'er.clinical_pass_check',
+                'er.supplementary_triggered',
                 'er.is_supplementary',
                 'er.is_special_exam',
                 'er.is_published',

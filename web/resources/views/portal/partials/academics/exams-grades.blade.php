@@ -175,10 +175,16 @@
                             <th>Total</th>
                             <th>Grade</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($academics['exam_results'] as $row)
+                            @php
+                                $didNotPass = ((int) ($row->theory_pass_check ?? 1) === 0)
+                                    || ((int) ($row->supplementary_triggered ?? 0) === 1)
+                                    || in_array(strtoupper((string) ($row->grade_letter ?? '')), ['E', 'F'], true);
+                            @endphp
                             <tr>
                                 <td>{{ $row->unit_code }} - {{ $row->unit_name }}</td>
                                 <td>{{ $row->semester_label }}</td>
@@ -191,10 +197,26 @@
                                         Special exam
                                     @elseif ($row->is_supplementary)
                                         Supplementary
+                                    @elseif ($didNotPass)
+                                        Did not pass
                                     @elseif ($row->is_published)
                                         Published
                                     @else
                                         Pending
+                                    @endif
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    @if ($didNotPass && ! $row->is_supplementary)
+                                        <a
+                                            href="{{ route('portal.dashboard', [
+                                                'section' => 'academics',
+                                                'tab' => 'exam-requests',
+                                                'apply' => 'supplementary',
+                                                'unit_id' => $row->unit_id,
+                                                'semester_id' => $row->semester_id,
+                                            ]) }}"
+                                            class="tich-btn tich-btn-secondary tich-btn--compact"
+                                        >Apply for supplementary</a>
                                     @endif
                                 </td>
                             </tr>

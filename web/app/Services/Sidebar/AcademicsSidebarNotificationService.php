@@ -31,6 +31,7 @@ class AcademicsSidebarNotificationService
         'attendance-ledger.hod' => 'Attendance ledger',
         'attendance-ledger.registrar' => 'Attendance ledger',
         'suggestions.open' => 'Suggestion box',
+        'lifecycle.pending' => 'Deferment requests',
         'applications.pending' => 'Application review',
     ];
 
@@ -46,7 +47,7 @@ class AcademicsSidebarNotificationService
         $counts = $this->countsForHub($hub, $fresh);
 
         if ($this->access->isSuggestionsOnly($user)) {
-            return array_intersect_key($counts, array_flip(['suggestions.open']));
+            return array_intersect_key($counts, array_flip(['suggestions.open', 'lifecycle.pending']));
         }
 
         return $counts;
@@ -99,6 +100,7 @@ class AcademicsSidebarNotificationService
             str_contains($routeName, 'departments.academics.lesson-plans.show') => 'lesson-plans.review',
             str_contains($routeName, 'departments.academics.attendance-ledger.') => $this->attendanceLedgerBadgeKey(),
             str_contains($routeName, 'departments.academics.suggestions.') => 'suggestions.open',
+            str_contains($routeName, 'departments.academics.lifecycle-requests.') => 'lifecycle.pending',
             str_contains($routeName, 'departments.academics.applications.') => 'applications.pending',
             default => null,
         };
@@ -201,6 +203,12 @@ class AcademicsSidebarNotificationService
             'attendance-ledger.registrar' => $attendanceRegistrar + $attendanceIncomplete,
             'suggestions.open' => Schema::hasTable('student_suggestions')
                 ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
+                : 0,
+            'lifecycle.pending' => Schema::hasTable('student_lifecycle_requests')
+                ? (int) DB::table('student_lifecycle_requests')
+                    ->where('request_type', 'deferment')
+                    ->whereIn('status', ['pending', 'partially_approved', 'on_hold'])
+                    ->count()
                 : 0,
             'applications.pending' => $applicationsPending,
             'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount + $attendanceForUser + $applicationsPending,

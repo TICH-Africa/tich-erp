@@ -71,7 +71,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
             'reviewed_notes' => 'nullable|string|max:2000',
         ]);
 
-        abort_unless(in_array($supplementaryExamRequest->application_status, ['pending_review', 'pending_fee'], true), 422);
+        abort_unless(in_array($supplementaryExamRequest->application_status, ['pending_review', 'pending_fee', 'on_hold'], true), 422);
 
         $supplementaryExamRequest->fill([
             'application_status' => 'approved',
@@ -88,6 +88,33 @@ class SupplementaryRequestController extends DepartmentAcademicsController
             ->with('success', 'Supplementary exam request approved.');
     }
 
+    public function hold(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): RedirectResponse
+    {
+        $this->authorizeReviewer($request, $department);
+        $staff = $this->staffPortal->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        $validated = $request->validate([
+            'reviewed_notes' => 'required|string|max:2000',
+        ]);
+
+        abort_unless(in_array($supplementaryExamRequest->application_status, ['pending_review', 'pending_fee', 'on_hold'], true), 422);
+
+        $supplementaryExamRequest->fill([
+            'application_status' => 'on_hold',
+            'reviewed_notes' => $validated['reviewed_notes'],
+            'reviewed_by' => $staff->id,
+            'reviewed_at' => now(),
+        ])->save();
+
+        return redirect()
+            ->route('departments.academics.supplementary-requests.show', array_merge(
+                \App\Support\AcademicsRouteParams::fromRequest($request),
+                ['supplementaryExamRequest' => $supplementaryExamRequest->id]
+            ))
+            ->with('success', 'Supplementary exam request put on hold.');
+    }
+
     public function reject(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
@@ -98,7 +125,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
             'reviewed_notes' => 'required|string|max:2000',
         ]);
 
-        abort_unless(in_array($supplementaryExamRequest->application_status, ['pending_review', 'pending_fee'], true), 422);
+        abort_unless(in_array($supplementaryExamRequest->application_status, ['pending_review', 'pending_fee', 'on_hold'], true), 422);
 
         $supplementaryExamRequest->fill([
             'application_status' => 'rejected',

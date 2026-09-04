@@ -69,7 +69,7 @@ class PortalDashboardController extends Controller
                 ->get();
         }
 
-        if ($section === 'exam-requests') {
+        if ($section === 'academics' && $tab === 'exam-requests') {
             if (Schema::hasTable('special_exam_requests')) {
                 $specialExamRequests = SpecialExamRequest::query()
                     ->with(['unit', 'semester'])

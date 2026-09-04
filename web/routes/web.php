@@ -733,6 +733,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.profile.update');
         Route::post('/lifecycle-requests', [\App\Http\Controllers\Portal\PortalLifecycleRequestController::class, 'store'])
             ->name('portal.lifecycle-requests.store');
+        Route::get('/lifecycle-requests/{lifecycleRequest}/attachments/{index}', [\App\Http\Controllers\Portal\PortalLifecycleRequestController::class, 'downloadAttachment'])
+            ->name('portal.lifecycle-requests.attachment');
         Route::post('/transcript-requests', [\App\Http\Controllers\Portal\PortalTranscriptRequestController::class, 'store'])
             ->name('portal.transcript-requests.store');
         Route::get('/evaluations', [\App\Http\Controllers\Portal\PortalEvaluationController::class, 'index'])

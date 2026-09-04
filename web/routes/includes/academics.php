@@ -69,6 +69,7 @@ return function (bool $named = true): void {
         $register('get', '/transcript-requests/{transcriptRequest}', [TranscriptRequestController::class, 'show'], 'departments.academics.transcript-requests.show');
         $register('get', '/lifecycle-requests', [LifecycleRequestController::class, 'index'], 'departments.academics.lifecycle-requests.index');
         $register('get', '/lifecycle-requests/{lifecycleRequest}', [LifecycleRequestController::class, 'show'], 'departments.academics.lifecycle-requests.show');
+        $register('get', '/lifecycle-requests/{lifecycleRequest}/attachments/{index}', [LifecycleRequestController::class, 'downloadAttachment'], 'departments.academics.lifecycle-requests.attachment');
         $register('get', '/evaluation-windows', [CourseEvaluationWindowController::class, 'index'], 'departments.academics.evaluation-windows.index');
         $register('get', '/document-requests', [DocumentRequestController::class, 'index'], 'departments.academics.document-requests.index');
         $register('get', '/document-requests/{documentRequest}', [DocumentRequestController::class, 'show'], 'departments.academics.document-requests.show');
@@ -110,14 +111,17 @@ return function (bool $named = true): void {
         $register('post', '/transcript-requests/{transcriptRequest}/reject', [TranscriptRequestController::class, 'reject'], 'departments.academics.transcript-requests.reject');
         $register('post', '/lifecycle-requests/{lifecycleRequest}/approve', [LifecycleRequestController::class, 'approve'], 'departments.academics.lifecycle-requests.approve');
         $register('post', '/lifecycle-requests/{lifecycleRequest}/reject', [LifecycleRequestController::class, 'reject'], 'departments.academics.lifecycle-requests.reject');
+        $register('post', '/lifecycle-requests/{lifecycleRequest}/hold', [LifecycleRequestController::class, 'hold'], 'departments.academics.lifecycle-requests.hold');
         $register('post', '/evaluation-windows', [CourseEvaluationWindowController::class, 'store'], 'departments.academics.evaluation-windows.store');
         $register('put', '/evaluation-windows/{evaluationWindow}', [CourseEvaluationWindowController::class, 'update'], 'departments.academics.evaluation-windows.update');
         $register('post', '/document-requests/{documentRequest}/issue', [DocumentRequestController::class, 'issue'], 'departments.academics.document-requests.issue');
         $register('post', '/document-requests/{documentRequest}/reject', [DocumentRequestController::class, 'reject'], 'departments.academics.document-requests.reject');
         $register('post', '/special-exam-requests/{specialExamRequest}/approve', [SpecialExamRequestController::class, 'approve'], 'departments.academics.special-exam-requests.approve');
         $register('post', '/special-exam-requests/{specialExamRequest}/reject', [SpecialExamRequestController::class, 'reject'], 'departments.academics.special-exam-requests.reject');
+        $register('post', '/special-exam-requests/{specialExamRequest}/hold', [SpecialExamRequestController::class, 'hold'], 'departments.academics.special-exam-requests.hold');
         $register('post', '/supplementary-requests/{supplementaryExamRequest}/approve', [SupplementaryRequestController::class, 'approve'], 'departments.academics.supplementary-requests.approve');
         $register('post', '/supplementary-requests/{supplementaryExamRequest}/reject', [SupplementaryRequestController::class, 'reject'], 'departments.academics.supplementary-requests.reject');
+        $register('post', '/supplementary-requests/{supplementaryExamRequest}/hold', [SupplementaryRequestController::class, 'hold'], 'departments.academics.supplementary-requests.hold');
         $register('post', '/examination-papers/{examinationPaper}/moderate', [ExaminationPaperController::class, 'moderate'], 'departments.academics.examination-papers.moderate');
         $register('post', '/examination-papers/{examinationPaper}/approve', [ExaminationPaperController::class, 'approve'], 'departments.academics.examination-papers.approve');
         $register('post', '/attendance-ledger/{session}/verify-registrar', [AttendanceLedgerController::class, 'verifyRegistrar'], 'departments.academics.attendance-ledger.verify-registrar');

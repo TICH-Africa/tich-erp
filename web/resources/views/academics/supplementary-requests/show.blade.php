@@ -33,7 +33,7 @@
             </dl>
         </article>
 
-        @if (in_array($supplementaryRequest->application_status, ['pending_review', 'pending_fee'], true))
+        @if (in_array($supplementaryRequest->application_status, ['pending_review', 'pending_fee', 'on_hold'], true))
             <article class="tich-card">
                 <h2 class="tich-h3">Review</h2>
                 <form method="POST" action="{{ route('departments.academics.supplementary-requests.approve', array_merge($hub, ['supplementaryExamRequest' => $supplementaryRequest->id])) }}" class="tich-form-stack tich-mt-4">
@@ -43,6 +43,14 @@
                         <textarea id="reviewed_notes" name="reviewed_notes" rows="3" class="tich-input"></textarea>
                     </div>
                     <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
+                </form>
+                <form method="POST" action="{{ route('departments.academics.supplementary-requests.hold', array_merge($hub, ['supplementaryExamRequest' => $supplementaryRequest->id])) }}" class="tich-form-stack tich-mt-6">
+                    @csrf
+                    <div>
+                        <label for="hold_notes" class="tich-label">Hold notes</label>
+                        <textarea id="hold_notes" name="reviewed_notes" rows="3" class="tich-input" required></textarea>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Put on hold</button>
                 </form>
                 <form method="POST" action="{{ route('departments.academics.supplementary-requests.reject', array_merge($hub, ['supplementaryExamRequest' => $supplementaryRequest->id])) }}" class="tich-form-stack tich-mt-6">
                     @csrf
