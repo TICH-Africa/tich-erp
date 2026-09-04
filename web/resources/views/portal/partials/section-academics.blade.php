@@ -30,6 +30,10 @@
         'content' => 'Learning Content',
         'assessments' => 'Assessments',
         'exams' => 'Exams & Grades',
+        'progress' => 'Academic progress',
+        'eligibility' => 'Exam eligibility',
+        'calendar' => 'Academic calendar',
+        'registration' => 'Unit registration',
         'attendance' => 'Attendance',
     ];
 @endphp
@@ -65,6 +69,14 @@
     @include('portal.assessments.index')
 @elseif ($academicsTab === 'exams')
     @include('portal.partials.academics.exams-grades')
+@elseif ($academicsTab === 'progress')
+    @include('portal.partials.academics.progress')
+@elseif ($academicsTab === 'eligibility')
+    @include('portal.partials.academics.eligibility')
+@elseif ($academicsTab === 'calendar')
+    @include('portal.partials.academics.calendar')
+@elseif ($academicsTab === 'registration')
+    @include('portal.partials.academics.registration')
 @elseif ($academicsTab === 'attendance')
     @include('portal.partials.academics.attendance')
 @endif

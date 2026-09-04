@@ -93,3 +93,20 @@
         <p class="tich-caption tich-mt-2">This account has no linked staff record. Link the user to a staff profile before requesting profile updates.</p>
     </article>
 @endif
+
+<article class="tich-card tich-mt-8">
+    <h2 class="tich-h3">Reset password</h2>
+    <p class="tich-caption tich-mt-2">ICT can set a new password when self-service reset is blocked or unavailable.</p>
+    <form method="POST" action="{{ $access->route('users.reset-password', $user) }}" class="tich-form-stack tich-mt-4" style="max-width:24rem;">
+        @csrf
+        <div>
+            <label for="password" class="tich-label">New password</label>
+            <input id="password" name="password" type="password" class="tich-input" required minlength="8">
+        </div>
+        <div>
+            <label for="password_confirmation" class="tich-label">Confirm password</label>
+            <input id="password_confirmation" name="password_confirmation" type="password" class="tich-input" required minlength="8">
+        </div>
+        <button type="submit" class="tich-btn tich-btn-primary">Reset password</button>
+    </form>
+</article>

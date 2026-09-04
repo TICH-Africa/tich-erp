@@ -17,6 +17,10 @@ class StudentPortalNavigationService
             'profile' => 'My profile',
             'enrolment' => 'Enrolment',
             'documents' => 'Documents',
+            'requests' => 'Lifecycle requests',
+            'evaluations' => 'Course evaluations',
+            'notifications' => 'Notifications',
+            'clearance' => 'Clearance',
             'academics' => 'Academics',
             'timetable' => 'Timetable',
             'finance' => 'Finance',
@@ -35,6 +39,10 @@ class StudentPortalNavigationService
             'content' => 'Learning Content',
             'assessments' => 'Assessments',
             'exams' => 'Exams & Grades',
+            'progress' => 'Academic progress',
+            'eligibility' => 'Exam eligibility',
+            'calendar' => 'Academic calendar',
+            'registration' => 'Unit registration',
             'attendance' => 'Attendance',
         ];
     }
@@ -111,6 +119,21 @@ class StudentPortalNavigationService
                 'section' => 'documents',
             ],
             [
+                'type' => 'link',
+                'label' => 'Lifecycle requests',
+                'section' => 'requests',
+            ],
+            [
+                'type' => 'link',
+                'label' => 'Clearance',
+                'section' => 'clearance',
+            ],
+            [
+                'type' => 'link',
+                'label' => 'Notifications',
+                'section' => 'notifications',
+            ],
+            [
                 'type' => 'group',
                 'label' => 'Academics',
                 'icon' => 'graduation-cap',
@@ -137,6 +160,26 @@ class StudentPortalNavigationService
                         'icon' => 'award',
                     ],
                     [
+                        'label' => 'Academic progress',
+                        'tab' => 'progress',
+                        'icon' => 'bar-chart',
+                    ],
+                    [
+                        'label' => 'Exam eligibility',
+                        'tab' => 'eligibility',
+                        'icon' => 'check-circle',
+                    ],
+                    [
+                        'label' => 'Academic calendar',
+                        'tab' => 'calendar',
+                        'icon' => 'calendar',
+                    ],
+                    [
+                        'label' => 'Unit registration',
+                        'tab' => 'registration',
+                        'icon' => 'list',
+                    ],
+                    [
                         'label' => 'Attendance',
                         'tab' => 'attendance',
                         'icon' => 'clipboard-check',
@@ -160,6 +203,11 @@ class StudentPortalNavigationService
                         'icon' => 'file-text',
                     ],
                 ],
+            ],
+            [
+                'type' => 'link',
+                'label' => 'Course evaluations',
+                'section' => 'evaluations',
             ],
             [
                 'type' => 'link',
@@ -200,8 +248,26 @@ class StudentPortalNavigationService
             ],
             [
                 'label' => 'Documents',
-                'description' => 'Certificates and files submitted with your application.',
+                'description' => 'Certificates and files submitted with your application, plus document requests.',
                 'section' => 'documents',
+                'group' => 'services',
+            ],
+            [
+                'label' => 'Lifecycle requests',
+                'description' => 'Request deferment, withdrawal, or readmission.',
+                'section' => 'requests',
+                'group' => 'services',
+            ],
+            [
+                'label' => 'Clearance',
+                'description' => 'Track finance, library, hostel, and academic clearance status.',
+                'section' => 'clearance',
+                'group' => 'services',
+            ],
+            [
+                'label' => 'Notifications',
+                'description' => 'Fee, exam, and academic alerts for your account.',
+                'section' => 'notifications',
                 'group' => 'services',
             ],
             [
@@ -214,6 +280,12 @@ class StudentPortalNavigationService
                 'label' => 'My Units',
                 'description' => 'Curriculum units, semester registration, and programme plan.',
                 'section' => 'academics',
+                'group' => 'learning',
+            ],
+            [
+                'label' => 'Course evaluations',
+                'description' => 'Submit course and lecturer evaluations when windows are open.',
+                'section' => 'evaluations',
                 'group' => 'learning',
             ],
             [

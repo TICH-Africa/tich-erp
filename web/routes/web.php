@@ -159,6 +159,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::middleware(['permission:users.access.manage'])->group(function () {
             Route::get('/users', [UserAccessController::class, 'index'])->name('admin.users.index');
             Route::put('/users/{user}/access', [UserAccessController::class, 'update'])->name('admin.users.update');
+            Route::post('/users/{user}/reset-password', [UserAccessController::class, 'resetPassword'])->name('admin.users.reset-password');
 
             Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
             Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
@@ -473,6 +474,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/users', [\App\Http\Controllers\Ict\UserAccessController::class, 'index'])->name('ict.users.index');
             Route::get('/users/{user}', [\App\Http\Controllers\Ict\UserAccessController::class, 'show'])->name('ict.users.show');
             Route::put('/users/{user}/access', [\App\Http\Controllers\Ict\UserAccessController::class, 'update'])->name('ict.users.update');
+            Route::post('/users/{user}/reset-password', [\App\Http\Controllers\Ict\UserAccessController::class, 'resetPassword'])->name('ict.users.reset-password');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\Ict\StaffProfileUpdatePromptController::class, 'store'])->name('ict.staff.profile-update-prompt.store');
             Route::put('/staff/{staff}/organisation-email', [\App\Http\Controllers\Ict\StaffOrganisationEmailController::class, 'update'])->name('ict.staff.organisation-email.update');
 
@@ -724,6 +726,26 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.transcript.print');
         Route::get('/transcript/pdf', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'pdf'])
             ->name('portal.transcript.pdf');
+        Route::post('/profile', [\App\Http\Controllers\Portal\PortalProfileController::class, 'update'])
+            ->name('portal.profile.update');
+        Route::post('/lifecycle-requests', [\App\Http\Controllers\Portal\PortalLifecycleRequestController::class, 'store'])
+            ->name('portal.lifecycle-requests.store');
+        Route::post('/transcript-requests', [\App\Http\Controllers\Portal\PortalTranscriptRequestController::class, 'store'])
+            ->name('portal.transcript-requests.store');
+        Route::get('/evaluations', [\App\Http\Controllers\Portal\PortalEvaluationController::class, 'index'])
+            ->name('portal.evaluations.index');
+        Route::post('/evaluations', [\App\Http\Controllers\Portal\PortalEvaluationController::class, 'store'])
+            ->name('portal.evaluations.store');
+        Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Portal\PortalNotificationController::class, 'markRead'])
+            ->name('portal.notifications.read');
+        Route::post('/clearance/ensure', [\App\Http\Controllers\Portal\PortalClearanceController::class, 'ensure'])
+            ->name('portal.clearance.ensure');
+        Route::get('/fee-statement/print', [\App\Http\Controllers\Portal\PortalFeeStatementController::class, 'print'])
+            ->name('portal.fee-statement.print');
+        Route::get('/fee-statement/pdf', [\App\Http\Controllers\Portal\PortalFeeStatementController::class, 'pdf'])
+            ->name('portal.fee-statement.pdf');
+        Route::post('/document-requests', [\App\Http\Controllers\Portal\PortalDocumentRequestController::class, 'store'])
+            ->name('portal.document-requests.store');
         Route::get('/exam-card/print', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'print'])
             ->name('portal.exam-card.print');
         Route::get('/exam-card/pdf', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'pdf'])

@@ -194,6 +194,38 @@
         Student accounts are created through admissions and enrolment. Full records live in the Student Information System.
     </p>
 
+    @php $passwordResetEscalations = $passwordResetEscalations ?? collect(); @endphp
+    @if ($passwordResetEscalations->isNotEmpty())
+        <div class="tich-card tich-table-panel tich-mb-8">
+            <div class="tich-table-panel__head">
+                <h2 class="tich-table-panel__title">Open password reset escalations</h2>
+                <p class="tich-table-panel__meta">{{ $passwordResetEscalations->count() }} open</p>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Attempts</th>
+                            <th>Opened</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($passwordResetEscalations as $escalation)
+                            <tr>
+                                <td>{{ $escalation->email }}</td>
+                                <td>{{ $escalation->attempt_count }}</td>
+                                <td class="tich-caption">{{ $escalation->created_at?->format('d M Y H:i') }}</td>
+                                <td class="tich-caption">{{ $escalation->notes ?: '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <div class="tich-card tich-table-panel">
         <table class="tich-admin-table">
             <thead>
@@ -251,6 +283,16 @@
                             @if ($user->student)
                                 · <a href="{{ route('sis.students.show', $user->student) }}" class="tich-link">SIS record</a>
                             @endif
+                            ·
+                            <details style="display:inline-block;">
+                                <summary class="tich-link" style="cursor:pointer;">Reset password</summary>
+                                <form method="POST" action="{{ $access->route('users.reset-password', $user) }}" class="tich-form-stack tich-mt-2" style="min-width:16rem;">
+                                    @csrf
+                                    <input type="password" name="password" class="tich-input" placeholder="New password" required minlength="8">
+                                    <input type="password" name="password_confirmation" class="tich-input" placeholder="Confirm" required minlength="8">
+                                    <button type="submit" class="tich-btn tich-btn-primary tich-btn--compact">Save</button>
+                                </form>
+                            </details>
                         </td>
                     </tr>
                 @empty

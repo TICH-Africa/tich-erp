@@ -9,7 +9,6 @@ use App\Services\TranscriptService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PortalTranscriptController extends Controller
@@ -22,22 +21,13 @@ class PortalTranscriptController extends Controller
 
     public function print(Request $request): View
     {
-        return $this->printDocuments->render(
-            'sis.transcript.print',
-            $this->documentData($request),
-        );
+        abort(403, 'Official transcript printing is not available on the student portal. View your grades online or submit a transcript request for an official copy.');
     }
 
     public function pdf(Request $request): Response
     {
-        $transcript = $this->buildTranscript($request);
-        $registration = $transcript['student']->registration_number;
-
-        return $this->printDocuments->downloadPdf(
-            'sis.transcript.print',
-            $this->documentData($request, includeActions: false),
-            'transcript-'.Str::slug($registration).'.pdf',
-        );
+        // Students may view unofficial grades in the portal; official PDF issuance is request-based.
+        abort(403, 'Official transcript PDF download is not available on the student portal. Please submit a transcript request.');
     }
 
     /**
@@ -73,8 +63,8 @@ class PortalTranscriptController extends Controller
                 ['label' => 'Enrollment status', 'value' => e(ucfirst($student->enrollment_status))],
                 ['label' => 'Department', 'value' => e($program?->department?->dept_name ?? '-')],
             ],
-            'backUrl' => $includeActions ? route('portal.dashboard', ['section' => 'academics']) : null,
-            'pdfUrl' => $includeActions ? route('portal.transcript.pdf') : null,
+            'backUrl' => $includeActions ? route('portal.dashboard', ['section' => 'academics', 'tab' => 'exams']) : null,
+            'pdfUrl' => null,
         ];
     }
 

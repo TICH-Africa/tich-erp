@@ -206,20 +206,69 @@
     </section>
 @endif
 
-@if (($portalData['transcript']['available'] ?? false))
+    @php $transcriptRequests = $transcriptRequests ?? collect(); @endphp
     <section class="tich-portal-panel tich-mt-8">
         <div class="tich-portal-panel__head">
             <div>
-                <h2 class="tich-h3">Official transcript</h2>
-                <p class="tich-caption tich-mt-1">Download or print your academic transcript once grades have been recorded.</p>
+                <h2 class="tich-h3">Transcript</h2>
+                <p class="tich-caption tich-mt-1">
+                    Grades above are an unofficial portal view. Official transcripts are issued by the Academic Registrar on request.
+                </p>
             </div>
-            <div class="tich-portal-actions">
-                <a href="{{ route('portal.transcript.print') }}" target="_blank" rel="noopener" class="tich-btn tich-btn-secondary tich-btn--compact">Print / preview</a>
-                <a href="{{ route('portal.transcript.pdf') }}" class="tich-btn tich-btn-secondary tich-btn--compact">Download PDF</a>
-            </div>
+            @if (($portalData['transcript']['available'] ?? false))
+                <div class="tich-portal-actions">
+                    <a href="{{ route('portal.dashboard', ['section' => 'academics', 'tab' => 'exams']) }}#grades" class="tich-btn tich-btn-secondary tich-btn--compact">View grades on portal</a>
+                </div>
+            @endif
         </div>
+
+        <article class="tich-card tich-mt-4">
+            <h3 class="tich-h3">Request official transcript</h3>
+            <form method="POST" action="{{ route('portal.transcript-requests.store') }}" class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem; align-items:end;">
+                @csrf
+                <div>
+                    <label for="delivery_method" class="tich-label">Delivery</label>
+                    <select id="delivery_method" name="delivery_method" class="tich-select" required>
+                        <option value="download">Portal download when ready</option>
+                        <option value="email">Email</option>
+                        <option value="collect">Collect from registry</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="student_notes" class="tich-label">Notes</label>
+                    <input id="student_notes" name="student_notes" type="text" class="tich-input" value="{{ old('student_notes') }}">
+                </div>
+                <div>
+                    <button type="submit" class="tich-btn tich-btn-primary">Submit request</button>
+                </div>
+            </form>
+
+            @if ($transcriptRequests->isNotEmpty())
+                <div class="tich-table-wrap tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Delivery</th>
+                                <th>Submitted</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($transcriptRequests as $req)
+                                <tr>
+                                    <td>{{ ucfirst($req->status) }}</td>
+                                    <td>{{ ucfirst($req->delivery_method) }}</td>
+                                    <td class="tich-caption">{{ $req->created_at?->format('d M Y') }}</td>
+                                    <td class="tich-caption">{{ $req->registrar_notes ?: ($req->student_notes ?: '-') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </article>
     </section>
-@endif
 
 @if ($upcomingExams->isEmpty() && $academics['grades']->isEmpty() && $academics['cat_scores']->isEmpty() && $academics['exam_results']->isEmpty())
     @include('partials.states.empty', [

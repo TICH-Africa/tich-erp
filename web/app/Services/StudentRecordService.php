@@ -59,27 +59,47 @@ class StudentRecordService
      */
     public function biodata360(Student $student): array
     {
-        $student->loadMissing(['applicant.documents', 'applicant.preferredCampus', 'program.department', 'campus', 'user']);
+        $student->loadMissing([
+            'applicant.documents',
+            'applicant.preferredCampus',
+            'program.department',
+            'campus',
+            'user',
+            'currentSemester.academicYear',
+        ]);
         $applicant = $student->applicant;
+        $currentSemester = $student->currentSemester;
+
+        $yearOfStudy = null;
+        if ($currentSemester?->semester_number) {
+            $yearOfStudy = (int) ceil(max(1, (int) $currentSemester->semester_number) / 2);
+        }
 
         return [
             'identity' => [
                 'full_name' => $applicant?->fullName() ?? '-',
                 'date_of_birth' => $applicant?->date_of_birth?->format('Y-m-d'),
                 'gender' => $applicant?->gender,
+                'nationality' => $applicant?->nationality,
                 'national_id_number' => $applicant?->national_id_number,
                 'passport_number' => $applicant?->passport_number,
+                'photo_url' => $student->photoUrl(),
             ],
             'contact' => [
                 'email' => $applicant?->email,
                 'phone_number' => $applicant?->phone_number,
                 'home_county' => $applicant?->home_county,
+                'postal_address' => $applicant?->postal_address,
+                'nationality' => $applicant?->nationality,
             ],
             'academic' => [
+                'student_id' => $student->id,
                 'registration_number' => $student->registration_number,
                 'program' => $student->program?->program_name,
                 'department' => $student->program?->department?->dept_name,
                 'cohort_intake' => $student->cohort_intake,
+                'year_of_study' => $yearOfStudy,
+                'current_semester' => $currentSemester?->semester_label,
                 'entry_qualification' => $applicant?->entry_qualification,
                 'entry_pathway' => $student->entry_pathway,
             ],

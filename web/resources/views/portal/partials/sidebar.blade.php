@@ -23,8 +23,12 @@
                 @php
                     $groupSection = $item['section'] ?? null;
                     $groupActive = $groupSection && $currentSection === $groupSection;
-                    $groupItems = collect($item['items'] ?? [])->map(function (array $child) use ($groupSection, $currentSection, $currentTab) {
+                    $groupItems = collect($item['items'] ?? [])->map(function (array $child) use ($groupSection, $currentSection, $currentTab, $studentBadgeKeys) {
                         $childTab = $child['tab'] ?? null;
+                        $badgeKey = $child['badgeKey'] ?? null;
+                        if (! $badgeKey && $groupSection === 'academics' && $childTab) {
+                            $badgeKey = $studentBadgeKeys->badgeKeyForAcademicsTab($childTab);
+                        }
 
                         return [
                             'href' => route('portal.dashboard', array_filter([
@@ -34,7 +38,7 @@
                             'label' => $child['label'],
                             'icon' => $child['icon'] ?? 'circle',
                             'active' => $groupSection && $currentSection === $groupSection && $childTab === ($currentTab ?: ($groupSection === 'academics' ? 'units' : 'lesson')),
-                            'badgeKey' => $child['badgeKey'] ?? null,
+                            'badgeKey' => $badgeKey,
                         ];
                     })->all();
                 @endphp
@@ -44,6 +48,7 @@
                     'icon' => $item['icon'] ?? \App\Support\SidebarIcon::forSection($groupSection),
                     'open' => $groupActive,
                     'active' => $groupActive,
+                    'badgeKey' => $item['badgeKey'] ?? ($groupSection ? $studentBadgeKeys->badgeKeyForSection($groupSection) : null),
                     'items' => $groupItems,
                 ])
             @elseif (! empty($item['coming_soon']))

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\AuthService;
 use App\Services\MFAService;
+use App\Services\PasswordResetService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ class WebAuthController extends Controller
     public function __construct(
         protected AuthService $authService,
         protected MFAService $mfaService,
+        protected PasswordResetService $passwordReset,
     ) {}
 
     public function showLogin(Request $request): View
@@ -55,7 +57,9 @@ class WebAuthController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        return back()->with('status', 'If an account exists for that email, a password reset link will be sent shortly.');
+        $result = $this->passwordReset->requestReset((string) $request->input('email'), $request);
+
+        return back()->with('status', $result['message']);
     }
 
     public function showResetPassword(Request $request, string $token): View
@@ -68,13 +72,26 @@ class WebAuthController extends Controller
 
     public function resetPassword(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        return back()->with('status', 'Password reset is not yet configured. Please contact your administrator.');
+        $result = $this->passwordReset->resetWithToken(
+            (string) $validated['email'],
+            (string) $validated['token'],
+            (string) $validated['password'],
+            $request
+        );
+
+        if (! $result['ok']) {
+            return back()->withErrors(['email' => $result['message']]);
+        }
+
+        return redirect()
+            ->route('login')
+            ->with('status', $result['message']);
     }
 
     public function showMfaSetup(Request $request): View|RedirectResponse

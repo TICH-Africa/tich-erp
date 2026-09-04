@@ -12,6 +12,8 @@
 
 <x-page-toolbar title="Finance" meta="Fee accounts, invoices, payments, and M-Pesa self-pay">
     <x-slot:actions>
+        <a href="{{ route('portal.fee-statement.print') }}" target="_blank" rel="noopener" class="tich-btn tich-btn-secondary">Print statement</a>
+        <a href="{{ route('portal.fee-statement.pdf') }}" class="tich-btn tich-btn-secondary">Download statement</a>
         @if ($payableInvoices->isNotEmpty())
             <a href="#pay-with-mpesa" class="tich-btn tich-btn-primary">Pay with M-Pesa</a>
         @endif

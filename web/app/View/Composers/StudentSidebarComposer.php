@@ -29,7 +29,7 @@ class StudentSidebarComposer
 
         $view->with([
             'sidebarCounts' => $counts,
-            'sidebarLabels' => $this->notifications->formattedCounts($counts),
+            'sidebarLabels' => $this->notifications->formattedCountsFor($student),
             'sidebarMenuLabels' => StudentSidebarNotificationService::MENU_KEYS,
             'sidebarId' => 'student-admin-sidebar',
             'sidebarPollUrl' => route('portal.sidebar-notifications'),

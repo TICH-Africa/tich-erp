@@ -32,11 +32,19 @@
                 $curriculumActive = request()->routeIs('departments.academics.units.*', 'departments.academics.programs.*', 'departments.academics.lesson-plans.*');
                 $assessmentActive = request()->routeIs('departments.academics.attendance-ledger.*', 'departments.academics.clearance.*', 'departments.academics.performance.*');
                 $studentVoiceActive = request()->routeIs('departments.academics.suggestions.*');
+                $studentServicesActive = request()->routeIs(
+                    'departments.academics.profile-changes.*',
+                    'departments.academics.transcript-requests.*',
+                    'departments.academics.lifecycle-requests.*',
+                    'departments.academics.evaluation-windows.*',
+                    'departments.academics.document-requests.*'
+                );
                 $planningActive = request()->routeIs('departments.academics.calendar.*', 'admin.departments.*');
 
                 $programsQuery = app(\App\Services\AcademicsAccessService::class)->programsQueryForHub(auth()->user(), $department);
                 $sidebarProgram = $programsQuery->first();
                 $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
+                $canManageStudentServices = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
             @endphp
 
             @can('academics.read')
@@ -164,6 +172,47 @@
                 ])
 
                 @unless ($suggestionsOnly)
+                    @if ($canManageStudentServices)
+                        @include('partials.navigation.sidebar-group', [
+                            'label' => 'Student services',
+                            'icon' => 'users',
+                            'open' => $studentServicesActive,
+                            'active' => $studentServicesActive,
+                            'items' => [
+                                [
+                                    'href' => route('departments.academics.profile-changes.index', $hub),
+                                    'label' => 'Profile approvals',
+                                    'icon' => 'user',
+                                    'active' => request()->routeIs('departments.academics.profile-changes.*'),
+                                ],
+                                [
+                                    'href' => route('departments.academics.transcript-requests.index', $hub),
+                                    'label' => 'Transcript requests',
+                                    'icon' => 'file-text',
+                                    'active' => request()->routeIs('departments.academics.transcript-requests.*'),
+                                ],
+                                [
+                                    'href' => route('departments.academics.lifecycle-requests.index', $hub),
+                                    'label' => 'Lifecycle',
+                                    'icon' => 'refresh-cw',
+                                    'active' => request()->routeIs('departments.academics.lifecycle-requests.*'),
+                                ],
+                                [
+                                    'href' => route('departments.academics.document-requests.index', $hub),
+                                    'label' => 'Document requests',
+                                    'icon' => 'folder',
+                                    'active' => request()->routeIs('departments.academics.document-requests.*'),
+                                ],
+                                [
+                                    'href' => route('departments.academics.evaluation-windows.index', $hub),
+                                    'label' => 'Evaluations',
+                                    'icon' => 'clipboard-check',
+                                    'active' => request()->routeIs('departments.academics.evaluation-windows.*'),
+                                ],
+                            ],
+                        ])
+                    @endif
+
                     @include('partials.navigation.sidebar-group', [
                         'label' => 'Planning',
                         'icon' => 'calendar',

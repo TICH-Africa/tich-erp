@@ -90,6 +90,11 @@ class Student extends Model
         return $this->belongsTo(Campus::class, 'enrollment_campus_id');
     }
 
+    public function currentSemester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class, 'current_semester_id');
+    }
+
     public function accounts(): HasMany
     {
         return $this->hasMany(StudentAccount::class);

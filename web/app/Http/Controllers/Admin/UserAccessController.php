@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\DepartmentModuleService;
+use App\Services\PasswordResetService;
 use App\Services\RBACService;
 use App\Support\UserType;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -32,6 +34,7 @@ class UserAccessController extends Controller
     public function __construct(
         protected RBACService $rbacService,
         protected DepartmentModuleService $departmentModuleService,
+        protected PasswordResetService $passwordReset,
     ) {}
 
     public function index(Request $request): View
@@ -129,6 +132,9 @@ class UserAccessController extends Controller
 
         if ($audience === 'students') {
             $viewData['studentRoles'] = Role::query()->whereIn('role_name', self::STUDENT_ROLES)->orderBy('role_name')->get();
+            $viewData['passwordResetEscalations'] = $this->passwordReset->openEscalations()
+                ->filter(fn ($row) => ! $row->user || $row->user->user_type === 'student')
+                ->values();
         }
 
         return view($this->accessContext()->prefix.'.users.index', array_merge($viewData, [
@@ -169,6 +175,33 @@ class UserAccessController extends Controller
         }
 
         return $this->updateStaffAccess($request, $user);
+    }
+
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        $this->passwordReset->ictReset($user, $validated['password'], $request->user(), $request);
+
+        $audience = $this->resolveAudience($request, $user);
+
+        if ($audience === 'students') {
+            return redirect()
+                ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'students'])
+                ->with('status', 'Password reset for '.$user->email.'.');
+        }
+
+        if ($this->accessContext()->prefix === 'ict') {
+            return redirect()
+                ->route('ict.users.show', $user)
+                ->with('status', 'Password reset for '.$user->email.'.');
+        }
+
+        return redirect()
+            ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
+            ->with('status', 'Password reset for '.$user->email.'.');
     }
 
     private function updateStudentAccess(Request $request, User $user): RedirectResponse
