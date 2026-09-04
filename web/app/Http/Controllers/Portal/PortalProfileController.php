@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Services\StudentPortalNavigationService;
 use App\Services\StudentPortalService;
 use App\Services\StudentProfileChangeService;
+use App\Services\StudentRecordService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use InvalidArgumentException;
 
 class PortalProfileController extends Controller
@@ -14,7 +17,26 @@ class PortalProfileController extends Controller
     public function __construct(
         protected StudentPortalService $portalService,
         protected StudentProfileChangeService $profileChanges,
+        protected StudentRecordService $studentRecords,
+        protected StudentPortalNavigationService $navigation,
     ) {}
+
+    public function edit(Request $request): View
+    {
+        $student = $this->portalService->studentForUser($request->user());
+        abort_if(! $student, 404);
+
+        $biodata = $this->studentRecords->biodata360($student);
+
+        return view('portal.profile.edit', [
+            'student' => $student,
+            'biodata' => $biodata,
+            'sidebarNavigation' => $this->navigation->sidebarNavigation($student),
+            'section' => 'profile',
+            'tab' => null,
+            'portalTitle' => 'Update profile',
+        ]);
+    }
 
     public function update(Request $request): RedirectResponse
     {

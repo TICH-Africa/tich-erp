@@ -46,7 +46,9 @@
         <article class="tich-card">
             <h2 class="tich-h3">Staff record</h2>
             @if ($staff)
-                <div class="tich-mt-4">
+                <div class="tich-mt-4" style="display:flex; align-items:flex-start; gap:1rem;">
+                    @include('hr.staff.partials.table-avatar', ['member' => $staff])
+                    <div style="flex:1;">
                     <p><strong>Employee no.:</strong> {{ $staff->employee_number }}</p>
                     <p><strong>Name:</strong> {{ $staff->fullName() }}</p>
                     <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '-' }}</p>
@@ -56,6 +58,7 @@
                     <p><strong>Personal email:</strong> {{ $staff->primary_email ?? '-' }}</p>
                     <p><strong>Organisation email:</strong> {{ $staff->organisation_email ?? '-' }}</p>
                     <p><strong>Phone:</strong> {{ $staff->phone_number ?? '-' }}</p>
+                    </div>
                 </div>
                 @if ($access->prefix === 'ict')
                     <form method="POST" action="{{ route('ict.staff.organisation-email.update', $staff) }}" class="tich-mt-4" style="padding-top:1rem;border-top:1px solid var(--tich-neutral-border);">

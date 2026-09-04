@@ -132,16 +132,16 @@
                     @error('date_of_birth')<p class="tich-form-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="{{ $profileHighlightClass('gender') }}" id="profile-field-gender">
-                    <label for="gender" class="tich-label">Gender (as per National ID) @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
+                    <label for="gender" class="tich-label">Gender at birth @if ($mustCompleteProfile)<span class="tich-caption" style="color:#b45309;">*</span>@endif</label>
                     @php
                         $genderValue = old('gender', $staff->gender);
-                        if (strcasecmp((string) $genderValue, 'Unspecified') === 0 && old('gender') === null) {
+                        if (old('gender') === null && in_array(strtolower((string) $genderValue), ['unspecified', 'other', ''], true)) {
                             $genderValue = '';
                         }
                     @endphp
                     <select id="gender" name="gender" class="tich-input @error('gender') tich-input--error @enderror" @required($mustCompleteProfile)>
                         <option value="">-</option>
-                        @foreach (['Male', 'Female', 'Other'] as $gender)
+                        @foreach (['Male', 'Female'] as $gender)
                             <option value="{{ $gender }}" @selected($genderValue === $gender)>{{ $gender }}</option>
                         @endforeach
                     </select>

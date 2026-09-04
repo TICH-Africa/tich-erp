@@ -31,7 +31,7 @@ class EmployeeProfileCompletenessService
         'first_name' => 'First name',
         'surname' => 'Surname',
         'date_of_birth' => 'Date of birth',
-        'gender' => 'Gender',
+        'gender' => 'Gender at birth',
         'primary_email' => 'Personal email',
         'phone_number' => 'Phone number',
         'marital_status' => 'Marital status',

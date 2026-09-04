@@ -357,17 +357,28 @@ class StudentAcademicRecordService
         return DB::table('attendance_summaries as a')
             ->join('units as u', 'u.id', '=', 'a.unit_id')
             ->join('semesters as s', 's.id', '=', 'a.semester_id')
+            ->leftJoin('exam_eligibility_matrix as eem', function ($join) {
+                $join->on('eem.student_id', '=', 'a.student_id')
+                    ->on('eem.unit_id', '=', 'a.unit_id')
+                    ->on('eem.semester_id', '=', 'a.semester_id');
+            })
             ->whereIn('a.student_id', $studentIds)
             ->orderByDesc('a.last_calculated_at')
             ->select([
                 'a.student_id',
+                'a.unit_id',
+                'a.semester_id',
                 'a.attendance_percentage',
                 'a.total_present',
                 'a.total_sessions',
                 'a.status_flag',
+                'a.exam_eligibility_blocked',
                 'u.unit_code',
                 'u.unit_name',
                 's.semester_label',
+                'eem.eligible_for_exams',
+                'eem.attendance_check_passed',
+                'eem.fee_clearance_check_passed',
             ])
             ->get()
             ->groupBy('student_id');

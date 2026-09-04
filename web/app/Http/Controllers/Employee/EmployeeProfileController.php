@@ -69,7 +69,7 @@ class EmployeeProfileController extends Controller
             'middle_name' => 'nullable|string|max:100',
             'surname' => ($mustComplete ? 'required' : 'nullable').'|string|max:100',
             'date_of_birth' => ($mustComplete ? 'required' : 'nullable').'|date|before:today',
-            'gender' => ($mustComplete ? 'required' : 'nullable').'|string|in:Male,Female,Other',
+            'gender' => ($mustComplete ? 'required' : 'nullable').'|string|in:Male,Female',
             'primary_email' => ($mustComplete ? 'required' : 'nullable').'|email|max:255',
             'phone_number' => ($mustComplete ? 'required' : 'nullable').'|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',

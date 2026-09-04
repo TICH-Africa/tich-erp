@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initMobileNav() {
     const header = document.getElementById('site-header');
+    const headerInner = header?.querySelector('.tich-header__inner');
     const toggle = document.querySelector('[data-nav-toggle]');
     const drawer = document.querySelector('[data-nav-drawer]');
     const backdrop = document.querySelector('[data-nav-drawer-backdrop]');
@@ -13,9 +14,23 @@ function initMobileNav() {
         return;
     }
 
+    const syncHeaderBarHeight = () => {
+        if (!headerInner) {
+            return;
+        }
+        const barHeight = Math.ceil(headerInner.offsetHeight || 0);
+        if (barHeight > 0) {
+            document.documentElement.style.setProperty('--tich-header-bar-height', `${Math.min(barHeight, Math.round(window.innerHeight * 0.3))}px`);
+        }
+    };
+
+    syncHeaderBarHeight();
+    window.addEventListener('resize', syncHeaderBarHeight);
+
     const isOpen = () => !drawer.hasAttribute('hidden');
 
     const openDrawer = () => {
+        syncHeaderBarHeight();
         drawer.removeAttribute('hidden');
         header.classList.add('is-nav-open');
         document.body.classList.add('is-nav-open');
@@ -35,6 +50,7 @@ function initMobileNav() {
         window.scrollTo(0, scrollY);
         toggle.setAttribute('aria-expanded', 'false');
         toggle.setAttribute('aria-label', 'Open menu');
+        syncHeaderBarHeight();
     };
 
     toggle.addEventListener('click', (event) => {

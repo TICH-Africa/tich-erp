@@ -1,7 +1,5 @@
 @php
     $attendance = $academics['attendance'] ?? collect();
-    $examPortal = $academics['exam_portal'] ?? [];
-    $upcomingExams = $examPortal['upcoming_exams'] ?? collect();
     $feeCleared = strtolower((string) ($student->fee_clearance_status ?? '')) === 'cleared';
 @endphp
 
@@ -53,8 +51,11 @@
                         @php
                             $pct = (float) ($row->attendance_percentage ?? 0);
                             $meets = $pct >= 90;
-                            $examMatch = $upcomingExams->firstWhere('unit_id', $row->unit_id)
-                                ?? $upcomingExams->firstWhere('unit_code', $row->unit_code ?? null);
+                            $present = (int) ($row->total_present ?? $row->sessions_present ?? 0);
+                            $total = (int) ($row->total_sessions ?? $row->sessions_total ?? 0);
+                            $eligible = isset($row->eligible_for_exams)
+                                ? (bool) $row->eligible_for_exams
+                                : ($feeCleared && $meets && ! (bool) ($row->exam_eligibility_blocked ?? false));
                         @endphp
                         <tr>
                             <td>
@@ -62,7 +63,7 @@
                                 <span class="tich-caption" style="display:block;">{{ $row->unit_name ?? '' }}</span>
                             </td>
                             <td>{{ number_format($pct, 1) }}%</td>
-                            <td>{{ (int) ($row->sessions_present ?? 0) }} / {{ (int) ($row->sessions_total ?? 0) }}</td>
+                            <td>{{ $present }} / {{ $total }}</td>
                             <td>
                                 @if ($meets)
                                     <span class="tich-badge tich-badge--success">Yes</span>
@@ -71,14 +72,10 @@
                                 @endif
                             </td>
                             <td>
-                                @if ($examMatch)
-                                    @if ($examMatch->eligible_for_exams)
-                                        <span class="tich-badge tich-badge--success">Eligible</span>
-                                    @else
-                                        <span class="tich-badge tich-badge--warning">Not cleared</span>
-                                    @endif
+                                @if ($eligible)
+                                    <span class="tich-badge tich-badge--success">Eligible</span>
                                 @else
-                                    <span class="tich-caption">—</span>
+                                    <span class="tich-badge tich-badge--warning">Not cleared</span>
                                 @endif
                             </td>
                         </tr>

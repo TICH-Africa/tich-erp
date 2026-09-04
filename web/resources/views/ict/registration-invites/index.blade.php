@@ -21,6 +21,7 @@
                             <th>Sent by</th>
                             <th>Status</th>
                             <th>Sent</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,6 +47,18 @@
                                     @endif
                                 </td>
                                 <td>{{ $invite->created_at?->format('j M Y, H:i') }}</td>
+                                <td>
+                                    @if ($invite->used_at)
+                                        <span class="tich-caption">—</span>
+                                    @else
+                                        <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="tich-btn tich-btn-secondary tich-btn-sm">
+                                                {{ $invite->expires_at->isPast() ? 'Re-invite' : 'Resend' }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

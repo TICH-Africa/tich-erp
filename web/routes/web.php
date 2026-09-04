@@ -447,6 +447,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
+        Route::post('/registration-invites/{invitation}/resend', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'resend'])->name('ict.registration-invites.resend');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');
@@ -726,6 +727,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.transcript.print');
         Route::get('/transcript/pdf', [\App\Http\Controllers\Portal\PortalTranscriptController::class, 'pdf'])
             ->name('portal.transcript.pdf');
+        Route::get('/profile/edit', [\App\Http\Controllers\Portal\PortalProfileController::class, 'edit'])
+            ->name('portal.profile.edit');
         Route::post('/profile', [\App\Http\Controllers\Portal\PortalProfileController::class, 'update'])
             ->name('portal.profile.update');
         Route::post('/lifecycle-requests', [\App\Http\Controllers\Portal\PortalLifecycleRequestController::class, 'store'])

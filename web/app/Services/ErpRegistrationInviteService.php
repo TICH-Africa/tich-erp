@@ -38,6 +38,11 @@ class ErpRegistrationInviteService
             ];
         }
 
+        $hadPriorInvite = ErpRegistrationInvitation::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->exists();
+
+        // Expire any still-open links so only the new invite works.
         ErpRegistrationInvitation::query()
             ->whereRaw('LOWER(email) = ?', [$email])
             ->whereNull('used_at')
@@ -77,21 +82,45 @@ class ErpRegistrationInviteService
                 'email' => $email,
                 'staff_id' => $staff?->id,
                 'mail_module' => $mailModule,
+                'resent' => $hadPriorInvite,
             ],
             null,
             'success',
             $invitedBy->id,
         );
 
-        $message = $staff
-            ? "Registration invitation sent to {$email} for {$staff->fullName()}."
-            : "Registration invitation sent to {$email}.";
+        if ($hadPriorInvite) {
+            $message = $staff
+                ? "Registration invitation re-sent to {$email} for {$staff->fullName()}. Previous unused links are no longer valid."
+                : "Registration invitation re-sent to {$email}. Previous unused links are no longer valid.";
+        } else {
+            $message = $staff
+                ? "Registration invitation sent to {$email} for {$staff->fullName()}."
+                : "Registration invitation sent to {$email}.";
+        }
 
         return [
             'success' => true,
             'message' => $message,
             'invitation' => $invitation,
         ];
+    }
+
+    /**
+     * Re-send an invitation for a previous invite row (pending or expired only).
+     *
+     * @return array{success: bool, message: string, invitation?: ErpRegistrationInvitation}
+     */
+    public function resend(ErpRegistrationInvitation $invitation, User $invitedBy, string $mailModule): array
+    {
+        if ($invitation->used_at !== null) {
+            return [
+                'success' => false,
+                'message' => 'This invitation was already used. The person can sign in or use forgot password.',
+            ];
+        }
+
+        return $this->send($invitation->email, $invitedBy, $mailModule);
     }
 
     public function findActiveByToken(string $token): ?ErpRegistrationInvitation

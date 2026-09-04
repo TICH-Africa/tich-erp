@@ -1,4 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const header = document.getElementById('site-header');
+    const headerInner = header?.querySelector('.tich-header__inner');
+
+    const syncHeaderHeight = () => {
+        if (!header || !headerInner) {
+            return;
+        }
+
+        // Measure only the top nav row for bar height. Full chrome = bar + module menu.
+        // Never write the combined height back into --tich-header-bar-height (that
+        // previously inflated the top navbar min-height and made it huge).
+        const barHeight = Math.ceil(headerInner.offsetHeight || 0);
+        const moduleToggle = header.querySelector('.tich-admin-sidebar-mobile__toggle');
+        const toggleVisible = moduleToggle
+            && window.getComputedStyle(moduleToggle).display !== 'none'
+            && !header.classList.contains('is-nav-open');
+        const toggleHeight = toggleVisible ? Math.ceil(moduleToggle.offsetHeight || 0) : 0;
+        const chromeHeight = barHeight + toggleHeight;
+
+        if (barHeight > 0) {
+            document.documentElement.style.setProperty('--tich-header-bar-height', `${barHeight}px`);
+            document.documentElement.style.setProperty('--tich-header-height', `${chromeHeight}px`);
+        }
+    };
+
+    syncHeaderHeight();
+    window.addEventListener('resize', syncHeaderHeight);
+
+    if (typeof ResizeObserver !== 'undefined' && headerInner) {
+        new ResizeObserver(syncHeaderHeight).observe(headerInner);
+    }
+
     document.querySelectorAll('.tich-admin').forEach((adminRoot) => {
         const sidebar = adminRoot.querySelector('.tich-admin-sidebar');
 
@@ -39,10 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.id = 'admin-sidebar-panel';
         }
 
-        adminRoot.insertBefore(toggle, sidebar);
+        // Attach module menu directly under the site nav bar (inside sticky header).
+        if (header && headerInner) {
+            headerInner.insertAdjacentElement('afterend', toggle);
+        } else {
+            adminRoot.insertBefore(toggle, sidebar);
+        }
+
         adminRoot.insertBefore(shell, sidebar);
         shell.appendChild(backdrop);
         shell.appendChild(sidebar);
+
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(syncHeaderHeight).observe(toggle);
+        }
+        syncHeaderHeight();
 
         const isOpen = () => adminRoot.classList.contains('is-sidebar-open');
 
@@ -54,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const openSidebar = () => {
+            syncHeaderHeight();
             adminRoot.classList.add('is-sidebar-open');
             document.body.classList.add('is-admin-sidebar-open');
             toggle.setAttribute('aria-expanded', 'true');

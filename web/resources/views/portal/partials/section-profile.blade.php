@@ -2,9 +2,28 @@
     $applicant = $student->applicant;
     $photoUrl = $biodata['identity']['photo_url'] ?? $student->photoUrl();
     $profileChangeRequests = $profileChangeRequests ?? collect();
+    $identity = $biodata['identity'] ?? [];
+    $contact = $biodata['contact'] ?? [];
+    $academic = $biodata['academic'] ?? [];
+    $application = $biodata['application'] ?? [];
+    $nextOfKin = $biodata['next_of_kin'] ?? [];
+    $emergency = $biodata['emergency'] ?? [];
+    $enrollment = $biodata['enrollment'] ?? [];
+    $portal = $biodata['portal'] ?? [];
 @endphp
 
-<x-page-toolbar title="My profile" meta="{{ $student->registration_number }} · {{ $biodata['academic']['program'] ?? '' }}" />
+<x-page-toolbar
+    title="My profile"
+    meta="{{ $student->registration_number }} · {{ $academic['program'] ?? '' }}"
+>
+    <x-slot:actions>
+        <a href="{{ route('portal.profile.edit') }}" class="tich-btn tich-btn-primary">Update profile</a>
+    </x-slot:actions>
+</x-page-toolbar>
+
+<p class="tich-caption tich-mt-2">
+    View your full record below. Use <strong>Update profile</strong> to change details — contact and next-of-kin save immediately; name, ID, date of birth, and photo require Academic Registrar approval.
+</p>
 
 <div class="tich-grid tich-grid--2 tich-mt-8" style="align-items: start; gap: 1.5rem;">
     <article class="tich-card">
@@ -19,151 +38,143 @@
             </div>
             <dl style="display: grid; grid-template-columns: 8rem 1fr; gap: 0.4rem 0.75rem; margin: 0; flex:1;">
                 <dt class="tich-caption">Full name</dt>
-                <dd>{{ $biodata['identity']['full_name'] ?? '-' }}</dd>
+                <dd>{{ $identity['full_name'] ?? '-' }}</dd>
                 <dt class="tich-caption">Date of birth</dt>
-                <dd>{{ $biodata['identity']['date_of_birth'] ?? '-' }}</dd>
+                <dd>{{ $identity['date_of_birth'] ?? '-' }}</dd>
                 <dt class="tich-caption">Gender</dt>
-                <dd>{{ $biodata['identity']['gender'] ?? '-' }}</dd>
+                <dd>{{ $identity['gender'] ?? '-' }}</dd>
                 <dt class="tich-caption">Nationality</dt>
-                <dd>{{ $biodata['identity']['nationality'] ?? $biodata['contact']['nationality'] ?? '-' }}</dd>
+                <dd>{{ $identity['nationality'] ?? $contact['nationality'] ?? '-' }}</dd>
                 <dt class="tich-caption">National ID</dt>
-                <dd>{{ $biodata['identity']['national_id_number'] ?? '-' }}</dd>
+                <dd>{{ $identity['national_id_number'] ?? '-' }}</dd>
                 <dt class="tich-caption">Passport</dt>
-                <dd>{{ $biodata['identity']['passport_number'] ?? '-' }}</dd>
+                <dd>{{ $identity['passport_number'] ?? '-' }}</dd>
             </dl>
         </div>
-        <p class="tich-caption tich-mt-4">Name, national ID / passport, and date of birth changes require Academic Registrar approval.</p>
+    </article>
+
+    <article class="tich-card">
+        <h2 class="tich-h3">Contact</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Email</dt>
+            <dd>{{ $contact['email'] ?? '-' }}</dd>
+            <dt class="tich-caption">Phone</dt>
+            <dd>{{ $contact['phone_number'] ?? '-' }}</dd>
+            <dt class="tich-caption">Home county</dt>
+            <dd>{{ $contact['home_county'] ?? '-' }}</dd>
+            <dt class="tich-caption">Postal address</dt>
+            <dd>{{ $contact['postal_address'] ?? '-' }}</dd>
+            <dt class="tich-caption">Nationality</dt>
+            <dd>{{ $contact['nationality'] ?? '-' }}</dd>
+        </dl>
     </article>
 
     <article class="tich-card">
         <h2 class="tich-h3">Academic profile</h2>
         <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
             <dt class="tich-caption">Registration no.</dt>
-            <dd>{{ $biodata['academic']['registration_number'] ?? '-' }}</dd>
+            <dd>{{ $academic['registration_number'] ?? '-' }}</dd>
             <dt class="tich-caption">Programme</dt>
-            <dd>{{ $biodata['academic']['program'] ?? '-' }}</dd>
+            <dd>{{ $academic['program'] ?? '-' }}</dd>
             <dt class="tich-caption">Department</dt>
-            <dd>{{ $biodata['academic']['department'] ?? '-' }}</dd>
+            <dd>{{ $academic['department'] ?? '-' }}</dd>
             <dt class="tich-caption">Year of study</dt>
-            <dd>{{ $biodata['academic']['year_of_study'] ?? '-' }}</dd>
+            <dd>{{ $academic['year_of_study'] ?? '-' }}</dd>
             <dt class="tich-caption">Current semester</dt>
-            <dd>{{ $biodata['academic']['current_semester'] ?? '-' }}</dd>
+            <dd>{{ $academic['current_semester'] ?? '-' }}</dd>
             <dt class="tich-caption">Cohort / intake</dt>
-            <dd>{{ $biodata['academic']['cohort_intake'] ?? '-' }}</dd>
+            <dd>{{ $academic['cohort_intake'] ?? '-' }}</dd>
+            <dt class="tich-caption">Entry pathway</dt>
+            <dd>{{ $academic['entry_pathway'] ?? '-' }}</dd>
+            <dt class="tich-caption">Entry qualification</dt>
+            <dd>{{ $academic['entry_qualification'] ?? '-' }}</dd>
         </dl>
     </article>
 
-    <article class="tich-card" style="grid-column: 1 / -1;">
-        <h2 class="tich-h3">Update profile</h2>
-        <p class="tich-caption tich-mt-2">Contact and next-of-kin details save immediately. Restricted identity fields are queued for registrar approval.</p>
+    <article class="tich-card">
+        <h2 class="tich-h3">Enrolment</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Status</dt>
+            <dd>{{ ucfirst((string) ($enrollment['enrollment_status'] ?? '-')) }}</dd>
+            <dt class="tich-caption">Campus</dt>
+            <dd>{{ $enrollment['campus'] ?? '-' }}</dd>
+            <dt class="tich-caption">Date of admission</dt>
+            <dd>{{ $enrollment['date_of_admission'] ?? '-' }}</dd>
+            <dt class="tich-caption">Fee clearance</dt>
+            <dd>{{ ucfirst((string) ($enrollment['fee_clearance_status'] ?? '-')) }}</dd>
+            <dt class="tich-caption">Outstanding balance</dt>
+            <dd>{{ number_format((float) ($enrollment['overall_balance'] ?? 0), 2) }}</dd>
+            <dt class="tich-caption">Portal activated</dt>
+            <dd>{{ $enrollment['portal_activated_at'] ?? '-' }}</dd>
+        </dl>
+    </article>
 
-        <form method="POST" action="{{ route('portal.profile.update') }}" enctype="multipart/form-data" class="tich-mt-4">
-            @csrf
+    <article class="tich-card">
+        <h2 class="tich-h3">Application</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Application no.</dt>
+            <dd>{{ $application['application_number'] ?? '-' }}</dd>
+            <dt class="tich-caption">Status</dt>
+            <dd>{{ ucwords(str_replace('_', ' ', (string) ($application['status'] ?? '-'))) }}</dd>
+            <dt class="tich-caption">Academic review</dt>
+            <dd>{{ ucwords(str_replace('_', ' ', (string) ($application['academic_review_status'] ?? '-'))) }}</dd>
+            <dt class="tich-caption">Preferred campus</dt>
+            <dd>{{ $application['preferred_campus'] ?? '-' }}</dd>
+            <dt class="tich-caption">Intake</dt>
+            <dd>
+                @if (! empty($application['intake_month']) || ! empty($application['intake_year']))
+                    {{ $application['intake_month'] ?? '' }}{{ ! empty($application['intake_month']) && ! empty($application['intake_year']) ? ' ' : '' }}{{ $application['intake_year'] ?? '' }}
+                @else
+                    -
+                @endif
+            </dd>
+            <dt class="tich-caption">Sponsorship</dt>
+            <dd>{{ $application['sponsorship_type'] ?? '-' }}</dd>
+            <dt class="tich-caption">Submitted</dt>
+            <dd>{{ $application['submitted_at'] ?? '-' }}</dd>
+            <dt class="tich-caption">Reviewed</dt>
+            <dd>{{ $application['reviewed_at'] ?? '-' }}</dd>
+        </dl>
+    </article>
 
-            <div class="tich-grid tich-grid--2" style="gap: 1rem; align-items: start;">
-                <div>
-                    <h3 class="tich-caption" style="margin-bottom:0.75rem;">Self-service contact</h3>
-                    <div class="tich-form-stack">
-                        <div>
-                            <label for="phone_number" class="tich-label">Phone</label>
-                            <input id="phone_number" name="phone_number" type="text" class="tich-input" value="{{ old('phone_number', $applicant?->phone_number) }}">
-                        </div>
-                        <div>
-                            <label for="email" class="tich-label">Email</label>
-                            <input id="email" name="email" type="email" class="tich-input" value="{{ old('email', $applicant?->email) }}">
-                        </div>
-                        <div>
-                            <label for="home_county" class="tich-label">Home county</label>
-                            <input id="home_county" name="home_county" type="text" class="tich-input" value="{{ old('home_county', $applicant?->home_county) }}">
-                        </div>
-                        <div>
-                            <label for="nationality" class="tich-label">Nationality</label>
-                            <input id="nationality" name="nationality" type="text" class="tich-input" value="{{ old('nationality', $applicant?->nationality) }}">
-                        </div>
-                        <div>
-                            <label for="postal_address" class="tich-label">Postal address</label>
-                            <input id="postal_address" name="postal_address" type="text" class="tich-input" value="{{ old('postal_address', $applicant?->postal_address) }}">
-                        </div>
-                    </div>
-                </div>
+    <article class="tich-card">
+        <h2 class="tich-h3">Portal account</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Account</dt>
+            <dd>{{ ! empty($portal['has_account']) ? 'Active' : 'Not linked' }}</dd>
+            <dt class="tich-caption">Login name</dt>
+            <dd>{{ $portal['name'] ?? '-' }}</dd>
+            <dt class="tich-caption">Login email</dt>
+            <dd>{{ $portal['email'] ?? '-' }}</dd>
+            <dt class="tich-caption">Last login</dt>
+            <dd>{{ $portal['last_login_at'] ?? '-' }}</dd>
+        </dl>
+    </article>
 
-                <div>
-                    <h3 class="tich-caption" style="margin-bottom:0.75rem;">Next of kin &amp; emergency</h3>
-                    <div class="tich-form-stack">
-                        <div>
-                            <label for="next_of_kin_name" class="tich-label">Next of kin name</label>
-                            <input id="next_of_kin_name" name="next_of_kin_name" type="text" class="tich-input" value="{{ old('next_of_kin_name', $applicant?->next_of_kin_name) }}">
-                        </div>
-                        <div>
-                            <label for="next_of_kin_relationship" class="tich-label">Relationship</label>
-                            <input id="next_of_kin_relationship" name="next_of_kin_relationship" type="text" class="tich-input" value="{{ old('next_of_kin_relationship', $applicant?->next_of_kin_relationship) }}">
-                        </div>
-                        <div>
-                            <label for="next_of_kin_phone" class="tich-label">Next of kin phone</label>
-                            <input id="next_of_kin_phone" name="next_of_kin_phone" type="text" class="tich-input" value="{{ old('next_of_kin_phone', $applicant?->next_of_kin_phone) }}">
-                        </div>
-                        <div>
-                            <label for="next_of_kin_address" class="tich-label">Next of kin address</label>
-                            <input id="next_of_kin_address" name="next_of_kin_address" type="text" class="tich-input" value="{{ old('next_of_kin_address', $applicant?->next_of_kin_address) }}">
-                        </div>
-                        <div>
-                            <label for="emergency_contact_name" class="tich-label">Emergency contact name</label>
-                            <input id="emergency_contact_name" name="emergency_contact_name" type="text" class="tich-input" value="{{ old('emergency_contact_name', $student->emergency_contact_name) }}">
-                        </div>
-                        <div>
-                            <label for="emergency_contact_phone" class="tich-label">Emergency phone</label>
-                            <input id="emergency_contact_phone" name="emergency_contact_phone" type="text" class="tich-input" value="{{ old('emergency_contact_phone', $student->emergency_contact_phone) }}">
-                        </div>
-                        <div>
-                            <label for="emergency_contact_relationship" class="tich-label">Emergency relationship</label>
-                            <input id="emergency_contact_relationship" name="emergency_contact_relationship" type="text" class="tich-input" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship) }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <article class="tich-card">
+        <h2 class="tich-h3">Next of kin</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Name</dt>
+            <dd>{{ $nextOfKin['name'] ?? '-' }}</dd>
+            <dt class="tich-caption">Relationship</dt>
+            <dd>{{ $nextOfKin['relationship'] ?? '-' }}</dd>
+            <dt class="tich-caption">Phone</dt>
+            <dd>{{ $nextOfKin['phone'] ?? '-' }}</dd>
+            <dt class="tich-caption">Address</dt>
+            <dd>{{ $nextOfKin['address'] ?? '-' }}</dd>
+        </dl>
+    </article>
 
-            <div class="tich-mt-6" style="padding-top:1rem; border-top:1px solid var(--tich-neutral-border, #e2e8f0);">
-                <h3 class="tich-caption" style="margin-bottom:0.75rem;">Registrar approval required</h3>
-                <div class="tich-grid tich-grid--2" style="gap:1rem;">
-                    <div>
-                        <label for="first_name" class="tich-label">First name</label>
-                        <input id="first_name" name="first_name" type="text" class="tich-input" value="{{ old('first_name', $applicant?->first_name) }}">
-                    </div>
-                    <div>
-                        <label for="middle_name" class="tich-label">Middle name</label>
-                        <input id="middle_name" name="middle_name" type="text" class="tich-input" value="{{ old('middle_name', $applicant?->middle_name) }}">
-                    </div>
-                    <div>
-                        <label for="surname" class="tich-label">Surname</label>
-                        <input id="surname" name="surname" type="text" class="tich-input" value="{{ old('surname', $applicant?->surname) }}">
-                    </div>
-                    <div>
-                        <label for="date_of_birth" class="tich-label">Date of birth</label>
-                        <input id="date_of_birth" name="date_of_birth" type="date" class="tich-input" value="{{ old('date_of_birth', optional($applicant?->date_of_birth)->format('Y-m-d')) }}">
-                    </div>
-                    <div>
-                        <label for="national_id_number" class="tich-label">National ID</label>
-                        <input id="national_id_number" name="national_id_number" type="text" class="tich-input" value="{{ old('national_id_number', $applicant?->national_id_number) }}">
-                    </div>
-                    <div>
-                        <label for="passport_number" class="tich-label">Passport number</label>
-                        <input id="passport_number" name="passport_number" type="text" class="tich-input" value="{{ old('passport_number', $applicant?->passport_number) }}">
-                    </div>
-                    <div>
-                        <label for="profile_photo" class="tich-label">New photo (pending approval)</label>
-                        <input id="profile_photo" name="profile_photo" type="file" class="tich-input" accept="image/*">
-                    </div>
-                    <div>
-                        <label for="student_notes" class="tich-label">Notes for registrar</label>
-                        <textarea id="student_notes" name="student_notes" rows="3" class="tich-input">{{ old('student_notes') }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tich-mt-4">
-                <button type="submit" class="tich-btn tich-btn-primary">Save profile</button>
-            </div>
-        </form>
+    <article class="tich-card">
+        <h2 class="tich-h3">Emergency contact</h2>
+        <dl style="display: grid; grid-template-columns: 9rem 1fr; gap: 0.5rem 1rem; margin: 1rem 0 0;">
+            <dt class="tich-caption">Name</dt>
+            <dd>{{ $emergency['name'] ?? '-' }}</dd>
+            <dt class="tich-caption">Phone</dt>
+            <dd>{{ $emergency['phone'] ?? '-' }}</dd>
+            <dt class="tich-caption">Relationship</dt>
+            <dd>{{ $emergency['relationship'] ?? '-' }}</dd>
+        </dl>
     </article>
 </div>
 

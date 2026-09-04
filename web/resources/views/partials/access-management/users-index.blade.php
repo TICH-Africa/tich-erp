@@ -79,8 +79,19 @@
                     @endphp
                     <tr>
                         <td>
-                            <strong>{{ $user->displayName() }}</strong><br>
-                            <span class="tich-caption">{{ $user->email }}</span>
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                @if ($user->staff)
+                                    @include('hr.staff.partials.table-avatar', ['member' => $user->staff])
+                                @else
+                                    <div class="tich-staff-table-avatar" aria-hidden="true">
+                                        <span>{{ strtoupper(mb_substr($user->displayName(), 0, 1)) }}</span>
+                                    </div>
+                                @endif
+                                <div>
+                                    <strong>{{ $user->displayName() }}</strong><br>
+                                    <span class="tich-caption">{{ $user->email }}</span>
+                                </div>
+                            </div>
                         </td>
                         <td><span class="tich-badge tich-badge--sm">{{ \App\Support\UserType::label($user->user_type) }}</span></td>
                         <td>
