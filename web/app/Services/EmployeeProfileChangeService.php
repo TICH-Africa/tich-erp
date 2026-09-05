@@ -487,6 +487,8 @@ class EmployeeProfileChangeService
             "{$staff->fullName()} submitted {$count} profile change request(s) for HR approval.",
             'staff_profile_change',
             (string) $staff->id,
+            'normal',
+            route('hr.profile-changes.index'),
         );
     }
 
@@ -512,6 +514,8 @@ class EmployeeProfileChangeService
             "{$staff->fullName()} confirmed their contact and emergency details in My Employee Portal.",
             'staff',
             (string) $staff->id,
+            'normal',
+            route('hr.staff.show', $staff),
         );
     }
 
@@ -529,6 +533,7 @@ class EmployeeProfileChangeService
                 'staff_profile_change',
                 $request->id,
                 'normal',
+                route('employee.dashboard'),
             );
 
             return;
@@ -541,6 +546,7 @@ class EmployeeProfileChangeService
             'staff_profile_change',
             $request->id,
             'normal',
+            route('employee.dashboard'),
         );
     }
 

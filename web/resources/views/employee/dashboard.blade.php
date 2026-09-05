@@ -1,6 +1,8 @@
 @extends('layouts.employee')
 
 @section('employee-content')
+    @include('partials.financial-privacy')
+
     @php
         $contract = $contractSummary;
         $pay = $compensation;
@@ -71,7 +73,7 @@
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Monthly compensation</p>
-            <p class="tich-stat__value" style="font-size:1.1rem;">KES {{ number_format($pay['total_monthly'], 0) }}</p>
+            <p class="tich-stat__value" style="font-size:1.1rem;"><x-financial-value :value="number_format($pay['total_monthly'], 0)" /></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Time with TICH</p>
@@ -108,9 +110,9 @@
             <article class="tich-card">
                 <h2 class="tich-h3">Compensation</h2>
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value">KES {{ number_format($pay['gross_monthly_salary'], 2) }}</span></div>
-                    <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value">KES {{ number_format($pay['allowances_total'], 2) }}</span></div>
-                    <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value">KES {{ number_format($pay['total_monthly'], 2) }}</span></div>
+                    <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['gross_monthly_salary'], 2)" /></span></div>
+                    <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['allowances_total'], 2)" /></span></div>
+                    <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['total_monthly'], 2)" /></span></div>
                 </div>
                 @if ($pay['allowances']->isNotEmpty())
                     <h3 class="tich-h3 tich-mt-6">Allowance breakdown</h3>
@@ -118,7 +120,7 @@
                         @foreach ($pay['allowances'] as $allowance)
                             <li class="tich-text tich-mt-2" style="display:flex; justify-content:space-between; gap:1rem; border-bottom:1px solid var(--tich-neutral-border); padding-bottom:0.5rem;">
                                 <span>{{ $allowance->allowance_name }}</span>
-                                <strong>KES {{ number_format($allowance->amount, 2) }}</strong>
+                                <strong><x-financial-value :value="number_format($allowance->amount, 2)" /></strong>
                             </li>
                         @endforeach
                     </ul>

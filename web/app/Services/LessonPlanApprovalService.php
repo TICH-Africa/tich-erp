@@ -432,6 +432,7 @@ class LessonPlanApprovalService
             'lesson_plan',
             (string) $plan->id,
             'normal',
+            route('departments.academics.lesson-plans.show', $plan),
         );
     }
 
@@ -448,6 +449,8 @@ class LessonPlanApprovalService
             $body,
             'lesson_plan',
             (string) $plan->id,
+            'normal',
+            route('staff.dashboard', ['section' => 'lesson-plans', 'edit_plan' => $plan->id]),
         );
     }
 

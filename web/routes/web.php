@@ -96,6 +96,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::get('/notifications/{notification}/open', [\App\Http\Controllers\NotificationController::class, 'open'])
+        ->name('notifications.open');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])
+        ->name('notifications.read');
+
     Route::get('/departments/{department}', [DepartmentDashboardController::class, 'show'])
         ->where('department', '[0-9]+(-[0-9]+)?')
         ->name('departments.show');

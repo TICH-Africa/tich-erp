@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-04 22:05:36 EAT
+-- Generated: 2026-09-05 14:16:19 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5159,6 +5159,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `channels_sent` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`channels_sent`)),
   `related_entity_type` varchar(100) DEFAULT NULL,
   `related_entity_id` varchar(50) DEFAULT NULL,
+  `action_url` varchar(500) DEFAULT NULL,
   `is_read` tinyint(4) NOT NULL DEFAULT 0,
   `read_at` datetime DEFAULT NULL,
   `read_device_info` varchar(500) DEFAULT NULL,
@@ -5183,6 +5184,7 @@ CALL `tich_ensure_column`('notifications', 'body', 'text NOT NULL');
 CALL `tich_ensure_column`('notifications', 'channels_sent', 'longtext NOT NULL');
 CALL `tich_ensure_column`('notifications', 'related_entity_type', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('notifications', 'related_entity_id', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('notifications', 'action_url', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('notifications', 'is_read', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('notifications', 'read_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('notifications', 'read_device_info', 'varchar(500) NULL DEFAULT NULL');

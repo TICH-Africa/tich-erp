@@ -623,6 +623,13 @@ SET @tich_fk_sql := (
 );
 PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
 
+-- -----------------------------------------------------------------------------
+-- 16. In-app notification deep links
+--     (2026_09_05_140000_add_action_url_to_notifications_table)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `notifications`
+    ADD COLUMN IF NOT EXISTS `action_url` varchar(500) NULL DEFAULT NULL AFTER `related_entity_id`;
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

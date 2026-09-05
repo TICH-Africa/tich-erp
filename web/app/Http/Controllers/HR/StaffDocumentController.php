@@ -262,7 +262,8 @@ $validated = $request->validate([
                 "Your document '{$document->document_name}' has been approved by HR.",
                 'staff_document',
                 $document->id,
-                'normal'
+                'normal',
+                route('employee.documents.index'),
             );
         }
 
@@ -292,7 +293,8 @@ $validated = $request->validate([
                 "Your document '{$document->document_name}' has been rejected. Reason: {$validated['rejection_reason']}",
                 'staff_document',
                 $document->id,
-                'normal'
+                'normal',
+                route('employee.documents.index'),
             );
         }
 

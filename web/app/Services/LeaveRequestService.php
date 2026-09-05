@@ -462,6 +462,7 @@ class LeaveRequestService
             'leave_request',
             (string) $leaveRequest->id,
             'normal',
+            route('hr.leave.show', $leaveRequest),
         );
     }
 
@@ -493,6 +494,7 @@ class LeaveRequestService
             'leave_request',
             (string) $leaveRequest->id,
             $decision === 'rejected' ? 'high' : 'normal',
+            route('employee.leave.index'),
         );
     }
 

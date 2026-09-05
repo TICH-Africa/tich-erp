@@ -27,6 +27,7 @@
 
             <div class="tich-nav__actions">
                 @include('partials.theme-toggle')
+                @include('partials.notification-bell')
 
                 @auth
                     <form method="POST" action="{{ route('logout') }}" class="tich-nav__logout">
@@ -75,6 +76,15 @@
                     <span class="tich-caption">Appearance</span>
                 </div>
                 @auth
+                    <a href="{{ route('notifications.index') }}" class="tich-btn tich-btn-ghost tich-btn-block tich-nav-drawer__notifications">
+                        Notifications
+                        @php
+                            $drawerUnread = \App\Models\InAppNotification::unreadCountForUser((int) auth()->id());
+                        @endphp
+                        @if ($drawerUnread > 0)
+                            <span class="tich-notification-badge">{{ $drawerUnread > 99 ? '99+' : $drawerUnread }}</span>
+                        @endif
+                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="tich-btn tich-btn-ghost tich-btn-block">

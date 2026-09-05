@@ -15,6 +15,7 @@
     @php
         $hideAppFooter = request()->routeIs([
             'dashboard',
+            'notifications.*',
             'admin.*',
             'administration.*',
             'site-settings.*',

@@ -3831,9 +3831,24 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         box-shadow: 8px 0 28px rgba(15, 23, 42, 0.18);
         z-index: 1;
         overflow: hidden;
-        --sidebar-scale: 0.90;
-        --sidebar-sub-scale: 0.84;
-        padding: 0.65rem 0.5rem;
+        /* Match right-side nav drawer (--nav-drawer-scale: 0.92) item sizing */
+        --sidebar-scale: 0.80;
+        --sidebar-sub-scale: 0.74;
+        --sidebar-font: calc(0.8125rem * 0.92);
+        --sidebar-sub-font: calc(0.75rem * 0.92);
+        --sidebar-icon: calc(1.45rem * 0.92);
+        --sidebar-sub-icon: calc(1.3rem * 0.92);
+        --sidebar-icon-svg: calc(14px * 0.92);
+        --sidebar-sub-icon-svg: calc(12px * 0.92);
+        --sidebar-chevron-svg: calc(14px * 0.92);
+        --sidebar-gap: calc(0.35rem * 0.92);
+        --sidebar-sub-gap: calc(0.3rem * 0.92);
+        --sidebar-pad-y: calc(0.55rem * 0.92);
+        --sidebar-pad-x: calc(0.4rem * 0.92);
+        --sidebar-sub-pad-y: calc(0.45rem * 0.92);
+        --sidebar-sub-pad-x: calc(0.35rem * 0.92);
+        padding: calc(0.45rem * 0.92) calc(0.55rem * 0.92);
+        gap: calc(0.05rem * 0.92);
     }
 
     .tich-admin.is-sidebar-open .tich-admin-sidebar-mobile__shell .tich-admin-sidebar {
@@ -5392,6 +5407,129 @@ a.tich-notification-badge:hover {
     display: block;
 }
 
+/* ??? Nav notification bell ????????????????????????????????????????????? */
+
+.tich-nav-notification {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--tich-grey);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tich-nav-notification:hover,
+.tich-nav-notification.is-active {
+    background: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+    color: var(--tich-blue);
+}
+
+.tich-nav-notification__badge {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.28rem;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    border: 2px solid var(--tich-white);
+    pointer-events: none;
+}
+
+[data-theme="dark"] .tich-nav-notification__badge {
+    border-color: var(--tich-surface, #0f172a);
+}
+
+.tich-nav-drawer__notifications {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tich-notification-card__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.tich-notification-card__link {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.tich-notification-card__link:hover .tich-h3 {
+    color: var(--tich-blue);
+}
+
+.tich-notification-card__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.tich-notification-card--linked {
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tich-notification-card--linked:hover {
+    border-color: var(--tich-blue);
+    box-shadow: 0 0 0 1px rgba(22, 105, 166, 0.12);
+}
+
+.tich-notification-card--unread {
+    border-left: 4px solid var(--tich-blue);
+}
+
+body.page-home .tich-header--over-hero .tich-nav-notification {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+body.page-home .tich-header--over-hero .tich-nav-notification:hover,
+body.page-home .tich-header--over-hero .tich-nav-notification.is-active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification {
+    border-color: var(--tich-neutral-border);
+    color: var(--tich-grey);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification:hover,
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification.is-active {
+    background: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+    color: var(--tich-blue);
+}
+
 body.page-home .tich-header--over-hero .tich-theme-toggle {
     border-color: rgba(255, 255, 255, 0.35);
     color: rgba(255, 255, 255, 0.95);
@@ -5609,13 +5747,15 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__link,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__action-btn--ghost,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__more-toggle,
-[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle {
+[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle,
+[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav-notification {
     color: rgba(255, 255, 255, 0.92);
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__link:hover,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__action-btn--ghost:hover,
-[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle:hover {
+[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle:hover,
+[data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav-notification:hover {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.12);
 }
@@ -7918,9 +8058,10 @@ a.tich-tabs__btn {
     }
 
     .tich-admin--student-portal .tich-admin-sidebar-mobile__shell .tich-admin-sidebar {
-        --sidebar-scale: var(--portal-mobile-scale);
-        --sidebar-sub-scale: calc(var(--portal-mobile-scale) * 0.94);
-        padding: calc(0.65rem * var(--portal-mobile-scale)) calc(0.5rem * var(--portal-mobile-scale));
+        /* Keep left menu sized like the right nav drawer (do not inflate with portal scale) */
+        --sidebar-scale: 0.80;
+        --sidebar-sub-scale: 0.74;
+        padding: calc(0.45rem * 0.92) calc(0.55rem * 0.92);
     }
 }
 
@@ -7932,7 +8073,6 @@ a.tich-tabs__btn {
     }
 
     .tich-admin--student-portal .tich-admin-sidebar {
-        --sidebar-scale: var(--portal-mobile-scale);
         max-width: 100%;
         box-sizing: border-box;
     }
@@ -8176,5 +8316,101 @@ a.tich-tabs__btn {
 
     .tich-portal-panel__head {
         gap: calc(0.5rem * var(--portal-mobile-scale, 0.94));
+    }
+}
+
+/* ??? Dashboard (mobile compact 2-up) ???????????????????????????????? */
+
+@media (max-width: 767px) {
+    .tich-dashboard {
+        padding: 1.25rem 0 1.75rem;
+    }
+
+    .tich-dashboard .tich-container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .tich-dashboard__intro {
+        margin-bottom: 1rem;
+    }
+
+    .tich-dashboard__title.tich-h1,
+    .tich-dashboard .tich-dashboard__title {
+        font-size: 1.35rem;
+        line-height: 1.25;
+        margin-bottom: 0.35rem;
+    }
+
+    .tich-dashboard__intro > .tich-text {
+        font-size: 0.75rem;
+        line-height: 1.4;
+        margin-top: 0.25rem;
+    }
+
+    .tich-dashboard__intro .tich-caption {
+        font-size: 0.625rem;
+    }
+
+    .tich-dashboard__intro .tich-alert {
+        margin-top: 0.75rem;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .tich-dashboard__grid.tich-grid,
+    .tich-dashboard__grid.tich-grid--3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+    }
+
+    .tich-dashboard__grid > .tich-card {
+        padding: 0.7rem 0.75rem;
+        border-radius: var(--radius-md, 0.5rem);
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-caption {
+        font-size: 0.5625rem;
+        line-height: 1.3;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-h3 {
+        font-size: 0.8125rem;
+        line-height: 1.25;
+        margin-bottom: 0.25rem;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-mt-2 {
+        margin-top: 0.3rem;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-mt-4 {
+        margin-top: 0.55rem;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-text {
+        font-size: 0.6875rem;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-btn {
+        width: 100%;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.6875rem;
+        gap: 0.25rem;
+        margin-top: auto;
+    }
+
+    .tich-dashboard__grid > .tich-card .tich-notification-badge {
+        font-size: 0.5625rem;
+        padding: 0.1rem 0.35rem;
+        min-width: 1.1rem;
     }
 }

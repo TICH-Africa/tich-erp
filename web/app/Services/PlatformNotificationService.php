@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\ModuleMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class PlatformNotificationService
@@ -41,7 +42,7 @@ class PlatformNotificationService
             }
         }
 
-        DB::table('notifications')->insert([
+        $row = [
             'user_id' => $userId,
             'title' => $title,
             'body' => $body,
@@ -52,7 +53,13 @@ class PlatformNotificationService
             'is_read' => 0,
             'is_dismissed' => 0,
             'created_at' => now(),
-        ]);
+        ];
+
+        if (Schema::hasColumn('notifications', 'action_url')) {
+            $row['action_url'] = $actionUrl;
+        }
+
+        DB::table('notifications')->insert($row);
     }
 
     /**

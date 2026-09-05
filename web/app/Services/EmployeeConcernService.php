@@ -73,6 +73,8 @@ class EmployeeConcernService
                 "Your concern {$grievance->reference_number} has been sent to HR for review.",
                 'employee_concern',
                 (string) $grievance->id,
+                'normal',
+                route('employee.concerns.show', $grievance),
             );
         }
 
@@ -120,6 +122,8 @@ class EmployeeConcernService
             "{$staff->fullName()} raised {$grievance->reference_number}: {$categoryLabel} - {$subject}",
             'employee_concern',
             (string) $grievance->id,
+            'normal',
+            route('hr.employee-relations.grievances.show', $grievance),
         );
     }
 }
