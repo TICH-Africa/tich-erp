@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -334,8 +335,26 @@ class AuthService
         }
 
         if ($this->rbacService->hasPermission($user, 'academics.read')) {
-            if (app(AcademicsAccessService::class)->isSuggestionsOnly($user)) {
+            $academicsAccess = app(AcademicsAccessService::class);
+
+            if ($academicsAccess->isTeachingOnly($user)) {
+                return route('staff.dashboard');
+            }
+
+            if ($academicsAccess->isSuggestionsOnly($user)) {
                 return route('departments.academics.suggestions.index');
+            }
+
+            if ($academicsAccess->isDepartmentHod($user)) {
+                $hub = Department::query()->where('dept_code', 'ACAD')->first();
+                if ($hub) {
+                    $learningDepartment = $academicsAccess->primaryLearningDepartment($user, $hub);
+                    if ($learningDepartment) {
+                        return route('departments.academics.programs.index', [
+                            'learning_department' => $learningDepartment->id,
+                        ]);
+                    }
+                }
             }
 
             return route('departments.academics.dashboard');

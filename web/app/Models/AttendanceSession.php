@@ -88,4 +88,19 @@ class AttendanceSession extends Model
     {
         return $this->belongsTo(Staff::class, 'recorded_by');
     }
+
+    public function hodVerifier(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'hod_verified_by');
+    }
+
+    public function registrarVerifier(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'registrar_verified_by');
+    }
+
+    public function rosterVerifier(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'roster_verified_by');
+    }
 }

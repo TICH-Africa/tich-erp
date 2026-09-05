@@ -66,6 +66,7 @@
                     'badge' => $item['badge'] ?? null,
                     'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
                     'sub' => true,
+                    'sidebarLabels' => $sidebarLabels,
                 ])
             @endif
         @endforeach

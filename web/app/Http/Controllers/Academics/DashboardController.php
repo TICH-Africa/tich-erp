@@ -24,6 +24,10 @@ class DashboardController extends DepartmentAcademicsController
 
     public function __invoke(Request $request, Department $department): View|RedirectResponse
     {
+        if ($this->access->isTeachingOnly($request->user())) {
+            return redirect()->route('staff.dashboard');
+        }
+
         $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
 
         if ($this->access->isSuggestionsOnly($request->user())) {
@@ -31,6 +35,15 @@ class DashboardController extends DepartmentAcademicsController
                 'departments.academics.suggestions.index',
                 \App\Support\AcademicsRouteParams::fromRequest($request)
             );
+        }
+
+        if ($this->access->isDepartmentHod($request->user()) && ! $request->integer('learning_department')) {
+            $learningDepartment = $this->access->primaryLearningDepartment($request->user(), $hub);
+            if ($learningDepartment) {
+                return redirect()->route('departments.academics.programs.index', [
+                    'learning_department' => $learningDepartment->id,
+                ]);
+            }
         }
 
         return view('academics.dashboard', [

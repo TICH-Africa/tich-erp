@@ -31,6 +31,7 @@
                     'badgeKey' => $badgeKey,
                     'badge' => $groupBadge,
                     'menuLabel' => $menuLabel,
+                    'sidebarLabels' => $sidebarLabels,
                 ])
             @endif
             <span class="tich-admin-sidebar__chevron" aria-hidden="true">
@@ -50,6 +51,7 @@
                 'badge' => $item['badge'] ?? null,
                 'menuLabel' => $item['menuLabel'] ?? ($item['label'] ?? null),
                 'sub' => true,
+                'sidebarLabels' => $sidebarLabels,
             ])
         @endforeach
     </div>

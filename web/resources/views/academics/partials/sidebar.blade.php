@@ -140,13 +140,14 @@
                         'icon' => 'clipboard-check',
                         'open' => $assessmentActive,
                         'active' => $assessmentActive,
-                        'badgeKey' => 'attendance-ledger.registrar',
+                        'badgeKey' => 'assessment',
                         'items' => [
                             [
                                 'href' => route('departments.academics.attendance-ledger.index', $hub),
                                 'label' => 'Attendance ledger',
                                 'icon' => 'clipboard-check',
                                 'active' => request()->routeIs('departments.academics.attendance-ledger.*'),
+                                'badgeKey' => $attendanceBadgeKey,
                             ],
                             [
                                 'href' => route('departments.academics.clearance.index', $hub),
@@ -165,12 +166,14 @@
                                 'label' => 'Special exam requests',
                                 'icon' => 'file-text',
                                 'active' => request()->routeIs('departments.academics.special-exam-requests.*'),
+                                'badgeKey' => 'special-exam-requests.pending',
                             ],
                             [
                                 'href' => route('departments.academics.supplementary-requests.index', $hub),
                                 'label' => 'Supplementary requests',
                                 'icon' => 'refresh-cw',
                                 'active' => request()->routeIs('departments.academics.supplementary-requests.*'),
+                                'badgeKey' => 'supplementary-requests.pending',
                             ],
                         ],
                     ])

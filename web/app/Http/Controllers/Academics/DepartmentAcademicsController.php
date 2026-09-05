@@ -37,6 +37,10 @@ abstract class DepartmentAcademicsController extends Controller
             abort(403, 'Dean of Students access in Academics is limited to the suggestion box and deferment requests.');
         }
 
+        if ($this->access->isTeachingOnly($request->user())) {
+            abort(403, 'Teaching staff use the Staff portal for academics work.');
+        }
+
         return $department;
     }
 }

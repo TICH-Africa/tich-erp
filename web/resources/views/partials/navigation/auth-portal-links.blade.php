@@ -32,6 +32,19 @@
         <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
     @endunless
     @include('partials.navigation.nav-link', [
+        'href' => route('dashboard'),
+        'label' => 'Dashboard',
+        'icon' => 'dashboard',
+        'active' => request()->routeIs('dashboard'),
+        'mobile' => $mobile ?? false,
+    ])
+    @unless ($mobile ?? false)
+        </div>
+    @endunless
+    @unless ($mobile ?? false)
+        <div class="tich-nav__item" data-nav-item data-nav-item-pinned>
+    @endunless
+    @include('partials.navigation.nav-link', [
         'href' => route('staff.dashboard'),
         'label' => 'Staff portal',
         'icon' => 'book-open',

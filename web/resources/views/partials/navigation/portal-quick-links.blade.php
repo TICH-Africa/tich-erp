@@ -48,6 +48,12 @@
 
     if ($user && $user->isTeachingStaff() && ! $user->isEnrolledStudent()) {
         $portalLinks[] = [
+            'label' => 'Dashboard',
+            'href' => route('dashboard'),
+            'icon' => 'dashboard',
+            'active' => request()->routeIs('dashboard'),
+        ];
+        $portalLinks[] = [
             'label' => 'Staff portal',
             'href' => $staffHref,
             'icon' => 'book-open',

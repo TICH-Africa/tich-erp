@@ -76,6 +76,10 @@
                             @endif
                         </td>
                         <td style="white-space:nowrap;">
+                            <a
+                                href="{{ route('departments.academics.attendance-ledger.show', array_merge($hub, ['session' => $session->id])) }}"
+                                class="tich-btn tich-btn-secondary tich-btn--compact"
+                            >View submission</a>
                             @if ($canVerifyHod && $session->verification_status === 'submitted')
                                 <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-hod', array_merge($hub, ['session' => $session->id])) }}" style="display:inline;">
                                     @csrf
@@ -83,16 +87,16 @@
                                 </form>
                             @endif
                             @if ($canVerifyRegistrar && in_array($session->verification_status, ['submitted', 'hod_verified'], true))
-                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-registrar', array_merge($hub, ['session' => $session->id])) }}" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="tich-link">Verify (Registrar)</button>
-                                </form>
+                                <!-- <a
+                                    href="{{ route('departments.academics.attendance-ledger.show', array_merge($hub, ['session' => $session->id])) }}"
+                                    class="tich-link"
+                                >Review &amp; verify</a> -->
                             @endif
                             @if (! $session->roster_verified_at && in_array($session->verification_status, ['draft', 'submitted', 'hod_verified'], true))
-                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-roster', array_merge(['department' => $department->id], $hub, ['session' => $session->id])) }}" style="display:inline;">
+                                <!-- <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-roster', array_merge(['department' => $department->id], $hub, ['session' => $session->id])) }}" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="tich-link">Verify roster</button>
-                                </form>
+                                </form> -->
                             @endif
                         </td>
                     </tr>

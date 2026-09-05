@@ -21,6 +21,16 @@ class AcademicsAccessService
         'Lecturer/Tutor',
     ];
 
+    /** Roles that unlock the Academics hub beyond teaching-only staff portal access. */
+    public const ACADEMICS_HUB_ROLES = [
+        'Super Admin',
+        'CEO',
+        'Head of Academics',
+        'Academic Registrar',
+        'HOD',
+        'Dean of Students',
+    ];
+
     public function __construct(
         protected RBACService $rbacService,
         protected DepartmentDashboardService $departmentDashboard,
@@ -29,6 +39,33 @@ class AcademicsAccessService
     public function canAccessAll(User $user): bool
     {
         return $this->rbacService->hasAnyRole($user, ['Super Admin', 'CEO', 'Academic Registrar', 'Head of Academics']);
+    }
+
+    /**
+     * Lecturer/Tutor (or teaching-flagged staff) with no hub management roles — staff portal only.
+     */
+    public function isTeachingOnly(User $user): bool
+    {
+        if ($this->rbacService->isPlatformAdministrator($user) || $this->canAccessAll($user)) {
+            return false;
+        }
+
+        if ($this->rbacService->hasAnyRole($user, self::ACADEMICS_HUB_ROLES)) {
+            return false;
+        }
+
+        $isTutor = $this->rbacService->hasRole($user, 'Lecturer/Tutor');
+        $isTeachingStaff = app(StaffPortalService::class)->isTeachingStaff($user);
+
+        return $isTutor || $isTeachingStaff;
+    }
+
+    /**
+     * HOD scoped to their learning department(s), without institutional hub-wide access.
+     */
+    public function isDepartmentHod(User $user): bool
+    {
+        return $this->rbacService->hasRole($user, 'HOD') && ! $this->canAccessAll($user);
     }
 
     /**
@@ -49,7 +86,70 @@ class AcademicsAccessService
 
     public function canAccessFullAcademics(User $user): bool
     {
-        return ! $this->isSuggestionsOnly($user);
+        return ! $this->isSuggestionsOnly($user) && ! $this->isTeachingOnly($user);
+    }
+
+    /**
+     * Preferred landing URL when opening Academics (hub or learning department) from the dashboard.
+     */
+    public function entryUrl(User $user, Department $department): string
+    {
+        if ($this->isTeachingOnly($user)) {
+            return route('staff.dashboard');
+        }
+
+        $hub = $department->isAcademicsHub()
+            ? $department
+            : ($department->academicsHub() ?? $department);
+
+        if ($this->isSuggestionsOnly($user)) {
+            return route('departments.academics.suggestions.index');
+        }
+
+        $learningDepartment = $department->isLearningDepartment()
+            ? $department
+            : $this->primaryLearningDepartment($user, $hub);
+
+        if ($learningDepartment && ($this->isDepartmentHod($user) || $department->isLearningDepartment())) {
+            return route('departments.academics.programs.index', [
+                'learning_department' => $learningDepartment->id,
+            ]);
+        }
+
+        return route('departments.academics.dashboard');
+    }
+
+    public function primaryLearningDepartment(User $user, Department $hub): ?Department
+    {
+        $inScope = $this->learningDepartmentsInScope($user, $hub);
+
+        if ($inScope->isEmpty()) {
+            return null;
+        }
+
+        $staff = app(StaffPortalService::class)->staffForUser($user);
+        if ($staff?->department_id) {
+            $match = $inScope->firstWhere('id', (int) $staff->department_id);
+            if ($match) {
+                return $match;
+            }
+        }
+
+        return $inScope->first();
+    }
+
+    /**
+     * Learning-department IDs the user may see counts / curriculum for.
+     *
+     * @return list<int>
+     */
+    public function accessibleLearningDepartmentIds(User $user, Department $hub): array
+    {
+        if ($this->canAccessAll($user) || $this->rbacService->isPlatformAdministrator($user)) {
+            return $this->scopeDepartmentIds($hub);
+        }
+
+        return $this->learningDepartmentsInScope($user, $hub)->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     public function canApproveRegistry(User $user): bool

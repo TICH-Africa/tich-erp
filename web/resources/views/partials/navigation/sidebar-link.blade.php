@@ -8,6 +8,7 @@
     $badgeKey = $badgeKey ?? null;
     $sub = $sub ?? false;
     $menuLabel = $menuLabel ?? $label;
+    $sidebarLabels = $sidebarLabels ?? $administrationSidebarLabels ?? $financeSidebarLabels ?? $hrSidebarLabels ?? [];
 @endphp
 
 <a href="{{ $href }}" @class([
@@ -27,6 +28,7 @@
                 'badge' => $badge,
                 'sub' => $sub,
                 'menuLabel' => $menuLabel,
+                'sidebarLabels' => $sidebarLabels ?? [],
             ])
         </span>
     @endif

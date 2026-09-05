@@ -39,9 +39,40 @@ class AttendanceLedgerController extends DepartmentAcademicsController
         ]);
     }
 
+    public function show(Request $request, Department $department, AttendanceSession $session): View
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $this->assertSessionInHub($hub, $session);
+
+        $sheet = $this->verification->sheetData($session);
+        $session->loadMissing(['hodVerifier', 'registrarVerifier', 'rosterVerifier']);
+
+        $presentCount = $session->records->where('is_present', true)->count();
+        $totalCount = $session->records->count();
+
+        return view('academics.attendance-ledger.show', [
+            'department' => $hub,
+            'learningDepartment' => $request->integer('learning_department')
+                ? Department::query()->find($request->integer('learning_department'))
+                : null,
+            'session' => $session,
+            'allocation' => $sheet['allocation'],
+            'unit' => $sheet['unit'],
+            'tutor' => $sheet['tutor'],
+            'records' => $sheet['records'],
+            'trackingId' => $sheet['tracking_id'],
+            'intakeLabel' => $sheet['intake_label'],
+            'presentCount' => $presentCount,
+            'totalCount' => $totalCount,
+            'canVerifyHod' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
+            'canVerifyRegistrar' => $request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']),
+        ]);
+    }
+
     public function verifyHod(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
-        $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department);
+        $this->assertSessionInHub($hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -49,12 +80,18 @@ class AttendanceLedgerController extends DepartmentAcademicsController
 
         $this->verification->verifyAsHod($session, $staff);
 
-        return back()->with('status', 'Attendance session verified by HOD.');
+        return redirect()
+            ->route('departments.academics.attendance-ledger.show', array_merge(
+                \App\Support\AcademicsRouteParams::fromRequest($request),
+                ['session' => $session->id]
+            ))
+            ->with('status', 'Attendance session verified by HOD.');
     }
 
     public function verifyRegistrar(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
-        $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department);
+        $this->assertSessionInHub($hub, $session);
         abort_unless($request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -62,12 +99,18 @@ class AttendanceLedgerController extends DepartmentAcademicsController
 
         $this->verification->verifyAsRegistrar($session, $staff);
 
-        return back()->with('status', 'Attendance session verified by Academic Registrar.');
+        return redirect()
+            ->route('departments.academics.attendance-ledger.show', array_merge(
+                \App\Support\AcademicsRouteParams::fromRequest($request),
+                ['session' => $session->id]
+            ))
+            ->with('status', 'Attendance session verified by Academic Registrar.');
     }
 
     public function verifyRoster(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
-        $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department);
+        $this->assertSessionInHub($hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -80,7 +123,8 @@ class AttendanceLedgerController extends DepartmentAcademicsController
 
     public function examEligibilityCheck(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
-        $this->authorizeHub($request, $department);
+        $hub = $this->authorizeHub($request, $department);
+        $this->assertSessionInHub($hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -91,5 +135,14 @@ class AttendanceLedgerController extends DepartmentAcademicsController
         $blockedCount = isset($session->exam_blocked_students) ? $session->exam_blocked_students->count() : 0;
 
         return back()->with('status', $blockedCount > 0 ? "Exam eligibility check complete. {$blockedCount} student(s) blocked due to attendance." : 'Exam eligibility check complete. All students eligible.');
+    }
+
+    protected function assertSessionInHub(Department $hub, AttendanceSession $session): void
+    {
+        $session->loadMissing('allocation.unit');
+        $unitDepartmentId = (int) ($session->allocation?->unit?->department_id ?? 0);
+        $scopeIds = $this->access->scopeDepartmentIds($hub);
+
+        abort_unless($unitDepartmentId > 0 && in_array($unitDepartmentId, $scopeIds, true), 404);
     }
 }

@@ -28,7 +28,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'departments' => $departments,
-            'departmentNotificationCounts' => $departmentNotifications->countsForDepartments($departments),
+            'departmentNotificationCounts' => $departmentNotifications->countsForDepartments($departments, $user),
             'formatNotificationCount' => fn (int $count) => $departmentNotifications->formatCount($count),
             'awaitingDepartmentAssignment' => $awaitingAssignment,
             'cardDescription' => fn ($department) => $departmentDashboard->cardDescription($department),

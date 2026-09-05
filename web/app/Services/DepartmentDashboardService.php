@@ -419,6 +419,10 @@ class DepartmentDashboardService
             return route('dashboard');
         }
 
+        if ($department->dept_code === 'ACAD' || $department->isAcademicsHub() || $department->isLearningDepartment()) {
+            return app(AcademicsAccessService::class)->entryUrl($user, $department);
+        }
+
         $moduleHome = app(DepartmentBudgetingService::class)->moduleHomeUrlForDepartment($department);
         if ($moduleHome) {
             return $moduleHome;

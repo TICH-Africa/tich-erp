@@ -60,6 +60,7 @@ return function (bool $named = true): void {
         $register('get', '/programs/{program}/timetables/{timetable}/print', [ProgramCurriculumController::class, 'printTimetable'], 'departments.academics.programs.timetable.print');
         $register('get', '/programs/{program}/timetables/{timetable}/pdf', [ProgramCurriculumController::class, 'downloadTimetablePdf'], 'departments.academics.programs.timetable.pdf');
         $register('get', '/attendance-ledger', [AttendanceLedgerController::class, 'index'], 'departments.academics.attendance-ledger.index');
+        $register('get', '/attendance-ledger/{session}', [AttendanceLedgerController::class, 'show'], 'departments.academics.attendance-ledger.show');
         $register('get', '/clearance', [AcademicClearanceController::class, 'index'], 'departments.academics.clearance.index');
         $register('get', '/suggestions', [SuggestionBoxController::class, 'index'], 'departments.academics.suggestions.index');
         $register('get', '/suggestions/{suggestion}', [SuggestionBoxController::class, 'show'], 'departments.academics.suggestions.show');
