@@ -171,6 +171,7 @@
     </div>
 
     @push('scripts')
+    <x-asset.script path="js/tich-cms-editor.js" :defer="false" />
     <script>
         document.querySelectorAll('.event-edit-trigger').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -182,7 +183,6 @@
                     title: 'edit_title',
                     subtitle: 'edit_subtitle',
                     'event-type': 'edit_event_type',
-                    description: 'edit_description',
                     'start-datetime': 'edit_start_datetime',
                     'end-datetime': 'edit_end_datetime',
                     venue: 'edit_venue',
@@ -192,6 +192,12 @@
                     var el = document.getElementById(map[key]);
                     if (el) el.value = btn.getAttribute('data-' + key) || '';
                 });
+                if (window.tichCmsEditor) {
+                    window.tichCmsEditor.setHtml('edit_description', btn.getAttribute('data-description') || '');
+                } else {
+                    var desc = document.getElementById('edit_description');
+                    if (desc) desc.value = btn.getAttribute('data-description') || '';
+                }
                 var pub = document.getElementById('edit_is_public');
                 var feat = document.getElementById('edit_is_featured');
                 if (pub) pub.checked = btn.getAttribute('data-is-public') === '1';

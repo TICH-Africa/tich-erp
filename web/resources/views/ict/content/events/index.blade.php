@@ -107,17 +107,24 @@
 
     @push('scripts')
     @include('admin.partials.tich-modal-assets')
+    <x-asset.script path="js/tich-cms-editor.js" :defer="false" />
     <script>
         document.querySelectorAll('.event-edit-trigger').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var form = document.getElementById('event-edit-form');
                 form.action = btn.getAttribute('data-update-url');
                 document.getElementById('edit_event_id').value = btn.getAttribute('data-event-id') || '';
-                var map = {title:'edit_title',subtitle:'edit_subtitle','event-type':'edit_event_type',description:'edit_description','start-datetime':'edit_start_datetime','end-datetime':'edit_end_datetime',venue:'edit_venue',registration:'edit_registration_url_or_form'};
+                var map = {title:'edit_title',subtitle:'edit_subtitle','event-type':'edit_event_type','start-datetime':'edit_start_datetime','end-datetime':'edit_end_datetime',venue:'edit_venue',registration:'edit_registration_url_or_form'};
                 Object.keys(map).forEach(function (k) {
                     var el = document.getElementById(map[k]);
                     if (el) el.value = btn.getAttribute('data-' + k) || '';
                 });
+                if (window.tichCmsEditor) {
+                    window.tichCmsEditor.setHtml('edit_description', btn.getAttribute('data-description') || '');
+                } else {
+                    var desc = document.getElementById('edit_description');
+                    if (desc) desc.value = btn.getAttribute('data-description') || '';
+                }
                 var pub = document.getElementById('edit_is_public');
                 var feat = document.getElementById('edit_is_featured');
                 if (pub) pub.checked = btn.getAttribute('data-is-public') === '1';

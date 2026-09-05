@@ -114,6 +114,7 @@
 
     @push('scripts')
     @include('admin.partials.tich-modal-assets')
+    <x-asset.script path="js/tich-cms-editor.js" :defer="false" />
     <script>
         document.querySelectorAll('.course-edit-trigger').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -128,14 +129,16 @@
                     'regulatory-body': 'edit_regulatory_body',
                     'duration-months': 'edit_duration_months',
                     'status': 'edit_status',
-                    'homepage-tagline': 'edit_homepage_tagline',
-                    'entry-requirements': 'edit_entry_requirements',
                     'homepage-display-order': 'edit_homepage_display_order'
                 };
                 Object.keys(fields).forEach(function (k) {
                     var el = document.getElementById(fields[k]);
                     if (el) el.value = btn.getAttribute('data-' + k) || '';
                 });
+                if (window.tichCmsEditor) {
+                    window.tichCmsEditor.setHtml('edit_homepage_tagline', btn.getAttribute('data-homepage-tagline') || '');
+                    window.tichCmsEditor.setHtml('edit_entry_requirements', btn.getAttribute('data-entry-requirements') || '');
+                }
                 var feat = document.getElementById('edit_is_featured_on_homepage');
                 if (feat) feat.checked = btn.getAttribute('data-is-featured') === '1';
             });

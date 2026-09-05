@@ -21,7 +21,7 @@
                 <p class="tich-program-show__eyebrow">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type ?? 'PROGRAMME')) }}</p>
                 <h1 class="tich-program-show__title" itemprop="name">{{ $program->program_name }}</h1>
                 @if (!empty($program->homepage_tagline))
-                    <p class="tich-program-show__lead" itemprop="description">{{ $program->homepage_tagline }}</p>
+                    <p class="tich-program-show__lead" itemprop="description">{{ \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline), 180) }}</p>
                 @endif
             </div>
         </header>
@@ -41,12 +41,12 @@
 
                     <h2 class="tich-h3">About this programme</h2>
                     @if (!empty($program->homepage_tagline))
-                        <p class="tich-text tich-mt-4">{{ $program->homepage_tagline }}</p>
+                        <div class="tich-text tich-mt-4 tich-prose">{!! $program->homepage_tagline !!}</div>
                     @endif
 
                     @if (!empty($program->entry_requirements))
                         <h3 class="tich-h3 tich-mt-8">Entry requirements</h3>
-                        <div class="tich-program-show__copy tich-mt-4">{{ $program->entry_requirements }}</div>
+                        <div class="tich-program-show__copy tich-mt-4 tich-prose">{!! $program->entry_requirements !!}</div>
                     @endif
 
                     <p class="tich-caption tich-mt-8">

@@ -15,42 +15,43 @@
 
 @section('content')
     <x-animated-section animation="fade">
-        <article class="tich-section" itemscope itemtype="https://schema.org/BlogPosting">
-            <div class="tich-container" style="max-width: 46rem;">
-                <x-animated-card animation="left">
-                    <p class="tich-caption">
-                        <a href="{{ route('blog') }}" class="tich-link">← Back to blog</a>
-                    </p>
-                </x-animated-card>
+        <article class="tich-section tich-article" itemscope itemtype="https://schema.org/BlogPosting">
+            <div class="tich-container" style="max-width: 48rem;">
+                <p class="tich-caption tich-article-back">
+                    <a href="{{ route('blog') }}" class="tich-link">← Back to blog</a>
+                </p>
 
-                <x-animated-card animation="bottom">
-                    <header class="tich-mt-6">
-                        <p class="tich-caption">{{ $post->formatted_date ?? '' }}
-                            @if (!empty($post->reading_time_minutes))
-                                · {{ $post->reading_time_minutes }} min read
-                            @endif
-                        </p>
-                        <h1 class="tich-h1 tich-mt-2" itemprop="headline">{{ $post->title }}</h1>
-                        @if (!empty($post->subtitle))
-                            <p class="tich-text tich-mt-2" itemprop="description">{{ $post->subtitle }}</p>
+                <header class="tich-mt-6">
+                    <p class="tich-caption">{{ $post->formatted_date ?? '' }}
+                        @if (!empty($post->reading_time_minutes))
+                            · {{ $post->reading_time_minutes }} min read
                         @endif
-                    </header>
-                </x-animated-card>
-
-                <x-animated-card animation="scale">
-                    @if (!empty($post->featured_image_path))
-                        <figure class="tich-mt-8">
-                            <img
-                                src="{{ $post->featured_image_path }}"
-                                alt="{{ $post->title }}"
-                                itemprop="image"
-                                style="width: 100%; height: auto; max-height: 26rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem);"
-                            >
-                        </figure>
+                    </p>
+                    <h1 class="tich-h1 tich-mt-2" itemprop="headline">{{ $post->title }}</h1>
+                    @if (!empty($post->subtitle))
+                        <p class="tich-text tich-mt-2" itemprop="description">{{ $post->subtitle }}</p>
                     @endif
 
-                    <div class="tich-text tich-mt-8" style="white-space: pre-wrap;" itemprop="articleBody">{{ $post->body }}</div>
-                </x-animated-card>
+                    <div class="tich-article-actions">
+                        <button type="button" class="tich-btn tich-btn-secondary" onclick="window.print()">Print</button>
+                        <a href="{{ route('blog.pdf', $post->slug) }}" class="tich-btn tich-btn-primary">Download PDF</a>
+                    </div>
+                </header>
+
+                @if (!empty($post->featured_image_path))
+                    <figure class="tich-mt-8">
+                        <img
+                            src="{{ $post->featured_image_path }}"
+                            alt="{{ $post->title }}"
+                            itemprop="image"
+                            style="width: 100%; height: auto; max-height: 26rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem);"
+                        >
+                    </figure>
+                @endif
+
+                <div class="tich-prose-article tich-mt-8" itemprop="articleBody">
+                    {!! $post->body !!}
+                </div>
             </div>
         </article>
     </x-animated-section>

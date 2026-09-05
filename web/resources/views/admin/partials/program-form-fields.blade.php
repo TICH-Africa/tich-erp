@@ -124,12 +124,22 @@
     </select>
 </div>
 <div class="tich-form-group">
-    <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}homepage_tagline" @endif>Homepage tagline</label>
-    <textarea name="homepage_tagline" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}homepage_tagline" @endif class="tich-input" rows="3">{{ old('homepage_tagline', $program->homepage_tagline ?? '') }}</textarea>
+    <x-cms-basic-editor
+        name="homepage_tagline"
+        :id="($fieldIdPrefix ?? '').'homepage_tagline'"
+        label="Course body / homepage tagline"
+        :value="old('homepage_tagline', $program->homepage_tagline ?? '')"
+        min-height="8rem"
+    />
 </div>
 <div class="tich-form-group">
-    <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}entry_requirements" @endif>Entry requirements</label>
-    <textarea name="entry_requirements" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}entry_requirements" @endif class="tich-input" rows="2">{{ old('entry_requirements', $program->entry_requirements ?? '') }}</textarea>
+    <x-cms-basic-editor
+        name="entry_requirements"
+        :id="($fieldIdPrefix ?? '').'entry_requirements'"
+        label="Entry requirements"
+        :value="old('entry_requirements', $program->entry_requirements ?? '')"
+        min-height="6rem"
+    />
 </div>
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}homepage_display_order" @endif>Homepage display order</label>

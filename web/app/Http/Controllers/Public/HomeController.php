@@ -8,15 +8,19 @@ use App\Models\Portal\Event;
 use App\Models\Portal\ResearchProject;
 use App\Services\AboutContentService;
 use App\Services\HomepageService;
+use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class HomeController extends Controller
 {
     public function __construct(
         protected HomepageService $homepageService,
         protected AboutContentService $aboutContent,
+        protected PrintDocumentService $printDocuments,
     ) {}
 
     public function index(): View
@@ -100,6 +104,23 @@ class HomeController extends Controller
         return view('pages.blog.show', [
             'post' => $this->homepageService->mapBlogPostForPublic($post),
         ]);
+    }
+
+    public function blogPdf(string $slug): StreamedResponse
+    {
+        $post = BlogPost::query()
+            ->where('slug', $slug)
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->firstOrFail();
+
+        $mapped = $this->homepageService->mapBlogPostForPublic($post);
+        $filename = Str::slug($post->title ?: 'article').'.pdf';
+
+        return $this->printDocuments->downloadPdf('pages.blog.pdf', [
+            'post' => $mapped,
+        ], $filename);
     }
 
     public function support(): View

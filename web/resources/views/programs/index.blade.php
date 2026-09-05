@@ -61,7 +61,7 @@
                                     <h2 class="tich-h2">{{ $featured->program_name }}</h2>
                                     <p class="tich-caption tich-mt-2">{{ strtoupper($featured->program_code) }} · {{ strtoupper(str_replace('_', ' ', $featured->program_type)) }}</p>
                                     @if (!empty($featured->homepage_tagline))
-                                        <p class="tich-text tich-mt-4">{{ $featured->homepage_tagline }}</p>
+                                        <p class="tich-text tich-mt-4">{{ \Illuminate\Support\Str::limit(strip_tags($featured->homepage_tagline), 180) }}</p>
                                     @endif
                                     <ul class="tich-program-card__meta tich-mt-4">
                                         @if (!empty($featured->duration_months))
@@ -71,7 +71,7 @@
                                             <li><span class="tich-caption">Accreditation</span> {{ $featured->regulatory_body }}</li>
                                         @endif
                                         @if (!empty($featured->entry_requirements))
-                                            <li><span class="tich-caption">Entry</span> {{ $featured->entry_requirements }}</li>
+                                            <li><span class="tich-caption">Entry</span> {{ \Illuminate\Support\Str::limit(strip_tags($featured->entry_requirements), 90) }}</li>
                                         @endif
                                         @if (!empty($featured->fee_display))
                                             <li><span class="tich-caption">Fees</span> {{ $featured->fee_display }}</li>
@@ -114,7 +114,7 @@
                                     <p class="tich-caption">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type)) }}</p>
                                     <h3 class="tich-h3 tich-mt-2">{{ $program->program_name }}</h3>
                                     @if (!empty($program->homepage_tagline))
-                                        <p class="tich-text tich-mt-2">{{ $program->homepage_tagline }}</p>
+                                        <p class="tich-text tich-mt-2">{{ \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline), 140) }}</p>
                                     @endif
 
                                     <ul class="tich-program-card__meta tich-mt-4">
@@ -125,7 +125,7 @@
                                             <li><span class="tich-caption">Accreditation</span> {{ $program->regulatory_body }}</li>
                                         @endif
                                         @if (!empty($program->entry_requirements))
-                                            <li><span class="tich-caption">Entry</span> {{ \Illuminate\Support\Str::limit($program->entry_requirements, 90) }}</li>
+                                            <li><span class="tich-caption">Entry</span> {{ \Illuminate\Support\Str::limit(strip_tags($program->entry_requirements), 90) }}</li>
                                         @endif
                                         @if (!empty($program->fee_display))
                                             <li><span class="tich-caption">Fees</span> {{ $program->fee_display }}</li>

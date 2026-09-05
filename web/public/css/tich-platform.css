@@ -8414,3 +8414,356 @@ a.tich-tabs__btn {
         min-width: 1.1rem;
     }
 }
+
+/* ??? Blog CMS editor + prose article ?????????????????????????????????? */
+
+.tich-blog-compose {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.tich-blog-compose__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+.tich-cms-editor {
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-lg);
+    background: var(--tich-white);
+    overflow: hidden;
+}
+
+.tich-cms-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--tich-neutral-border);
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.tich-cms-toolbar__group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    padding-right: 0.5rem;
+    border-right: 1px solid var(--tich-neutral-border);
+}
+
+.tich-cms-toolbar__group:last-child {
+    border-right: 0;
+}
+
+.tich-cms-toolbar button,
+.tich-cms-toolbar select {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 0.35rem);
+    background: transparent;
+    color: var(--tich-grey);
+    padding: 0.3rem 0.45rem;
+    cursor: pointer;
+}
+
+.tich-cms-toolbar button:hover,
+.tich-cms-toolbar select:hover {
+    background: #fff;
+    border-color: var(--tich-neutral-border);
+    color: var(--tich-blue);
+}
+
+.tich-cms-toolbar select {
+    max-width: 8.5rem;
+    background: #fff;
+    border-color: var(--tich-neutral-border);
+}
+
+.tich-cms-toolbar__swatch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-sm, 0.35rem);
+    border: 1px solid var(--tich-neutral-border);
+    background: #fff;
+    font-weight: 700;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.tich-cms-toolbar__swatch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.tich-cms-surface {
+    min-height: 28rem;
+    padding: 1.25rem 1.35rem 2rem;
+    outline: none;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.tich-cms-surface:focus {
+    box-shadow: inset 0 0 0 2px rgba(22, 105, 166, 0.12);
+}
+
+.tich-cms-hidden-input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+}
+
+.tich-cms-find {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--tich-neutral-border);
+    background: #fffbeb;
+}
+
+.tich-cms-find__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.tich-cms-find__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.tich-prose,
+.tich-prose-article {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--tich-grey);
+}
+
+.tich-prose p,
+.tich-prose-article p {
+    margin: 0 0 1rem;
+}
+
+.tich-prose h1,
+.tich-prose-article h1,
+.tich-prose-title {
+    font-family: var(--font-heading);
+    font-size: 2.25rem;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--tich-green);
+    margin: 1.5rem 0 0.75rem;
+}
+
+.tich-prose h2,
+.tich-prose-article h2 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    color: var(--tich-blue);
+    margin: 1.35rem 0 0.65rem;
+}
+
+.tich-prose h3,
+.tich-prose-article h3 {
+    font-size: 1.4rem;
+    color: var(--tich-blue);
+    margin: 1.2rem 0 0.55rem;
+}
+
+.tich-prose h4,
+.tich-prose-article h4 {
+    font-size: 1.2rem;
+    margin: 1.1rem 0 0.5rem;
+}
+
+.tich-prose h5,
+.tich-prose-article h5 {
+    font-size: 1.05rem;
+    margin: 1rem 0 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tich-prose-quote,
+.tich-prose blockquote,
+.tich-prose-article blockquote {
+    margin: 1.25rem 0;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--tich-blue);
+    background: var(--tich-blue-light);
+    font-style: italic;
+}
+
+.tich-prose-quote--intense {
+    border-left-color: var(--tich-green);
+    background: var(--tich-green-light);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.tich-prose-image,
+.tich-prose img,
+.tich-prose-article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    margin: 1rem 0;
+    display: block;
+}
+
+.tich-prose-table,
+.tich-prose table,
+.tich-prose-article table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.95rem;
+}
+
+.tich-prose-table th,
+.tich-prose-table td,
+.tich-prose table th,
+.tich-prose table td,
+.tich-prose-article table th,
+.tich-prose-article table td {
+    border: 1px solid var(--tich-neutral-border);
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+}
+
+.tich-prose-table th,
+.tich-prose table th,
+.tich-prose-article table th {
+    background: var(--tich-neutral);
+    font-weight: 700;
+}
+
+.tich-prose-hr,
+.tich-prose hr,
+.tich-prose-article hr {
+    border: 0;
+    border-top: 2px solid var(--tich-neutral-border);
+    margin: 1.5rem 0;
+}
+
+.tich-prose ul,
+.tich-prose ol,
+.tich-prose-article ul,
+.tich-prose-article ol {
+    margin: 0 0 1rem 1.25rem;
+    padding: 0;
+}
+
+.tich-prose a,
+.tich-prose-article a {
+    color: var(--tich-blue);
+    font-weight: 600;
+}
+
+.tich-shape {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0.25rem;
+}
+
+.tich-shape--circle,
+.tich-shape--square,
+.tich-shape--rounded,
+.tich-shape--diamond {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--tich-blue);
+}
+
+.tich-shape--circle { border-radius: 50%; }
+.tich-shape--rounded { border-radius: 0.65rem; }
+.tich-shape--diamond { transform: rotate(45deg); width: 1.85rem; height: 1.85rem; }
+.tich-shape--triangle {
+    width: 0;
+    height: 0;
+    border-left: 1.25rem solid transparent;
+    border-right: 1.25rem solid transparent;
+    border-bottom: 2.2rem solid var(--tich-green);
+}
+.tich-shape--star,
+.tich-shape--arrow {
+    font-size: 1.75rem;
+    color: var(--tich-green);
+    line-height: 1;
+}
+
+.tich-article-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.tich-article-actions .tich-btn {
+    text-decoration: none;
+}
+
+@media print {
+    .tich-header,
+    .tich-nav-drawer,
+    .tich-footer,
+    .tich-skip-link,
+    .tich-article-actions,
+    .tich-article-back {
+        display: none !important;
+    }
+
+    .tich-prose-article,
+    .tich-section {
+        padding: 0 !important;
+    }
+
+    body {
+        background: #fff !important;
+        color: #111 !important;
+    }
+}
+
+[data-theme="dark"] .tich-cms-toolbar {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border-color: var(--tich-border, #334155);
+}
+
+[data-theme="dark"] .tich-cms-editor,
+[data-theme="dark"] .tich-cms-toolbar button:hover,
+[data-theme="dark"] .tich-cms-toolbar select {
+    background: var(--tich-surface, #0f172a);
+    border-color: var(--tich-border, #334155);
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-cms-find {
+    background: #422006;
+}
+
+.tich-cms-editor--basic .tich-cms-toolbar {
+    padding: 0.45rem 0.55rem;
+}
+
+.tich-cms-editor--basic .tich-cms-surface {
+    padding: 0.85rem 1rem;
+}

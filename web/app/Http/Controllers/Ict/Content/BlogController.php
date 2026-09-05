@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Portal\BlogPost;
 use App\Services\AuditService;
 use App\Services\StoredFileService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -27,6 +28,20 @@ class BlogController extends Controller
 
         return view('ict.content.blogs.index', [
             'posts' => $posts,
+        ]);
+    }
+
+    public function create(): View
+    {
+        return view('ict.content.blogs.create', [
+            'statuses' => ['draft', 'published', 'archived'],
+        ]);
+    }
+
+    public function edit(BlogPost $post): View
+    {
+        return view('ict.content.blogs.edit', [
+            'post' => $post,
             'statuses' => ['draft', 'published', 'archived'],
         ]);
     }
@@ -34,6 +49,7 @@ class BlogController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validated($request);
+        $validated['body'] = $this->sanitizeBody($validated['body']);
         $staffId = $request->user()?->staff_id;
 
         $post = BlogPost::query()->create([
@@ -54,12 +70,15 @@ class BlogController extends Controller
 
         $this->audit->log('portal.blog.created', 'blog_posts', $post->id, null, $post->only(['title', 'slug', 'status']), null, 'success', $request->user()?->id, $request);
 
-        return back()->with('status', 'Blog post created.');
+        return redirect()
+            ->route('ict.content.blogs.edit', $post)
+            ->with('status', 'Blog post created.');
     }
 
     public function update(Request $request, BlogPost $post): RedirectResponse
     {
         $validated = $this->validated($request, $post);
+        $validated['body'] = $this->sanitizeBody($validated['body']);
         $staffId = $request->user()?->staff_id;
         $old = $post->only(['title', 'status', 'featured_image_path']);
 
@@ -96,7 +115,9 @@ class BlogController extends Controller
 
         $this->audit->log('portal.blog.updated', 'blog_posts', $post->id, $old, $post->only(['title', 'status', 'featured_image_path']), null, 'success', $request->user()?->id, $request);
 
-        return back()->with('status', 'Blog post updated.');
+        return redirect()
+            ->route('ict.content.blogs.edit', $post)
+            ->with('status', 'Blog post updated.');
     }
 
     public function destroy(Request $request, BlogPost $post): RedirectResponse
@@ -111,7 +132,23 @@ class BlogController extends Controller
 
         $this->audit->log('portal.blog.deleted', 'blog_posts', $id, ['title' => $title], null, null, 'success', $request->user()?->id, $request);
 
-        return back()->with('status', 'Blog post deleted.');
+        return redirect()
+            ->route('ict.content.blogs.index')
+            ->with('status', 'Blog post deleted.');
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+        ]);
+
+        $path = $this->files->store($request->file('image'), 'blog/inline', 'public');
+
+        return response()->json([
+            'url' => $this->files->url($path, 'public'),
+            'path' => $path,
+        ]);
     }
 
     /**
@@ -123,7 +160,7 @@ class BlogController extends Controller
             'title' => ['required', 'string', 'max:300'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'excerpt' => ['nullable', 'string', 'max:500'],
-            'body' => ['required', 'string', 'max:50000'],
+            'body' => ['required', 'string', 'max:500000'],
             'status' => ['required', 'in:draft,published,archived'],
             'published_at' => ['nullable', 'date'],
             'seo_meta_title' => ['nullable', 'string', 'max:300'],
@@ -131,6 +168,16 @@ class BlogController extends Controller
             'featured_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'remove_image' => ['nullable', 'boolean'],
         ]);
+    }
+
+    private function sanitizeBody(string $html): string
+    {
+        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta|style)[^>]*>.*?</\1>#is', '', $html) ?? $html;
+        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta)\b[^>]*/?>#is', '', $html) ?? $html;
+        $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? $html;
+        $html = preg_replace('/javascript:/i', '', $html) ?? $html;
+
+        return $html;
     }
 
     private function uniqueSlug(string $title): string

@@ -54,8 +54,13 @@
 </div>
 
 <div class="tich-form-group">
-    <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}description" @endif>Description</label>
-    <textarea name="description" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}description" @endif class="tich-input" rows="3">{{ old('description', $event->description ?? '') }}</textarea>
+    <x-cms-basic-editor
+        name="description"
+        :id="($fieldIdPrefix ?? '').'description'"
+        label="Description"
+        :value="old('description', $event->description ?? '')"
+        min-height="7rem"
+    />
 </div>
 
 <div class="tich-form-group">

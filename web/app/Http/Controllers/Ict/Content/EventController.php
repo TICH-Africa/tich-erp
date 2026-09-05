@@ -107,7 +107,7 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:300'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'event_type' => ['required', 'string', 'max:50'],
-            'description' => ['nullable', 'string', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:50000'],
             'start_datetime' => ['required', 'date'],
             'end_datetime' => ['nullable', 'date', 'after_or_equal:start_datetime'],
             'venue' => ['nullable', 'string', 'max:300'],

@@ -196,6 +196,7 @@
     </div>
 
     @include('admin.partials.tich-modal-assets')
+    <x-asset.script path="js/tich-cms-editor.js" :defer="false" />
 
     <script>
     (function () {
@@ -228,10 +229,15 @@
             setFieldValue('program-edit-regulatory_body', trigger.getAttribute('data-regulatory-body') || '');
             setFieldValue('program-edit-duration_months', trigger.getAttribute('data-duration-months') || '12');
             setFieldValue('program-edit-status', trigger.getAttribute('data-status') || 'active');
-            setFieldValue('program-edit-homepage_tagline', trigger.getAttribute('data-homepage-tagline') || '');
-            setFieldValue('program-edit-entry_requirements', trigger.getAttribute('data-entry-requirements') || '');
             setFieldValue('program-edit-homepage_display_order', trigger.getAttribute('data-homepage-display-order') || '0');
             setFieldValue('program-edit-is_featured_on_homepage', trigger.getAttribute('data-is-featured'));
+            if (window.tichCmsEditor) {
+                window.tichCmsEditor.setHtml('program-edit-homepage_tagline', trigger.getAttribute('data-homepage-tagline') || '');
+                window.tichCmsEditor.setHtml('program-edit-entry_requirements', trigger.getAttribute('data-entry-requirements') || '');
+            } else {
+                setFieldValue('program-edit-homepage_tagline', trigger.getAttribute('data-homepage-tagline') || '');
+                setFieldValue('program-edit-entry_requirements', trigger.getAttribute('data-entry-requirements') || '');
+            }
 
             var coverPreview = document.getElementById('program-edit-cover_preview');
             var coverUrl = trigger.getAttribute('data-cover-image-url') || '';

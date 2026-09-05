@@ -47,7 +47,7 @@
 
                             @if (!empty($event->description))
                                 <h2 class="tich-h3">About this event</h2>
-                                <div class="tich-event-show__description">{{ $event->description }}</div>
+                                <div class="tich-event-show__description tich-prose">{!! $event->description !!}</div>
                             @else
                                 <p class="tich-text">More details for this event will be published soon.</p>
                             @endif
