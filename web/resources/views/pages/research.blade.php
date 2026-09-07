@@ -4,7 +4,7 @@
 @section('meta_description', config('tich-seo.pages.research.description'))
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <section class="tich-section" aria-labelledby="research-heading">
             <div class="tich-container">
                 <header class="tich-section__intro tich-mb-8">

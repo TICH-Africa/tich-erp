@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-05 14:16:19 EAT
+-- Generated: 2026-09-07 12:06:34 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -1990,6 +1990,49 @@ CALL `tich_ensure_column`('clearance_checklist_items', 'updated_at', 'datetime N
 -- Indexes for `clearance_checklist_items` (add only if missing)
 CALL `tich_ensure_index`('clearance_checklist_items', 'clearance_checklist_items_completed_by_foreign', '`completed_by`');
 CALL `tich_ensure_index`('clearance_checklist_items', 'clearance_checklist_items_offboarding_request_id_index', '`offboarding_request_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `cms_pages`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `cms_pages` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `slug` varchar(100) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `body` longtext NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `published_at` datetime DEFAULT NULL,
+  `seo_meta_title` varchar(300) DEFAULT NULL,
+  `seo_meta_description` varchar(500) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cms_pages_slug_unique` (`slug`),
+  KEY `cms_pages_created_by_foreign` (`created_by`),
+  KEY `cms_pages_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `cms_pages_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `cms_pages_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `cms_pages` (add only if missing)
+CALL `tich_ensure_column`('cms_pages', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('cms_pages', 'slug', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('cms_pages', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('cms_pages', 'body', 'longtext NOT NULL');
+CALL `tich_ensure_column`('cms_pages', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('cms_pages', 'published_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('cms_pages', 'seo_meta_title', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('cms_pages', 'seo_meta_description', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('cms_pages', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('cms_pages', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('cms_pages', 'updated_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('cms_pages', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+
+-- Indexes for `cms_pages` (add only if missing)
+CALL `tich_ensure_index`('cms_pages', 'cms_pages_created_by_foreign', '`created_by`');
+CALL `tich_ensure_unique`('cms_pages', 'cms_pages_slug_unique', '`slug`');
+CALL `tich_ensure_index`('cms_pages', 'cms_pages_updated_by_foreign', '`updated_by`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `communication_logs`
@@ -10398,6 +10441,10 @@ CALL `tich_ensure_fk`('chatbot_messages', 'chatbot_messages_human_agent_id_forei
 -- Foreign keys for `clearance_checklist_items`
 CALL `tich_ensure_fk`('clearance_checklist_items', 'clearance_checklist_items_completed_by_foreign', '`completed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('clearance_checklist_items', 'clearance_checklist_items_offboarding_request_id_foreign', '`offboarding_request_id`', 'offboarding_requests', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `cms_pages`
+CALL `tich_ensure_fk`('cms_pages', 'cms_pages_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('cms_pages', 'cms_pages_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `competency_assessments`
 CALL `tich_ensure_fk`('competency_assessments', 'competency_assessments_assessed_by_foreign', '`assessed_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');

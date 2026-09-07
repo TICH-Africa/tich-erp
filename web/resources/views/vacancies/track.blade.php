@@ -4,7 +4,7 @@
 @section('meta_robots', 'noindex,nofollow')
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <section class="tich-section tich-careers-page" id="track-application" aria-labelledby="track-heading">
             <div class="tich-container">
                 <div class="tich-mb-8">

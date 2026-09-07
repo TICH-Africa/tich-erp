@@ -38,6 +38,7 @@
 
     <div style="background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px;">
         <p>This is an automated message. Please do not reply to this email.</p>
+        @include('emails.partials.legal-links')
     </div>
 </body>
 </html>

@@ -4,7 +4,7 @@
 @section('meta_description', config('tich-seo.pages.support.description'))
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <section class="tich-section" aria-labelledby="support-heading">
             <div class="tich-container">
                 <header class="tich-mb-8">

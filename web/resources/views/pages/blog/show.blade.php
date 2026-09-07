@@ -14,7 +14,7 @@
 @endphp
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <article class="tich-section tich-article" itemscope itemtype="https://schema.org/BlogPosting">
             <div class="tich-container" style="max-width: 48rem;">
                 <p class="tich-caption tich-article-back">

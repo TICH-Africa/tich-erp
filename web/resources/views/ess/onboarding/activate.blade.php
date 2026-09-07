@@ -202,6 +202,10 @@
         </div>
 
         <div class="tich-mt-6">
+            <p class="tich-caption tich-mb-4">
+                By completing onboarding you agree to our
+                @include('partials.legal-links', ['separator' => ' and ', 'class' => 'tich-link', 'newTab' => true]).
+            </p>
             <button type="submit" class="tich-btn tich-btn-primary">Complete Onboarding</button>
             <button type="button" onclick="document.getElementById('draft-form').submit()" class="tich-btn tich-btn-ghost tich-ml-4">Save Draft</button>
         </div>

@@ -2512,8 +2512,9 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         0 1px 2px rgba(0, 0, 0, 0.85),
         0 2px 8px rgba(0, 0, 0, 0.65),
         0 8px 28px rgba(0, 0, 0, 0.45);
-    opacity: 1;
-    transform: none;
+    opacity: 0;
+    transform: translateY(-2.75rem);
+    will-change: transform, opacity;
 }
 
 .tich-hero-carousel__lead {
@@ -2527,6 +2528,8 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         0 1px 2px rgba(0, 0, 0, 0.8),
         0 4px 16px rgba(0, 0, 0, 0.5);
     opacity: 0;
+    transform: translateY(2.25rem);
+    will-change: transform, opacity;
 }
 
 .tich-hero-carousel__actions {
@@ -2536,36 +2539,59 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     justify-content: center;
     gap: 0.75rem;
     opacity: 0;
+    transform: translateY(2.25rem);
+    will-change: transform, opacity;
+}
+
+.tich-hero-carousel__inner.is-visible .tich-hero-carousel__title {
+    animation: tich-hero-title-in 0.75s ease-out both;
 }
 
 .tich-hero-carousel__inner.is-visible .tich-hero-carousel__lead {
-    opacity: 1;
+    animation: tich-hero-rise-in 0.75s ease-out 0.18s both;
 }
 
 .tich-hero-carousel__inner.is-visible .tich-hero-carousel__actions {
-    opacity: 1;
-    animation: tich-hero-cta-float 3.6s ease-in-out infinite;
+    animation: tich-hero-rise-in 0.75s ease-out 0.32s both;
 }
 
 .tich-hero-carousel__inner.is-visible .tich-hero-carousel__eyebrow {
     opacity: 1;
     transform: translateY(0);
+    animation: tich-hero-rise-in 0.7s ease-out 0.08s both;
 }
 
-@keyframes tich-hero-cta-float {
-    0%,
+@keyframes tich-hero-title-in {
+    0% {
+        opacity: 0;
+        transform: translateY(-2.75rem);
+    }
     100% {
+        opacity: 1;
         transform: translateY(0);
     }
-    50% {
-        transform: translateY(-0.55rem);
+}
+
+@keyframes tich-hero-rise-in {
+    0% {
+        opacity: 0;
+        transform: translateY(2.25rem);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .tich-hero-carousel__inner.is-visible .tich-hero-carousel__actions {
-        animation: none;
+    .tich-hero-carousel__title,
+    .tich-hero-carousel__lead,
+    .tich-hero-carousel__actions,
+    .tich-hero-carousel__eyebrow {
+        opacity: 1;
         transform: none;
+        animation: none !important;
+        will-change: auto;
     }
 }
 
@@ -3661,6 +3687,9 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     gap: 0.125rem;
     min-height: 0;
     flex: 1 1 auto;
+    /* Keep menu items at natural height; do not stretch/squeeze to fill the sidebar. */
+    align-content: start;
+    align-items: start;
 }
 
 @media (min-width: 1024px) {
@@ -4107,6 +4136,8 @@ a.tich-notification-badge:hover {
 .tich-admin-sidebar__group {
     display: grid;
     gap: 0.125rem;
+    align-content: start;
+    align-items: start;
 }
 
 .tich-admin-sidebar__group-toggle {
@@ -7629,6 +7660,13 @@ a.tich-tabs__btn {
     will-change: opacity, transform;
 }
 
+.tich-about-page__intro {
+    transform: translate3d(0, -2.25rem, 0);
+    transition:
+        opacity 0.7s ease-out,
+        transform 0.7s ease-out;
+}
+
 @media (min-width: 640px) {
     .tich-about-block--media-right [data-about-slide="inward-start"],
     .tich-about-block--media-left [data-about-slide="inward-end"],
@@ -7978,6 +8016,17 @@ a.tich-tabs__btn {
     transform: translateY(0);
 }
 
+.tich-animate--top {
+    opacity: 0;
+    transform: translateY(-2.25rem);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.tich-animate--top.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .tich-animate--fade {
     opacity: 0;
     transition: opacity 0.7s ease;
@@ -7991,6 +8040,20 @@ a.tich-tabs__btn {
     opacity: 0;
     transform: scale(0.94);
     transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tich-animate,
+    .tich-animate--left,
+    .tich-animate--right,
+    .tich-animate--bottom,
+    .tich-animate--top,
+    .tich-animate--fade,
+    .tich-animate--scale {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
 }
 
 

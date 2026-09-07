@@ -85,7 +85,11 @@
                 style="margin-top: 0.2rem;"
             >
             <label for="terms" class="tich-text">
-                I agree to the institutional data use and privacy policies of TICH in Africa.
+                I agree to the
+                <a href="{{ route('privacy') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                and
+                <a href="{{ route('terms') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>
+                of TICH in Africa.
             </label>
         </div>
 

@@ -630,6 +630,87 @@ PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE
 ALTER TABLE `notifications`
     ADD COLUMN IF NOT EXISTS `action_url` varchar(500) NULL DEFAULT NULL AFTER `related_entity_id`;
 
+-- -----------------------------------------------------------------------------
+-- 17. Legal CMS pages (Privacy Policy & Terms and Conditions)
+--     (2026_09_07_120000_create_cms_pages_table)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `cms_pages` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `slug` varchar(100) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `body` longtext NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `published_at` datetime DEFAULT NULL,
+  `seo_meta_title` varchar(300) DEFAULT NULL,
+  `seo_meta_description` varchar(500) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cms_pages_slug_unique` (`slug`),
+  KEY `cms_pages_created_by_foreign` (`created_by`),
+  KEY `cms_pages_updated_by_foreign` (`updated_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'cms_pages'
+              AND CONSTRAINT_NAME = 'cms_pages_created_by_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `cms_pages` ADD CONSTRAINT `cms_pages_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'cms_pages'
+              AND CONSTRAINT_NAME = 'cms_pages_updated_by_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `cms_pages` ADD CONSTRAINT `cms_pages_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+INSERT INTO `cms_pages` (`slug`, `title`, `body`, `status`, `published_at`, `seo_meta_title`, `seo_meta_description`, `created_at`, `updated_at`)
+SELECT * FROM (
+    SELECT
+        'privacy' AS `slug`,
+        'Privacy Policy' AS `title`,
+        '<p>This Privacy Policy explains how TICH in Africa collects, uses, and protects personal information when you use our website and institutional platforms.</p><p>We collect information you provide during applications, registration, onboarding, and account use. We use that information to deliver education services, manage admissions and employment processes, communicate with you, and meet legal obligations.</p><p>We do not sell personal data. Access is limited to authorised staff and service providers who need it to support institutional operations. You may contact us to request access to or correction of your personal information where applicable.</p><p>This policy may be updated from time to time. The version published on this page is the current version.</p>' AS `body`,
+        'published' AS `status`,
+        NOW() AS `published_at`,
+        'Privacy Policy' AS `seo_meta_title`,
+        'How TICH in Africa collects, uses, and protects personal information.' AS `seo_meta_description`,
+        NOW() AS `created_at`,
+        NOW() AS `updated_at`
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM `cms_pages` WHERE `slug` = 'privacy');
+
+INSERT INTO `cms_pages` (`slug`, `title`, `body`, `status`, `published_at`, `seo_meta_title`, `seo_meta_description`, `created_at`, `updated_at`)
+SELECT * FROM (
+    SELECT
+        'terms' AS `slug`,
+        'Terms and Conditions' AS `title`,
+        '<p>These Terms and Conditions govern your use of the TICH in Africa website and institutional platforms, including applications, student and staff portals, and related online services.</p><p>By creating an account, completing onboarding, or submitting an application, you agree to provide accurate information and to use the platform only for lawful institutional purposes.</p><p>Accounts and access credentials are personal. You are responsible for keeping them secure and for activity under your account. Content and materials on the platform remain the property of TICH in Africa or their respective owners.</p><p>We may update these terms periodically. Continued use of the platform after updates constitutes acceptance of the revised terms.</p>' AS `body`,
+        'published' AS `status`,
+        NOW() AS `published_at`,
+        'Terms and Conditions' AS `seo_meta_title`,
+        'Terms governing use of TICH in Africa websites and institutional platforms.' AS `seo_meta_description`,
+        NOW() AS `created_at`,
+        NOW() AS `updated_at`
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM `cms_pages` WHERE `slug` = 'terms');
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

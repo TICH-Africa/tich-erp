@@ -46,6 +46,8 @@ Route::get('/events/{event}', [HomeController::class, 'eventShow'])->name('event
 Route::get('/blog', [HomeController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}/pdf', [HomeController::class, 'blogPdf'])->name('blog.pdf');
 Route::get('/blog/{slug}', [HomeController::class, 'blogShow'])->name('blog.show');
+Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('programs.show');
 
@@ -473,6 +475,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/blogs/{post}/edit', [\App\Http\Controllers\Ict\Content\BlogController::class, 'edit'])->name('blogs.edit');
             Route::put('/blogs/{post}', [\App\Http\Controllers\Ict\Content\BlogController::class, 'update'])->name('blogs.update');
             Route::delete('/blogs/{post}', [\App\Http\Controllers\Ict\Content\BlogController::class, 'destroy'])->name('blogs.destroy');
+
+            Route::get('/pages', [\App\Http\Controllers\Ict\Content\PageController::class, 'index'])->name('pages.index');
+            Route::post('/pages/upload-image', [\App\Http\Controllers\Ict\Content\PageController::class, 'uploadImage'])->name('pages.upload-image');
+            Route::get('/pages/{page}/edit', [\App\Http\Controllers\Ict\Content\PageController::class, 'edit'])->name('pages.edit');
+            Route::put('/pages/{page}', [\App\Http\Controllers\Ict\Content\PageController::class, 'update'])->name('pages.update');
 
             Route::get('/events', [\App\Http\Controllers\Ict\Content\EventController::class, 'index'])->name('events.index');
             Route::post('/events', [\App\Http\Controllers\Ict\Content\EventController::class, 'store'])->name('events.store');

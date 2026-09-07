@@ -12,6 +12,8 @@
         $classes[] = 'tich-animate--right';
     } elseif ($animation === 'bottom') {
         $classes[] = 'tich-animate--bottom';
+    } elseif ($animation === 'top') {
+        $classes[] = 'tich-animate--top';
     } elseif ($animation === 'fade') {
         $classes[] = 'tich-animate--fade';
     } elseif ($animation === 'scale') {

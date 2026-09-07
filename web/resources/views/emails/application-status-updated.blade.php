@@ -102,6 +102,10 @@
                     <tr>
                         <td style="padding:16px 28px;background:#f5f6f6;border-top:1px solid #e2e4e5;font-family:Arial,sans-serif;font-size:11px;color:#6b6e72;">
                             Tropical Institute of Community Health and Development in Africa
+                            <br>
+                            <a href="{{ route('privacy') }}" style="color:#1669a6;text-decoration:underline;">Privacy Policy</a>
+                            &nbsp;|&nbsp;
+                            <a href="{{ route('terms') }}" style="color:#1669a6;text-decoration:underline;">Terms and Conditions</a>
                         </td>
                     </tr>
                 </table>

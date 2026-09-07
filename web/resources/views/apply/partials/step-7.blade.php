@@ -98,7 +98,12 @@
 <div class="tich-form-group">
     <label style="display:flex;gap:0.5rem;align-items:flex-start;">
         <input type="checkbox" name="confirm_terms" value="1" @checked(old('confirm_terms')) required>
-        <span class="tich-text">I agree that TICH may contact me about this application and store my data for admissions processing.</span>
+        <span class="tich-text">
+            I agree that TICH may contact me about this application and store my data for admissions processing, in accordance with the
+            <a href="{{ route('privacy') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+            and
+            <a href="{{ route('terms') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>.
+        </span>
     </label>
     @error('confirm_terms')<p class="tich-field-error">{{ $message }}</p>@enderror
 </div>

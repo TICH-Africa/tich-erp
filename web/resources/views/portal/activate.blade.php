@@ -54,6 +54,11 @@
             >
         </div>
 
+        <p class="tich-caption tich-mb-4">
+            By creating your account you agree to our
+            @include('partials.legal-links', ['separator' => ' and ', 'class' => 'tich-link', 'newTab' => true]).
+        </p>
+
         <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">Create account &amp; open portal</button>
     </form>
 

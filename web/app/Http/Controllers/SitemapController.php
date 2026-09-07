@@ -24,6 +24,8 @@ class SitemapController extends Controller
             ['loc' => route('blog'), 'changefreq' => 'weekly', 'priority' => '0.8'],
             ['loc' => route('careers.index'), 'changefreq' => 'daily', 'priority' => '0.8'],
             ['loc' => route('apply.index'), 'changefreq' => 'weekly', 'priority' => '0.7'],
+            ['loc' => route('privacy'), 'changefreq' => 'yearly', 'priority' => '0.4'],
+            ['loc' => route('terms'), 'changefreq' => 'yearly', 'priority' => '0.4'],
         ];
 
         if (Schema::hasTable('academic_programs')) {

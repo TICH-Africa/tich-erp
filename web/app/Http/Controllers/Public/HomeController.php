@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Portal\BlogPost;
+use App\Models\Portal\CmsPage;
 use App\Models\Portal\Event;
 use App\Models\Portal\ResearchProject;
 use App\Services\AboutContentService;
@@ -131,5 +132,39 @@ class HomeController extends Controller
     public function contact(): View
     {
         return view('pages.contact');
+    }
+
+    public function privacy(): View
+    {
+        return $this->legalPage(CmsPage::SLUG_PRIVACY, 'Privacy Policy');
+    }
+
+    public function terms(): View
+    {
+        return $this->legalPage(CmsPage::SLUG_TERMS, 'Terms and Conditions');
+    }
+
+    private function legalPage(string $slug, string $fallbackTitle): View
+    {
+        $page = null;
+
+        if (Schema::hasTable('cms_pages')) {
+            $page = CmsPage::publishedBySlug($slug);
+        }
+
+        if (! $page) {
+            $page = (object) [
+                'slug' => $slug,
+                'title' => $fallbackTitle,
+                'body' => '<p>This page is being updated. Please check back shortly.</p>',
+                'seo_meta_title' => $fallbackTitle,
+                'seo_meta_description' => null,
+                'updated_at' => null,
+            ];
+        }
+
+        return view('pages.legal.show', [
+            'page' => $page,
+        ]);
     }
 }

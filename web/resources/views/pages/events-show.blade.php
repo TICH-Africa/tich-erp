@@ -7,12 +7,12 @@
     $seo = [
         'type' => 'article',
         'image' => $event->cover_image_url ?? $event->cover_image_path ?? null,
-        'url' => route('events.show', $event),
+        'url' => route('events.show', $event->slug),
     ];
 @endphp
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <article class="tich-event-show" itemscope itemtype="https://schema.org/Event">
             <header class="tich-event-show__hero">
                 <div class="tich-container tich-event-show__hero-content">
@@ -104,7 +104,7 @@
             '@type' => 'Event',
             'name' => $event->title,
             'description' => $event->subtitle ?: $event->description,
-            'url' => route('events.show', $event),
+            'url' => route('events.show', $event->slug),
             'image' => $event->cover_image_url ?? $event->cover_image_path ?? null,
             'startDate' => optional($event->start_datetime ?? null)->toAtomString(),
             'endDate' => optional($event->end_datetime ?? null)->toAtomString(),

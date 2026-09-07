@@ -55,6 +55,8 @@ function initCarousel() {
             content.classList.remove('is-visible');
 
             if (isActive) {
+                // Force reflow so entrance animations restart on every slide change.
+                void content.offsetWidth;
                 requestAnimationFrame(() => {
                     content.classList.add('is-visible');
                 });

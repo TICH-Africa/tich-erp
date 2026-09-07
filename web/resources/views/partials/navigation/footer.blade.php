@@ -66,7 +66,11 @@
 
         <div class="tich-footer__bottom">
             <p>&copy; {{ date('Y') }} {{ $siteMeta['copyright'] ?? $siteMeta['institution_name'] }}</p>
-            <p class="tich-caption">Built for community health and development across Africa</p>
+            <p class="tich-caption">
+                @include('partials.legal-links', ['separator' => ' · ', 'class' => ''])
+                <span style="margin: 0 0.5rem;">·</span>
+                Built for community health and development across Africa
+            </p>
         </div>
     </div>
 </footer>

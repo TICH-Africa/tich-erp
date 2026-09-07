@@ -11,7 +11,7 @@
 @endphp
 
 @section('content')
-    <x-animated-section animation="fade">
+    <x-animated-section animation="top">
         <section class="tich-section tich-careers-page" id="careers" aria-labelledby="vacancy-heading">
             <div class="tich-container">
                 <x-animated-card animation="left">

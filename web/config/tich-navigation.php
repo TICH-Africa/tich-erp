@@ -28,6 +28,8 @@ return [
         ['label' => 'SACCO Login', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'Careers', 'url' => '/careers'],
         ['label' => 'Contact', 'url' => '/contact'],
+        ['label' => 'Privacy Policy', 'url' => '/privacy'],
+        ['label' => 'Terms and Conditions', 'url' => '/terms'],
     ],
 
     'contact' => [

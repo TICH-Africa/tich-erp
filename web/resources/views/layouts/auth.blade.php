@@ -29,7 +29,13 @@
                 </ul>
             </div>
 
-            <p class="tich-caption" style="color: rgba(255,255,255,0.7);">&copy; {{ date('Y') }} TICH in Africa. All rights reserved.</p>
+            <p class="tich-caption" style="color: rgba(255,255,255,0.7);">
+                &copy; {{ date('Y') }} TICH in Africa. All rights reserved.
+                <br>
+                <a href="{{ route('privacy') }}" style="color: rgba(255,255,255,0.85); text-decoration: underline;">Privacy Policy</a>
+                ·
+                <a href="{{ route('terms') }}" style="color: rgba(255,255,255,0.85); text-decoration: underline;">Terms and Conditions</a>
+            </p>
         </aside>
 
         <main class="tich-auth-main" id="main-content">

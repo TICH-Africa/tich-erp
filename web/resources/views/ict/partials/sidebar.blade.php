@@ -8,6 +8,7 @@
         <p class="tich-admin-sidebar__title tich-mt-4">Website content</p>
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.about.index'), 'label' => 'About Us', 'icon' => 'book-open', 'active' => request()->routeIs('ict.content.about.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.blogs.index'), 'label' => 'Blogs', 'icon' => 'layers', 'active' => request()->routeIs('ict.content.blogs.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('ict.content.pages.index'), 'label' => 'Legal pages', 'icon' => 'file-text', 'active' => request()->routeIs('ict.content.pages.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.events.index'), 'label' => 'Events', 'icon' => 'calendar', 'active' => request()->routeIs('ict.content.events.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.courses.index'), 'label' => 'Courses', 'icon' => 'graduation-cap', 'active' => request()->routeIs('ict.content.courses.*')])
 
