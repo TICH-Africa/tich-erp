@@ -99,6 +99,28 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
+    Route::prefix('ceo')->middleware(['role:CEO,Super Admin'])->group(function () {
+        Route::get('/', \App\Http\Controllers\Ceo\DashboardController::class)->name('ceo.dashboard');
+
+        Route::get('/budgets', [\App\Http\Controllers\Ceo\BudgetAuthorizationController::class, 'index'])->name('ceo.budgets.index');
+        Route::get('/budgets/{budgetRequest}', [\App\Http\Controllers\Ceo\BudgetAuthorizationController::class, 'show'])->name('ceo.budgets.show');
+        Route::post('/budgets/{budgetRequest}/approve', [\App\Http\Controllers\Ceo\BudgetAuthorizationController::class, 'approve'])->name('ceo.budgets.approve');
+        Route::post('/budgets/{budgetRequest}/reject', [\App\Http\Controllers\Ceo\BudgetAuthorizationController::class, 'reject'])->name('ceo.budgets.reject');
+
+        Route::get('/approvals', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'index'])->name('ceo.approvals.index');
+        Route::get('/approvals/{budgetRequest}', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'show'])->name('ceo.approvals.show');
+        Route::post('/approvals/{budgetRequest}/review', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'review'])->name('ceo.approvals.review');
+        Route::post('/approvals/{budgetRequest}/route-finance', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'routeToFinance'])->name('ceo.approvals.route-finance');
+        Route::post('/approvals/{budgetRequest}/return', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'returnToSender'])->name('ceo.approvals.return');
+        Route::post('/approvals/{budgetRequest}/reject', [\App\Http\Controllers\Ceo\ApprovalWorkflowController::class, 'reject'])->name('ceo.approvals.reject');
+
+        Route::get('/curriculum', [\App\Http\Controllers\Ceo\CurriculumController::class, 'index'])->name('ceo.curriculum.index');
+        Route::get('/curriculum/versions/{version}', [\App\Http\Controllers\Ceo\CurriculumController::class, 'show'])->name('ceo.curriculum.show');
+        Route::post('/curriculum/versions/{version}/approve', [\App\Http\Controllers\Ceo\CurriculumController::class, 'approve'])->name('ceo.curriculum.approve');
+
+        Route::get('/academics', \App\Http\Controllers\Ceo\AcademicsOverviewController::class)->name('ceo.academics.index');
+    });
+
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
         ->name('notifications.index');
     Route::get('/notifications/{notification}/open', [\App\Http\Controllers\NotificationController::class, 'open'])

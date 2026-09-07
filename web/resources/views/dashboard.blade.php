@@ -25,6 +25,15 @@
             </div>
 
             <div class="tich-grid tich-grid--3 tich-dashboard__grid">
+                @if (auth()->user()->hasAnyRole(['CEO', 'Super Admin']))
+                    <article class="tich-card tich-card--highlight">
+                        <p class="tich-caption">Executive</p>
+                        <h3 class="tich-h3 tich-mt-2">Chief Executive Officer</h3>
+                        <p class="tich-text tich-mt-2">Budget authorizations, curriculum sign-off, and institution-wide executive oversight.</p>
+                        <a href="{{ route('ceo.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open CEO office</a>
+                    </article>
+                @endif
+
                 @can('admin.access')
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Core</p>

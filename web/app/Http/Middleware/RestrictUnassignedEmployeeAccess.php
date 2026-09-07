@@ -39,7 +39,7 @@ class RestrictUnassignedEmployeeAccess
     {
         $user = $request->user();
 
-        if ($user && $this->rbacService->isPlatformAdministrator($user)) {
+        if ($user && ($this->rbacService->isPlatformAdministrator($user) || $this->rbacService->hasRole($user, 'CEO'))) {
             return $next($request);
         }
 
