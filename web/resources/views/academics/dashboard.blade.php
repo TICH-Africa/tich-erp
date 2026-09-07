@@ -13,7 +13,10 @@
             :meta="$department->dept_code . ' · Academics hub'"
         />
 
-        <div class="tich-grid tich-grid--4 tich-academics-dashboard__stats tich-mt-8">
+        <div
+            class="tich-stat-row tich-academics-dashboard__stats tich-mt-8"
+            style="--stats-cols: {{ 6 + (($canApproveRegistry || $canApproveCeo) ? 1 : 0) }};"
+        >
             <article class="tich-card tich-stat">
                 <p class="tich-caption">Learning departments</p>
                 <p class="tich-stat__value">{{ $stats['departments'] }}</p>

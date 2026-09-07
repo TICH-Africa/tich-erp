@@ -1446,8 +1446,13 @@ select.tich-select:focus {
     grid-column: 1 / -1;
 }
 
-.tich-academics-dashboard__stats {
-    gap: 1.5rem;
+.tich-academics-dashboard__stats.tich-stat-row {
+    grid-template-columns: repeat(var(--stats-cols, 7), minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.tich-academics-dashboard__stats .tich-stat {
+    min-width: 0;
 }
 
 .tich-chart-card__meta {
@@ -2225,6 +2230,16 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
 .tich-nav__label {
     line-height: 1.2;
+}
+
+.tich-nav__link.is-icon-only {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    gap: 0;
+}
+
+.tich-nav__link.is-icon-only .tich-nav__icon {
+    margin: 0;
 }
 
 .tich-nav__action-btn {
@@ -3469,7 +3484,11 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     .tich-admin {
         grid-template-columns: 240px minmax(0, 1fr);
         gap: 0;
-        align-items: start;
+        align-items: stretch;
+        height: 100%;
+        min-height: 0;
+        max-height: 100%;
+        overflow: hidden;
     }
 }
 
@@ -3500,11 +3519,26 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 }
 
 @media (min-width: 1024px) {
+    /* Keep the left menu fixed while main content scrolls independently. */
+    body.tich-body:has(.tich-admin) {
+        overflow: hidden;
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    body.tich-body:has(.tich-admin) #main-content {
+        height: calc(100vh - var(--tich-header-height, 4rem));
+        height: calc(100dvh - var(--tich-header-height, 4rem));
+        overflow: hidden;
+        min-height: 0;
+    }
+
     .tich-admin-sidebar {
-        position: sticky;
-        top: var(--tich-header-height);
-        align-self: start;
-        max-height: calc(100vh - var(--tich-header-height));
+        position: relative;
+        top: auto;
+        align-self: stretch;
+        height: 100%;
+        max-height: none;
         min-height: 0;
         border-radius: 0;
         border-top: none;
@@ -3515,6 +3549,12 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
     .tich-admin__main {
         padding: 1.5rem;
+        height: 100%;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -3620,6 +3660,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     display: grid;
     gap: 0.125rem;
     min-height: 0;
+    flex: 1 1 auto;
 }
 
 @media (min-width: 1024px) {
@@ -8397,19 +8438,14 @@ a.tich-tabs__btn {
     }
 }
 
-/* ??? Academics dashboard (mobile compact 2-up) ??????????????????????? */
+/* ??? Academics dashboard (mobile compact) ???????????????????????????? */
 
 @media (max-width: 767px) {
-    .tich-admin__main .tich-academics-dashboard__stats.tich-grid,
-    .tich-admin__main .tich-academics-dashboard__stats.tich-grid--4 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-    }
-
     .tich-admin__main .tich-academics-dashboard__stats .tich-stat {
         padding: 0.55rem 0.6rem;
         min-width: 0;
         border-radius: var(--radius-md, 0.5rem);
+        flex: 0 0 min(9.5rem, 42vw);
     }
 
     .tich-admin__main .tich-academics-dashboard__stats .tich-caption {
