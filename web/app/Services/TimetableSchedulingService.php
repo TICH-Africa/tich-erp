@@ -24,6 +24,8 @@ use App\Models\ProgramTimetableTemplate;
 
 use App\Models\ProgramTimetableSession;
 
+use App\Models\Staff;
+
 use App\Models\User;
 
 use App\Support\UiText;
@@ -48,6 +50,7 @@ class TimetableSchedulingService
         protected AcademicsAccessService $access,
         protected TimetableTemplateService $templates,
         protected AuditService $auditService,
+        protected PlatformNotificationService $notifications,
     ) {}
 
     /**
@@ -681,6 +684,109 @@ class TimetableSchedulingService
             'session' => $session->fresh(['unit', 'staff', 'room']),
             'swap_session' => $swapSession?->fresh(['unit', 'staff', 'room']),
         ];
+    }
+
+    public function assignSessionInvigilator(
+        User $user,
+        ProgramTimetable $timetable,
+        ProgramTimetableSession $session,
+        ?int $staffId,
+        ?Request $request = null
+    ): ProgramTimetableSession {
+        abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+        abort_unless(
+            in_array($timetable->timetable_kind, ['exam', 'supplementary', 'special_exam'], true),
+            422,
+            'Invigilators can only be assigned on exam timetables.'
+        );
+
+        $previousStaffId = $session->staff_id ? (int) $session->staff_id : null;
+        $newStaffId = $staffId ?: null;
+
+        if ($previousStaffId === $newStaffId) {
+            return $session->load(['unit', 'staff', 'room', 'timetable.program', 'timetable.curriculumVersion']);
+        }
+
+        $session->update(['staff_id' => $newStaffId]);
+
+        DB::table('exam_schedules')
+            ->where('program_timetable_session_id', $session->id)
+            ->update(['invigilator_id' => $newStaffId]);
+
+        $session = $session->fresh(['unit', 'staff', 'room', 'timetable.program', 'timetable.curriculumVersion']);
+
+        $this->auditService->log(
+            'academics.timetable.invigilator_assigned',
+            'program_timetable_sessions',
+            $session->id,
+            ['staff_id' => $previousStaffId],
+            ['staff_id' => $newStaffId],
+            'Exam timetable invigilator updated',
+            'success',
+            $user->id,
+            $request
+        );
+
+        if ($newStaffId) {
+            $this->notifyInvigilatorAssigned($session);
+        }
+
+        return $session;
+    }
+
+    public function notifyInvigilatorAssigned(ProgramTimetableSession $session): void
+    {
+        $session->loadMissing(['unit', 'staff', 'room', 'timetable.program', 'timetable.curriculumVersion']);
+
+        $userId = $this->staffUserId($session->staff);
+        if (! $userId) {
+            return;
+        }
+
+        $timetable = $session->timetable;
+        $programLabel = $timetable?->program?->program_code
+            ?: ($timetable?->program?->program_name ?: 'programme');
+        $intakeLabel = $timetable?->curriculumVersion?->intakeLabel() ?: null;
+        $dayLabels = TimetableTemplateService::dayLabels();
+        $dayLabel = $dayLabels[(int) $session->day_of_week] ?? ('Day '.$session->day_of_week);
+        $venue = $session->room?->room_code
+            ?: ($session->room?->room_name ?: ($session->venue ?: 'TBC'));
+
+        $title = 'Exam invigilation assigned';
+        $body = sprintf(
+            'You have been assigned to invigilate %s (%s, %s%s). Venue: %s.',
+            $session->displayTitle(),
+            $dayLabel,
+            $session->timeLabel(),
+            $intakeLabel ? ', '.$intakeLabel : '',
+            $venue
+        );
+        if ($programLabel) {
+            $body .= ' Programme: '.$programLabel.'.';
+        }
+
+        $this->notifications->notifyUser(
+            $userId,
+            $title,
+            $body,
+            'program_timetable_session',
+            (string) $session->id,
+            'high',
+            route('staff.dashboard', ['section' => 'timetable']),
+        );
+    }
+
+    private function staffUserId(?Staff $staff): ?int
+    {
+        if (! $staff) {
+            return null;
+        }
+
+        if ($staff->user_id) {
+            return (int) $staff->user_id;
+        }
+
+        return User::query()->where('staff_id', $staff->id)->value('id');
     }
 
     public function publish(User $user, ProgramTimetable $timetable, ?Request $request = null): ProgramTimetable

@@ -549,7 +549,45 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $teachingPeriod,
                 'timetable_kind' => $validated['timetable_kind'] ?? $timetableKind,
             ]))
+            ->withFragment('timetable-display')
             ->with('status', 'Timetable draft generated. Review conflicts, then publish.');
+    }
+
+    public function updateTimetableSessionInvigilator(
+        Request $request,
+        Department $department,
+        AcademicProgram $program,
+        ProgramTimetable $timetable,
+        ProgramTimetableSession $session
+    ): RedirectResponse {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+        abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $validated = $request->validate([
+            'staff_id' => ['nullable', 'exists:staff,id'],
+        ]);
+
+        $this->timetableScheduling->assignSessionInvigilator(
+            $request->user(),
+            $timetable,
+            $session,
+            isset($validated['staff_id']) ? (int) $validated['staff_id'] : null,
+            $request
+        );
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $timetable->curriculum_version_id,
+                'section' => 'timetable',
+                'teaching_period' => $timetable->teaching_period,
+                'timetable_kind' => $timetable->timetable_kind,
+            ]))
+            ->withFragment('timetable-display')
+            ->with('status', 'Invigilator updated.');
     }
 
     public function addTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
@@ -571,9 +609,28 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'class_group' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $this->timetableScheduling->addSession($request->user(), $timetable, $validated, $request);
+        $session = $this->timetableScheduling->addSession($request->user(), $timetable, $validated, $request);
 
-        return back()->with('status', 'Session added to timetable draft.');
+        if (
+            ! empty($validated['staff_id'])
+            && in_array($timetable->timetable_kind, ['exam', 'supplementary', 'special_exam'], true)
+        ) {
+            $this->timetableScheduling->notifyInvigilatorAssigned(
+                $session->load(['unit', 'staff', 'room', 'timetable.program', 'timetable.curriculumVersion'])
+            );
+        }
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $timetable->curriculum_version_id,
+                'section' => 'timetable',
+                'teaching_period' => $timetable->teaching_period,
+                'timetable_kind' => $timetable->timetable_kind,
+            ]))
+            ->withFragment('timetable-display')
+            ->with('status', 'Session added to timetable draft.');
     }
 
     public function moveTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable, ProgramTimetableSession $session): JsonResponse|RedirectResponse
@@ -628,7 +685,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $this->timetableScheduling->publish($request->user(), $timetable, $request);
 
-        return back()->with('status', 'Timetable published. Students can now view it in the portal.');
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $timetable->curriculum_version_id,
+                'section' => 'timetable',
+                'teaching_period' => $timetable->teaching_period,
+                'timetable_kind' => $timetable->timetable_kind,
+            ]))
+            ->withFragment('timetable-display')
+            ->with('status', 'Timetable published. Students can now view it in the portal.');
     }
 
     public function printTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): View

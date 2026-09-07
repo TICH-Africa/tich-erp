@@ -57,6 +57,11 @@
         var draggedFromCell = null;
 
         wrap.addEventListener('dragstart', function (event) {
+            if (event.target.closest('[data-open-invigilator-modal], .tich-timetable-session__invigilator-btn, a, button, input, select, textarea')) {
+                event.preventDefault();
+                return;
+            }
+
             var session = event.target.closest('.tich-timetable-session.is-draggable');
             if (!session || !wrap.contains(session)) {
                 return;

@@ -1,6 +1,7 @@
 @php
     $activeDayList = $activeDays ?? range(1, 5);
     $editable = $editable ?? false;
+    $canEditInvigilator = $canEditInvigilator ?? false;
     $moveSessionUrl = $moveSessionUrl ?? null;
     $rows = collect($segments ?? [])->filter(fn ($segment) => $segment->segment_type !== 'break');
     if ($rows->isEmpty()) {
@@ -32,6 +33,9 @@
     @if ($editable)
         <p class="tich-caption tich-mb-3">Drag sessions to another day or time slot. Drop onto another session to swap.</p>
         <div class="tich-timetable-drag-status" hidden role="status"></div>
+    @endif
+    @if ($canEditInvigilator)
+        <p class="tich-caption tich-mb-3">Use <strong>Invigilator</strong> on a slot to assign or change who supervises that exam.</p>
     @endif
 
     <table class="tich-timetable-grid">
@@ -88,9 +92,21 @@
                                             <span class="tich-caption">{{ $session->venue }}</span>
                                         @endif
                                         @if ($session->staff)
-                                            <span class="tich-caption">{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
+                                            <span class="tich-caption">{{ $canEditInvigilator ? 'Invigilator: ' : '' }}{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
+                                        @elseif ($canEditInvigilator)
+                                            <span class="tich-caption">Invigilator: unassigned</span>
                                         @endif
                                         <span class="tich-caption">{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
+                                        @if ($canEditInvigilator)
+                                            <button
+                                                type="button"
+                                                class="tich-link tich-timetable-session__invigilator-btn"
+                                                data-open-invigilator-modal
+                                                data-session-id="{{ $session->id }}"
+                                                data-staff-id="{{ $session->staff_id ?? '' }}"
+                                                data-session-label="{{ $session->displayTitle() }} · {{ $dayLabel }} · {{ $segment->timeLabel() }}"
+                                            >{{ $session->staff_id ? 'Change invigilator' : 'Assign invigilator' }}</button>
+                                        @endif
                                     </div>
                                 @empty
                                     <span class="tich-timetable-grid__empty">-</span>

@@ -144,6 +144,7 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/intakes/{version}/timetable/generate', [ProgramCurriculumController::class, 'generateTimetable'], 'departments.academics.programs.timetable.generate');
         $register('post', '/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'], 'departments.academics.programs.timetable.add-session');
         $register('patch', '/programs/{program}/timetables/{timetable}/sessions/{session}/move', [ProgramCurriculumController::class, 'moveTimetableSession'], 'departments.academics.programs.timetable.move-session');
+        $register('put', '/programs/{program}/timetables/{timetable}/sessions/{session}/invigilator', [ProgramCurriculumController::class, 'updateTimetableSessionInvigilator'], 'departments.academics.programs.timetable.update-invigilator');
         $register('post', '/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'], 'departments.academics.programs.timetable.publish');
         $register('put', '/programs/{program}/exam-schedules/{schedule}', [ProgramCurriculumController::class, 'updateExamSchedule'], 'departments.academics.programs.exam-schedules.update');
         $register('put', '/programs/{program}/units/{unit}/assessment-weights', [ProgramCurriculumController::class, 'updateUnitAssessmentWeights'], 'departments.academics.programs.units.assessment-weights.update');

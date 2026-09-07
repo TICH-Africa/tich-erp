@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
+use App\Models\ProgramTimetableSession;
 use App\Models\Semester;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +21,8 @@ class ProgramExamService
         protected StudentAcademicRecordService $academicRecords,
         protected ExamScheduleSyncService $examScheduleSync,
         protected AuditService $auditService,
+        protected TimetableSchedulingService $timetableScheduling,
+        protected PlatformNotificationService $notifications,
     ) {}
 
     /**
@@ -103,6 +108,10 @@ class ProgramExamService
         }
 
         $old = (array) $schedule;
+        $previousInvigilatorId = ! empty($old['invigilator_id']) ? (int) $old['invigilator_id'] : null;
+        $newInvigilatorId = isset($data['invigilator_id']) && $data['invigilator_id'] !== '' && $data['invigilator_id'] !== null
+            ? (int) $data['invigilator_id']
+            : null;
 
         DB::table('exam_schedules')
             ->where('id', $scheduleId)
@@ -112,9 +121,15 @@ class ProgramExamService
                 'end_time' => $data['end_time'],
                 'venue' => $data['venue'],
                 'exam_type' => $data['exam_type'],
-                'invigilator_id' => $data['invigilator_id'] ?? null,
+                'invigilator_id' => $newInvigilatorId,
                 'status' => $data['status'],
             ]);
+
+        if (! empty($old['program_timetable_session_id'])) {
+            ProgramTimetableSession::query()
+                ->whereKey((int) $old['program_timetable_session_id'])
+                ->update(['staff_id' => $newInvigilatorId]);
+        }
 
         $this->auditService->log(
             'academics.exam_schedule.updated',
@@ -126,12 +141,70 @@ class ProgramExamService
                 'end_time' => $old['end_time'] ?? null,
                 'venue' => $old['venue'] ?? null,
                 'exam_type' => $old['exam_type'] ?? null,
+                'invigilator_id' => $previousInvigilatorId,
                 'status' => $old['status'] ?? null,
             ],
-            $data,
+            array_merge($data, ['invigilator_id' => $newInvigilatorId]),
             'Exam schedule updated',
             'success',
             Auth::id(),
+        );
+
+        if ($newInvigilatorId && $newInvigilatorId !== $previousInvigilatorId) {
+            if (! empty($old['program_timetable_session_id'])) {
+                $session = ProgramTimetableSession::query()
+                    ->with(['unit', 'staff', 'room', 'timetable.program', 'timetable.curriculumVersion'])
+                    ->find((int) $old['program_timetable_session_id']);
+
+                if ($session) {
+                    $this->timetableScheduling->notifyInvigilatorAssigned($session);
+
+                    return;
+                }
+            }
+
+            $this->notifyInvigilatorFromSchedule($scheduleId, $newInvigilatorId, $data, $old);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $old
+     */
+    private function notifyInvigilatorFromSchedule(int $scheduleId, int $staffId, array $data, array $old): void
+    {
+        $staff = Staff::query()->find($staffId);
+        if (! $staff) {
+            return;
+        }
+
+        $userId = $staff->user_id
+            ? (int) $staff->user_id
+            : User::query()->where('staff_id', $staff->id)->value('id');
+
+        if (! $userId) {
+            return;
+        }
+
+        $unitLabel = DB::table('units')->where('id', $old['unit_id'] ?? null)->value('unit_code') ?: 'exam';
+        $title = 'Exam invigilation assigned';
+        $body = sprintf(
+            'You have been assigned to invigilate %s on %s (%s-%s). Venue: %s.',
+            $unitLabel,
+            $data['exam_date'],
+            $data['start_time'],
+            $data['end_time'],
+            $data['venue'] ?? 'TBC'
+        );
+
+        $this->notifications->notifyUser(
+            (int) $userId,
+            $title,
+            $body,
+            'exam_schedule',
+            (string) $scheduleId,
+            'high',
+            route('staff.dashboard', ['section' => 'timetable']),
         );
     }
 

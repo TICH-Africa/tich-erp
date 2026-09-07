@@ -57,6 +57,9 @@
         };
         $canEditTimetable = auth()->user()?->can('academics.write') ?? false;
         $timetableEditable = $timetableDraft && $timetableDraft->status === 'draft' && $canEditTimetable;
+        $canEditInvigilator = $timetableDraft
+            && $canEditTimetable
+            && in_array($timetableKind, ['exam', 'supplementary'], true);
     @endphp
 
     <x-page-toolbar
@@ -317,7 +320,7 @@
             @endif
 
             @can('academics.write')
-                <form method="POST" action="{{ route('departments.academics.programs.timetable.generate', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-mt-4">
+                <form method="POST" action="{{ route('departments.academics.programs.timetable.generate', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-mt-4" data-scroll-target="timetable-display">
                     @csrf
                     <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
                     <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
@@ -334,7 +337,7 @@
     </article>
 
     @if ($timetableDraft)
-        <article class="tich-card tich-mb-8">
+        <article class="tich-card tich-mb-8" id="timetable-display">
             <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
                 <div>
                     <h2 class="tich-h3">3. {{ $timetableKinds[$timetableKind] ?? 'Timetable' }} display</h2>
@@ -378,6 +381,7 @@
                 'activeDays' => $activeDays,
                 'segments' => $gridSegments,
                 'editable' => $timetableEditable,
+                'canEditInvigilator' => $canEditInvigilator,
                 'moveSessionUrl' => $timetableEditable
                     ? route('departments.academics.programs.timetable.move-session', array_merge($hub, [
                         'program' => $program->id,
@@ -391,11 +395,82 @@
                 <script src="{{ asset('js/tich-timetable-drag.js') }}" defer></script>
             @endif
 
+            @if ($canEditInvigilator)
+                @include('admin.partials.tich-modal-assets')
+                <div class="tich-modal" id="timetable-invigilator-modal" hidden aria-hidden="true">
+                    <div class="tich-modal__backdrop" data-close-modal="timetable-invigilator-modal"></div>
+                    <div class="tich-modal__dialog">
+                        <header class="tich-modal__header">
+                            <h2 class="tich-h3" style="margin:0;">Assign invigilator</h2>
+                            <button type="button" class="tich-modal__close" data-close-modal="timetable-invigilator-modal" aria-label="Close">&times;</button>
+                        </header>
+                        <form
+                            method="POST"
+                            id="timetable-invigilator-form"
+                            action="#"
+                            class="tich-modal__body"
+                            data-scroll-target="timetable-display"
+                        >
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+                            <p class="tich-text tich-mb-4" id="timetable-invigilator-session-label"></p>
+                            <div class="tich-form-group">
+                                <label class="tich-label" for="timetable-invigilator-staff">Invigilator</label>
+                                <select name="staff_id" id="timetable-invigilator-staff" class="tich-input">
+                                    <option value="">Unassigned</option>
+                                    @foreach ($timetableStaff as $member)
+                                        <option value="{{ $member->id }}">{{ $member->first_name }} {{ $member->surname }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <p class="tich-caption tich-mt-2">The assigned invigilator is notified in-app and by email immediately.</p>
+                            <footer class="tich-modal__footer">
+                                <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="timetable-invigilator-modal">Cancel</button>
+                                <button type="submit" class="tich-btn tich-btn-primary">Save invigilator</button>
+                            </footer>
+                        </form>
+                    </div>
+                </div>
+                @php
+                    $invigilatorUpdateUrlTemplate = route(
+                        'departments.academics.programs.timetable.update-invigilator',
+                        array_merge($hub, [
+                            'program' => $program->id,
+                            'timetable' => $timetableDraft->id,
+                            'session' => '__SESSION__',
+                        ])
+                    );
+                @endphp
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var form = document.getElementById('timetable-invigilator-form');
+                    var staffSelect = document.getElementById('timetable-invigilator-staff');
+                    var labelEl = document.getElementById('timetable-invigilator-session-label');
+                    var urlTemplate = @json($invigilatorUpdateUrlTemplate);
+
+                    document.querySelectorAll('[data-open-invigilator-modal]').forEach(function (button) {
+                        button.addEventListener('click', function (event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (!form || !staffSelect) return;
+                            form.action = urlTemplate.replace('__SESSION__', button.getAttribute('data-session-id'));
+                            staffSelect.value = button.getAttribute('data-staff-id') || '';
+                            if (labelEl) {
+                                labelEl.textContent = button.getAttribute('data-session-label') || '';
+                            }
+                            window.tichOpenModal('timetable-invigilator-modal');
+                        });
+                    });
+                });
+                </script>
+            @endif
+
             @if ($timetableDraft->status === 'draft')
                 @can('academics.write')
                     <details class="tich-mt-6 tich-inset-panel">
                         <summary class="tich-label" style="cursor:pointer;">Add session manually</summary>
-                        <form method="POST" action="{{ route('departments.academics.programs.timetable.add-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}" class="tich-mt-4">
+                        <form method="POST" action="{{ route('departments.academics.programs.timetable.add-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id])) }}" class="tich-mt-4" data-scroll-target="timetable-display">
                             @csrf
                             <div class="tich-grid tich-grid--2" style="gap:1rem;">
                                 <div class="tich-form-group">
@@ -454,7 +529,7 @@
                                     </select>
                                 </div>
                                 <div class="tich-form-group">
-                                    <label class="tich-label">Lecturer</label>
+                                    <label class="tich-label">{{ in_array($timetableKind, ['exam', 'supplementary'], true) ? 'Invigilator' : 'Lecturer' }}</label>
                                     <select name="staff_id" class="tich-input">
                                         <option value="">-</option>
                                         @foreach ($timetableStaff as $member)
@@ -476,3 +551,41 @@
         </article>
     @endif
 @endif
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form[data-scroll-target]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            var target = form.getAttribute('data-scroll-target');
+            if (target) {
+                try { sessionStorage.setItem('tich-timetable-scroll', target); } catch (e) {}
+            }
+        });
+    });
+
+    var scrollTarget = null;
+    try {
+        scrollTarget = sessionStorage.getItem('tich-timetable-scroll');
+        if (scrollTarget) {
+            sessionStorage.removeItem('tich-timetable-scroll');
+        }
+    } catch (e) {}
+
+    if (!scrollTarget && window.location.hash) {
+        scrollTarget = window.location.hash.replace(/^#/, '');
+    }
+
+    if (!scrollTarget) {
+        return;
+    }
+
+    var el = document.getElementById(scrollTarget);
+    if (!el) {
+        return;
+    }
+
+    requestAnimationFrame(function () {
+        el.scrollIntoView({ behavior: 'auto', block: 'start' });
+    });
+});
+</script>

@@ -12,25 +12,12 @@ function initCarousel() {
     const dots = [...carousel.querySelectorAll('[data-carousel-dot]')];
     const prev = carousel.querySelector('[data-carousel-prev]');
     const next = carousel.querySelector('[data-carousel-next]');
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (slides.length === 0) return;
 
     let current = 0;
     let autoplayTimer = null;
-    let typeTimer = null;
-    let typeToken = 0;
-    const CHAR_MS = 42;
-    const HOLD_AFTER_TYPE_MS = 3200;
-    const MIN_SLIDE_MS = 5500;
-
-    const clearTypewriter = () => {
-        if (typeTimer) {
-            window.clearInterval(typeTimer);
-            typeTimer = null;
-        }
-        typeToken += 1;
-    };
+    const SLIDE_MS = 5500;
 
     const clearAutoplay = () => {
         if (autoplayTimer) {
@@ -39,87 +26,20 @@ function initCarousel() {
         }
     };
 
-    const resetTypewriter = (slide) => {
-        const title = slide.querySelector('[data-typewriter-title]');
-        const textEl = slide.querySelector('[data-typewriter-text]');
-        const cursor = slide.querySelector('[data-typewriter-cursor]');
-
-        if (!title || !textEl) {
-            return;
-        }
-
-        textEl.textContent = '';
-        title.classList.remove('is-typing', 'is-typed');
-        cursor?.classList.remove('is-blinking');
-    };
-
-    const scheduleAutoplay = (titleLength = 0) => {
+    const scheduleAutoplay = () => {
         clearAutoplay();
 
         if (slides.length < 2) {
             return;
         }
 
-        const typeDuration = prefersReducedMotion ? 0 : (titleLength * CHAR_MS);
-        const delay = Math.max(MIN_SLIDE_MS, typeDuration + HOLD_AFTER_TYPE_MS);
-
         autoplayTimer = window.setTimeout(() => {
             show(current + 1);
-        }, delay);
-    };
-
-    const runTypewriter = (slide) => {
-        const title = slide.querySelector('[data-typewriter-title]');
-        const textEl = slide.querySelector('[data-typewriter-text]');
-        const cursor = slide.querySelector('[data-typewriter-cursor]');
-        const fullText = title?.getAttribute('data-typewriter-title') || '';
-
-        if (!title || !textEl) {
-            scheduleAutoplay(0);
-            return;
-        }
-
-        clearTypewriter();
-        resetTypewriter(slide);
-
-        if (fullText === '' || prefersReducedMotion) {
-            textEl.textContent = fullText;
-            title.classList.add('is-typed');
-            cursor?.classList.add('is-blinking');
-            scheduleAutoplay(0);
-            return;
-        }
-
-        const token = typeToken;
-        let index = 0;
-
-        title.classList.add('is-typing');
-        cursor?.classList.add('is-blinking');
-        scheduleAutoplay(fullText.length);
-
-        typeTimer = window.setInterval(() => {
-            if (token !== typeToken) {
-                window.clearInterval(typeTimer);
-                typeTimer = null;
-                return;
-            }
-
-            index += 1;
-            textEl.textContent = fullText.slice(0, index);
-
-            if (index >= fullText.length) {
-                window.clearInterval(typeTimer);
-                typeTimer = null;
-                title.classList.remove('is-typing');
-                title.classList.add('is-typed');
-                cursor?.classList.add('is-blinking');
-            }
-        }, CHAR_MS);
+        }, SLIDE_MS);
     };
 
     const show = (index) => {
         current = (index + slides.length) % slides.length;
-        clearTypewriter();
         clearAutoplay();
 
         slides.forEach((slide, i) => {
@@ -133,12 +53,10 @@ function initCarousel() {
             }
 
             content.classList.remove('is-visible');
-            resetTypewriter(slide);
 
             if (isActive) {
                 requestAnimationFrame(() => {
                     content.classList.add('is-visible');
-                    runTypewriter(slide);
                 });
             }
         });
@@ -148,6 +66,8 @@ function initCarousel() {
             dot.classList.toggle('is-active', active);
             dot.setAttribute('aria-current', active ? 'true' : 'false');
         });
+
+        scheduleAutoplay();
     };
 
     if (slides.length > 1) {

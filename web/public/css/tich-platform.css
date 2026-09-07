@@ -1246,6 +1246,18 @@ select.tich-select:focus {
     user-select: none;
 }
 
+.tich-timetable-session__invigilator-btn {
+    display: inline-block;
+    margin-top: 0.15rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+}
+
 .tich-timetable-grid__dropzone.is-drag-over {
     background: var(--tich-blue-light);
     outline: 2px dashed var(--tich-blue);
@@ -1432,6 +1444,10 @@ select.tich-select:focus {
 
 .tich-dashboard-charts__wide {
     grid-column: 1 / -1;
+}
+
+.tich-academics-dashboard__stats {
+    gap: 1.5rem;
 }
 
 .tich-chart-card__meta {
@@ -2472,34 +2488,17 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
 .tich-hero-carousel__title {
     font-family: var(--font-heading);
-    font-size: clamp(3rem, 7.5vw, 5.25rem);
+    font-size: clamp(2.7rem, 6.75vw, 4.725rem);
     font-weight: 700;
     line-height: 1.15;
     color: var(--hero-white);
     margin: 0 0 0.75rem;
-    min-height: 1.15em;
     text-shadow:
         0 1px 2px rgba(0, 0, 0, 0.85),
         0 2px 8px rgba(0, 0, 0, 0.65),
         0 8px 28px rgba(0, 0, 0, 0.45);
     opacity: 1;
     transform: none;
-}
-
-.tich-hero-carousel__cursor {
-    display: inline-block;
-    margin-left: 0.06em;
-    font-weight: 700;
-    color: #ffffff;
-    text-shadow: inherit;
-    opacity: 0;
-    vertical-align: baseline;
-}
-
-.tich-hero-carousel__title.is-typing .tich-hero-carousel__cursor,
-.tich-hero-carousel__title.is-typed .tich-hero-carousel__cursor.is-blinking {
-    opacity: 1;
-    animation: tich-hero-cursor-blink 0.9s steps(1, end) infinite;
 }
 
 .tich-hero-carousel__lead {
@@ -2538,17 +2537,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     transform: translateY(0);
 }
 
-@keyframes tich-hero-cursor-blink {
-    0%,
-    49% {
-        opacity: 1;
-    }
-    50%,
-    100% {
-        opacity: 0;
-    }
-}
-
 @keyframes tich-hero-cta-float {
     0%,
     100% {
@@ -2560,12 +2548,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .tich-hero-carousel__title.is-typing .tich-hero-carousel__cursor,
-    .tich-hero-carousel__title.is-typed .tich-hero-carousel__cursor.is-blinking {
-        animation: none;
-        opacity: 1;
-    }
-
     .tich-hero-carousel__inner.is-visible .tich-hero-carousel__actions {
         animation: none;
         transform: none;
@@ -8412,6 +8394,75 @@ a.tich-tabs__btn {
         font-size: 0.5625rem;
         padding: 0.1rem 0.35rem;
         min-width: 1.1rem;
+    }
+}
+
+/* ??? Academics dashboard (mobile compact 2-up) ??????????????????????? */
+
+@media (max-width: 767px) {
+    .tich-admin__main .tich-academics-dashboard__stats.tich-grid,
+    .tich-admin__main .tich-academics-dashboard__stats.tich-grid--4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__stats .tich-stat {
+        padding: 0.55rem 0.6rem;
+        min-width: 0;
+        border-radius: var(--radius-md, 0.5rem);
+    }
+
+    .tich-admin__main .tich-academics-dashboard__stats .tich-caption {
+        font-size: 0.5625rem;
+        line-height: 1.3;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__stats .tich-stat__value {
+        font-size: 0.9375rem;
+        margin-top: 0.3rem;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__stats .tich-text,
+    .tich-admin__main .tich-academics-dashboard__stats .tich-link {
+        font-size: 0.625rem;
+        line-height: 1.3;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__stats .tich-mt-2 {
+        margin-top: 0.25rem;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__charts .tich-grid,
+    .tich-admin__main .tich-academics-dashboard__charts .tich-grid--3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__charts .tich-chart-card {
+        padding: 0.55rem 0.6rem;
+        min-width: 0;
+        border-radius: var(--radius-md, 0.5rem);
+    }
+
+    .tich-admin__main .tich-academics-dashboard__charts .tich-chart-card .tich-h3 {
+        font-size: 0.75rem;
+        line-height: 1.25;
+        margin: 0;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__charts .tich-chart-card__meta {
+        font-size: 0.5625rem;
+        line-height: 1.3;
+        margin-top: 0.2rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .tich-admin__main .tich-academics-dashboard__charts .tich-chart-card__canvas-wrap {
+        height: 9.5rem;
+        margin-top: 0.55rem;
     }
 }
 
