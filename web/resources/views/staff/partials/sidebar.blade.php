@@ -18,7 +18,7 @@
                 @php
                     $isHodSubSection = in_array($section, ['hod-management', 'hod-lesson-plans', 'hod-unit-allocations', 'hod-attendance', 'hod-leave', 'hod-performance']);
                 @endphp
-                <div data-sidebar-group class="tich-sidebar-group">
+                <div data-sidebar-group class="tich-sidebar-group{{ $isHodSubSection ? ' is-open' : '' }}">
                     <button type="button" data-sidebar-group-toggle class="tich-admin-sidebar__group-toggle" aria-expanded="{{ $isHodSubSection ? 'true' : 'false' }}">
                         @include('partials.navigation.sidebar-icon', ['name' => $item['icon'] ?? 'circle'])
                         <span class="tich-admin-sidebar__label">{{ $item['label'] }}</span>
@@ -50,7 +50,7 @@
     </nav>
 
     <style>
-        .tich-sidebar-group__panel { margin-left: 1rem; }
+        .tich-sidebar-group__panel { margin-left: 1rem; overflow: hidden; }
         .tich-admin-sidebar__group-toggle {
             width: 100%; text-align: left; padding: var(--space-sm) var(--space-md);
             background: var(--tich-white); border: none; cursor: pointer;
@@ -58,7 +58,7 @@
             font-weight: 600; color: var(--tich-text, #1e293b);
         }
         .tich-admin-sidebar__group-toggle:hover { background: var(--tich-surface-muted, #f1f5f9); }
-        .tich-admin-sidebar__chevron { margin-left: auto; transition: transform 0.2s ease; font-size: 0.75rem; }
+        .tich-admin-sidebar__chevron { margin-left: auto; transition: transform 0.28s ease; font-size: 0.75rem; }
         [data-sidebar-group].is-open .tich-admin-sidebar__chevron { transform: rotate(-180deg); }
         .tich-admin-sidebar__link--sub { padding-left: var(--space-xl); font-size: 0.875rem; }
     </style>

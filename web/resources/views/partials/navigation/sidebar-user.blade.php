@@ -6,7 +6,15 @@
     <div class="tich-admin-sidebar__user">
         <div class="tich-admin-sidebar__user-photo" aria-hidden="true">
             @if ($sidebarUser->photoUrl)
-                <img src="{{ $sidebarUser->photoUrl }}" alt="">
+                <img
+                    src="{{ $sidebarUser->photoUrl }}"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    data-sidebar-user-photo
+                    data-fallback-initials="{{ $sidebarUser->initials }}"
+                    onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('span'),{className:'tich-admin-sidebar__user-initials',textContent:this.dataset.fallbackInitials||'?'}));"
+                >
             @else
                 <span class="tich-admin-sidebar__user-initials">{{ $sidebarUser->initials }}</span>
             @endif

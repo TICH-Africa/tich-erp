@@ -157,11 +157,7 @@ class Student extends Model
 
     public function photoUrl(): ?string
     {
-        if (! $this->photo_path) {
-            return null;
-        }
-
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo_path);
+        return \App\Support\PublicAsset::media($this->photo_path);
     }
 
     public function initials(): string

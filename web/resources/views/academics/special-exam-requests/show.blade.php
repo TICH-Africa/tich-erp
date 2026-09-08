@@ -1,7 +1,10 @@
 @extends('layouts.academics')
 
 @section('academics-content')
-    @php $hub = \App\Support\AcademicsRouteParams::for(['learning_department' => request()->integer('learning_department') ?: null]); @endphp
+    @php
+        $hub = \App\Support\AcademicsRouteParams::for(['learning_department' => request()->integer('learning_department') ?: null]);
+        $canReview = in_array($specialExamRequest->status, ['pending', 'on_hold'], true);
+    @endphp
 
     <div class="tich-mb-6">
         <a href="{{ route('departments.academics.special-exam-requests.index', $hub) }}" class="tich-btn tich-btn-ghost">← Back</a>
@@ -18,55 +21,17 @@
         </div>
     </section>
 
-    <div class="tich-grid tich-grid--2" style="align-items:start; gap:1.5rem;">
-        <article class="tich-card">
-            <h2 class="tich-h3">Request</h2>
-            <dl class="tich-mt-4" style="display:grid; grid-template-columns:9rem 1fr; gap:0.5rem 1rem;">
-                <dt class="tich-caption">Unit</dt>
-                <dd>{{ $specialExamRequest->unit?->unit_code }} - {{ $specialExamRequest->unit?->unit_name }}</dd>
-                <dt class="tich-caption">Semester</dt>
-                <dd>{{ $specialExamRequest->semester?->semester_label ?? '-' }}</dd>
-                <dt class="tich-caption">Reason</dt>
-                <dd style="white-space:pre-wrap;">{{ $specialExamRequest->reason ?: '-' }}</dd>
-            </dl>
-        </article>
-
-        @if (in_array($specialExamRequest->status, ['pending', 'on_hold'], true))
-            <article class="tich-card">
-                <h2 class="tich-h3">Review</h2>
-                <form method="POST" action="{{ route('departments.academics.special-exam-requests.approve', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-4">
-                    @csrf
-                    <div>
-                        <label for="reviewed_notes" class="tich-label">Notes</label>
-                        <textarea id="reviewed_notes" name="reviewed_notes" rows="3" class="tich-input"></textarea>
-                    </div>
-                    <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
-                </form>
-                <form method="POST" action="{{ route('departments.academics.special-exam-requests.hold', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-6">
-                    @csrf
-                    <div>
-                        <label for="hold_notes" class="tich-label">Hold notes</label>
-                        <textarea id="hold_notes" name="reviewed_notes" rows="3" class="tich-input" required></textarea>
-                    </div>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Put on hold</button>
-                </form>
-                <form method="POST" action="{{ route('departments.academics.special-exam-requests.reject', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-6">
-                    @csrf
-                    <div>
-                        <label for="reject_notes" class="tich-label">Rejection notes</label>
-                        <textarea id="reject_notes" name="reviewed_notes" rows="3" class="tich-input" required></textarea>
-                    </div>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Reject</button>
-                </form>
-            </article>
-        @else
-            <article class="tich-card">
-                <h2 class="tich-h3">Decision</h2>
-                <p class="tich-mt-4">{{ $specialExamRequest->statusLabel() }}</p>
-                <p class="tich-caption">{{ $specialExamRequest->reviewed_notes ?: '-' }}</p>
-            </article>
-        @endif
-    </div>
+    <article class="tich-card tich-mb-8">
+        <h2 class="tich-h3">Request</h2>
+        <dl class="tich-mt-4" style="display:grid; grid-template-columns:9rem 1fr; gap:0.5rem 1rem;">
+            <dt class="tich-caption">Unit</dt>
+            <dd>{{ $specialExamRequest->unit?->unit_code }} - {{ $specialExamRequest->unit?->unit_name }}</dd>
+            <dt class="tich-caption">Semester</dt>
+            <dd>{{ $specialExamRequest->semester?->semester_label ?? '-' }}</dd>
+            <dt class="tich-caption">Reason</dt>
+            <dd style="white-space:pre-wrap;">{{ $specialExamRequest->reason ?: '-' }}</dd>
+        </dl>
+    </article>
 
     @include('academics.partials.supporting-docs-viewer', [
         'documents' => $specialExamRequest->supporting_docs ?? [],
@@ -76,4 +41,54 @@
         'title' => 'Supporting documents',
         'subtitle' => 'Review uploaded evidence for this special exam request.',
     ])
+
+    @if ($canReview)
+        <article class="tich-card tich-mt-8">
+            <h2 class="tich-h3">Review</h2>
+            <div class="tich-mt-4">
+                <label for="exam-review-notes" class="tich-label">Notes</label>
+                <textarea id="exam-review-notes" rows="3" class="tich-input" placeholder="Optional for approve; required for hold or reject"></textarea>
+            </div>
+            <div class="tich-flex-wrap tich-mt-6" style="gap: 0.75rem; align-items: center;">
+                <form method="POST" action="{{ route('departments.academics.special-exam-requests.approve', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="exam-review-action" data-require-notes="0">
+                    @csrf
+                    <input type="hidden" name="reviewed_notes" value="">
+                    <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
+                </form>
+                <form method="POST" action="{{ route('departments.academics.special-exam-requests.hold', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="exam-review-action" data-require-notes="1">
+                    @csrf
+                    <input type="hidden" name="reviewed_notes" value="">
+                    <button type="submit" class="tich-btn tich-btn-secondary">Put on hold</button>
+                </form>
+                <form method="POST" action="{{ route('departments.academics.special-exam-requests.reject', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="exam-review-action" data-require-notes="1">
+                    @csrf
+                    <input type="hidden" name="reviewed_notes" value="">
+                    <button type="submit" class="tich-btn tich-btn-secondary">Reject</button>
+                </form>
+            </div>
+        </article>
+        <script>
+            (function () {
+                var notes = document.getElementById('exam-review-notes');
+                document.querySelectorAll('.exam-review-action').forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        var value = notes ? notes.value.trim() : '';
+                        var input = form.querySelector('[name="reviewed_notes"]');
+                        if (input) input.value = value;
+                        if (form.dataset.requireNotes === '1' && !value) {
+                            event.preventDefault();
+                            if (notes) notes.focus();
+                            alert('Notes are required for this action.');
+                        }
+                    });
+                });
+            })();
+        </script>
+    @else
+        <article class="tich-card tich-mt-8">
+            <h2 class="tich-h3">Decision</h2>
+            <p class="tich-mt-4">{{ $specialExamRequest->statusLabel() }}</p>
+            <p class="tich-caption">{{ $specialExamRequest->reviewed_notes ?: '-' }}</p>
+        </article>
+    @endif
 @endsection

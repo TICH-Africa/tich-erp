@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Storage;
-
 /**
  * Resolves public CSS/JS/image/storage URLs using Laravel's asset root
  * (APP_URL / ASSET_URL), with cache-busting for files under /public.
@@ -30,6 +28,7 @@ class PublicAsset
     /**
      * URL for an uploaded/public disk file (storage/app/public → /storage/…).
      * Accepts "storage/…", relative disk paths, or absolute http(s) URLs.
+     * Returns a host-relative path when possible so 127.0.0.1 vs LAN IP both work.
      */
     public static function media(?string $path): ?string
     {
@@ -40,7 +39,7 @@ class PublicAsset
         $normalized = str_replace('\\', '/', trim($path));
 
         if (str_starts_with($normalized, 'http://') || str_starts_with($normalized, 'https://')) {
-            return $normalized;
+            return self::toHostRelative($normalized) ?? $normalized;
         }
 
         // Already a public web path.
@@ -48,7 +47,7 @@ class PublicAsset
             || str_starts_with($normalized, 'images/')
             || str_starts_with($normalized, 'css/')
             || str_starts_with($normalized, 'js/')) {
-            return asset(ltrim($normalized, '/'));
+            return '/'.ltrim($normalized, '/');
         }
 
         $relative = ltrim($normalized, '/');
@@ -56,8 +55,21 @@ class PublicAsset
             $relative = substr($relative, 7);
         }
 
-        // Disk-relative path under storage/app/public.
-        return Storage::disk('public')->url($relative);
+        if (str_starts_with($relative, 'storage/')) {
+            return '/'.$relative;
+        }
+
+        return '/storage/'.$relative;
+    }
+
+    private static function toHostRelative(string $url): ?string
+    {
+        $parsed = parse_url($url);
+        if ($parsed === false || empty($parsed['path'])) {
+            return null;
+        }
+
+        return $parsed['path'].(isset($parsed['query']) ? '?'.$parsed['query'] : '');
     }
 
     private static function normalizePublicPath(string $path): string
