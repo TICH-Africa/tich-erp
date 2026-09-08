@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-07 12:06:34 EAT
+-- Generated: 2026-09-08 12:19:36 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4903,6 +4903,351 @@ CALL `tich_ensure_index`('medical_records', 'medical_records_reviewed_by_foreign
 CALL `tich_ensure_index`('medical_records', 'medical_records_student_id_foreign', '`student_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `me_department_health_scores`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_department_health_scores` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `fiscal_year` varchar(20) DEFAULT NULL,
+  `planning_cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `qa_compliance_avg` decimal(5,2) DEFAULT NULL,
+  `me_achievement_avg` decimal(5,2) DEFAULT NULL,
+  `health_score` decimal(5,2) DEFAULT NULL,
+  `health_rating` varchar(50) DEFAULT NULL,
+  `calculated_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_health_dept_year_unique` (`department_id`,`fiscal_year`),
+  KEY `me_department_health_scores_planning_cycle_id_foreign` (`planning_cycle_id`),
+  CONSTRAINT `me_department_health_scores_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_department_health_scores_planning_cycle_id_foreign` FOREIGN KEY (`planning_cycle_id`) REFERENCES `admin_planning_cycles` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_department_health_scores` (add only if missing)
+CALL `tich_ensure_column`('me_department_health_scores', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_department_health_scores', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'fiscal_year', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'planning_cycle_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'qa_compliance_avg', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'me_achievement_avg', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'health_score', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'health_rating', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'calculated_at', 'datetime NOT NULL');
+CALL `tich_ensure_column`('me_department_health_scores', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `me_department_health_scores` (add only if missing)
+CALL `tich_ensure_index`('me_department_health_scores', 'me_department_health_scores_planning_cycle_id_foreign', '`planning_cycle_id`');
+CALL `tich_ensure_unique`('me_department_health_scores', 'me_health_dept_year_unique', '`department_id`, `fiscal_year`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_plan_outputs`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_plan_outputs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `output` text NOT NULL,
+  `activity` text NOT NULL,
+  `costable_item` varchar(500) DEFAULT NULL,
+  `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `planned_unit` varchar(50) DEFAULT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_plan_outputs_technical_plan_id_foreign` (`technical_plan_id`),
+  CONSTRAINT `me_plan_outputs_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_plan_outputs` (add only if missing)
+CALL `tich_ensure_column`('me_plan_outputs', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_plan_outputs', 'technical_plan_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'output', 'text NOT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'activity', 'text NOT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'costable_item', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'planned', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('me_plan_outputs', 'planned_unit', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('me_plan_outputs', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `me_plan_outputs` (add only if missing)
+CALL `tich_ensure_index`('me_plan_outputs', 'me_plan_outputs_technical_plan_id_foreign', '`technical_plan_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_policies`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_policies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `fiscal_year` varchar(20) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `version` varchar(50) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `description` text DEFAULT NULL,
+  `effective_date` date DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `uploaded_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `published_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_policies_uploaded_by_foreign` (`uploaded_by`),
+  KEY `me_policies_fiscal_year_status_index` (`fiscal_year`,`status`),
+  CONSTRAINT `me_policies_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_policies` (add only if missing)
+CALL `tich_ensure_column`('me_policies', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_policies', 'fiscal_year', 'varchar(20) NOT NULL');
+CALL `tich_ensure_column`('me_policies', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('me_policies', 'version', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policies', 'file_path', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('me_policies', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policies', 'effective_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policies', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('me_policies', 'uploaded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policies', 'uploaded_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('me_policies', 'published_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policies', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('me_policies', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `me_policies` (add only if missing)
+CALL `tich_ensure_index`('me_policies', 'me_policies_fiscal_year_status_index', '`fiscal_year`, `status`');
+CALL `tich_ensure_index`('me_policies', 'me_policies_uploaded_by_foreign', '`uploaded_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_policy_signoffs`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_policy_signoffs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `policy_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `signed_name` varchar(200) NOT NULL,
+  `employee_number` varchar(100) DEFAULT NULL,
+  `signature` text DEFAULT NULL,
+  `ip_address` varchar(64) DEFAULT NULL,
+  `signed_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_policy_signoffs_unique` (`policy_id`,`department_id`,`staff_id`),
+  KEY `me_policy_signoffs_department_id_foreign` (`department_id`),
+  KEY `me_policy_signoffs_staff_id_foreign` (`staff_id`),
+  KEY `me_policy_signoffs_user_id_foreign` (`user_id`),
+  CONSTRAINT `me_policy_signoffs_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_policy_signoffs_policy_id_foreign` FOREIGN KEY (`policy_id`) REFERENCES `me_policies` (`id`),
+  CONSTRAINT `me_policy_signoffs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `me_policy_signoffs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_policy_signoffs` (add only if missing)
+CALL `tich_ensure_column`('me_policy_signoffs', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_policy_signoffs', 'policy_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'signed_name', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'employee_number', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'signature', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'ip_address', 'varchar(64) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'signed_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `me_policy_signoffs` (add only if missing)
+CALL `tich_ensure_index`('me_policy_signoffs', 'me_policy_signoffs_department_id_foreign', '`department_id`');
+CALL `tich_ensure_index`('me_policy_signoffs', 'me_policy_signoffs_staff_id_foreign', '`staff_id`');
+CALL `tich_ensure_unique`('me_policy_signoffs', 'me_policy_signoffs_unique', '`policy_id`, `department_id`, `staff_id`');
+CALL `tich_ensure_index`('me_policy_signoffs', 'me_policy_signoffs_user_id_foreign', '`user_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_quarterly_reports`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_quarterly_reports` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `quarter_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `me_verified_by` bigint(20) unsigned DEFAULT NULL,
+  `me_verified_at` datetime DEFAULT NULL,
+  `me_notes` text DEFAULT NULL,
+  `ceo_delivered_at` datetime DEFAULT NULL,
+  `ceo_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `ceo_reviewed_at` datetime DEFAULT NULL,
+  `ceo_signature` varchar(300) DEFAULT NULL,
+  `ceo_notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_quarterly_reports_quarter_id_department_id_unique` (`quarter_id`,`department_id`),
+  KEY `me_quarterly_reports_technical_plan_id_foreign` (`technical_plan_id`),
+  KEY `me_quarterly_reports_department_id_foreign` (`department_id`),
+  KEY `me_quarterly_reports_submitted_by_foreign` (`submitted_by`),
+  KEY `me_quarterly_reports_me_verified_by_foreign` (`me_verified_by`),
+  KEY `me_quarterly_reports_ceo_reviewed_by_foreign` (`ceo_reviewed_by`),
+  CONSTRAINT `me_quarterly_reports_ceo_reviewed_by_foreign` FOREIGN KEY (`ceo_reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_reports_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_quarterly_reports_me_verified_by_foreign` FOREIGN KEY (`me_verified_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_reports_quarter_id_foreign` FOREIGN KEY (`quarter_id`) REFERENCES `me_quarters` (`id`),
+  CONSTRAINT `me_quarterly_reports_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_reports_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_quarterly_reports` (add only if missing)
+CALL `tich_ensure_column`('me_quarterly_reports', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_quarterly_reports', 'technical_plan_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'quarter_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('me_quarterly_reports', 'submitted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'submitted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'me_verified_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'me_verified_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'me_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'ceo_delivered_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'ceo_reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'ceo_reviewed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'ceo_signature', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'ceo_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_reports', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('me_quarterly_reports', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `me_quarterly_reports` (add only if missing)
+CALL `tich_ensure_index`('me_quarterly_reports', 'me_quarterly_reports_ceo_reviewed_by_foreign', '`ceo_reviewed_by`');
+CALL `tich_ensure_index`('me_quarterly_reports', 'me_quarterly_reports_department_id_foreign', '`department_id`');
+CALL `tich_ensure_index`('me_quarterly_reports', 'me_quarterly_reports_me_verified_by_foreign', '`me_verified_by`');
+CALL `tich_ensure_unique`('me_quarterly_reports', 'me_quarterly_reports_quarter_id_department_id_unique', '`quarter_id`, `department_id`');
+CALL `tich_ensure_index`('me_quarterly_reports', 'me_quarterly_reports_submitted_by_foreign', '`submitted_by`');
+CALL `tich_ensure_index`('me_quarterly_reports', 'me_quarterly_reports_technical_plan_id_foreign', '`technical_plan_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_quarterly_report_lines`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_quarterly_report_lines` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `quarterly_report_id` bigint(20) unsigned NOT NULL,
+  `plan_output_id` bigint(20) unsigned DEFAULT NULL,
+  `output` text NOT NULL,
+  `activity` text NOT NULL,
+  `costable_item` varchar(500) DEFAULT NULL,
+  `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `achieved` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `deviation` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `me_quarterly_report_lines_quarterly_report_id_foreign` (`quarterly_report_id`),
+  KEY `me_quarterly_report_lines_plan_output_id_foreign` (`plan_output_id`),
+  CONSTRAINT `me_quarterly_report_lines_plan_output_id_foreign` FOREIGN KEY (`plan_output_id`) REFERENCES `me_plan_outputs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_report_lines_quarterly_report_id_foreign` FOREIGN KEY (`quarterly_report_id`) REFERENCES `me_quarterly_reports` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_quarterly_report_lines` (add only if missing)
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'quarterly_report_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'plan_output_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'output', 'text NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'activity', 'text NOT NULL');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'costable_item', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'planned', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'achieved', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'deviation', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('me_quarterly_report_lines', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
+
+-- Indexes for `me_quarterly_report_lines` (add only if missing)
+CALL `tich_ensure_index`('me_quarterly_report_lines', 'me_quarterly_report_lines_plan_output_id_foreign', '`plan_output_id`');
+CALL `tich_ensure_index`('me_quarterly_report_lines', 'me_quarterly_report_lines_quarterly_report_id_foreign', '`quarterly_report_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_quarters`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_quarters` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `quarter_number` tinyint(3) unsigned NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'open',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_quarters_technical_plan_id_quarter_number_unique` (`technical_plan_id`,`quarter_number`),
+  CONSTRAINT `me_quarters_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_quarters` (add only if missing)
+CALL `tich_ensure_column`('me_quarters', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_quarters', 'technical_plan_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarters', 'quarter_number', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_quarters', 'period_start', 'date NOT NULL');
+CALL `tich_ensure_column`('me_quarters', 'period_end', 'date NOT NULL');
+CALL `tich_ensure_column`('me_quarters', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'open\\\'\'');
+CALL `tich_ensure_column`('me_quarters', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `me_quarters` (add only if missing)
+CALL `tich_ensure_unique`('me_quarters', 'me_quarters_technical_plan_id_quarter_number_unique', '`technical_plan_id`, `quarter_number`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `me_technical_plans`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_technical_plans` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `budget_request_id` bigint(20) unsigned DEFAULT NULL,
+  `planning_cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `fiscal_year` varchar(20) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `summary` text DEFAULT NULL,
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `me_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `me_reviewed_at` datetime DEFAULT NULL,
+  `me_notes` text DEFAULT NULL,
+  `baseline_locked_by` bigint(20) unsigned DEFAULT NULL,
+  `baseline_locked_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_technical_plans_budget_request_id_foreign` (`budget_request_id`),
+  KEY `me_technical_plans_planning_cycle_id_foreign` (`planning_cycle_id`),
+  KEY `me_technical_plans_submitted_by_foreign` (`submitted_by`),
+  KEY `me_technical_plans_me_reviewed_by_foreign` (`me_reviewed_by`),
+  KEY `me_technical_plans_baseline_locked_by_foreign` (`baseline_locked_by`),
+  KEY `me_technical_plans_department_id_status_index` (`department_id`,`status`),
+  CONSTRAINT `me_technical_plans_baseline_locked_by_foreign` FOREIGN KEY (`baseline_locked_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_budget_request_id_foreign` FOREIGN KEY (`budget_request_id`) REFERENCES `admin_budget_requests` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_technical_plans_me_reviewed_by_foreign` FOREIGN KEY (`me_reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_planning_cycle_id_foreign` FOREIGN KEY (`planning_cycle_id`) REFERENCES `admin_planning_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `me_technical_plans` (add only if missing)
+CALL `tich_ensure_column`('me_technical_plans', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('me_technical_plans', 'budget_request_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'planning_cycle_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'fiscal_year', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('me_technical_plans', 'summary', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'submitted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'submitted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'me_reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'me_reviewed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'me_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'baseline_locked_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'baseline_locked_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_technical_plans', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('me_technical_plans', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `me_technical_plans` (add only if missing)
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_baseline_locked_by_foreign', '`baseline_locked_by`');
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_budget_request_id_foreign', '`budget_request_id`');
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_department_id_status_index', '`department_id`, `status`');
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_me_reviewed_by_foreign', '`me_reviewed_by`');
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_planning_cycle_id_foreign', '`planning_cycle_id`');
+CALL `tich_ensure_index`('me_technical_plans', 'me_technical_plans_submitted_by_foreign', '`submitted_by`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `migrations`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `migrations` (
@@ -6812,6 +7157,40 @@ CALL `tich_ensure_index`('qa_audit_checklists', 'qa_audit_checklists_applies_to_
 CALL `tich_ensure_index`('qa_audit_checklists', 'qa_audit_checklists_qa_plan_id_foreign', '`qa_plan_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `qa_capacity_sessions`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `qa_capacity_sessions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `scheduled_at` datetime DEFAULT NULL,
+  `audience` varchar(300) DEFAULT NULL,
+  `location` varchar(300) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'scheduled',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `qa_capacity_sessions_created_by_foreign` (`created_by`),
+  CONSTRAINT `qa_capacity_sessions_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `qa_capacity_sessions` (add only if missing)
+CALL `tich_ensure_column`('qa_capacity_sessions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'scheduled_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'audience', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'location', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'scheduled\\\'\'');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('qa_capacity_sessions', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `qa_capacity_sessions` (add only if missing)
+CALL `tich_ensure_index`('qa_capacity_sessions', 'qa_capacity_sessions_created_by_foreign', '`created_by`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `qa_compliance_scores`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `qa_compliance_scores` (
@@ -6996,34 +7375,51 @@ CALL `tich_ensure_index`('qa_evidence_attachments', 'qa_evidence_attachments_upl
 CREATE TABLE IF NOT EXISTS `qa_plans` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `plan_name` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `instructions` text DEFAULT NULL,
   `period_start` date NOT NULL,
   `period_end` date NOT NULL,
+  `due_at` datetime DEFAULT NULL,
+  `pass_threshold` decimal(5,2) NOT NULL DEFAULT 70.00,
   `scope_type` varchar(50) NOT NULL,
   `department_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`department_ids`)),
-  `deployed_by` bigint(20) unsigned NOT NULL,
-  `deployed_at` datetime NOT NULL,
-  `status` varchar(50) NOT NULL DEFAULT 'active',
+  `deployed_by` bigint(20) unsigned DEFAULT NULL,
+  `deployed_at` datetime DEFAULT NULL,
+  `dispatched_at` datetime DEFAULT NULL,
+  `compiled_at` datetime DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `qa_plans_deployed_by_foreign` (`deployed_by`),
+  KEY `qa_plans_created_by_foreign` (`created_by`),
+  CONSTRAINT `qa_plans_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `qa_plans_deployed_by_foreign` FOREIGN KEY (`deployed_by`) REFERENCES `staff` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `qa_plans` (add only if missing)
 CALL `tich_ensure_column`('qa_plans', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('qa_plans', 'plan_name', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('qa_plans', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'instructions', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('qa_plans', 'period_start', 'date NOT NULL');
 CALL `tich_ensure_column`('qa_plans', 'period_end', 'date NOT NULL');
+CALL `tich_ensure_column`('qa_plans', 'due_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'pass_threshold', 'decimal(5,2) NOT NULL DEFAULT \'70.00\'');
 CALL `tich_ensure_column`('qa_plans', 'scope_type', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('qa_plans', 'department_ids', 'longtext NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_plans', 'deployed_by', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qa_plans', 'deployed_at', 'datetime NOT NULL');
-CALL `tich_ensure_column`('qa_plans', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'active\\\'\'');
+CALL `tich_ensure_column`('qa_plans', 'deployed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'deployed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'dispatched_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'compiled_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_plans', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
 CALL `tich_ensure_column`('qa_plans', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('qa_plans', 'updated_at', 'datetime NULL DEFAULT NULL');
 
 -- Indexes for `qa_plans` (add only if missing)
+CALL `tich_ensure_index`('qa_plans', 'qa_plans_created_by_foreign', '`created_by`');
 CALL `tich_ensure_index`('qa_plans', 'qa_plans_deployed_by_foreign', '`deployed_by`');
 
 -- -----------------------------------------------------------------------------
@@ -10690,6 +11086,45 @@ CALL `tich_ensure_fk`('media_attachments', 'media_attachments_uploaded_by_foreig
 CALL `tich_ensure_fk`('medical_records', 'medical_records_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('medical_records', 'medical_records_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `me_department_health_scores`
+CALL `tich_ensure_fk`('me_department_health_scores', 'me_department_health_scores_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_department_health_scores', 'me_department_health_scores_planning_cycle_id_foreign', '`planning_cycle_id`', 'admin_planning_cycles', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `me_plan_outputs`
+CALL `tich_ensure_fk`('me_plan_outputs', 'me_plan_outputs_technical_plan_id_foreign', '`technical_plan_id`', 'me_technical_plans', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `me_policies`
+CALL `tich_ensure_fk`('me_policies', 'me_policies_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `me_policy_signoffs`
+CALL `tich_ensure_fk`('me_policy_signoffs', 'me_policy_signoffs_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_policy_signoffs', 'me_policy_signoffs_policy_id_foreign', '`policy_id`', 'me_policies', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_policy_signoffs', 'me_policy_signoffs_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_policy_signoffs', 'me_policy_signoffs_user_id_foreign', '`user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `me_quarterly_reports`
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_ceo_reviewed_by_foreign', '`ceo_reviewed_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_me_verified_by_foreign', '`me_verified_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_quarter_id_foreign', '`quarter_id`', 'me_quarters', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_submitted_by_foreign', '`submitted_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_quarterly_reports', 'me_quarterly_reports_technical_plan_id_foreign', '`technical_plan_id`', 'me_technical_plans', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `me_quarterly_report_lines`
+CALL `tich_ensure_fk`('me_quarterly_report_lines', 'me_quarterly_report_lines_plan_output_id_foreign', '`plan_output_id`', 'me_plan_outputs', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_quarterly_report_lines', 'me_quarterly_report_lines_quarterly_report_id_foreign', '`quarterly_report_id`', 'me_quarterly_reports', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `me_quarters`
+CALL `tich_ensure_fk`('me_quarters', 'me_quarters_technical_plan_id_foreign', '`technical_plan_id`', 'me_technical_plans', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `me_technical_plans`
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_baseline_locked_by_foreign', '`baseline_locked_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_budget_request_id_foreign', '`budget_request_id`', 'admin_budget_requests', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_me_reviewed_by_foreign', '`me_reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_planning_cycle_id_foreign', '`planning_cycle_id`', 'admin_planning_cycles', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_submitted_by_foreign', '`submitted_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
 -- Foreign keys for `mpesa_stk_requests`
 CALL `tich_ensure_fk`('mpesa_stk_requests', 'mpesa_stk_requests_applicant_id_foreign', '`applicant_id`', 'applicants', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('mpesa_stk_requests', 'mpesa_stk_requests_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'CASCADE');
@@ -10842,6 +11277,9 @@ CALL `tich_ensure_fk`('purchase_orders', 'purchase_orders_supplier_id_foreign', 
 CALL `tich_ensure_fk`('qa_audit_checklists', 'qa_audit_checklists_applies_to_department_id_foreign', '`applies_to_department_id`', 'departments', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('qa_audit_checklists', 'qa_audit_checklists_qa_plan_id_foreign', '`qa_plan_id`', 'qa_plans', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `qa_capacity_sessions`
+CALL `tich_ensure_fk`('qa_capacity_sessions', 'qa_capacity_sessions_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
 -- Foreign keys for `qa_compliance_scores`
 CALL `tich_ensure_fk`('qa_compliance_scores', 'qa_compliance_scores_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('qa_compliance_scores', 'qa_compliance_scores_qa_plan_id_foreign', '`qa_plan_id`', 'qa_plans', '`id`', 'RESTRICT', 'RESTRICT');
@@ -10864,6 +11302,7 @@ CALL `tich_ensure_fk`('qa_department_submissions', 'qa_department_submissions_ve
 CALL `tich_ensure_fk`('qa_evidence_attachments', 'qa_evidence_attachments_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `qa_plans`
+CALL `tich_ensure_fk`('qa_plans', 'qa_plans_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('qa_plans', 'qa_plans_deployed_by_foreign', '`deployed_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `receipts`

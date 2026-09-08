@@ -711,6 +711,230 @@ SELECT * FROM (
 ) AS seed
 WHERE NOT EXISTS (SELECT 1 FROM `cms_pages` WHERE `slug` = 'terms');
 
+-- -----------------------------------------------------------------------------
+-- 18. QA assessment lifecycle + capacity building registry
+--     (2026_09_07_140000_enhance_qa_plans_and_capacity_sessions)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `qa_plans`
+    ADD COLUMN IF NOT EXISTS `description` text NULL DEFAULT NULL AFTER `plan_name`,
+    ADD COLUMN IF NOT EXISTS `instructions` text NULL DEFAULT NULL AFTER `description`,
+    ADD COLUMN IF NOT EXISTS `due_at` datetime NULL DEFAULT NULL AFTER `period_end`,
+    ADD COLUMN IF NOT EXISTS `pass_threshold` decimal(5,2) NOT NULL DEFAULT 70.00 AFTER `due_at`,
+    ADD COLUMN IF NOT EXISTS `dispatched_at` datetime NULL DEFAULT NULL AFTER `deployed_at`,
+    ADD COLUMN IF NOT EXISTS `compiled_at` datetime NULL DEFAULT NULL AFTER `dispatched_at`,
+    ADD COLUMN IF NOT EXISTS `created_by` bigint(20) unsigned NULL DEFAULT NULL AFTER `compiled_at`;
+
+ALTER TABLE `qa_plans`
+    MODIFY COLUMN `deployed_by` bigint(20) unsigned NULL DEFAULT NULL,
+    MODIFY COLUMN `deployed_at` datetime NULL DEFAULT NULL,
+    MODIFY COLUMN `status` varchar(50) NOT NULL DEFAULT 'draft';
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'qa_plans'
+              AND CONSTRAINT_NAME = 'qa_plans_created_by_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `qa_plans` ADD CONSTRAINT `qa_plans_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+CREATE TABLE IF NOT EXISTS `qa_capacity_sessions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `scheduled_at` datetime DEFAULT NULL,
+  `audience` varchar(300) DEFAULT NULL,
+  `location` varchar(300) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'scheduled',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `qa_capacity_sessions_created_by_foreign` (`created_by`),
+  CONSTRAINT `qa_capacity_sessions_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 19. Monitoring & Evaluation module
+--     (2026_09_08_100000_create_monitoring_evaluation_tables)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `me_policies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `fiscal_year` varchar(20) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `version` varchar(50) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `description` text DEFAULT NULL,
+  `effective_date` date DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `uploaded_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `published_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_policies_fiscal_year_status_index` (`fiscal_year`,`status`),
+  KEY `me_policies_uploaded_by_foreign` (`uploaded_by`),
+  CONSTRAINT `me_policies_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_policy_signoffs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `policy_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `signed_name` varchar(200) NOT NULL,
+  `employee_number` varchar(100) DEFAULT NULL,
+  `signature` text DEFAULT NULL,
+  `ip_address` varchar(64) DEFAULT NULL,
+  `signed_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_policy_signoffs_unique` (`policy_id`,`department_id`,`staff_id`),
+  KEY `me_policy_signoffs_department_id_foreign` (`department_id`),
+  KEY `me_policy_signoffs_staff_id_foreign` (`staff_id`),
+  KEY `me_policy_signoffs_user_id_foreign` (`user_id`),
+  CONSTRAINT `me_policy_signoffs_policy_id_foreign` FOREIGN KEY (`policy_id`) REFERENCES `me_policies` (`id`),
+  CONSTRAINT `me_policy_signoffs_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_policy_signoffs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `me_policy_signoffs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_technical_plans` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `budget_request_id` bigint(20) unsigned DEFAULT NULL,
+  `planning_cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `fiscal_year` varchar(20) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `summary` text DEFAULT NULL,
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `me_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `me_reviewed_at` datetime DEFAULT NULL,
+  `me_notes` text DEFAULT NULL,
+  `baseline_locked_by` bigint(20) unsigned DEFAULT NULL,
+  `baseline_locked_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_technical_plans_department_id_status_index` (`department_id`,`status`),
+  KEY `me_technical_plans_budget_request_id_foreign` (`budget_request_id`),
+  KEY `me_technical_plans_planning_cycle_id_foreign` (`planning_cycle_id`),
+  KEY `me_technical_plans_submitted_by_foreign` (`submitted_by`),
+  KEY `me_technical_plans_me_reviewed_by_foreign` (`me_reviewed_by`),
+  KEY `me_technical_plans_baseline_locked_by_foreign` (`baseline_locked_by`),
+  CONSTRAINT `me_technical_plans_budget_request_id_foreign` FOREIGN KEY (`budget_request_id`) REFERENCES `admin_budget_requests` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_planning_cycle_id_foreign` FOREIGN KEY (`planning_cycle_id`) REFERENCES `admin_planning_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_technical_plans_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_me_reviewed_by_foreign` FOREIGN KEY (`me_reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_technical_plans_baseline_locked_by_foreign` FOREIGN KEY (`baseline_locked_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_plan_outputs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `output` text NOT NULL,
+  `activity` text NOT NULL,
+  `costable_item` varchar(500) DEFAULT NULL,
+  `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `planned_unit` varchar(50) DEFAULT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `me_plan_outputs_technical_plan_id_foreign` (`technical_plan_id`),
+  CONSTRAINT `me_plan_outputs_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_quarters` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `quarter_number` tinyint(3) unsigned NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'open',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_quarters_technical_plan_id_quarter_number_unique` (`technical_plan_id`,`quarter_number`),
+  CONSTRAINT `me_quarters_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_quarterly_reports` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `technical_plan_id` bigint(20) unsigned NOT NULL,
+  `quarter_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `me_verified_by` bigint(20) unsigned DEFAULT NULL,
+  `me_verified_at` datetime DEFAULT NULL,
+  `me_notes` text DEFAULT NULL,
+  `ceo_delivered_at` datetime DEFAULT NULL,
+  `ceo_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `ceo_reviewed_at` datetime DEFAULT NULL,
+  `ceo_signature` varchar(300) DEFAULT NULL,
+  `ceo_notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_quarterly_reports_quarter_id_department_id_unique` (`quarter_id`,`department_id`),
+  KEY `me_quarterly_reports_technical_plan_id_foreign` (`technical_plan_id`),
+  KEY `me_quarterly_reports_department_id_foreign` (`department_id`),
+  KEY `me_quarterly_reports_submitted_by_foreign` (`submitted_by`),
+  KEY `me_quarterly_reports_me_verified_by_foreign` (`me_verified_by`),
+  KEY `me_quarterly_reports_ceo_reviewed_by_foreign` (`ceo_reviewed_by`),
+  CONSTRAINT `me_quarterly_reports_technical_plan_id_foreign` FOREIGN KEY (`technical_plan_id`) REFERENCES `me_technical_plans` (`id`),
+  CONSTRAINT `me_quarterly_reports_quarter_id_foreign` FOREIGN KEY (`quarter_id`) REFERENCES `me_quarters` (`id`),
+  CONSTRAINT `me_quarterly_reports_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_quarterly_reports_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_reports_me_verified_by_foreign` FOREIGN KEY (`me_verified_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `me_quarterly_reports_ceo_reviewed_by_foreign` FOREIGN KEY (`ceo_reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_quarterly_report_lines` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `quarterly_report_id` bigint(20) unsigned NOT NULL,
+  `plan_output_id` bigint(20) unsigned DEFAULT NULL,
+  `output` text NOT NULL,
+  `activity` text NOT NULL,
+  `costable_item` varchar(500) DEFAULT NULL,
+  `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `achieved` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `deviation` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `me_quarterly_report_lines_quarterly_report_id_foreign` (`quarterly_report_id`),
+  KEY `me_quarterly_report_lines_plan_output_id_foreign` (`plan_output_id`),
+  CONSTRAINT `me_quarterly_report_lines_quarterly_report_id_foreign` FOREIGN KEY (`quarterly_report_id`) REFERENCES `me_quarterly_reports` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `me_quarterly_report_lines_plan_output_id_foreign` FOREIGN KEY (`plan_output_id`) REFERENCES `me_plan_outputs` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `me_department_health_scores` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `fiscal_year` varchar(20) DEFAULT NULL,
+  `planning_cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `qa_compliance_avg` decimal(5,2) DEFAULT NULL,
+  `me_achievement_avg` decimal(5,2) DEFAULT NULL,
+  `health_score` decimal(5,2) DEFAULT NULL,
+  `health_rating` varchar(50) DEFAULT NULL,
+  `calculated_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `me_health_dept_year_unique` (`department_id`,`fiscal_year`),
+  KEY `me_department_health_scores_planning_cycle_id_foreign` (`planning_cycle_id`),
+  CONSTRAINT `me_department_health_scores_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `me_department_health_scores_planning_cycle_id_foreign` FOREIGN KEY (`planning_cycle_id`) REFERENCES `admin_planning_cycles` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

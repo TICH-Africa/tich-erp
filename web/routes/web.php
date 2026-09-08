@@ -119,6 +119,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/curriculum/versions/{version}/approve', [\App\Http\Controllers\Ceo\CurriculumController::class, 'approve'])->name('ceo.curriculum.approve');
 
         Route::get('/academics', \App\Http\Controllers\Ceo\AcademicsOverviewController::class)->name('ceo.academics.index');
+
+        Route::get('/quality', [\App\Http\Controllers\Ceo\QualityReportController::class, 'index'])->name('ceo.quality.index');
+        Route::get('/quality/{plan}', [\App\Http\Controllers\Ceo\QualityReportController::class, 'show'])->name('ceo.quality.show');
+
+        Route::get('/monitoring-evaluation', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'index'])->name('ceo.me.index');
+        Route::get('/monitoring-evaluation/{report}', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'show'])->name('ceo.me.show');
+        Route::post('/monitoring-evaluation/{report}/sign', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'sign'])->name('ceo.me.sign');
     });
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
@@ -456,9 +463,31 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/ledger-sync/run', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'runSync'])->name('administration.ledger-sync.run');
     });
 
-    Route::prefix('qa')->middleware(['permission:qa.read'])->group(function () use ($registerModuleBudgeting) {
-        Route::get('/', [\App\Http\Controllers\Qa\DashboardController::class, '__invoke'])->name('qa.dashboard');
-        $registerModuleBudgeting('qa');
+    Route::prefix('qa')->group(function () use ($registerModuleBudgeting) {
+        Route::middleware(['permission:qa.read'])->group(function () use ($registerModuleBudgeting) {
+            Route::get('/', [\App\Http\Controllers\Qa\DashboardController::class, '__invoke'])->name('qa.dashboard');
+            $registerModuleBudgeting('qa');
+
+            Route::get('/assessments', [\App\Http\Controllers\Qa\AssessmentController::class, 'index'])->name('qa.assessments.index');
+            Route::get('/assessments/create', [\App\Http\Controllers\Qa\AssessmentController::class, 'create'])->name('qa.assessments.create');
+            Route::post('/assessments', [\App\Http\Controllers\Qa\AssessmentController::class, 'store'])->name('qa.assessments.store');
+            Route::get('/assessments/{plan}', [\App\Http\Controllers\Qa\AssessmentController::class, 'show'])->name('qa.assessments.show');
+            Route::get('/assessments/{plan}/edit', [\App\Http\Controllers\Qa\AssessmentController::class, 'edit'])->name('qa.assessments.edit');
+            Route::put('/assessments/{plan}', [\App\Http\Controllers\Qa\AssessmentController::class, 'update'])->name('qa.assessments.update');
+            Route::post('/assessments/{plan}/dispatch', [\App\Http\Controllers\Qa\AssessmentController::class, 'dispatch'])->name('qa.assessments.dispatch');
+            Route::post('/assessments/{plan}/compile', [\App\Http\Controllers\Qa\AssessmentController::class, 'compile'])->name('qa.assessments.compile');
+
+            Route::get('/corrective-actions', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'index'])->name('qa.corrective-actions.index');
+            Route::post('/corrective-actions/{action}/resolve', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'resolve'])->name('qa.corrective-actions.resolve');
+
+            Route::get('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'index'])->name('qa.capacity.index');
+            Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
+        });
+
+        // Department respondents (HOD / department staff) — access checked in service.
+        Route::get('/tasks', [\App\Http\Controllers\Qa\TaskController::class, 'index'])->name('qa.tasks.index');
+        Route::get('/tasks/{plan}/{department}', [\App\Http\Controllers\Qa\TaskController::class, 'show'])->name('qa.tasks.show');
+        Route::post('/tasks/{plan}/{department}', [\App\Http\Controllers\Qa\TaskController::class, 'store'])->name('qa.tasks.store');
     });
 
     Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting) {
@@ -471,9 +500,42 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('research');
     });
 
-    Route::prefix('monitoring-evaluation')->middleware(['permission:monitoring_evaluation.read'])->group(function () use ($registerModuleBudgeting) {
-        Route::get('/dashboard', [\App\Http\Controllers\MonitoringEvaluation\DashboardController::class, '__invoke'])->name('monitoring_evaluation.dashboard');
-        $registerModuleBudgeting('monitoring_evaluation');
+    Route::prefix('monitoring-evaluation')->group(function () use ($registerModuleBudgeting) {
+        Route::middleware(['permission:monitoring_evaluation.read'])->group(function () use ($registerModuleBudgeting) {
+            Route::get('/dashboard', [\App\Http\Controllers\MonitoringEvaluation\DashboardController::class, '__invoke'])->name('monitoring_evaluation.dashboard');
+            $registerModuleBudgeting('monitoring_evaluation');
+
+            Route::get('/policies', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'index'])->name('monitoring_evaluation.policies.index');
+            Route::get('/policies/create', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'create'])->name('monitoring_evaluation.policies.create');
+            Route::post('/policies', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'store'])->name('monitoring_evaluation.policies.store');
+            Route::get('/policies/{policy}', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'show'])->name('monitoring_evaluation.policies.show');
+            Route::post('/policies/{policy}/publish', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'publish'])->name('monitoring_evaluation.policies.publish');
+
+            Route::get('/plans', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'index'])->name('monitoring_evaluation.plans.index');
+            Route::get('/plans/{plan}', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'show'])->name('monitoring_evaluation.plans.show');
+            Route::post('/plans/{plan}/approve', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'approve'])->name('monitoring_evaluation.plans.approve');
+            Route::post('/plans/{plan}/return', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'returnPlan'])->name('monitoring_evaluation.plans.return');
+            Route::post('/plans/{plan}/lock-baseline', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'lockBaseline'])->name('monitoring_evaluation.plans.lock');
+
+            Route::get('/reports', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'index'])->name('monitoring_evaluation.reports.index');
+            Route::get('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'show'])->name('monitoring_evaluation.reports.show');
+            Route::post('/reports/{report}/verify', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'verify'])->name('monitoring_evaluation.reports.verify');
+            Route::post('/reports/{report}/return', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'returnReport'])->name('monitoring_evaluation.reports.return');
+            Route::post('/plans/{plan}/quarters/{quarter}/open', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'openQuarter'])->name('monitoring_evaluation.plans.open-quarter');
+
+            Route::get('/pime', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'index'])->name('monitoring_evaluation.pime.index');
+            Route::post('/pime/recalculate-health', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'recalculateHealth'])->name('monitoring_evaluation.pime.recalculate');
+        });
+
+        // HOD / department respondents — policy sign-off + quarterly reports
+        Route::get('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('monitoring_evaluation.policy.sign');
+        Route::post('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('monitoring_evaluation.policy.sign.store');
+        Route::get('/policies/{policy}/download', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'download'])->name('monitoring_evaluation.policies.download');
+        Route::get('/department-reports', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'index'])->name('monitoring_evaluation.department.index');
+        Route::get('/department-reports/plans/{plan}/quarters/{quarter}', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'open'])->name('monitoring_evaluation.department.open');
+        Route::get('/department-reports/{report}/edit', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'edit'])->name('monitoring_evaluation.department.reports.edit');
+        Route::put('/department-reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'update'])->name('monitoring_evaluation.department.reports.update');
+        Route::post('/department-reports/{report}/submit', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'submit'])->name('monitoring_evaluation.department.reports.submit');
     });
 
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting) {

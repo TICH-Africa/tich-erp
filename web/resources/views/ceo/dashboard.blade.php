@@ -49,6 +49,20 @@
             <a href="{{ route('ceo.academics.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open academics overview</a>
         </article>
 
+        <article class="tich-card">
+            <p class="tich-caption">Quality</p>
+            <h3 class="tich-h3 tich-mt-2">Quality Level Reports</h3>
+            <p class="tich-text tich-mt-2">Review compiled QA compliance scores and corrective action flags.</p>
+            <a href="{{ route('ceo.quality.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open quality reports</a>
+        </article>
+
+        <article class="tich-card">
+            <p class="tich-caption">M&amp;E</p>
+            <h3 class="tich-h3 tich-mt-2">Monitoring &amp; evaluation</h3>
+            <p class="tich-text tich-mt-2">Review verified quarterly M&amp;E packages and department health ratings.</p>
+            <a href="{{ route('ceo.me.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open M&amp;E reports</a>
+        </article>
+
         @if (auth()->user()->hasEmployeeProfile())
             <article class="tich-card">
                 <p class="tich-caption">My Portal</p>

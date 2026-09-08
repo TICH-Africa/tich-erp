@@ -5,12 +5,26 @@
 @section($moduleContext['content_section'])
     <x-page-toolbar
         :title="$pageTitle"
-        meta="List line items with quantities and unit prices - totals calculate automatically"
+        meta="Budget routes to Administration/Finance; technical plan routes concurrently to M&E"
     >
         <x-slot:actions>
             <a href="{{ route($indexRoute) }}" class="tich-btn tich-btn-ghost">Back to budgeting</a>
         </x-slot:actions>
     </x-page-toolbar>
+
+    @if (!($mePolicySigned ?? true) && ($mePolicy ?? null))
+        <div class="tich-alert tich-alert--error tich-mt-4">
+            <strong>M&amp;E policy sign-off required.</strong>
+            HODs must digitally sign
+            <em>{{ $mePolicy->title }}</em>
+            ({{ $mePolicy->fiscal_year }}) before submitting annual budgets and departmental plans.
+            <a href="{{ route('monitoring_evaluation.policy.sign') }}" class="tich-link">Sign the policy now</a>
+        </div>
+    @elseif ($mePolicy ?? null)
+        <div class="tich-alert tich-alert--info tich-mt-4">
+            Dual submission: budget → Admin then Finance; technical plan → M&amp;E. Baseline locks after M&amp;E and budget approvals.
+        </div>
+    @endif
 
     @if ($budgetRequest?->status === 'returned' && $budgetRequest->workflow_notes)
         <div class="tich-alert tich-alert--info tich-mt-4">
@@ -135,9 +149,51 @@
             </div>
         </div>
 
+        <div class="tich-card tich-table-panel tich-mt-6">
+            <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem;">
+                <div>
+                    <h2 class="tich-h3" style="margin:0;">Technical plan (M&amp;E)</h2>
+                    <p class="tich-caption tich-mt-1" style="margin:0;">Standard grid: Output · Activity · Costable item · Planned baseline. Routes to M&amp;E concurrently.</p>
+                </div>
+                <button type="button" class="tich-btn tich-btn-secondary" id="dept-plan-add-line">+ Add output</button>
+            </div>
+
+            <div class="tich-form-group tich-mt-4">
+                <label class="tich-label" for="plan_summary">Plan summary</label>
+                <textarea id="plan_summary" name="plan_summary" class="tich-input" rows="2" maxlength="5000" placeholder="Optional narrative for the annual departmental plan">{{ old('plan_summary') }}</textarea>
+            </div>
+
+            <div class="tich-table-wrap tich-mt-4">
+                <table class="tich-admin-table" id="dept-plan-lines-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:12rem;">Output</th>
+                            <th style="min-width:12rem;">Activity</th>
+                            <th style="min-width:10rem;">Costable item</th>
+                            <th style="min-width:7rem;">Planned</th>
+                            <th style="min-width:6rem;">Unit</th>
+                            <th style="width:3rem;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="dept-plan-lines-body">
+                        @foreach (($planOutputs ?? [['output'=>'','activity'=>'','costable_item'=>'','planned'=>'','planned_unit'=>'']]) as $pi => $pLine)
+                            <tr class="dept-plan-line">
+                                <td><input type="text" name="plan_outputs[{{ $pi }}][output]" class="tich-input" value="{{ $pLine['output'] ?? '' }}" required maxlength="2000" placeholder="Strategic target"></td>
+                                <td><input type="text" name="plan_outputs[{{ $pi }}][activity]" class="tich-input" value="{{ $pLine['activity'] ?? '' }}" required maxlength="2000" placeholder="Implementation task"></td>
+                                <td><input type="text" name="plan_outputs[{{ $pi }}][costable_item]" class="tich-input" value="{{ $pLine['costable_item'] ?? '' }}" maxlength="500" placeholder="Budget code / resource"></td>
+                                <td><input type="number" name="plan_outputs[{{ $pi }}][planned]" class="tich-input" value="{{ $pLine['planned'] ?? '' }}" min="0" step="0.01" required placeholder="0"></td>
+                                <td><input type="text" name="plan_outputs[{{ $pi }}][planned_unit]" class="tich-input" value="{{ $pLine['planned_unit'] ?? '' }}" maxlength="50" placeholder="e.g. students"></td>
+                                <td><button type="button" class="tich-btn tich-btn-ghost js-remove-plan-line" title="Remove" aria-label="Remove">&times;</button></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="tich-flex-wrap tich-mt-6" style="gap:0.75rem; justify-content:flex-end;">
             <a href="{{ route($indexRoute) }}" class="tich-btn tich-btn-secondary">Cancel</a>
-            <button type="submit" class="tich-btn tich-btn-primary">{{ $submitLabel }}</button>
+            <button type="submit" class="tich-btn tich-btn-primary" @if(!($mePolicySigned ?? true)) disabled @endif>{{ $submitLabel }}</button>
         </div>
     </form>
 
@@ -229,6 +285,45 @@
         body.querySelectorAll('.dept-budget-line').forEach(bindRow);
         addBtn.addEventListener('click', addRow);
         refreshTotals();
+
+        var planBody = document.getElementById('dept-plan-lines-body');
+        var planAdd = document.getElementById('dept-plan-add-line');
+        if (planBody && planAdd) {
+            function reindexPlanRows() {
+                planBody.querySelectorAll('.dept-plan-line').forEach(function (row, index) {
+                    row.querySelectorAll('input[name^="plan_outputs["]').forEach(function (input) {
+                        input.name = input.name.replace(/plan_outputs\[\d+]/, 'plan_outputs[' + index + ']');
+                    });
+                });
+            }
+            function bindPlanRow(row) {
+                var removeBtn = row.querySelector('.js-remove-plan-line');
+                if (!removeBtn) return;
+                removeBtn.addEventListener('click', function () {
+                    if (planBody.querySelectorAll('.dept-plan-line').length <= 1) {
+                        row.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+                        return;
+                    }
+                    row.remove();
+                    reindexPlanRows();
+                });
+            }
+            planAdd.addEventListener('click', function () {
+                var index = planBody.querySelectorAll('.dept-plan-line').length;
+                var row = document.createElement('tr');
+                row.className = 'dept-plan-line';
+                row.innerHTML =
+                    '<td><input type="text" name="plan_outputs[' + index + '][output]" class="tich-input" required maxlength="2000" placeholder="Strategic target"></td>' +
+                    '<td><input type="text" name="plan_outputs[' + index + '][activity]" class="tich-input" required maxlength="2000" placeholder="Implementation task"></td>' +
+                    '<td><input type="text" name="plan_outputs[' + index + '][costable_item]" class="tich-input" maxlength="500" placeholder="Budget code / resource"></td>' +
+                    '<td><input type="number" name="plan_outputs[' + index + '][planned]" class="tich-input" min="0" step="0.01" required placeholder="0"></td>' +
+                    '<td><input type="text" name="plan_outputs[' + index + '][planned_unit]" class="tich-input" maxlength="50" placeholder="e.g. students"></td>' +
+                    '<td><button type="button" class="tich-btn tich-btn-ghost js-remove-plan-line" title="Remove" aria-label="Remove">&times;</button></td>';
+                planBody.appendChild(row);
+                bindPlanRow(row);
+            });
+            planBody.querySelectorAll('.dept-plan-line').forEach(bindPlanRow);
+        }
     })();
     </script>
 @endsection

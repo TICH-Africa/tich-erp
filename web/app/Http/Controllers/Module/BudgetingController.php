@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Module;
 
 use App\Http\Controllers\Controller;
+use App\Models\Me\MeTechnicalPlan;
 use App\Services\DepartmentBudgetingService;
+use App\Services\Me\MePolicyService;
+use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,6 +15,8 @@ class BudgetingController extends Controller
 {
     public function __construct(
         protected DepartmentBudgetingService $budgeting,
+        protected MePolicyService $mePolicies,
+        protected MeTechnicalPlanService $mePlans,
     ) {}
 
     public function index(Request $request): View
@@ -40,17 +45,25 @@ class BudgetingController extends Controller
         $department = $this->budgeting->departmentForModule($module);
         $routes = $this->budgeting->routeNames($module);
 
+        $policy = $this->mePolicies->currentPublishedPolicy();
+        $policySigned = $policy
+            ? $this->mePolicies->userMaySubmitBudget($request->user(), $department)
+            : true;
+
         return view('module-budgeting.create', [
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
             'cycles' => $this->budgeting->openCycles(),
             'lines' => $this->defaultLines(),
+            'planOutputs' => $this->defaultPlanOutputs(),
             'budgetRequest' => null,
             'formAction' => route($routes['store']),
-            'submitLabel' => 'Submit to Administration',
-            'pageTitle' => 'New budget request',
+            'submitLabel' => 'Submit budget & technical plan',
+            'pageTitle' => 'New budget & departmental plan',
             'indexRoute' => $routes['index'],
+            'mePolicy' => $policy,
+            'mePolicySigned' => $policySigned,
         ]);
     }
 
@@ -70,17 +83,43 @@ class BudgetingController extends Controller
             $lines = $stored !== [] ? $stored : $this->defaultLines();
         }
 
+        $existingPlan = MeTechnicalPlan::query()
+            ->with('outputs')
+            ->where('budget_request_id', $record->id)
+            ->first();
+
+        $planOutputs = old('plan_outputs');
+        if (! is_array($planOutputs) || $planOutputs === []) {
+            $planOutputs = $existingPlan
+                ? $existingPlan->outputs->map(fn ($o) => [
+                    'output' => $o->output,
+                    'activity' => $o->activity,
+                    'costable_item' => $o->costable_item,
+                    'planned' => (string) $o->planned,
+                    'planned_unit' => $o->planned_unit,
+                ])->all()
+                : $this->defaultPlanOutputs();
+        }
+
+        $policy = $this->mePolicies->currentPublishedPolicy();
+        $policySigned = $policy
+            ? $this->mePolicies->userMaySubmitBudget($request->user(), $department)
+            : true;
+
         return view('module-budgeting.create', [
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
             'cycles' => $this->budgeting->openCycles(),
             'lines' => $lines,
+            'planOutputs' => $planOutputs,
             'budgetRequest' => $record,
             'formAction' => route($routes['update'], $record->id),
-            'submitLabel' => 'Resubmit to Administration',
-            'pageTitle' => 'Revise budget request',
+            'submitLabel' => 'Resubmit budget & technical plan',
+            'pageTitle' => 'Revise budget & departmental plan',
             'indexRoute' => $routes['index'],
+            'mePolicy' => $policy,
+            'mePolicySigned' => $policySigned,
         ]);
     }
 
@@ -99,22 +138,39 @@ class BudgetingController extends Controller
         $module = $this->moduleKey($request);
         $department = $this->budgeting->departmentForModule($module);
 
+        if (! $this->mePolicies->userMaySubmitBudget($request->user(), $department)) {
+            return back()->withInput()->withErrors([
+                'budget' => $this->mePolicies->gateMessage($department),
+            ]);
+        }
+
         $data = $request->validate([
             'planning_cycle_id' => ['nullable', 'exists:admin_planning_cycles,id'],
             'title' => ['required', 'string', 'max:300'],
             'budget_type' => ['nullable', 'in:annual,quarterly,monthly,weekly'],
             'justification' => ['nullable', 'string', 'max:3000'],
+            'plan_summary' => ['nullable', 'string', 'max:5000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.item' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.description' => ['nullable', 'string', 'max:2000'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
+            'plan_outputs' => ['required', 'array', 'min:1'],
+            'plan_outputs.*.output' => ['required', 'string', 'max:2000'],
+            'plan_outputs.*.activity' => ['required', 'string', 'max:2000'],
+            'plan_outputs.*.costable_item' => ['nullable', 'string', 'max:500'],
+            'plan_outputs.*.planned' => ['required', 'numeric', 'min:0'],
+            'plan_outputs.*.planned_unit' => ['nullable', 'string', 'max:50'],
         ], [
             'lines.required' => 'Add at least one budget line item.',
             'lines.*.item.required' => 'Each line needs an item name.',
             'lines.*.quantity.required' => 'Each line needs a quantity.',
             'lines.*.unit_price.required' => 'Each line needs a price per item.',
+            'plan_outputs.required' => 'Add at least one technical plan output for M&E routing.',
+            'plan_outputs.*.output.required' => 'Each plan row needs an output.',
+            'plan_outputs.*.activity.required' => 'Each plan row needs an activity.',
+            'plan_outputs.*.planned.required' => 'Each plan row needs a planned baseline value.',
         ]);
 
         [$lineItems, $requestedAmount] = $this->normalizeLines($data['lines']);
@@ -139,12 +195,20 @@ class BudgetingController extends Controller
         try {
             if ($budgetRequestId) {
                 $record = $this->budgeting->findDepartmentRequest($department, $budgetRequestId);
-                $this->budgeting->resubmit($record, $department, $payload, $request->user());
-                $message = 'Budget request revised and resubmitted to Administration.';
+                $record = $this->budgeting->resubmit($record, $department, $payload, $request->user());
+                $message = 'Budget revised (Admin/Finance) and technical plan re-routed to M&E concurrently.';
             } else {
-                $this->budgeting->submit($department, $payload, $request->user());
-                $message = 'Budget request submitted to Administration for aggregation and workflow routing.';
+                $record = $this->budgeting->submit($department, $payload, $request->user());
+                $message = 'Dual submission complete: budget → Administration/Finance; technical plan → M&E.';
             }
+
+            $this->mePlans->ingestFromBudgetSubmission(
+                $record,
+                $department,
+                $request->user(),
+                $data['plan_outputs'],
+                $data['plan_summary'] ?? null,
+            );
         } catch (\RuntimeException $e) {
             return back()->withInput()->withErrors(['budget' => $e->getMessage()]);
         }
@@ -194,6 +258,21 @@ class BudgetingController extends Controller
 
         return [
             ['item' => '', 'quantity' => '1', 'description' => '', 'unit_price' => '', 'unit_of_measure' => ''],
+        ];
+    }
+
+    /**
+     * @return list<array{output: string, activity: string, costable_item: string, planned: string, planned_unit: string}>
+     */
+    private function defaultPlanOutputs(): array
+    {
+        $old = old('plan_outputs');
+        if (is_array($old) && $old !== []) {
+            return $old;
+        }
+
+        return [
+            ['output' => '', 'activity' => '', 'costable_item' => '', 'planned' => '', 'planned_unit' => ''],
         ];
     }
 

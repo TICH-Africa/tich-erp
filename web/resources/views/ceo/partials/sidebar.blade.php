@@ -32,6 +32,18 @@
             'icon' => 'graduation-cap',
             'active' => request()->routeIs('ceo.academics.*'),
         ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.quality.index'),
+            'label' => 'Quality reports',
+            'icon' => 'shield',
+            'active' => request()->routeIs('ceo.quality.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.me.index'),
+            'label' => 'M&E reports',
+            'icon' => 'bar-chart',
+            'active' => request()->routeIs('ceo.me.*'),
+        ])
     </nav>
     <div class="tich-admin-sidebar__footer">
         @include('partials.navigation.sidebar-link', [

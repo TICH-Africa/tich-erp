@@ -294,6 +294,19 @@ class AdministrationService
             $userId
         );
 
+        try {
+            $plan = \App\Models\Me\MeTechnicalPlan::query()
+                ->where('budget_request_id', $fresh->id)
+                ->where('status', 'me_approved')
+                ->first();
+            if ($plan) {
+                $user = $userId ? \App\Models\User::query()->find($userId) : null;
+                app(\App\Services\Me\MeTechnicalPlanService::class)->tryBaselineLock($plan, $user);
+            }
+        } catch (\Throwable) {
+            // Non-fatal: M&E baseline lock can be completed from the M&E portal.
+        }
+
         return $fresh;
     }
 
