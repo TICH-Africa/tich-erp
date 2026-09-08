@@ -94,7 +94,7 @@ class MePolicyService
     {
         $policy = $this->currentPublishedPolicy();
         if (! $policy) {
-            // No published policy yet — do not block budgeting.
+            // No published policy yet - do not block budgeting.
             return true;
         }
 

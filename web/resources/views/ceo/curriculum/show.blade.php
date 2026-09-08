@@ -5,7 +5,7 @@
 @section('ceo-content')
     <x-page-toolbar
         title="Review curriculum"
-        meta="{{ $version->program?->program_code }} — {{ $version->intakeLabel() }}"
+        meta="{{ $version->program?->program_code }} - {{ $version->intakeLabel() }}"
     >
         <x-slot:actions>
             <a href="{{ route('ceo.curriculum.index') }}" class="tich-btn tich-btn-ghost">Back to list</a>

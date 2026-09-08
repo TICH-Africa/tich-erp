@@ -47,7 +47,7 @@
                             </td>
                             <td><strong>{{ $event->title }}</strong></td>
                             <td>{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</td>
-                            <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '—' }}</td>
+                            <td>{{ $event->start_datetime?->format('d M Y H:i') ?? '-' }}</td>
                             <td>
                                 @if ($event->is_public)
                                     <span class="tich-badge tich-badge--success">Yes</span>
@@ -59,7 +59,7 @@
                                 @if ($event->is_featured)
                                     <span class="tich-badge tich-badge--info">Hero</span>
                                 @else
-                                    <span class="tich-caption">—</span>
+                                    <span class="tich-caption">-</span>
                                 @endif
                             </td>
                             <td class="tich-admin-table__actions">

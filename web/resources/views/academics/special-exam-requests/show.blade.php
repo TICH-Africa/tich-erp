@@ -23,7 +23,7 @@
             <h2 class="tich-h3">Request</h2>
             <dl class="tich-mt-4" style="display:grid; grid-template-columns:9rem 1fr; gap:0.5rem 1rem;">
                 <dt class="tich-caption">Unit</dt>
-                <dd>{{ $specialExamRequest->unit?->unit_code }} — {{ $specialExamRequest->unit?->unit_name }}</dd>
+                <dd>{{ $specialExamRequest->unit?->unit_code }} - {{ $specialExamRequest->unit?->unit_name }}</dd>
                 <dt class="tich-caption">Semester</dt>
                 <dd>{{ $specialExamRequest->semester?->semester_label ?? '-' }}</dd>
                 <dt class="tich-caption">Reason</dt>

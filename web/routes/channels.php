@@ -98,3 +98,27 @@ Broadcast::channel('academics.sidebar.{departmentId}', function ($user, $departm
     return app(AcademicsAccessService::class)->canAccessAll($user)
         || app(DepartmentDashboardService::class)->userCanAccessDepartment($user, $department);
 });
+
+Broadcast::channel('me.sidebar', function ($user) {
+    return (bool) $user;
+});
+
+Broadcast::channel('qa.sidebar', function ($user) {
+    return (bool) $user;
+});
+
+Broadcast::channel('ceo.sidebar', function ($user) {
+    if (! $user) {
+        return false;
+    }
+
+    return $user->hasAnyRole(['CEO', 'Super Admin']);
+});
+
+Broadcast::channel('ict.sidebar', function ($user) {
+    if (! $user) {
+        return false;
+    }
+
+    return app(RBACService::class)->hasPermission($user, 'ict.read');
+});

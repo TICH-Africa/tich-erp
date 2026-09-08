@@ -631,7 +631,7 @@ class EvanzzChpAcademicSimulationSeeder extends Seeder
                 [
                     'unit_allocation_id' => $allocation->id,
                     'prepared_by' => $allocation->staff_id,
-                    'lesson_title' => $allocation->unit->unit_name.' — Week 1',
+                    'lesson_title' => $allocation->unit->unit_name.' - Week 1',
                     'lesson_objectives' => 'Introduce core concepts; link theory to community practice.',
                     'topics_covered' => 'Foundations, definitions, local case examples',
                     'competencies_targeted' => $code.'-C1',
@@ -937,7 +937,7 @@ class EvanzzChpAcademicSimulationSeeder extends Seeder
         DB::table('unit_contents')->updateOrInsert(
             [
                 'unit_id' => $unit->id,
-                'title' => $unit->unit_name.' — Course outline',
+                'title' => $unit->unit_name.' - Course outline',
             ],
             [
                 'created_by' => $teacher->id,

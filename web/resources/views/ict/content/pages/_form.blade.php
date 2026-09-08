@@ -24,11 +24,11 @@
         </div>
         <div class="tich-form-group">
             <label class="tich-label" for="page_seo_title">SEO title</label>
-            <input id="page_seo_title" type="text" name="seo_meta_title" class="tich-input" maxlength="300" value="{{ old('seo_meta_title', $page->seo_meta_title ?? '') }}" placeholder="Optional — defaults to page title">
+            <input id="page_seo_title" type="text" name="seo_meta_title" class="tich-input" maxlength="300" value="{{ old('seo_meta_title', $page->seo_meta_title ?? '') }}" placeholder="Optional - defaults to page title">
         </div>
         <div class="tich-form-group">
             <label class="tich-label" for="page_seo_description">SEO description</label>
-            <textarea id="page_seo_description" name="seo_meta_description" class="tich-input" rows="2" maxlength="500" placeholder="Optional — shown in search results">{{ old('seo_meta_description', $page->seo_meta_description ?? '') }}</textarea>
+            <textarea id="page_seo_description" name="seo_meta_description" class="tich-input" rows="2" maxlength="500" placeholder="Optional - shown in search results">{{ old('seo_meta_description', $page->seo_meta_description ?? '') }}</textarea>
         </div>
     </div>
 </div>
@@ -128,7 +128,7 @@
                     <option value="arrow">Arrow</option>
                     <option value="line">Line</option>
                 </select>
-                <button type="button" data-action="hr" title="Horizontal line">—</button>
+                <button type="button" data-action="hr" title="Horizontal line">-</button>
                 <button type="button" data-action="find" title="Find and replace">Find</button>
                 <button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>
             </div>

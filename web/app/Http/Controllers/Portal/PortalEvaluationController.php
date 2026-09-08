@@ -51,6 +51,6 @@ class PortalEvaluationController extends Controller
 
         return redirect()
             ->route('portal.dashboard', ['section' => 'evaluations'])
-            ->with('success', 'Thank you — your evaluation was submitted.');
+            ->with('success', 'Thank you - your evaluation was submitted.');
     }
 }

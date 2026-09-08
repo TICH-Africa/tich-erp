@@ -28,8 +28,8 @@
             <span class="tich-caption">None assigned</span>
         @endif
     </td>
-    <td>{{ $department->parent?->dept_name ?? '—' }}</td>
-    <td>{{ $department->campus?->campus_name ?? '—' }}</td>
+    <td>{{ $department->parent?->dept_name ?? '-' }}</td>
+    <td>{{ $department->campus?->campus_name ?? '-' }}</td>
     <td>
         @if ($department->is_active)
             <span class="tich-badge tich-badge--success">Active</span>

@@ -36,8 +36,8 @@
                                 <strong>{{ $leave->tutor_name }}</strong>
                                 <p class="tich-caption">{{ $leave->employee_number }}</p>
                             </td>
-                            <td>{{ $leave->job_title ?? '—' }}</td>
-                            <td>{{ $leave->leave_type_name ?? '—' }}</td>
+                            <td>{{ $leave->job_title ?? '-' }}</td>
+                            <td>{{ $leave->leave_type_name ?? '-' }}</td>
                             <td>{{ \Illuminate\Support\Carbon::parse($leave->start_date)->format('d M Y') }}</td>
                             <td>{{ \Illuminate\Support\Carbon::parse($leave->end_date)->format('d M Y') }}</td>
                             <td>
@@ -49,7 +49,7 @@
                                         <span class="tich-badge tich-badge--info tich-ml-2">Today</span>
                                     @endif
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
                             <td>

@@ -59,11 +59,11 @@ class StaffProfileUpdatePromptController extends Controller
         foreach (\App\Services\EmployeeProfileCompletenessService::requestableFieldKeys() as $key) {
             $values[$key] = match ($key) {
                 'photo' => $staff->photoUrl() ? 'Photo on file' : 'No photo uploaded',
-                'date_of_birth' => $staff->date_of_birth?->format('d M Y') ?? '—',
+                'date_of_birth' => $staff->date_of_birth?->format('d M Y') ?? '-',
                 'qualification' => $staff->qualifications->isNotEmpty()
                     ? $staff->qualifications->map(fn ($q) => trim(($q->qualification_name ?? 'Qualification').($q->institution ? ' · '.$q->institution : '')))->join('; ')
                     : 'No qualifications on file',
-                default => filled($staff->{$key}) ? (string) $staff->{$key} : '—',
+                default => filled($staff->{$key}) ? (string) $staff->{$key} : '-',
             };
         }
 

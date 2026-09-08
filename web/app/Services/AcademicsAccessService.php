@@ -42,7 +42,7 @@ class AcademicsAccessService
     }
 
     /**
-     * Lecturer/Tutor (or teaching-flagged staff) with no hub management roles — staff portal only.
+     * Lecturer/Tutor (or teaching-flagged staff) with no hub management roles - staff portal only.
      */
     public function isTeachingOnly(User $user): bool
     {

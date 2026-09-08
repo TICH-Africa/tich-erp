@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\AcademicProgram;
+use App\Models\AuditLog;
 use App\Models\Campus;
 use App\Models\Department;
+use App\Models\User;
 use App\Services\Sidebar\AdminSidebarNotificationService;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +22,8 @@ class AdminSidebarNotificationServiceProvider extends ServiceProvider
             Campus::class,
             Department::class,
             AcademicProgram::class,
+            User::class,
+            AuditLog::class,
         ] as $model) {
             $model::saved($broadcast);
             $model::deleted($broadcast);

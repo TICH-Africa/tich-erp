@@ -132,7 +132,7 @@
                                         && (string) old('semester_id', $prefillSemesterId) === (string) $unit->semester_id;
                                 @endphp
                                 <option value="{{ $unit->unit_id }}:{{ $unit->semester_id }}" @selected($selected)>
-                                    {{ $unit->unit_code }} — {{ $unit->unit_name }} ({{ $unit->semester_label }})
+                                    {{ $unit->unit_code }} - {{ $unit->unit_name }} ({{ $unit->semester_label }})
                                 </option>
                             @endforeach
                         </select>

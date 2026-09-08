@@ -74,7 +74,7 @@
         </form>
     @else
         <article class="tich-card tich-mt-6">
-            <p class="tich-text">Signed by CEO {{ $report->ceo_reviewed_at->format('d M Y H:i') }} — {{ $report->ceo_signature }}</p>
+            <p class="tich-text">Signed by CEO {{ $report->ceo_reviewed_at->format('d M Y H:i') }} - {{ $report->ceo_signature }}</p>
             @if ($report->ceo_notes)
                 <p class="tich-caption tich-mt-2">{{ $report->ceo_notes }}</p>
             @endif

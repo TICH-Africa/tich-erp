@@ -13,18 +13,21 @@
             'label' => 'Budget authorizations',
             'icon' => 'file-text',
             'active' => request()->routeIs('ceo.budgets.*'),
+            'badgeKey' => 'budgets',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.approvals.index'),
             'label' => 'Approval workflow',
             'icon' => 'shield',
             'active' => request()->routeIs('ceo.approvals.*'),
+            'badgeKey' => 'approvals',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.curriculum.index'),
             'label' => 'Curriculum sign-off',
             'icon' => 'book-open',
             'active' => request()->routeIs('ceo.curriculum.*'),
+            'badgeKey' => 'curriculum',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.academics.index'),
@@ -37,12 +40,14 @@
             'label' => 'Quality reports',
             'icon' => 'shield',
             'active' => request()->routeIs('ceo.quality.*'),
+            'badgeKey' => 'quality',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.me.index'),
             'label' => 'M&E reports',
             'icon' => 'bar-chart',
             'active' => request()->routeIs('ceo.me.*'),
+            'badgeKey' => 'me',
         ])
     </nav>
     <div class="tich-admin-sidebar__footer">

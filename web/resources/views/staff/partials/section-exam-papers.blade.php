@@ -23,7 +23,7 @@
                                 data-semester="{{ $allocation->semester_id }}"
                                 @selected(old('unit_id') == $allocation->unit_id && old('semester_id') == $allocation->semester_id)
                             >
-                                {{ $allocation->unit?->unit_code }} — {{ $allocation->unit?->unit_name }}
+                                {{ $allocation->unit?->unit_code }} - {{ $allocation->unit?->unit_name }}
                                 ({{ $allocation->semester?->semester_label ?? 'Semester' }})
                             </option>
                         @endforeach

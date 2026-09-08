@@ -49,7 +49,7 @@
                                 <td>{{ $invite->created_at?->format('j M Y, H:i') }}</td>
                                 <td>
                                     @if ($invite->used_at)
-                                        <span class="tich-caption">—</span>
+                                        <span class="tich-caption">-</span>
                                     @else
                                         <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;">
                                             @csrf

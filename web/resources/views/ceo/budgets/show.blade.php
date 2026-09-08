@@ -3,7 +3,7 @@
 @section('title', 'Authorize budget')
 
 @section('ceo-content')
-    <x-page-toolbar title="Authorize budget" meta="{{ $budgetRequest->request_code }} — {{ $budgetRequest->title }}">
+    <x-page-toolbar title="Authorize budget" meta="{{ $budgetRequest->request_code }} - {{ $budgetRequest->title }}">
         <x-slot:actions>
             <a href="{{ route('ceo.budgets.index') }}" class="tich-btn tich-btn-ghost">Back to queue</a>
         </x-slot:actions>

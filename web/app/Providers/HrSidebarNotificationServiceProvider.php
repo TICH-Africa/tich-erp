@@ -8,6 +8,7 @@ use App\Models\LeaveRequest;
 use App\Models\OffboardingRequest;
 use App\Models\PolicyAcknowledgement;
 use App\Models\RecruitmentApplication;
+use App\Models\StaffAttendance;
 use App\Models\StaffContract;
 use App\Models\StaffDocument;
 use App\Models\StaffOnboarding;
@@ -34,6 +35,7 @@ class HrSidebarNotificationServiceProvider extends ServiceProvider
             PolicyAcknowledgement::class,
             Grievance::class,
             Feedback::class,
+            StaffAttendance::class,
         ] as $model) {
             $model::saved($broadcast);
             $model::deleted($broadcast);

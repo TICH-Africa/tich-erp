@@ -104,7 +104,7 @@
             <select name="assignments[__INDEX__][learning_department_id]" class="tich-input staff-learning-dept-select">
                 <option value="">Select learning department…</option>
             </select>
-            <p class="tich-caption tich-mt-1">Required for Head of Department — choose the school or training unit they lead.</p>
+            <p class="tich-caption tich-mt-1">Required for Head of Department - choose the school or training unit they lead.</p>
         </div>
         <div class="tich-form-group" style="margin: 0;">
             <label class="tich-label">Campus (optional)</label>

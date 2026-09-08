@@ -196,7 +196,7 @@ class MpesaSettingsService
 
     /**
      * Finance UI credentials apply only when M-Pesa is enabled there.
-     * Otherwise use .env only — avoids mixing a DB consumer key with an .env passkey.
+     * Otherwise use .env only - avoids mixing a DB consumer key with an .env passkey.
      */
     private function usesDatabaseCredentials(): bool
     {

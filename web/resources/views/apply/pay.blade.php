@@ -80,7 +80,7 @@
 
                         <div class="tich-mt-6">
                             <h3 class="tich-h4">Pay with M-Pesa</h3>
-                            <p class="tich-text tich-mt-2">Enter your M-Pesa phone number and tap the button below. You will receive a payment prompt on your phone — enter your PIN to complete payment.</p>
+                            <p class="tich-text tich-mt-2">Enter your M-Pesa phone number and tap the button below. You will receive a payment prompt on your phone - enter your PIN to complete payment.</p>
 
                             <form method="POST" action="{{ route('apply.pay.store') }}" class="tich-mt-4">
                                 @csrf

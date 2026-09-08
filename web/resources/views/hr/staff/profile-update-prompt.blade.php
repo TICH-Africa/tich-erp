@@ -92,8 +92,8 @@
                                 @endif
                                 @php
                                     $isSelected = in_array($key, $selectedFields, true);
-                                    $current = $currentValues[$key] ?? '—';
-                                    $isEmpty = $current === '—' || $current === 'No photo uploaded' || $current === 'No qualifications on file';
+                                    $current = $currentValues[$key] ?? '-';
+                                    $isEmpty = $current === '-' || $current === 'No photo uploaded' || $current === 'No qualifications on file';
                                 @endphp
                                 <label class="tich-prompt-field{{ $isSelected ? ' is-selected' : '' }}">
                                     <input

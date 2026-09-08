@@ -18,15 +18,15 @@
             <dl class="tich-mt-3" style="display:grid;grid-template-columns:9rem 1fr;gap:0.4rem 1rem;">
                 @if ($semester)
                     <dt class="tich-caption">Semester</dt>
-                    <dd>{{ $semester->semester_label ?? $semester->name ?? '—' }}</dd>
+                    <dd>{{ $semester->semester_label ?? $semester->name ?? '-' }}</dd>
                 @endif
                 @if ($current)
                     <dt class="tich-caption">Curriculum term</dt>
                     <dd>Semester {{ $current->semester }}</dd>
                     <dt class="tich-caption">Starts</dt>
-                    <dd>{{ $current->start_date?->format('d M Y') ?? '—' }}</dd>
+                    <dd>{{ $current->start_date?->format('d M Y') ?? '-' }}</dd>
                     <dt class="tich-caption">Ends</dt>
-                    <dd>{{ $current->end_date?->format('d M Y') ?? '—' }}</dd>
+                    <dd>{{ $current->end_date?->format('d M Y') ?? '-' }}</dd>
                 @endif
             </dl>
         </article>
@@ -44,11 +44,11 @@
                 <dl class="tich-portal-item-card__meta">
                     <div>
                         <dt>Start</dt>
-                        <dd>{{ $period?->start_date?->format('d M Y') ?? '—' }}</dd>
+                        <dd>{{ $period?->start_date?->format('d M Y') ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt>End</dt>
-                        <dd>{{ $period?->end_date?->format('d M Y') ?? '—' }}</dd>
+                        <dd>{{ $period?->end_date?->format('d M Y') ?? '-' }}</dd>
                     </div>
                 </dl>
             </article>

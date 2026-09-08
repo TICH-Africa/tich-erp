@@ -12,7 +12,7 @@
                 @forelse ($failing as $score)
                     <li class="tich-text tich-mt-2">
                         <strong>{{ $score->department?->dept_name }}</strong>
-                        — {{ number_format((float) $score->weighted_score, 1) }}%
+                        - {{ number_format((float) $score->weighted_score, 1) }}%
                         <p class="tich-caption">{{ $score->plan?->plan_name }}</p>
                     </li>
                 @empty

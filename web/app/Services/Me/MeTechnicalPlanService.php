@@ -49,7 +49,7 @@ class MeTechnicalPlanService
             $attrs = [
                 'planning_cycle_id' => $budgetRequest->planning_cycle_id,
                 'department_id' => $department->id,
-                'title' => $budgetRequest->title.' — Technical plan',
+                'title' => $budgetRequest->title.' - Technical plan',
                 'fiscal_year' => $fiscalYear,
                 'status' => 'me_review',
                 'summary' => $summary,

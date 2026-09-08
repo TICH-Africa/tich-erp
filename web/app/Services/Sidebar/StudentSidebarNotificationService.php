@@ -4,6 +4,7 @@ namespace App\Services\Sidebar;
 
 use App\Models\CourseEvaluation;
 use App\Models\CourseEvaluationWindow;
+use App\Models\SpecialExamRequest;
 use App\Models\Student;
 use App\Models\StudentClearanceItem;
 use App\Models\StudentDocumentRequest;
@@ -11,6 +12,7 @@ use App\Models\StudentLifecycleRequest;
 use App\Models\StudentNotification;
 use App\Models\StudentProfileChangeRequest;
 use App\Models\StudentTranscriptRequest;
+use App\Models\SupplementaryExamRequest;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -251,7 +253,21 @@ class StudentSidebarNotificationService
                 ->count();
         }
 
-        $academics = $exams + $assessments + $eligibility;
+        $examRequests = 0;
+        if (Schema::hasTable('special_exam_requests')) {
+            $examRequests += SpecialExamRequest::query()
+                ->where('student_id', $student->id)
+                ->whereIn('status', ['pending', 'on_hold'])
+                ->count();
+        }
+        if (Schema::hasTable('supplementary_requests')) {
+            $examRequests += SupplementaryExamRequest::query()
+                ->where('student_id', $student->id)
+                ->whereIn('application_status', ['pending_review', 'pending_fee', 'on_hold'])
+                ->count();
+        }
+
+        $academics = $exams + $assessments + $eligibility + $examRequests;
 
         return [
             'notifications' => $notifications,
@@ -263,6 +279,7 @@ class StudentSidebarNotificationService
             'finance' => $finance,
             'academics' => $academics,
             'academics.exams' => $exams,
+            'academics.exam-requests' => $examRequests,
             'academics.assessments' => $assessments,
             'academics.eligibility' => $eligibility,
             'suggestions' => $suggestions,

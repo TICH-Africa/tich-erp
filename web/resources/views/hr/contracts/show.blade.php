@@ -27,8 +27,8 @@
         <div class="tich-hr-profile-header__main">
             <h2 class="tich-hr-profile-header__name">{{ $contract->job_title }}</h2>
             <div class="tich-hr-profile-header__meta">
-                <span>{{ $contract->staff->fullName() ?? '—' }}</span>
-                <span>{{ $contract->department->dept_name ?? '—' }}</span>
+                <span>{{ $contract->staff->fullName() ?? '-' }}</span>
+                <span>{{ $contract->department->dept_name ?? '-' }}</span>
                 <span class="tich-badge tich-badge--info">{{ ucfirst($contract->contract_type) }}</span>
                 <span class="tich-badge tich-badge--{{ $contract->is_signed ? 'success' : 'warning' }}">
                     {{ $contract->is_signed ? 'Signed' : 'Unsigned' }}
@@ -46,17 +46,17 @@
             <h3 class="tich-detail-card__title">Contract details</h3>
             <dl class="tich-dl">
                 <div class="tich-dl__row"><dt class="tich-dl__label">Contract No.</dt><dd class="tich-dl__value">{{ $contract->contract_number }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Staff</dt><dd class="tich-dl__value">{{ $contract->staff->fullName() ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Staff</dt><dd class="tich-dl__value">{{ $contract->staff->fullName() ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Job title</dt><dd class="tich-dl__value">{{ $contract->job_title }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Department</dt><dd class="tich-dl__value">{{ $contract->department->dept_name ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Department</dt><dd class="tich-dl__value">{{ $contract->department->dept_name ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Type</dt><dd class="tich-dl__value">{{ ucfirst($contract->contract_type) }}</dd></div>
                 <div class="tich-dl__row">
                     <dt class="tich-dl__label">Gross salary</dt>
                     <dd class="tich-dl__value"><x-financial-value :value="number_format($contract->gross_salary, 2)" /></dd>
                 </div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $contract->start_date?->format('d M Y') ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $contract->start_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">End date</dt><dd class="tich-dl__value">{{ $contract->end_date?->format('d M Y') ?? 'Ongoing' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Probation end</dt><dd class="tich-dl__value">{{ $contract->probation_end_date?->format('d M Y') ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Probation end</dt><dd class="tich-dl__value">{{ $contract->probation_end_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Renewable</dt><dd class="tich-dl__value">{{ $contract->is_renewable ? 'Yes' : 'No' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Signed</dt><dd class="tich-dl__value">{{ $contract->is_signed ? 'Yes (' . $contract->signed_date?->format('d M Y') . ')' : 'No' }}</dd></div>
             </dl>

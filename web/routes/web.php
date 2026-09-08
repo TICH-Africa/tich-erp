@@ -126,6 +126,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/monitoring-evaluation', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'index'])->name('ceo.me.index');
         Route::get('/monitoring-evaluation/{report}', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'show'])->name('ceo.me.show');
         Route::post('/monitoring-evaluation/{report}/sign', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'sign'])->name('ceo.me.sign');
+
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Ceo\SidebarNotificationController::class)->name('ceo.sidebar-notifications');
     });
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
@@ -484,7 +486,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
         });
 
-        // Department respondents (HOD / department staff) — access checked in service.
+        // Department respondents (HOD / department staff) - access checked in service.
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Qa\SidebarNotificationController::class)->name('qa.sidebar-notifications');
         Route::get('/tasks', [\App\Http\Controllers\Qa\TaskController::class, 'index'])->name('qa.tasks.index');
         Route::get('/tasks/{plan}/{department}', [\App\Http\Controllers\Qa\TaskController::class, 'show'])->name('qa.tasks.show');
         Route::post('/tasks/{plan}/{department}', [\App\Http\Controllers\Qa\TaskController::class, 'store'])->name('qa.tasks.store');
@@ -527,7 +530,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/pime/recalculate-health', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'recalculateHealth'])->name('monitoring_evaluation.pime.recalculate');
         });
 
-        // HOD / department respondents — policy sign-off + quarterly reports
+        // HOD / department respondents - policy sign-off + quarterly reports
+        Route::get('/sidebar-notifications', \App\Http\Controllers\MonitoringEvaluation\SidebarNotificationController::class)->name('monitoring_evaluation.sidebar-notifications');
         Route::get('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('monitoring_evaluation.policy.sign');
         Route::post('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('monitoring_evaluation.policy.sign.store');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'download'])->name('monitoring_evaluation.policies.download');
@@ -540,6 +544,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting) {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Ict\SidebarNotificationController::class)->name('ict.sidebar-notifications');
         $registerModuleBudgeting('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');

@@ -47,7 +47,7 @@
                             </td>
                             <td><strong>{{ $program->program_code }}</strong></td>
                             <td>{{ $program->program_name }}</td>
-                            <td>{{ $program->department?->dept_name ?? '—' }}</td>
+                            <td>{{ $program->department?->dept_name ?? '-' }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $program->program_type)) }}</td>
                             <td>
                                 @php

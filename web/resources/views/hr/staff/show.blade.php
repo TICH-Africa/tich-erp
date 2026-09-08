@@ -38,40 +38,40 @@
             <h3 class="tich-detail-card__title">Profile</h3>
             <dl class="tich-dl">
                 <div class="tich-dl__row"><dt class="tich-dl__label">Employee No.</dt><dd class="tich-dl__value">{{ $staff->employee_number }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Primary email</dt><dd class="tich-dl__value">{{ $staff->primary_email ?: '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Organisation email</dt><dd class="tich-dl__value">{{ $staff->organisation_email ?: '—' }}@if (! $staff->organisation_email)<span class="tich-caption"> · Assigned by ICT</span>@endif</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Phone</dt><dd class="tich-dl__value">{{ $staff->phone_number ?: '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Gender</dt><dd class="tich-dl__value">{{ $staff->gender ?: '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Date of birth</dt><dd class="tich-dl__value">{{ $staff->date_of_birth?->format('d M Y') ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Nationality</dt><dd class="tich-dl__value">{{ $staff->nationality ?: '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Home county</dt><dd class="tich-dl__value">{{ $staff->home_county ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Primary email</dt><dd class="tich-dl__value">{{ $staff->primary_email ?: '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Organisation email</dt><dd class="tich-dl__value">{{ $staff->organisation_email ?: '-' }}@if (! $staff->organisation_email)<span class="tich-caption"> · Assigned by ICT</span>@endif</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Phone</dt><dd class="tich-dl__value">{{ $staff->phone_number ?: '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Gender</dt><dd class="tich-dl__value">{{ $staff->gender ?: '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Date of birth</dt><dd class="tich-dl__value">{{ $staff->date_of_birth?->format('d M Y') ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Nationality</dt><dd class="tich-dl__value">{{ $staff->nationality ?: '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Home county</dt><dd class="tich-dl__value">{{ $staff->home_county ?? '-' }}</dd></div>
             </dl>
         </section>
 
         <section class="tich-detail-card">
             <h3 class="tich-detail-card__title">Employment</h3>
             <dl class="tich-dl">
-                <div class="tich-dl__row"><dt class="tich-dl__label">Department</dt><dd class="tich-dl__value">{{ $staff->department->dept_name ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Campus</dt><dd class="tich-dl__value">{{ $staff->campus->campus_name ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Job title</dt><dd class="tich-dl__value">{{ $staff->job_title ?: '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Grade</dt><dd class="tich-dl__value">{{ $staff->job_grade ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Department</dt><dd class="tich-dl__value">{{ $staff->department->dept_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Campus</dt><dd class="tich-dl__value">{{ $staff->campus->campus_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Job title</dt><dd class="tich-dl__value">{{ $staff->job_title ?: '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Grade</dt><dd class="tich-dl__value">{{ $staff->job_grade ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Category</dt><dd class="tich-dl__value">{{ config('tich-payroll.employment_categories.'.$staff->employment_category, ucfirst(str_replace('_', ' ', $staff->employment_category))) }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Payroll scheme</dt><dd class="tich-dl__value">{{ $staff->payrollSchemeLabel() }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $staff->employment_start_date?->format('d M Y') ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Contract end</dt><dd class="tich-dl__value">{{ $staff->contract_end_date?->format('d M Y') ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Salary scale</dt><dd class="tich-dl__value">{{ $staff->salary_scale ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $staff->employment_start_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Contract end</dt><dd class="tich-dl__value">{{ $staff->contract_end_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Salary scale</dt><dd class="tich-dl__value">{{ $staff->salary_scale ?? '-' }}</dd></div>
             </dl>
         </section>
 
         <section class="tich-detail-card">
             <h3 class="tich-detail-card__title">Statutory</h3>
             <dl class="tich-dl">
-                <div class="tich-dl__row"><dt class="tich-dl__label">KRA PIN</dt><dd class="tich-dl__value">{{ $staff->kra_pin ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">NSSF</dt><dd class="tich-dl__value">{{ $staff->nssf_number ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">SHA</dt><dd class="tich-dl__value">{{ $staff->sha_number ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">HELB</dt><dd class="tich-dl__value">{{ $staff->helb_number ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Bank</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_name ?? '—' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Pension</dt><dd class="tich-dl__value">{{ $staff->pensionScheme?->scheme_name ?? '—' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">KRA PIN</dt><dd class="tich-dl__value">{{ $staff->kra_pin ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">NSSF</dt><dd class="tich-dl__value">{{ $staff->nssf_number ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">SHA</dt><dd class="tich-dl__value">{{ $staff->sha_number ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">HELB</dt><dd class="tich-dl__value">{{ $staff->helb_number ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Bank</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Pension</dt><dd class="tich-dl__value">{{ $staff->pensionScheme?->scheme_name ?? '-' }}</dd></div>
             </dl>
         </section>
     </div>

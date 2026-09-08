@@ -127,7 +127,7 @@
                     'icon' => 'clipboard-list',
                     'open' => $studentVoiceActive || $suggestionsOnly,
                     'active' => $studentVoiceActive,
-                    'badgeKey' => 'suggestions.open',
+                    'badgeKey' => 'student-voice',
                     'items' => array_values(array_filter([
                         [
                             'href' => route('departments.academics.suggestions.index', $hub),

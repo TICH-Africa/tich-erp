@@ -8,13 +8,52 @@ use App\Services\Finance\FinanceSidebarNotificationService;
 use App\Services\HrSidebarNotificationService;
 use App\Services\Sidebar\AcademicsSidebarNotificationService;
 use App\Services\Sidebar\AdministrationSidebarNotificationService;
+use App\Services\Sidebar\IctSidebarNotificationService;
+use App\Services\Sidebar\MeSidebarNotificationService;
+use App\Services\Sidebar\QaSidebarNotificationService;
 use Illuminate\Support\Collection;
 
 class DepartmentDashboardNotificationService
 {
     /**
-     * Department codes mapped to sidebar notification services (institutional queue totals).
+     * Leaf-only keys so rollup parents are not double-counted on the main dashboard.
      *
+     * @var array<string, list<string>>
+     */
+    private const LEAF_KEYS = [
+        'HR' => [
+            'onboarding',
+            'recruitment',
+            'leave.requests',
+            'documents',
+            'offboarding',
+            'contracts',
+            'profile-changes',
+            'attendance',
+            'policies',
+            'grievances',
+            'feedback',
+        ],
+        'FIN' => [
+            'student-finance.adjustments',
+            'student-finance.invoices',
+            'student-finance.fee-structures',
+            'student-finance.installments',
+            'student-finance.payments',
+            'ap.pending',
+            'payroll-runs',
+            'payroll-integration',
+        ],
+        'ADM' => [
+            'approvals',
+            'applications',
+            'lifecycle',
+            'statutory',
+            'inspection',
+        ],
+    ];
+
+    /**
      * @var array<string, class-string>
      */
     private const NOTIFICATION_SERVICES = [
@@ -22,6 +61,10 @@ class DepartmentDashboardNotificationService
         'FIN' => FinanceSidebarNotificationService::class,
         'ADM' => AdministrationSidebarNotificationService::class,
         'ACAD' => AcademicsSidebarNotificationService::class,
+        'QA' => QaSidebarNotificationService::class,
+        'MNE' => MeSidebarNotificationService::class,
+        'ICTO' => IctSidebarNotificationService::class,
+        'ICT' => IctSidebarNotificationService::class,
     ];
 
     /**
@@ -41,13 +84,9 @@ class DepartmentDashboardNotificationService
 
     public function totalCountForDepartment(Department $department, ?User $user = null): int
     {
-        $serviceClass = self::NOTIFICATION_SERVICES[$department->dept_code] ?? null;
+        $code = strtoupper((string) $department->dept_code);
 
-        if (! $serviceClass) {
-            return 0;
-        }
-
-        if ($department->dept_code === 'ACAD') {
+        if ($code === 'ACAD') {
             $notifications = app(AcademicsSidebarNotificationService::class);
             $access = app(AcademicsAccessService::class);
 
@@ -77,9 +116,28 @@ class DepartmentDashboardNotificationService
             );
         }
 
-        $counts = app($serviceClass)->counts();
+        if (in_array($code, ['QA', 'MNE', 'ICTO', 'ICT'], true)) {
+            $serviceClass = self::NOTIFICATION_SERVICES[$code] ?? null;
+            if (! $serviceClass) {
+                return 0;
+            }
 
-        return (int) array_sum($counts);
+            return app($serviceClass)->dashboardTotal();
+        }
+
+        $serviceClass = self::NOTIFICATION_SERVICES[$code] ?? null;
+        if (! $serviceClass) {
+            return 0;
+        }
+
+        $counts = app($serviceClass)->counts();
+        $leafKeys = self::LEAF_KEYS[$code] ?? null;
+
+        if ($leafKeys === null) {
+            return (int) array_sum($counts);
+        }
+
+        return (int) collect($leafKeys)->sum(fn (string $key) => (int) ($counts[$key] ?? 0));
     }
 
     public function formatCount(int $count): ?string

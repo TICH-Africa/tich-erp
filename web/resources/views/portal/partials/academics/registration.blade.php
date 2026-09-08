@@ -32,9 +32,9 @@
                 <tbody>
                     @forelse ($registered as $unit)
                         <tr>
-                            <td><strong>{{ $unit->unit_code ?? $unit->code ?? '—' }}</strong></td>
-                            <td>{{ $unit->unit_name ?? $unit->name ?? '—' }}</td>
-                            <td>{{ $unit->credit_hours ?? $unit->credits ?? '—' }}</td>
+                            <td><strong>{{ $unit->unit_code ?? $unit->code ?? '-' }}</strong></td>
+                            <td>{{ $unit->unit_name ?? $unit->name ?? '-' }}</td>
+                            <td>{{ $unit->credit_hours ?? $unit->credits ?? '-' }}</td>
                             <td><span class="tich-badge tich-badge--success">Registered</span></td>
                         </tr>
                     @empty

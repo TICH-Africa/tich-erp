@@ -66,7 +66,7 @@
                 </div>
                 <div>
                     <label class="tich-label">Organisation email</label>
-                    <p class="tich-input" style="background:var(--tich-surface-muted,#f8fafc);">{{ $staff->organisation_email ?: '—' }}</p>
+                    <p class="tich-input" style="background:var(--tich-surface-muted,#f8fafc);">{{ $staff->organisation_email ?: '-' }}</p>
                     <p class="tich-caption tich-mt-1">Assigned by ICT. Contact ICT to issue or change an @tich.africa address.</p>
                 </div>
                 <div>

@@ -41,8 +41,8 @@
                             <td><strong>{{ $campus->campus_code }}</strong></td>
                             <td>{{ $campus->campus_name }}</td>
                             <td>{{ \App\Models\Campus::typeLabel($campus->campus_type) }}</td>
-                            <td>{{ $campus->parentCampus?->campus_name ?? '—' }}</td>
-                            <td>{{ $campus->county ?? '—' }}</td>
+                            <td>{{ $campus->parentCampus?->campus_name ?? '-' }}</td>
+                            <td>{{ $campus->county ?? '-' }}</td>
                             <td>
                                 @if ($campus->is_active)
                                     <span class="tich-badge tich-badge--success">Active</span>

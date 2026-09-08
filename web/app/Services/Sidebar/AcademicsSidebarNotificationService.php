@@ -36,6 +36,7 @@ class AcademicsSidebarNotificationService
         'suggestions.open' => 'Suggestion box',
         'lifecycle.pending' => 'Deferment requests',
         'applications.pending' => 'Application review',
+        'student-voice' => 'Student voice',
     ];
 
     public function __construct(
@@ -205,6 +206,7 @@ class AcademicsSidebarNotificationService
                 'applications.pending' => 0,
                 'curriculum' => 0,
                 'assessment' => 0,
+                'student-voice' => 0,
             ];
         }
 
@@ -296,6 +298,16 @@ class AcademicsSidebarNotificationService
                 ->count();
         }
 
+        $suggestionsOpen = Schema::hasTable('student_suggestions')
+            ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
+            : 0;
+        $lifecyclePending = Schema::hasTable('student_lifecycle_requests')
+            ? (int) DB::table('student_lifecycle_requests')
+                ->where('request_type', 'deferment')
+                ->whereIn('status', ['pending', 'partially_approved', 'on_hold'])
+                ->count()
+            : 0;
+
         return [
             'units.pending-registry' => $unitsPending,
             'curriculum.workflow' => $curriculumWorkflow,
@@ -304,18 +316,12 @@ class AcademicsSidebarNotificationService
             'attendance-ledger.registrar' => $attendanceRegistrar + $attendanceIncomplete,
             'special-exam-requests.pending' => $specialExamPending,
             'supplementary-requests.pending' => $supplementaryPending,
-            'suggestions.open' => Schema::hasTable('student_suggestions')
-                ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
-                : 0,
-            'lifecycle.pending' => Schema::hasTable('student_lifecycle_requests')
-                ? (int) DB::table('student_lifecycle_requests')
-                    ->where('request_type', 'deferment')
-                    ->whereIn('status', ['pending', 'partially_approved', 'on_hold'])
-                    ->count()
-                : 0,
+            'suggestions.open' => $suggestionsOpen,
+            'lifecycle.pending' => $lifecyclePending,
             'applications.pending' => $applicationsPending,
             'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount,
             'assessment' => $attendanceForUser + $specialExamPending + $supplementaryPending,
+            'student-voice' => $suggestionsOpen + $lifecyclePending,
         ];
     }
 

@@ -22,7 +22,7 @@
 </x-page-toolbar>
 
 <p class="tich-caption tich-mt-2">
-    View your full record below. Use <strong>Update profile</strong> to change details — contact and next-of-kin save immediately; name, ID, date of birth, and photo require Academic Registrar approval.
+    View your full record below. Use <strong>Update profile</strong> to change details - contact and next-of-kin save immediately; name, ID, date of birth, and photo require Academic Registrar approval.
 </p>
 
 <div class="tich-grid tich-grid--2 tich-mt-8" style="align-items: start; gap: 1.5rem;">

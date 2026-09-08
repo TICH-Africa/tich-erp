@@ -353,7 +353,7 @@ class ContractService
             'is_on_probation' => $contract->probation_status === 'active',
         ];
 
-        // Organisation email is issued manually by ICT only — never copy from login/user email.
+        // Organisation email is issued manually by ICT only - never copy from login/user email.
         if (filled($contract->organisation_email)) {
             $updates['organisation_email'] = $contract->organisation_email;
         }

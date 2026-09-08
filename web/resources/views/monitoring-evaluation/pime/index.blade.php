@@ -3,7 +3,7 @@
 @section('title', 'PIME Workspace')
 
 @section('monitoring-evaluation-content')
-    <x-page-toolbar title="PIME meeting workspace" meta="Planning · Implementation · Monitoring · Evaluation — planned vs achieved">
+    <x-page-toolbar title="PIME meeting workspace" meta="Planning · Implementation · Monitoring · Evaluation - planned vs achieved">
         <x-slot:actions>
             <form method="POST" action="{{ route('monitoring_evaluation.pime.recalculate') }}">
                 @csrf
@@ -44,7 +44,7 @@
     </div>
 
     <div class="tich-card tich-mt-6">
-        <h2 class="tich-h3">Comparative chart — Q{{ $quarter }}</h2>
+        <h2 class="tich-h3">Comparative chart - Q{{ $quarter }}</h2>
         <div class="tich-mt-4" style="display:flex;flex-direction:column;gap:0.75rem;">
             @php $max = max(1, collect($comparison)->max(fn ($r) => max($r['planned'], $r['achieved'])) ?: 1); @endphp
             @forelse ($comparison as $row)
@@ -85,10 +85,10 @@
                     @forelse ($health as $row)
                         <tr>
                             <td>{{ $row->department?->dept_name }}</td>
-                            <td>{{ $row->qa_compliance_avg !== null ? number_format($row->qa_compliance_avg, 1).'%' : '—' }}</td>
-                            <td>{{ $row->me_achievement_avg !== null ? number_format($row->me_achievement_avg, 1).'%' : '—' }}</td>
-                            <td>{{ $row->health_score !== null ? number_format($row->health_score, 1) : '—' }}</td>
-                            <td>{{ $row->health_rating ? ucfirst($row->health_rating) : '—' }}</td>
+                            <td>{{ $row->qa_compliance_avg !== null ? number_format($row->qa_compliance_avg, 1).'%' : '-' }}</td>
+                            <td>{{ $row->me_achievement_avg !== null ? number_format($row->me_achievement_avg, 1).'%' : '-' }}</td>
+                            <td>{{ $row->health_score !== null ? number_format($row->health_score, 1) : '-' }}</td>
+                            <td>{{ $row->health_rating ? ucfirst($row->health_rating) : '-' }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="5">No health scores for this year yet.</td></tr>

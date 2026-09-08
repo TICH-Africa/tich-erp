@@ -11,4 +11,8 @@ return [
     App\Providers\PortalSidebarNotificationServiceProvider::class,
     App\Providers\AdminSidebarNotificationServiceProvider::class,
     App\Providers\AdministrationSidebarNotificationServiceProvider::class,
+    App\Providers\MeSidebarNotificationServiceProvider::class,
+    App\Providers\QaSidebarNotificationServiceProvider::class,
+    App\Providers\CeoSidebarNotificationServiceProvider::class,
+    App\Providers\IctSidebarNotificationServiceProvider::class,
 ];

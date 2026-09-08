@@ -55,7 +55,7 @@
                             <td>
                                 <ul class="tich-caption" style="margin:0; padding-left:1rem;">
                                     @foreach ($row->units as $unit)
-                                        <li>{{ $unit->unit_code }} — {{ $unit->unit_name }} ({{ $unit->contact_hours_assigned }}h)</li>
+                                        <li>{{ $unit->unit_code }} - {{ $unit->unit_name }} ({{ $unit->contact_hours_assigned }}h)</li>
                                     @endforeach
                                 </ul>
                             </td>

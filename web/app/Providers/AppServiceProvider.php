@@ -6,11 +6,15 @@ use App\Services\RBACService;
 use App\View\Composers\AcademicsSidebarComposer;
 use App\View\Composers\AdminSidebarComposer;
 use App\View\Composers\AdministrationSidebarComposer;
+use App\View\Composers\CeoSidebarComposer;
 use App\View\Composers\EmailBrandComposer;
 use App\View\Composers\EmployeeSidebarComposer;
 use App\View\Composers\FinanceSidebarComposer;
 use App\View\Composers\HrSidebarComposer;
+use App\View\Composers\IctSidebarComposer;
+use App\View\Composers\MeSidebarComposer;
 use App\View\Composers\PublicLayoutComposer;
+use App\View\Composers\QaSidebarComposer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Database\Events\MigrationsEnded;
@@ -73,6 +77,10 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['academics.partials.sidebar', 'layouts.academics'], AcademicsSidebarComposer::class);
         View::composer(['admin.partials.sidebar', 'layouts.admin'], AdminSidebarComposer::class);
         View::composer(['administration.partials.sidebar', 'layouts.administration'], AdministrationSidebarComposer::class);
+        View::composer(['monitoring-evaluation.partials.sidebar', 'layouts.monitoring-evaluation'], MeSidebarComposer::class);
+        View::composer(['qa.partials.sidebar', 'layouts.qa'], QaSidebarComposer::class);
+        View::composer(['ceo.partials.sidebar', 'layouts.ceo'], CeoSidebarComposer::class);
+        View::composer(['ict.partials.sidebar', 'layouts.ict'], IctSidebarComposer::class);
 
         // Keep deploy/production.sql in sync whenever migrations finish successfully (local/dev).
         Event::listen(MigrationsEnded::class, function (): void {

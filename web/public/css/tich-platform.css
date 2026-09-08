@@ -3274,7 +3274,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
         align-items: flex-start;
         pointer-events: none;
         --nav-drawer-scale: 0.92;
-        /* Do not reserve viewport height while closed — that was expanding the sticky header */
+        /* Do not reserve viewport height while closed - that was expanding the sticky header */
         height: 0;
         max-height: 0;
     }

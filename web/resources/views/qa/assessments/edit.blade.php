@@ -90,7 +90,7 @@
             <div class="tich-flex" style="justify-content:space-between;align-items:center;gap:1rem;">
                 <div>
                     <h2 class="tich-h3">Evaluation criteria</h2>
-                    <p class="tich-caption tich-mt-1">Dynamic form builder — each row becomes a scored metric on the department sheet.</p>
+                    <p class="tich-caption tich-mt-1">Dynamic form builder - each row becomes a scored metric on the department sheet.</p>
                 </div>
                 <button type="button" class="tich-btn tich-btn-secondary" id="qa-add-item">Add criterion</button>
             </div>

@@ -20,7 +20,7 @@
         <article class="tich-card">
             <h2 class="tich-h3">Routing</h2>
             <p class="tich-text tich-mt-2">Linked budget: #{{ $plan->budget_request_id }} · {{ $plan->budgetRequest?->status ?? 'n/a' }}</p>
-            <p class="tich-caption">Fiscal year: {{ $plan->fiscal_year ?? '—' }}</p>
+            <p class="tich-caption">Fiscal year: {{ $plan->fiscal_year ?? '-' }}</p>
             <p class="tich-caption">Submitted {{ $plan->submitted_at?->format('d M Y H:i') }}</p>
             @if ($plan->summary)
                 <p class="tich-text tich-mt-4">{{ $plan->summary }}</p>

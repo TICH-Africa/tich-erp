@@ -19,7 +19,7 @@
                 </select>
                 <select name="status" class="tich-input tich-input--compact">
                     <option value="pending" @selected($filters['status'] === 'pending')>Awaiting review</option>
-                    <option value="payment_pending" @selected($filters['status'] === 'payment_pending')>Approved — awaiting payment</option>
+                    <option value="payment_pending" @selected($filters['status'] === 'payment_pending')>Approved - awaiting payment</option>
                     <option value="admitted" @selected($filters['status'] === 'admitted')>Admitted</option>
                     <option value="rejected" @selected($filters['status'] === 'rejected')>Rejected</option>
                 </select>

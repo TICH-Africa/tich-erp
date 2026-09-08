@@ -88,10 +88,10 @@
                     @forelse ($health as $row)
                         <tr>
                             <td>{{ $row->department?->dept_name }}</td>
-                            <td>{{ $row->qa_compliance_avg !== null ? number_format($row->qa_compliance_avg, 1).'%' : '—' }}</td>
-                            <td>{{ $row->me_achievement_avg !== null ? number_format($row->me_achievement_avg, 1).'%' : '—' }}</td>
-                            <td>{{ $row->health_score !== null ? number_format($row->health_score, 1) : '—' }}</td>
-                            <td>{{ $row->health_rating ? ucfirst($row->health_rating) : '—' }}</td>
+                            <td>{{ $row->qa_compliance_avg !== null ? number_format($row->qa_compliance_avg, 1).'%' : '-' }}</td>
+                            <td>{{ $row->me_achievement_avg !== null ? number_format($row->me_achievement_avg, 1).'%' : '-' }}</td>
+                            <td>{{ $row->health_score !== null ? number_format($row->health_score, 1) : '-' }}</td>
+                            <td>{{ $row->health_rating ? ucfirst($row->health_rating) : '-' }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="5" class="tich-text">Health scores appear after QA audits and verified M&amp;E reports.</td></tr>

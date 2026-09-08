@@ -16,5 +16,6 @@
 
 @section('scripts')
     @parent
+    @include('partials.navigation.sidebar-realtime-config')
     <x-asset.script path="js/tich-sidebar.js" />
 @endsection

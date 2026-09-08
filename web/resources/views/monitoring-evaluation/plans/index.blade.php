@@ -32,7 +32,7 @@
                         <td>{{ $plan->department?->dept_name }}</td>
                         <td>{{ $plan->title }}</td>
                         <td>{{ $plan->outputs->count() }}</td>
-                        <td>{{ $plan->budgetRequest?->status ?? '—' }}</td>
+                        <td>{{ $plan->budgetRequest?->status ?? '-' }}</td>
                         <td>{{ str_replace('_', ' ', $plan->status) }}</td>
                         <td><a href="{{ route('monitoring_evaluation.plans.show', $plan) }}" class="tich-link">Open</a></td>
                     </tr>

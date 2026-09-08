@@ -24,7 +24,7 @@ class StudentPortalService
 
   /**
    * Link an admitted applicant's student record to an existing login (same email) after fee payment.
-   * Applicants are students — staff/lecturer roles from ERP invites are removed.
+   * Applicants are students - staff/lecturer roles from ERP invites are removed.
    */
   public function ensureStudentAccountForApplicant(Applicant $applicant, Student $student): ?User
   {
