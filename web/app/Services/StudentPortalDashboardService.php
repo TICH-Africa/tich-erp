@@ -212,21 +212,52 @@ class StudentPortalDashboardService
     {
         $curriculum = $academics['curriculum'] ?? null;
         $period = $academics['current_period'] ?? null;
-        $teachingPeriod = $period?->semester ?? 1;
+        $currentSemester = $academics['current_semester'] ?? null;
+        $registrations = collect($academics['registrations'] ?? []);
+
+        $candidatePeriods = collect([
+            $period?->semester,
+            $currentSemester?->semester_number ?? null,
+            $registrations->first()?->semester_number ?? null,
+        ])->filter(fn ($value) => $value !== null && $value !== '')
+            ->map(fn ($value) => (int) $value)
+            ->unique()
+            ->values();
+
+        if ($candidatePeriods->isEmpty()) {
+            $candidatePeriods = collect([1]);
+        }
 
         $timetables = collect();
+        $teachingPeriod = (int) $candidatePeriods->first();
+        $isProvisional = false;
 
-        if ($curriculum && $student->program_id) {
-            foreach (array_keys(TimetableSchedulingService::timetableKinds()) as $kind) {
-                $published = $this->timetableScheduling->publishedTimetable(
-                    (int) $student->program_id,
-                    $curriculum->id,
-                    (int) $teachingPeriod,
-                    $kind
-                );
+        if ($student->program_id) {
+            $programId = (int) $student->program_id;
+            $curriculumId = $curriculum?->id ? (int) $curriculum->id : null;
+            $campusId = $student->campus_id ? (int) $student->campus_id : null;
 
-                if ($published) {
-                    $timetables->push($published);
+            foreach ($candidatePeriods as $candidatePeriod) {
+                $found = $this->resolvePublishedTimetables($programId, $curriculumId, (int) $candidatePeriod, $campusId);
+                if ($found->isNotEmpty()) {
+                    $timetables = $found;
+                    $teachingPeriod = (int) $candidatePeriod;
+                    break;
+                }
+            }
+
+            if ($timetables->isEmpty()) {
+                $timetables = $this->resolveLatestPublishedTimetables($programId, $curriculumId, $campusId);
+                if ($timetables->isNotEmpty()) {
+                    $teachingPeriod = (int) ($timetables->first()->teaching_period ?: $teachingPeriod);
+                }
+            }
+
+            if ($timetables->isEmpty()) {
+                $drafts = $this->resolveDraftTimetables($programId, $curriculumId, $teachingPeriod, $campusId);
+                if ($drafts->isNotEmpty()) {
+                    $timetables = $drafts;
+                    $isProvisional = true;
                 }
             }
         }
@@ -243,8 +274,104 @@ class StudentPortalDashboardService
             'segment_types' => TimetableTemplateService::segmentTypes(),
             'active_days' => $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5],
             'teaching_period' => $teachingPeriod,
-            'is_provisional' => false,
+            'is_provisional' => $isProvisional,
         ];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
+     */
+    private function resolvePublishedTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
+    {
+        $kinds = array_keys(TimetableSchedulingService::timetableKinds());
+        $found = collect();
+
+        foreach ($kinds as $kind) {
+            $published = $this->timetableScheduling->publishedTimetable(
+                $programId,
+                $curriculumId,
+                $teachingPeriod,
+                $kind
+            );
+
+            if (! $published && $curriculumId) {
+                $published = $this->timetableScheduling->publishedTimetable(
+                    $programId,
+                    null,
+                    $teachingPeriod,
+                    $kind
+                );
+            }
+
+            if ($published) {
+                $found->push($published);
+            }
+        }
+
+        if ($campusId && $found->isNotEmpty()) {
+            $campusMatched = $found->filter(fn ($timetable) => (int) ($timetable->campus_id ?? 0) === $campusId);
+            if ($campusMatched->isNotEmpty()) {
+                return $campusMatched->values();
+            }
+        }
+
+        return $found->values();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
+     */
+    private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId): Collection
+    {
+        $query = \App\Models\ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+            ->where('program_id', $programId)
+            ->where('status', 'published')
+            ->orderByDesc('teaching_period')
+            ->orderByDesc('published_at');
+
+        if ($curriculumId) {
+            $query->where(function ($inner) use ($curriculumId) {
+                $inner->where('curriculum_version_id', $curriculumId)
+                    ->orWhereNull('curriculum_version_id');
+            });
+        }
+
+        if ($campusId) {
+            $query->orderByRaw('CASE WHEN campus_id = ? THEN 0 ELSE 1 END', [$campusId]);
+        }
+
+        return $query->get()
+            ->unique('timetable_kind')
+            ->values();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
+     */
+    private function resolveDraftTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
+    {
+        $query = \App\Models\ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+            ->where('program_id', $programId)
+            ->whereIn('status', ['draft'])
+            ->where('teaching_period', $teachingPeriod)
+            ->orderByDesc('updated_at');
+
+        if ($curriculumId) {
+            $query->where(function ($inner) use ($curriculumId) {
+                $inner->where('curriculum_version_id', $curriculumId)
+                    ->orWhereNull('curriculum_version_id');
+            });
+        }
+
+        if ($campusId) {
+            $query->orderByRaw('CASE WHEN campus_id = ? THEN 0 ELSE 1 END', [$campusId]);
+        }
+
+        return $query->get()
+            ->unique('timetable_kind')
+            ->values();
     }
 
     private function mayViewProvisionalCurriculum(Student $student): bool

@@ -50,15 +50,15 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($segments as $segment)
+            @foreach ($rows as $segment)
                 @if ($segment->segment_type === 'break')
                     <tr class="tich-timetable-grid__break">
-                        <td>{{ $segment->timeLabel() }}</td>
+                        <td>{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : ($segment->label ?? '') }}</td>
                         <td colspan="{{ count($activeDayList) }}">{{ $segment->label }}</td>
                     </tr>
                 @else
                     <tr>
-                        <td class="tich-timetable-grid__time">{{ $segment->label }}<br><span class="tich-caption">{{ $segment->timeLabel() }}</span></td>
+                        <td class="tich-timetable-grid__time">{{ $segment->label }}<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span></td>
                         @foreach ($dayLabels as $dayNum => $dayLabel)
                             @if (! in_array($dayNum, $activeDayList, true))
                                 @continue

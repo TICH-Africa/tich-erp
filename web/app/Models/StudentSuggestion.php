@@ -24,6 +24,7 @@ class StudentSuggestion extends Model
 
     protected $fillable = [
         'student_id',
+        'is_anonymous',
         'category',
         'subject',
         'body',
@@ -35,6 +36,7 @@ class StudentSuggestion extends Model
     ];
 
     protected $casts = [
+        'is_anonymous' => 'boolean',
         'resolved_at' => 'datetime',
         'metadata' => 'array',
     ];
@@ -68,5 +70,23 @@ class StudentSuggestion extends Model
             'closed' => 'secondary',
             default => 'secondary',
         };
+    }
+
+    public function displayNameForStaff(): string
+    {
+        if ($this->is_anonymous) {
+            return 'Anonymous student';
+        }
+
+        return $this->student?->fullName() ?? 'Student';
+    }
+
+    public function displayRegistrationForStaff(): string
+    {
+        if ($this->is_anonymous) {
+            return 'Hidden';
+        }
+
+        return $this->student?->registration_number ?? '-';
     }
 }

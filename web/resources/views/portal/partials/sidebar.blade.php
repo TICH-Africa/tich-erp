@@ -29,6 +29,9 @@
                         if (! $badgeKey && $groupSection === 'academics' && $childTab) {
                             $badgeKey = $studentBadgeKeys->badgeKeyForAcademicsTab($childTab);
                         }
+                        if (! $badgeKey && $groupSection === 'timetable' && $childTab) {
+                            $badgeKey = $studentBadgeKeys->badgeKeyForTimetableTab($childTab);
+                        }
 
                         return [
                             'href' => route('portal.dashboard', array_filter([

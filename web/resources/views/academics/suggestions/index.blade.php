@@ -30,7 +30,7 @@
         <form method="GET" action="{{ route('departments.academics.suggestions.index', $hub) }}" class="tich-flex-wrap" style="gap: 0.75rem; align-items: end;">
             <div class="tich-form-group" style="margin: 0;">
                 <label for="search" class="tich-label">Search</label>
-                <input type="text" id="search" name="search" value="{{ $search }}" placeholder="Student, subject, or text" class="tich-input" style="min-width: 14rem;">
+                <input type="text" id="search" name="search" value="{{ $search }}" placeholder="Subject, text, or named student" class="tich-input" style="min-width: 14rem;">
             </div>
             <div class="tich-form-group" style="margin: 0;">
                 <label for="category" class="tich-label">Category</label>
@@ -74,8 +74,13 @@
                     @forelse ($suggestions as $item)
                         <tr>
                             <td>
-                                <strong>{{ $item->student?->fullName() ?? '-' }}</strong>
-                                <p class="tich-caption">{{ $item->student?->registration_number ?? '-' }}</p>
+                                <strong>{{ $item->displayNameForStaff() }}</strong>
+                                <p class="tich-caption">
+                                    {{ $item->displayRegistrationForStaff() }}
+                                    @if ($item->is_anonymous)
+                                        · <span class="tich-badge tich-badge--secondary">Anonymous</span>
+                                    @endif
+                                </p>
                             </td>
                             <td class="tich-caption">{{ $item->categoryLabel() }}</td>
                             <td class="tich-caption">{{ $item->subject ?: \Illuminate\Support\Str::limit($item->body, 60) }}</td>

@@ -149,7 +149,7 @@
                 <div class="tich-form-group" id="exam-special-attachments-wrap" style="margin:0;">
                     <label for="exam_attachments" class="tich-label">Supporting document(s)</label>
                     <input id="exam_attachments" name="attachments[]" type="file" class="tich-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
-                    <p class="tich-caption">Required for special exams. PDF, Word, or image. Max 10&nbsp;MB each.</p>
+                    <p class="tich-caption" id="exam-attachments-hint">Required for special exams. Optional for supplementary. PDF, Word, or image. Max 10&nbsp;MB each.</p>
                 </div>
             </div>
 
@@ -170,6 +170,7 @@
         const attachWrap = document.getElementById('exam-special-attachments-wrap');
         const reasonInput = document.getElementById('exam_reason');
         const attachInput = document.getElementById('exam_attachments');
+        const attachHint = document.getElementById('exam-attachments-hint');
         const select = document.getElementById('exam_unit_semester');
         const unitInput = document.getElementById('exam-req-unit-id');
         const semesterInput = document.getElementById('exam-req-semester-id');
@@ -177,9 +178,14 @@
         const syncType = () => {
             const isSpecial = typeSelect && typeSelect.value === 'special_exam';
             if (reasonWrap) reasonWrap.style.display = isSpecial ? '' : 'none';
-            if (attachWrap) attachWrap.style.display = isSpecial ? '' : 'none';
+            if (attachWrap) attachWrap.style.display = '';
             if (reasonInput) reasonInput.required = !!isSpecial;
             if (attachInput) attachInput.required = !!isSpecial;
+            if (attachHint) {
+                attachHint.textContent = isSpecial
+                    ? 'Required for special exams. PDF, Word, or image. Max 10 MB each.'
+                    : 'Optional. PDF, Word, or image. Max 10 MB each.';
+            }
         };
 
         if (typeSelect) {

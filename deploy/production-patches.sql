@@ -937,5 +937,31 @@ CREATE TABLE IF NOT EXISTS `me_department_health_scores` (
 
 SET time_zone = '+03:00';
 
+-- -----------------------------------------------------------------------------
+-- 20. Anonymous student suggestions + supplementary supporting docs
+--     (2026_09_08_150000_add_anonymous_suggestions_and_supplementary_docs)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='student_suggestions' AND COLUMN_NAME='is_anonymous'),
+    'SELECT 1',
+    'ALTER TABLE `student_suggestions` ADD COLUMN `is_anonymous` tinyint(1) NOT NULL DEFAULT 0 AFTER `student_id`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='supplementary_requests' AND COLUMN_NAME='supporting_docs'),
+    'SELECT 1',
+    'ALTER TABLE `supplementary_requests` ADD COLUMN `supporting_docs` json DEFAULT NULL AFTER `student_notes`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET time_zone = '+03:00';
+
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

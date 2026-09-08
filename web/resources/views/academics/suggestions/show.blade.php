@@ -17,6 +17,9 @@
             <h1 class="tich-leave-hero__title">{{ $suggestion->subject ?: ('Submission #'.$suggestion->id) }}</h1>
             <div class="tich-leave-hero__meta">
                 <span class="tich-badge tich-badge--{{ $suggestion->statusBadge() }}">{{ $suggestion->statusLabel() }}</span>
+                @if ($suggestion->is_anonymous)
+                    <span class="tich-badge tich-badge--secondary">Anonymous</span>
+                @endif
                 <span class="tich-caption">Submitted {{ $suggestion->created_at?->format('d M Y H:i') }}</span>
             </div>
         </div>
@@ -25,25 +28,29 @@
     <div class="tich-grid tich-grid--2 tich-mb-8" style="align-items:start; gap:1.5rem;">
         <article class="tich-card">
             <h2 class="tich-h3">Student</h2>
-            <div class="tich-kv-grid tich-mt-4">
-                <div>
-                    <span class="tich-kv-grid__label">Name</span>
-                    <span class="tich-kv-grid__value">{{ $suggestion->student?->fullName() ?? '-' }}</span>
+            @if ($suggestion->is_anonymous)
+                <p class="tich-text tich-mt-4">This submission was sent anonymously. Name, registration number, and programme details are not shared with Academics.</p>
+            @else
+                <div class="tich-kv-grid tich-mt-4">
+                    <div>
+                        <span class="tich-kv-grid__label">Name</span>
+                        <span class="tich-kv-grid__value">{{ $suggestion->displayNameForStaff() }}</span>
+                    </div>
+                    <div>
+                        <span class="tich-kv-grid__label">Registration</span>
+                        <span class="tich-kv-grid__value">{{ $suggestion->displayRegistrationForStaff() }}</span>
+                    </div>
+                    <div>
+                        <span class="tich-kv-grid__label">Programme</span>
+                        <span class="tich-kv-grid__value">
+                            {{ $suggestion->student?->program?->program_code ?? '-' }}
+                            @if ($suggestion->student?->program?->program_name)
+                                · {{ $suggestion->student->program->program_name }}
+                            @endif
+                        </span>
+                    </div>
                 </div>
-                <div>
-                    <span class="tich-kv-grid__label">Registration</span>
-                    <span class="tich-kv-grid__value">{{ $suggestion->student?->registration_number ?? '-' }}</span>
-                </div>
-                <div>
-                    <span class="tich-kv-grid__label">Programme</span>
-                    <span class="tich-kv-grid__value">
-                        {{ $suggestion->student?->program?->program_code ?? '-' }}
-                        @if ($suggestion->student?->program?->program_name)
-                            · {{ $suggestion->student->program->program_name }}
-                        @endif
-                    </span>
-                </div>
-            </div>
+            @endif
         </article>
 
         <article class="tich-card">

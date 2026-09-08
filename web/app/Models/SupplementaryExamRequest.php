@@ -40,6 +40,7 @@ class SupplementaryExamRequest extends Model
         'fee_paid_at',
         'application_status',
         'student_notes',
+        'supporting_docs',
         'reviewed_by',
         'reviewed_at',
         'reviewed_notes',
@@ -54,6 +55,7 @@ class SupplementaryExamRequest extends Model
         'fee_paid_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'new_score' => 'decimal:2',
+        'supporting_docs' => 'array',
         'created_at' => 'datetime',
     ];
 

@@ -69,4 +69,13 @@
             </article>
         @endif
     </div>
+
+    @include('academics.partials.supporting-docs-viewer', [
+        'documents' => $supplementaryRequest->supporting_docs ?? [],
+        'viewRoute' => 'departments.academics.supplementary-requests.attachments.view',
+        'downloadRoute' => 'departments.academics.supplementary-requests.attachments.download',
+        'routeParams' => array_merge($hub, ['supplementaryExamRequest' => $supplementaryRequest->id]),
+        'title' => 'Supporting documents',
+        'subtitle' => 'Review uploaded evidence for this supplementary exam request.',
+    ])
 @endsection

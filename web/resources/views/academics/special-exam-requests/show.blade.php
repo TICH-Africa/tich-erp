@@ -34,14 +34,6 @@
         @if (in_array($specialExamRequest->status, ['pending', 'on_hold'], true))
             <article class="tich-card">
                 <h2 class="tich-h3">Review</h2>
-                @if (! empty($specialExamRequest->supporting_docs))
-                    <div class="tich-mt-4">
-                        <p class="tich-caption">Attachments</p>
-                        @foreach ($specialExamRequest->supporting_docs as $i => $file)
-                            <p class="tich-text">{{ is_array($file) ? ($file['original_name'] ?? 'File '.($i + 1)) : $file }}</p>
-                        @endforeach
-                    </div>
-                @endif
                 <form method="POST" action="{{ route('departments.academics.special-exam-requests.approve', array_merge($hub, ['specialExamRequest' => $specialExamRequest->id])) }}" class="tich-form-stack tich-mt-4">
                     @csrf
                     <div>
@@ -75,4 +67,13 @@
             </article>
         @endif
     </div>
+
+    @include('academics.partials.supporting-docs-viewer', [
+        'documents' => $specialExamRequest->supporting_docs ?? [],
+        'viewRoute' => 'departments.academics.special-exam-requests.attachments.view',
+        'downloadRoute' => 'departments.academics.special-exam-requests.attachments.download',
+        'routeParams' => array_merge($hub, ['specialExamRequest' => $specialExamRequest->id]),
+        'title' => 'Supporting documents',
+        'subtitle' => 'Review uploaded evidence for this special exam request.',
+    ])
 @endsection

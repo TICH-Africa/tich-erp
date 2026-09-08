@@ -89,6 +89,25 @@ class PortalExamSittingRequestController extends Controller
 
         abort_unless(Schema::hasTable('supplementary_requests'), 404);
 
+        $storedPaths = [];
+        foreach ($request->file('attachments', []) as $file) {
+            if (! $file) {
+                continue;
+            }
+            $original = $file->getClientOriginalName();
+            $path = $file->storeAs(
+                'student-requests/supplementary/'.$student->id,
+                Str::uuid()->toString().'_'.Str::slug(pathinfo($original, PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension(),
+                'local'
+            );
+            $storedPaths[] = [
+                'path' => $path,
+                'original_name' => $original,
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ];
+        }
+
         SupplementaryExamRequest::query()->create([
             'student_id' => $student->id,
             'exam_result_id' => null,
@@ -99,6 +118,7 @@ class PortalExamSittingRequestController extends Controller
             'fee_paid' => 0,
             'application_status' => 'pending_review',
             'student_notes' => null,
+            'supporting_docs' => $storedPaths !== [] ? $storedPaths : null,
             'created_at' => now(),
         ]);
 

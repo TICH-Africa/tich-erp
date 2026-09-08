@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Academics;
 use App\Models\Department;
 use App\Models\SpecialExamRequest;
 use App\Services\StaffPortalService;
+use App\Support\SupportingDocumentResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SpecialExamRequestController extends DepartmentAcademicsController
 {
@@ -59,6 +61,20 @@ class SpecialExamRequestController extends DepartmentAcademicsController
             'department' => $hub,
             'specialExamRequest' => $specialExamRequest,
         ]);
+    }
+
+    public function viewAttachment(Request $request, Department $department, SpecialExamRequest $specialExamRequest, int $index): StreamedResponse
+    {
+        $this->authorizeReviewer($request, $department);
+
+        return SupportingDocumentResponse::view($specialExamRequest->supporting_docs ?? [], $index);
+    }
+
+    public function downloadAttachment(Request $request, Department $department, SpecialExamRequest $specialExamRequest, int $index): StreamedResponse
+    {
+        $this->authorizeReviewer($request, $department);
+
+        return SupportingDocumentResponse::download($specialExamRequest->supporting_docs ?? [], $index);
     }
 
     public function approve(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse

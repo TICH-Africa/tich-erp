@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-08 12:19:36 EAT
+-- Generated: 2026-09-08 14:48:42 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -10006,6 +10006,7 @@ CALL `tich_ensure_index`('student_semester_registrations', 'student_semester_reg
 CREATE TABLE IF NOT EXISTS `student_suggestions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `student_id` bigint(20) unsigned NOT NULL,
+  `is_anonymous` tinyint(1) NOT NULL DEFAULT 0,
   `category` varchar(40) NOT NULL,
   `subject` varchar(255) DEFAULT NULL,
   `body` text NOT NULL,
@@ -10027,6 +10028,7 @@ CREATE TABLE IF NOT EXISTS `student_suggestions` (
 -- Columns for `student_suggestions` (add only if missing)
 CALL `tich_ensure_column`('student_suggestions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('student_suggestions', 'student_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('student_suggestions', 'is_anonymous', 'tinyint(1) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('student_suggestions', 'category', 'varchar(40) NOT NULL');
 CALL `tich_ensure_column`('student_suggestions', 'subject', 'varchar(255) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('student_suggestions', 'body', 'text NOT NULL');
@@ -10107,6 +10109,7 @@ CREATE TABLE IF NOT EXISTS `supplementary_requests` (
   `fee_paid_at` datetime DEFAULT NULL,
   `application_status` varchar(50) NOT NULL DEFAULT 'pending_fee',
   `student_notes` text DEFAULT NULL,
+  `supporting_docs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`supporting_docs`)),
   `reviewed_by` bigint(20) unsigned DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
   `reviewed_notes` text DEFAULT NULL,
@@ -10141,6 +10144,7 @@ CALL `tich_ensure_column`('supplementary_requests', 'fee_payment_ref', 'varchar(
 CALL `tich_ensure_column`('supplementary_requests', 'fee_paid_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'application_status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending_fee\\\'\'');
 CALL `tich_ensure_column`('supplementary_requests', 'student_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('supplementary_requests', 'supporting_docs', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'reviewed_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('supplementary_requests', 'reviewed_notes', 'text NULL DEFAULT NULL');

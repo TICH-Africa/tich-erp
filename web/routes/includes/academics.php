@@ -76,8 +76,12 @@ return function (bool $named = true): void {
         $register('get', '/document-requests/{documentRequest}', [DocumentRequestController::class, 'show'], 'departments.academics.document-requests.show');
         $register('get', '/special-exam-requests', [SpecialExamRequestController::class, 'index'], 'departments.academics.special-exam-requests.index');
         $register('get', '/special-exam-requests/{specialExamRequest}', [SpecialExamRequestController::class, 'show'], 'departments.academics.special-exam-requests.show');
+        $register('get', '/special-exam-requests/{specialExamRequest}/attachments/{index}', [SpecialExamRequestController::class, 'viewAttachment'], 'departments.academics.special-exam-requests.attachments.view');
+        $register('get', '/special-exam-requests/{specialExamRequest}/attachments/{index}/download', [SpecialExamRequestController::class, 'downloadAttachment'], 'departments.academics.special-exam-requests.attachments.download');
         $register('get', '/supplementary-requests', [SupplementaryRequestController::class, 'index'], 'departments.academics.supplementary-requests.index');
         $register('get', '/supplementary-requests/{supplementaryExamRequest}', [SupplementaryRequestController::class, 'show'], 'departments.academics.supplementary-requests.show');
+        $register('get', '/supplementary-requests/{supplementaryExamRequest}/attachments/{index}', [SupplementaryRequestController::class, 'viewAttachment'], 'departments.academics.supplementary-requests.attachments.view');
+        $register('get', '/supplementary-requests/{supplementaryExamRequest}/attachments/{index}/download', [SupplementaryRequestController::class, 'downloadAttachment'], 'departments.academics.supplementary-requests.attachments.download');
         $register('get', '/examination-papers/{examinationPaper}/download/{kind}', [ExaminationPaperController::class, 'download'], 'departments.academics.examination-papers.download');
         $register('get', '/lesson-plans', [LessonPlanController::class, 'index'], 'departments.academics.lesson-plans.index');
         $register('get', '/lesson-plans/audit', [LessonPlanController::class, 'audit'], 'departments.academics.lesson-plans.audit');

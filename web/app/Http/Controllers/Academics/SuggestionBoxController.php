@@ -25,11 +25,14 @@ class SuggestionBoxController extends DepartmentAcademicsController
                     $q->where(function ($inner) use ($search) {
                         $inner->where('subject', 'like', "%{$search}%")
                             ->orWhere('body', 'like', "%{$search}%")
-                            ->orWhereHas('student', function ($sq) use ($search) {
-                                $sq->where('registration_number', 'like', "%{$search}%")
-                                    ->orWhereHas('applicant', function ($aq) use ($search) {
-                                        $aq->where('first_name', 'like', "%{$search}%")
-                                            ->orWhere('surname', 'like', "%{$search}%");
+                            ->orWhere(function ($named) use ($search) {
+                                $named->where('is_anonymous', false)
+                                    ->whereHas('student', function ($sq) use ($search) {
+                                        $sq->where('registration_number', 'like', "%{$search}%")
+                                            ->orWhereHas('applicant', function ($aq) use ($search) {
+                                                $aq->where('first_name', 'like', "%{$search}%")
+                                                    ->orWhere('surname', 'like', "%{$search}%");
+                                            });
                                     });
                             });
                     });

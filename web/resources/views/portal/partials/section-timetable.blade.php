@@ -36,13 +36,13 @@
                     fn ($segment) => in_array($segment->segment_type, ['lesson', 'break'], true)
                 ) ?? collect(),
             };
-            if ($gridSegments->isEmpty() && in_array($timetable->timetable_kind, ['exam', 'supplementary', 'special_exam'], true)) {
+            if ($gridSegments->isEmpty() && ($timetable->sessions ?? collect())->isNotEmpty()) {
                 $gridSegments = collect($timetable->sessions ?? [])->map(fn ($session) => (object) [
                     'id' => $session->segment_id,
                     'label' => $session->timeLabel(),
                     'start_time' => $session->start_time,
                     'end_time' => $session->end_time,
-                    'segment_type' => $session->session_type,
+                    'segment_type' => $session->session_type === 'break' ? 'break' : ($session->session_type ?: 'lesson'),
                 ])->unique(fn ($row) => substr((string) $row->start_time, 0, 5).'-'.substr((string) $row->end_time, 0, 5))->sortBy('start_time')->values();
             }
         @endphp

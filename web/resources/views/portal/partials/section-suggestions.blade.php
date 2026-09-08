@@ -32,6 +32,15 @@
                     <p class="tich-form-error">{{ $message }}</p>
                 @enderror
             </div>
+            <div class="tich-form-group" style="margin:0;">
+                <label class="tich-label" style="display:flex; align-items:flex-start; gap:0.75rem; font-weight:500;">
+                    <input type="checkbox" name="is_anonymous" value="1" @checked(old('is_anonymous')) style="margin-top:0.2rem;">
+                    <span>
+                        Submit anonymously
+                        <span class="tich-caption" style="display:block; font-weight:400;">Academics will not see your name, registration number, or personal details. You can still track the response here.</span>
+                    </span>
+                </label>
+            </div>
             <div>
                 <button type="submit" class="tich-btn tich-btn-primary">Send to Academics</button>
             </div>
@@ -51,7 +60,12 @@
                 <div class="tich-flex-wrap" style="gap: 0.5rem; align-items: center; justify-content: space-between;">
                     <div>
                         <strong>{{ $item->subject ?: $item->categoryLabel() }}</strong>
-                        <p class="tich-caption">{{ $item->categoryLabel() }} · {{ $item->created_at?->format('d M Y') }}</p>
+                        <p class="tich-caption">
+                            {{ $item->categoryLabel() }} · {{ $item->created_at?->format('d M Y') }}
+                            @if ($item->is_anonymous)
+                                · <span class="tich-badge tich-badge--secondary">Anonymous</span>
+                            @endif
+                        </p>
                     </div>
                     <span class="tich-badge tich-badge--{{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                 </div>
