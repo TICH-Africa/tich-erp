@@ -242,11 +242,11 @@ class QaAssessmentService
                 }
 
                 $score = isset($payload['score']) && $payload['score'] !== '' && $payload['score'] !== null
-                    ? (float) $payload['score']
+                    ? (int) $payload['score']
                     : null;
 
                 if ($score !== null) {
-                    $score = max(0, min((float) $item->max_score, $score));
+                    $score = max(0, min((int) $item->max_score, $score));
                 }
 
                 $status = $finalSubmit ? 'submitted' : 'draft';
@@ -353,7 +353,7 @@ class QaAssessmentService
 
         foreach ($items as $item) {
             $weight = (float) $item->weight;
-            $max = max(0.01, (float) $item->max_score);
+            $max = max(1, (int) $item->max_score);
             $totalWeight += $weight;
 
             $submission = $submissions->get($item->id);
@@ -362,7 +362,7 @@ class QaAssessmentService
             }
 
             $submittedCount++;
-            $earned += ($weight * ((float) $submission->score / $max));
+            $earned += ($weight * ((int) $submission->score / $max));
         }
 
         $weighted = $totalWeight > 0 ? round(($earned / $totalWeight) * 100, 2) : 0.0;
@@ -622,7 +622,7 @@ class QaAssessmentService
                 'checklist_item_text' => $text,
                 'item_category' => $item['category'] ?? null,
                 'weight' => $item['weight'] ?? 1,
-                'max_score' => $item['max_score'] ?? 100,
+                'max_score' => (int) ($item['max_score'] ?? 100),
                 'requires_evidence' => ! empty($item['requires_evidence']) ? 1 : 0,
                 'display_order' => $index + 1,
                 'is_active' => 1,

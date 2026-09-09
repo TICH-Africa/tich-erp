@@ -21,7 +21,7 @@ class QaDepartmentSubmission extends Model
     ];
 
     protected $casts = [
-        'score' => 'decimal:2',
+        'score' => 'integer',
         'verified_at' => 'datetime',
         'submitted_at' => 'datetime',
     ];

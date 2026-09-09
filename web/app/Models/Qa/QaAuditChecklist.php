@@ -21,7 +21,7 @@ class QaAuditChecklist extends Model
 
     protected $casts = [
         'weight' => 'decimal:2',
-        'max_score' => 'decimal:2',
+        'max_score' => 'integer',
         'requires_evidence' => 'boolean',
         'is_active' => 'boolean',
         'created_at' => 'datetime',

@@ -68,7 +68,7 @@
                         <td>{{ $item->checklist_item_text }}</td>
                         <td>{{ $item->item_category ?: '-' }}</td>
                         <td>{{ $item->weight }}</td>
-                        <td>{{ $item->max_score }}</td>
+                        <td>{{ (int) $item->max_score }}</td>
                         <td>{{ $item->requires_evidence ? 'Required' : 'Optional' }}</td>
                     </tr>
                 @endforeach

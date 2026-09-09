@@ -32,7 +32,7 @@
                 <h2 class="tich-h3">{{ $item->checklist_item_text }}</h2>
                 <p class="tich-caption tich-mt-1">
                     @if ($item->item_category){{ $item->item_category }} · @endif
-                    Max {{ $item->max_score }} · Weight {{ $item->weight }}
+                    Max {{ (int) $item->max_score }} · Weight {{ $item->weight }}
                     @if ($item->requires_evidence) · Evidence required @endif
                     @if ($submission)
                         · Status: {{ $submission->submission_status }}
@@ -41,7 +41,7 @@
 
                 @if ($submission && ! $submission->isEditable())
                     <p class="tich-text tich-mt-4">{{ $submission->submission_text }}</p>
-                    <p class="tich-caption">Score: {{ $submission->score }}</p>
+                    <p class="tich-caption">Score: {{ $submission->score !== null ? (int) $submission->score : '-' }}</p>
                 @else
                     <div class="tich-form-grid tich-form-grid--2 tich-mt-4">
                         <div class="tich-form-group" style="grid-column:1/-1;">
@@ -53,19 +53,19 @@
                             >{{ old("answers.{$item->id}.submission_text", $submission->submission_text ?? '') }}</textarea>
                         </div>
                         <div class="tich-form-group">
-                            <label class="tich-label">Score (0–{{ $item->max_score }})</label>
+                            <label class="tich-label">Score (0–{{ (int) $item->max_score }})</label>
                             <input
                                 type="number"
-                                step="0.01"
+                                step="1"
                                 min="0"
-                                max="{{ $item->max_score }}"
+                                max="{{ (int) $item->max_score }}"
                                 name="answers[{{ $item->id }}][score]"
                                 class="tich-input"
                                 value="{{ old("answers.{$item->id}.score", $submission->score ?? '') }}"
                             >
                         </div>
                         <div class="tich-form-group">
-                            <label class="tich-label">Evidence files</label>
+                            <label class="tich-label">Attach Files</label>
                             <input type="file" name="evidence[{{ $item->id }}][]" class="tich-input" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx">
                             @if ($submission?->evidence?->isNotEmpty())
                                 <ul class="tich-mt-2" style="margin:0;padding-left:1.1rem;">

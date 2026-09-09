@@ -59,7 +59,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'answers' => ['required', 'array'],
             'answers.*.submission_text' => ['nullable', 'string', 'max:5000'],
-            'answers.*.score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'answers.*.score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'evidence' => ['nullable', 'array'],
             'evidence.*' => ['nullable', 'array'],
             'evidence.*.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx'],

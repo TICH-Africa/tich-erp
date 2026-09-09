@@ -113,7 +113,7 @@
                             </div>
                             <div class="tich-form-group qa-criterion__score">
                                 <label class="tich-label">Max score</label>
-                                <input type="number" step="0.01" min="1" name="items[{{ $index }}][max_score]" class="tich-input" value="{{ $item['max_score'] ?? 100 }}">
+                                <input type="number" step="1" min="1" name="items[{{ $index }}][max_score]" class="tich-input" value="{{ (int) ($item['max_score'] ?? 100) }}">
                             </div>
                             <div class="tich-form-group qa-criterion__evidence">
                                 <label class="qa-check">

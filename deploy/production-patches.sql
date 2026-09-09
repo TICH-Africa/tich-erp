@@ -961,6 +961,16 @@ SET @sql := (
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- -----------------------------------------------------------------------------
+-- 21. QA criterion max_score + submission score as integers
+--     (2026_09_09_140000_qa_scores_to_integers)
+-- -----------------------------------------------------------------------------
+UPDATE `qa_audit_checklists` SET `max_score` = ROUND(`max_score`) WHERE `max_score` IS NOT NULL;
+ALTER TABLE `qa_audit_checklists` MODIFY `max_score` INT UNSIGNED NOT NULL DEFAULT 100;
+
+UPDATE `qa_department_submissions` SET `score` = ROUND(`score`) WHERE `score` IS NOT NULL;
+ALTER TABLE `qa_department_submissions` MODIFY `score` INT UNSIGNED NULL DEFAULT NULL;
+
 SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables

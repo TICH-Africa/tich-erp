@@ -29,7 +29,7 @@ return new class extends Migration
             $table->text('checklist_item_text');
             $table->string('item_category', 100)->nullable();
             $table->decimal('weight', 5, 2)->default(1.00);
-            $table->decimal('max_score', 5, 2)->default(100.00);
+            $table->unsignedInteger('max_score')->default(100);
             $table->unsignedBigInteger('applies_to_department_id')->nullable();
             $table->tinyInteger('requires_evidence')->default(1);
             $table->integer('display_order')->default(0);
@@ -46,7 +46,7 @@ return new class extends Migration
             $table->unsignedBigInteger('department_id');
             $table->unsignedBigInteger('submitted_by');
             $table->text('submission_text')->nullable();
-            $table->decimal('score', 5, 2)->nullable();
+            $table->unsignedInteger('score')->nullable();
             $table->string('submission_status', 50)->default('pending'); // pending, submitted, verified, approved, rejected
             $table->unsignedBigInteger('verified_by')->nullable();
             $table->dateTime('verified_at')->nullable();

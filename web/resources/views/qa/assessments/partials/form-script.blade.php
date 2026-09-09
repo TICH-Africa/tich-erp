@@ -22,7 +22,7 @@
                 '<div class="qa-criterion__meta">' +
                 '<div class="tich-form-group qa-criterion__category"><label class="tich-label">Category</label><input name="items[' + index + '][category]" class="tich-input" placeholder="e.g. Teaching, Records"></div>' +
                 '<div class="tich-form-group qa-criterion__weight"><label class="tich-label">Weight</label><input type="number" step="0.01" min="0.01" name="items[' + index + '][weight]" class="tich-input" value="1"></div>' +
-                '<div class="tich-form-group qa-criterion__score"><label class="tich-label">Max score</label><input type="number" step="0.01" min="1" name="items[' + index + '][max_score]" class="tich-input" value="100"></div>' +
+                '<div class="tich-form-group qa-criterion__score"><label class="tich-label">Max score</label><input type="number" step="1" min="1" name="items[' + index + '][max_score]" class="tich-input" value="100"></div>' +
                 '<div class="tich-form-group qa-criterion__evidence"><label class="qa-check"><input type="checkbox" name="items[' + index + '][requires_evidence]" value="1" checked><span>Require evidence upload</span></label></div>' +
                 '</div></div>';
             container.appendChild(wrap);

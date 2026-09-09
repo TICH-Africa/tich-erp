@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-08 14:48:42 EAT
+-- Generated: 2026-09-10 02:19:34 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -7126,7 +7126,7 @@ CREATE TABLE IF NOT EXISTS `qa_audit_checklists` (
   `checklist_item_text` text NOT NULL,
   `item_category` varchar(100) DEFAULT NULL,
   `weight` decimal(5,2) NOT NULL DEFAULT 1.00,
-  `max_score` decimal(5,2) NOT NULL DEFAULT 100.00,
+  `max_score` int(10) unsigned NOT NULL DEFAULT 100,
   `applies_to_department_id` bigint(20) unsigned DEFAULT NULL,
   `requires_evidence` tinyint(4) NOT NULL DEFAULT 1,
   `display_order` int(11) NOT NULL DEFAULT 0,
@@ -7145,7 +7145,7 @@ CALL `tich_ensure_column`('qa_audit_checklists', 'qa_plan_id', 'bigint(20) unsig
 CALL `tich_ensure_column`('qa_audit_checklists', 'checklist_item_text', 'text NOT NULL');
 CALL `tich_ensure_column`('qa_audit_checklists', 'item_category', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('qa_audit_checklists', 'weight', 'decimal(5,2) NOT NULL DEFAULT \'1.00\'');
-CALL `tich_ensure_column`('qa_audit_checklists', 'max_score', 'decimal(5,2) NOT NULL DEFAULT \'100.00\'');
+CALL `tich_ensure_column`('qa_audit_checklists', 'max_score', 'int(10) unsigned NOT NULL DEFAULT \'100\'');
 CALL `tich_ensure_column`('qa_audit_checklists', 'applies_to_department_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('qa_audit_checklists', 'requires_evidence', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('qa_audit_checklists', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
@@ -7297,7 +7297,7 @@ CREATE TABLE IF NOT EXISTS `qa_department_submissions` (
   `department_id` bigint(20) unsigned NOT NULL,
   `submitted_by` bigint(20) unsigned NOT NULL,
   `submission_text` text DEFAULT NULL,
-  `score` decimal(5,2) DEFAULT NULL,
+  `score` int(10) unsigned DEFAULT NULL,
   `submission_status` varchar(50) NOT NULL DEFAULT 'pending',
   `verified_by` bigint(20) unsigned DEFAULT NULL,
   `verified_at` datetime DEFAULT NULL,
@@ -7323,7 +7323,7 @@ CALL `tich_ensure_column`('qa_department_submissions', 'checklist_item_id', 'big
 CALL `tich_ensure_column`('qa_department_submissions', 'department_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('qa_department_submissions', 'submitted_by', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('qa_department_submissions', 'submission_text', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_department_submissions', 'score', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('qa_department_submissions', 'score', 'int(10) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('qa_department_submissions', 'submission_status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending\\\'\'');
 CALL `tich_ensure_column`('qa_department_submissions', 'verified_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('qa_department_submissions', 'verified_at', 'datetime NULL DEFAULT NULL');

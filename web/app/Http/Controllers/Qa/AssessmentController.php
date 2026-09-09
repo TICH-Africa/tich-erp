@@ -116,7 +116,7 @@ class AssessmentController extends Controller
             'items.*.text' => ['required', 'string', 'max:2000'],
             'items.*.category' => ['nullable', 'string', 'max:100'],
             'items.*.weight' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
-            'items.*.max_score' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'items.*.max_score' => ['nullable', 'integer', 'min:1', 'max:100'],
             'items.*.requires_evidence' => ['nullable', 'boolean'],
         ]);
 
@@ -126,7 +126,7 @@ class AssessmentController extends Controller
                 'text' => $item['text'],
                 'category' => $item['category'] ?? null,
                 'weight' => $item['weight'] ?? 1,
-                'max_score' => $item['max_score'] ?? 100,
+                'max_score' => (int) ($item['max_score'] ?? 100),
                 'requires_evidence' => ! empty($item['requires_evidence']),
             ];
         }
