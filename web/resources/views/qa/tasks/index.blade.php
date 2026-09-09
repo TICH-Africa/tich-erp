@@ -1,8 +1,13 @@
-@extends('layouts.qa')
+@php
+    $moduleContext = $moduleContext ?? \App\Support\QaTaskModuleContext::forModule('qa');
+    $taskRoutes = $taskRoutes ?? $moduleContext['routes'];
+@endphp
+
+@extends($moduleContext['layout'])
 
 @section('title', 'My department QA tasks')
 
-@section('qa-content')
+@section($moduleContext['content_section'])
     <x-page-toolbar title="My department QA tasks" meta="Outstanding assessment sheets assigned to your department(s)" />
 
     <div class="tich-card tich-table-panel tich-mt-8">
@@ -10,33 +15,24 @@
             <thead>
                 <tr>
                     <th>Assessment</th>
-                    <th>Your department(s)</th>
+                    <th>Department</th>
                     <th>Due</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($plans as $plan)
-                    @php
-                        $mine = $departments->whereIn('id', $plan->targetDepartmentIds());
-                    @endphp
+                @forelse ($tasks as $task)
                     <tr>
                         <td>
-                            <strong>{{ $plan->plan_name }}</strong>
-                            <p class="tich-caption">{{ str_replace('_', ' ', $plan->status) }}</p>
+                            <strong>{{ $task->plan->plan_name }}</strong>
+                            <p class="tich-caption">{{ str_replace('_', ' ', $task->plan->status) }}</p>
                         </td>
                         <td>
-                            @foreach ($mine as $department)
-                                <div class="tich-mt-1">
-                                    <a href="{{ route('qa.tasks.show', [$plan, $department]) }}" class="tich-link">{{ $department->dept_name }}</a>
-                                </div>
-                            @endforeach
+                            <a href="{{ \App\Support\QaTaskModuleContext::url('show', $moduleContext['key'], ['plan' => $task->plan, 'department' => $task->department]) }}" class="tich-link">{{ $task->department->dept_name }}</a>
                         </td>
-                        <td>{{ $plan->due_at?->format('d M Y H:i') ?? '-' }}</td>
+                        <td>{{ $task->plan->due_at?->format('d M Y H:i') ?? '-' }}</td>
                         <td>
-                            @if ($mine->isNotEmpty())
-                                <a href="{{ route('qa.tasks.show', [$plan, $mine->first()]) }}" class="tich-btn tich-btn-primary">Fill</a>
-                            @endif
+                            <a href="{{ \App\Support\QaTaskModuleContext::url('show', $moduleContext['key'], ['plan' => $task->plan, 'department' => $task->department]) }}" class="tich-btn tich-btn-primary">Fill</a>
                         </td>
                     </tr>
                 @empty

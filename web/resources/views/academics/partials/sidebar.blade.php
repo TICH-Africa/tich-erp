@@ -64,6 +64,14 @@
                     ])
 
                     @include('partials.navigation.sidebar-link', [
+                        'href' => route('departments.academics.qa.tasks.index'),
+                        'label' => 'QA assessment tasks',
+                        'icon' => 'layers',
+                        'active' => request()->routeIs('departments.academics.qa.tasks.*'),
+                        'badgeKey' => 'qa.tasks',
+                    ])
+
+                    @include('partials.navigation.sidebar-link', [
                         'href' => route('departments.academics.applications.index', $hub),
                         'label' => 'Application review',
                         'icon' => 'clipboard-list',

@@ -5,6 +5,8 @@
 @section('monitoring-evaluation-content')
     <x-page-toolbar title="Monitoring & evaluation" meta="Policy alignment, baseline plans, PIME cycle, and executive reporting" />
 
+    @include('qa.partials.assigned-tasks-panel')
+
     <div class="tich-grid tich-grid--4 tich-mt-8">
         <article class="tich-card"><p class="tich-caption">Plans in M&amp;E review</p><p class="tich-h2 tich-mt-2">{{ $stats['plans_review'] }}</p></article>
         <article class="tich-card"><p class="tich-caption">Baselines locked</p><p class="tich-h2 tich-mt-2">{{ $stats['baselines'] }}</p></article>

@@ -5,6 +5,8 @@
 @section('hr-content')
     <x-page-toolbar title="HR Dashboard" meta="Staff lifecycle, onboarding, contracts, and recruitment" />
 
+    @include('qa.partials.assigned-tasks-panel')
+
     <div class="tich-stat-row tich-stat-row--7 tich-mb-8">
         <div class="tich-stat">
             <p class="tich-stat__label">Total Staff</p>

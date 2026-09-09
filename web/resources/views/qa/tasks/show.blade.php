@@ -1,11 +1,17 @@
-@extends('layouts.qa')
+@php
+    $moduleContext = $moduleContext ?? \App\Support\QaTaskModuleContext::forModule('qa');
+    $taskRoutes = $taskRoutes ?? $moduleContext['routes'];
+    $respondentDepartment = $respondentDepartment ?? $department;
+@endphp
+
+@extends($moduleContext['layout'])
 
 @section('title', 'Complete QA assessment')
 
-@section('qa-content')
-    <x-page-toolbar title="{{ $plan->plan_name }}" meta="{{ $department->dept_name }}">
+@section($moduleContext['content_section'])
+    <x-page-toolbar title="{{ $plan->plan_name }}" meta="{{ $respondentDepartment->dept_name }}">
         <x-slot:actions>
-            <a href="{{ route('qa.tasks.index') }}" class="tich-btn tich-btn-ghost">Back to tasks</a>
+            <a href="{{ \App\Support\QaTaskModuleContext::url('index', $moduleContext['key']) }}" class="tich-btn tich-btn-ghost">Back to tasks</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -17,7 +23,7 @@
         <div class="tich-alert tich-alert--info tich-mt-4">{{ $plan->instructions }}</div>
     @endif
 
-    <form method="POST" action="{{ route('qa.tasks.store', [$plan, $department]) }}" enctype="multipart/form-data" class="tich-mt-6">
+    <form method="POST" action="{{ \App\Support\QaTaskModuleContext::url('store', $moduleContext['key'], ['plan' => $plan, 'department' => $respondentDepartment]) }}" enctype="multipart/form-data" class="tich-mt-6">
         @csrf
 
         @foreach ($plan->checklists as $item)

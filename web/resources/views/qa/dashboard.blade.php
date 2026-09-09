@@ -5,6 +5,8 @@
 @section('qa-content')
     <x-page-toolbar title="QA Command Center" meta="Quality plans, assessment sheets, capacity building, and compliance oversight" />
 
+    @include('qa.partials.assigned-tasks-panel')
+
     <div class="tich-grid tich-grid--4 tich-mt-8">
         <article class="tich-card"><p class="tich-caption">Draft sheets</p><p class="tich-h2 tich-mt-2">{{ $stats['draft'] }}</p></article>
         <article class="tich-card"><p class="tich-caption">In the field</p><p class="tich-h2 tich-mt-2">{{ $stats['active'] }}</p></article>
@@ -47,11 +49,4 @@
             <a href="{{ route('qa.corrective-actions.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Manage actions</a>
         </article>
     </div>
-
-    @if ($pendingTasks > 0)
-        <div class="tich-alert tich-alert--info tich-mt-8">
-            You have department QA tasks waiting.
-            <a href="{{ route('qa.tasks.index') }}" class="tich-link">Open my department tasks</a>
-        </div>
-    @endif
 @endsection

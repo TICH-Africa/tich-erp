@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Qa\QaDepartmentSubmission;
 use App\Models\Qa\QaPlan;
 use App\Services\Qa\QaAssessmentService;
+use App\Support\QaTaskModuleContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,43 +18,44 @@ class TaskController extends Controller
 
     public function index(Request $request): View
     {
-        $departments = $this->qa->respondableDepartments($request->user());
-        $departmentIds = $departments->pluck('id')->all();
+        $moduleContext = QaTaskModuleContext::resolve($request);
+        $tasks = $this->qa->outstandingTasksForUser($request->user());
 
-        $plans = QaPlan::query()
-            ->whereIn('status', ['dispatched', 'in_progress'])
-            ->orderByDesc('dispatched_at')
-            ->get()
-            ->filter(function (QaPlan $plan) use ($departmentIds) {
-                return count(array_intersect($plan->targetDepartmentIds(), $departmentIds)) > 0;
-            })
-            ->values();
-
-        return view('qa.tasks.index', [
-            'plans' => $plans,
-            'departments' => $departments,
-        ]);
+        return view('qa.tasks.index', $this->viewPayload($moduleContext, [
+            'tasks' => $tasks,
+            'departments' => $this->qa->respondableDepartments($request->user()),
+        ]));
     }
 
-    public function show(Request $request, QaPlan $plan, Department $department): View
+    public function show(Request $request, QaPlan $plan): View
     {
+        $moduleContext = QaTaskModuleContext::resolve($request);
+        $respondent = $this->respondentDepartment($request);
+
         abort_unless($plan->isOpenForSubmission(), 404);
-        abort_unless(in_array((int) $department->id, $plan->targetDepartmentIds(), true), 404);
-        abort_unless($this->qa->userCanRespondForDepartment($request->user(), $department), 403);
+        abort_unless(in_array((int) $respondent->id, $plan->targetDepartmentIds(), true), 404);
+        abort_unless($this->qa->userCanRespondForDepartment($request->user(), $respondent), 403);
 
         $plan->load('checklists');
         $submissions = QaDepartmentSubmission::query()
             ->where('qa_plan_id', $plan->id)
-            ->where('department_id', $department->id)
+            ->where('department_id', $respondent->id)
             ->with('evidence')
             ->get()
             ->keyBy('checklist_item_id');
 
-        return view('qa.tasks.show', compact('plan', 'department', 'submissions'));
+        return view('qa.tasks.show', $this->viewPayload($moduleContext, [
+            'plan' => $plan,
+            'respondentDepartment' => $respondent,
+            'submissions' => $submissions,
+        ]));
     }
 
-    public function store(Request $request, QaPlan $plan, Department $department): RedirectResponse
+    public function store(Request $request, QaPlan $plan): RedirectResponse
     {
+        $moduleContext = QaTaskModuleContext::resolve($request);
+        $respondent = $this->respondentDepartment($request);
+
         $validated = $request->validate([
             'answers' => ['required', 'array'],
             'answers.*.submission_text' => ['nullable', 'string', 'max:5000'],
@@ -68,7 +70,7 @@ class TaskController extends Controller
             $this->qa->saveDepartmentResponses(
                 $request->user(),
                 $plan,
-                $department,
+                $respondent,
                 $validated['answers'] ?? [],
                 $validated['evidence'] ?? [],
                 $request->boolean('final_submit'),
@@ -78,9 +80,56 @@ class TaskController extends Controller
         }
 
         return redirect()
-            ->route('qa.tasks.show', [$plan, $department])
+            ->to(QaTaskModuleContext::url('show', $moduleContext['key'], [
+                'plan' => $plan,
+                'department' => $respondent,
+                'targetDepartment' => $respondent,
+            ]))
             ->with('status', $request->boolean('final_submit')
                 ? 'Assessment submitted to Quality Assurance.'
                 : 'Draft saved.');
+    }
+
+    private function respondentDepartment(Request $request): Department
+    {
+        $candidate = $request->route('targetDepartment') ?? $request->route('department');
+
+        // Academics injects the hub as {department}; respondent is {targetDepartment}.
+        if ($request->routeIs('departments.academics.qa.tasks.*')) {
+            $candidate = $request->route('targetDepartment');
+        }
+
+        if ($candidate instanceof Department) {
+            return $candidate;
+        }
+
+        if (is_string($candidate) || is_numeric($candidate)) {
+            $resolved = Department::resolveFromRouteKey((string) $candidate);
+            if ($resolved) {
+                return $resolved;
+            }
+        }
+
+        abort(404);
+    }
+
+    /**
+     * @param  array{key: string, layout: string, content_section: string, routes: array<string, string>, department?: Department|null}  $moduleContext
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function viewPayload(array $moduleContext, array $extra = []): array
+    {
+        $payload = array_merge([
+            'moduleContext' => $moduleContext,
+            'taskRoutes' => $moduleContext['routes'],
+        ], $extra);
+
+        // Academics layout sidebar expects the hub as $department.
+        if (($moduleContext['key'] ?? '') === 'academics') {
+            $payload['department'] = $moduleContext['department'] ?? Department::findAcademicsHub();
+        }
+
+        return $payload;
     }
 }

@@ -107,23 +107,6 @@ class QaSidebarNotificationService
 
     private function pendingTasksForUser(User $user): int
     {
-        if (! Schema::hasTable('qa_plans')) {
-            return 0;
-        }
-
-        $departments = $this->qa->respondableDepartments($user);
-        if ($departments->isEmpty()) {
-            return 0;
-        }
-
-        return QaPlan::query()
-            ->whereIn('status', ['dispatched', 'in_progress'])
-            ->where(function ($query) use ($departments) {
-                foreach ($departments as $department) {
-                    $query->orWhereJsonContains('department_ids', (int) $department->id)
-                        ->orWhereJsonContains('department_ids', (string) $department->id);
-                }
-            })
-            ->count();
+        return $this->qa->outstandingTaskCountForUser($user);
     }
 }

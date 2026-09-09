@@ -25,13 +25,14 @@ class EmployeeSidebarComposer
             return;
         }
 
-        $counts = $this->notifications->countsFor($staff);
+        $counts = $this->notifications->countsFor($staff, false, $user);
+        $labels = $this->notifications->formattedCountsFor($staff, false, $user);
 
         $view->with([
             'staff' => $staff,
             'mustCompleteProfile' => app(\App\Services\EmployeeProfileCompletenessService::class)->isComplete($staff) === false,
             'sidebarCounts' => $counts,
-            'sidebarLabels' => $this->notifications->formattedCounts($counts),
+            'sidebarLabels' => $labels,
             'sidebarMenuLabels' => EmployeeSidebarNotificationService::MENU_KEYS,
             'sidebarId' => 'employee-admin-sidebar',
             'sidebarPollUrl' => route('employee.sidebar-notifications'),

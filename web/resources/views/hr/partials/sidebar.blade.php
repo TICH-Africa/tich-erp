@@ -3,6 +3,13 @@
     <p class="tich-admin-sidebar__title">HR Module</p>
     <nav class="tich-admin-sidebar__nav" aria-label="HR module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('hr.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('hr.dashboard')])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.qa.tasks.index'),
+            'label' => 'QA assessment tasks',
+            'icon' => 'layers',
+            'active' => request()->routeIs('hr.qa.tasks.*'),
+            'badgeKey' => 'qa.tasks',
+        ])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.staff.index'), 'label' => 'Staff Directory', 'icon' => 'users', 'active' => request()->routeIs('hr.staff.*')])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.profile-changes.index'),

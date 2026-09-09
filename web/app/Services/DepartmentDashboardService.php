@@ -185,7 +185,7 @@ class DepartmentDashboardService
     }
 
     /**
-     * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, coming_soon?: bool}>
+     * @return list<array{type: 'link'|'heading', label: string, route?: string, params?: array<string, mixed>, section?: string, coming_soon?: bool, icon?: string, badge?: string|null}>
      */
     public function sidebarNavigation(User $user, Department $department): array
     {
@@ -203,6 +203,20 @@ class DepartmentDashboardService
                 'section' => 'overview',
             ],
         ];
+
+        $qaModule = \App\Support\QaTaskModuleContext::moduleKeyForDepartment($department);
+        $qaCount = app(\App\Services\Qa\QaAssessmentService::class)
+            ->outstandingTaskCountForDepartment($user, $department);
+        if ($qaCount > 0 || app(\App\Services\Qa\QaAssessmentService::class)->userCanRespondForDepartment($user, $department)) {
+            $items[] = [
+                'type' => 'link',
+                'label' => 'QA assessment tasks',
+                'route' => \App\Support\QaTaskModuleContext::routeNames($qaModule)['index'],
+                'params' => [],
+                'icon' => 'layers',
+                'badge' => $qaCount > 0 ? ($qaCount > 99 ? '99+' : (string) $qaCount) : null,
+            ];
+        }
 
         $children = $this->accessibleChildDepartments($user, $department);
 
@@ -294,6 +308,17 @@ class DepartmentDashboardService
                 'target_id' => $department->id,
                 'section' => 'overview',
             ],
+        ];
+
+        $qaCount = app(\App\Services\Qa\QaAssessmentService::class)
+            ->outstandingTaskCountForDepartment($user, $department);
+        $items[] = [
+            'type' => 'link',
+            'label' => 'QA assessment tasks',
+            'route' => 'departments.academics.qa.tasks.index',
+            'params' => [],
+            'icon' => 'layers',
+            'badge' => $qaCount > 0 ? ($qaCount > 99 ? '99+' : (string) $qaCount) : null,
         ];
 
         $modules = $this->modulesForDepartment($user, $department);

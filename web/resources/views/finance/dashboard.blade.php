@@ -5,6 +5,8 @@
 @section('finance-content')
     <x-page-toolbar title="Finance Dashboard" meta="Student fees, accounts receivable, treasury, and compliance reporting" />
 
+    @include('qa.partials.assigned-tasks-panel')
+
     <div class="tich-stat-row tich-mb-8">
         <div class="tich-stat">
             <p class="tich-stat__label">Accounts receivable</p>

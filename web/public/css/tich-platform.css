@@ -9206,3 +9206,220 @@ a.tich-tabs__btn {
 .tich-cms-editor--basic .tich-cms-surface {
     padding: 0.85rem 1rem;
 }
+
+/* ??? QA forms (assessment builder + capacity) ??????????????????????? */
+
+.qa-form-page,
+.qa-capacity-page {
+    max-width: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.qa-form-section {
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 1.5rem;
+}
+
+.qa-form-section__head {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.qa-form-section__head .tich-h3 {
+    margin: 0;
+}
+
+.qa-form-fields {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.qa-form-fields--schedule,
+.qa-form-fields--capacity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+}
+
+.qa-form-fields__full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+    .qa-form-fields--schedule,
+    .qa-form-fields--capacity {
+        grid-template-columns: 1fr;
+    }
+}
+
+.qa-dept-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem;
+}
+
+.qa-dept-picker__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface-muted, #f8fafc);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.qa-dept-picker__item:hover {
+    border-color: var(--tich-primary, #00529b);
+    background: rgba(0, 82, 155, 0.04);
+}
+
+.qa-dept-picker__item input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.qa-dept-picker__name {
+    display: block;
+    font-weight: 600;
+    color: var(--tich-text, #1f2937);
+    line-height: 1.35;
+}
+
+.qa-criteria-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.qa-criterion {
+    padding: 1.25rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface-muted, #f8fafc);
+}
+
+.qa-criterion__badge {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(0, 82, 155, 0.1);
+    color: var(--tich-primary, #00529b);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.qa-criterion__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.qa-criterion__text {
+    width: 100%;
+}
+
+.qa-criterion__meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(5.5rem, 0.55fr) minmax(5.5rem, 0.55fr) minmax(11rem, 1fr);
+    gap: 0.85rem 1rem;
+    align-items: end;
+}
+
+.qa-criterion__evidence {
+    display: flex;
+    align-items: center;
+    min-height: 2.625rem;
+    padding-bottom: 0.15rem;
+}
+
+.qa-criterion__evidence .qa-check {
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .qa-criterion__meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .qa-criterion__evidence {
+        grid-column: 1 / -1;
+        min-height: 0;
+        padding-bottom: 0;
+    }
+}
+
+@media (max-width: 560px) {
+    .qa-criterion__meta {
+        grid-template-columns: 1fr;
+    }
+}
+
+.qa-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--tich-text, #1f2937);
+    cursor: pointer;
+}
+
+.qa-criteria-add {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--tich-neutral-border);
+}
+
+.qa-form-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.qa-form-section--table {
+    max-width: none;
+}
+
+.qa-capacity-page {
+    max-width: 60rem;
+}
+
+.qa-capacity-page .qa-form-section--table .tich-table-wrap {
+    margin-top: 0.25rem;
+}
+
+[data-theme="dark"] .qa-form-section,
+[data-theme="dark"] .qa-criterion,
+[data-theme="dark"] .qa-dept-picker__item {
+    background: var(--tich-surface, #0f172a);
+    border-color: var(--tich-border, #334155);
+}
+
+[data-theme="dark"] .qa-dept-picker__item:hover {
+    background: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .qa-form-section__head,
+[data-theme="dark"] .qa-criteria-add {
+    border-color: var(--tich-border, #334155);
+}
+
+[data-theme="dark"] .qa-form-footer {
+    /* inherits */
+}
+
+[data-theme="dark"] .qa-dept-picker__name {
+    color: var(--tich-grey);
+}

@@ -4,10 +4,13 @@ namespace App\View\Composers;
 
 use App\Models\Department;
 use App\Services\Sidebar\AcademicsSidebarNotificationService;
+use App\View\Composers\Concerns\InjectsQaTaskSidebarBadge;
 use Illuminate\View\View;
 
 class AcademicsSidebarComposer
 {
+    use InjectsQaTaskSidebarBadge;
+
     public function __construct(
         protected AcademicsSidebarNotificationService $notifications,
     ) {}
@@ -30,12 +33,15 @@ class AcademicsSidebarComposer
         }
 
         $counts = $this->notifications->countsFor($user, $department);
+        $labels = $this->notifications->formattedCounts($counts);
+        $menuKeys = AcademicsSidebarNotificationService::MENU_KEYS;
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, $user);
         $hub = $department->isAcademicsHub() ? $department : ($department->academicsHub() ?? $department);
 
         $view->with([
             'sidebarCounts' => $counts,
-            'sidebarLabels' => $this->notifications->formattedCounts($counts),
-            'sidebarMenuLabels' => AcademicsSidebarNotificationService::MENU_KEYS,
+            'sidebarLabels' => $labels,
+            'sidebarMenuLabels' => $menuKeys,
             'sidebarId' => 'academics-admin-sidebar',
             'sidebarPollUrl' => route('departments.academics.sidebar-notifications', ['department' => $department]),
             'sidebarBroadcastEnabled' => true,

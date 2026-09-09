@@ -10,6 +10,13 @@
             'icon' => 'dashboard',
             'active' => request()->routeIs('administration.dashboard'),
         ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('administration.qa.tasks.index'),
+            'label' => 'QA assessment tasks',
+            'icon' => 'layers',
+            'active' => request()->routeIs('administration.qa.tasks.*'),
+            'badgeKey' => 'qa.tasks',
+        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'administration'])
 
         @foreach ($adminNav->sidebarGroups() as $group)

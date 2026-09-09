@@ -8,13 +8,16 @@ use App\Models\LeaveRequest;
 use App\Models\PolicyAcknowledgement;
 use App\Models\Staff;
 use App\Models\StaffProfileChangeRequest;
+use App\Models\User;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
+use App\Services\Sidebar\Concerns\MergesQaTaskSidebarCounts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class EmployeeSidebarNotificationService
 {
     use FormatsSidebarBadgeCounts;
+    use MergesQaTaskSidebarCounts;
 
     public const CACHE_KEY_PREFIX = 'employee.sidebar.counts.';
 
@@ -27,28 +30,29 @@ class EmployeeSidebarNotificationService
         'concerns' => 'Concerns & issues',
         'feedback' => 'My feedback',
         'policies' => 'HR Policies',
+        'qa.tasks' => 'QA assessment tasks',
     ];
 
     /**
      * @return array<string, int>
      */
-    public function countsFor(Staff $staff, bool $fresh = false): array
+    public function countsFor(Staff $staff, bool $fresh = false, ?User $user = null): array
     {
         $cacheKey = self::CACHE_KEY_PREFIX.$staff->id;
 
-        if ($fresh) {
-            return $this->computeCounts($staff);
-        }
+        $counts = $fresh
+            ? $this->computeCounts($staff)
+            : Cache::remember($cacheKey, self::CACHE_TTL_SECONDS, fn () => $this->computeCounts($staff));
 
-        return Cache::remember($cacheKey, self::CACHE_TTL_SECONDS, fn () => $this->computeCounts($staff));
+        return $this->withQaTaskCount($counts, $user);
     }
 
     /**
      * @return array<string, string|null>
      */
-    public function formattedCountsFor(Staff $staff, bool $fresh = false): array
+    public function formattedCountsFor(Staff $staff, bool $fresh = false, ?User $user = null): array
     {
-        return $this->formattedCounts($this->countsFor($staff, $fresh));
+        return $this->formattedCounts($this->countsFor($staff, $fresh, $user));
     }
 
     public function forget(Staff $staff): void

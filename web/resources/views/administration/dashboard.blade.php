@@ -5,6 +5,8 @@
 @section('administration-content')
     <x-page-toolbar title="Administration" meta="Institutional planning, admissions ops, compliance, and procurement visibility" />
 
+    @include('qa.partials.assigned-tasks-panel')
+
     @if ($department)
         <article class="tich-card tich-mt-8">
             <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">

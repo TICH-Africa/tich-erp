@@ -41,6 +41,8 @@
         .tich-employee-profile-header__initials { font-family:var(--font-heading); font-size:1.25rem; font-weight:700; color:var(--tich-blue); }
     </style>
 
+    @include('qa.partials.assigned-tasks-panel')
+
     <article class="tich-card tich-mt-6" style="border-left:4px solid #dc2626;">
         <div class="tich-flex tich-flex--between" style="flex-wrap:wrap; gap:0.75rem; align-items:flex-start;">
             <div>

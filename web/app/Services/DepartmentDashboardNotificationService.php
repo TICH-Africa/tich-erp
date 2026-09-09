@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Department;
 use App\Models\User;
+use App\Services\AcademicsAccessService;
 use App\Services\Finance\FinanceSidebarNotificationService;
 use App\Services\HrSidebarNotificationService;
+use App\Services\Qa\QaAssessmentService;
 use App\Services\Sidebar\AcademicsSidebarNotificationService;
 use App\Services\Sidebar\AdministrationSidebarNotificationService;
 use App\Services\Sidebar\IctSidebarNotificationService;
@@ -85,13 +87,14 @@ class DepartmentDashboardNotificationService
     public function totalCountForDepartment(Department $department, ?User $user = null): int
     {
         $code = strtoupper((string) $department->dept_code);
+        $qaTasks = $this->qaTaskCountForDepartmentCard($department, $user);
 
         if ($code === 'ACAD') {
             $notifications = app(AcademicsSidebarNotificationService::class);
             $access = app(AcademicsAccessService::class);
 
             if ($user && $access->isTeachingOnly($user)) {
-                return 0;
+                return $qaTasks;
             }
 
             $counts = $user
@@ -113,31 +116,50 @@ class DepartmentDashboardNotificationService
                 + ($counts['supplementary-requests.pending'] ?? 0)
                 + ($counts['suggestions.open'] ?? 0)
                 + ($counts['lifecycle.pending'] ?? 0)
+                + $qaTasks
             );
         }
 
         if (in_array($code, ['QA', 'MNE', 'ICTO', 'ICT'], true)) {
             $serviceClass = self::NOTIFICATION_SERVICES[$code] ?? null;
             if (! $serviceClass) {
-                return 0;
+                return $qaTasks;
             }
 
-            return app($serviceClass)->dashboardTotal();
+            return app($serviceClass)->dashboardTotal() + $qaTasks;
         }
 
         $serviceClass = self::NOTIFICATION_SERVICES[$code] ?? null;
         if (! $serviceClass) {
-            return 0;
+            return $qaTasks;
         }
 
         $counts = app($serviceClass)->counts();
         $leafKeys = self::LEAF_KEYS[$code] ?? null;
 
-        if ($leafKeys === null) {
-            return (int) array_sum($counts);
+        $moduleTotal = $leafKeys === null
+            ? (int) array_sum($counts)
+            : (int) collect($leafKeys)->sum(fn (string $key) => (int) ($counts[$key] ?? 0));
+
+        return $moduleTotal + $qaTasks;
+    }
+
+    private function qaTaskCountForDepartmentCard(Department $department, ?User $user): int
+    {
+        if (! $user) {
+            return 0;
         }
 
-        return (int) collect($leafKeys)->sum(fn (string $key) => (int) ($counts[$key] ?? 0));
+        $qa = app(QaAssessmentService::class);
+
+        if ($department->isAcademicsHub() || strtoupper((string) $department->dept_code) === 'ACAD') {
+            $access = app(AcademicsAccessService::class);
+            $learningIds = $access->accessibleLearningDepartmentIds($user, $department);
+
+            return $qa->outstandingTaskCountForUser($user, $learningIds);
+        }
+
+        return $qa->outstandingTaskCountForDepartment($user, $department);
     }
 
     public function formatCount(int $count): ?string

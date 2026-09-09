@@ -3,6 +3,13 @@
     <p class="tich-admin-sidebar__title">ICT</p>
     <nav class="tich-admin-sidebar__nav" aria-label="ICT module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('ict.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('ict.dashboard')])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ict.qa.tasks.index'),
+            'label' => 'QA assessment tasks',
+            'icon' => 'layers',
+            'active' => request()->routeIs('ict.qa.tasks.*'),
+            'badgeKey' => 'qa.tasks',
+        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
 
         <p class="tich-admin-sidebar__title tich-mt-4">Website content</p>

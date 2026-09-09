@@ -19,8 +19,8 @@ class SidebarNotificationController extends Controller
         abort_unless($staff, 403);
 
         return response()->json([
-            'counts' => $notifications->countsFor($staff, true),
-            'labels' => $notifications->formattedCountsFor($staff, true),
+            'counts' => $notifications->countsFor($staff, true, $request->user()),
+            'labels' => $notifications->formattedCountsFor($staff, true, $request->user()),
         ]);
     }
 }

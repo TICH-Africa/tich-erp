@@ -173,6 +173,12 @@ class QaAssessmentService
 
             $this->notifyDepartmentsOfDispatch($plan);
 
+            // Ensure sidebar badges refresh after submissions are created.
+            try {
+                app(\App\Services\Sidebar\QaSidebarNotificationService::class)->broadcastCounts();
+            } catch (\Throwable) {
+            }
+
             $this->audit->log(
                 'qa.plan.dispatched',
                 'qa_plans',
@@ -470,6 +476,92 @@ class QaAssessmentService
         return Department::query()->whereIn('id', $ids)->active()->orderBy('dept_name')->get();
     }
 
+    /**
+     * Open assessment assignments the user still needs to complete (plan × department).
+     *
+     * @return Collection<int, object{plan: QaPlan, department: Department}>
+     */
+    public function outstandingTasksForUser(User $user, ?array $limitDepartmentIds = null): Collection
+    {
+        $departments = $this->respondableDepartments($user);
+        if ($limitDepartmentIds !== null) {
+            $allowed = array_map('intval', $limitDepartmentIds);
+            $departments = $departments->filter(fn (Department $department) => in_array((int) $department->id, $allowed, true))->values();
+        }
+
+        if ($departments->isEmpty() || ! Schema::hasTable('qa_plans')) {
+            return collect();
+        }
+
+        $departmentIds = $departments->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $departmentsById = $departments->keyBy('id');
+
+        $plans = QaPlan::query()
+            ->whereIn('status', ['dispatched', 'in_progress'])
+            ->orderByDesc('dispatched_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $tasks = collect();
+
+        foreach ($plans as $plan) {
+            $targets = array_values(array_intersect($plan->targetDepartmentIds(), $departmentIds));
+            foreach ($targets as $departmentId) {
+                if (! $this->departmentHasOutstandingWork($plan, (int) $departmentId)) {
+                    continue;
+                }
+
+                $department = $departmentsById->get($departmentId);
+                if (! $department) {
+                    continue;
+                }
+
+                $tasks->push((object) [
+                    'plan' => $plan,
+                    'department' => $department,
+                ]);
+            }
+        }
+
+        return $tasks->values();
+    }
+
+    public function outstandingTaskCountForUser(User $user, ?array $limitDepartmentIds = null): int
+    {
+        return $this->outstandingTasksForUser($user, $limitDepartmentIds)->count();
+    }
+
+    public function outstandingTaskCountForDepartment(User $user, Department $department): int
+    {
+        if (! $this->userCanRespondForDepartment($user, $department)) {
+            return 0;
+        }
+
+        return $this->outstandingTasksForUser($user, [(int) $department->id])->count();
+    }
+
+    public function departmentHasOutstandingWork(QaPlan $plan, int $departmentId): bool
+    {
+        if (! Schema::hasTable('qa_department_submissions')) {
+            return in_array($departmentId, $plan->targetDepartmentIds(), true);
+        }
+
+        $hasRows = QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->where('department_id', $departmentId)
+            ->exists();
+
+        if (! $hasRows) {
+            return in_array($departmentId, $plan->targetDepartmentIds(), true);
+        }
+
+        return QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->where('department_id', $departmentId)
+            ->whereIn('submission_status', ['pending', 'draft', 'rejected'])
+            ->exists();
+    }
+
     private function flagCorrectiveAction(QaPlan $plan, Department $department, float $score): void
     {
         $existing = QaCorrectiveAction::query()
@@ -546,6 +638,8 @@ class QaAssessmentService
                 continue;
             }
 
+            $moduleKey = \App\Support\QaTaskModuleContext::moduleKeyForDepartment($department);
+
             $this->notifications->notifyUsers(
                 $userIds,
                 'QA assessment sheet assigned',
@@ -553,7 +647,10 @@ class QaAssessmentService
                 'qa_plan',
                 (string) $plan->id,
                 'high',
-                route('qa.tasks.show', ['plan' => $plan->id, 'department' => $department->id]),
+                \App\Support\QaTaskModuleContext::url('show', $moduleKey, [
+                    'plan' => $plan->id,
+                    'department' => $department->id,
+                ]),
             );
         }
     }

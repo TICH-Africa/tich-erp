@@ -25,24 +25,13 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
-        $pendingTasks = 0;
-        $departments = $qa->respondableDepartments(auth()->user());
-        if ($departments->isNotEmpty()) {
-            $pendingTasks = QaPlan::query()
-                ->whereIn('status', ['dispatched', 'in_progress'])
-                ->where(function ($query) use ($departments) {
-                    foreach ($departments as $department) {
-                        $query->orWhereJsonContains('department_ids', (int) $department->id)
-                            ->orWhereJsonContains('department_ids', (string) $department->id);
-                    }
-                })
-                ->count();
-        }
+        $qaPendingTasks = $qa->outstandingTasksForUser(auth()->user());
 
         return view('qa.dashboard', [
             'openPlans' => $openPlans,
             'openActions' => $openActions,
-            'pendingTasks' => $pendingTasks,
+            'pendingTasks' => $qaPendingTasks->count(),
+            'qaPendingTasks' => $qaPendingTasks,
             'stats' => [
                 'draft' => QaPlan::query()->where('status', 'draft')->count(),
                 'active' => QaPlan::query()->whereIn('status', ['dispatched', 'in_progress'])->count(),

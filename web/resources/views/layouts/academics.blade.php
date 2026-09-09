@@ -11,6 +11,7 @@
 
     <div class="tich-admin__main">
         @include('partials.alerts')
+        @include('qa.partials.assigned-tasks-panel')
 
         @yield('academics-content')
     </div>

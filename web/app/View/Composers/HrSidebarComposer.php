@@ -3,10 +3,13 @@
 namespace App\View\Composers;
 
 use App\Services\HrSidebarNotificationService;
+use App\View\Composers\Concerns\InjectsQaTaskSidebarBadge;
 use Illuminate\View\View;
 
 class HrSidebarComposer
 {
+    use InjectsQaTaskSidebarBadge;
+
     public function __construct(
         protected HrSidebarNotificationService $notifications,
     ) {}
@@ -15,14 +18,16 @@ class HrSidebarComposer
     {
         $counts = $this->notifications->counts();
         $labels = $this->notifications->formattedCounts();
+        $menuKeys = HrSidebarNotificationService::MENU_KEYS;
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys);
 
         $view->with([
             'hrSidebarCounts' => $counts,
             'hrSidebarLabels' => $labels,
-            'hrSidebarMenuLabels' => HrSidebarNotificationService::MENU_KEYS,
+            'hrSidebarMenuLabels' => $menuKeys,
             'sidebarCounts' => $counts,
             'sidebarLabels' => $labels,
-            'sidebarMenuLabels' => HrSidebarNotificationService::MENU_KEYS,
+            'sidebarMenuLabels' => $menuKeys,
             'sidebarId' => 'hr-admin-sidebar',
             'sidebarPollUrl' => route('hr.sidebar-notifications'),
             'sidebarBroadcastEnabled' => true,

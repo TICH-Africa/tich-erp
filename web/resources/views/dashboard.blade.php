@@ -24,6 +24,8 @@
                 @endif
             </div>
 
+            @include('qa.partials.assigned-tasks-panel')
+
             <div class="tich-grid tich-grid--3 tich-dashboard__grid">
                 @if (auth()->user()->hasAnyRole(['CEO', 'Super Admin']))
                     <article class="tich-card tich-card--highlight">

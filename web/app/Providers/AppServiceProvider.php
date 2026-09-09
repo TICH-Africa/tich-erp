@@ -14,6 +14,7 @@ use App\View\Composers\HrSidebarComposer;
 use App\View\Composers\IctSidebarComposer;
 use App\View\Composers\MeSidebarComposer;
 use App\View\Composers\PublicLayoutComposer;
+use App\View\Composers\QaAssignedTasksComposer;
 use App\View\Composers\QaSidebarComposer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
@@ -81,6 +82,20 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['qa.partials.sidebar', 'layouts.qa'], QaSidebarComposer::class);
         View::composer(['ceo.partials.sidebar', 'layouts.ceo'], CeoSidebarComposer::class);
         View::composer(['ict.partials.sidebar', 'layouts.ict'], IctSidebarComposer::class);
+        View::composer([
+            'dashboard',
+            'academics.dashboard',
+            'layouts.academics',
+            'hr.dashboard',
+            'finance.dashboard',
+            'administration.dashboard',
+            'employee.dashboard',
+            'ict.dashboard',
+            'qa.dashboard',
+            'monitoring-evaluation.dashboard',
+            'research.dashboard',
+            'procurement.dashboard',
+        ], QaAssignedTasksComposer::class);
 
         // Keep deploy/production.sql in sync whenever migrations finish successfully (local/dev).
         Event::listen(MigrationsEnded::class, function (): void {

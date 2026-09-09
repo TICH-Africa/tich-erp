@@ -135,11 +135,6 @@ class StudentPortalNavigationService
                 'section' => 'clearance',
             ],
             [
-                'type' => 'link',
-                'label' => 'Notifications',
-                'section' => 'notifications',
-            ],
-            [
                 'type' => 'group',
                 'label' => 'Academics',
                 'icon' => 'graduation-cap',
@@ -284,12 +279,6 @@ class StudentPortalNavigationService
                 'label' => 'Clearance',
                 'description' => 'Track finance, library, hostel, and academic clearance status.',
                 'section' => 'clearance',
-                'group' => 'services',
-            ],
-            [
-                'label' => 'Notifications',
-                'description' => 'Fee, exam, and academic alerts for your account.',
-                'section' => 'notifications',
                 'group' => 'services',
             ],
             [
