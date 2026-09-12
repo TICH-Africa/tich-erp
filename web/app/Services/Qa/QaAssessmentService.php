@@ -5,6 +5,7 @@ namespace App\Services\Qa;
 use App\Models\Department;
 use App\Models\Qa\QaAuditChecklist;
 use App\Models\Qa\QaComplianceScore;
+use App\Models\Qa\QcaFlag;
 use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaDepartmentSubmission;
 use App\Models\Qa\QaEvidenceAttachment;
@@ -574,9 +575,15 @@ class QaAssessmentService
             return;
         }
 
+        $category = 'Evidence';
+        if ($plan->plan_name && stripos($plan->plan_name, 'training') !== false) {
+            $category = 'Training';
+        }
+
         $action = QaCorrectiveAction::query()->create([
             'qa_plan_id' => $plan->id,
             'department_id' => $department->id,
+            'checklist_item_id' => null,
             'flagged_reason' => "Compliance score {$score}% fell below the {$plan->pass_threshold}% threshold for assessment \"{$plan->plan_name}\".",
             'compliance_score_at_flag' => $score,
             'resolution_deadline' => now()->addDays(14)->toDateString(),
@@ -584,6 +591,41 @@ class QaAssessmentService
             'responsible_officer_id' => $department->hod_id,
             'is_module_lock_active' => 0,
         ]);
+
+        if ($score < 50) {
+            try {
+                $flag = QcaFlag::query()->create([
+                    'flag_number' => 'QCA-'.now()->format('Y').'-'.str_pad(QcaFlag::query()->count() + 1, 5, '0', STR_PAD_LEFT),
+                    'category' => $category,
+                    'severity' => 'High',
+                    'status' => 'open',
+                    'description' => "Compliance score {$score}% below threshold ({$plan->pass_threshold}%) for \"{$plan->plan_name}\" at {$department->dept_name}.",
+                    'assigned_to' => $department->hod_id,
+                    'raised_by' => auth()?->user()?->staff_id ?? $action->responsible_officer_id,
+                    'target_entity_type' => 'department',
+                    'target_entity_id' => $department->id,
+                    'resolution_deadline' => $action->resolution_deadline,
+                    'source_module' => 'qa',
+                    'source_entity_id' => $plan->id,
+                    'downstream_locks' => ['modules' => ['Student Portal', 'HR']],
+                ]);
+
+                if ($flag->isHighOrCritical()) {
+                    $this->audit->log(
+                        'qca.flag.downstream_lock',
+                        'qca_flags',
+                        $flag->id,
+                        null,
+                        ['locked_modules' => $flag->lockedModules()],
+                        'Downstream lock applied for High/Critical QCA flag: '.$flag->flag_number,
+                        'success',
+                        auth()?->user()?->id,
+                    );
+                }
+            } catch (\Throwable) {
+                // Non-fatal: QCA flag creation failure doesn't block corrective action.
+            }
+        }
 
         $this->notifyCorrectiveAction($action);
     }

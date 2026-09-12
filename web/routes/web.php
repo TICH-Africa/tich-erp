@@ -516,6 +516,39 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/corrective-actions', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'index'])->name('qa.corrective-actions.index');
             Route::post('/corrective-actions/{action}/resolve', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'resolve'])->name('qa.corrective-actions.resolve');
 
+            Route::prefix('qca-flags')->name('qa.qca-flags.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'index'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\Qa\QcaFlagController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'store'])->name('store');
+                Route::get('/{qcaFlag}', [\App\Http\Controllers\Qa\QcaFlagController::class, 'show'])->name('show');
+                Route::post('/{qcaFlag}/update-status', [\App\Http\Controllers\Qa\QcaFlagController::class, 'updateStatus'])->name('update-status');
+                Route::post('/{qcaFlag}/add-milestone', [\App\Http\Controllers\Qa\QcaFlagController::class, 'addMilestone'])->name('add-milestone');
+                Route::post('/{qcaFlag}/resolve', [\App\Http\Controllers\Qa\QcaFlagController::class, 'resolve'])->name('resolve');
+                Route::post('/{qcaFlag}/close', [\App\Http\Controllers\Qa\QcaFlagController::class, 'close'])->name('close');
+                Route::post('/{qcaFlag}/ceo-override', [\App\Http\Controllers\Qa\QcaFlagController::class, 'ceoOverride'])->name('ceo-override');
+            });
+
+            Route::prefix('capacity')->name('qa.capacity.')->group(function () {
+                Route::post('/register', [\App\Http\Controllers\Qa\CapacityController::class, 'register'])->name('register');
+                Route::get('/export', [\App\Http\Controllers\Qa\CapacityController::class, 'export'])->name('export');
+            });
+
+            Route::prefix('training-credits')->name('qa.training-credits.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'index'])->name('index');
+                Route::post('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'store'])->name('store');
+                Route::get('/export', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'export'])->name('export');
+            });
+
+            Route::get('/executive-dashboard', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'index'])->name('qa.executive-dashboard');
+            Route::get('/executive-dashboard/compliance-hub', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'complianceByHub'])->name('qa.executive-dashboard.compliance-hub');
+            Route::get('/executive-dashboard/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'auditTrail'])->name('qa.executive-dashboard.audit-trail');
+            Route::get('/executive-dashboard/chart/compliance', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartCompliance'])->name('qa.executive-dashboard.chart.compliance');
+            Route::get('/executive-dashboard/chart/flags', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartFlags'])->name('qa.executive-dashboard.chart.flags');
+            Route::get('/executive-dashboard/chart/actions', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartActions'])->name('qa.executive-dashboard.chart.actions');
+            Route::get('/executive-dashboard/chart/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartAuditTrail'])->name('qa.executive-dashboard.chart.audit-trail');
+
+            Route::get('/downstream-lock/check', [\App\Http\Controllers\Qa\QcaDownstreamLockController::class, 'check'])->name('qa.downstream-lock.check');
+
             Route::get('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'index'])->name('qa.capacity.index');
             Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
         });

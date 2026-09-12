@@ -34,7 +34,6 @@ class AttendanceLedgerController extends DepartmentAcademicsController
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'sessions' => $this->verification->ledgerForDepartment($departmentId, $status),
             'selectedStatus' => $status,
-            'canVerifyHod' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
             'canVerifyRegistrar' => $request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']),
         ]);
     }
@@ -64,7 +63,6 @@ class AttendanceLedgerController extends DepartmentAcademicsController
             'intakeLabel' => $sheet['intake_label'],
             'presentCount' => $presentCount,
             'totalCount' => $totalCount,
-            'canVerifyHod' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
             'canVerifyRegistrar' => $request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']),
         ]);
     }

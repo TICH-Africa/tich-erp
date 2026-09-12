@@ -19,12 +19,29 @@ class TaskController extends Controller
     public function index(Request $request): View
     {
         $moduleContext = QaTaskModuleContext::resolve($request);
-        $tasks = $this->qa->outstandingTasksForUser($request->user());
+        $tasks = $this->qa->outstandingTasksForUser($request->user(), $this->limitDepartmentIds($request, $moduleContext));
 
         return view('qa.tasks.index', $this->viewPayload($moduleContext, [
             'tasks' => $tasks,
             'departments' => $this->qa->respondableDepartments($request->user()),
         ]));
+    }
+
+    private function limitDepartmentIds(Request $request, array $moduleContext): ?array
+    {
+        $key = $moduleContext['key'] ?? 'qa';
+
+        if ($key === 'qa') {
+            return null;
+        }
+
+        if ($key === 'academics') {
+            $target = $request->route('targetDepartment');
+            return $target instanceof \App\Models\Department ? [(int) $target->id] : null;
+        }
+
+        $department = $request->route('department');
+        return $department instanceof \App\Models\Department ? [(int) $department->id] : null;
     }
 
     public function show(Request $request, QaPlan $plan): View

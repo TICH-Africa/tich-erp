@@ -1,22 +1,35 @@
 @extends('layouts.qa')
 
-@section('title', 'QA Command Center')
+@section('title', 'Executive Dashboard')
 
 @section('qa-content')
-    <x-page-toolbar title="QA Command Center" meta="Quality plans, assessment sheets, capacity building, and compliance oversight" />
+    <x-page-toolbar title="Executive Dashboard" meta="Real-time compliance status across all hubs and programmes" />
 
     <div class="tich-grid tich-grid--4 tich-mt-8">
-        <article class="tich-card"><p class="tich-caption">Draft sheets</p><p class="tich-h2 tich-mt-2">{{ $stats['draft'] }}</p></article>
-        <article class="tich-card"><p class="tich-caption">In the field</p><p class="tich-h2 tich-mt-2">{{ $stats['active'] }}</p></article>
-        <article class="tich-card"><p class="tich-caption">Compiled reports</p><p class="tich-h2 tich-mt-2">{{ $stats['compiled'] }}</p></article>
-        <article class="tich-card tich-card--highlight"><p class="tich-caption">Open corrective actions</p><p class="tich-h2 tich-mt-2">{{ $stats['corrective'] }}</p></article>
+        <article class="tich-card tich-card--highlight">
+            <p class="tich-caption">Overall compliance</p>
+            <p class="tich-h2 tich-mt-2">{{ $totalCompliance }}%</p>
+            <span class="tich-badge tich-badge--{{ $complianceStatus }}">{{ $complianceStatus === 'green' ? 'GREEN' : ($complianceStatus === 'amber' ? 'AMBER' : 'RED') }}</span>
+        </article>
+        <article class="tich-card">
+            <p class="tich-caption">Active QCA flags</p>
+            <p class="tich-h2 tich-mt-2">{{ $openFlags }}</p>
+        </article>
+        <article class="tich-card">
+            <p class="tich-caption">High / Critical</p>
+            <p class="tich-h2 tich-mt-2">{{ $criticalFlags }}</p>
+        </article>
+        <article class="tich-card">
+            <p class="tich-caption">Open corrective actions</p>
+            <p class="tich-h2 tich-mt-2">{{ $actionCount }}</p>
+        </article>
     </div>
 
     <div class="tich-grid tich-grid--2 tich-mt-8">
         <article class="tich-card">
-            <h2 class="tich-h3">Compliance overview</h2>
-            <p class="tich-caption tich-mt-2">Overall: {{ $totalCompliance }}% ({{ $complianceStatus }}) — {{ $openFlags }} open QCA flags ({{ $criticalFlags }} high/critical)</p>
-            <div class="tich-mt-4" style="position:relative; height:240px;">
+            <h2 class="tich-h3">Compliance distribution</h2>
+            <p class="tich-caption tich-mt-2">How departments are performing: passing (80%+), watch (60-79%), failing (below 60%)</p>
+            <div class="tich-mt-4" style="position:relative; height:280px;">
                 <canvas id="complianceDoughnut"></canvas>
             </div>
             <div class="tich-flex tich-flex--between tich-mt-3" style="font-size:0.75rem;">
@@ -28,8 +41,8 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">QCA flags by severity</h2>
-            <p class="tich-caption tich-mt-2">Active flags — High/Critical lock downstream modules</p>
-            <div class="tich-mt-4" style="position:relative; height:240px;">
+            <p class="tich-caption tich-mt-2">Active (open/in-progress) flags - High and Critical severity lock downstream modules</p>
+            <div class="tich-mt-4" style="position:relative; height:280px;">
                 <canvas id="flagsBar"></canvas>
             </div>
         </article>
@@ -38,60 +51,70 @@
     <div class="tich-grid tich-grid--2 tich-mt-8">
         <article class="tich-card">
             <h2 class="tich-h3">Corrective actions status</h2>
-            <p class="tich-caption tich-mt-2">Lifecycle of all corrective actions</p>
-            <div class="tich-mt-4" style="position:relative; height:240px;">
+            <p class="tich-caption tich-mt-2">Distribution of corrective actions across their lifecycle stages</p>
+            <div class="tich-mt-4" style="position:relative; height:280px;">
                 <canvas id="actionsBar"></canvas>
             </div>
         </article>
 
         <article class="tich-card">
-            <h2 class="tich-h3">Assessment plans</h2>
-            <p class="tich-caption tich-mt-2">Current plan lifecycle distribution</p>
-            <div class="tich-mt-4" style="position:relative; height:240px;">
-                <canvas id="plansDoughnut"></canvas>
+            <h2 class="tich-h3">Audit activity (14 days)</h2>
+            <p class="tich-caption tich-mt-2">QA audit log entries per day - shows monitoring intensity and recent activity</p>
+            <div class="tich-mt-4" style="position:relative; height:280px;">
+                <canvas id="auditLine"></canvas>
             </div>
         </article>
     </div>
 
     <div class="tich-grid tich-grid--2 tich-mt-8">
         <article class="tich-card">
-            <div class="tich-flex" style="justify-content:space-between;align-items:center;gap:1rem;">
-                <h2 class="tich-h3">Assessment sheets</h2>
-                <a href="{{ route('qa.assessments.create') }}" class="tich-btn tich-btn-primary">Build sheet</a>
+            <h2 class="tich-h3">Assessment plans by status</h2>
+            <p class="tich-caption tich-mt-2">Current assessment sheet lifecycle distribution</p>
+            <div class="tich-mt-4" style="position:relative; height:260px;">
+                <canvas id="plansDoughnut"></canvas>
             </div>
-            <ul class="tich-mt-4" style="margin:0;padding-left:1.25rem;">
-                @forelse ($openPlans as $plan)
-                    <li class="tich-text tich-mt-2">
-                        <a href="{{ route('qa.assessments.show', $plan) }}" class="tich-link">{{ $plan->plan_name }}</a>
-                        <span class="tich-caption">· {{ str_replace('_', ' ', $plan->status) }}</span>
-                    </li>
-                @empty
-                    <li class="tich-text">No open assessment sheets yet.</li>
-                @endforelse
-            </ul>
-            <a href="{{ route('qa.assessments.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View all</a>
         </article>
 
         <article class="tich-card">
-            <h2 class="tich-h3">Corrective actions</h2>
-            <ul class="tich-mt-4" style="margin:0;padding-left:1.25rem;">
-                @forelse ($openActions as $action)
-                    <li class="tich-text tich-mt-2">
-                        <strong>{{ $action->department?->dept_name }}</strong>
-                        <span class="tich-caption">due {{ $action->resolution_deadline?->format('d M Y') }}</span>
-                        <p class="tich-caption">{{ \Illuminate\Support\Str::limit($action->flagged_reason, 120) }}</p>
-                    </li>
-                @empty
-                    <li class="tich-text">No open corrective actions.</li>
-                @endforelse
-            </ul>
-            <a href="{{ route('qa.corrective-actions.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Manage actions</a>
+            <h2 class="tich-h3">What's happening in QA</h2>
+            <div class="tich-mt-4">
+                @if ($chartData['compliance']['red'] > 0)
+                    <div class="tich-mb-4">
+                        <p class="tich-text"><strong>{{ $chartData['compliance']['red'] }} departments</strong> are below the 60% compliance threshold and require immediate attention. Review failing departments below.</p>
+                    </div>
+                @endif
+                @if ($criticalFlags > 0)
+                    <div class="tich-mb-4">
+                        <p class="tich-text"><strong>{{ $criticalFlags }} High/Critical QCA flags</strong> are active. These have downstream lock effects on HR, Tutor Workspace, Student Portal, Grade Book, and/or Exam Engine modules.</p>
+                    </div>
+                @endif
+                @if ($actionCount > 0)
+                    <div class="tich-mb-4">
+                        <p class="tich-text"><strong>{{ $actionCount }} corrective actions</strong> are currently open, in-progress, or overdue. These were triggered by compliance scores falling below the pass threshold.</p>
+                    </div>
+                @endif
+                @if ($failingDepartments->isNotEmpty())
+                    <div class="tich-mb-4">
+                        <p class="tich-text"><strong>{{ $failingDepartments->count() }} failing department-plan combinations</strong> need resolution. See the table below for details.</p>
+                    </div>
+                @endif
+                @if ($chartData['compliance']['amber'] > 0)
+                    <div class="tich-mb-4">
+                        <p class="tich-text"><strong>{{ $chartData['compliance']['amber'] }} departments</strong> are in the watch zone (60-79% compliance). Monitor closely to prevent further decline.</p>
+                    </div>
+                @endif
+                @if ($chartData['compliance']['green'] > 0 && $criticalFlags === 0 && $actionCount === 0)
+                    <div>
+                        <p class="tich-text">All departments are meeting compliance targets. Continue monitoring and schedule next assessment cycle.</p>
+                    </div>
+                @endif
+            </div>
         </article>
     </div>
 
-    @if ($topFailing->isNotEmpty())
+    @if ($failingDepartments->isNotEmpty())
         <div class="tich-card tich-mt-8">
-            <h2 class="tich-h3">Failing departments (top 5)</h2>
+            <h2 class="tich-h3">Failing departments</h2>
             <table class="tich-admin-table tich-mt-4">
                 <thead>
                     <tr>
@@ -102,7 +125,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($topFailing as $score)
+                    @foreach ($failingDepartments as $score)
                         <tr>
                             <td>{{ $score->department?->dept_name }}</td>
                             <td>{{ $score->plan?->plan_name }}</td>
@@ -116,6 +139,28 @@
             </table>
         </div>
     @endif
+
+    <div class="tich-card tich-mt-8">
+        <h2 class="tich-h3">Quick links</h2>
+        <div class="tich-grid tich-grid--4 tich-mt-4">
+            <a href="{{ route('qa.assessments.index') }}" class="tich-card tich-card--link">
+                <p class="tich-caption">Assessment sheets</p>
+                <p class="tich-h3 tich-mt-2">{{ $activePlans }} active</p>
+            </a>
+            <a href="{{ route('qa.qca-flags.index') }}" class="tich-card tich-card--link">
+                <p class="tich-caption">QCA flags</p>
+                <p class="tich-h3 tich-mt-2">{{ $openFlags }} open</p>
+            </a>
+            <a href="{{ route('qa.corrective-actions.index') }}" class="tich-card tich-card--link">
+                <p class="tich-caption">Corrective actions</p>
+                <p class="tich-h3 tich-mt-2">{{ $actionCount }} open</p>
+            </a>
+            <a href="{{ route('qa.training-credits.index') }}" class="tich-card tich-card--link">
+                <p class="tich-caption">Training credits</p>
+                <p class="tich-h3 tich-mt-2">View</p>
+            </a>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
@@ -197,7 +242,7 @@
                 }
             });
 
-            // Corrective actions by status bar (horizontal)
+            // Corrective actions by status bar
             var actionsData = {
                 labels: Object.keys(chartData.actionsByStatus),
                 datasets: [{
@@ -210,7 +255,7 @@
                         return chartColors.green;
                     }),
                     borderRadius: 6,
-                    barThickness: 30,
+                    barThickness: 40,
                 }]
             };
             if (actionsData.labels.length > 0) {
@@ -236,6 +281,55 @@
                     }
                 });
             }
+
+            // Audit trail line chart
+            fetch('{{ route('qa.executive-dashboard.audit-trail') }}?days=14&per_page=1000')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.logs && data.logs.length > 0) {
+                        var dates = {};
+                        data.logs.forEach(function(l) {
+                            var d = l.timestamp.slice(0, 10);
+                            dates[d] = (dates[d] || 0) + 1;
+                        });
+                        var labels = Object.keys(dates).sort();
+                        var counts = labels.map(function(d) { return dates[d]; });
+
+                        new Chart(document.getElementById('auditLine'), {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Audit entries',
+                                    data: counts,
+                                    borderColor: chartColors.blue,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: chartColors.blue,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(ctx) { return ctx.raw + ' entries'; }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                                    x: { grid: { display: false } },
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(function() {});
 
             // Plans by status doughnut
             var plansLabels = Object.keys(chartData.plansByStatus);

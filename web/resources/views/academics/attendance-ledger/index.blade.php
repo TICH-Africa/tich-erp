@@ -80,12 +80,6 @@
                                 href="{{ route('departments.academics.attendance-ledger.show', array_merge($hub, ['session' => $session->id])) }}"
                                 class="tich-btn tich-btn-secondary tich-btn--compact"
                             >View submission</a>
-                            <!-- @if ($canVerifyHod && $session->verification_status === 'submitted')
-                                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-hod', array_merge($hub, ['session' => $session->id])) }}" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="tich-link">Verify (HOD)</button>
-                                </form>
-                            @endif -->
                             @if ($canVerifyRegistrar && in_array($session->verification_status, ['submitted', 'hod_verified'], true))
                                 <!-- <a
                                     href="{{ route('departments.academics.attendance-ledger.show', array_merge($hub, ['session' => $session->id])) }}"
