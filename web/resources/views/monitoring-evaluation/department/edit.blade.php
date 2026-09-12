@@ -2,12 +2,20 @@
 
 @section('title', 'Edit quarterly M&E report')
 
+@php
+    $canSubmit = (bool) ($canSubmit ?? false);
+    $isEditable = $canSubmit && in_array($report->status, ['draft', 'returned'], true);
+@endphp
+
 @section('monitoring-evaluation-content')
     <x-page-toolbar
         :title="($report->department?->dept_name ?? 'Department').' · '.($report->quarter?->label() ?? '')"
         meta="Rigid schema: Output · Activity · Costable item · Planned · Achieved · Deviation"
     >
         <x-slot:actions>
+            @if (! $canSubmit && in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered'], true))
+                <a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-btn tich-btn-primary">Open for verification</a>
+            @endif
             <a href="{{ route('monitoring_evaluation.department.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
@@ -23,7 +31,14 @@
         <div class="tich-alert tich-alert--info tich-mt-4"><strong>Returned by M&amp;E:</strong> {{ $report->me_notes }}</div>
     @endif
 
-    @if (in_array($report->status, ['draft', 'returned'], true))
+    @if (! $canSubmit && in_array($report->status, ['draft', 'returned'], true))
+        <div class="tich-alert tich-alert--info tich-mt-4">
+            This is {{ $report->department?->dept_name ?? 'the department' }}’s report.
+            Only that department’s HOD or staff can edit and submit it to M&amp;E for verification.
+        </div>
+    @endif
+
+    @if ($isEditable)
     <form method="POST" action="{{ route('monitoring_evaluation.department.reports.update', $report) }}" class="tich-mt-6">
         @csrf
         @method('PUT')
@@ -101,7 +116,7 @@
                 </thead>
                 <tbody>
                     @foreach ($report->lines as $line)
-                        <tr @if($line->isWarning()) style="background:#fff7ed;" @endif>
+                        <tr @class(['tich-me-row--warning' => $line->isWarning()])>
                             <td>{{ $line->output }}</td>
                             <td>{{ $line->activity }}</td>
                             <td>{{ $line->costable_item }}</td>
@@ -113,8 +128,7 @@
                 </tbody>
             </table>
         </div>
-        <p class="tich-caption tich-mt-4">Status: {{ str_replace('_', ' ', $report->status) }}</p>
+        <p class="tich-caption tich-mt-4">Status: <x-status-badge :status="$report->status" /></p>
     </div>
     @endif
 @endsection
-

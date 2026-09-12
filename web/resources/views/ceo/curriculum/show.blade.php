@@ -30,7 +30,7 @@
             </div>
             <div>
                 <p class="tich-caption">Status</p>
-                <p><span class="tich-badge">{{ str_replace('_', ' ', $version->status) }}</span></p>
+                <p><x-status-badge :status="$version->status" /></p>
             </div>
             <div>
                 <p class="tich-caption">Intake</p>

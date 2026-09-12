@@ -44,7 +44,7 @@
                 </thead>
                 <tbody>
                     @foreach ($report->lines as $line)
-                        <tr @if($line->isWarning()) style="background:#fff7ed;" @endif>
+                        <tr @class(['tich-me-row--warning' => $line->isWarning()])>
                             <td>{{ $line->output }}</td>
                             <td>{{ $line->activity }}</td>
                             <td>{{ $line->costable_item }}</td>

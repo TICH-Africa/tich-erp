@@ -3,7 +3,7 @@
 @section('title', 'Technical plans')
 
 @section('monitoring-evaluation-content')
-    <x-page-toolbar title="Technical plans" meta="Concurrent intake from department budget submissions">
+    <x-page-toolbar title="Technical plans" meta="Released by Administration after budget clearance — concurrent with Finance review">
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'me_review']) }}" class="tich-btn tich-btn-secondary">In review</a>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'baseline_locked']) }}" class="tich-btn tich-btn-ghost">Baselines</a>
@@ -33,7 +33,7 @@
                         <td>{{ $plan->title }}</td>
                         <td>{{ $plan->outputs->count() }}</td>
                         <td>{{ $plan->budgetRequest?->status ?? '-' }}</td>
-                        <td>{{ str_replace('_', ' ', $plan->status) }}</td>
+                        <td><x-status-badge :status="$plan->status" /></td>
                         <td><a href="{{ route('monitoring_evaluation.plans.show', $plan) }}" class="tich-link">Open</a></td>
                     </tr>
                 @empty

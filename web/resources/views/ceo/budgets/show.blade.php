@@ -22,7 +22,7 @@
             </div>
             <div>
                 <p class="tich-caption">Status</p>
-                <p><span class="tich-badge">{{ str_replace('_', ' ', $budgetRequest->status) }}</span></p>
+                <p><x-status-badge :status="$budgetRequest->status" /></p>
             </div>
             <div>
                 <p class="tich-caption">Planning cycle</p>

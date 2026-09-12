@@ -151,6 +151,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name('finance.budget-requests.edit');
             Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name('finance.budget-requests.update');
 
+            Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('finance.me-policy.sign');
+            Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('finance.me-policy.sign.store');
+
             return;
         }
 
@@ -159,6 +162,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/budgeting', [ModuleBudgetingController::class, 'store'])->name("{$module}.budgeting.store");
         Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name("{$module}.budgeting.edit");
         Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name("{$module}.budgeting.update");
+
+        Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name("{$module}.me-policy.sign");
+        Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name("{$module}.me-policy.sign.store");
     };
 
     $registerModuleQaTasks = static function (string $module, ?string $namePrefix = null): void {
@@ -501,6 +507,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/assessments/create', [\App\Http\Controllers\Qa\AssessmentController::class, 'create'])->name('qa.assessments.create');
             Route::post('/assessments', [\App\Http\Controllers\Qa\AssessmentController::class, 'store'])->name('qa.assessments.store');
             Route::get('/assessments/{plan}', [\App\Http\Controllers\Qa\AssessmentController::class, 'show'])->name('qa.assessments.show');
+            Route::get('/assessments/{plan}/responses/{department}', [\App\Http\Controllers\Qa\AssessmentController::class, 'reviewResponses'])->name('qa.assessments.responses');
             Route::get('/assessments/{plan}/edit', [\App\Http\Controllers\Qa\AssessmentController::class, 'edit'])->name('qa.assessments.edit');
             Route::put('/assessments/{plan}', [\App\Http\Controllers\Qa\AssessmentController::class, 'update'])->name('qa.assessments.update');
             Route::post('/assessments/{plan}/dispatch', [\App\Http\Controllers\Qa\AssessmentController::class, 'dispatch'])->name('qa.assessments.dispatch');
@@ -515,6 +522,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         // Department respondents (HOD / department staff) - access checked in service.
         Route::get('/sidebar-notifications', \App\Http\Controllers\Qa\SidebarNotificationController::class)->name('qa.sidebar-notifications');
+        Route::get('/evidence/{attachment}/view', [\App\Http\Controllers\Qa\EvidenceController::class, 'viewer'])->name('qa.evidence.viewer');
+        Route::get('/evidence/{attachment}/file', [\App\Http\Controllers\Qa\EvidenceController::class, 'file'])->name('qa.evidence.file');
+        Route::get('/evidence/{attachment}/download', [\App\Http\Controllers\Qa\EvidenceController::class, 'download'])->name('qa.evidence.download');
         $registerModuleQaTasks('qa');
     });
 
@@ -551,7 +561,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'show'])->name('monitoring_evaluation.reports.show');
             Route::post('/reports/{report}/verify', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'verify'])->name('monitoring_evaluation.reports.verify');
             Route::post('/reports/{report}/return', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'returnReport'])->name('monitoring_evaluation.reports.return');
-            Route::post('/plans/{plan}/quarters/{quarter}/open', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'openQuarter'])->name('monitoring_evaluation.plans.open-quarter');
+            Route::get('/plans/{plan}/quarters/{quarter}/open', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'openQuarter'])->name('monitoring_evaluation.plans.open-quarter');
 
             Route::get('/pime', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'index'])->name('monitoring_evaluation.pime.index');
             Route::post('/pime/recalculate-health', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'recalculateHealth'])->name('monitoring_evaluation.pime.recalculate');
@@ -562,6 +572,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleQaTasks('monitoring_evaluation');
         Route::get('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('monitoring_evaluation.policy.sign');
         Route::post('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('monitoring_evaluation.policy.sign.store');
+        Route::get('/policies/{policy}/view', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'view'])->name('monitoring_evaluation.policies.view');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'download'])->name('monitoring_evaluation.policies.download');
         Route::get('/department-reports', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'index'])->name('monitoring_evaluation.department.index');
         Route::get('/department-reports/plans/{plan}/quarters/{quarter}', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'open'])->name('monitoring_evaluation.department.open');

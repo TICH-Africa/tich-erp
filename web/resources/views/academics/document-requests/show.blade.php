@@ -12,7 +12,7 @@
             <p class="tich-caption">{{ $documentRequest->typeLabel() }}</p>
             <h1 class="tich-leave-hero__title">{{ $documentRequest->student?->fullName() ?? 'Student' }}</h1>
             <div class="tich-leave-hero__meta">
-                <span class="tich-badge">{{ ucfirst($documentRequest->status) }}</span>
+                <x-status-badge :status="$documentRequest->status" />
                 <span class="tich-caption">{{ $documentRequest->student?->registration_number }}</span>
             </div>
         </div>

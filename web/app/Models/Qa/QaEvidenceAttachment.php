@@ -44,6 +44,11 @@ class QaEvidenceAttachment extends Model
             return $this->file_path;
         }
 
-        return asset(ltrim($this->file_path, '/'));
+        $path = ltrim($this->file_path, '/');
+        if (str_starts_with($path, 'storage/')) {
+            return asset($path);
+        }
+
+        return asset('storage/'.$path);
     }
 }

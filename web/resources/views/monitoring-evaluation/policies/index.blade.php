@@ -40,7 +40,7 @@
                     <tr>
                         <td>{{ $item->title }}@if($item->version) <span class="tich-caption">v{{ $item->version }}</span>@endif</td>
                         <td>{{ $item->fiscal_year }}</td>
-                        <td>{{ ucfirst($item->status) }}</td>
+                        <td><x-status-badge :status="$item->status" /></td>
                         <td>{{ $item->uploaded_at?->format('d M Y') }}</td>
                         <td><a href="{{ route('monitoring_evaluation.policies.show', $item) }}" class="tich-link">View</a></td>
                     </tr>

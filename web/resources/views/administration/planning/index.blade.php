@@ -35,7 +35,7 @@
                             <td class="tich-caption {{ $cycle->isPastDeadline() ? 'tich-text--danger' : '' }}">
                                 {{ $cycle->requisition_deadline?->format('d M Y H:i') }}
                             </td>
-                            <td><span class="tich-badge">{{ ucfirst($cycle->status) }}</span></td>
+                            <td><x-status-badge :status="$cycle->status" /></td>
                             <td>
                                 @if ($cycle->status === 'open')
                                     <form method="POST" action="{{ route('administration.planning.lock', $cycle) }}" onsubmit="return confirm('Lock this cycle?')">

@@ -90,7 +90,7 @@
                             <td>{{ $item->title }}</td>
                             <td class="tich-caption">{{ strtoupper($item->framework) }}</td>
                             <td>KES {{ number_format($item->requested_amount, 0) }}</td>
-                            <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
+                            <td><x-status-badge :status="$item->status" /></td>
                         </tr>
                     @empty
                         @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No requests yet', 'icon' => 'inbox'])

@@ -21,7 +21,12 @@ class TechnicalPlanController extends Controller
 
         $items = MeTechnicalPlan::query()
             ->with(['department', 'budgetRequest', 'outputs'])
-            ->when($status !== '', fn ($q) => $q->where('status', $status))
+            ->when(
+                $status !== '',
+                fn ($q) => $q->where('status', $status),
+                // Hide plans still waiting on Administration clearance unless filtered.
+                fn ($q) => $q->where('status', '!=', 'draft')
+            )
             ->orderByDesc('submitted_at')
             ->orderByDesc('id')
             ->paginate(20)

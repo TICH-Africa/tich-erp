@@ -37,7 +37,7 @@
                                 </td>
                                 <td>{{ $item->department?->dept_name }}</td>
                                 <td>KES {{ number_format($item->requested_amount, 0) }}</td>
-                                <td><span class="tich-badge">{{ str_replace('_', ' ', ucfirst($item->status)) }}</span></td>
+                                <td><x-status-badge :status="$item->status" /></td>
                                 <td>
                                     <a href="{{ route('finance.budgeting.requests.show', [$item->id]) }}" class="tich-btn tich-btn-primary">Review</a>
                                 </td>

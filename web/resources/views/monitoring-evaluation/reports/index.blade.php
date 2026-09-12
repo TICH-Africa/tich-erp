@@ -26,7 +26,7 @@
                     <tr>
                         <td>{{ $report->department?->dept_name }}</td>
                         <td>{{ $report->quarter?->label() }}</td>
-                        <td>{{ str_replace('_', ' ', $report->status) }}</td>
+                        <td><x-status-badge :status="$report->status" /></td>
                         <td>{{ $report->submitted_at?->format('d M Y') ?? '-' }}</td>
                         <td><a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-link">Open</a></td>
                     </tr>

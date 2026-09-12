@@ -76,28 +76,64 @@
         </table>
     </div>
 
-    @if ($plan->complianceScores->isNotEmpty())
-        <div class="tich-card tich-table-panel tich-mt-6">
-            <h2 class="tich-h3">Department compliance</h2>
+    @if ($plan->complianceScores->isNotEmpty() || (isset($departments) && $departments->isNotEmpty()))
+        <div class="tich-card tich-table-panel tich-mt-6" id="department-responses">
+            <h2 class="tich-h3">Department responses</h2>
+            <p class="tich-caption tich-mt-2">Open a department to read submitted answers, scores, and attachments.</p>
             <table class="tich-admin-table tich-mt-4">
                 <thead>
                     <tr>
                         <th>Department</th>
-                        <th>Submitted</th>
+                        <th>Progress</th>
                         <th>Score</th>
                         <th>Result</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($plan->complianceScores as $score)
+                    @foreach (($departments ?? $plan->targetDepartments()) as $department)
+                        @php
+                            $score = $plan->complianceScores->firstWhere('department_id', $department->id);
+                            $stats = $submissionStats[$department->id] ?? null;
+                            $submittedRows = (int) ($stats->submitted_rows ?? 0);
+                            $openRows = (int) ($stats->open_rows ?? 0);
+                            $hasResponse = $submittedRows > 0 || ($score && (int) $score->items_submitted > 0);
+                            $awaitingReview = $submittedRows > 0;
+                        @endphp
                         <tr>
-                            <td>{{ $score->department?->dept_name }}</td>
-                            <td>{{ $score->items_submitted }} / {{ $score->total_items }}</td>
-                            <td>{{ number_format((float) $score->weighted_score, 1) }}%</td>
                             <td>
-                                <span class="tich-badge">{{ $score->pass_fail_status }}</span>
-                                @if ($score->is_below_threshold)
-                                    <span class="tich-caption" style="color:#b91c1c;">below threshold</span>
+                                <strong>{{ $department->dept_name }}</strong>
+                                @if ($awaitingReview)
+                                    <span class="tich-signal-dot" title="Responses awaiting review" aria-label="Responses awaiting review" style="margin-left:0.35rem;"></span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($score)
+                                    {{ $score->items_submitted }} / {{ $score->total_items }}
+                                @elseif ($stats)
+                                    {{ $submittedRows }} submitted · {{ $openRows }} open
+                                @else
+                                    Not started
+                                @endif
+                            </td>
+                            <td>{{ $score ? number_format((float) $score->weighted_score, 1).'%' : '—' }}</td>
+                            <td>
+                                @if ($score)
+                                    <x-status-badge :status="$score->pass_fail_status" />
+                                    @if ($score->is_below_threshold)
+                                        <span class="tich-caption" style="color:#b91c1c;">below threshold</span>
+                                    @endif
+                                @else
+                                    <x-status-badge status="pending" />
+                                @endif
+                            </td>
+                            <td>
+                                @if ($hasResponse || ($stats && (int) ($stats->total_rows ?? 0) > 0))
+                                    <a href="{{ route('qa.assessments.responses', [$plan, $department]) }}" class="tich-btn {{ $awaitingReview ? 'tich-btn-success' : 'tich-btn-secondary' }}">
+                                        {{ $awaitingReview ? 'Review' : 'View' }}
+                                    </a>
+                                @else
+                                    <span class="tich-caption">Waiting</span>
                                 @endif
                             </td>
                         </tr>

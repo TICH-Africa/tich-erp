@@ -12,7 +12,7 @@
             <p class="tich-caption">Transcript request</p>
             <h1 class="tich-leave-hero__title">{{ $transcriptRequest->student?->fullName() ?? 'Student' }}</h1>
             <div class="tich-leave-hero__meta">
-                <span class="tich-badge">{{ ucfirst($transcriptRequest->status) }}</span>
+                <x-status-badge :status="$transcriptRequest->status" />
                 <span class="tich-caption">{{ $transcriptRequest->student?->registration_number }}</span>
             </div>
         </div>

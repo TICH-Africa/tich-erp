@@ -35,7 +35,7 @@
                 </thead>
                 <tbody>
                     @foreach ($report->lines as $line)
-                        <tr @if($line->isWarning()) style="background:#fff7ed;" @endif>
+                        <tr @class(['tich-me-row--warning' => $line->isWarning()])>
                             <td>{{ $line->output }}</td>
                             <td>{{ $line->activity }}</td>
                             <td>{{ $line->costable_item }}</td>
@@ -43,7 +43,7 @@
                             <td>{{ number_format((float) $line->achieved, 2) }}</td>
                             <td>
                                 {{ number_format((float) $line->deviation, 2) }}
-                                @if($line->isWarning()) <span class="tich-caption" style="color:#c2410c;">warning</span> @endif
+                                @if($line->isWarning()) <span class="tich-caption tich-me-warning-label">warning</span> @endif
                             </td>
                         </tr>
                     @endforeach

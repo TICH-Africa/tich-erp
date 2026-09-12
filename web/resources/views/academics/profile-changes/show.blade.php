@@ -16,7 +16,7 @@
             <p class="tich-caption">{{ ucfirst(str_replace('_', ' ', $profileChange->request_type)) }}</p>
             <h1 class="tich-leave-hero__title">{{ $profileChange->student?->fullName() ?? 'Student' }}</h1>
             <div class="tich-leave-hero__meta">
-                <span class="tich-badge">{{ ucfirst($profileChange->status) }}</span>
+                <x-status-badge :status="$profileChange->status" />
                 <span class="tich-caption">{{ $profileChange->student?->registration_number }} · submitted {{ $profileChange->created_at?->format('d M Y H:i') }}</span>
             </div>
         </div>

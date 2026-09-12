@@ -52,7 +52,7 @@
                 @forelse ($plans as $plan)
                     <tr>
                         <td>{{ $plan->plan_name }}</td>
-                        <td><span class="tich-badge">{{ str_replace('_', ' ', $plan->status) }}</span></td>
+                        <td><x-status-badge :status="$plan->status" /></td>
                         <td>{{ $plan->compiled_at?->format('d M Y H:i') ?? '-' }}</td>
                         <td>{{ $plan->complianceScores->count() }}</td>
                         <td><a href="{{ route('ceo.quality.show', $plan) }}" class="tich-btn tich-btn-secondary">Open</a></td>

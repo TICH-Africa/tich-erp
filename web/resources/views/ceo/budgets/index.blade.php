@@ -40,7 +40,7 @@
                             <td>{{ $item->department?->dept_name }}</td>
                             <td>KES {{ number_format((float) $item->requested_amount, 0) }}</td>
                             <td>KES {{ number_format((float) ($item->verified_amount ?? 0), 0) }}</td>
-                            <td><span class="tich-badge">{{ str_replace('_', ' ', $item->status) }}</span></td>
+                            <td><x-status-badge :status="$item->status" /></td>
                             <td>
                                 <a href="{{ route('ceo.budgets.show', $item) }}" class="tich-btn tich-btn-primary">Open</a>
                             </td>

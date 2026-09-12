@@ -13,6 +13,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'finance'])
+        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'finance'])
 
         @foreach ($financeNav->sidebarGroups() as $group)
             @include('partials.navigation.sidebar-group', [

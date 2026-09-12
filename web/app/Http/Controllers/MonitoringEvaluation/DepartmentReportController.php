@@ -77,14 +77,16 @@ class DepartmentReportController extends Controller
             403
         );
 
-        return view('monitoring-evaluation.department.edit', compact('report'));
+        $canSubmit = $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department);
+
+        return view('monitoring-evaluation.department.edit', compact('report', 'canSubmit'));
     }
 
     public function update(Request $request, MeQuarterlyReport $report): RedirectResponse
     {
         $report->load('department');
         abort_unless(
-            $this->reports->userCanEditDepartmentReport($request->user(), $report->department),
+            $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
             403
         );
 
@@ -107,7 +109,7 @@ class DepartmentReportController extends Controller
     {
         $report->load('department');
         abort_unless(
-            $this->reports->userCanEditDepartmentReport($request->user(), $report->department),
+            $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
             403
         );
 

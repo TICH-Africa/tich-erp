@@ -32,7 +32,7 @@
                             <td>{{ $check->area }}</td>
                             <td>{{ $check->requirement }}</td>
                             <td class="tich-caption">{{ $check->regulator ?? '-' }}</td>
-                            <td><span class="tich-badge">{{ ucfirst($check->status) }}</span></td>
+                            <td><x-status-badge :status="$check->status" /></td>
                             <td>
                                 <form method="POST" action="{{ route('administration.inspection.status', $check) }}" class="tich-flex-wrap" style="gap: 0.35rem;">
                                     @csrf

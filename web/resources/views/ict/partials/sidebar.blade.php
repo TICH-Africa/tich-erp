@@ -11,6 +11,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
+        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'ict'])
 
         <p class="tich-admin-sidebar__title tich-mt-4">Website content</p>
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.about.index'), 'label' => 'About Us', 'icon' => 'book-open', 'active' => request()->routeIs('ict.content.about.*')])

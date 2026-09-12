@@ -126,7 +126,7 @@
     @if ($canAct)
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Administration actions</h2>
-            <p class="tich-caption tich-mt-1">Review the request first. You can save notes, return it to the department, forward it to Finance, or reject it.</p>
+            <p class="tich-caption tich-mt-1">Review the request first. You can save notes, return it to the department, approve and forward it to Finance and M&E, or reject it.</p>
 
             <form method="POST" action="{{ route('administration.approvals.review', $budgetRequest) }}" class="tich-form-stack tich-mt-4">
                 @csrf
@@ -150,10 +150,10 @@
                 </form>
 
                 <div class="tich-form-stack">
-                    <form method="POST" action="{{ route('administration.approvals.route-finance', $budgetRequest) }}" onsubmit="return confirm('Forward this budget request to Finance?')">
+                    <form method="POST" action="{{ route('administration.approvals.route-finance', $budgetRequest) }}" onsubmit="return confirm('Approve and forward this request to Finance and M&E?')">
                         @csrf
-                        <p class="tich-caption">When the request looks correct, forward it for Finance verification.</p>
-                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-2">Forward to Finance</button>
+                        <p class="tich-caption">When the request looks correct, approve it. Finance verifies the budget; M&E reviews the linked technical plan.</p>
+                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-2">Approve &amp; forward to Finance &amp; M&E</button>
                     </form>
 
                     <form method="POST" action="{{ route('administration.approvals.reject', $budgetRequest) }}" class="tich-mt-4" onsubmit="return confirm('Reject this request permanently?')">

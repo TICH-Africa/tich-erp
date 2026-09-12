@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $filename }}</title>
+    <x-asset.stylesheet path="css/tich-platform.css" />
+    @if (config('security.block_inspect_ui', false))
+        <x-asset.script path="js/tich-ui-protection.js" />
+    @endif
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: #1f2937;
+        }
+
+        .doc-external-viewer {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .doc-external-viewer__toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            padding: 0.875rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid var(--tich-border, #e2e4e5);
+        }
+
+        .doc-external-viewer__meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            min-width: 0;
+            flex: 1 1 12rem;
+        }
+
+        .doc-external-viewer__meta strong {
+            font-size: 0.9375rem;
+        }
+
+        .doc-external-viewer__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        .doc-external-viewer__stage {
+            flex: 1;
+            min-height: 0;
+            background: #525659;
+        }
+
+        .doc-external-viewer__frame,
+        .doc-external-viewer__image {
+            width: 100%;
+            height: calc(100vh - 4.5rem);
+            border: 0;
+            display: block;
+            object-fit: contain;
+            background: #525659;
+        }
+
+        .doc-external-viewer__fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 4.5rem);
+            padding: 2rem;
+            text-align: center;
+            background: #fff;
+        }
+    </style>
+</head>
+<body class="doc-external-viewer">
+    <header class="doc-external-viewer__toolbar">
+        <div class="doc-external-viewer__meta">
+            <strong>{{ $filename }}</strong>
+            <span class="tich-caption">{{ strtoupper($attachment->file_type ?: 'file') }} attachment</span>
+        </div>
+        <div class="doc-external-viewer__actions">
+            <a href="{{ $backUrl }}" class="tich-btn tich-btn-ghost">&larr; Back</a>
+            <a href="{{ route('qa.evidence.download', $attachment) }}" class="tich-btn tich-btn-primary">Download</a>
+        </div>
+    </header>
+
+    <main class="doc-external-viewer__stage">
+        @if ($isPreviewable)
+            @if (str_starts_with($mime, 'image/'))
+                <img
+                    src="{{ route('qa.evidence.file', $attachment) }}"
+                    alt="{{ $filename }}"
+                    class="doc-external-viewer__image"
+                >
+            @else
+                <iframe
+                    src="{{ route('qa.evidence.file', $attachment) }}"
+                    title="{{ $filename }}"
+                    class="doc-external-viewer__frame"
+                ></iframe>
+            @endif
+        @else
+            <div class="doc-external-viewer__fallback">
+                <p class="tich-text">This file type cannot be previewed in the browser.</p>
+                <a href="{{ route('qa.evidence.download', $attachment) }}" class="tich-btn tich-btn-primary tich-mt-4">Download file</a>
+            </div>
+        @endif
+    </main>
+</body>
+</html>

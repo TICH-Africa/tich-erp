@@ -42,7 +42,7 @@
                             <td>{{ $changeRequest->created_at->format('d M Y H:i') }}</td>
                             <td>
                                 @if ($changeRequest->status === 'pending')
-                                    <span class="tich-badge tich-badge--warning">Pending</span>
+                                    <x-status-badge status="pending" label="Pending" />
                                 @elseif ($changeRequest->status === 'approved')
                                     <span class="tich-badge tich-badge--success">Approved</span>
                                 @else

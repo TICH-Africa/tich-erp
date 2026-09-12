@@ -56,6 +56,26 @@
     --tich-notice-info-border: #e2e8f0;
     --tich-focus-ring: rgba(22, 105, 166, 0.15);
 
+    /* Status tones (badges) — light mode */
+    --tich-status-success-bg: #dcfce7;
+    --tich-status-success-text: #166534;
+    --tich-status-success-border: #86efac;
+    --tich-status-danger-bg: #fee2e2;
+    --tich-status-danger-text: #991b1b;
+    --tich-status-danger-border: #fca5a5;
+    --tich-status-warning-bg: #ffedd5;
+    --tich-status-warning-text: #9a3412;
+    --tich-status-warning-border: #fdba74;
+    --tich-status-caution-bg: #fef9c3;
+    --tich-status-caution-text: #854d0e;
+    --tich-status-caution-border: #fde047;
+    --tich-status-info-bg: #dbeafe;
+    --tich-status-info-text: #1e40af;
+    --tich-status-info-border: #93c5fd;
+    --tich-status-neutral-bg: #e2e8f0;
+    --tich-status-neutral-text: #475569;
+    --tich-status-neutral-border: #cbd5e1;
+
     /* Semantic aliases (modals, elevated surfaces) */
     --tich-surface: var(--tich-white);
     --tich-surface-muted: #f8fafc;
@@ -5129,6 +5149,29 @@ a.tich-notification-badge:hover {
     background: color-mix(in srgb, var(--tich-blue) 12%, var(--tich-surface-muted));
 }
 
+.tich-me-row--warning > td {
+    background: #fff7ed;
+}
+
+.tich-me-warning-label {
+    color: #c2410c;
+    margin-left: 0.35rem;
+}
+
+[data-theme="dark"] .tich-me-row--warning > td {
+    background: color-mix(in srgb, #ea580c 18%, var(--tich-surface));
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-admin-table tbody tr.tich-me-row--warning:nth-child(even) > td,
+[data-theme="dark"] .tich-admin-table tbody tr.tich-me-row--warning:hover > td {
+    background: color-mix(in srgb, #ea580c 22%, var(--tich-surface));
+}
+
+[data-theme="dark"] .tich-me-warning-label {
+    color: #fb923c;
+}
+
 .tich-status-badge {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -5138,33 +5181,46 @@ a.tich-notification-badge:hover {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: capitalize;
-    background: var(--tich-neutral-border);
-    color: var(--tich-grey);
+    border: 1px solid var(--tich-status-neutral-border);
+    background: var(--tich-status-neutral-bg);
+    color: var(--tich-status-neutral-text);
 }
 
-.tich-status-badge.is-pending {
-    background: #fef3c7;
-    color: #92400e;
+.tich-status-badge.is-pending,
+.tich-status-badge.is-caution {
+    background: var(--tich-status-caution-bg);
+    color: var(--tich-status-caution-text);
+    border-color: var(--tich-status-caution-border);
 }
 
 .tich-status-badge.is-info {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--tich-status-info-bg);
+    color: var(--tich-status-info-text);
+    border-color: var(--tich-status-info-border);
 }
 
 .tich-status-badge.is-warning {
-    background: #ffedd5;
-    color: #9a3412;
+    background: var(--tich-status-warning-bg);
+    color: var(--tich-status-warning-text);
+    border-color: var(--tich-status-warning-border);
 }
 
 .tich-status-badge.is-success {
-    background: #d1fae5;
-    color: #065f46;
+    background: var(--tich-status-success-bg);
+    color: var(--tich-status-success-text);
+    border-color: var(--tich-status-success-border);
 }
 
 .tich-status-badge.is-danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--tich-status-danger-bg);
+    color: var(--tich-status-danger-text);
+    border-color: var(--tich-status-danger-border);
+}
+
+.tich-status-badge.is-neutral {
+    background: var(--tich-status-neutral-bg);
+    color: var(--tich-status-neutral-text);
+    border-color: var(--tich-status-neutral-border);
 }
 
 .tich-badge {
@@ -5176,28 +5232,54 @@ a.tich-notification-badge:hover {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: capitalize;
-    background: var(--tich-neutral-border);
-    color: var(--tich-grey);
+    border: 1px solid var(--tich-status-neutral-border);
+    background: var(--tich-status-neutral-bg);
+    color: var(--tich-status-neutral-text);
 }
 
-.tich-badge--success {
-    background: #d1fae5;
-    color: #065f46;
+.tich-badge--success,
+.tich-badge[data-status="success"] {
+    background: var(--tich-status-success-bg);
+    color: var(--tich-status-success-text);
+    border-color: var(--tich-status-success-border);
 }
 
-.tich-badge--warning {
-    background: #fef3c7;
-    color: #92400e;
+.tich-badge--danger,
+.tich-badge[data-status="danger"] {
+    background: var(--tich-status-danger-bg);
+    color: var(--tich-status-danger-text);
+    border-color: var(--tich-status-danger-border);
 }
 
-.tich-badge--info {
-    background: #dbeafe;
-    color: #1e40af;
+.tich-badge--warning,
+.tich-badge[data-status="warning"] {
+    background: var(--tich-status-warning-bg);
+    color: var(--tich-status-warning-text);
+    border-color: var(--tich-status-warning-border);
 }
 
-.tich-badge--danger {
-    background: #fee2e2;
-    color: #991b1b;
+.tich-badge--caution,
+.tich-badge--pending,
+.tich-badge[data-status="caution"],
+.tich-badge[data-status="pending"] {
+    background: var(--tich-status-caution-bg);
+    color: var(--tich-status-caution-text);
+    border-color: var(--tich-status-caution-border);
+}
+
+.tich-badge--info,
+.tich-badge[data-status="info"] {
+    background: var(--tich-status-info-bg);
+    color: var(--tich-status-info-text);
+    border-color: var(--tich-status-info-border);
+}
+
+.tich-badge--neutral,
+.tich-badge--secondary,
+.tich-badge[data-status="neutral"] {
+    background: var(--tich-status-neutral-bg);
+    color: var(--tich-status-neutral-text);
+    border-color: var(--tich-status-neutral-border);
 }
 
 .tich-card--hover {
@@ -5343,55 +5425,7 @@ a.tich-notification-badge:hover {
     color: var(--tich-white);
 }
 
-[data-theme="dark"] .tich-status-badge.is-pending {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fcd34d;
-}
-
-[data-theme="dark"] .tich-status-badge.is-info {
-    background: rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
-}
-
-[data-theme="dark"] .tich-status-badge.is-warning {
-    background: rgba(251, 146, 60, 0.2);
-    color: #fdba74;
-}
-
-[data-theme="dark"] .tich-status-badge.is-success {
-    background: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
-}
-
-[data-theme="dark"] .tich-status-badge.is-danger {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-}
-
-[data-theme="dark"] .tich-badge {
-    background: rgba(148, 163, 184, 0.15);
-    color: var(--tich-grey);
-}
-
-[data-theme="dark"] .tich-badge--success {
-    background: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
-}
-
-[data-theme="dark"] .tich-badge--warning {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fcd34d;
-}
-
-[data-theme="dark"] .tich-badge--info {
-    background: rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
-}
-
-[data-theme="dark"] .tich-badge--danger {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-}
+/* Status badge dark tones come from [data-theme="dark"] CSS variables. */
 
 [data-theme="dark"] .tich-card--hover:hover {
     border-color: var(--tich-blue);
@@ -5943,6 +5977,25 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     --tich-notice-info-bg: #1e293b;
     --tich-notice-info-border: #475569;
     --tich-focus-ring: rgba(96, 165, 250, 0.25);
+
+    --tich-status-success-bg: rgba(34, 197, 94, 0.22);
+    --tich-status-success-text: #86efac;
+    --tich-status-success-border: rgba(34, 197, 94, 0.45);
+    --tich-status-danger-bg: rgba(239, 68, 68, 0.22);
+    --tich-status-danger-text: #fca5a5;
+    --tich-status-danger-border: rgba(239, 68, 68, 0.45);
+    --tich-status-warning-bg: rgba(249, 115, 22, 0.24);
+    --tich-status-warning-text: #fdba74;
+    --tich-status-warning-border: rgba(249, 115, 22, 0.5);
+    --tich-status-caution-bg: rgba(234, 179, 8, 0.24);
+    --tich-status-caution-text: #fde047;
+    --tich-status-caution-border: rgba(234, 179, 8, 0.5);
+    --tich-status-info-bg: rgba(59, 130, 246, 0.24);
+    --tich-status-info-text: #93c5fd;
+    --tich-status-info-border: rgba(59, 130, 246, 0.5);
+    --tich-status-neutral-bg: rgba(148, 163, 184, 0.18);
+    --tich-status-neutral-text: #cbd5e1;
+    --tich-status-neutral-border: rgba(148, 163, 184, 0.35);
 
     --tich-surface: var(--tich-white);
     --tich-surface-muted: #131c28;
@@ -9422,4 +9475,45 @@ a.tich-tabs__btn {
 
 [data-theme="dark"] .qa-dept-picker__name {
     color: var(--tich-grey);
+}
+
+.tich-badge--with-signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.tich-signal-dot {
+    position: relative;
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #dc2626;
+    flex-shrink: 0;
+}
+
+.tich-signal-dot::before,
+.tich-signal-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid #dc2626;
+    animation: tich-signal-wave 1.7s ease-out infinite;
+}
+
+.tich-signal-dot::after {
+    animation-delay: 0.85s;
+}
+
+@keyframes tich-signal-wave {
+    0% {
+        transform: scale(1);
+        opacity: 0.75;
+    }
+    100% {
+        transform: scale(3.4);
+        opacity: 0;
+    }
 }

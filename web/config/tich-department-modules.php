@@ -621,6 +621,7 @@ return [
         'MKT' => ['portal'],
         'MNE' => ['monitoring_evaluation'],
         'ME' => ['monitoring_evaluation'],
+        'M&E' => ['monitoring_evaluation'],
     ],
 
     /** Map dashboard permission keys to assignable department module keys. */

@@ -78,7 +78,7 @@
                                 <td>{{ $session->scheduled_at?->format('d M Y H:i') ?? '-' }}</td>
                                 <td>{{ $session->audience ?: '-' }}</td>
                                 <td>{{ $session->location ?: '-' }}</td>
-                                <td><span class="tich-badge">{{ $session->status }}</span></td>
+                                <td><x-status-badge :status="$session->status" /></td>
                             </tr>
                         @empty
                             @include('partials.states.table-empty', ['colspan' => 5, 'title' => 'No capacity sessions logged', 'icon' => 'inbox'])

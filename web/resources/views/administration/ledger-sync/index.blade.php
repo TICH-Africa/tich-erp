@@ -44,7 +44,7 @@
                             <td><strong>{{ $log->sync_batch }}</strong></td>
                             <td class="tich-caption">{{ $log->source_type }} #{{ $log->source_id }}</td>
                             <td class="tich-caption">{{ $log->external_ref ?? '-' }}</td>
-                            <td><span class="tich-badge">{{ ucfirst($log->status) }}</span></td>
+                            <td><x-status-badge :status="$log->status" /></td>
                             <td class="tich-caption">{{ $log->synced_at?->format('d M Y H:i') ?? '-' }}</td>
                             <td class="tich-caption">{{ \Illuminate\Support\Str::limit($log->error_message, 80) }}</td>
                         </tr>

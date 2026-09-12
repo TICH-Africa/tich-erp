@@ -17,7 +17,11 @@ class AssessmentController extends Controller
     public function index(): View
     {
         $plans = QaPlan::query()
-            ->withCount(['checklists', 'correctiveActions'])
+            ->withCount([
+                'checklists',
+                'correctiveActions',
+                'submissions as awaiting_review_count' => fn ($query) => $query->where('submission_status', 'submitted'),
+            ])
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -46,7 +50,34 @@ class AssessmentController extends Controller
     {
         $plan->load(['checklists', 'complianceScores.department', 'correctiveActions.department', 'deployedBy']);
 
-        return view('qa.assessments.show', compact('plan'));
+        $departments = $plan->targetDepartments();
+        $submissionStats = \App\Models\Qa\QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->selectRaw('department_id, COUNT(*) as total_rows, SUM(CASE WHEN submission_status IN (\'submitted\', \'verified\', \'approved\') THEN 1 ELSE 0 END) as submitted_rows, SUM(CASE WHEN submission_status IN (\'pending\', \'draft\', \'rejected\') THEN 1 ELSE 0 END) as open_rows, MAX(submitted_at) as last_activity_at')
+            ->groupBy('department_id')
+            ->get()
+            ->keyBy('department_id');
+
+        return view('qa.assessments.show', compact('plan', 'departments', 'submissionStats'));
+    }
+
+    public function reviewResponses(QaPlan $plan, Department $department): View
+    {
+        abort_unless(in_array((int) $department->id, $plan->targetDepartmentIds(), true), 404);
+
+        $plan->load('checklists');
+        $submissions = \App\Models\Qa\QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->where('department_id', $department->id)
+            ->with(['evidence', 'submittedByStaff'])
+            ->get()
+            ->keyBy('checklist_item_id');
+
+        $compliance = $plan->complianceScores()
+            ->where('department_id', $department->id)
+            ->first();
+
+        return view('qa.assessments.responses', compact('plan', 'department', 'submissions', 'compliance'));
     }
 
     public function edit(QaPlan $plan): View

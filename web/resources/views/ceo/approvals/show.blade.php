@@ -22,7 +22,7 @@
             </div>
             <div>
                 <p class="tich-caption">Status</p>
-                <p><span class="tich-badge">{{ str_replace('_', ' ', $budgetRequest->status) }}</span></p>
+                <p><x-status-badge :status="$budgetRequest->status" /></p>
             </div>
             <div>
                 <p class="tich-caption">Requested amount</p>
@@ -81,9 +81,9 @@
                 </form>
 
                 <div class="tich-form-stack">
-                    <form method="POST" action="{{ route('ceo.approvals.route-finance', $budgetRequest) }}" onsubmit="return confirm('Forward this budget request to Finance?')">
+                    <form method="POST" action="{{ route('ceo.approvals.route-finance', $budgetRequest) }}" onsubmit="return confirm('Approve and forward this request to Finance and M&E?')">
                         @csrf
-                        <button type="submit" class="tich-btn tich-btn-primary">Forward to Finance</button>
+                        <button type="submit" class="tich-btn tich-btn-primary">Approve → Finance &amp; M&E</button>
                     </form>
                     <form method="POST" action="{{ route('ceo.approvals.reject', $budgetRequest) }}" class="tich-mt-4" onsubmit="return confirm('Reject this request permanently?')">
                         @csrf

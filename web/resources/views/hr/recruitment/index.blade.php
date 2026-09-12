@@ -63,7 +63,7 @@
                                 @elseif ($application->status == 'offered')
                                     <span class="tich-badge tich-badge--success">Offered</span>
                                 @else
-                                    <span class="tich-badge">{{ ucfirst($application->status) }}</span>
+                                    <x-status-badge :status="$application->status" />
                                 @endif
                             </td>
                             <td>

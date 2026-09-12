@@ -51,7 +51,8 @@ class MeTechnicalPlanService
                 'department_id' => $department->id,
                 'title' => $budgetRequest->title.' - Technical plan',
                 'fiscal_year' => $fiscalYear,
-                'status' => 'me_review',
+                // Held until Administration forwards to Finance & M&E.
+                'status' => 'draft',
                 'summary' => $summary,
                 'submitted_by' => $user->id,
                 'submitted_at' => now(),
@@ -88,10 +89,139 @@ class MeTechnicalPlanService
                 ]);
             }
 
-            $this->notifyMeOfficers($plan);
-
             return $plan->fresh(['outputs', 'department']);
         });
+    }
+
+    /**
+     * Ensure a technical plan exists for a budget request, then release it to M&E review.
+     * Creates a fallback plan from budget line items when dual-ingest never ran.
+     */
+    public function ensureReleasedForBudget(BudgetRequest $budgetRequest, ?User $actor = null): MeTechnicalPlan
+    {
+        $budgetRequest->loadMissing(['department', 'planningCycle']);
+
+        $plan = MeTechnicalPlan::query()
+            ->where('budget_request_id', $budgetRequest->id)
+            ->first();
+
+        if (! $plan) {
+            $department = $budgetRequest->department;
+            if (! $department) {
+                throw new \RuntimeException('Budget request has no department; cannot create an M&E plan.');
+            }
+
+            $outputs = $this->outputsFromBudgetLines($budgetRequest);
+            $user = $actor
+                ?? ($budgetRequest->submitted_by
+                    ? User::query()->find($budgetRequest->submitted_by)
+                    : null)
+                ?? User::query()->orderBy('id')->first();
+
+            if (! $user) {
+                throw new \RuntimeException('Cannot create an M&E plan without a submitting user.');
+            }
+
+            $plan = $this->ingestFromBudgetSubmission(
+                $budgetRequest,
+                $department,
+                $user,
+                $outputs,
+                'Auto-created from budget line items when Administration forwarded to Finance & M&E.',
+            );
+        }
+
+        return $this->releaseToMeReview($plan, $actor);
+    }
+
+    /**
+     * @return list<array{output: string, activity: string, costable_item: ?string, planned: float, planned_unit: ?string}>
+     */
+    protected function outputsFromBudgetLines(BudgetRequest $budgetRequest): array
+    {
+        $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
+        $outputs = [];
+
+        foreach ($lines as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            $item = trim((string) ($line['item'] ?? $line['description'] ?? ''));
+            if ($item === '') {
+                continue;
+            }
+            $outputs[] = [
+                'output' => $item,
+                'activity' => trim((string) ($line['description'] ?? '')) !== ''
+                    ? trim((string) $line['description'])
+                    : 'Deliver / procure '.$item,
+                'costable_item' => $item,
+                'planned' => round((float) ($line['quantity'] ?? $line['total'] ?? 1), 2),
+                'planned_unit' => isset($line['unit_of_measure']) ? trim((string) $line['unit_of_measure']) : null,
+            ];
+        }
+
+        if ($outputs === []) {
+            $outputs[] = [
+                'output' => $budgetRequest->title,
+                'activity' => 'Implement activities under '.$budgetRequest->title,
+                'costable_item' => null,
+                'planned' => round((float) $budgetRequest->requested_amount, 2),
+                'planned_unit' => 'KES',
+            ];
+        }
+
+        return $outputs;
+    }
+
+    /**
+     * Release a linked technical plan into the M&E review queue (after Administration clearance).
+     */
+    public function releaseToMeReview(MeTechnicalPlan $plan, ?User $actor = null): MeTechnicalPlan
+    {
+        if ($plan->isBaselineLocked()) {
+            throw new \RuntimeException('This technical plan is baseline-locked and cannot be released to M&E.');
+        }
+
+        if (in_array($plan->status, ['me_approved', 'baseline_locked'], true)) {
+            return $plan;
+        }
+
+        if ($plan->status !== 'me_review') {
+            $plan->update([
+                'status' => 'me_review',
+                'me_reviewed_by' => null,
+                'me_reviewed_at' => null,
+                'me_notes' => null,
+                'submitted_at' => $plan->submitted_at ?? now(),
+            ]);
+        }
+
+        $fresh = $plan->fresh(['department']);
+        $this->notifyMeOfficers($fresh);
+
+        try {
+            app(\App\Services\Sidebar\MeSidebarNotificationService::class)->broadcastCounts();
+        } catch (\Throwable) {
+            // Non-fatal.
+        }
+
+        return $fresh;
+    }
+
+    public function holdAfterAdminReturn(MeTechnicalPlan $plan): MeTechnicalPlan
+    {
+        if ($plan->isBaselineLocked() || in_array($plan->status, ['me_approved', 'baseline_locked'], true)) {
+            return $plan;
+        }
+
+        $plan->update([
+            'status' => 'draft',
+            'me_reviewed_by' => null,
+            'me_reviewed_at' => null,
+        ]);
+
+        return $plan->fresh();
     }
 
     public function approveByMe(MeTechnicalPlan $plan, User $user, ?string $notes = null): MeTechnicalPlan
@@ -256,7 +386,7 @@ class MeTechnicalPlanService
             $this->notifications->notifyUsers(
                 $userIds,
                 'Technical plan awaiting M&E review',
-                ($plan->department?->dept_name ?? 'A department').' submitted a technical plan with their budget request.',
+                ($plan->department?->dept_name ?? 'A department').' technical plan was released by Administration for M&E review (alongside Finance).',
                 'me_technical_plan',
                 (string) $plan->id,
                 'high',

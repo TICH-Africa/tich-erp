@@ -18,7 +18,7 @@
             HODs must digitally sign
             <em>{{ $mePolicy->title }}</em>
             ({{ $mePolicy->fiscal_year }}) before submitting annual budgets and departmental plans.
-            <a href="{{ route('monitoring_evaluation.policy.sign') }}" class="tich-link">Sign the policy now</a>
+            <a href="{{ route($mePolicySignRoute ?? 'monitoring_evaluation.policy.sign') }}" class="tich-link">Sign the policy now</a>
         </div>
     @elseif ($mePolicy ?? null)
         <div class="tich-alert tich-alert--info tich-mt-4">

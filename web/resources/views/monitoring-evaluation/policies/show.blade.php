@@ -34,13 +34,15 @@
         <p class="tich-caption tich-mt-1">{{ $signoff['signed'] }} / {{ $signoff['total'] }} departments</p>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
-                <thead><tr><th>Department</th><th>Code</th><th>Signed</th></tr></thead>
+                    <thead><tr><th>Department</th><th>Code</th><th>Signed by</th><th>Signed at</th><th>Status</th></tr></thead>
                 <tbody>
                     @foreach ($signoff['departments'] as $dept)
                         <tr>
                             <td>{{ $dept['name'] }}</td>
                             <td>{{ $dept['code'] }}</td>
-                            <td>{{ $dept['signed'] ? 'Yes' : 'Pending' }}</td>
+                            <td>{{ $dept['signed'] ? ($dept['signed_name'] ?? '—') : '—' }}</td>
+                            <td>{{ $dept['signed'] ? ($dept['signed_at'] ?? '—') : '—' }}</td>
+                            <td><x-status-badge :status="$dept['signed'] ? 'signed' : 'pending'" :label="$dept['signed'] ? 'Signed' : 'Pending'" /></td>
                         </tr>
                     @endforeach
                 </tbody>

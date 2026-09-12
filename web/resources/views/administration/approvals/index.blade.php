@@ -66,9 +66,9 @@
                                     <a href="{{ route('administration.approvals.show', $item) }}" class="tich-btn tich-btn-primary">Review</a>
 
                                     @if ($item->status === 'submitted' || $item->status === 'draft')
-                                        <form method="POST" action="{{ route('administration.approvals.route-finance', $item) }}" onsubmit="return confirm('Forward this budget request to Finance?')">
+                                        <form method="POST" action="{{ route('administration.approvals.route-finance', $item) }}" onsubmit="return confirm('Approve and forward this request to Finance and M&E?')">
                                             @csrf
-                                            <button type="submit" class="tich-btn tich-btn-secondary">Forward to Finance</button>
+                                            <button type="submit" class="tich-btn tich-btn-secondary">Approve → Finance &amp; M&E</button>
                                         </form>
                                     @endif
                                 </div>
@@ -86,6 +86,6 @@
     </div>
 
     <div class="tich-alert tich-alert--info tich-mt-6">
-        <strong>Workflow:</strong> Department submits → Administration reviews (notes, return, or forward) → Finance verifies → Executive/CEO authorizes → disbursement.
+        <strong>Workflow:</strong> Department submits → Administration reviews → approve forwards to Finance (budget) and M&E (technical plan) → Finance verifies → Executive/CEO authorizes → disbursement.
     </div>
 @endsection

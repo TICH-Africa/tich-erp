@@ -72,7 +72,7 @@ class ApprovalWorkflowController extends Controller
 
         return redirect()
             ->route('ceo.approvals.index')
-            ->with('status', 'Routed to Finance for verification.');
+            ->with('status', 'Approved and forwarded to Finance and M&E.');
     }
 
     public function returnToSender(Request $httpRequest, BudgetRequest $budgetRequest): RedirectResponse

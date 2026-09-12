@@ -95,13 +95,34 @@ class DepartmentBudgetingService
     public function departmentForModule(string $module): Department
     {
         $context = $this->moduleContext($module);
-        $department = $this->departmentByCode($context['dept_code']);
 
-        if (! $department) {
-            abort(404, 'Department for this module is not configured.');
+        foreach ($this->departmentCodesForModule($module, $context['dept_code']) as $code) {
+            $department = $this->departmentByCode($code);
+            if ($department) {
+                return $department;
+            }
         }
 
-        return $department;
+        abort(404, 'Department for this module is not configured.');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function departmentCodesForModule(string $module, ?string $primary = null): array
+    {
+        $primary ??= self::MODULES[$module]['dept_code'] ?? null;
+        $aliases = match ($module) {
+            'monitoring_evaluation' => ['MNE', 'M&E', 'ME'],
+            'ict' => ['ICTO', 'ICT'],
+            default => $primary ? [$primary] : [],
+        };
+
+        if ($primary) {
+            array_unshift($aliases, $primary);
+        }
+
+        return array_values(array_unique($aliases));
     }
 
     /**
@@ -143,11 +164,8 @@ class DepartmentBudgetingService
     public function moduleHomeUrlForDepartment(Department $department): ?string
     {
         foreach (self::MODULES as $module => $config) {
-            if ($department->dept_code === $config['dept_code']) {
-                if ($module === 'academics') {
-                    return route($config['dashboard_route']);
-                }
-
+            $codes = $this->departmentCodesForModule($module, $config['dept_code']);
+            if (in_array($department->dept_code, $codes, true)) {
                 return route($config['dashboard_route']);
             }
         }

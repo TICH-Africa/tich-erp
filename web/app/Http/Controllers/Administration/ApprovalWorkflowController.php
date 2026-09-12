@@ -63,7 +63,7 @@ class ApprovalWorkflowController extends Controller
             return back()->withInput()->withErrors(['workflow' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Review notes saved. You can still forward to Finance or return to the sender.');
+        return back()->with('status', 'Review notes saved. You can still approve to Finance & M&E or return to the sender.');
     }
 
     public function routeToFinance(BudgetRequest $budgetRequest): RedirectResponse
@@ -78,7 +78,7 @@ class ApprovalWorkflowController extends Controller
 
         return redirect()
             ->route('administration.approvals.index')
-            ->with('status', 'Routed to Finance for verification.');
+            ->with('status', 'Approved and forwarded to Finance and M&E.');
     }
 
     public function returnToSender(Request $httpRequest, BudgetRequest $budgetRequest): RedirectResponse

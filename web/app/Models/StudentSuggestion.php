@@ -64,11 +64,11 @@ class StudentSuggestion extends Model
     public function statusBadge(): string
     {
         return match ($this->status) {
-            'open' => 'warning',
+            'open' => 'caution',
             'under_review' => 'info',
             'resolved' => 'success',
-            'closed' => 'secondary',
-            default => 'secondary',
+            'closed' => 'neutral',
+            default => 'neutral',
         };
     }
 

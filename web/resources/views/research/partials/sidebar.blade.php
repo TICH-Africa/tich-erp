@@ -11,6 +11,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'research'])
+        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'research'])
     </nav>
     <div class="tich-admin-sidebar__footer">
         @include('partials.navigation.sidebar-link', ['href' => route('employee.dashboard'), 'label' => 'Back to my employee portal', 'icon' => 'arrow-left', 'muted' => true])

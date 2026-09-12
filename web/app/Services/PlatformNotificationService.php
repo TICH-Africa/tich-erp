@@ -23,25 +23,6 @@ class PlatformNotificationService
     ): void {
         $channels = ['in_app'];
 
-        $email = $this->resolveRecipientEmail($userId);
-        if ($email) {
-            $result = ModuleMail::trySend(
-                ModuleMail::NOTIFICATION,
-                $email,
-                new PlatformNotificationMail($title, $body, $priority, $actionUrl)
-            );
-
-            if ($result['sent']) {
-                $channels[] = 'email';
-            } elseif ($result['error']) {
-                Log::warning('Platform notification email failed', [
-                    'user_id' => $userId,
-                    'email' => $email,
-                    'error' => $result['error'],
-                ]);
-            }
-        }
-
         $row = [
             'user_id' => $userId,
             'title' => $title,
@@ -60,6 +41,28 @@ class PlatformNotificationService
         }
 
         DB::table('notifications')->insert($row);
+
+        // Email is deferred so unreachable SMTP cannot block form submissions (e.g. budgeting).
+        $email = $this->resolveRecipientEmail($userId);
+        if (! $email) {
+            return;
+        }
+
+        dispatch(function () use ($userId, $email, $title, $body, $priority, $actionUrl) {
+            $result = ModuleMail::trySend(
+                ModuleMail::NOTIFICATION,
+                $email,
+                new PlatformNotificationMail($title, $body, $priority, $actionUrl)
+            );
+
+            if (! $result['sent'] && $result['error']) {
+                Log::warning('Platform notification email failed', [
+                    'user_id' => $userId,
+                    'email' => $email,
+                    'error' => $result['error'],
+                ]);
+            }
+        })->afterResponse();
     }
 
     /**

@@ -10,7 +10,13 @@
             @include('partials.navigation.sidebar-link', ['href' => route('monitoring_evaluation.pime.index'), 'label' => 'PIME workspace', 'icon' => 'bar-chart', 'active' => request()->routeIs('monitoring_evaluation.pime.*')])
             @include('partials.navigation.department-budgeting-link', ['module' => 'monitoring_evaluation'])
         @endcan
-        @include('partials.navigation.sidebar-link', ['href' => route('monitoring_evaluation.policy.sign'), 'label' => 'Sign M&E policy', 'icon' => 'shield', 'active' => request()->routeIs('monitoring_evaluation.policy.sign*'), 'badgeKey' => 'policy.sign'])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('monitoring_evaluation.policy.sign'),
+            'label' => 'Sign M&E policy',
+            'icon' => 'shield',
+            'active' => request()->routeIs('monitoring_evaluation.policy.sign*') || request()->routeIs('monitoring_evaluation.me-policy.sign*'),
+            'badgeKey' => 'policy.sign',
+        ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('monitoring_evaluation.qa.tasks.index'),
             'label' => 'QA assessment tasks',

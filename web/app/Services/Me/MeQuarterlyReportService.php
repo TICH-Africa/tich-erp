@@ -25,6 +25,19 @@ class MeQuarterlyReportService
             return true;
         }
 
+        return $this->userIsDepartmentRespondent($user, $department);
+    }
+
+    /**
+     * Only the owning department (HOD / staff) may draft and submit reports to M&E.
+     */
+    public function userCanSubmitDepartmentReport(User $user, Department $department): bool
+    {
+        return $this->userIsDepartmentRespondent($user, $department);
+    }
+
+    public function userIsDepartmentRespondent(User $user, Department $department): bool
+    {
         $staff = $this->staffPortal->staffForUser($user);
         if (! $staff) {
             return false;
@@ -35,6 +48,15 @@ class MeQuarterlyReportService
         }
 
         return (int) $staff->department_id === (int) $department->id;
+    }
+
+    public function userIsMeReviewer(User $user): bool
+    {
+        return $user->hasAnyRole([
+            'Super Admin',
+            'Monitoring and Evaluation Officer',
+            'Assistant Monitoring and Evaluation Officer',
+        ]);
     }
 
     /**

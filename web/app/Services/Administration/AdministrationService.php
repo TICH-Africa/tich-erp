@@ -120,20 +120,30 @@ class AdministrationService
         $old = ['status' => $request->status];
         $request->update([
             'status' => 'finance_review',
-            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'Routed to Finance for verification.'),
+            'workflow_notes' => trim(($request->workflow_notes ? $request->workflow_notes."\n" : '').'Approved by Administration and forwarded to Finance and M&E.'),
         ]);
 
-        $fresh = $request->fresh();
+        $fresh = $request->fresh(['department']);
         $this->auditService->log(
             'administration.budget_request.routed_finance',
             'budget_requests',
             $fresh->id,
             $old,
             ['status' => $fresh->status],
-            'Budget request routed to Finance',
+            'Budget request forwarded to Finance and M&E',
             'success',
             $userId
         );
+
+        try {
+            $actor = $userId ? \App\Models\User::query()->find($userId) : null;
+            app(\App\Services\Me\MeTechnicalPlanService::class)->ensureReleasedForBudget($fresh, $actor);
+        } catch (\Throwable) {
+            // Non-fatal: Finance hand-off still stands if M&E release fails.
+        }
+
+        $this->notifyFinanceOfBudgetForward($fresh);
+        $this->broadcastBudgetSidebarCounts();
 
         return $fresh;
     }
@@ -197,6 +207,19 @@ class AdministrationService
             'success',
             $userId
         );
+
+        try {
+            $plan = \App\Models\Me\MeTechnicalPlan::query()
+                ->where('budget_request_id', $fresh->id)
+                ->first();
+            if ($plan) {
+                app(\App\Services\Me\MeTechnicalPlanService::class)->holdAfterAdminReturn($plan);
+            }
+        } catch (\Throwable) {
+            // Non-fatal.
+        }
+
+        $this->broadcastBudgetSidebarCounts();
 
         return $fresh;
     }
@@ -605,5 +628,55 @@ class AdministrationService
             ->where('is_active', 1)
             ->orderBy('dept_name')
             ->get(['id', 'dept_code', 'dept_name']);
+    }
+
+    protected function notifyFinanceOfBudgetForward(BudgetRequest $request): void
+    {
+        try {
+            $userIds = DB::table('user_roles as ur')
+                ->join('roles as r', 'r.id', '=', 'ur.role_id')
+                ->whereIn('r.role_name', [
+                    'Finance Manager',
+                    'Assistant Finance Manager',
+                    'Super Admin',
+                ])
+                ->pluck('ur.user_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($userIds === []) {
+                return;
+            }
+
+            $dept = $request->department?->dept_name ?? 'A department';
+            app(\App\Services\PlatformNotificationService::class)->notifyUsers(
+                $userIds,
+                'Budget request awaiting Finance review',
+                $dept.' budget request '.$request->request_code.' was approved by Administration and is ready for Finance verification.',
+                'budget_request',
+                (string) $request->id,
+                'high',
+                route('finance.budgeting.requests.show', $request->id),
+            );
+        } catch (\Throwable) {
+            // Non-fatal.
+        }
+    }
+
+    protected function broadcastBudgetSidebarCounts(): void
+    {
+        try {
+            app(\App\Services\Sidebar\AdministrationSidebarNotificationService::class)->broadcastCounts();
+        } catch (\Throwable) {
+            // Non-fatal.
+        }
+
+        try {
+            app(\App\Services\Finance\FinanceSidebarNotificationService::class)->broadcastCounts();
+        } catch (\Throwable) {
+            // Non-fatal.
+        }
     }
 }

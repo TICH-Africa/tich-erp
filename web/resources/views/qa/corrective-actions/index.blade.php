@@ -27,7 +27,7 @@
                         </td>
                         <td>{{ $action->compliance_score_at_flag !== null ? number_format((float) $action->compliance_score_at_flag, 1).'%' : '-' }}</td>
                         <td>{{ $action->resolution_deadline?->format('d M Y') }}</td>
-                        <td><span class="tich-badge">{{ $action->status }}</span></td>
+                        <td><x-status-badge :status="$action->status" /></td>
                         <td>
                             @if (in_array($action->status, ['open', 'in_progress', 'overdue'], true))
                                 <form method="POST" action="{{ route('qa.corrective-actions.resolve', $action) }}" class="tich-form-stack">

@@ -44,10 +44,19 @@ class TaskController extends Controller
             ->get()
             ->keyBy('checklist_item_id');
 
+        $activeItems = $plan->checklists->where('is_active', true);
+        $readOnly = $activeItems->isNotEmpty()
+            && $activeItems->every(function ($item) use ($submissions) {
+                $submission = $submissions->get($item->id);
+
+                return $submission && ! $submission->isEditable();
+            });
+
         return view('qa.tasks.show', $this->viewPayload($moduleContext, [
             'plan' => $plan,
             'respondentDepartment' => $respondent,
             'submissions' => $submissions,
+            'readOnly' => $readOnly,
         ]));
     }
 
@@ -56,6 +65,27 @@ class TaskController extends Controller
         $moduleContext = QaTaskModuleContext::resolve($request);
         $respondent = $this->respondentDepartment($request);
 
+        $hasEditable = QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->where('department_id', $respondent->id)
+            ->whereIn('submission_status', ['pending', 'draft', 'rejected'])
+            ->exists();
+
+        $hasRows = QaDepartmentSubmission::query()
+            ->where('qa_plan_id', $plan->id)
+            ->where('department_id', $respondent->id)
+            ->exists();
+
+        if ($hasRows && ! $hasEditable) {
+            return redirect()
+                ->to(QaTaskModuleContext::url('show', $moduleContext['key'], [
+                    'plan' => $plan,
+                    'department' => $respondent,
+                    'targetDepartment' => $respondent,
+                ]))
+                ->withErrors(['task' => 'This assessment has already been submitted and can only be viewed.']);
+        }
+
         $validated = $request->validate([
             'answers' => ['required', 'array'],
             'answers.*.submission_text' => ['nullable', 'string', 'max:5000'],
@@ -63,8 +93,10 @@ class TaskController extends Controller
             'evidence' => ['nullable', 'array'],
             'evidence.*' => ['nullable', 'array'],
             'evidence.*.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx'],
-            'final_submit' => ['nullable', 'boolean'],
+            'save_action' => ['nullable', 'in:draft,submit'],
         ]);
+
+        $finalSubmit = ($validated['save_action'] ?? $request->input('save_action')) === 'submit';
 
         try {
             $this->qa->saveDepartmentResponses(
@@ -72,8 +104,8 @@ class TaskController extends Controller
                 $plan,
                 $respondent,
                 $validated['answers'] ?? [],
-                $validated['evidence'] ?? [],
-                $request->boolean('final_submit'),
+                $request->file('evidence', []) ?? [],
+                $finalSubmit,
             );
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             return back()->withInput()->withErrors(['task' => $e->getMessage()]);
@@ -85,7 +117,7 @@ class TaskController extends Controller
                 'department' => $respondent,
                 'targetDepartment' => $respondent,
             ]))
-            ->with('status', $request->boolean('final_submit')
+            ->with('status', $finalSubmit
                 ? 'Assessment submitted to Quality Assurance.'
                 : 'Draft saved.');
     }

@@ -166,7 +166,13 @@ class ProgramsSeeder extends Seeder
     ): int {
         $id = DB::table('departments')->where('dept_code', $code)->value('id');
 
+        // Legacy M&E code maps to canonical MNE used by module budgeting.
+        if (! $id && $code === 'MNE') {
+            $id = DB::table('departments')->whereIn('dept_code', ['M&E', 'ME'])->value('id');
+        }
+
         $payload = [
+            'dept_code' => $code,
             'dept_name' => $name,
             'dept_category' => $category,
             'campus_id' => $campusId,
@@ -178,7 +184,6 @@ class ProgramsSeeder extends Seeder
 
         if (! $id) {
             $id = DB::table('departments')->insertGetId([
-                'dept_code' => $code,
                 ...$payload,
                 'created_at' => now(),
             ]);

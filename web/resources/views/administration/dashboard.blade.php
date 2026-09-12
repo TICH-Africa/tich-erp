@@ -178,7 +178,7 @@
                                 <td>{{ $task->owner_id ?: '-' }}</td>
                                 <td>{{ $task->due_on?->format('d/m/Y') }}</td>
                                 <td>KES {{ number_format($task->budget_implication, 2) }}</td>
-                                <td><span class="tich-badge">{{ ucfirst($task->status) }}</span></td>
+                                <td><x-status-badge :status="$task->status" /></td>
                             </tr>
                         @empty
                             <tr>
@@ -212,7 +212,7 @@
                                     <td><strong>{{ $cycle->title }}</strong></td>
                                     <td>{{ ucfirst($cycle->plan_tier) }}</td>
                                     <td>{{ $cycle->requisition_deadline?->format('d/m/Y H:i') }}</td>
-                                    <td><span class="tich-badge">{{ ucfirst($cycle->status) }}</span></td>
+                                    <td><x-status-badge :status="$cycle->status" /></td>
                                 </tr>
                             @empty
                                 <tr>

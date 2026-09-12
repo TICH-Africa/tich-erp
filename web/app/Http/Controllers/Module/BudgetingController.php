@@ -64,6 +64,9 @@ class BudgetingController extends Controller
             'indexRoute' => $routes['index'],
             'mePolicy' => $policy,
             'mePolicySigned' => $policySigned,
+            'mePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.me-policy.sign')
+                ? $module.'.me-policy.sign'
+                : 'monitoring_evaluation.policy.sign',
         ]);
     }
 
@@ -120,6 +123,9 @@ class BudgetingController extends Controller
             'indexRoute' => $routes['index'],
             'mePolicy' => $policy,
             'mePolicySigned' => $policySigned,
+            'mePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.me-policy.sign')
+                ? $module.'.me-policy.sign'
+                : 'monitoring_evaluation.policy.sign',
         ]);
     }
 

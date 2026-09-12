@@ -63,7 +63,7 @@
                             <td>{{ $student->fullName() }}</td>
                             <td class="tich-caption">{{ $student->program?->program_name ?? '-' }}</td>
                             <td class="tich-caption">{{ $student->date_of_admission?->format('d M Y') ?? '-' }}</td>
-                            <td><span class="tich-badge">{{ ucfirst($student->fee_clearance_status ?? 'pending') }}</span></td>
+                            <td><x-status-badge :status="$student->fee_clearance_status ?? 'pending'" /></td>
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $student->enrollment_status ?? 'unknown')) }}</td>
                         </tr>
                     @empty

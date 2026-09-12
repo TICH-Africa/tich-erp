@@ -47,13 +47,18 @@
                             <td data-financial-col="amount"><span class="tich-financial-cell">KES {{ number_format((float) $item->requested_amount, 2) }}</span></td>
                             <td class="tich-caption">{{ $lineCount }} {{ \Illuminate\Support\Str::plural('line', $lineCount) }}</td>
                             <td class="tich-caption">{{ $item->planningCycle?->cycle_code ?? '-' }}</td>
-                            <td><span class="tich-badge">{{ match($item->status) {
-                                'submitted' => 'Awaiting Administration',
-                                'returned' => 'Returned - revise',
-                                'finance_review' => 'Finance review',
-                                'executive_review' => 'Executive review',
-                                default => str_replace('_', ' ', ucfirst($item->status)),
-                            } }}</span></td>
+                            <td>
+                                <x-status-badge
+                                    :status="$item->status"
+                                    :label="match($item->status) {
+                                        'submitted' => 'Awaiting Administration',
+                                        'returned' => 'Returned - revise',
+                                        'finance_review' => 'Finance review',
+                                        'executive_review' => 'Executive review',
+                                        default => str_replace('_', ' ', ucfirst($item->status)),
+                                    }"
+                                />
+                            </td>
                             <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '-' }}</td>
                             <td>
                                 @if ($item->status === 'returned')

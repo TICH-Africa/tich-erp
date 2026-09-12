@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             $this->call(ResearchDemoSeeder::class);
             $this->call(IctDemoSeeder::class);
             $this->call(MonitoringEvaluationDemoSeeder::class);
+            $this->call(MeFrameworkDemoSeeder::class);
             $this->call(FinanceAccountsDemoSeeder::class);
             $this->call(FinanceBulkDemoSeeder::class);
             $this->call(ExamResultsDemoSeeder::class);

@@ -76,7 +76,19 @@ class ReportController extends Controller
 
         $q = $plan->quarters()->where('quarter_number', $quarter)->firstOrFail();
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
+        $report->loadMissing('department');
 
-        return redirect()->route('monitoring_evaluation.department.reports.edit', $report);
+        // Department staff fill/submit; M&E officers review on the verification screen.
+        if ($this->reports->userCanSubmitDepartmentReport($request->user(), $report->department)) {
+            return redirect()->route('monitoring_evaluation.department.reports.edit', $report);
+        }
+
+        if (in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered', 'returned'], true)) {
+            return redirect()->route('monitoring_evaluation.reports.show', $report);
+        }
+
+        return redirect()
+            ->route('monitoring_evaluation.department.reports.edit', $report)
+            ->with('status', 'This report is still a department draft. Departments submit it to M&E for verification.');
     }
 }

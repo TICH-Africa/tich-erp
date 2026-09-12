@@ -36,7 +36,7 @@
                         <td>{{ $score->items_submitted }} / {{ $score->total_items }}</td>
                         <td>{{ number_format((float) $score->weighted_score, 1) }}%</td>
                         <td>
-                            <span class="tich-badge">{{ $score->pass_fail_status }}</span>
+                            <x-status-badge :status="$score->pass_fail_status" />
                             @if ($score->is_below_threshold)
                                 <span class="tich-caption" style="color:#b91c1c;">corrective action flagged</span>
                             @endif

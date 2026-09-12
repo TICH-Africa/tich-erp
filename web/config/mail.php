@@ -17,7 +17,7 @@ $moduleSmtpMailer = static function (?string $username, ?string $password) use (
         'encryption' => env('MAIL_ENCRYPTION'),
         'username' => $username,
         'password' => $password,
-        'timeout' => null,
+        'timeout' => (int) env('MAIL_TIMEOUT', 8),
         'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         'stream' => $smtpStream,
     ];

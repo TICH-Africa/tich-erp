@@ -79,14 +79,9 @@ class MePolicyService
 
     public function departmentHasHodSignoff(MePolicy $policy, Department $department): bool
     {
-        if (! $department->hod_id) {
-            return false;
-        }
-
         return MePolicySignoff::query()
             ->where('policy_id', $policy->id)
             ->where('department_id', $department->id)
-            ->where('staff_id', $department->hod_id)
             ->exists();
     }
 
@@ -112,8 +107,13 @@ class MePolicyService
     /**
      * @param  array{signed_name: string, employee_number?: ?string, signature?: ?string}  $data
      */
-    public function signOff(MePolicy $policy, User $user, array $data, ?string $ip = null): MePolicySignoff
-    {
+    public function signOff(
+        MePolicy $policy,
+        User $user,
+        array $data,
+        ?string $ip = null,
+        ?Department $department = null,
+    ): MePolicySignoff {
         if (! $policy->isPublished()) {
             throw new \RuntimeException('Only the published M&E policy can be signed.');
         }
@@ -123,16 +123,20 @@ class MePolicyService
             throw new \RuntimeException('Your account is not linked to a staff record.');
         }
 
-        $department = $staff->department;
+        $department ??= $staff->department;
         if (! $department) {
             throw new \RuntimeException('Your staff profile has no department assignment.');
         }
 
-        if (! $this->staffIsHod($staff, $department) && ! $user->hasAnyRole(['Super Admin', 'CEO', 'Monitoring and Evaluation Officer'])) {
-            // Allow HOD only for the gate; officers may sign for testing/admin depts if they are HOD.
-            if ((int) ($department->hod_id ?? 0) !== (int) $staff->id) {
-                throw new \RuntimeException('Only the Head of Department can digitally sign the M&E policy for this department.');
-            }
+        $isPrivileged = $user->hasAnyRole([
+            'Super Admin',
+            'CEO',
+            'Monitoring and Evaluation Officer',
+            'Assistant Monitoring and Evaluation Officer',
+        ]);
+
+        if (! $isPrivileged && ! $this->staffIsHod($staff, $department)) {
+            throw new \RuntimeException('Only the Head of Department can digitally sign the M&E policy for this department.');
         }
 
         return MePolicySignoff::query()->updateOrCreate(
@@ -155,26 +159,49 @@ class MePolicyService
     public function signoffProgress(MePolicy $policy): array
     {
         $departments = Department::query()
-            ->whereNotNull('hod_id')
+            ->where(function ($q) {
+                $q->whereNotNull('hod_id')
+                    ->orWhereNull('parent_dept_id');
+            })
+            ->where('is_active', 1)
             ->orderBy('dept_name')
             ->get(['id', 'dept_name', 'dept_code', 'hod_id']);
 
-        $signedIds = MePolicySignoff::query()
+        $signoffs = MePolicySignoff::query()
             ->where('policy_id', $policy->id)
-            ->pluck('department_id')
-            ->all();
+            ->with(['staff', 'department'])
+            ->orderByDesc('signed_at')
+            ->get()
+            ->groupBy('department_id');
 
+        $signedIds = $signoffs->keys()->map(fn ($id) => (int) $id)->all();
         $signedSet = array_fill_keys($signedIds, true);
 
         return [
             'total' => $departments->count(),
             'signed' => count(array_intersect($departments->pluck('id')->all(), $signedIds)),
-            'departments' => $departments->map(fn (Department $d) => [
-                'id' => $d->id,
-                'name' => $d->dept_name,
-                'code' => $d->dept_code,
-                'signed' => isset($signedSet[$d->id]),
-            ]),
+            'departments' => $departments->map(function (Department $d) use ($signedSet, $signoffs) {
+                $deptSignoffs = $signoffs->get($d->id) ?? collect();
+                $latest = $deptSignoffs->first();
+
+                return [
+                    'id' => $d->id,
+                    'name' => $d->dept_name,
+                    'code' => $d->dept_code,
+                    'signed' => isset($signedSet[$d->id]),
+                    'signed_name' => $latest?->signed_name
+                        ?: ($latest?->staff ? $latest->staff->fullName() : null),
+                    'employee_number' => $latest?->employee_number,
+                    'signed_at' => $latest?->signed_at?->format('d M Y H:i'),
+                ];
+            }),
+            'signoffs' => $signoffs->flatten(1)->map(fn (MePolicySignoff $s) => [
+                'department' => $s->department?->dept_name ?? '—',
+                'department_code' => $s->department?->dept_code,
+                'signed_name' => $s->signed_name ?: ($s->staff?->fullName() ?? '—'),
+                'employee_number' => $s->employee_number,
+                'signed_at' => $s->signed_at?->format('d M Y H:i'),
+            ])->values()->all(),
         ];
     }
 

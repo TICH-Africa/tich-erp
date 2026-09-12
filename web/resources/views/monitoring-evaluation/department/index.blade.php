@@ -45,7 +45,7 @@
                         <tr>
                             <td>{{ $report->department?->dept_name }}</td>
                             <td>{{ $report->quarter?->label() }}</td>
-                            <td>{{ str_replace('_', ' ', $report->status) }}</td>
+                            <td><x-status-badge :status="$report->status" /></td>
                             <td>
                                 <a href="{{ route('monitoring_evaluation.department.reports.edit', $report) }}" class="tich-link">
                                     {{ in_array($report->status, ['draft', 'returned'], true) ? 'Edit' : 'View' }}
