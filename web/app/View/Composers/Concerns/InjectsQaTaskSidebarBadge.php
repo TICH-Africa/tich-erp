@@ -16,11 +16,18 @@ trait InjectsQaTaskSidebarBadge
      * @param  array<string, string>  $menuKeys
      * @return array{0: array<string, int>, 1: array<string, string|null>, 2: array<string, string>}
      */
-    protected function withQaTaskSidebarBadge(array $counts, array $labels, array $menuKeys, ?User $user = null): array
+    protected function withQaTaskSidebarBadge(array $counts, array $labels, array $menuKeys, ?User $user = null, ?string $moduleKey = null): array
     {
         $user ??= auth()->user();
+        $scopeIds = null;
+        if ($moduleKey) {
+            $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
+                \App\Support\QaTaskModuleContext::forModule($moduleKey)
+            );
+        }
+
         $taskCount = $user
-            ? app(QaAssessmentService::class)->outstandingTaskCountForUser($user)
+            ? app(QaAssessmentService::class)->outstandingTaskCountForUser($user, $scopeIds)
             : 0;
 
         $counts['qa.tasks'] = $taskCount;

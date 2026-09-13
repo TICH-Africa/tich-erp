@@ -19,11 +19,14 @@ class TaskController extends Controller
     public function index(Request $request): View
     {
         $moduleContext = QaTaskModuleContext::resolve($request);
-        $tasks = $this->qa->outstandingTasksForUser($request->user());
+        $scopeIds = QaTaskModuleContext::taskScopeDepartmentIds($moduleContext, $request);
+        $tasks = $this->qa->outstandingTasksForUser($request->user(), $scopeIds);
 
         return view('qa.tasks.index', $this->viewPayload($moduleContext, [
             'tasks' => $tasks,
-            'departments' => $this->qa->respondableDepartments($request->user()),
+            'departments' => $this->qa->respondableDepartments($request->user())
+                ->filter(fn (Department $department) => in_array((int) $department->id, $scopeIds, true))
+                ->values(),
         ]));
     }
 
@@ -31,6 +34,7 @@ class TaskController extends Controller
     {
         $moduleContext = QaTaskModuleContext::resolve($request);
         $respondent = $this->respondentDepartment($request);
+        $this->assertRespondentInModuleScope($moduleContext, $respondent);
 
         abort_unless($plan->isOpenForSubmission(), 404);
         abort_unless(in_array((int) $respondent->id, $plan->targetDepartmentIds(), true), 404);
@@ -64,6 +68,7 @@ class TaskController extends Controller
     {
         $moduleContext = QaTaskModuleContext::resolve($request);
         $respondent = $this->respondentDepartment($request);
+        $this->assertRespondentInModuleScope($moduleContext, $respondent);
 
         $hasEditable = QaDepartmentSubmission::query()
             ->where('qa_plan_id', $plan->id)
@@ -143,6 +148,20 @@ class TaskController extends Controller
         }
 
         abort(404);
+    }
+
+    /**
+     * @param  array{key: string, department?: Department|null}  $moduleContext
+     */
+    private function assertRespondentInModuleScope(array $moduleContext, Department $respondent): void
+    {
+        $scopeIds = QaTaskModuleContext::taskScopeDepartmentIds($moduleContext);
+
+        abort_unless(
+            in_array((int) $respondent->id, $scopeIds, true),
+            403,
+            'You can only open QA assessments for this module\'s department.'
+        );
     }
 
     /**

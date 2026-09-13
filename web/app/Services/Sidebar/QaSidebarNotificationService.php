@@ -107,6 +107,10 @@ class QaSidebarNotificationService
 
     private function pendingTasksForUser(User $user): int
     {
-        return $this->qa->outstandingTaskCountForUser($user);
+        $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
+            \App\Support\QaTaskModuleContext::forModule('qa')
+        );
+
+        return $this->qa->outstandingTaskCountForUser($user, $scopeIds);
     }
 }

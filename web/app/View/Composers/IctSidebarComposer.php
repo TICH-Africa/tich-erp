@@ -19,7 +19,7 @@ class IctSidebarComposer
         $counts = $this->notifications->counts();
         $labels = $this->notifications->labels();
         $menuKeys = IctSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, null, 'ict');
 
         $view->with([
             'sidebarCounts' => $counts,

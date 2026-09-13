@@ -39,6 +39,15 @@ class TechnicalPlanController extends Controller
     {
         $plan->load(['department', 'budgetRequest', 'outputs', 'quarters', 'submitter', 'meReviewer']);
 
+        if ($plan->outputs->isEmpty() && $plan->budget_request_id) {
+            try {
+                $this->plans->hydrateOutputsFromBudget($plan);
+                $plan->load(['outputs', 'budgetRequest']);
+            } catch (\Throwable) {
+                // Keep the page usable even if recovery fails.
+            }
+        }
+
         return view('monitoring-evaluation.plans.show', compact('plan'));
     }
 

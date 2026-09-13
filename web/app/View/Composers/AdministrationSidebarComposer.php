@@ -19,7 +19,7 @@ class AdministrationSidebarComposer
         $counts = $this->notifications->counts();
         $labels = $this->notifications->formattedCounts();
         $menuKeys = AdministrationSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, null, 'administration');
 
         $view->with([
             'administrationSidebarCounts' => $counts,

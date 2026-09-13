@@ -19,7 +19,7 @@ class FinanceSidebarComposer
         $counts = $this->notifications->counts();
         $labels = $this->notifications->formattedCounts();
         $menuKeys = FinanceSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, null, 'finance');
 
         $view->with([
             'financeSidebarCounts' => $counts,

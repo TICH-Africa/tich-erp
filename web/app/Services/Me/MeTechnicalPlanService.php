@@ -129,9 +129,42 @@ class MeTechnicalPlanService
                 $outputs,
                 'Auto-created from budget line items when Administration forwarded to Finance & M&E.',
             );
+        } else {
+            $this->hydrateOutputsFromBudget($plan);
         }
 
         return $this->releaseToMeReview($plan, $actor);
+    }
+
+    /**
+     * Fill missing plan output rows from the linked budget line items.
+     */
+    public function hydrateOutputsFromBudget(MeTechnicalPlan $plan): MeTechnicalPlan
+    {
+        $plan->loadMissing(['outputs', 'budgetRequest']);
+
+        if ($plan->outputs->isNotEmpty() || ! $plan->budgetRequest) {
+            return $plan;
+        }
+
+        if ($plan->isBaselineLocked()) {
+            return $plan;
+        }
+
+        foreach ($this->outputsFromBudgetLines($plan->budgetRequest) as $i => $row) {
+            MePlanOutput::query()->create([
+                'technical_plan_id' => $plan->id,
+                'output' => $row['output'],
+                'activity' => $row['activity'],
+                'costable_item' => $row['costable_item'],
+                'planned' => $row['planned'],
+                'planned_unit' => $row['planned_unit'],
+                'display_order' => $i,
+                'created_at' => now(),
+            ]);
+        }
+
+        return $plan->fresh(['outputs', 'budgetRequest', 'department']);
     }
 
     /**

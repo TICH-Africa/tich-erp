@@ -8,7 +8,7 @@
 @section('title', 'My department QA tasks')
 
 @section($moduleContext['content_section'])
-    <x-page-toolbar title="My department QA tasks" meta="Outstanding assessment sheets assigned to your department(s)" />
+    <x-page-toolbar title="My department QA tasks" meta="Outstanding assessment sheets assigned to this department only" />
 
     <div class="tich-card tich-table-panel tich-mt-8">
         <table class="tich-admin-table">

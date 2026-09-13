@@ -25,7 +25,12 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
-        $qaPendingTasks = $qa->outstandingTasksForUser(auth()->user());
+        $qaPendingTasks = $qa->outstandingTasksForUser(
+            auth()->user(),
+            \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
+                \App\Support\QaTaskModuleContext::forModule('qa')
+            )
+        );
 
         return view('qa.dashboard', [
             'openPlans' => $openPlans,

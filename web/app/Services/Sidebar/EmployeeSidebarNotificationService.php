@@ -44,7 +44,7 @@ class EmployeeSidebarNotificationService
             ? $this->computeCounts($staff)
             : Cache::remember($cacheKey, self::CACHE_TTL_SECONDS, fn () => $this->computeCounts($staff));
 
-        return $this->withQaTaskCount($counts, $user);
+        return $this->withQaTaskCount($counts, $user, 'employee');
     }
 
     /**

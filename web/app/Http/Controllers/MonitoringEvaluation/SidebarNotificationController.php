@@ -14,7 +14,7 @@ class SidebarNotificationController extends Controller
     {
         $counts = $notifications->counts($request->user(), true);
         $labels = $notifications->labels($request->user(), true);
-        [$counts, $labels] = QaTaskSidebarBadge::merge($counts, $labels, $request->user());
+        [$counts, $labels] = QaTaskSidebarBadge::merge($counts, $labels, $request->user(), 'monitoring_evaluation');
 
         return response()->json([
             'counts' => $counts,

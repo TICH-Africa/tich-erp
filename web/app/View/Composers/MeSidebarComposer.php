@@ -20,7 +20,7 @@ class MeSidebarComposer
         $counts = $this->notifications->counts($user);
         $labels = $this->notifications->labels($user);
         $menuKeys = MeSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, $user);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, $user, 'monitoring_evaluation');
 
         $view->with([
             'sidebarCounts' => $counts,

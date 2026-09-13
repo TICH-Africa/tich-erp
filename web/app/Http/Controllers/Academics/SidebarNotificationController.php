@@ -18,7 +18,7 @@ class SidebarNotificationController extends DepartmentAcademicsController
         $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
         $counts = $notifications->countsFor($request->user(), $hub, true);
         $labels = $notifications->formattedCountsFor($request->user(), $hub, true);
-        [$counts, $labels] = QaTaskSidebarBadge::merge($counts, $labels, $request->user());
+        [$counts, $labels] = QaTaskSidebarBadge::merge($counts, $labels, $request->user(), 'academics');
 
         return response()->json([
             'counts' => $counts,

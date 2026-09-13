@@ -11,11 +11,18 @@ trait MergesQaTaskSidebarCounts
      * @param  array<string, int>  $counts
      * @return array<string, int>
      */
-    protected function withQaTaskCount(array $counts, ?User $user = null): array
+    protected function withQaTaskCount(array $counts, ?User $user = null, ?string $moduleKey = null): array
     {
         $user ??= auth()->user();
+        $scopeIds = null;
+        if ($moduleKey) {
+            $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
+                \App\Support\QaTaskModuleContext::forModule($moduleKey)
+            );
+        }
+
         $counts['qa.tasks'] = $user
-            ? app(QaAssessmentService::class)->outstandingTaskCountForUser($user)
+            ? app(QaAssessmentService::class)->outstandingTaskCountForUser($user, $scopeIds)
             : 0;
 
         return $counts;

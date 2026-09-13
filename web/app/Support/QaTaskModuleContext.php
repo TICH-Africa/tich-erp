@@ -54,24 +54,41 @@ class QaTaskModuleContext
         $request ??= request();
 
         if ($key === 'qa') {
+            $qaDepartment = null;
+            try {
+                $qaDepartment = app(DepartmentBudgetingService::class)->departmentForModule('qa');
+            } catch (\Throwable) {
+                $qaDepartment = null;
+            }
+
             return [
                 'key' => 'qa',
                 'layout' => 'layouts.qa',
                 'content_section' => 'qa-content',
                 'routes' => self::routeNames('qa'),
                 'params' => [],
-                'department' => null,
+                'department' => $qaDepartment,
             ];
         }
 
         if ($key === 'employee') {
+            $staffDepartment = null;
+            $user = $request?->user();
+            if ($user?->staff_id) {
+                $staffDepartment = Department::query()
+                    ->whereKey(
+                        \App\Models\Staff::query()->whereKey($user->staff_id)->value('department_id')
+                    )
+                    ->first();
+            }
+
             return [
                 'key' => 'employee',
                 'layout' => 'layouts.employee',
                 'content_section' => 'employee-content',
                 'routes' => self::routeNames('employee'),
                 'params' => [],
-                'department' => null,
+                'department' => $staffDepartment,
             ];
         }
 
@@ -95,6 +112,12 @@ class QaTaskModuleContext
         abort_unless(isset($modules[$key]), 404, 'Unknown QA task module.');
 
         $config = $modules[$key];
+        $department = null;
+        try {
+            $department = app(DepartmentBudgetingService::class)->departmentForModule($key);
+        } catch (\Throwable) {
+            $department = null;
+        }
 
         return [
             'key' => $key,
@@ -102,8 +125,60 @@ class QaTaskModuleContext
             'content_section' => $config['content_section'],
             'routes' => self::routeNames($key),
             'params' => [],
-            'department' => null,
+            'department' => $department,
         ];
+    }
+
+    /**
+     * Department IDs this module host may list/fill QA assessments for.
+     *
+     * @param  array{key: string, department?: Department|null}  $moduleContext
+     * @return list<int>
+     */
+    public static function taskScopeDepartmentIds(array $moduleContext, ?Request $request = null): array
+    {
+        $request ??= request();
+        $key = (string) ($moduleContext['key'] ?? 'qa');
+
+        if ($key === 'academics' || $key === 'departments') {
+            $hub = $moduleContext['department'] ?? Department::findAcademicsHub();
+            if (! $hub) {
+                return [];
+            }
+
+            $ids = [(int) $hub->id];
+            $learningIds = Department::query()
+                ->learningDepartments()
+                ->where('parent_dept_id', $hub->id)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            return array_values(array_unique(array_merge($ids, $learningIds)));
+        }
+
+        $department = $moduleContext['department'] ?? null;
+        if ($department instanceof Department) {
+            return [(int) $department->id];
+        }
+
+        if (isset(DepartmentBudgetingService::MODULES[$key])) {
+            try {
+                return [(int) app(DepartmentBudgetingService::class)->departmentForModule($key)->id];
+            } catch (\Throwable) {
+                return [];
+            }
+        }
+
+        $user = $request->user();
+        if ($user?->staff_id) {
+            $deptId = \App\Models\Staff::query()->whereKey($user->staff_id)->value('department_id');
+            if ($deptId) {
+                return [(int) $deptId];
+            }
+        }
+
+        return [];
     }
 
     /**

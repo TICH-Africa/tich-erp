@@ -35,7 +35,7 @@ class AcademicsSidebarComposer
         $counts = $this->notifications->countsFor($user, $department);
         $labels = $this->notifications->formattedCounts($counts);
         $menuKeys = AcademicsSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, $user);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, $user, 'academics');
         $hub = $department->isAcademicsHub() ? $department : ($department->academicsHub() ?? $department);
 
         $view->with([

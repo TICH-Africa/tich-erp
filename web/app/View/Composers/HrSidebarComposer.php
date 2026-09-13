@@ -19,7 +19,7 @@ class HrSidebarComposer
         $counts = $this->notifications->counts();
         $labels = $this->notifications->formattedCounts();
         $menuKeys = HrSidebarNotificationService::MENU_KEYS;
-        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys);
+        [$counts, $labels, $menuKeys] = $this->withQaTaskSidebarBadge($counts, $labels, $menuKeys, null, 'hr');
 
         $view->with([
             'hrSidebarCounts' => $counts,
