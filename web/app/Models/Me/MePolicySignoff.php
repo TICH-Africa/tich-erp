@@ -16,6 +16,8 @@ class MePolicySignoff extends Model
 
     protected $fillable = [
         'policy_id',
+        'policy_version',
+        'signed_role',
         'department_id',
         'staff_id',
         'user_id',

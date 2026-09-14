@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-12 08:46:07 EAT
+-- Generated: 2026-09-14 10:51:07 EAT
 -- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4933,6 +4933,8 @@ CALL `tich_ensure_index`('me_policies', 'me_policies_uploaded_by_foreign', '`upl
 CREATE TABLE IF NOT EXISTS `me_policy_signoffs` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `policy_id` bigint unsigned NOT NULL,
+  `policy_version` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `signed_role` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department_id` bigint unsigned NOT NULL,
   `staff_id` bigint unsigned NOT NULL,
   `user_id` bigint unsigned DEFAULT NULL,
@@ -4955,6 +4957,8 @@ CREATE TABLE IF NOT EXISTS `me_policy_signoffs` (
 -- Columns for `me_policy_signoffs` (add only if missing)
 CALL `tich_ensure_column`('me_policy_signoffs', 'id', 'bigint unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('me_policy_signoffs', 'policy_id', 'bigint unsigned NOT NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'policy_version', 'varchar(50) NULL');
+CALL `tich_ensure_column`('me_policy_signoffs', 'signed_role', 'varchar(100) NULL');
 CALL `tich_ensure_column`('me_policy_signoffs', 'department_id', 'bigint unsigned NOT NULL');
 CALL `tich_ensure_column`('me_policy_signoffs', 'staff_id', 'bigint unsigned NOT NULL');
 CALL `tich_ensure_column`('me_policy_signoffs', 'user_id', 'bigint unsigned NULL');

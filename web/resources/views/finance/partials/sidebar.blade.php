@@ -13,7 +13,6 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'finance'])
-        @include('partials.navigation.department-budgeting-link', ['module' => 'finance'])
         @include('partials.navigation.department-me-policy-sign-link', ['module' => 'finance'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'finance'])
 

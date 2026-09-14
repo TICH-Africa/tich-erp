@@ -1,8 +1,10 @@
 @php
     $moduleContext = $moduleContext ?? \App\Support\MeDepartmentReportModuleContext::forModule('monitoring_evaluation');
     $reportRoutes = $reportRoutes ?? $moduleContext['routes'];
+    $canEdit = (bool) ($canEdit ?? false);
     $canSubmit = (bool) ($canSubmit ?? false);
-    $isEditable = $canSubmit && in_array($report->status, ['draft', 'returned'], true);
+    $viewOnly = (bool) ($viewOnly ?? false);
+    $isEditable = $canEdit && in_array($report->status, ['draft', 'returned'], true);
 @endphp
 
 @extends($moduleContext['layout'])
@@ -33,7 +35,11 @@
         <div class="tich-alert tich-alert--info tich-mt-4"><strong>Returned by M&amp;E:</strong> {{ $report->me_notes }}</div>
     @endif
 
-    @if (! $canSubmit && in_array($report->status, ['draft', 'returned'], true))
+    @if ($viewOnly)
+        <div class="tich-alert tich-alert--info tich-mt-4">
+            <strong>View only.</strong> You are viewing this department's report. Only that department's HOD or staff can edit and submit it.
+        </div>
+    @elseif (! $canSubmit && in_array($report->status, ['draft', 'returned'], true))
         <div class="tich-alert tich-alert--info tich-mt-4">
             This is {{ $report->department?->dept_name ?? 'the department' }}'s report.
             Only that department's HOD or staff can edit and submit it to M&amp;E for verification.

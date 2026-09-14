@@ -39,6 +39,9 @@
         @if ($policy->description)
             <p class="tich-caption tich-mt-2">{{ $policy->description }}</p>
         @endif
+        @if ($policy->version)
+            <p class="tich-caption tich-mt-1">Version: {{ $policy->version }} · Fiscal Year: {{ $policy->fiscal_year }}</p>
+        @endif
         @if ($alreadySigned)
             <div class="tich-alert tich-alert--success tich-mt-4">{{ $department?->dept_name ?? 'This department' }} has already signed this policy.</div>
         @endif

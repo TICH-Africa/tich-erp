@@ -10,7 +10,7 @@
 @section($moduleContext['content_section'])
     <x-page-toolbar
         title="M&E quarterly reports"
-        :meta="($scopeDepartment?->dept_name ?? 'This department').' - fill the standardised quarterly grid and submit to M&E'"
+        :meta="($viewAllDepartments ?? false) ? 'All departments · verification status' : ($scopeDepartment?->dept_name ?? 'This department').' - fill the standardised quarterly grid and submit to M&E'"
     />
 
     @if (session('status'))

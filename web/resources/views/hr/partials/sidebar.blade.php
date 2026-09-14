@@ -40,7 +40,6 @@
             'badgeKey' => 'contracts',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'hr'])
-        @include('partials.navigation.department-budgeting-link', ['module' => 'hr'])
         @include('partials.navigation.department-me-policy-sign-link', ['module' => 'hr'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'hr'])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.vacancies.index'), 'label' => 'Vacancies', 'icon' => 'briefcase', 'active' => request()->routeIs('hr.vacancies.*')])

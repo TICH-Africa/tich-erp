@@ -23,7 +23,13 @@ class DepartmentReportController extends Controller
     public function index(Request $request): View
     {
         $moduleContext = MeDepartmentReportModuleContext::resolve($request);
-        $scopeIds = MeDepartmentReportModuleContext::scopeDepartmentIds($moduleContext, $request);
+        $moduleKey = $moduleContext['key'] ?? '';
+
+        if (in_array($moduleKey, ['qa', 'monitoring_evaluation'], true)) {
+            $scopeIds = Department::query()->where('is_active', 1)->pluck('id')->all();
+        } else {
+            $scopeIds = MeDepartmentReportModuleContext::scopeDepartmentIds($moduleContext, $request);
+        }
 
         abort_if($scopeIds === [], 403, 'No department is configured for this module.');
 
@@ -44,6 +50,7 @@ class DepartmentReportController extends Controller
             'plans' => $plans,
             'reports' => $reports,
             'scopeDepartment' => $moduleContext['department'] ?? null,
+            'viewAllDepartments' => in_array($moduleKey, ['qa', 'monitoring_evaluation'], true),
         ]));
     }
 
@@ -69,19 +76,20 @@ class DepartmentReportController extends Controller
     public function edit(Request $request, MeQuarterlyReport $report): View
     {
         $moduleContext = MeDepartmentReportModuleContext::resolve($request);
+        $moduleKey = $moduleContext['key'] ?? '';
         $report->load(['lines', 'department', 'quarter', 'technicalPlan']);
         $this->assertDepartmentInModuleScope($moduleContext, $report->department);
 
-        abort_unless(
-            $this->reports->userCanEditDepartmentReport($request->user(), $report->department),
-            403
-        );
-
+        $canEdit = $this->reports->userCanEditDepartmentReport($request->user(), $report->department);
         $canSubmit = $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department);
+
+        abort_unless($canEdit || in_array($moduleKey, ['qa', 'monitoring_evaluation'], true), 403);
 
         return view('monitoring-evaluation.department.edit', $this->viewPayload($moduleContext, [
             'report' => $report,
             'canSubmit' => $canSubmit,
+            'canEdit' => $canEdit,
+            'viewOnly' => in_array($moduleKey, ['qa', 'monitoring_evaluation'], true) && ! $canEdit,
         ]));
     }
 
@@ -139,6 +147,12 @@ class DepartmentReportController extends Controller
     private function assertDepartmentInModuleScope(array $moduleContext, ?Department $department): void
     {
         abort_unless($department, 404);
+
+        $moduleKey = $moduleContext['key'] ?? '';
+
+        if (in_array($moduleKey, ['qa', 'monitoring_evaluation'], true)) {
+            return;
+        }
 
         $scopeIds = MeDepartmentReportModuleContext::scopeDepartmentIds($moduleContext);
 

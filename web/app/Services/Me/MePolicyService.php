@@ -133,11 +133,14 @@ class MePolicyService
             'CEO',
             'Monitoring and Evaluation Officer',
             'Assistant Monitoring and Evaluation Officer',
+            'QA Officer',
         ]);
 
         if (! $isPrivileged && ! $this->staffIsHod($staff, $department)) {
             throw new \RuntimeException('Only the Head of Department can digitally sign the M&E policy for this department.');
         }
+
+        $role = $this->resolveSignRole($user, $staff, $department, $isPrivileged);
 
         return MePolicySignoff::query()->updateOrCreate(
             [
@@ -146,6 +149,8 @@ class MePolicyService
                 'staff_id' => $staff->id,
             ],
             [
+                'policy_version' => $policy->version,
+                'signed_role' => $role,
                 'user_id' => $user->id,
                 'signed_name' => $data['signed_name'],
                 'employee_number' => $data['employee_number'] ?? $staff->employee_number,
@@ -154,6 +159,31 @@ class MePolicyService
                 'signed_at' => now(),
             ]
         );
+    }
+
+    private function resolveSignRole(User $user, Staff $staff, Department $department, bool $isPrivileged): string
+    {
+        if ($user->hasAnyRole(['CEO'])) {
+            return 'CEO';
+        }
+
+        if ($user->hasAnyRole(['Monitoring and Evaluation Officer', 'Assistant Monitoring and Evaluation Officer'])) {
+            return 'M&E Officer';
+        }
+
+        if ($user->hasAnyRole(['QA Officer'])) {
+            return 'QA Officer';
+        }
+
+        if ($user->hasAnyRole(['Super Admin'])) {
+            return 'Super Admin';
+        }
+
+        if ($this->staffIsHod($staff, $department)) {
+            return 'HOD';
+        }
+
+        return 'Staff';
     }
 
     public function signoffProgress(MePolicy $policy): array
@@ -192,6 +222,8 @@ class MePolicyService
                     'signed_name' => $latest?->signed_name
                         ?: ($latest?->staff ? $latest->staff->fullName() : null),
                     'employee_number' => $latest?->employee_number,
+                    'signed_role' => $latest?->signed_role,
+                    'policy_version' => $latest?->policy_version,
                     'signed_at' => $latest?->signed_at?->format('d M Y H:i'),
                 ];
             }),
@@ -200,6 +232,8 @@ class MePolicyService
                 'department_code' => $s->department?->dept_code,
                 'signed_name' => $s->signed_name ?: ($s->staff?->fullName() ?? '-'),
                 'employee_number' => $s->employee_number,
+                'signed_role' => $s->signed_role,
+                'policy_version' => $s->policy_version,
                 'signed_at' => $s->signed_at?->format('d M Y H:i'),
             ])->values()->all(),
         ];
