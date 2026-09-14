@@ -40,8 +40,8 @@
                         <tr>
                             <td>{{ $dept['name'] }}</td>
                             <td>{{ $dept['code'] }}</td>
-                            <td>{{ $dept['signed'] ? ($dept['signed_name'] ?? '—') : '—' }}</td>
-                            <td>{{ $dept['signed'] ? ($dept['signed_at'] ?? '—') : '—' }}</td>
+                            <td>{{ $dept['signed'] ? ($dept['signed_name'] ?? '-') : '-' }}</td>
+                            <td>{{ $dept['signed'] ? ($dept['signed_at'] ?? '-') : '-' }}</td>
                             <td><x-status-badge :status="$dept['signed'] ? 'signed' : 'pending'" :label="$dept['signed'] ? 'Signed' : 'Pending'" /></td>
                         </tr>
                     @endforeach

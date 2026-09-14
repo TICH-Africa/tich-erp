@@ -192,6 +192,27 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/qa/tasks/{plan}/{department}', [$controller, 'store'])->name("{$namePrefix}.qa.tasks.store");
     };
 
+    $registerModuleMeReports = static function (string $module, ?string $namePrefix = null): void {
+        $namePrefix ??= $module;
+        $controller = \App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class;
+
+        if ($module === 'academics') {
+            Route::get('/me-reports', [$controller, 'index'])->name('departments.academics.me-reports.index');
+            Route::get('/me-reports/plans/{plan}/quarters/{quarter}', [$controller, 'open'])->name('departments.academics.me-reports.open');
+            Route::get('/me-reports/{report}/edit', [$controller, 'edit'])->name('departments.academics.me-reports.edit');
+            Route::put('/me-reports/{report}', [$controller, 'update'])->name('departments.academics.me-reports.update');
+            Route::post('/me-reports/{report}/submit', [$controller, 'submit'])->name('departments.academics.me-reports.submit');
+
+            return;
+        }
+
+        Route::get('/me-reports', [$controller, 'index'])->name("{$namePrefix}.me-reports.index");
+        Route::get('/me-reports/plans/{plan}/quarters/{quarter}', [$controller, 'open'])->name("{$namePrefix}.me-reports.open");
+        Route::get('/me-reports/{report}/edit', [$controller, 'edit'])->name("{$namePrefix}.me-reports.edit");
+        Route::put('/me-reports/{report}', [$controller, 'update'])->name("{$namePrefix}.me-reports.update");
+        Route::post('/me-reports/{report}/submit', [$controller, 'submit'])->name("{$namePrefix}.me-reports.submit");
+    };
+
     Route::prefix('admin')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])
             ->middleware('permission:admin.access')
@@ -293,11 +314,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/students/{student}/transcript/pdf', [\App\Http\Controllers\Sis\TranscriptController::class, 'pdf'])->name('sis.students.transcript.pdf');
     });
 
-    Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Finance\DashboardController::class, '__invoke'])->name('finance.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Finance\SidebarNotificationController::class)->name('finance.sidebar-notifications');
         $registerModuleBudgeting('finance');
         $registerModuleQaTasks('finance');
+        $registerModuleMeReports('finance');
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
 
@@ -437,11 +459,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/reports/export/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'exportExcel'])->name('finance.reports.export.excel');
     });
 
-    Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('administration')->middleware(['permission:administration.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Administration\DashboardController::class, '__invoke'])->name('administration.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Administration\SidebarNotificationController::class)->name('administration.sidebar-notifications');
         $registerModuleBudgeting('administration');
         $registerModuleQaTasks('administration');
+        $registerModuleMeReports('administration');
 
         Route::get('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'index'])->name('administration.planning.index');
         Route::post('/planning', [\App\Http\Controllers\Administration\PlanningController::class, 'store'])->name('administration.planning.store');
@@ -498,7 +521,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/ledger-sync/run', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'runSync'])->name('administration.ledger-sync.run');
     });
 
-    Route::prefix('qa')->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('qa')->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::middleware(['permission:qa.read'])->group(function () use ($registerModuleBudgeting) {
             Route::get('/', [\App\Http\Controllers\Qa\DashboardController::class, '__invoke'])->name('qa.dashboard');
             $registerModuleBudgeting('qa');
@@ -516,6 +539,39 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/corrective-actions', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'index'])->name('qa.corrective-actions.index');
             Route::post('/corrective-actions/{action}/resolve', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'resolve'])->name('qa.corrective-actions.resolve');
 
+            Route::prefix('qca-flags')->name('qa.qca-flags.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'index'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\Qa\QcaFlagController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'store'])->name('store');
+                Route::get('/{qcaFlag}', [\App\Http\Controllers\Qa\QcaFlagController::class, 'show'])->name('show');
+                Route::post('/{qcaFlag}/update-status', [\App\Http\Controllers\Qa\QcaFlagController::class, 'updateStatus'])->name('update-status');
+                Route::post('/{qcaFlag}/add-milestone', [\App\Http\Controllers\Qa\QcaFlagController::class, 'addMilestone'])->name('add-milestone');
+                Route::post('/{qcaFlag}/resolve', [\App\Http\Controllers\Qa\QcaFlagController::class, 'resolve'])->name('resolve');
+                Route::post('/{qcaFlag}/close', [\App\Http\Controllers\Qa\QcaFlagController::class, 'close'])->name('close');
+                Route::post('/{qcaFlag}/ceo-override', [\App\Http\Controllers\Qa\QcaFlagController::class, 'ceoOverride'])->name('ceo-override');
+            });
+
+            Route::prefix('capacity')->name('qa.capacity.')->group(function () {
+                Route::post('/register', [\App\Http\Controllers\Qa\CapacityController::class, 'register'])->name('register');
+                Route::get('/export', [\App\Http\Controllers\Qa\CapacityController::class, 'export'])->name('export');
+            });
+
+            Route::prefix('training-credits')->name('qa.training-credits.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'index'])->name('index');
+                Route::post('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'store'])->name('store');
+                Route::get('/export', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'export'])->name('export');
+            });
+
+            Route::get('/executive-dashboard', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'index'])->name('qa.executive-dashboard');
+            Route::get('/executive-dashboard/compliance-hub', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'complianceByHub'])->name('qa.executive-dashboard.compliance-hub');
+            Route::get('/executive-dashboard/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'auditTrail'])->name('qa.executive-dashboard.audit-trail');
+            Route::get('/executive-dashboard/chart/compliance', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartCompliance'])->name('qa.executive-dashboard.chart.compliance');
+            Route::get('/executive-dashboard/chart/flags', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartFlags'])->name('qa.executive-dashboard.chart.flags');
+            Route::get('/executive-dashboard/chart/actions', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartActions'])->name('qa.executive-dashboard.chart.actions');
+            Route::get('/executive-dashboard/chart/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartAuditTrail'])->name('qa.executive-dashboard.chart.audit-trail');
+
+            Route::get('/downstream-lock/check', [\App\Http\Controllers\Qa\QcaDownstreamLockController::class, 'check'])->name('qa.downstream-lock.check');
+
             Route::get('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'index'])->name('qa.capacity.index');
             Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
         });
@@ -526,21 +582,24 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/evidence/{attachment}/file', [\App\Http\Controllers\Qa\EvidenceController::class, 'file'])->name('qa.evidence.file');
         Route::get('/evidence/{attachment}/download', [\App\Http\Controllers\Qa\EvidenceController::class, 'download'])->name('qa.evidence.download');
         $registerModuleQaTasks('qa');
+        $registerModuleMeReports('qa');
     });
 
-    Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Procurement\DashboardController::class, '__invoke'])->name('procurement.dashboard');
         $registerModuleBudgeting('procurement');
         $registerModuleQaTasks('procurement');
+        $registerModuleMeReports('procurement');
     });
 
-    Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/dashboard', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
         $registerModuleBudgeting('research');
         $registerModuleQaTasks('research');
+        $registerModuleMeReports('research');
     });
 
-    Route::prefix('monitoring-evaluation')->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('monitoring-evaluation')->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::middleware(['permission:monitoring_evaluation.read'])->group(function () use ($registerModuleBudgeting) {
             Route::get('/dashboard', [\App\Http\Controllers\MonitoringEvaluation\DashboardController::class, '__invoke'])->name('monitoring_evaluation.dashboard');
             $registerModuleBudgeting('monitoring_evaluation');
@@ -570,10 +629,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         // HOD / department respondents - policy sign-off + quarterly reports
         Route::get('/sidebar-notifications', \App\Http\Controllers\MonitoringEvaluation\SidebarNotificationController::class)->name('monitoring_evaluation.sidebar-notifications');
         $registerModuleQaTasks('monitoring_evaluation');
+        $registerModuleMeReports('monitoring_evaluation');
         Route::get('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('monitoring_evaluation.policy.sign');
         Route::post('/policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('monitoring_evaluation.policy.sign.store');
         Route::get('/policies/{policy}/view', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'view'])->name('monitoring_evaluation.policies.view');
         Route::get('/policies/{policy}/download', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'download'])->name('monitoring_evaluation.policies.download');
+
+        // Legacy aliases (same controller, scoped to M&E department).
         Route::get('/department-reports', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'index'])->name('monitoring_evaluation.department.index');
         Route::get('/department-reports/plans/{plan}/quarters/{quarter}', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'open'])->name('monitoring_evaluation.department.open');
         Route::get('/department-reports/{report}/edit', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'edit'])->name('monitoring_evaluation.department.reports.edit');
@@ -581,11 +643,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/department-reports/{report}/submit', [\App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class, 'submit'])->name('monitoring_evaluation.department.reports.submit');
     });
 
-    Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ict\SidebarNotificationController::class)->name('ict.sidebar-notifications');
         $registerModuleBudgeting('ict');
         $registerModuleQaTasks('ict');
+        $registerModuleMeReports('ict');
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
         Route::post('/registration-invites/{invitation}/resend', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'resend'])->name('ict.registration-invites.resend');
@@ -642,11 +705,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         });
     });
 
-    Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks) {
+    Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
         $registerModuleBudgeting('hr');
         $registerModuleQaTasks('hr');
+        $registerModuleMeReports('hr');
         Route::post('/registration-invites', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'store'])->name('hr.registration-invites.store');
         Route::post('/profile-update-prompts', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'storeByEmail'])->name('hr.profile-update-prompts.store');
 
@@ -845,12 +909,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('academics')
         ->middleware('resolve.academics.hub')
-        ->group(function () use ($registerAcademicsRoutes, $registerModuleBudgeting, $registerModuleQaTasks) {
+        ->group(function () use ($registerAcademicsRoutes, $registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
             $registerAcademicsRoutes(true);
             Route::middleware('permission:academics.read')->group(function () use ($registerModuleBudgeting) {
                 $registerModuleBudgeting('academics');
             });
             $registerModuleQaTasks('academics');
+            $registerModuleMeReports('academics');
         });
 
     Route::prefix('departments/{department}/academics')
@@ -933,9 +998,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         ->middleware('employee.portal')
         ->name('employee.dashboard');
 
-    Route::middleware('employee.portal')->prefix('employee')->group(function () use ($registerModuleQaTasks) {
+    Route::middleware('employee.portal')->prefix('employee')->group(function () use ($registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/sidebar-notifications', \App\Http\Controllers\Employee\SidebarNotificationController::class)->name('employee.sidebar-notifications');
         $registerModuleQaTasks('employee');
+        $registerModuleMeReports('employee');
 
         Route::get('/profile/edit', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'edit'])->name('employee.profile.edit');
         Route::post('/profile', [\App\Http\Controllers\Employee\EmployeeProfileController::class, 'update'])->name('employee.profile.update');

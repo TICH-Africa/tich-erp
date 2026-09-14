@@ -78,9 +78,14 @@ class ReportController extends Controller
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
         $report->loadMissing('department');
 
-        // Department staff fill/submit; M&E officers review on the verification screen.
+        $moduleKey = $report->department
+            ? \App\Support\MeDepartmentReportModuleContext::moduleKeyForDepartment($report->department)
+            : 'monitoring_evaluation';
+        $editUrl = \App\Support\MeDepartmentReportModuleContext::url('edit', $moduleKey, ['report' => $report]);
+
+        // Department staff fill/submit in their own module; M&E officers review on the verification screen.
         if ($this->reports->userCanSubmitDepartmentReport($request->user(), $report->department)) {
-            return redirect()->route('monitoring_evaluation.department.reports.edit', $report);
+            return redirect()->to($editUrl);
         }
 
         if (in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered', 'returned'], true)) {
@@ -88,7 +93,7 @@ class ReportController extends Controller
         }
 
         return redirect()
-            ->route('monitoring_evaluation.department.reports.edit', $report)
-            ->with('status', 'This report is still a department draft. Departments submit it to M&E for verification.');
+            ->to($editUrl)
+            ->with('status', 'This report is still a department draft. Open it from that department module to submit to M&E.');
     }
 }

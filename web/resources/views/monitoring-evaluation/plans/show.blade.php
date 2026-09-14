@@ -9,7 +9,7 @@
         $budgetStructured = $budgetLines !== [] && isset($budgetLines[0]) && is_array($budgetLines[0]) && array_key_exists('unit_price', $budgetLines[0]);
     @endphp
 
-    <x-page-toolbar :title="$plan->title" :meta="($plan->department?->dept_name ?? 'Department').' · '.str_replace('_', ' ', $plan->status)">
+    <x-page-toolbar :title="$plan->title" :meta="($plan->department?->dept_name ?? 'Department').' · '.\App\Support\StatusTone::label($plan->status)">
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'me_review']) }}" class="tich-btn tich-btn-ghost">Back to queue</a>
         </x-slot:actions>
@@ -100,7 +100,7 @@
                     @endforeach
                 </div>
             @else
-                <p class="tich-caption tich-mt-2">No actions available for status <strong>{{ str_replace('_', ' ', $plan->status) }}</strong>.</p>
+                <p class="tich-caption tich-mt-2">No actions available for status <strong>{{ \App\Support\StatusTone::label($plan->status) }}</strong>.</p>
             @endif
         </article>
     </div>
@@ -127,9 +127,9 @@
                             <td class="tich-caption">{{ $index + 1 }}</td>
                             <td><strong>{{ $out->output }}</strong></td>
                             <td>{{ $out->activity }}</td>
-                            <td>{{ $out->costable_item ?: '—' }}</td>
+                            <td>{{ $out->costable_item ?: '-' }}</td>
                             <td>{{ number_format((float) $out->planned, 2) }}</td>
-                            <td>{{ $out->planned_unit ?: '—' }}</td>
+                            <td>{{ $out->planned_unit ?: '-' }}</td>
                         </tr>
                     @empty
                         @include('partials.states.table-empty', [
@@ -173,9 +173,9 @@
                                 <tr>
                                     <td>{{ $line['item'] ?? '-' }}</td>
                                     <td>{{ $line['quantity'] ?? '-' }}</td>
-                                    <td class="tich-caption">{{ $line['description'] ?: '—' }}</td>
+                                    <td class="tich-caption">{{ $line['description'] ?: '-' }}</td>
                                     <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                    <td class="tich-caption">{{ $line['unit_of_measure'] ?: '—' }}</td>
+                                    <td class="tich-caption">{{ $line['unit_of_measure'] ?: '-' }}</td>
                                     <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
                                 </tr>
                             @endforeach

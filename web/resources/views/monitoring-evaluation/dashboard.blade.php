@@ -44,7 +44,7 @@
                 @forelse ($pendingPlans as $plan)
                     <li class="tich-text tich-mt-2">
                         <a href="{{ route('monitoring_evaluation.plans.show', $plan) }}" class="tich-link">{{ $plan->department?->dept_name }}</a>
-                        <span class="tich-caption">· {{ str_replace('_', ' ', $plan->status) }}</span>
+                        <span class="tich-caption">· {{ \App\Support\StatusTone::label($plan->status) }}</span>
                     </li>
                 @empty
                     <li class="tich-text">No plans awaiting M&amp;E review.</li>

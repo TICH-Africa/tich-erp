@@ -24,7 +24,7 @@
                             <td>{{ $unit->exam_date ? \Illuminate\Support\Carbon::parse($unit->exam_date)->format('d M Y') : '-' }}</td>
                             <td>
                                 @if ($unit->start_time && $unit->end_time)
-                                    {{ substr((string) $unit->start_time, 0, 5) }} – {{ substr((string) $unit->end_time, 0, 5) }}
+                                    {{ substr((string) $unit->start_time, 0, 5) }} - {{ substr((string) $unit->end_time, 0, 5) }}
                                 @else
                                     -
                                 @endif

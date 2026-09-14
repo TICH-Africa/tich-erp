@@ -83,7 +83,6 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['ceo.partials.sidebar', 'layouts.ceo'], CeoSidebarComposer::class);
         View::composer(['ict.partials.sidebar', 'layouts.ict'], IctSidebarComposer::class);
         View::composer([
-            'dashboard',
             'academics.dashboard',
             'layouts.academics',
             'hr.dashboard',

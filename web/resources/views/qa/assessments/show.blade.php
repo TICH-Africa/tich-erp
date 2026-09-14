@@ -28,7 +28,7 @@
     <div class="tich-grid tich-grid--3 tich-mt-8">
         <article class="tich-card">
             <p class="tich-caption">Period</p>
-            <p class="tich-text tich-mt-2">{{ $plan->period_start?->format('d M Y') }} – {{ $plan->period_end?->format('d M Y') }}</p>
+            <p class="tich-text tich-mt-2">{{ $plan->period_start?->format('d M Y') }} - {{ $plan->period_end?->format('d M Y') }}</p>
             @if ($plan->due_at)<p class="tich-caption tich-mt-2">Due {{ $plan->due_at->format('d M Y H:i') }}</p>@endif
         </article>
         <article class="tich-card">
@@ -116,7 +116,7 @@
                                     Not started
                                 @endif
                             </td>
-                            <td>{{ $score ? number_format((float) $score->weighted_score, 1).'%' : '—' }}</td>
+                            <td>{{ $score ? number_format((float) $score->weighted_score, 1).'%' : '-' }}</td>
                             <td>
                                 @if ($score)
                                     <x-status-badge :status="$score->pass_fail_status" />

@@ -58,7 +58,7 @@
                             <td>{{ $window->title }}</td>
                             <td class="tich-caption">
                                 {{ $window->opens_at?->format('d M Y H:i') }}
-                                –
+                                -
                                 {{ $window->closes_at?->format('d M Y H:i') }}
                             </td>
                             <td>{{ $window->is_active ? 'Yes' : 'No' }}</td>

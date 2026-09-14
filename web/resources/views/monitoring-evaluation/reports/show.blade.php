@@ -5,7 +5,7 @@
 @section('monitoring-evaluation-content')
     <x-page-toolbar
         :title="($report->department?->dept_name ?? 'Department').' · '.($report->quarter?->label() ?? 'Quarter')"
-        :meta="'Status: '.str_replace('_', ' ', $report->status)"
+        :meta="'Status: '.\App\Support\StatusTone::label($report->status)"
     >
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.reports.index') }}" class="tich-btn tich-btn-ghost">Back</a>

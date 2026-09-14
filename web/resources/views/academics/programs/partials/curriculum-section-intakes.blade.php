@@ -13,9 +13,11 @@
         </p>
     @else
         @if ($intakes->isEmpty())
-            <p class="tich-text tich-mt-4">No intakes yet. Create the first intake below.</p>
+            <p class="tich-text tich-mt-4">No intakes exist yet for this programme.</p>
         @else
-            <div class="tich-card tich-table-panel tich-mt-4">
+            <h3 class="tich-h4 tich-mt-4">Select an existing intake</h3>
+            <p class="tich-caption tich-mb-2">Click "Set working" to choose an intake as your working intake, or "Semester units" to review its mapped units.</p>
+            <div class="tich-card tich-table-panel tich-mt-2">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -113,45 +115,48 @@
         @endif
 
         @can('academics.write')
-            <form method="POST" action="{{ route('departments.academics.programs.intakes.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-6" style="border-top:1px solid var(--tich-border); padding-top:1.5rem;">
-                @csrf
-                <h3 class="tich-h3">New intake</h3>
-                <div class="tich-grid tich-grid--4 tich-mt-4" style="gap:1rem; align-items:end;">
-                    <div class="tich-form-group">
-                        <label class="tich-label">Intake year</label>
-                        <input type="number" name="intake_year" class="tich-input" min="2000" max="2100" value="{{ old('intake_year', now()->year) }}" required>
+            <div class="tich-mt-6" style="border-top:2px dashed var(--tich-border,#e5e7eb); padding-top:1.5rem;">
+                <h3 class="tich-h4">Create a new intake</h3>
+                <p class="tich-caption tich-mb-2">Start a new intake cohort with its own unit mappings, timetable and exam schedule.</p>
+                <form method="POST" action="{{ route('departments.academics.programs.intakes.store', array_merge($hub, ['program' => $program->id])) }}">
+                    @csrf
+                    <div class="tich-grid tich-grid--4" style="gap:1rem; align-items:end;">
+                        <div class="tich-form-group">
+                            <label class="tich-label">Intake year</label>
+                            <input type="number" name="intake_year" class="tich-input" min="2000" max="2100" value="{{ old('intake_year', now()->year) }}" required>
+                        </div>
+                        <div class="tich-form-group">
+                            <label class="tich-label">Intake month</label>
+                            <select name="intake_month" class="tich-input" required>
+                                @foreach ($intakeMonths as $monthNum => $monthName)
+                                    <option value="{{ $monthNum }}" @selected((int) old('intake_month', now()->month) === $monthNum)>{{ $monthName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="tich-form-group">
+                            <label class="tich-label">Copy units from</label>
+                            <select name="copy_from_version_id" class="tich-input">
+                                <option value="">Blank intake</option>
+                                @foreach ($intakes as $intake)
+                                    <option value="{{ $intake->id }}">{{ $intake->intakeLabel() }} ({{ ucwords(str_replace('_', ' ', $intake->status)) }})</option>
+                                @endforeach
+                                @if ($publishedVersion && ! $intakes->contains('id', $publishedVersion->id))
+                                    <option value="{{ $publishedVersion->id }}">{{ $publishedVersion->intakeLabel() }} (published)</option>
+                                @endif
+                            </select>
+                        </div>
+                        <div class="tich-form-group">
+                            <button type="submit" class="tich-btn tich-btn-primary">Create intake</button>
+                        </div>
                     </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Intake month</label>
-                        <select name="intake_month" class="tich-input" required>
-                            @foreach ($intakeMonths as $monthNum => $monthName)
-                                <option value="{{ $monthNum }}" @selected((int) old('intake_month', now()->month) === $monthNum)>{{ $monthName }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="tich-form-group">
-                        <label class="tich-label">Copy units from</label>
-                        <select name="copy_from_version_id" class="tich-input">
-                            <option value="">Blank intake</option>
-                            @foreach ($intakes as $intake)
-                                <option value="{{ $intake->id }}">{{ $intake->intakeLabel() }} ({{ ucwords(str_replace('_', ' ', $intake->status)) }})</option>
-                            @endforeach
-                            @if ($publishedVersion && ! $intakes->contains('id', $publishedVersion->id))
-                                <option value="{{ $publishedVersion->id }}">{{ $publishedVersion->intakeLabel() }} (published)</option>
-                            @endif
-                        </select>
-                    </div>
-                    <div class="tich-form-group">
-                        <button type="submit" class="tich-btn tich-btn-primary">Create intake</button>
-                    </div>
-                </div>
-                @error('intake_year')
-                    <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
-                @enderror
-                @error('intake_month')
-                    <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
-                @enderror
-            </form>
+                    @error('intake_year')
+                        <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
+                    @enderror
+                    @error('intake_month')
+                        <p class="tich-caption tich-mt-2" style="color:var(--tich-danger,#b91c1c);">{{ $message }}</p>
+                    @enderror
+                </form>
+            </div>
         @endcan
     @endif
 </article>

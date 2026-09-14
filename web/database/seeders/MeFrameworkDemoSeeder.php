@@ -170,7 +170,7 @@ class MeFrameworkDemoSeeder extends Seeder
             ."- M&E: review plans, verify reports, maintain PIME dashboards.\n"
             ."- CEO: receive and sign consolidated quarterly performance packs.\n\n"
             ."4. Reporting cycle\n"
-            ."Q1–Q4 reports are due within 15 working days after each quarter end.\n"
+            ."Q1-Q4 reports are due within 15 working days after each quarter end.\n"
         );
 
         return MePolicy::query()->create([
@@ -355,7 +355,7 @@ class MeFrameworkDemoSeeder extends Seeder
             'MNE', 'M&E', 'ME' => [
                 ['output' => 'Policy sign-offs completed', 'activity' => 'Track HOD digital sign-off of M&E policy', 'costable_item' => 'Policy dissemination', 'planned' => 12, 'planned_unit' => 'departments'],
                 ['output' => 'Technical plans reviewed', 'activity' => 'Review and approve departmental technical plans', 'costable_item' => 'Review panels', 'planned' => 12, 'planned_unit' => 'plans'],
-                ['output' => 'Quarterly reports verified', 'activity' => 'Verify Q1–Q4 departmental reports', 'costable_item' => 'Verification visits', 'planned' => 48, 'planned_unit' => 'reports'],
+                ['output' => 'Quarterly reports verified', 'activity' => 'Verify Q1-Q4 departmental reports', 'costable_item' => 'Verification visits', 'planned' => 48, 'planned_unit' => 'reports'],
                 ['output' => 'PIME packs delivered to CEO', 'activity' => 'Consolidate and deliver performance packs', 'costable_item' => 'Reporting tools', 'planned' => 4, 'planned_unit' => 'packs'],
             ],
             default => [

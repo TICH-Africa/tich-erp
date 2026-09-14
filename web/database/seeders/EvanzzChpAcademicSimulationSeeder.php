@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 
 /**
  * Keep only Certificate in Community Health Practice (CHP) for Evanzz Osumba,
- * then seed a full academics–student simulation (calendar, units, allocations,
+ * then seed a full academics-student simulation (calendar, units, allocations,
  * attendance, CATs, exams, fees, curriculum, timetable, lesson plans).
  */
 class EvanzzChpAcademicSimulationSeeder extends Seeder

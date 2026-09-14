@@ -5,12 +5,12 @@ namespace App\Support;
 /**
  * Platform status tone map for badges (light + dark CSS variants).
  *
- * Green  success  – completed / ok
- * Red    danger   – failure / critical
- * Amber  warning  – major attention / in progress
- * Yellow caution  – pending / minor caution
- * Blue   info     – informational / active standby
- * Grey   neutral  – inactive / not started
+ * Green  success  - completed / ok
+ * Red    danger   - failure / critical
+ * Amber  warning  - major attention / in progress
+ * Yellow caution  - pending / minor caution
+ * Blue   info     - informational / active standby
+ * Grey   neutral  - inactive / not started
  */
 final class StatusTone
 {
@@ -74,9 +74,32 @@ final class StatusTone
     {
         $raw = trim((string) $status);
         if ($raw === '') {
-            return '—';
+            return '-';
         }
 
-        return ucwords(str_replace(['_', '-'], ' ', $raw));
+        $key = strtolower(str_replace(['-', ' '], '_', $raw));
+
+        $labels = [
+            'me_review' => 'M&E review',
+            'me_approved' => 'M&E approved',
+            'me_verified' => 'M&E verified',
+            'baseline_locked' => 'Baseline locked',
+            'finance_review' => 'Finance review',
+            'executive_review' => 'Executive review',
+            'ceo_delivered' => 'CEO delivered',
+        ];
+
+        if (isset($labels[$key])) {
+            return $labels[$key];
+        }
+
+        $label = ucwords(str_replace(['_', '-'], ' ', $raw));
+
+        // Avoid "Me Review" style labels for any remaining me_* statuses.
+        if (str_starts_with($key, 'me_')) {
+            return preg_replace('/^Me\b/u', 'M&E', $label) ?? $label;
+        }
+
+        return $label;
     }
 }

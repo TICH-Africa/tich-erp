@@ -3,7 +3,7 @@
 @section('title', 'Technical plans')
 
 @section('monitoring-evaluation-content')
-    <x-page-toolbar title="Technical plans" meta="Released by Administration after budget clearance — concurrent with Finance review">
+    <x-page-toolbar title="Technical plans" meta="Released by Administration after budget clearance - concurrent with Finance review">
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'me_review']) }}" class="tich-btn tich-btn-secondary">In review</a>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'baseline_locked']) }}" class="tich-btn tich-btn-ghost">Baselines</a>

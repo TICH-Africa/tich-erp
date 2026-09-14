@@ -33,7 +33,7 @@
                 <dt class="tich-caption">Time</dt>
                 <dd>
                     @if ($session->start_time || $session->end_time)
-                        {{ substr((string) $session->start_time, 0, 5) }} – {{ substr((string) $session->end_time, 0, 5) }}
+                        {{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}
                     @else
                         -
                     @endif
@@ -100,13 +100,6 @@
                     @endif
                 </div>
             </div>
-
-            @if ($canVerifyHod && $session->verification_status === 'submitted')
-                <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-hod', array_merge($hub, ['session' => $session->id])) }}" class="tich-mt-6">
-                    @csrf
-                    <button type="submit" class="tich-btn tich-btn-primary">Verify as HOD</button>
-                </form>
-            @endif
 
             @if ($canVerifyRegistrar && in_array($session->verification_status, ['submitted', 'hod_verified'], true))
                 <form method="POST" action="{{ route('departments.academics.attendance-ledger.verify-registrar', array_merge($hub, ['session' => $session->id])) }}" class="tich-mt-4">

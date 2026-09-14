@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Services\Qa\QaAssessmentService;
+use App\Support\QaTaskModuleContext;
 use Illuminate\View\View;
 
 class QaAssignedTasksComposer
@@ -24,9 +25,9 @@ class QaAssignedTasksComposer
             return;
         }
 
-        $moduleKey = \App\Support\QaTaskModuleContext::currentModuleKey();
-        $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
-            \App\Support\QaTaskModuleContext::forModule($moduleKey)
+        $moduleKey = QaTaskModuleContext::currentModuleKey();
+        $scopeIds = QaTaskModuleContext::taskScopeDepartmentIds(
+            QaTaskModuleContext::forModule($moduleKey)
         );
 
         $view->with('qaPendingTasks', $this->qa->outstandingTasksForUser($user, $scopeIds));

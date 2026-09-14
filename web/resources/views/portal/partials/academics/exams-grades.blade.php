@@ -58,7 +58,7 @@
                             <dt>Time</dt>
                             <dd>
                                 @if ($exam->start_time && $exam->end_time)
-                                    {{ substr((string) $exam->start_time, 0, 5) }} – {{ substr((string) $exam->end_time, 0, 5) }}
+                                    {{ substr((string) $exam->start_time, 0, 5) }} - {{ substr((string) $exam->end_time, 0, 5) }}
                                 @else
                                     -
                                 @endif

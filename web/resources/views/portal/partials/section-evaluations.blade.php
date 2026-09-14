@@ -9,13 +9,13 @@
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">{{ $window->title }}</h2>
         <p class="tich-caption tich-mt-2">
-            Open {{ $window->opens_at?->format('d M Y H:i') }} – {{ $window->closes_at?->format('d M Y H:i') }}
+            Open {{ $window->opens_at?->format('d M Y H:i') }} - {{ $window->closes_at?->format('d M Y H:i') }}
         </p>
         <form method="POST" action="{{ route('portal.evaluations.store') }}" class="tich-form-stack tich-mt-4">
             @csrf
             <input type="hidden" name="window_id" value="{{ $window->id }}">
             <div>
-                <label for="rating-{{ $window->id }}" class="tich-label">Overall rating (1–5)</label>
+                <label for="rating-{{ $window->id }}" class="tich-label">Overall rating (1-5)</label>
                 <select id="rating-{{ $window->id }}" name="rating" class="tich-select" required>
                     @for ($i = 5; $i >= 1; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>

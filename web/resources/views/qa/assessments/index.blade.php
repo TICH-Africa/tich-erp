@@ -33,7 +33,7 @@
                                 <p class="tich-caption">Due {{ $plan->due_at->format('d M Y') }}</p>
                             @endif
                         </td>
-                        <td>{{ $plan->period_start?->format('d M Y') }} – {{ $plan->period_end?->format('d M Y') }}</td>
+                        <td>{{ $plan->period_start?->format('d M Y') }} - {{ $plan->period_end?->format('d M Y') }}</td>
                         <td>{{ count($plan->targetDepartmentIds()) }}</td>
                         <td>{{ $plan->checklists_count }}</td>
                         <td>

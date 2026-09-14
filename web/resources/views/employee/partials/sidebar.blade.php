@@ -21,6 +21,7 @@
                 'active' => request()->routeIs('employee.qa.tasks.*'),
                 'badgeKey' => 'qa.tasks',
             ])
+            @include('partials.navigation.department-me-reports-link', ['module' => 'employee'])
             @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.leave.index'),
                 'label' => 'Apply for leave',

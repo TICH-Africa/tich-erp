@@ -41,7 +41,7 @@
                             · Status: {{ $submission->submission_status }}
                         @endif
                     </p>
-                    <p class="tich-text tich-mt-4">{{ $submission->submission_text ?: '—' }}</p>
+                    <p class="tich-text tich-mt-4">{{ $submission->submission_text ?: '-' }}</p>
                     <p class="tich-caption">Score: {{ $submission && $submission->score !== null ? (int) $submission->score : '-' }}</p>
                     @if ($submission?->evidence?->isNotEmpty())
                         <ul class="tich-mt-2" style="margin:0;padding-left:1.1rem;">
@@ -92,7 +92,7 @@
                                 >{{ old("answers.{$item->id}.submission_text", $submission->submission_text ?? '') }}</textarea>
                             </div>
                             <div class="tich-form-group">
-                                <label class="tich-label">Score (0–{{ (int) $item->max_score }})</label>
+                                <label class="tich-label">Score (0-{{ (int) $item->max_score }})</label>
                                 <input
                                     type="number"
                                     step="1"

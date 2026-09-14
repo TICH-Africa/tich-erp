@@ -24,7 +24,7 @@
             'active' => request()->routeIs('monitoring_evaluation.qa.tasks.*'),
             'badgeKey' => 'qa.tasks',
         ])
-        @include('partials.navigation.sidebar-link', ['href' => route('monitoring_evaluation.department.index'), 'label' => 'My department reports', 'icon' => 'layers', 'active' => request()->routeIs('monitoring_evaluation.department.*'), 'badgeKey' => 'department'])
+        @include('partials.navigation.department-me-reports-link', ['module' => 'monitoring_evaluation', 'label' => 'My department reports'])
     </nav>
     <div class="tich-admin-sidebar__footer">
         @include('partials.navigation.sidebar-link', ['href' => route('employee.dashboard'), 'label' => 'Back to my employee portal', 'icon' => 'arrow-left', 'muted' => true])

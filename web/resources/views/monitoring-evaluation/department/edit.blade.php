@@ -1,22 +1,24 @@
-@extends('layouts.monitoring-evaluation')
-
-@section('title', 'Edit quarterly M&E report')
-
 @php
+    $moduleContext = $moduleContext ?? \App\Support\MeDepartmentReportModuleContext::forModule('monitoring_evaluation');
+    $reportRoutes = $reportRoutes ?? $moduleContext['routes'];
     $canSubmit = (bool) ($canSubmit ?? false);
     $isEditable = $canSubmit && in_array($report->status, ['draft', 'returned'], true);
 @endphp
 
-@section('monitoring-evaluation-content')
+@extends($moduleContext['layout'])
+
+@section('title', 'Edit quarterly M&E report')
+
+@section($moduleContext['content_section'])
     <x-page-toolbar
         :title="($report->department?->dept_name ?? 'Department').' · '.($report->quarter?->label() ?? '')"
         meta="Rigid schema: Output · Activity · Costable item · Planned · Achieved · Deviation"
     >
         <x-slot:actions>
-            @if (! $canSubmit && in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered'], true))
+            @if (! $canSubmit && in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered'], true) && \Illuminate\Support\Facades\Route::has('monitoring_evaluation.reports.show'))
                 <a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-btn tich-btn-primary">Open for verification</a>
             @endif
-            <a href="{{ route('monitoring_evaluation.department.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route($reportRoutes['index']) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -33,13 +35,13 @@
 
     @if (! $canSubmit && in_array($report->status, ['draft', 'returned'], true))
         <div class="tich-alert tich-alert--info tich-mt-4">
-            This is {{ $report->department?->dept_name ?? 'the department' }}’s report.
-            Only that department’s HOD or staff can edit and submit it to M&amp;E for verification.
+            This is {{ $report->department?->dept_name ?? 'the department' }}'s report.
+            Only that department's HOD or staff can edit and submit it to M&amp;E for verification.
         </div>
     @endif
 
     @if ($isEditable)
-    <form method="POST" action="{{ route('monitoring_evaluation.department.reports.update', $report) }}" class="tich-mt-6">
+    <form method="POST" action="{{ route($reportRoutes['update'], $report) }}" class="tich-mt-6">
         @csrf
         @method('PUT')
         <div class="tich-card tich-table-panel">
@@ -80,7 +82,7 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ route('monitoring_evaluation.department.reports.submit', $report) }}" class="tich-mt-4" style="text-align:right;">
+    <form method="POST" action="{{ route($reportRoutes['submit'], $report) }}" class="tich-mt-4" style="text-align:right;">
         @csrf
         <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Submit this quarterly report to M&E for verification?')">Submit to M&amp;E Officer</button>
     </form>

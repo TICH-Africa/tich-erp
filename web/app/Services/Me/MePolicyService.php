@@ -196,9 +196,9 @@ class MePolicyService
                 ];
             }),
             'signoffs' => $signoffs->flatten(1)->map(fn (MePolicySignoff $s) => [
-                'department' => $s->department?->dept_name ?? '—',
+                'department' => $s->department?->dept_name ?? '-',
                 'department_code' => $s->department?->dept_code,
-                'signed_name' => $s->signed_name ?: ($s->staff?->fullName() ?? '—'),
+                'signed_name' => $s->signed_name ?: ($s->staff?->fullName() ?? '-'),
                 'employee_number' => $s->employee_number,
                 'signed_at' => $s->signed_at?->format('d M Y H:i'),
             ])->values()->all(),

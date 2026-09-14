@@ -12,7 +12,7 @@
     <div class="tich-card tich-mt-6">
         <p class="tich-text">{{ $plan->description }}</p>
         <p class="tich-caption tich-mt-2">
-            Period {{ $plan->period_start?->format('d M Y') }} – {{ $plan->period_end?->format('d M Y') }}
+            Period {{ $plan->period_start?->format('d M Y') }} - {{ $plan->period_end?->format('d M Y') }}
             · Threshold {{ $plan->pass_threshold }}%
             · Status {{ str_replace('_', ' ', $plan->status) }}
         </p>

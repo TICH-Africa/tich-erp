@@ -20,7 +20,7 @@
         </article>
         <article class="tich-card">
             <p class="tich-caption">Weighted score</p>
-            <p class="tich-h2 tich-mt-2">{{ $compliance ? number_format((float) $compliance->weighted_score, 1).'%' : '—' }}</p>
+            <p class="tich-h2 tich-mt-2">{{ $compliance ? number_format((float) $compliance->weighted_score, 1).'%' : '-' }}</p>
             @if ($compliance)
                 <p class="tich-caption tich-mt-2">{{ str_replace('_', ' ', $compliance->pass_fail_status) }}</p>
             @endif
@@ -42,8 +42,8 @@
             </div>
 
             @if ($submission)
-                <p class="tich-text tich-mt-4">{{ $submission->submission_text ?: '—' }}</p>
-                <p class="tich-caption tich-mt-2">Score: {{ $submission->score !== null ? (int) $submission->score : '—' }}</p>
+                <p class="tich-text tich-mt-4">{{ $submission->submission_text ?: '-' }}</p>
+                <p class="tich-caption tich-mt-2">Score: {{ $submission->score !== null ? (int) $submission->score : '-' }}</p>
                 @if ($submission->submittedByStaff)
                     <p class="tich-caption">Submitted by {{ $submission->submittedByStaff->fullName() }}{{ $submission->submitted_at ? ' · '.$submission->submitted_at->format('d M Y H:i') : '' }}</p>
                 @endif
