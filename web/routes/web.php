@@ -587,6 +587,42 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Procurement\DashboardController::class, '__invoke'])->name('procurement.dashboard');
+        Route::get('/requisitions', [\App\Http\Controllers\Procurement\RequisitionController::class, 'index'])->name('procurement.requisitions.index');
+        Route::get('/requisitions/create', [\App\Http\Controllers\Procurement\RequisitionController::class, 'create'])->name('procurement.requisitions.create');
+        Route::post('/requisitions', [\App\Http\Controllers\Procurement\RequisitionController::class, 'store'])->name('procurement.requisitions.store');
+        Route::get('/requisitions/{requisition}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'show'])->name('procurement.requisitions.show');
+        Route::post('/requisitions/{requisition}/approve/{level}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'approve'])->name('procurement.requisitions.approve');
+        Route::post('/requisitions/{requisition}/reject/{level}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'reject'])->name('procurement.requisitions.reject');
+        Route::post('/requisitions/{requisition}/submit', [\App\Http\Controllers\Procurement\RequisitionController::class, 'submit'])->name('procurement.requisitions.submit');
+        Route::post('/requisitions/{requisition}/cancel', [\App\Http\Controllers\Procurement\RequisitionController::class, 'cancel'])->name('procurement.requisitions.cancel');
+
+        Route::resource('suppliers', \App\Http\Controllers\Procurement\SupplierController::class)->only(['index', 'show', 'create', 'store', 'edit', 'update'])->names([
+            'index' => 'procurement.suppliers.index',
+            'create' => 'procurement.suppliers.create',
+            'store' => 'procurement.suppliers.store',
+            'show' => 'procurement.suppliers.show',
+            'edit' => 'procurement.suppliers.edit',
+            'update' => 'procurement.suppliers.update',
+        ]);
+
+        Route::post('suppliers/{supplier}/verify', [\App\Http\Controllers\Procurement\SupplierController::class, 'verify'])->name('procurement.suppliers.verify');
+        Route::post('suppliers/{supplier}/blacklist', [\App\Http\Controllers\Procurement\SupplierController::class, 'blacklist'])->name('procurement.suppliers.blacklist');
+        Route::post('suppliers/{supplier}/remove-blacklist', [\App\Http\Controllers\Procurement\SupplierController::class, 'removeBlacklist'])->name('procurement.suppliers.remove-blacklist');
+
+        Route::resource('rfqs', \App\Http\Controllers\Procurement\RfqController::class)->only(['index', 'show', 'create', 'store'])->names([
+            'index' => 'procurement.rfqs.index',
+            'create' => 'procurement.rfqs.create',
+            'store' => 'procurement.rfqs.store',
+            'show' => 'procurement.rfqs.show',
+        ]);
+        Route::post('rfqs/{rfq}/publish', [\App\Http\Controllers\Procurement\RfqController::class, 'publish'])->name('procurement.rfqs.publish');
+        Route::post('rfqs/{rfq}/invite', [\App\Http\Controllers\Procurement\RfqController::class, 'inviteSuppliers'])->name('procurement.rfqs.invite-suppliers');
+        Route::post('rfqs/{rfq}/close', [\App\Http\Controllers\Procurement\RfqController::class, 'close'])->name('procurement.rfqs.close');
+        Route::post('rfqs/{rfq}/submit-evaluation', [\App\Http\Controllers\Procurement\RfqController::class, 'submitEvaluation'])->name('procurement.rfqs.submit-evaluation');
+        Route::post('rfqs/{rfq}/award', [\App\Http\Controllers\Procurement\RfqController::class, 'award'])->name('procurement.rfqs.award');
+        Route::post('rfqs/{rfq}/approve-award', [\App\Http\Controllers\Procurement\RfqController::class, 'approveAward'])->name('procurement.rfqs.approve-award');
+        Route::post('rfqs/{rfq}/reject-award', [\App\Http\Controllers\Procurement\RfqController::class, 'rejectAward'])->name('procurement.rfqs.reject-award');
+
         $registerModuleBudgeting('procurement');
         $registerModuleQaTasks('procurement');
         $registerModuleMeReports('procurement');

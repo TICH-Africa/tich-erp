@@ -4,6 +4,24 @@
     <nav class="tich-admin-sidebar__nav" aria-label="Procurement module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('procurement.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('procurement.dashboard')])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.requisitions.index'),
+            'label' => 'Requisitions',
+            'icon' => 'clipboard-list',
+            'active' => request()->routeIs('procurement.requisitions.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.suppliers.index'),
+            'label' => 'Suppliers',
+            'icon' => 'building-storefront',
+            'active' => request()->routeIs('procurement.suppliers.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.rfqs.index'),
+            'label' => 'RFQs',
+            'icon' => 'clipboard-document-list',
+            'active' => request()->routeIs('procurement.rfqs.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.qa.tasks.index'),
             'label' => 'QA assessment tasks',
             'icon' => 'layers',
