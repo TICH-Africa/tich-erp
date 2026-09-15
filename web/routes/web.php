@@ -623,6 +623,66 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('rfqs/{rfq}/approve-award', [\App\Http\Controllers\Procurement\RfqController::class, 'approveAward'])->name('procurement.rfqs.approve-award');
         Route::post('rfqs/{rfq}/reject-award', [\App\Http\Controllers\Procurement\RfqController::class, 'rejectAward'])->name('procurement.rfqs.reject-award');
 
+        Route::resource('assets', \App\Http\Controllers\Procurement\AssetController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.assets.index',
+            'create' => 'procurement.assets.create',
+            'store' => 'procurement.assets.store',
+            'show' => 'procurement.assets.show',
+        ]);
+        Route::resource('grns', \App\Http\Controllers\Procurement\GrnController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.grns.index',
+            'create' => 'procurement.grns.create',
+            'store' => 'procurement.grns.store',
+            'show' => 'procurement.grns.show',
+        ]);
+        Route::resource('inventory-items', \App\Http\Controllers\Procurement\InventoryItemController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.inventory-items.index',
+            'create' => 'procurement.inventory-items.create',
+            'store' => 'procurement.inventory-items.store',
+            'show' => 'procurement.inventory-items.show',
+        ]);
+        Route::resource('stock-alerts', \App\Http\Controllers\Procurement\StockAlertController::class)->only(['index', 'show', 'autoReorder'])->names([
+            'index' => 'procurement.stock-alerts.index',
+            'show' => 'procurement.stock-alerts.show',
+            'autoReorder' => 'procurement.stock-alerts.auto-reorder',
+        ]);
+
+        Route::resource('asset-movements', \App\Http\Controllers\Procurement\AssetMovementController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.asset-movements.index',
+            'create' => 'procurement.asset-movements.create',
+            'store' => 'procurement.asset-movements.store',
+            'show' => 'procurement.asset-movements.show',
+        ]);
+        Route::post('asset-movements/{assetMovement}/approve', [\App\Http\Controllers\Procurement\AssetMovementController::class, 'approve'])->name('procurement.asset-movements.approve');
+        Route::resource('asset-maintenance', \App\Http\Controllers\Procurement\AssetMaintenanceController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.asset-maintenance.index',
+            'create' => 'procurement.asset-maintenance.create',
+            'store' => 'procurement.asset-maintenance.store',
+            'show' => 'procurement.asset-maintenance.show',
+        ]);
+        Route::post('asset-maintenance/{assetMaintenance}/complete', [\App\Http\Controllers\Procurement\AssetMaintenanceController::class, 'complete'])->name('procurement.asset-maintenance.complete');
+        Route::resource('asset-disposals', \App\Http\Controllers\Procurement\AssetDisposalController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.asset-disposals.index',
+            'create' => 'procurement.asset-disposals.create',
+            'store' => 'procurement.asset-disposals.store',
+            'show' => 'procurement.asset-disposals.show',
+        ]);
+        Route::post('asset-disposals/{assetDisposal}/approve', [\App\Http\Controllers\Procurement\AssetDisposalController::class, 'approve'])->name('procurement.asset-disposals.approve');
+        Route::resource('asset-audits', \App\Http\Controllers\Procurement\AssetAuditController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.asset-audits.index',
+            'create' => 'procurement.asset-audits.create',
+            'store' => 'procurement.asset-audits.store',
+            'show' => 'procurement.asset-audits.show',
+        ]);
+        Route::post('asset-audits/{assetAudit}/review', [\App\Http\Controllers\Procurement\AssetAuditController::class, 'review'])->name('procurement.asset-audits.review');
+        Route::resource('stock-issues', \App\Http\Controllers\Procurement\StockIssueController::class)->only(['index', 'create', 'store', 'show'])->names([
+            'index' => 'procurement.stock-issues.index',
+            'create' => 'procurement.stock-issues.create',
+            'store' => 'procurement.stock-issues.store',
+            'show' => 'procurement.stock-issues.show',
+        ]);
+        Route::post('stock-issues/{stockIssue}/approve', [\App\Http\Controllers\Procurement\StockIssueController::class, 'approve'])->name('procurement.stock-issues.approve');
+
         $registerModuleBudgeting('procurement');
         $registerModuleQaTasks('procurement');
         $registerModuleMeReports('procurement');

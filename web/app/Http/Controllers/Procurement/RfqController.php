@@ -47,6 +47,7 @@ class RfqController extends Controller
             'draft' => Rfq::query()->where('status', 'draft')->count(),
             'published' => Rfq::query()->where('status', 'published')->count(),
             'closed' => Rfq::query()->where('status', 'closed')->count(),
+            'evaluated' => Rfq::query()->where('status', 'evaluated')->count(),
             'awarded' => Rfq::query()->where('status', 'awarded')->count(),
         ];
 

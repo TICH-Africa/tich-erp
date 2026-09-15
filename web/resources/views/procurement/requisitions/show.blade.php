@@ -27,10 +27,6 @@
             <p class="tich-stat__value">{{ $requisition->statusLabel() }}</p>
         </article>
         <article class="tich-card tich-stat">
-            <p class="tich-caption">Type</p>
-            <p class="tich-stat__value">{{ ucfirst($requisition->requisition_type) }}</p>
-        </article>
-        <article class="tich-card tich-stat">
             <p class="tich-caption">Estimated cost</p>
             <p class="tich-stat__value">KES {{ number_format((float) $requisition->estimated_cost, 2) }}</p>
         </article>

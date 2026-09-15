@@ -22,6 +22,60 @@
             'active' => request()->routeIs('procurement.rfqs.*'),
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.assets.index'),
+            'label' => 'Assets',
+            'icon' => 'cpu',
+            'active' => request()->routeIs('procurement.assets.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.grns.index'),
+            'label' => 'GRNs',
+            'icon' => 'package',
+            'active' => request()->routeIs('procurement.grns.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.inventory-items.index'),
+            'label' => 'Inventory',
+            'icon' => 'archive',
+            'active' => request()->routeIs('procurement.inventory-items.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.stock-alerts.index'),
+            'label' => 'Stock alerts',
+            'icon' => 'bell',
+            'active' => request()->routeIs('procurement.stock-alerts.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.asset-movements.index'),
+            'label' => 'Asset movements',
+            'icon' => 'arrow-left-right',
+            'active' => request()->routeIs('procurement.asset-movements.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.asset-maintenance.index'),
+            'label' => 'Maintenance',
+            'icon' => 'wrench',
+            'active' => request()->routeIs('procurement.asset-maintenance.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.asset-disposals.index'),
+            'label' => 'Disposals',
+            'icon' => 'trash',
+            'active' => request()->routeIs('procurement.asset-disposals.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.asset-audits.index'),
+            'label' => 'Audits',
+            'icon' => 'clipboard-check',
+            'active' => request()->routeIs('procurement.asset-audits.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.stock-issues.index'),
+            'label' => 'Stock issues',
+            'icon' => 'shopping-cart',
+            'active' => request()->routeIs('procurement.stock-issues.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.qa.tasks.index'),
             'label' => 'QA assessment tasks',
             'icon' => 'layers',

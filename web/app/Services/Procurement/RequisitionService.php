@@ -35,7 +35,7 @@ class RequisitionService
 
     public function verifyBudget(ProcurementRequisition $requisition): array
     {
-        if ($requisition->requisition_type === 'emergency') {
+        if (($requisition->requisition_type ?? null) === 'emergency') {
             return [
                 'passed' => true,
                 'message' => 'Emergency requisitions bypass standard budget verification.',
