@@ -87,6 +87,40 @@
         </article>
     </div>
 
+    @if(is_array($requisition->line_items) && count($requisition->line_items) > 0)
+        <article class="tich-card tich-table-panel tich-mt-6">
+            <h2 class="tich-h3" style="margin-top:0;">Line items</h2>
+            <div class="tich-table-wrap tich-mt-4">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Description</th>
+                            <th>Unit price</th>
+                            <th>Unit</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($requisition->line_items as $index => $line)
+                            <tr>
+                                <td class="tich-col-num">{{ $index + 1 }}</td>
+                                <td>{{ $line['item'] ?? '-' }}</td>
+                                <td>{{ $line['quantity'] ?? '-' }}</td>
+                                <td>{{ $line['description'] ?: '-' }}</td>
+                                <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
+                                <td>{{ $line['unit_of_measure'] ?: '-' }}</td>
+                                <td>KES {{ number_format((float) ($line['total'] ?? 0), 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    @endif
+
     @if($requisition->attachments && count($requisition->attachments) > 0)
         <article class="tich-card tich-mt-6">
             <h2 class="tich-h3" style="margin-top:0;">Attachments</h2>

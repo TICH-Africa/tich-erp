@@ -9,6 +9,7 @@ use App\Models\Staff;
 use App\Models\Supplier;
 use App\Services\Procurement\GrnService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +33,7 @@ class GrnController extends Controller
             });
         }
 
-        $grns = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $grns = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         $stats = [
             'total' => GoodsReceivedNote::query()->count(),

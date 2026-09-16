@@ -8,6 +8,7 @@ use App\Models\AssetMovement;
 use App\Models\Staff;
 use App\Services\Procurement\AssetMovementService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -23,7 +24,7 @@ class AssetMovementController extends Controller
             $query->where('status', $request->status);
         }
 
-        $movements = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $movements = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         return view('procurement.asset-movements.index', compact('movements'));
     }

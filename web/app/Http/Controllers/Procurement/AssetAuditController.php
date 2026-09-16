@@ -8,6 +8,7 @@ use App\Models\AssetAudit;
 use App\Models\Staff;
 use App\Services\Procurement\AssetAuditService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -23,7 +24,7 @@ class AssetAuditController extends Controller
             $query->where('status', $request->status);
         }
 
-        $records = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $records = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         return view('procurement.asset-audits.index', compact('records'));
     }

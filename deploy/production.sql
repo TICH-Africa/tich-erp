@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-16 12:03:33 EAT
+-- Generated: 2026-09-16 21:25:38 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -6995,6 +6995,7 @@ CREATE TABLE IF NOT EXISTS `procurement_requisitions` (
   `request_date` date NOT NULL,
   `justification` text NOT NULL,
   `requested_item` varchar(300) DEFAULT NULL,
+  `line_items` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`line_items`)),
   `attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attachments`)),
   `estimated_cost` decimal(12,2) NOT NULL,
   `estimated_unit_cost` decimal(12,2) DEFAULT NULL,
@@ -7037,6 +7038,7 @@ CALL `tich_ensure_column`('procurement_requisitions', 'requested_by', 'bigint(20
 CALL `tich_ensure_column`('procurement_requisitions', 'request_date', 'date NOT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'justification', 'text NOT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'requested_item', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('procurement_requisitions', 'line_items', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'attachments', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'estimated_cost', 'decimal(12,2) NOT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'estimated_unit_cost', 'decimal(12,2) NULL DEFAULT NULL');

@@ -9,6 +9,7 @@ use App\Models\StockAlert;
 use App\Services\Procurement\InventoryService;
 use App\Services\Procurement\RequisitionService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -27,7 +28,7 @@ class StockAlertController extends Controller
             $query->whereHas('inventoryItem', fn ($q) => $q->where('item_name', 'like', "%{$request->search}%")->orWhere('item_code', 'like', "%{$request->search}%"));
         }
 
-        $alerts = $query->orderByDesc('triggered_at')->paginate(25)->withQueryString();
+        $alerts = $query->orderByDesc('triggered_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         $stats = [
             'active' => StockAlert::query()->where('status', 'active')->count(),

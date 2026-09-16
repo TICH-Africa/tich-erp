@@ -8,6 +8,7 @@ return [
     TichSecurityServiceProvider::class,
     App\Providers\HrSidebarNotificationServiceProvider::class,
     App\Providers\FinanceSidebarNotificationServiceProvider::class,
+    App\Providers\ProcurementSidebarNotificationServiceProvider::class,
     App\Providers\PortalSidebarNotificationServiceProvider::class,
     App\Providers\AdminSidebarNotificationServiceProvider::class,
     App\Providers\AdministrationSidebarNotificationServiceProvider::class,

@@ -3,6 +3,7 @@
 namespace App\Services\Finance;
 
 use App\Events\FinanceSidebarCountsUpdated;
+use App\Models\Administration\BudgetRequest;
 use App\Models\FeeStructure;
 use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlanItem;
@@ -34,6 +35,7 @@ class FinanceSidebarNotificationService
         'finance-records' => 'Finance Records',
         'ar.overdue' => 'Accounts receivable',
         'ap.pending' => 'Accounts payable',
+        'budgeting.pending' => 'Budgeting',
         'finance.mpesa' => 'M-Pesa / treasury',
         'employee-finance' => 'Employee Finance',
         'payroll-runs' => 'Payroll runs',
@@ -89,6 +91,7 @@ class FinanceSidebarNotificationService
         $milestonesDue = $this->paymentMilestonesNeedingActionCount();
         $pendingMpesa = $this->pendingMpesaRequestsCount();
         $pendingAp = $this->accountsPayableNeedingActionCount();
+        $pendingBudgets = $this->budgetsPendingFinanceReviewCount();
         $draftPayrollRuns = 0;
         $approvedPayrollRuns = 0;
 
@@ -104,7 +107,7 @@ class FinanceSidebarNotificationService
             + $milestonesDue
             + $pendingMpesa;
 
-        $financeRecords = $openInvoices + $pendingAp + $approvedPayrollRuns + $pendingMpesa;
+        $financeRecords = $openInvoices + $pendingAp + $pendingBudgets + $approvedPayrollRuns + $pendingMpesa;
         $employeeFinance = $draftPayrollRuns + $approvedPayrollRuns;
 
         return [
@@ -116,6 +119,7 @@ class FinanceSidebarNotificationService
             'student-finance' => $studentFinance,
             'ar.overdue' => $openInvoices,
             'ap.pending' => $pendingAp,
+            'budgeting.pending' => $pendingBudgets,
             'finance.mpesa' => $pendingMpesa,
             'finance-records' => $financeRecords,
             'payroll-runs' => $draftPayrollRuns,
@@ -219,5 +223,16 @@ class FinanceSidebarNotificationService
         }
 
         return $apPending + $procurementPending;
+    }
+
+    private function budgetsPendingFinanceReviewCount(): int
+    {
+        if (! Schema::hasTable('admin_budget_requests')) {
+            return 0;
+        }
+
+        return BudgetRequest::query()
+            ->where('status', 'finance_review')
+            ->count();
     }
 }

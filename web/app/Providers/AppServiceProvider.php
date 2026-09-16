@@ -13,6 +13,7 @@ use App\View\Composers\FinanceSidebarComposer;
 use App\View\Composers\HrSidebarComposer;
 use App\View\Composers\IctSidebarComposer;
 use App\View\Composers\MeSidebarComposer;
+use App\View\Composers\ProcurementSidebarComposer;
 use App\View\Composers\PublicLayoutComposer;
 use App\View\Composers\QaAssignedTasksComposer;
 use App\View\Composers\QaSidebarComposer;
@@ -72,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['emails.*', 'emails.finance.*'], EmailBrandComposer::class);
         View::composer(['hr.partials.sidebar', 'layouts.hr'], HrSidebarComposer::class);
         View::composer(['finance.partials.sidebar', 'layouts.finance'], FinanceSidebarComposer::class);
+        View::composer(['procurement.partials.sidebar', 'layouts.procurement'], ProcurementSidebarComposer::class);
         View::composer(['employee.partials.sidebar', 'layouts.employee'], EmployeeSidebarComposer::class);
         View::composer(['staff.partials.sidebar', 'layouts.staff'], StaffSidebarComposer::class);
         View::composer(['portal.partials.sidebar', 'layouts.portal'], StudentSidebarComposer::class);

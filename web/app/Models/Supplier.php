@@ -10,6 +10,8 @@ class Supplier extends Model
 {
     protected $table = 'suppliers';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'supplier_code',
         'supplier_name',

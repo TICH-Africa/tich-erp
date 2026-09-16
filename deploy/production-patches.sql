@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-09-04
+-- Last updated: 2026-09-16
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -972,6 +972,399 @@ UPDATE `qa_department_submissions` SET `score` = ROUND(`score`) WHERE `score` IS
 ALTER TABLE `qa_department_submissions` MODIFY `score` INT UNSIGNED NULL DEFAULT NULL;
 
 SET time_zone = '+03:00';
+
+-- -----------------------------------------------------------------------------
+-- 22. M&E policy signoffs: version + role at signature
+--     (2026_09_14_000001_add_version_role_to_me_policy_signoffs)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='me_policy_signoffs' AND COLUMN_NAME='policy_version'),
+    'SELECT 1',
+    'ALTER TABLE `me_policy_signoffs` ADD COLUMN `policy_version` varchar(50) NULL DEFAULT NULL AFTER `policy_id`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='me_policy_signoffs' AND COLUMN_NAME='signed_role'),
+    'SELECT 1',
+    'ALTER TABLE `me_policy_signoffs` ADD COLUMN `signed_role` varchar(100) NULL DEFAULT NULL AFTER `policy_version`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
+-- 23. Procurement requisitions: item / budget / audit detail columns
+--     (2026_09_14_000003_add_requisition_details_to_procurement_requisitions)
+-- -----------------------------------------------------------------------------
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='requested_item'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `requested_item` varchar(300) NULL DEFAULT NULL AFTER `justification`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='attachments'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `attachments` json NULL DEFAULT NULL AFTER `requested_item`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='budget_line'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `budget_line` varchar(100) NULL DEFAULT NULL AFTER `budget_code`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='estimated_unit_cost'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `estimated_unit_cost` decimal(12,2) NULL DEFAULT NULL AFTER `estimated_cost`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='quantity'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `quantity` decimal(12,2) NULL DEFAULT NULL AFTER `estimated_unit_cost`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='delivery_location'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `delivery_location` varchar(500) NULL DEFAULT NULL AFTER `delivery_required_by`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='audit_trail'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `audit_trail` text NULL DEFAULT NULL AFTER `ceo_approved_at`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
+-- 24. Suppliers registry extensions + created_at default
+--     (2026_09_14_000004_extend_suppliers_table)
+-- -----------------------------------------------------------------------------
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='supplier_category'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `supplier_category` varchar(50) NULL DEFAULT NULL AFTER `is_active`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='sub_category'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `sub_category` varchar(100) NULL DEFAULT NULL AFTER `supplier_category`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='risk_rating'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `risk_rating` varchar(20) NOT NULL DEFAULT ''medium'''
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='compliance_status'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `compliance_status` varchar(50) NOT NULL DEFAULT ''pending'''
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='performance_score'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `performance_score` decimal(5,2) NOT NULL DEFAULT 50.00'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='registration_number'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `registration_number` varchar(100) NULL DEFAULT NULL AFTER `supplier_name`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='pin_certificate_path'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `pin_certificate_path` varchar(500) NULL DEFAULT NULL AFTER `compliance_doc_path`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='cr12_path'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `cr12_path` varchar(500) NULL DEFAULT NULL AFTER `pin_certificate_path`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='audited_financial_statements_path'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `audited_financial_statements_path` varchar(500) NULL DEFAULT NULL AFTER `cr12_path`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='past_contracts'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `past_contracts` json NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='client_references'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `client_references` json NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='staff_count'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `staff_count` int(11) NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='certifications'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `certifications` json NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='blacklist_status'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `blacklist_status` varchar(50) NOT NULL DEFAULT ''active'''
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='blacklist_reason'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `blacklist_reason` text NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='blacklisted_at'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `blacklisted_at` datetime NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='blacklisted_by'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `blacklisted_by` bigint(20) unsigned NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='performance_last_updated_at'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `performance_last_updated_at` datetime NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='performance_updated_by'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `performance_updated_by` bigint(20) unsigned NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='notes'),
+    'SELECT 1',
+    'ALTER TABLE `suppliers` ADD COLUMN `notes` text NULL DEFAULT NULL'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- production.sql cannot change existing column defaults; align created_at.
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='created_at'),
+    'ALTER TABLE `suppliers` MODIFY COLUMN `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP',
+    'SELECT 1'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
+-- 25. Assets: tagging, custodian, location, GRN / requisition links
+--     (2026_09_15_000001_extend_assets_table)
+-- -----------------------------------------------------------------------------
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='tag_number'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `tag_number` varchar(50) NULL DEFAULT NULL AFTER `asset_number`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND INDEX_NAME='assets_tag_number_unique'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD UNIQUE KEY `assets_tag_number_unique` (`tag_number`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='qr_code_path'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `qr_code_path` varchar(500) NULL DEFAULT NULL AFTER `tag_number`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='custodian_id'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `custodian_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `qr_code_path`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='location_name'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `location_name` varchar(255) NULL DEFAULT NULL AFTER `custodian_id`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='building'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `building` varchar(100) NULL DEFAULT NULL AFTER `location_name`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='room'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `room` varchar(100) NULL DEFAULT NULL AFTER `building`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='asset_status'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `asset_status` varchar(50) NOT NULL DEFAULT ''new'' AFTER `room`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='handover_date'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `handover_date` date NULL DEFAULT NULL AFTER `asset_status`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='grn_id'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `grn_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `handover_date`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='assets' AND COLUMN_NAME='procurement_requisition_id'),
+    'SELECT 1',
+    'ALTER TABLE `assets` ADD COLUMN `procurement_requisition_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `grn_id`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET time_zone = '+03:00';
+
+-- New procurement tables (rfqs, asset_*, grn_items, stock_*) are created by
+-- deploy/production.sql (CREATE TABLE IF NOT EXISTS). Run that file first.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

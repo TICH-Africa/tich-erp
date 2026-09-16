@@ -587,8 +587,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('procurement')->middleware(['permission:procurement.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Procurement\DashboardController::class, '__invoke'])->name('procurement.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Procurement\SidebarNotificationController::class)->name('procurement.sidebar-notifications');
         Route::get('/requisitions', [\App\Http\Controllers\Procurement\RequisitionController::class, 'index'])->name('procurement.requisitions.index');
         Route::get('/requisitions/create', [\App\Http\Controllers\Procurement\RequisitionController::class, 'create'])->name('procurement.requisitions.create');
+        Route::get('/api/budget-lines', [\App\Http\Controllers\Procurement\RequisitionController::class, 'budgetLines'])->name('procurement.api.budget-lines');
         Route::post('/requisitions', [\App\Http\Controllers\Procurement\RequisitionController::class, 'store'])->name('procurement.requisitions.store');
         Route::get('/requisitions/{requisition}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'show'])->name('procurement.requisitions.show');
         Route::post('/requisitions/{requisition}/approve/{level}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'approve'])->name('procurement.requisitions.approve');

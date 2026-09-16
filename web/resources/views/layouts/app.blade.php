@@ -7,49 +7,54 @@
     @include('partials.seo')
     @include('partials.head-assets')
 </head>
-<body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}">
+@php
+    $portalRoutePatterns = [
+        'dashboard',
+        'notifications.*',
+        'admin.*',
+        'administration.*',
+        'site-settings.*',
+        'departments.*',
+        'finance.*',
+        'sis.*',
+        'admissions.*',
+        'portal.*',
+        'staff.*',
+        'employee.*',
+        'hr.*',
+        'qa.*',
+        'procurement.*',
+        'research.*',
+        'ict.*',
+        'ceo.*',
+        'monitoring_evaluation.*',
+    ];
+
+    $autohideAppHeader = request()->routeIs($portalRoutePatterns);
+    $hideAppFooter = request()->routeIs($portalRoutePatterns);
+    $hideAppAlerts = request()->routeIs([
+        'admin.*',
+        'administration.*',
+        'departments.*',
+        'finance.*',
+        'sis.*',
+        'admissions.*',
+        'portal.*',
+        'staff.*',
+        'employee.*',
+        'hr.*',
+        'qa.*',
+        'procurement.*',
+        'research.*',
+        'ict.*',
+        'ceo.*',
+        'monitoring_evaluation.*',
+    ]);
+@endphp
+<body class="tich-body{{ request()->routeIs('home') ? ' page-home' : '' }}{{ $autohideAppHeader ? ' tich-body--autohide-header' : '' }}">
     <a class="tich-skip-link" href="#main-content">Skip to main content</a>
     @include('partials.states.global-banners')
     @include('partials.navigation.header')
-
-    @php
-        $hideAppFooter = request()->routeIs([
-            'dashboard',
-            'notifications.*',
-            'admin.*',
-            'administration.*',
-            'site-settings.*',
-            'departments.*',
-            'finance.*',
-            'sis.*',
-            'admissions.*',
-            'portal.*',
-            'staff.*',
-            'employee.*',
-            'hr.*',
-            'qa.*',
-            'procurement.*',
-            'research.*',
-            'ict.*',
-        ]);
-
-        $hideAppAlerts = request()->routeIs([
-            'admin.*',
-            'administration.*',
-            'departments.*',
-            'finance.*',
-            'sis.*',
-            'admissions.*',
-            'portal.*',
-            'staff.*',
-            'employee.*',
-            'hr.*',
-            'qa.*',
-            'procurement.*',
-            'research.*',
-            'ict.*',
-        ]);
-    @endphp
 
     <main id="main-content">
         @unless ($hideAppAlerts)
@@ -64,6 +69,7 @@
 
     <x-asset.script path="js/tich-nav.js" />
     <x-asset.script path="js/tich-admin-sidebar-mobile.js" />
+    <x-asset.script path="js/tich-header-autohide.js" />
     <x-asset.script path="js/tich-sidebar-layout.js" />
     <x-asset.script path="js/tich-homepage.js" />
     <x-asset.script path="js/tich-states.js" />

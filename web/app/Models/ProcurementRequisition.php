@@ -9,6 +9,8 @@ class ProcurementRequisition extends Model
 {
     protected $table = 'procurement_requisitions';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'requisition_number',
         'requesting_department_id',
@@ -31,6 +33,7 @@ class ProcurementRequisition extends Model
         'ceo_approved_by',
         'ceo_approved_at',
         'requested_item',
+        'line_items',
         'attachments',
         'estimated_unit_cost',
         'quantity',
@@ -47,6 +50,7 @@ class ProcurementRequisition extends Model
         'finance_approved_at' => 'datetime',
         'ceo_approved_at' => 'datetime',
         'attachments' => 'array',
+        'line_items' => 'array',
         'audit_trail' => 'array',
     ];
 

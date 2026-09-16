@@ -20,7 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (barHeight > 0) {
             document.documentElement.style.setProperty('--tich-header-bar-height', `${barHeight}px`);
-            document.documentElement.style.setProperty('--tich-header-height', `${chromeHeight}px`);
+            document.documentElement.style.setProperty('--tich-header-chrome-height', `${chromeHeight}px`);
+
+            // Autohide keeps layout height at 0 while the bar is tucked away.
+            if (document.body.classList.contains('is-header-idle') && !header.classList.contains('is-nav-open')) {
+                document.documentElement.style.setProperty('--tich-header-height', '0px');
+            } else {
+                document.documentElement.style.setProperty('--tich-header-height', `${chromeHeight}px`);
+            }
         }
     };
 

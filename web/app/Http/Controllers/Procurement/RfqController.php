@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Services\Procurement\RfqService;
 use App\Services\Procurement\SupplierService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -39,7 +40,7 @@ class RfqController extends Controller
             })
             ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->orderByDesc('created_at')
-            ->paginate(25)
+            ->paginate(Pagination::perPage($request))
             ->withQueryString();
 
         $stats = [

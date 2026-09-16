@@ -38,11 +38,13 @@ final class StatusTone
             'active', 'verified', 'me_verified', 'ceo_delivered', 'published',
             'baseline_locked', 'cleared', 'paid', 'renewed', 'resolved', 'closed_ok',
             'pass', 'passed', 'yes', 'open_ok', 'me_approved', 'acknowledged',
-            'compliant' => self::SUCCESS,
+            'compliant', 'awarded', 'hod_approved', 'finance_approved', 'ceo_approved',
+            'reviewed' => self::SUCCESS,
 
             'rejected', 'failed', 'failure', 'error', 'danger', 'critical', 'overdue',
             'blocked', 'cancelled', 'canceled', 'terminated', 'inactive', 'not_cleared',
-            'not_selected', 'breach', 'fail', 'no', 'non_compliant', 'failed_status' => self::DANGER,
+            'not_selected', 'breach', 'fail', 'no', 'non_compliant', 'failed_status',
+            'blacklisted' => self::DANGER,
 
             'in_progress', 'processing', 'under_review', 'finance_review', 'executive_review',
             'me_review', 'returned', 'attention', 'warning', 'major', 'action_required',
@@ -52,7 +54,7 @@ final class StatusTone
             'hold', 'queued', 'scheduled', 'not_started', 'unverified' => self::CAUTION,
 
             'info', 'informational', 'review', 'new', 'received', 'assigned',
-            'standby', 'locked', 'open' => self::INFO,
+            'standby', 'locked', 'open', 'closed' => self::INFO,
 
             default => self::NEUTRAL,
         };

@@ -8,6 +8,7 @@ use App\Models\AssetMaintenance;
 use App\Models\Staff;
 use App\Services\Procurement\AssetMaintenanceService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -27,7 +28,7 @@ class AssetMaintenanceController extends Controller
             $query->where('asset_id', $request->asset_id);
         }
 
-        $records = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $records = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         return view('procurement.asset-maintenance.index', compact('records'));
     }

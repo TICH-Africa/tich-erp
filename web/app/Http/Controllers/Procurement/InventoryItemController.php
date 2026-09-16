@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
 use App\Models\Supplier;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -25,7 +26,7 @@ class InventoryItemController extends Controller
             $query->where('category', $request->category);
         }
 
-        $items = $query->orderBy('item_name')->paginate(25)->withQueryString();
+        $items = $query->orderBy('item_name')->paginate(Pagination::perPage($request))->withQueryString();
 
         $stats = [
             'total' => InventoryItem::query()->count(),

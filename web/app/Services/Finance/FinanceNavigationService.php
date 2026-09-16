@@ -99,7 +99,7 @@ class FinanceNavigationService
             $this->item('Accounts payable', 'trending-down', route('finance.ap.index'), request()->routeIs('finance.ap.*'), 'ap.pending'),
             $this->item('Suppliers', 'truck', route('finance.suppliers.index'), request()->routeIs('finance.suppliers.*')),
             $this->item('Chart of accounts / GL', 'grid', route('finance.gl.index'), request()->routeIs('finance.gl.*')),
-            $this->item('Budgeting', 'pie-chart', route('finance.budgeting.index'), request()->routeIs('finance.budgeting.*')),
+            $this->item('Budgeting', 'pie-chart', route('finance.budgeting.index'), request()->routeIs('finance.budgeting.*'), 'budgeting.pending'),
             $this->item('Projects & donors', 'globe', route('finance.projects-donors.index'), request()->routeIs('finance.projects-donors.*')),
         ];
 

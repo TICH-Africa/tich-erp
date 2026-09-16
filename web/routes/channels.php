@@ -45,6 +45,14 @@ Broadcast::channel('finance.sidebar', function ($user) {
     return app(RBACService::class)->hasPermission($user, 'finance.read');
 });
 
+Broadcast::channel('procurement.sidebar', function ($user) {
+    if (! $user) {
+        return false;
+    }
+
+    return app(RBACService::class)->hasPermission($user, 'procurement.read');
+});
+
 Broadcast::channel('employee.sidebar.{userId}', function ($user, $userId) {
     if (! $user || (int) $user->id !== (int) $userId) {
         return false;

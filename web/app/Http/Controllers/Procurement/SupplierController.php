@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use App\Services\Procurement\SupplierService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -31,7 +32,7 @@ class SupplierController extends Controller
             ->when($status !== '', fn ($query) => $query->where('compliance_status', $status))
             ->when($category !== '', fn ($query) => $query->where('supplier_category', $category))
             ->orderByDesc('created_at')
-            ->paginate(25)
+            ->paginate(Pagination::perPage($request))
             ->withQueryString();
 
         $stats = [

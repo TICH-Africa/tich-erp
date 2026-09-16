@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Administration\BudgetRequest;
 use App\Models\FeeStructure;
 use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlanItem;
@@ -30,6 +31,7 @@ class FinanceSidebarNotificationServiceProvider extends ServiceProvider
             InstallmentPlanItem::class,
             PaymentMilestone::class,
             MpesaStkRequest::class,
+            BudgetRequest::class,
         ] as $model) {
             $model::saved($broadcast);
             $model::deleted($broadcast);

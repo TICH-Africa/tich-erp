@@ -9,20 +9,26 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-grid tich-grid--4 tich-mt-6">
-        <article class="tich-card tich-stat"><p class="tich-caption">Active alerts</p><p class="tich-stat__value">{{ $stats['active'] }}</p></article>
-        <article class="tich-card tich-stat"><p class="tich-caption">Closed</p><p class="tich-stat__value">{{ $stats['closed'] }}</p></article>
-        <article class="tich-card tich-stat"><p class="tich-caption">Triggered today</p><p class="tich-stat__value">{{ $stats['triggered_today'] }}</p></article>
-        <article class="tich-card tich-stat"><p class="tich-caption">Open requisitions</p><p class="tich-stat__value">{{ \App\Models\ProcurementRequisition::where('status', 'draft')->count() }}</p></article>
-    </div>
-
     <div class="tich-card tich-table-panel tich-mt-6">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
-                <thead><tr><th>Item</th><th>Code</th><th>Current</th><th>Reorder</th><th>Recommended</th><th>Triggered</th><th>Requisition</th><th>Action</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th class="tich-col-num">#</th>
+                        <th>Item</th>
+                        <th>Code</th>
+                        <th>Current</th>
+                        <th>Reorder</th>
+                        <th>Recommended</th>
+                        <th>Triggered</th>
+                        <th>Requisition</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @forelse($alerts as $alert)
                         <tr>
+                            <td class="tich-col-num">{{ $alerts->firstItem() + $loop->index }}</td>
                             <td><a href="{{ route('procurement.inventory-items.show', $alert->inventoryItem) }}" class="tich-link">{{ $alert->inventoryItem?->item_name ?? '-' }}</a></td>
                             <td>{{ $alert->inventoryItem?->item_code ?? '-' }}</td>
                             <td>{{ $alert->current_stock }}</td>
@@ -38,11 +44,12 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="tich-table-empty">No active alerts.</td></tr>
+                        <tr><td colspan="9" class="tich-table-empty">No active alerts.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="tich-mt-4">{{ $alerts->links() }}</div>
+
+    @include('partials.pagination-footer', ['paginator' => $alerts])
 @endsection

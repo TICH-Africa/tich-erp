@@ -43,24 +43,117 @@
     function buildMenu(select, menu) {
         menu.innerHTML = '';
 
+        var enableSearch = select.dataset.tichSearch === 'true' || select.options.length > 8;
+        var list = document.createElement('div');
+        list.className = 'tich-dropdown__options';
+        list.setAttribute('role', 'presentation');
+
+        if (enableSearch) {
+            var searchWrap = document.createElement('div');
+            searchWrap.className = 'tich-dropdown__search';
+
+            var searchInput = document.createElement('input');
+            searchInput.type = 'search';
+            searchInput.className = 'tich-input tich-dropdown__search-input';
+            searchInput.placeholder = select.dataset.tichSearchPlaceholder || 'Search…';
+            searchInput.setAttribute('aria-label', 'Search options');
+            searchInput.autocomplete = 'off';
+
+            searchWrap.appendChild(searchInput);
+            menu.appendChild(searchWrap);
+
+            searchInput.addEventListener('click', function (event) {
+                event.stopPropagation();
+            });
+
+            searchInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeDropdown(select.tichDropdownWrapper);
+                    if (select.tichDropdownTrigger) {
+                        select.tichDropdownTrigger.focus();
+                    }
+                    return;
+                }
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    var first = list.querySelector('.tich-dropdown__option:not(.is-disabled):not([hidden])');
+                    if (first) {
+                        first.focus();
+                    }
+                }
+            });
+
+            searchInput.addEventListener('input', function () {
+                filterMenuOptions(list, searchInput.value);
+            });
+
+            menu._tichSearchInput = searchInput;
+        }
+
         Array.from(select.children).forEach(function (node) {
             if (node.tagName === 'OPTGROUP') {
                 var groupLabel = document.createElement('div');
                 groupLabel.className = 'tich-dropdown__group-label';
                 groupLabel.textContent = node.label;
-                menu.appendChild(groupLabel);
+                list.appendChild(groupLabel);
 
                 Array.from(node.children).forEach(function (option) {
-                    menu.appendChild(createOptionButton(select, option));
+                    list.appendChild(createOptionButton(select, option));
                 });
 
                 return;
             }
 
             if (node.tagName === 'OPTION') {
-                menu.appendChild(createOptionButton(select, node));
+                list.appendChild(createOptionButton(select, node));
             }
         });
+
+        menu.appendChild(list);
+        menu._tichOptionsList = list;
+    }
+
+    function filterMenuOptions(list, query) {
+        var needle = (query || '').trim().toLowerCase();
+        var visibleCount = 0;
+
+        list.querySelectorAll('.tich-dropdown__option').forEach(function (button) {
+            var haystack = (button.dataset.searchText || button.textContent || '').toLowerCase();
+            var match = needle === '' || haystack.indexOf(needle) !== -1;
+            button.hidden = !match;
+            if (match) {
+                visibleCount += 1;
+            }
+        });
+
+        list.querySelectorAll('.tich-dropdown__group-label').forEach(function (label) {
+            var next = label.nextElementSibling;
+            var hasVisible = false;
+            while (next && !next.classList.contains('tich-dropdown__group-label')) {
+                if (next.classList.contains('tich-dropdown__option') && !next.hidden) {
+                    hasVisible = true;
+                    break;
+                }
+                next = next.nextElementSibling;
+            }
+            label.hidden = !hasVisible;
+        });
+
+        var empty = list.querySelector('.tich-dropdown__empty');
+        if (visibleCount === 0) {
+            if (!empty) {
+                empty = document.createElement('div');
+                empty.className = 'tich-dropdown__empty';
+                empty.textContent = 'No matches';
+                list.appendChild(empty);
+            }
+            empty.hidden = false;
+        } else if (empty) {
+            empty.hidden = true;
+        }
     }
 
     function createOptionButton(select, option) {
@@ -68,6 +161,7 @@
         button.type = 'button';
         button.className = 'tich-dropdown__option';
         button.dataset.value = option.value;
+        button.dataset.searchText = option.textContent.trim();
         button.setAttribute('role', 'option');
 
         if (option.disabled) {
@@ -147,9 +241,17 @@
         }
 
         wrapper.classList.add('is-open');
-        wrapper.querySelector('.tich-dropdown__menu').hidden = false;
+        var menu = wrapper.querySelector('.tich-dropdown__menu');
+        menu.hidden = false;
         wrapper.querySelector('.tich-dropdown__trigger').setAttribute('aria-expanded', 'true');
         openDropdown = wrapper;
+
+        if (menu._tichSearchInput) {
+            menu._tichSearchInput.value = '';
+            filterMenuOptions(menu._tichOptionsList || menu, '');
+            menu._tichSearchInput.focus();
+            return;
+        }
 
         var selected = wrapper.querySelector('.tich-dropdown__option.is-selected');
         if (selected) {
@@ -234,7 +336,7 @@
         });
 
         menu.addEventListener('keydown', function (event) {
-            var options = Array.from(menu.querySelectorAll('.tich-dropdown__option:not(.is-disabled)'));
+            var options = Array.from(menu.querySelectorAll('.tich-dropdown__option:not(.is-disabled):not([hidden])'));
             var index = options.indexOf(document.activeElement);
 
             if (event.key === 'Escape') {
@@ -253,6 +355,10 @@
 
             if (event.key === 'ArrowUp') {
                 event.preventDefault();
+                if (index <= 0 && menu._tichSearchInput) {
+                    menu._tichSearchInput.focus();
+                    return;
+                }
                 var prev = options[Math.max(index - 1, 0)] || options[options.length - 1];
                 if (prev) {
                     prev.focus();

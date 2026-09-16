@@ -8,18 +8,21 @@
             'label' => 'Requisitions',
             'icon' => 'clipboard-list',
             'active' => request()->routeIs('procurement.requisitions.*'),
+            'badgeKey' => 'requisitions.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.suppliers.index'),
             'label' => 'Suppliers',
             'icon' => 'building-storefront',
             'active' => request()->routeIs('procurement.suppliers.*'),
+            'badgeKey' => 'suppliers.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.rfqs.index'),
             'label' => 'RFQs',
             'icon' => 'clipboard-document-list',
             'active' => request()->routeIs('procurement.rfqs.*'),
+            'badgeKey' => 'rfqs.actionable',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.assets.index'),
@@ -32,6 +35,7 @@
             'label' => 'GRNs',
             'icon' => 'package',
             'active' => request()->routeIs('procurement.grns.*'),
+            'badgeKey' => 'grns.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.inventory-items.index'),
@@ -44,36 +48,42 @@
             'label' => 'Stock alerts',
             'icon' => 'bell',
             'active' => request()->routeIs('procurement.stock-alerts.*'),
+            'badgeKey' => 'stock-alerts.active',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.asset-movements.index'),
             'label' => 'Asset movements',
             'icon' => 'arrow-left-right',
             'active' => request()->routeIs('procurement.asset-movements.*'),
+            'badgeKey' => 'asset-movements.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.asset-maintenance.index'),
             'label' => 'Maintenance',
             'icon' => 'wrench',
             'active' => request()->routeIs('procurement.asset-maintenance.*'),
+            'badgeKey' => 'asset-maintenance.open',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.asset-disposals.index'),
             'label' => 'Disposals',
             'icon' => 'trash',
             'active' => request()->routeIs('procurement.asset-disposals.*'),
+            'badgeKey' => 'asset-disposals.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.asset-audits.index'),
             'label' => 'Audits',
             'icon' => 'clipboard-check',
             'active' => request()->routeIs('procurement.asset-audits.*'),
+            'badgeKey' => 'asset-audits.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.stock-issues.index'),
             'label' => 'Stock issues',
             'icon' => 'shopping-cart',
             'active' => request()->routeIs('procurement.stock-issues.*'),
+            'badgeKey' => 'stock-issues.pending',
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.qa.tasks.index'),

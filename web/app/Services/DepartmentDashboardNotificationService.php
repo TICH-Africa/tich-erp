@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AcademicsAccessService;
 use App\Services\Finance\FinanceSidebarNotificationService;
 use App\Services\HrSidebarNotificationService;
+use App\Services\Procurement\ProcurementSidebarNotificationService;
 use App\Services\Qa\QaAssessmentService;
 use App\Services\Sidebar\AcademicsSidebarNotificationService;
 use App\Services\Sidebar\AdministrationSidebarNotificationService;
@@ -43,8 +44,21 @@ class DepartmentDashboardNotificationService
             'student-finance.installments',
             'student-finance.payments',
             'ap.pending',
+            'budgeting.pending',
             'payroll-runs',
             'payroll-integration',
+        ],
+        'PRC' => [
+            'requisitions.pending',
+            'suppliers.pending',
+            'rfqs.actionable',
+            'grns.pending',
+            'stock-alerts.active',
+            'asset-movements.pending',
+            'asset-maintenance.open',
+            'asset-disposals.pending',
+            'asset-audits.pending',
+            'stock-issues.pending',
         ],
         'ADM' => [
             'approvals',
@@ -61,6 +75,7 @@ class DepartmentDashboardNotificationService
     private const NOTIFICATION_SERVICES = [
         'HR' => HrSidebarNotificationService::class,
         'FIN' => FinanceSidebarNotificationService::class,
+        'PRC' => ProcurementSidebarNotificationService::class,
         'ADM' => AdministrationSidebarNotificationService::class,
         'ACAD' => AcademicsSidebarNotificationService::class,
         'QA' => QaSidebarNotificationService::class,

@@ -12,10 +12,22 @@
     <div class="tich-card tich-table-panel tich-mt-6">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
-                <thead><tr><th>Asset</th><th>Type</th><th>Priority</th><th>Scheduled</th><th>Completed</th><th>Cost</th><th>Status</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th class="tich-col-num">#</th>
+                        <th>Asset</th>
+                        <th>Type</th>
+                        <th>Priority</th>
+                        <th>Scheduled</th>
+                        <th>Completed</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @forelse($records as $record)
                         <tr>
+                            <td class="tich-col-num">{{ $records->firstItem() + $loop->index }}</td>
                             <td><a href="{{ route('procurement.assets.show', $record->asset) }}" class="tich-link">{{ $record->asset->asset_name }}</a></td>
                             <td>{{ $record->maintenance_type }}</td>
                             <td>{{ $record->priority }}</td>
@@ -25,11 +37,12 @@
                             <td>{{ ucfirst($record->status) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No records.</td></tr>
+                        <tr><td colspan="8" class="tich-table-empty">No records.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="tich-mt-4">{{ $records->links() }}</div>
+
+    @include('partials.pagination-footer', ['paginator' => $records])
 @endsection

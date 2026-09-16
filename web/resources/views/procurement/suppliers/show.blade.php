@@ -158,13 +158,37 @@
             <h2 class="tich-h3" style="margin-top:0;">Compliance documents</h2>
             <dl class="tich-dl">
                 <dt>Compliance certificate</dt>
-                <dd>{{ $supplier->compliance_doc_path ? '<a href="'.asset('storage/'.$supplier->compliance_doc_path).'" target="_blank">View</a>' : '-' }}</dd>
+                <dd>
+                    @if ($supplier->compliance_doc_path)
+                        <a href="{{ asset('storage/'.$supplier->compliance_doc_path) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener noreferrer">View</a>
+                    @else
+                        -
+                    @endif
+                </dd>
                 <dt>PIN certificate</dt>
-                <dd>{{ $supplier->pin_certificate_path ? '<a href="'.asset('storage/'.$supplier->pin_certificate_path).'" target="_blank">View</a>' : '-' }}</dd>
+                <dd>
+                    @if ($supplier->pin_certificate_path)
+                        <a href="{{ asset('storage/'.$supplier->pin_certificate_path) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener noreferrer">View</a>
+                    @else
+                        -
+                    @endif
+                </dd>
                 <dt>CR12</dt>
-                <dd>{{ $supplier->cr12_path ? '<a href="'.asset('storage/'.$supplier->cr12_path).'" target="_blank">View</a>' : '-' }}</dd>
+                <dd>
+                    @if ($supplier->cr12_path)
+                        <a href="{{ asset('storage/'.$supplier->cr12_path) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener noreferrer">View</a>
+                    @else
+                        -
+                    @endif
+                </dd>
                 <dt>Audited financial statements</dt>
-                <dd>{{ $supplier->audited_financial_statements_path ? '<a href="'.asset('storage/'.$supplier->audited_financial_statements_path).'" target="_blank">View</a>' : '-' }}</dd>
+                <dd>
+                    @if ($supplier->audited_financial_statements_path)
+                        <a href="{{ asset('storage/'.$supplier->audited_financial_statements_path) }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener noreferrer">View</a>
+                    @else
+                        -
+                    @endif
+                </dd>
             </dl>
         </article>
 

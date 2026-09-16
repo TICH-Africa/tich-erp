@@ -9,30 +9,12 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-grid tich-grid--4 tich-mt-6">
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Draft</p>
-            <p class="tich-stat__value">{{ number_format($stats['draft'] ?? 0) }}</p>
-        </article>
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Open</p>
-            <p class="tich-stat__value">{{ number_format($stats['published'] ?? 0) }}</p>
-        </article>
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Evaluated</p>
-            <p class="tich-stat__value">{{ number_format($stats['evaluated'] ?? 0) }}</p>
-        </article>
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Awarded</p>
-            <p class="tich-stat__value">{{ number_format($stats['awarded'] ?? 0) }}</p>
-        </article>
-    </div>
-
     <div class="tich-card tich-table-panel tich-mt-6">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
+                        <th class="tich-col-num">#</th>
                         <th>RFQ #</th>
                         <th>Subject</th>
                         <th>Category</th>
@@ -45,28 +27,26 @@
                 <tbody>
                     @forelse($rfqs as $rfq)
                         <tr>
+                            <td class="tich-col-num">{{ $rfqs->firstItem() + $loop->index }}</td>
                             <td>{{ $rfq->rfq_number }}</td>
                             <td><a href="{{ route('procurement.rfqs.show', $rfq) }}" class="tich-link">{{ Str::limit($rfq->title ?? $rfq->item_description, 60) }}</a></td>
                             <td>{{ ucfirst($rfq->category ?? '-') }}</td>
                             <td>{{ $rfq->requisition_id ? 'PR/'.$rfq->requisition_id : '-' }}</td>
                             <td>{{ $rfq->suppliers->count() }}</td>
                             <td>
-                                @php($state = $rfq->status ?? 'draft')
-                                <span class="tich-badge tich-badge--{{ $state === 'awarded' ? 'success' : ($state === 'published' ? 'warning' : ($state === 'evaluated' ? 'info' : 'secondary')) }}">
-                                    {{ ucfirst($state) }}
-                                </span>
+                                <x-status-badge :status="$rfq->status ?? 'draft'" />
                             </td>
                             <td>
                                 <a href="{{ route('procurement.rfqs.show', $rfq) }}" class="tich-link">View</a>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tich-table-empty">No RFQs yet.</td></tr>
+                        <tr><td colspan="8" class="tich-table-empty">No RFQs yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="tich-mt-4">{{ $rfqs->links() }}</div>
+    @include('partials.pagination-footer', ['paginator' => $rfqs])
 @endsection

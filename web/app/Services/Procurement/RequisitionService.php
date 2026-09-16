@@ -2,11 +2,13 @@
 
 namespace App\Services\Procurement;
 
+use App\Models\Administration\BudgetRequest;
 use App\Models\FinanceBudget;
 use App\Models\ProcurementRequisition;
 use App\Models\Staff;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 
 class RequisitionService
@@ -72,6 +74,37 @@ class RequisitionService
                 ->where('status', 'active')
                 ->orderByDesc('fiscal_year')
                 ->first();
+        }
+
+        if (!$budget && $requisition->budget_code && Schema::hasTable('admin_budget_requests')) {
+            $budgetRequest = BudgetRequest::query()
+                ->where('request_code', $requisition->budget_code)
+                ->whereNotIn('status', ['draft', 'rejected', 'returned', 'cancelled'])
+                ->first();
+
+            if ($budgetRequest) {
+                $available = (float) ($budgetRequest->approved_amount
+                    ?: $budgetRequest->verified_amount
+                    ?: $budgetRequest->requested_amount);
+
+                if ($available < $estimatedCost) {
+                    return [
+                        'passed' => false,
+                        'message' => "Insufficient budget. Required: {$estimatedCost}, Available: {$available}.",
+                        'budget' => null,
+                        'available' => $available,
+                        'required' => $estimatedCost,
+                    ];
+                }
+
+                return [
+                    'passed' => true,
+                    'message' => 'Budget verification passed against budget request '.$budgetRequest->request_code.'.',
+                    'budget' => null,
+                    'available' => $available,
+                    'required' => $estimatedCost,
+                ];
+            }
         }
 
         if (!$budget) {

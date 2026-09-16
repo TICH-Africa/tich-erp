@@ -663,6 +663,35 @@ select.tich-select optgroup {
     scrollbar-color: var(--tich-neutral-border) transparent;
 }
 
+.tich-dropdown__search {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: -0.35rem -0.35rem 0.35rem;
+    padding: 0.4rem;
+    background: var(--tich-white);
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-dropdown__search-input {
+    width: 100%;
+    min-height: 2.1rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8125rem;
+}
+
+.tich-dropdown__options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.tich-dropdown__empty {
+    padding: 0.65rem 0.75rem;
+    color: var(--tich-neutral-muted);
+    font-size: 0.8125rem;
+}
+
 .tich-dropdown__menu[hidden] {
     display: none !important;
 }
@@ -1559,6 +1588,38 @@ select.tich-select:focus {
 
 body.tich-body:has(.tich-admin) .tich-header:not(.tich-header--over-hero) {
     box-shadow: none;
+}
+
+/* Dashboards / portals: slide header up after idle and free the space */
+body.tich-body--autohide-header {
+    --tich-header-chrome-height: var(--tich-header-height, 4rem);
+    --tich-header-autohide-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --tich-header-autohide-duration: 0.4s;
+}
+
+body.tich-body--autohide-header .tich-header:not(.is-nav-open) {
+    /* Sticky would pin the bar on-screen and block a real slide-away. */
+    position: relative;
+    top: auto;
+    margin-top: 0;
+    transition:
+        margin-top var(--tich-header-autohide-duration) var(--tich-header-autohide-ease),
+        border-color var(--tich-header-autohide-duration) var(--tich-header-autohide-ease),
+        box-shadow var(--tich-header-autohide-duration) var(--tich-header-autohide-ease),
+        background-color 0.35s ease;
+    will-change: margin-top;
+}
+
+/* Pull the bar upward; same property reverses smoothly on slide-in. */
+body.tich-body--autohide-header.is-header-idle .tich-header:not(.is-nav-open) {
+    margin-top: calc(-1 * var(--tich-header-chrome-height, 4rem));
+    pointer-events: none;
+    box-shadow: none;
+    border-bottom-color: transparent;
+}
+
+body.tich-body--autohide-header #main-content {
+    transition: height var(--tich-header-autohide-duration) var(--tich-header-autohide-ease);
 }
 
 @media (max-width: 1023px) {
@@ -7460,6 +7521,47 @@ a.tich-tabs__btn {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
     gap: 1.25rem 1.5rem;
+}
+
+.tich-pagination-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1rem;
+}
+
+.tich-pagination-footer__meta {
+    font-size: 0.8125rem;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-pagination-footer__links {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
+.tich-pagination-footer__per-page {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+}
+
+.tich-pagination-footer__per-page .tich-input--compact {
+    width: auto;
+    min-width: 4.5rem;
+}
+
+.tich-admin-table th.tich-col-num,
+.tich-admin-table td.tich-col-num {
+    width: 3rem;
+    text-align: right;
+    color: var(--tich-text-muted, #64748b);
+    white-space: nowrap;
 }
 
 /* Generic entity detail pages (procurement, HR docs, etc.) */

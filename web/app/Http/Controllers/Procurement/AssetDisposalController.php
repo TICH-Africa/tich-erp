@@ -8,6 +8,7 @@ use App\Models\AssetDisposal;
 use App\Models\Staff;
 use App\Services\Procurement\AssetDisposalService;
 use Illuminate\Http\RedirectResponse;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -23,7 +24,7 @@ class AssetDisposalController extends Controller
             $query->where('status', $request->status);
         }
 
-        $records = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $records = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         return view('procurement.asset-disposals.index', compact('records'));
     }

@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\PurchaseOrder;
 use App\Models\Staff;
 use App\Models\Supplier;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +33,7 @@ class AssetController extends Controller
             $query->where('asset_status', $request->status);
         }
 
-        $assets = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $assets = $query->orderByDesc('created_at')->paginate(Pagination::perPage($request))->withQueryString();
 
         $stats = [
             'total' => Asset::query()->count(),
