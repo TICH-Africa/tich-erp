@@ -16,7 +16,7 @@
         <article class="tich-card tich-stat"><p class="tich-caption">Items</p><p class="tich-stat__value">{{ \App\Models\GrnItem::count() }}</p></article>
     </div>
 
-    <form method="get" class="tich-flex tich-mt-6 tich-mb-4" style="gap:0.5rem; flex-wrap:wrap;">
+    <form method="get" class="tich-filter-bar tich-mt-6 tich-mb-4">
         <input type="search" name="search" value="{{ $search ?? '' }}" class="tich-input" placeholder="Search GRN or PO number…">
         <select name="status" class="tich-input"><option value="">All statuses</option><option value="pending">Pending</option><option value="complete">Complete</option></select>
         <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>

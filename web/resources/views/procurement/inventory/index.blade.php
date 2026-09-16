@@ -16,7 +16,7 @@
         <article class="tich-card tich-stat"><p class="tich-caption">Transactions</p><p class="tich-stat__value">{{ \App\Models\InventoryTransaction::count() }}</p></article>
     </div>
 
-    <form method="get" class="tich-flex tich-mt-6 tich-mb-4" style="gap:0.5rem; flex-wrap:wrap;">
+    <form method="get" class="tich-filter-bar tich-mt-6 tich-mb-4">
         <input type="search" name="search" value="{{ $search ?? '' }}" class="tich-input" placeholder="Search item name or code…">
         <select name="category" class="tich-input"><option value="">All categories</option></select>
         <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>

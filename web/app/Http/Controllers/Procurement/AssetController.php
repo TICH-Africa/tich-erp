@@ -56,9 +56,12 @@ class AssetController extends Controller
 
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
+        $presetCategories = ['furniture', 'ict_hardware', 'equipment', 'vehicle', 'building', 'other'];
+
         $validated = $request->validate([
             'asset_name' => ['required', 'string', 'max:300'],
-            'asset_category' => ['required', 'string', 'max:50'],
+            'asset_category' => ['required', 'string', 'in:'.implode(',', $presetCategories)],
+            'asset_category_other' => ['nullable', 'required_if:asset_category,other', 'string', 'max:50'],
             'serial_number' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
             'acquisition_date' => ['required', 'date_format:d/m/Y'],
@@ -76,6 +79,11 @@ class AssetController extends Controller
             'tag_number' => ['nullable', 'string', 'max:50'],
             'procurement_requisition_id' => ['nullable', 'exists:procurement_requisitions,id'],
         ]);
+
+        if ($validated['asset_category'] === 'other') {
+            $validated['asset_category'] = trim((string) ($validated['asset_category_other'] ?? ''));
+        }
+        unset($validated['asset_category_other']);
 
         $validated['acquisition_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['acquisition_date'])->format('Y-m-d');
         $validated['warranty_expiry_date'] = $validated['warranty_expiry_date'] ?? null;

@@ -18,15 +18,18 @@ class GrnController extends Controller
 
     public function index(Request $request): View
     {
+        $search = (string) $request->input('search', '');
         $query = GoodsReceivedNote::query()->with(['purchaseOrder.supplier', 'receivedBy']);
 
         if ($request->filled('status')) {
             $query->where('inspection_status', $request->status);
         }
 
-        if ($request->filled('search')) {
-            $query->where('grn_number', 'like', "%{$request->search}%")
-                ->orWhereHas('purchaseOrder', fn ($q) => $q->where('po_number', 'like', "%{$request->search}%"));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('grn_number', 'like', "%{$search}%")
+                    ->orWhereHas('purchaseOrder', fn ($po) => $po->where('po_number', 'like', "%{$search}%"));
+            });
         }
 
         $grns = $query->orderByDesc('created_at')->paginate(25)->withQueryString();

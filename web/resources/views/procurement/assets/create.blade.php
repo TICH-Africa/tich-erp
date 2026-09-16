@@ -30,12 +30,32 @@
             </div>
             <div class="tich-form-group">
                 <label class="tich-label" for="asset_category">Category *</label>
+                @php
+                    $presetCategories = ['furniture', 'ict_hardware', 'equipment', 'vehicle', 'building'];
+                    $oldCategory = old('asset_category', '');
+                    $isOtherCategory = $oldCategory !== '' && ! in_array($oldCategory, $presetCategories, true);
+                    $selectedCategory = $isOtherCategory ? 'other' : $oldCategory;
+                @endphp
                 <select id="asset_category" name="asset_category" class="tich-input" required>
                     <option value="">Select category</option>
-                    @foreach(['furniture', 'ict_hardware', 'equipment', 'vehicle', 'building', 'other'] as $c)
-                        <option value="{{ $c }}">{{ ucfirst(str_replace('_', ' ', $c)) }}</option>
+                    @foreach($presetCategories as $c)
+                        <option value="{{ $c }}" @selected($selectedCategory === $c)>{{ ucfirst(str_replace('_', ' ', $c)) }}</option>
                     @endforeach
+                    <option value="other" @selected($selectedCategory === 'other')>Other</option>
                 </select>
+            </div>
+            <div class="tich-form-group" id="asset_category_other_wrap" @style(['display:none' => ! $isOtherCategory])>
+                <label class="tich-label" for="asset_category_other">Specify category *</label>
+                <input
+                    type="text"
+                    id="asset_category_other"
+                    name="asset_category_other"
+                    class="tich-input"
+                    value="{{ old('asset_category_other', $isOtherCategory ? $oldCategory : '') }}"
+                    placeholder="Type the category"
+                    maxlength="50"
+                    @if($isOtherCategory) required @endif
+                >
             </div>
             <div class="tich-form-group">
                 <label class="tich-label" for="serial_number">Serial number</label>
@@ -134,4 +154,25 @@
             <button type="submit" class="tich-btn tich-btn-primary">Register asset</button>
         </div>
     </form>
+
+    <script>
+        (function () {
+            var select = document.getElementById('asset_category');
+            var wrap = document.getElementById('asset_category_other_wrap');
+            var other = document.getElementById('asset_category_other');
+            if (!select || !wrap || !other) return;
+
+            function syncOtherCategory() {
+                var isOther = select.value === 'other';
+                wrap.style.display = isOther ? '' : 'none';
+                other.required = isOther;
+                if (!isOther) {
+                    other.value = '';
+                }
+            }
+
+            select.addEventListener('change', syncOtherCategory);
+            syncOtherCategory();
+        })();
+    </script>
 @endsection

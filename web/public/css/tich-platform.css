@@ -4626,6 +4626,41 @@ a.tich-notification-badge:hover {
     min-width: 0;
 }
 
+/* Standalone list filters: search + dropdowns + Filter stay on one row */
+.tich-filter-bar {
+    --filter-dropdown-width: 14rem;
+    --filter-search-min: 16rem;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tich-filter-bar > .tich-input[type="search"],
+.tich-filter-bar > input.tich-input:not([type="hidden"]) {
+    flex: 1 1 var(--filter-search-min);
+    width: auto;
+    min-width: var(--filter-search-min);
+    max-width: none;
+}
+
+.tich-filter-bar > select.tich-input {
+    flex: 0 0 var(--filter-dropdown-width);
+    width: var(--filter-dropdown-width);
+    min-width: var(--filter-dropdown-width);
+    max-width: var(--filter-dropdown-width);
+}
+
+.tich-filter-bar > .tich-btn,
+.tich-filter-bar > a.tich-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .tich-page-toolbar__filters-form {
     --filter-dropdown-width: 16rem;
     --filter-search-width: calc(var(--filter-dropdown-width) * 2);
@@ -7425,6 +7460,313 @@ a.tich-tabs__btn {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
     gap: 1.25rem 1.5rem;
+}
+
+/* Generic entity detail pages (procurement, HR docs, etc.) */
+.tich-entity-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 1.35rem 1.6rem;
+    margin-top: 1.5rem;
+    border-radius: var(--radius-md);
+    background: var(--tich-white, #fff);
+    border: 1px solid var(--tich-neutral-border, var(--tich-border));
+    border-left: 4px solid var(--tich-blue, #1d4ed8);
+}
+
+.tich-entity-hero--success {
+    border-left-color: var(--tich-green, #15803d);
+}
+
+.tich-entity-hero--warning {
+    border-left-color: #d97706;
+}
+
+.tich-entity-hero--danger {
+    border-left-color: #dc2626;
+}
+
+.tich-entity-hero__eyebrow {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-entity-hero__title {
+    margin: 0.3rem 0 0;
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 2vw, 1.65rem);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--tich-text, #0f172a);
+}
+
+.tich-entity-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem 0.9rem;
+    margin-top: 0.65rem;
+    color: var(--tich-text-muted, #64748b);
+    font-size: 0.875rem;
+}
+
+.tich-entity-hero__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    text-align: right;
+    min-width: 7rem;
+}
+
+.tich-entity-hero__stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-entity-hero__stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--tich-blue, #1d4ed8);
+    word-break: break-word;
+}
+
+.tich-detail-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    align-items: start;
+}
+
+@media (min-width: 768px) {
+    .tich-detail-grid--2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tich-detail-grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.tich-detail-card {
+    padding: 1.25rem 1.35rem;
+    background: var(--tich-white, #fff);
+    border: 1px solid var(--tich-neutral-border, var(--tich-border));
+    border-radius: var(--radius-md);
+}
+
+.tich-detail-card--span {
+    grid-column: 1 / -1;
+}
+
+.tich-detail-card__title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-text-muted, #64748b);
+    margin: 0 0 0.85rem;
+}
+
+.tich-detail-card__subtitle {
+    margin: -0.35rem 0 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-dl {
+    display: grid;
+    gap: 0;
+    margin: 0;
+}
+
+.tich-dl > dt,
+.tich-dl > dd {
+    margin: 0;
+}
+
+/* Legacy bare dt/dd pairs (without __row) still read as label/value rows */
+.tich-dl:not(:has(.tich-dl__row)) {
+    display: grid;
+    grid-template-columns: minmax(7rem, 36%) 1fr;
+    gap: 0.55rem 0.85rem;
+    align-items: baseline;
+}
+
+.tich-dl:not(:has(.tich-dl__row)) > dt {
+    font-size: 0.8125rem;
+    color: var(--tich-text-muted, #64748b);
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--tich-neutral-border, #e2e8f0);
+}
+
+.tich-dl:not(:has(.tich-dl__row)) > dd {
+    font-size: 0.9375rem;
+    word-break: break-word;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--tich-neutral-border, #e2e8f0);
+}
+
+.tich-dl:not(:has(.tich-dl__row)) > dt:nth-last-of-type(1),
+.tich-dl:not(:has(.tich-dl__row)) > dd:nth-last-of-type(1) {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.tich-dl__row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 38%) 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--tich-neutral-border, #e2e8f0);
+}
+
+.tich-dl__row:first-child {
+    padding-top: 0;
+}
+
+.tich-dl__row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.tich-dl__label {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-dl__value {
+    margin: 0;
+    font-size: 0.9375rem;
+    word-break: break-word;
+    color: var(--tich-text, #0f172a);
+}
+
+.tich-approval-track {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+}
+
+.tich-approval-step {
+    flex: 1 1 8rem;
+    min-width: 7rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--tich-neutral-border, #e2e8f0);
+    background: var(--tich-surface-muted, #f8fafc);
+}
+
+.tich-approval-step__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--tich-text-muted, #64748b);
+}
+
+.tich-approval-step__state {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--tich-text, #0f172a);
+}
+
+.tich-approval-step.is-done {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.tich-approval-step.is-done .tich-approval-step__state {
+    color: #15803d;
+}
+
+.tich-approval-step.is-current {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.tich-approval-step.is-current .tich-approval-step__state {
+    color: #1d4ed8;
+}
+
+.tich-approval-step.is-rejected {
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.tich-approval-step.is-rejected .tich-approval-step__state {
+    color: #b91c1c;
+}
+
+.tich-doc-link-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tich-doc-link-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--tich-neutral-border, #e2e8f0);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface-muted, #f8fafc);
+}
+
+[data-theme="dark"] .tich-entity-hero,
+[data-theme="dark"] .tich-detail-card,
+[data-theme="dark"] .tich-approval-step,
+[data-theme="dark"] .tich-doc-link-list li {
+    background: var(--tich-surface, #111827);
+    border-color: var(--tich-border, #334155);
+}
+
+[data-theme="dark"] .tich-entity-hero__title,
+[data-theme="dark"] .tich-dl__value,
+[data-theme="dark"] .tich-approval-step__state {
+    color: var(--tich-text, #e2e8f0);
+}
+
+[data-theme="dark"] .tich-dl__row,
+[data-theme="dark"] .tich-dl:not(:has(.tich-dl__row)) > dt,
+[data-theme="dark"] .tich-dl:not(:has(.tich-dl__row)) > dd {
+    border-bottom-color: var(--tich-border, #334155);
+}
+
+[data-theme="dark"] .tich-approval-step.is-done {
+    background: rgba(21, 128, 61, 0.15);
+    border-color: rgba(134, 239, 172, 0.35);
+}
+
+[data-theme="dark"] .tich-approval-step.is-current {
+    background: rgba(29, 78, 216, 0.18);
+    border-color: rgba(147, 197, 253, 0.35);
+}
+
+[data-theme="dark"] .tich-approval-step.is-rejected {
+    background: rgba(185, 28, 28, 0.18);
+    border-color: rgba(252, 165, 165, 0.35);
 }
 
 .tich-kv-grid__label {

@@ -28,7 +28,7 @@
         </article>
     </div>
 
-    <form method="get" class="tich-flex tich-mt-6 tich-mb-4" style="gap:0.5rem; flex-wrap:wrap;">
+    <form method="get" class="tich-filter-bar tich-mt-6 tich-mb-4">
         <input type="search" name="search" value="{{ $search }}" class="tich-input" placeholder="Search supplier name, code, email…">
         <select name="status" class="tich-input">
             <option value="">All compliance statuses</option>
