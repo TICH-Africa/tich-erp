@@ -1065,6 +1065,20 @@ SET @sql := (
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- -----------------------------------------------------------------------------
+-- 23b. Procurement requisitions: multi-line items JSON
+--     (2026_03_16_000001_add_line_items_to_procurement_requisitions)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+SET @sql := (
+  SELECT IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='procurement_requisitions' AND COLUMN_NAME='line_items'),
+    'SELECT 1',
+    'ALTER TABLE `procurement_requisitions` ADD COLUMN `line_items` json NULL DEFAULT NULL AFTER `requested_item`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
 -- 24. Suppliers registry extensions + created_at default
 --     (2026_09_14_000004_extend_suppliers_table)
 -- -----------------------------------------------------------------------------
