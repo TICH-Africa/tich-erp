@@ -16,4 +16,5 @@ return [
     App\Providers\QaSidebarNotificationServiceProvider::class,
     App\Providers\CeoSidebarNotificationServiceProvider::class,
     App\Providers\IctSidebarNotificationServiceProvider::class,
+    App\Providers\PlatformPerformanceServiceProvider::class,
 ];

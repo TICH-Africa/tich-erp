@@ -1375,6 +1375,15 @@ SET @sql := (
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+
+
+
+
+-- PRESENT IN PRODUCTION UP TO HERE
+
+
+
+
 SET time_zone = '+03:00';
 
 -- New procurement tables (rfqs, asset_*, grn_items, stock_*) are created by
