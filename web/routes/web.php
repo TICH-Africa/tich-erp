@@ -685,6 +685,29 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         ]);
         Route::post('stock-issues/{stockIssue}/approve', [\App\Http\Controllers\Procurement\StockIssueController::class, 'approve'])->name('procurement.stock-issues.approve');
 
+        Route::prefix('payment-verification')->name('procurement.payment-verification.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'index'])->name('index');
+            Route::get('/matching', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'matching'])->name('matching');
+            Route::get('/discrepancies', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'discrepancies'])->name('discrepancies');
+            Route::get('/payments', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'payments'])->name('payments');
+            Route::get('/mpesa-stk', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'mpesaStk'])->name('mpesa-stk');
+            Route::get('/audit-trail', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'auditTrail'])->name('audit-trail');
+
+            Route::get('/invoices/create', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'createInvoice'])->name('invoices.create');
+            Route::post('/invoices', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'storeInvoice'])->name('invoices.store');
+            Route::put('/invoices/{invoice}', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'updateInvoice'])->name('invoices.update');
+            Route::post('/invoices/{invoice}/supersede', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'supersedeInvoice'])->name('invoices.supersede');
+            Route::post('/matching/{invoice}', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'matchInvoice'])->name('matching.run');
+            Route::post('/discrepancies/{discrepancy}/resolve', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'resolveDiscrepancy'])->name('discrepancies.resolve');
+            Route::post('/discrepancies/{discrepancy}/flag', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'flagDiscrepancy'])->name('discrepancies.flag');
+            Route::post('/discrepancies/{discrepancy}/escalate', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'escalateDiscrepancy'])->name('discrepancies.escalate');
+            Route::post('/discrepancies/{discrepancy}/accept', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'acceptDiscrepancy'])->name('discrepancies.accept');
+            Route::post('/discrepancies/{discrepancy}/reject', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'rejectDiscrepancy'])->name('discrepancies.reject');
+            Route::post('/payments', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'processPayment'])->name('payments.process');
+            Route::post('/payments/{payment}/release-holdback', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'releaseHoldback'])->name('payments.holdback');
+            Route::post('/mpesa-stk/callback', [\App\Http\Controllers\Procurement\PaymentVerificationController::class, 'mpesaStkCallback'])->name('mpesa-stk.callback');
+        });
+
         $registerModuleBudgeting('procurement');
         $registerModuleQaTasks('procurement');
         $registerModuleMeReports('procurement');

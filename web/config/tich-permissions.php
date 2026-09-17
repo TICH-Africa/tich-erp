@@ -96,6 +96,10 @@ return [
             'manage_purchase_orders',
             'manage_tenders',
             'manage_inventory',
+            'manage_invoices',
+            'manage_payments',
+            'manage_matching',
+            'manage_discrepancies',
         ],
         'research' => [
             'manage_projects',
