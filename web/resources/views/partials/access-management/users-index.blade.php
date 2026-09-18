@@ -49,6 +49,7 @@
                 <tr>
                     <th>Employee</th>
                     <th>Account type</th>
+                    <th>Status</th>
                     <th>Roles &amp; departments</th>
                     <th class="tich-admin-table__actions"></th>
                 </tr>
@@ -56,6 +57,7 @@
             <tbody>
                 @forelse ($users as $user)
                     @php
+                        $presence = $presenceByUserId[$user->id] ?? ['online' => false, 'label' => 'Last seen unavailable'];
                         $assignmentsPayload = $user->roles->map(function ($role) {
                             $departmentId = $role->pivot->department_id ? (int) $role->pivot->department_id : null;
                             $hubDepartmentId = $departmentId;
@@ -94,6 +96,16 @@
                             </div>
                         </td>
                         <td><span class="tich-badge tich-badge--sm">{{ \App\Support\UserType::label($user->user_type) }}</span></td>
+                        <td>
+                            @if ($presence['online'])
+                                <span class="tich-presence tich-presence--online">
+                                    <span class="tich-presence__dot" aria-hidden="true"></span>
+                                    Online
+                                </span>
+                            @else
+                                <span class="tich-presence tich-presence--offline">{{ $presence['label'] }}</span>
+                            @endif
+                        </td>
                         <td>
                             @forelse ($user->roles as $role)
                                 <div style="margin-bottom: {{ $loop->last ? '0' : '0.35rem' }};">
@@ -135,7 +147,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="tich-table-empty">No staff accounts found.</td>
+                        <td colspan="5" class="tich-table-empty">No staff accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -168,18 +180,32 @@
                 <tr>
                     <th>Account</th>
                     <th>Account type</th>
+                    <th>Status</th>
                     <th>Roles</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($users as $user)
+                    @php
+                        $presence = $presenceByUserId[$user->id] ?? ['online' => false, 'label' => 'Last seen unavailable'];
+                    @endphp
                     <tr>
                         <td>
                             <strong>{{ $user->displayName() }}</strong><br>
                             <span class="tich-caption">{{ $user->email }}</span>
                         </td>
                         <td>{{ \App\Support\UserType::label($user->user_type) }}</td>
+                        <td>
+                            @if ($presence['online'])
+                                <span class="tich-presence tich-presence--online">
+                                    <span class="tich-presence__dot" aria-hidden="true"></span>
+                                    Online
+                                </span>
+                            @else
+                                <span class="tich-presence tich-presence--offline">{{ $presence['label'] }}</span>
+                            @endif
+                        </td>
                         <td>
                             @forelse ($user->roles as $role)
                                 {{ $role->role_name }}@if (!$loop->last)<br>@endif
@@ -193,7 +219,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="tich-table-empty">No super admin accounts found.</td>
+                        <td colspan="5" class="tich-table-empty">No super admin accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -243,6 +269,7 @@
                 <tr>
                     <th>Student</th>
                     <th>Programme</th>
+                    <th>Status</th>
                     <th>Role</th>
                     <th>Portal</th>
                     <th></th>
@@ -252,6 +279,7 @@
                 @forelse ($users as $user)
                     @php
                         $primaryRoleId = $user->roles->first()?->id ?? '';
+                        $presence = $presenceByUserId[$user->id] ?? ['online' => false, 'label' => 'Last seen unavailable'];
                     @endphp
                     <tr>
                         <td>
@@ -263,6 +291,16 @@
                                 {{ $user->student->program->program_code }} · {{ $user->student->program->program_name }}
                             @else
                                 <span class="tich-caption">No enrolment linked</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($presence['online'])
+                                <span class="tich-presence tich-presence--online">
+                                    <span class="tich-presence__dot" aria-hidden="true"></span>
+                                    Online
+                                </span>
+                            @else
+                                <span class="tich-presence tich-presence--offline">{{ $presence['label'] }}</span>
                             @endif
                         </td>
                         <td>
@@ -308,7 +346,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="tich-table-empty">No student accounts found.</td>
+                        <td colspan="6" class="tich-table-empty">No student accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>
