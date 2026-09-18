@@ -12,7 +12,12 @@
             return;
         }
 
-        const palette = ['#1669a6', '#6cab33', '#494c50', '#125a8c', '#d39b2a', '#b54a4a'];
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const ink = isDark ? '#e2e8f0' : '#494c50';
+        const palette = ['#1669a6', '#6cab33', '#0f766e', '#125a8c', '#5a9430', '#64748b'];
+        Chart.defaults.color = ink;
+        Chart.defaults.font.family = 'Arial, Calibri, ui-sans-serif, sans-serif';
+
         const render = (id, dataset, type, message) => {
             const canvas = document.getElementById(id);
             if (!canvas || !dataset) return;
@@ -30,19 +35,49 @@
                 }
                 return;
             }
+            const isRing = type === 'doughnut' || type === 'pie';
             new Chart(canvas, {
                 type: type,
                 data: {
                     labels: labels,
-                    datasets: [{ data: values, backgroundColor: palette, borderWidth: 2, borderColor: '#fff' }],
+                    datasets: [{
+                        data: values,
+                        backgroundColor: palette,
+                        borderWidth: 0,
+                        hoverBorderWidth: 0,
+                        borderRadius: isRing ? 0 : 6,
+                        maxBarThickness: isRing ? undefined : 28,
+                    }],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: type === 'doughnut' || type === 'pie' ? undefined : {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { ticks: { autoSkip: false } },
+                    cutout: isRing ? '68%' : undefined,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: ink,
+                                boxBorderWidth: 0,
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                padding: 14,
+                                font: { size: 11 },
+                            },
+                        },
+                    },
+                    scales: isRing ? undefined : {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, color: ink },
+                            grid: { color: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(22,105,166,0.08)' },
+                            border: { display: false },
+                        },
+                        x: {
+                            ticks: { autoSkip: false, color: ink },
+                            grid: { display: false },
+                            border: { display: false },
+                        },
                     },
                 },
             });

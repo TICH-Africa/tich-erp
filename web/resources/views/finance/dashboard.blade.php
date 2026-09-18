@@ -3,33 +3,48 @@
 @section('title', 'Finance Dashboard')
 
 @section('finance-content')
-    <x-page-toolbar title="Finance Dashboard" meta="Student fees, accounts receivable, treasury, and compliance reporting" />
+<div class="tich-mod-dash">
+    <header class="tich-mod-dash__hero">
+        <div class="tich-mod-dash__hero-copy">
+            <p class="tich-mod-dash__eyebrow">Treasury &amp; student accounts</p>
+            <h1 class="tich-mod-dash__title">Finance command center</h1>
+            <p class="tich-mod-dash__lede">Student fees, accounts receivable, treasury, payroll, and compliance reporting — live overview.</p>
+        </div>
+        <div class="tich-mod-dash__hero-actions">
+            <a href="{{ route('finance.invoices.create') }}" class="tich-btn tich-btn-primary">Generate invoice</a>
+            <a href="{{ route('finance.reports.index') }}" class="tich-btn tich-btn-secondary">Financial reports</a>
+        </div>
+    </header>
 
     @include('qa.partials.assigned-tasks-panel')
 
-    <div class="tich-stat-row tich-mb-8">
-        <div class="tich-stat">
-            <p class="tich-stat__label">Accounts receivable</p>
-            <p class="tich-stat__value">KES {{ number_format($stats['accounts_receivable'], 0) }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Collected today</p>
-            <p class="tich-stat__value">KES {{ number_format($stats['collected_today'], 0) }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Open invoices</p>
-            <p class="tich-stat__value">{{ $stats['open_invoices'] }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Treasury (main account)</p>
-            <p class="tich-stat__value">KES {{ number_format($stats['treasury_balance'], 0) }}</p>
-        </div>
-    </div>
+    <section class="tich-mod-dash__metrics" aria-label="Key finance metrics">
+        <article class="tich-mod-dash__metric">
+            <p class="tich-mod-dash__metric-label">Accounts receivable</p>
+            <p class="tich-mod-dash__metric-value" style="font-size:1.05rem;">KES {{ number_format($stats['accounts_receivable'], 0) }}</p>
+        </article>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--ok">
+            <p class="tich-mod-dash__metric-label">Collected today</p>
+            <p class="tich-mod-dash__metric-value" style="font-size:1.05rem;">KES {{ number_format($stats['collected_today'], 0) }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ ($stats['open_invoices'] ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Open invoices</p>
+            <p class="tich-mod-dash__metric-value">{{ $stats['open_invoices'] }}</p>
+        </article>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
+            <p class="tich-mod-dash__metric-label">Treasury</p>
+            <p class="tich-mod-dash__metric-value" style="font-size:1.05rem;">KES {{ number_format($stats['treasury_balance'], 0) }}</p>
+            <p class="tich-mod-dash__metric-hint">Main account</p>
+        </article>
+    </section>
 
-    <div class="tich-grid tich-grid--2 tich-mb-8">
-        <article class="tich-card">
-            <div class="tich-flex tich-flex--between tich-mb-4">
-                <h2 class="tich-h3" style="margin:0;">Recent invoices</h2>
+    <div class="tich-mod-dash__charts" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <article class="tich-mod-dash__panel">
+            <div class="tich-mod-dash__panel-head">
+                <div>
+                    <p class="tich-mod-dash__panel-eyebrow">Receivables</p>
+                    <h2 class="tich-mod-dash__panel-title">Recent invoices</h2>
+                </div>
                 <a href="{{ route('finance.invoices.index') }}" class="tich-btn tich-btn-ghost">View all</a>
             </div>
             <div class="tich-table-wrap">
@@ -51,9 +66,12 @@
             </div>
         </article>
 
-        <article class="tich-card">
-            <div class="tich-flex tich-flex--between tich-mb-4">
-                <h2 class="tich-h3" style="margin:0;">Recent payments</h2>
+        <article class="tich-mod-dash__panel">
+            <div class="tich-mod-dash__panel-head">
+                <div>
+                    <p class="tich-mod-dash__panel-eyebrow">Collections</p>
+                    <h2 class="tich-mod-dash__panel-title">Recent payments</h2>
+                </div>
                 <a href="{{ route('finance.payments.index') }}" class="tich-btn tich-btn-ghost">View all</a>
             </div>
             <div class="tich-table-wrap">
@@ -76,35 +94,42 @@
         </article>
     </div>
 
-    <div class="tich-grid tich-grid--3 tich-mb-8">
-        <a href="{{ route('finance.student-finance.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Student Finance</h3>
-            <p class="tich-text tich-mt-2">Accounts, fee structures, invoices, payments, receipts, adjustments, refunds, and clearance.</p>
-        </a>
-        <a href="{{ route('finance.records.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Finance Records</h3>
-            <p class="tich-text tich-mt-2">General ledger, financial reports, AR/AP, budgeting, projects, and treasury.</p>
-        </a>
-        <a href="{{ route('finance.employee.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Employee Finance</h3>
-            <p class="tich-text tich-mt-2">Payroll runs, statutory settings, payroll reports, and GL integration.</p>
-        </a>
-    </div>
-
-    <div class="tich-grid tich-grid--3">
-        <a href="{{ route('finance.invoices.create') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Generate invoice</h3>
-            <p class="tich-text tich-mt-2">Bill tuition, application, exam, or graduation fees.</p>
-        </a>
-        <a href="{{ route('finance.reports.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h3">Financial reports</h3>
-            <p class="tich-text tich-mt-2">Trial balance, balance sheet, P&amp;L, and cashflow.</p>
-        </a>
-        @can('finance.payments.manage')
-            <a href="{{ route('finance.mpesa.settings') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-                <h3 class="tich-h3">M-Pesa settings</h3>
-                <p class="tich-text tich-mt-2">Configure Daraja STK push for student self-pay.</p>
+    <section class="tich-mod-dash__nav" aria-label="Finance shortcuts">
+        <p class="tich-mod-dash__section-label">Quick routes</p>
+        <div class="tich-mod-dash__nav-grid">
+            <a href="{{ route('finance.student-finance.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">01</span>
+                <h3 class="tich-mod-dash__nav-title">Student finance</h3>
+                <p class="tich-mod-dash__nav-text">Accounts, fee structures, invoices, payments, receipts, and clearance.</p>
             </a>
-        @endcan
-    </div>
+            <a href="{{ route('finance.records.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">02</span>
+                <h3 class="tich-mod-dash__nav-title">Finance records</h3>
+                <p class="tich-mod-dash__nav-text">General ledger, AR/AP, budgeting, projects, and treasury.</p>
+            </a>
+            <a href="{{ route('finance.employee.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">03</span>
+                <h3 class="tich-mod-dash__nav-title">Employee finance</h3>
+                <p class="tich-mod-dash__nav-text">Payroll runs, statutory settings, and GL integration.</p>
+            </a>
+            <a href="{{ route('finance.invoices.create') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">04</span>
+                <h3 class="tich-mod-dash__nav-title">Generate invoice</h3>
+                <p class="tich-mod-dash__nav-text">Bill tuition, application, exam, or graduation fees.</p>
+            </a>
+            <a href="{{ route('finance.reports.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">05</span>
+                <h3 class="tich-mod-dash__nav-title">Financial reports</h3>
+                <p class="tich-mod-dash__nav-text">Trial balance, balance sheet, P&amp;L, and cashflow.</p>
+            </a>
+            @can('finance.payments.manage')
+                <a href="{{ route('finance.mpesa.settings') }}" class="tich-mod-dash__nav-card">
+                    <span class="tich-mod-dash__nav-index">06</span>
+                    <h3 class="tich-mod-dash__nav-title">M-Pesa settings</h3>
+                    <p class="tich-mod-dash__nav-text">Configure Daraja STK push for student self-pay.</p>
+                </a>
+            @endcan
+        </div>
+    </section>
+</div>
 @endsection

@@ -5,8 +5,6 @@ namespace App\Services\Procurement;
 use App\Events\ProcurementSidebarCountsUpdated;
 use App\Models\AssetAudit;
 use App\Models\AssetDisposal;
-use App\Models\AssetMaintenance;
-use App\Models\AssetMovement;
 use App\Models\GoodsReceivedNote;
 use App\Models\ProcurementRequisition;
 use App\Models\Rfq;
@@ -32,8 +30,6 @@ class ProcurementSidebarNotificationService
         'rfqs.actionable' => 'RFQs',
         'grns.pending' => 'GRNs',
         'stock-alerts.active' => 'Stock alerts',
-        'asset-movements.pending' => 'Asset movements',
-        'asset-maintenance.open' => 'Maintenance',
         'asset-disposals.pending' => 'Disposals',
         'asset-audits.pending' => 'Audits',
         'stock-issues.pending' => 'Stock issues',
@@ -87,8 +83,6 @@ class ProcurementSidebarNotificationService
             'rfqs.actionable' => $this->actionableRfqsCount(),
             'grns.pending' => $this->pendingGrnsCount(),
             'stock-alerts.active' => $this->activeStockAlertsCount(),
-            'asset-movements.pending' => $this->pendingAssetMovementsCount(),
-            'asset-maintenance.open' => $this->openAssetMaintenanceCount(),
             'asset-disposals.pending' => $this->pendingAssetDisposalsCount(),
             'asset-audits.pending' => $this->pendingAssetAuditsCount(),
             'stock-issues.pending' => $this->pendingStockIssuesCount(),
@@ -153,28 +147,6 @@ class ProcurementSidebarNotificationService
 
         return StockAlert::query()
             ->where('status', 'active')
-            ->count();
-    }
-
-    private function pendingAssetMovementsCount(): int
-    {
-        if (! Schema::hasTable('asset_movements')) {
-            return 0;
-        }
-
-        return AssetMovement::query()
-            ->where('approval_status', 'pending')
-            ->count();
-    }
-
-    private function openAssetMaintenanceCount(): int
-    {
-        if (! Schema::hasTable('asset_maintenance')) {
-            return 0;
-        }
-
-        return AssetMaintenance::query()
-            ->whereIn('status', ['scheduled', 'in_progress'])
             ->count();
     }
 

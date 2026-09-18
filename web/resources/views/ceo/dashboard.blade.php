@@ -3,73 +3,77 @@
 @section('title', 'CEO Office')
 
 @section('ceo-content')
-    <x-page-toolbar
-        title="Chief Executive Officer"
-        meta="Institution-wide executive oversight and authorizations"
-    />
+<div class="tich-mod-dash">
+    <header class="tich-mod-dash__hero">
+        <div class="tich-mod-dash__hero-copy">
+            <p class="tich-mod-dash__eyebrow">Executive oversight</p>
+            <h1 class="tich-mod-dash__title">CEO command center</h1>
+            <p class="tich-mod-dash__lede">Institution-wide authorizations across finance, academics, quality, and M&amp;E.</p>
+        </div>
+        <div class="tich-mod-dash__hero-actions">
+            <a href="{{ route('ceo.budgets.index') }}" class="tich-btn tich-btn-primary">Budget queue</a>
+            <a href="{{ route('ceo.approvals.index') }}" class="tich-btn tich-btn-secondary">Approvals</a>
+        </div>
+    </header>
 
-    <div class="tich-grid tich-grid--3 tich-mt-8">
-        <article class="tich-card tich-card--highlight">
-            <p class="tich-caption">Finance</p>
-            <h3 class="tich-h3 tich-mt-2">Budget authorizations</h3>
-            <p class="tich-text tich-mt-2">
-                Review and authorize department budgets awaiting executive approval.
-            </p>
-            @if ($pendingBudgets > 0)
-                <p class="tich-caption tich-mt-2">{{ $pendingBudgets }} awaiting your decision</p>
+    <section class="tich-mod-dash__metrics" aria-label="Executive queues">
+        <article class="tich-mod-dash__metric {{ ($pendingBudgets ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : 'tich-mod-dash__metric--ok' }}">
+            <p class="tich-mod-dash__metric-label">Budgets awaiting</p>
+            <p class="tich-mod-dash__metric-value">{{ $pendingBudgets }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ ($pendingCurriculum ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Curriculum pending</p>
+            <p class="tich-mod-dash__metric-value">{{ $pendingCurriculum }}</p>
+        </article>
+    </section>
+
+    <section class="tich-mod-dash__nav" aria-label="CEO hubs">
+        <p class="tich-mod-dash__section-label">Executive hubs</p>
+        <div class="tich-mod-dash__nav-grid">
+            <a href="{{ route('ceo.budgets.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">01</span>
+                <h3 class="tich-mod-dash__nav-title">Budget authorizations</h3>
+                <p class="tich-mod-dash__nav-text">Review and authorize department budgets awaiting executive approval.</p>
+                @if ($pendingBudgets > 0)
+                    <span class="tich-mod-dash__nav-badge">{{ $pendingBudgets }} awaiting</span>
+                @endif
+            </a>
+            <a href="{{ route('ceo.approvals.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">02</span>
+                <h3 class="tich-mod-dash__nav-title">Approval workflow</h3>
+                <p class="tich-mod-dash__nav-text">Track department-to-finance-to-executive budget routing.</p>
+            </a>
+            <a href="{{ route('ceo.curriculum.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">03</span>
+                <h3 class="tich-mod-dash__nav-title">Curriculum sign-off</h3>
+                <p class="tich-mod-dash__nav-text">Approve programme curricula pending CEO publication.</p>
+                @if ($pendingCurriculum > 0)
+                    <span class="tich-mod-dash__nav-badge">{{ $pendingCurriculum }} pending</span>
+                @endif
+            </a>
+            <a href="{{ route('ceo.academics.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">04</span>
+                <h3 class="tich-mod-dash__nav-title">Academics hub</h3>
+                <p class="tich-mod-dash__nav-text">Institution-wide academics snapshot and learning departments.</p>
+            </a>
+            <a href="{{ route('ceo.quality.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">05</span>
+                <h3 class="tich-mod-dash__nav-title">Quality reports</h3>
+                <p class="tich-mod-dash__nav-text">Compiled QA compliance scores and corrective action flags.</p>
+            </a>
+            <a href="{{ route('ceo.me.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">06</span>
+                <h3 class="tich-mod-dash__nav-title">M&amp;E reports</h3>
+                <p class="tich-mod-dash__nav-text">Verified quarterly packages and department health ratings.</p>
+            </a>
+            @if (auth()->user()->hasEmployeeProfile())
+                <a href="{{ route('employee.dashboard') }}" class="tich-mod-dash__nav-card">
+                    <span class="tich-mod-dash__nav-index">07</span>
+                    <h3 class="tich-mod-dash__nav-title">Employee portal</h3>
+                    <p class="tich-mod-dash__nav-text">Personal profile, leave, and workplace self-service.</p>
+                </a>
             @endif
-            <a href="{{ route('ceo.budgets.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open budget queue</a>
-        </article>
-
-        <article class="tich-card">
-            <p class="tich-caption">Administration</p>
-            <h3 class="tich-h3 tich-mt-2">Approval workflow</h3>
-            <p class="tich-text tich-mt-2">
-                Track department-to-finance-to-executive budget routing across the institution.
-            </p>
-            <a href="{{ route('ceo.approvals.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open approvals</a>
-        </article>
-
-        <article class="tich-card tich-card--highlight">
-            <p class="tich-caption">Academics</p>
-            <h3 class="tich-h3 tich-mt-2">Curriculum sign-off</h3>
-            <p class="tich-text tich-mt-2">
-                Approve programme curricula and versions pending CEO publication.
-            </p>
-            @if ($pendingCurriculum > 0)
-                <p class="tich-caption tich-mt-2">{{ $pendingCurriculum }} programme(s) pending</p>
-            @endif
-            <a href="{{ route('ceo.curriculum.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Review curriculum</a>
-        </article>
-
-        <article class="tich-card">
-            <p class="tich-caption">Academics</p>
-            <h3 class="tich-h3 tich-mt-2">Academics hub</h3>
-            <p class="tich-text tich-mt-2">Institution-wide academics snapshot and learning department overview.</p>
-            <a href="{{ route('ceo.academics.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open academics overview</a>
-        </article>
-
-        <article class="tich-card">
-            <p class="tich-caption">Quality</p>
-            <h3 class="tich-h3 tich-mt-2">Quality Level Reports</h3>
-            <p class="tich-text tich-mt-2">Review compiled QA compliance scores and corrective action flags.</p>
-            <a href="{{ route('ceo.quality.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open quality reports</a>
-        </article>
-
-        <article class="tich-card">
-            <p class="tich-caption">M&amp;E</p>
-            <h3 class="tich-h3 tich-mt-2">Monitoring &amp; evaluation</h3>
-            <p class="tich-text tich-mt-2">Review verified quarterly M&amp;E packages and department health ratings.</p>
-            <a href="{{ route('ceo.me.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open M&amp;E reports</a>
-        </article>
-
-        @if (auth()->user()->hasEmployeeProfile())
-            <article class="tich-card">
-                <p class="tich-caption">My Portal</p>
-                <h3 class="tich-h3 tich-mt-2">Employee portal</h3>
-                <p class="tich-text tich-mt-2">Personal profile, leave, and workplace self-service.</p>
-                <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-secondary tich-mt-4">Open employee portal</a>
-            </article>
-        @endif
-    </div>
+        </div>
+    </section>
+</div>
 @endsection

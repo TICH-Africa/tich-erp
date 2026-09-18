@@ -54,8 +54,6 @@ class DepartmentDashboardNotificationService
             'rfqs.actionable',
             'grns.pending',
             'stock-alerts.active',
-            'asset-movements.pending',
-            'asset-maintenance.open',
             'asset-disposals.pending',
             'asset-audits.pending',
             'stock-issues.pending',

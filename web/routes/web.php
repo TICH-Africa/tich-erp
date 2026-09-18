@@ -631,6 +631,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'store' => 'procurement.assets.store',
             'show' => 'procurement.assets.show',
         ]);
+        Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Procurement\AssetController::class, 'transfer'])->name('procurement.assets.transfer');
         Route::resource('grns', \App\Http\Controllers\Procurement\GrnController::class)->only(['index', 'create', 'store', 'show'])->names([
             'index' => 'procurement.grns.index',
             'create' => 'procurement.grns.create',
@@ -649,20 +650,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'autoReorder' => 'procurement.stock-alerts.auto-reorder',
         ]);
 
-        Route::resource('asset-movements', \App\Http\Controllers\Procurement\AssetMovementController::class)->only(['index', 'create', 'store', 'show'])->names([
-            'index' => 'procurement.asset-movements.index',
-            'create' => 'procurement.asset-movements.create',
-            'store' => 'procurement.asset-movements.store',
-            'show' => 'procurement.asset-movements.show',
-        ]);
-        Route::post('asset-movements/{assetMovement}/approve', [\App\Http\Controllers\Procurement\AssetMovementController::class, 'approve'])->name('procurement.asset-movements.approve');
-        Route::resource('asset-maintenance', \App\Http\Controllers\Procurement\AssetMaintenanceController::class)->only(['index', 'create', 'store', 'show'])->names([
-            'index' => 'procurement.asset-maintenance.index',
-            'create' => 'procurement.asset-maintenance.create',
-            'store' => 'procurement.asset-maintenance.store',
-            'show' => 'procurement.asset-maintenance.show',
-        ]);
-        Route::post('asset-maintenance/{assetMaintenance}/complete', [\App\Http\Controllers\Procurement\AssetMaintenanceController::class, 'complete'])->name('procurement.asset-maintenance.complete');
         Route::resource('asset-disposals', \App\Http\Controllers\Procurement\AssetDisposalController::class)->only(['index', 'create', 'store', 'show'])->names([
             'index' => 'procurement.asset-disposals.index',
             'create' => 'procurement.asset-disposals.create',

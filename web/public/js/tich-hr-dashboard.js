@@ -11,11 +11,15 @@
         return;
     }
 
-    const palette = ['#1669a6', '#6cab33', '#494c50', '#125a8c', '#5a9430', '#6b6e72', '#d6e8f5', '#e8f3dc'];
-    const fontFamily = 'Arial, Helvetica, sans-serif';
+    const palette = ['#1669a6', '#6cab33', '#0f766e', '#125a8c', '#5a9430', '#64748b', '#38bdf8', '#86efac'];
+    const fontFamily = 'Arial, Calibri, ui-sans-serif, sans-serif';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const ink = isDark ? '#e2e8f0' : '#494c50';
+    const grid = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(22, 105, 166, 0.08)';
+    const surface = isDark ? '#0f172a' : '#ffffff';
 
     Chart.defaults.font.family = fontFamily;
-    Chart.defaults.color = '#494c50';
+    Chart.defaults.color = ink;
 
     const emptyNote = (canvas, message) => {
         const wrap = canvas.closest('.tich-chart-card__canvas-wrap');
@@ -38,12 +42,19 @@
     const doughnutOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '68%',
         plugins: {
             legend: {
                 position: 'bottom',
                 labels: {
-                    boxWidth: 12,
-                    padding: 14,
+                    color: ink,
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    boxBorderWidth: 0,
+                    borderRadius: 2,
+                    useBorderRadius: true,
+                    padding: 16,
+                    font: { size: 11 },
                 },
             },
         },
@@ -59,11 +70,14 @@
         scales: {
             x: {
                 beginAtZero: true,
-                ticks: { precision: 0 },
-                grid: { color: 'rgba(73, 76, 80, 0.08)' },
+                ticks: { precision: 0, color: ink },
+                grid: { color: grid, drawBorder: false },
+                border: { display: false },
             },
             y: {
+                ticks: { color: ink },
                 grid: { display: false },
+                border: { display: false },
             },
         },
     };
@@ -86,8 +100,10 @@
                 datasets: [{
                     data: dataset.values,
                     backgroundColor: makeColors(dataset.values.length),
-                    borderWidth: 2,
-                    borderColor: '#ffffff',
+                    borderWidth: 0,
+                    borderColor: surface,
+                    hoverBorderWidth: 0,
+                    hoverOffset: 4,
                 }],
             },
             options: doughnutOptions,
@@ -112,8 +128,8 @@
                 datasets: [{
                     data: dataset.values,
                     backgroundColor: '#1669a6',
-                    borderRadius: 6,
-                    maxBarThickness: 28,
+                    borderRadius: 8,
+                    maxBarThickness: 26,
                 }],
             },
             options: barOptions,
