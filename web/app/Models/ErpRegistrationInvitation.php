@@ -42,27 +42,6 @@ class ErpRegistrationInvitation extends Model
 
     public function registerUrl(): string
     {
-        $base = rtrim((string) (config('app.invite_base_url') ?: config('app.url')), '/');
-
-        return $base.'/register/invite/'.$this->token;
-    }
-
-    public static function appUrlLooksPrivate(): bool
-    {
-        $host = strtolower((string) parse_url((string) (config('app.invite_base_url') ?: config('app.url')), PHP_URL_HOST));
-
-        if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
-            return true;
-        }
-
-        if (str_starts_with($host, '192.168.') || str_starts_with($host, '10.')) {
-            return true;
-        }
-
-        if (preg_match('/^172\.(1[6-9]|2\d|3[0-1])\./', $host) === 1) {
-            return true;
-        }
-
-        return false;
+        return route('register.invite', ['token' => $this->token]);
     }
 }

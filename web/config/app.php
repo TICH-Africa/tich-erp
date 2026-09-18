@@ -56,19 +56,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Public invite / registration base URL
-    |--------------------------------------------------------------------------
-    |
-    | Optional override for ERP registration invite links in email. Use this
-    | when APP_URL is a private LAN address but invitees need a public host.
-    | Example: https://erp.tich.africa
-    |
-    */
-
-    'invite_base_url' => env('INVITE_BASE_URL'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Asset URL / CDN root
     |--------------------------------------------------------------------------
     |

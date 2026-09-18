@@ -87,7 +87,7 @@ class ErpRegistrationInviteService
                 'success' => true,
                 'warning' => true,
                 'message' => ($delivery['error'] ?? 'Invitation email could not be delivered.')
-                    .' Invitation was still created — share this link manually: '.$registerUrl,
+                    .' Invitation was still created — use Copy link in the list below to share it.',
                 'invitation' => $invitation,
                 'register_url' => $registerUrl,
             ];
@@ -121,7 +121,7 @@ class ErpRegistrationInviteService
 
         return [
             'success' => true,
-            'message' => $message.' Registration link: '.$registerUrl,
+            'message' => $message,
             'invitation' => $invitation,
             'register_url' => $registerUrl,
         ];
