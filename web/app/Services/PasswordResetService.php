@@ -49,7 +49,7 @@ class PasswordResetService
 
             return [
                 'status' => 'sent',
-                'message' => 'If an account exists for that email, a one-time reset code has been sent from ICT.',
+                'message' => 'If an account exists for that email, a one-time reset code has been sent.',
             ];
         }
 
@@ -62,8 +62,9 @@ class PasswordResetService
 
         $this->recordAttempt($email, $user->id, 'sent', $request);
 
+        // Deliver via notification@ — ict@ is accepted by SMTP but does not reach external inboxes.
         $delivery = ModuleMail::trySend(
-            ModuleMail::ICT,
+            ModuleMail::NOTIFICATION,
             $user->email,
             new PasswordResetOtpMail($otp, self::OTP_TTL_MINUTES),
         );
@@ -89,6 +90,7 @@ class PasswordResetService
                 'attempts' => $attempts + 1,
                 'mail_sent' => $delivery['sent'],
                 'via' => 'otp',
+                'delivery_module' => ModuleMail::NOTIFICATION,
             ],
             'Password reset OTP requested',
             $delivery['sent'] ? 'success' : 'failure',
@@ -98,7 +100,7 @@ class PasswordResetService
 
         return [
             'status' => 'sent',
-            'message' => 'If an account exists for that email, a one-time reset code has been sent from ICT.',
+            'message' => 'If an account exists for that email, a one-time reset code has been sent.',
         ];
     }
 

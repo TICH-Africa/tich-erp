@@ -2,12 +2,12 @@
 
 @section('title', 'Reset Password')
 @section('headline', 'Enter your reset code.')
-@section('subheadline', 'Use the one-time code from ICT, then choose a new password.')
+@section('subheadline', 'Use the one-time code from your email, then choose a new password.')
 
 @section('content')
     <div class="tich-mb-8">
         <h2 class="tich-h2">Reset password</h2>
-        <p class="tich-text tich-mt-2">Enter the 6-digit code emailed from ICT, then set your new password.</p>
+        <p class="tich-text tich-mt-2">Enter the 6-digit code from your email, then set your new password.</p>
         @if (session('password_reset_dev_otp'))
             <p class="tich-caption tich-mt-2" style="color:#b45309;">Development code: {{ session('password_reset_dev_otp') }}</p>
         @endif
