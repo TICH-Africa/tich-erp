@@ -14,6 +14,30 @@ return [
 
     'default_module' => 'notification',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Public link base for email bodies
+    |--------------------------------------------------------------------------
+    |
+    | Invite / reset links inside emails must use a publicly reachable HTTPS
+    | host. Private APP_URL values (127.0.0.1, 192.168.x.x) cause Gmail and
+    | other providers to drop or spam-folder the message.
+    |
+    */
+    'link_url' => env('MAIL_LINK_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Registration invite delivery mailbox
+    |--------------------------------------------------------------------------
+    |
+    | hr@ / ict@ are accepted by SMTP but often never reach external inboxes on
+    | this host. Invites therefore send via notification@ (proven delivery),
+    | while HR/ICT branding stays in the display name and email body.
+    |
+    */
+    'invite_delivery_module' => env('MAIL_INVITE_DELIVERY_MODULE', 'notification'),
+
     'modules' => [
         'hr' => [
             'mailer' => 'hr',

@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Mail\PasswordResetLinkMail;
+use App\Mail\PasswordResetOtpMail;
 use App\Models\PasswordResetEscalation;
 use App\Models\User;
+use App\Support\ModuleMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PasswordResetService
@@ -17,7 +18,7 @@ class PasswordResetService
 
     public const WINDOW_DAYS = 7;
 
-    public const TOKEN_TTL_MINUTES = 60;
+    public const OTP_TTL_MINUTES = 15;
 
     public function __construct(
         protected AuditService $auditService,
@@ -48,27 +49,34 @@ class PasswordResetService
 
             return [
                 'status' => 'sent',
-                'message' => 'If an account exists for that email, a password reset link will be sent shortly.',
+                'message' => 'If an account exists for that email, a one-time reset code has been sent from ICT.',
             ];
         }
 
-        $token = Str::random(64);
+        $otp = $this->generateOtp();
+
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $email],
-            ['token' => Hash::make($token), 'created_at' => now()]
+            ['token' => Hash::make($otp), 'created_at' => now()]
         );
 
         $this->recordAttempt($email, $user->id, 'sent', $request);
 
-        $resetUrl = url(route('password.reset', [
-            'token' => $token,
-            'email' => $email,
-        ], false));
+        $delivery = ModuleMail::trySend(
+            ModuleMail::ICT,
+            $user->email,
+            new PasswordResetOtpMail($otp, self::OTP_TTL_MINUTES),
+        );
 
-        try {
-            Mail::to($user->email)->send(new PasswordResetLinkMail($resetUrl, self::TOKEN_TTL_MINUTES));
-        } catch (\Throwable) {
-            // Keep UX generic; admins can use ICT reset if mail fails.
+        if (! $delivery['sent']) {
+            Log::warning('Password reset OTP email failed', [
+                'email' => $email,
+                'error' => $delivery['error'],
+            ]);
+        }
+
+        if (config('app.debug') && ! $delivery['sent']) {
+            session()->flash('password_reset_dev_otp', $otp);
         }
 
         $this->auditService->log(
@@ -76,35 +84,41 @@ class PasswordResetService
             'users',
             $user->id,
             null,
-            ['email' => $email, 'attempts' => $attempts + 1],
-            'Password reset link requested',
-            'success',
+            [
+                'email' => $email,
+                'attempts' => $attempts + 1,
+                'mail_sent' => $delivery['sent'],
+                'via' => 'otp',
+            ],
+            'Password reset OTP requested',
+            $delivery['sent'] ? 'success' : 'failure',
             $user->id,
             $request
         );
 
         return [
             'status' => 'sent',
-            'message' => 'If an account exists for that email, a password reset link will be sent shortly.',
+            'message' => 'If an account exists for that email, a one-time reset code has been sent from ICT.',
         ];
     }
 
     /**
      * @return array{ok: bool, message: string}
      */
-    public function resetWithToken(string $email, string $token, string $password, ?Request $request = null): array
+    public function resetWithOtp(string $email, string $otp, string $password, ?Request $request = null): array
     {
         $email = Str::lower(trim($email));
+        $otp = preg_replace('/\s+/', '', trim($otp)) ?? '';
         $row = DB::table('password_reset_tokens')->where('email', $email)->first();
 
-        if (! $row || ! Hash::check($token, $row->token)) {
-            return ['ok' => false, 'message' => 'This password reset link is invalid or has already been used.'];
+        if (! $row || ! Hash::check($otp, $row->token)) {
+            return ['ok' => false, 'message' => 'This reset code is invalid or has already been used.'];
         }
 
-        if ($row->created_at && now()->diffInMinutes($row->created_at) > self::TOKEN_TTL_MINUTES) {
+        if ($row->created_at && now()->diffInMinutes($row->created_at) > self::OTP_TTL_MINUTES) {
             DB::table('password_reset_tokens')->where('email', $email)->delete();
 
-            return ['ok' => false, 'message' => 'This password reset link has expired. Please request a new one.'];
+            return ['ok' => false, 'message' => 'This reset code has expired. Please request a new one.'];
         }
 
         $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
@@ -123,7 +137,7 @@ class PasswordResetService
             ->where('status', PasswordResetEscalation::STATUS_OPEN)
             ->update([
                 'status' => PasswordResetEscalation::STATUS_RESOLVED,
-                'notes' => 'Resolved via self-service reset link',
+                'notes' => 'Resolved via self-service reset OTP',
                 'resolved_at' => now(),
             ]);
 
@@ -132,7 +146,7 @@ class PasswordResetService
             'users',
             $user->id,
             null,
-            ['email' => $email],
+            ['email' => $email, 'via' => 'otp'],
             'Password reset completed',
             'success',
             $user->id,
@@ -140,6 +154,16 @@ class PasswordResetService
         );
 
         return ['ok' => true, 'message' => 'Your password has been reset. You can now sign in.'];
+    }
+
+    /**
+     * @deprecated Use resetWithOtp(). Kept for any legacy callers that still pass a long token.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function resetWithToken(string $email, string $token, string $password, ?Request $request = null): array
+    {
+        return $this->resetWithOtp($email, $token, $password, $request);
     }
 
     /**
@@ -198,6 +222,11 @@ class PasswordResetService
             ->where('status', PasswordResetEscalation::STATUS_OPEN)
             ->orderByDesc('created_at')
             ->get();
+    }
+
+    private function generateOtp(): string
+    {
+        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     private function escalate(string $email, ?User $user, int $attempts, ?Request $request): void

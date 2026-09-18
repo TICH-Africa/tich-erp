@@ -58,22 +58,31 @@ class ErpRegistrationInviteService
             'expires_at' => now()->addDays((int) config('tich.erp_registration.invite_days', 14)),
         ]);
 
+        // Same delivery path for HR and ICT invites: notification@ reaches external inboxes;
+        // hr@ / ict@ are accepted by SMTP but often never arrive.
+        $deliveryModule = (string) config('tich-mail.invite_delivery_module', ModuleMail::NOTIFICATION);
+        if ($deliveryModule === '' || ! config()->has("tich-mail.modules.{$deliveryModule}")) {
+            $deliveryModule = ModuleMail::NOTIFICATION;
+        }
+
         $delivery = ModuleMail::trySend(
-            $mailModule,
+            $deliveryModule,
             $email,
-            new ErpRegistrationInvitationEmail($invitation, $staff),
+            new ErpRegistrationInvitationEmail($invitation, $staff, $deliveryModule),
         );
 
-        $registerUrl = $invitation->registerUrl();
-
         if (! $delivery['sent']) {
+            $invitationId = $invitation->id;
+            $invitation->delete();
+
             $this->auditInvite(
                 'auth.registration_invite.mail_failed',
-                $invitation->id,
+                $invitationId,
                 [
                     'email' => $email,
                     'staff_id' => $staff?->id,
                     'mail_module' => $mailModule,
+                    'delivery_module' => $deliveryModule,
                     'error' => $delivery['error'],
                 ],
                 'failure',
@@ -81,12 +90,9 @@ class ErpRegistrationInviteService
             );
 
             return [
-                'success' => true,
-                'warning' => true,
-                'message' => ($delivery['error'] ?? 'Invitation email could not be delivered.')
-                    .' Invitation was still created — use Copy link in the list below to share it.',
-                'invitation' => $invitation,
-                'register_url' => $registerUrl,
+                'success' => false,
+                'message' => 'Invitation email could not be sent to '.$email.'. '
+                    .($delivery['error'] ?? 'Check MAIL_HOST and MAIL_NOTIFICATION_* credentials in .env, then run php artisan config:clear.'),
             ];
         }
 
@@ -97,6 +103,7 @@ class ErpRegistrationInviteService
                 'email' => $email,
                 'staff_id' => $staff?->id,
                 'mail_module' => $mailModule,
+                'delivery_module' => $deliveryModule,
                 'resent' => $hadPriorInvite,
             ],
             'success',
@@ -117,8 +124,39 @@ class ErpRegistrationInviteService
             'success' => true,
             'message' => $message,
             'invitation' => $invitation,
-            'register_url' => $registerUrl,
         ];
+    }
+
+    /**
+     * Invite a specific staff record using the personal email HR captured.
+     *
+     * @return array{success: bool, message: string, invitation?: ErpRegistrationInvitation}
+     */
+    public function sendForStaff(Staff $staff, User $invitedBy, string $mailModule = 'hr'): array
+    {
+        $email = strtolower(trim((string) $staff->primary_email));
+
+        if ($email === '') {
+            return [
+                'success' => false,
+                'message' => 'Add a personal email on this staff record before sending an invite.',
+            ];
+        }
+
+        if ($staff->user_id) {
+            return [
+                'success' => false,
+                'message' => 'This employee already has an ERP account. They can sign in or use forgot password.',
+            ];
+        }
+
+        $result = $this->send($email, $invitedBy, $mailModule);
+
+        if (! empty($result['invitation']) && empty($result['invitation']->staff_id)) {
+            $result['invitation']->update(['staff_id' => $staff->id]);
+        }
+
+        return $result;
     }
 
     /**
@@ -265,7 +303,7 @@ class ErpRegistrationInviteService
     private function findStaffByPersonalEmail(string $email): ?Staff
     {
         return Staff::query()
-            ->with('department')
+            ->with(['department'])
             ->whereRaw('LOWER(primary_email) = ?', [strtolower(trim($email))])
             ->first();
     }

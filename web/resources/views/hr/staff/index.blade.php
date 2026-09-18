@@ -75,7 +75,17 @@
                                     {{ ucfirst($member->employment_status) }}
                                 </span>
                             </td>
-                            <td>
+                            <td style="white-space:nowrap;">
+                                @if (! $member->user_id && $member->primary_email)
+                                    <form method="POST" action="{{ route('hr.staff.invite', $member) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="tich-btn tich-btn-secondary" title="Send ERP registration invite to {{ $member->primary_email }}">
+                                            Invite
+                                        </button>
+                                    </form>
+                                @elseif ($member->user_id)
+                                    <span class="tich-caption">Has account</span>
+                                @endif
                                 <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>

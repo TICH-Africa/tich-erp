@@ -67,7 +67,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])->name('register.invite.store');
     Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
-    Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::get('/reset-password', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset.legacy');
     Route::post('/reset-password', [WebAuthController::class, 'resetPassword'])->name('password.update');
 
     Route::get('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'show'])->name('portal.activate');
@@ -821,6 +822,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::post('/staff/{staff}/invite', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'inviteStaff'])->name('hr.staff.invite');
             Route::get('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'create'])->name('hr.staff.profile-update-prompt.create');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'store'])->name('hr.staff.profile-update-prompt.store');
             Route::get('/profile-changes', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'index'])->name('hr.profile-changes.index');

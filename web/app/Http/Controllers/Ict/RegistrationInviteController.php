@@ -41,7 +41,7 @@ class RegistrationInviteController extends Controller
     }
 
     /**
-     * @param  array{success: bool, message: string, warning?: bool, register_url?: string}  $result
+     * @param  array{success: bool, message: string}  $result
      */
     private function flashInviteResult(array $result): RedirectResponse
     {
@@ -49,15 +49,6 @@ class RegistrationInviteController extends Controller
             return back()->with('error', $result['message']);
         }
 
-        $redirect = back()->with(
-            ! empty($result['warning']) ? 'warning' : 'success',
-            $result['message'],
-        );
-
-        if (! empty($result['register_url'])) {
-            $redirect->with('invite_register_url', $result['register_url']);
-        }
-
-        return $redirect;
+        return back()->with('success', $result['message']);
     }
 }

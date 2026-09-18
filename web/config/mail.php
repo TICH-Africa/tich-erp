@@ -1,9 +1,14 @@
 <?php
 
+$verifyPeer = filter_var(env('MAIL_VERIFY_PEER', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+if ($verifyPeer === null) {
+    $verifyPeer = true;
+}
+
 $smtpStream = [
     'ssl' => [
-        'verify_peer' => env('MAIL_VERIFY_PEER', true),
-        'verify_peer_name' => env('MAIL_VERIFY_PEER', true),
+        'verify_peer' => $verifyPeer,
+        'verify_peer_name' => $verifyPeer,
     ],
 ];
 
@@ -17,13 +22,20 @@ $moduleSmtpMailer = static function (?string $username, ?string $password) use (
             : (preg_match('/(^|\.)tich\.africa$/i', $mailHost) === 1 ? 'tich.africa' : 'localhost');
     }
 
+    $port = (int) env('MAIL_PORT', 2525);
+    $encryption = env('MAIL_ENCRYPTION');
+    $scheme = env('MAIL_SCHEME');
+    if (! is_string($scheme) || $scheme === '' || strtolower($scheme) === 'null') {
+        $scheme = ($port === 465 || $encryption === 'ssl') ? 'smtps' : null;
+    }
+
     return [
         'transport' => 'smtp',
-        'scheme' => env('MAIL_SCHEME'),
+        'scheme' => $scheme,
         'url' => env('MAIL_URL'),
         'host' => env('MAIL_HOST', '127.0.0.1'),
-        'port' => env('MAIL_PORT', 2525),
-        'encryption' => env('MAIL_ENCRYPTION'),
+        'port' => $port,
+        'encryption' => $encryption,
         'username' => $username,
         'password' => $password,
         'timeout' => (int) env('MAIL_TIMEOUT', 30),

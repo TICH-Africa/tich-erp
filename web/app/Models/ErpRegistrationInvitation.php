@@ -42,6 +42,6 @@ class ErpRegistrationInvitation extends Model
 
     public function registerUrl(): string
     {
-        return route('register.invite', ['token' => $this->token]);
+        return \App\Support\MailPublicUrl::to('register/invite/'.$this->token);
     }
 }

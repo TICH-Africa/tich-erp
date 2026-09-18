@@ -1,19 +1,20 @@
 @extends('layouts.auth')
 
 @section('title', 'Reset Password')
-@section('headline', 'Choose a new password.')
-@section('subheadline', 'Set a strong password to secure your TICH ERP account.')
+@section('headline', 'Enter your reset code.')
+@section('subheadline', 'Use the one-time code from ICT, then choose a new password.')
 
 @section('content')
     <div class="tich-mb-8">
         <h2 class="tich-h2">Reset password</h2>
-        <p class="tich-text tich-mt-2">Enter your new password below.</p>
+        <p class="tich-text tich-mt-2">Enter the 6-digit code emailed from ICT, then set your new password.</p>
+        @if (session('password_reset_dev_otp'))
+            <p class="tich-caption tich-mt-2" style="color:#b45309;">Development code: {{ session('password_reset_dev_otp') }}</p>
+        @endif
     </div>
 
     <form method="POST" action="{{ route('password.update') }}">
         @csrf
-
-        <input type="hidden" name="token" value="{{ $token }}">
 
         <div class="tich-form-group">
             <label for="email" class="tich-label">Email address</label>
@@ -28,6 +29,26 @@
                 class="tich-input @error('email') tich-input--error @enderror"
             >
             @error('email')
+                <p class="tich-field-error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div class="tich-form-group">
+            <label for="otp" class="tich-label">Reset code</label>
+            <input
+                type="text"
+                id="otp"
+                name="otp"
+                value="{{ old('otp') }}"
+                required
+                inputmode="numeric"
+                pattern="[0-9]{6}"
+                maxlength="6"
+                autocomplete="one-time-code"
+                class="tich-input @error('otp') tich-input--error @enderror"
+                placeholder="6-digit code"
+            >
+            @error('otp')
                 <p class="tich-field-error">{{ $message }}</p>
             @enderror
         </div>
@@ -65,4 +86,9 @@
             Reset password
         </button>
     </form>
+
+    <p class="tich-text tich-mt-8 tich-text-center">
+        Didn’t get a code?
+        <a href="{{ route('password.request') }}" class="tich-link">Request a new one</a>
+    </p>
 @endsection
