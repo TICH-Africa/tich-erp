@@ -43,7 +43,6 @@
                         <th>Job Title</th>
                         <th>Category</th>
                         <th>Status</th>
-                        <th>Profile</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -77,18 +76,11 @@
                                 </span>
                             </td>
                             <td>
-                                @if ($member->is_profile_locked)
-                                    <span class="tich-caption">Locked</span>
-                                @else
-                                    <span class="tich-caption">Editable</span>
-                                @endif
-                            </td>
-                            <td>
                                 <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No staff records found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No staff records found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

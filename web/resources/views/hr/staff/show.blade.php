@@ -70,8 +70,12 @@
                 <div class="tich-dl__row"><dt class="tich-dl__label">NSSF</dt><dd class="tich-dl__value">{{ $staff->nssf_number ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">SHA</dt><dd class="tich-dl__value">{{ $staff->sha_number ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">HELB</dt><dd class="tich-dl__value">{{ $staff->helb_number ?? '-' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Bank</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_name ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Pension</dt><dd class="tich-dl__value">{{ $staff->pensionScheme?->scheme_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Bank</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Branch</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_branch ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Bank code</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->bank_code ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Account name</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->account_name ?? '-' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Account number</dt><dd class="tich-dl__value">{{ $staff->bankAccount?->account_number ?? '-' }}</dd></div>
             </dl>
         </section>
     </div>

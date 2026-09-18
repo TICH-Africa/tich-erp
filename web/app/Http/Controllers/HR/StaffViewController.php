@@ -4,19 +4,24 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\PensionScheme;
 use App\Models\Staff;
+use App\Models\StaffBankAccount;
 use App\Models\StaffOnboarding;
 use App\Services\AuditService;
+use App\Services\EmployeeProfileChangeService;
 use App\Services\StaffLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class StaffViewController extends Controller
 {
     public function __construct(
         protected AuditService $auditService,
         protected StaffLifecycleService $staffLifecycle,
+        protected EmployeeProfileChangeService $profileChanges,
     ) {}
 
     public function index(): View
@@ -173,19 +178,29 @@ class StaffViewController extends Controller
 
     public function edit(int $id): View
     {
-        $staff = Staff::findOrFail($id);
+        $staff = Staff::with(['bankAccount', 'pensionScheme'])->findOrFail($id);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
         $lineManagers = Staff::where('id', '!=', $id)
             ->whereIn('employment_status', ['active', 'onboarding'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number']);
+        $pensionSchemes = PensionScheme::query()
+            ->where(function ($query) use ($staff) {
+                $query->where('is_active', true);
+                if ($staff->pension_scheme_id) {
+                    $query->orWhere('id', $staff->pension_scheme_id);
+                }
+            })
+            ->orderBy('scheme_name')
+            ->get(['id', 'scheme_name']);
 
         return view('hr.staff.edit', [
             'staff' => $staff,
             'departments' => $departments,
             'campuses' => $campuses,
             'lineManagers' => $lineManagers,
+            'pensionSchemes' => $pensionSchemes,
         ]);
     }
 
@@ -225,41 +240,100 @@ class StaffViewController extends Controller
             'is_on_probation' => 'boolean',
             'probation_end_date' => 'nullable|date',
             'gross_monthly_salary' => 'sometimes|numeric|min:0',
-            'bank_id' => 'nullable|exists:staff_bank_accounts,id',
             'kra_pin' => 'nullable|string|max:50',
             'nssf_number' => 'nullable|string|max:50',
             'sha_number' => 'nullable|string|max:50',
             'helb_number' => 'nullable|string|max:50',
             'pension_scheme_id' => 'nullable|exists:pension_schemes,id',
+            'bank_name' => 'nullable|string|max:200',
+            'bank_branch' => 'nullable|string|max:200',
+            'bank_code' => 'nullable|string|max:20',
+            'account_name' => 'nullable|string|max:300',
+            'account_number' => 'nullable|string|max:50',
             'is_teaching_staff' => 'boolean',
             'is_nursing_license_required' => 'boolean',
             'line_manager_id' => 'nullable|exists:staff,id',
             'salary_scale' => 'nullable|string|max:50',
             'incremental_date' => 'nullable|date',
             'project_code' => 'nullable|string|max:100',
+            'profile_photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:6144',
         ]);
 
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
         $validated = $this->prepareStaffEmails($validated, $staff);
+        unset($validated['profile_photo']);
 
-        DB::transaction(function () use ($staff, $validated, $request) {
-            $staff->update($validated);
-            $staff->syncLinkedUserEmail();
+        $bankInput = [
+            'bank_name' => trim((string) ($validated['bank_name'] ?? '')),
+            'bank_branch' => trim((string) ($validated['bank_branch'] ?? '')),
+            'bank_code' => trim((string) ($validated['bank_code'] ?? '')),
+            'account_name' => trim((string) ($validated['account_name'] ?? '')),
+            'account_number' => trim((string) ($validated['account_number'] ?? '')),
+        ];
+        unset(
+            $validated['bank_name'],
+            $validated['bank_branch'],
+            $validated['bank_code'],
+            $validated['account_name'],
+            $validated['account_number'],
+            $validated['bank_id'],
+        );
 
-            $this->auditService->log(
-                'staff.updated',
-                'staff',
-                $staff->id,
-                $staff->getOriginal(),
-                $staff->fresh()->toArray(),
-                'Staff record updated',
-                'success',
-                $request->user()->id,
-                $request
-            );
-        });
+        try {
+            $photoPath = $this->profileChanges->resolvePhotoPathFromInput($staff, [
+                'profile_photo' => $request->file('profile_photo'),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'employee number')) {
+                $message = 'This staff record is missing an employee number. Assign one before uploading a photo.';
+            }
 
-        return redirect()->route('hr.staff.show', $staff)->with('success', 'Staff member updated successfully.');
+            return back()
+                ->withInput()
+                ->withErrors(['profile_photo' => $message]);
+        }
+
+        if ($photoPath) {
+            $validated['photo_path'] = $photoPath;
+        }
+
+        if (array_key_exists('pension_scheme_id', $validated) && $validated['pension_scheme_id'] === '') {
+            $validated['pension_scheme_id'] = null;
+        }
+
+        try {
+            DB::transaction(function () use ($staff, $validated, $bankInput, $request) {
+                $this->syncStaffBankAccount($staff, $bankInput);
+
+                if ($staff->bank_id) {
+                    $validated['bank_id'] = $staff->bank_id;
+                }
+
+                $staff->update($validated);
+                $staff->syncLinkedUserEmail();
+
+                $this->auditService->log(
+                    'staff.updated',
+                    'staff',
+                    $staff->id,
+                    $staff->getOriginal(),
+                    $staff->fresh()->toArray(),
+                    'Staff record updated',
+                    'success',
+                    $request->user()->id,
+                    $request
+                );
+            });
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors());
+        }
+        $message = 'Staff member updated successfully.';
+        if ($photoPath) {
+            $message .= ' Profile photo saved.';
+        }
+
+        return redirect()->route('hr.staff.show', $staff)->with('success', $message);
     }
 
     public function destroy(Request $request, int $id)
@@ -295,6 +369,54 @@ class StaffViewController extends Controller
         }
 
         return $validated;
+    }
+
+    /**
+     * Create or update the staff member's primary bank account from edit-form fields.
+     *
+     * @param  array{bank_name: string, bank_branch: string, bank_code: string, account_name: string, account_number: string}  $bankInput
+     */
+    private function syncStaffBankAccount(Staff $staff, array $bankInput): void
+    {
+        $hasAnyValue = collect($bankInput)->contains(fn (string $value) => $value !== '');
+
+        if (! $hasAnyValue) {
+            return;
+        }
+
+        $required = ['bank_name', 'bank_code', 'account_name', 'account_number'];
+        foreach ($required as $field) {
+            if ($bankInput[$field] === '') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    $field => 'Bank name, bank code, account name, and account number are required together.',
+                ]);
+            }
+        }
+
+        $payload = [
+            'bank_name' => $bankInput['bank_name'],
+            'bank_branch' => $bankInput['bank_branch'] !== '' ? $bankInput['bank_branch'] : null,
+            'bank_code' => $bankInput['bank_code'],
+            'account_name' => $bankInput['account_name'],
+            'account_number' => $bankInput['account_number'],
+            'is_primary' => true,
+            'is_active' => true,
+        ];
+
+        $account = $staff->bankAccount;
+        if ($account) {
+            $account->update($payload);
+            return;
+        }
+
+        $account = StaffBankAccount::create([
+            'staff_id' => $staff->id,
+            ...$payload,
+            'created_at' => now(),
+        ]);
+
+        $staff->bank_id = $account->id;
+        $staff->save();
     }
 }
 

@@ -4,38 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StaffBankAccount extends Model
 {
     protected $table = 'staff_bank_accounts';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'staff_id',
-        'bank_name',
-        'branch_name',
-        'account_number',
         'account_name',
-        'swift_code',
+        'account_number',
+        'bank_name',
+        'bank_branch',
+        'bank_code',
         'is_primary',
-        'is_verified',
-        'verified_by',
-        'verified_at',
+        'is_active',
+        'created_at',
     ];
 
     protected $casts = [
         'is_primary' => 'boolean',
-        'is_verified' => 'boolean',
-        'verified_at' => 'datetime',
+        'is_active' => 'boolean',
+        'created_at' => 'datetime',
     ];
 
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);
-    }
-
-    public function verifiedBy(): BelongsTo
-    {
-        return $this->belongsTo(Staff::class, 'verified_by');
     }
 }
