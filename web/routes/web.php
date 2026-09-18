@@ -551,11 +551,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::post('/{qcaFlag}/ceo-override', [\App\Http\Controllers\Qa\QcaFlagController::class, 'ceoOverride'])->name('ceo-override');
             });
 
-            Route::prefix('capacity')->name('qa.capacity.')->group(function () {
-                Route::post('/register', [\App\Http\Controllers\Qa\CapacityController::class, 'register'])->name('register');
-                Route::get('/export', [\App\Http\Controllers\Qa\CapacityController::class, 'export'])->name('export');
-            });
-
             Route::prefix('training-credits')->name('qa.training-credits.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'store'])->name('store');
@@ -571,9 +566,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/executive-dashboard/chart/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartAuditTrail'])->name('qa.executive-dashboard.chart.audit-trail');
 
             Route::get('/downstream-lock/check', [\App\Http\Controllers\Qa\QcaDownstreamLockController::class, 'check'])->name('qa.downstream-lock.check');
-
-            Route::get('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'index'])->name('qa.capacity.index');
-            Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
         });
 
         // Department respondents (HOD / department staff) - access checked in service.

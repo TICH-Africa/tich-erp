@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Quality assurance</p>
             <h1 class="tich-mod-dash__title">QA command center</h1>
-            <p class="tich-mod-dash__lede">Quality plans, assessment sheets, capacity building, and compliance oversight — live overview.</p>
+            <p class="tich-mod-dash__lede">Quality plans, assessment sheets, and compliance oversight — live overview.</p>
         </div>
         <div class="tich-mod-dash__hero-actions">
             <a href="{{ route('qa.assessments.create') }}" class="tich-btn tich-btn-primary">Build sheet</a>
