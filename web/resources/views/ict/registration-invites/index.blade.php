@@ -5,6 +5,29 @@
 @section('ict-content')
     <x-page-toolbar title="ERP registration invites" meta="Send signup invitations to employees using their personal email" />
 
+    @if (\App\Models\ErpRegistrationInvitation::appUrlLooksPrivate())
+        <div class="tich-toast tich-toast--warning tich-mt-4" role="status">
+            <div class="tich-toast__content">
+                <p class="tich-toast__message">
+                    Invite links currently use a private/local address (<code>{{ config('app.invite_base_url') ?: config('app.url') }}</code>).
+                    Recipients outside this network cannot open them. Set a public <code>APP_URL</code> or <code>INVITE_BASE_URL</code> in <code>.env</code>, then run <code>php artisan config:clear</code>.
+                    Until then, copy the registration link from the list below and share it directly.
+                </p>
+            </div>
+        </div>
+    @endif
+
+    @if (session('invite_register_url'))
+        <div class="tich-toast tich-toast--success tich-mt-4" role="status">
+            <div class="tich-toast__content">
+                <p class="tich-toast__message">
+                    Registration link (copy and share if needed):
+                    <a class="tich-link" href="{{ session('invite_register_url') }}" target="_blank" rel="noopener">{{ session('invite_register_url') }}</a>
+                </p>
+            </div>
+        </div>
+    @endif
+
     @include('partials.staff-registration-invite-form', [
         'action' => route('ict.registration-invites.store'),
     ])
@@ -21,6 +44,7 @@
                             <th>Sent by</th>
                             <th>Status</th>
                             <th>Sent</th>
+                            <th>Registration link</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -39,11 +63,11 @@
                                 <td>{{ $invite->inviter?->email ?? '-' }}</td>
                                 <td>
                                     @if ($invite->used_at)
-                                        Registered
+                                        <span class="tich-badge tich-badge--success">Registered</span>
                                     @elseif ($invite->expires_at->isPast())
-                                        Expired
+                                        <span class="tich-badge tich-badge--neutral">Expired</span>
                                     @else
-                                        Pending
+                                        <span class="tich-badge tich-badge--pending">Pending</span>
                                     @endif
                                 </td>
                                 <td>{{ $invite->created_at?->format('j M Y, H:i') }}</td>
@@ -51,7 +75,14 @@
                                     @if ($invite->used_at)
                                         <span class="tich-caption">-</span>
                                     @else
-                                        <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;">
+                                        <a class="tich-link" href="{{ $invite->registerUrl() }}" target="_blank" rel="noopener">Open link</a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($invite->used_at)
+                                        <span class="tich-caption">-</span>
+                                    @else
+                                        <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;" data-allow-resubmit>
                                             @csrf
                                             <button type="submit" class="tich-btn tich-btn-secondary tich-btn-sm">
                                                 {{ $invite->expires_at->isPast() ? 'Re-invite' : 'Resend' }}

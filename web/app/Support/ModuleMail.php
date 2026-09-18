@@ -58,6 +58,13 @@ class ModuleMail
 
             return ['sent' => true, 'error' => null];
         } catch (Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Module mail send failed', [
+                'module' => $module,
+                'to' => $to,
+                'mailable' => $mailable::class,
+                'error' => $e->getMessage(),
+            ]);
+
             return [
                 'sent' => false,
                 'error' => MailConfig::friendlySmtpError($e->getMessage(), $module),

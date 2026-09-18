@@ -64,12 +64,32 @@ class ErpRegistrationInviteService
             new ErpRegistrationInvitationEmail($invitation, $staff),
         );
 
+        $registerUrl = $invitation->registerUrl();
+
         if (! $delivery['sent']) {
-            $invitation->delete();
+            app(AuditService::class)->log(
+                'auth.registration_invite.mail_failed',
+                'erp_registration_invitations',
+                $invitation->id,
+                null,
+                [
+                    'email' => $email,
+                    'staff_id' => $staff?->id,
+                    'mail_module' => $mailModule,
+                    'error' => $delivery['error'],
+                ],
+                null,
+                'failure',
+                $invitedBy->id,
+            );
 
             return [
-                'success' => false,
-                'message' => $delivery['error'] ?? 'Could not send invitation email. Check mail settings and try again.',
+                'success' => true,
+                'warning' => true,
+                'message' => ($delivery['error'] ?? 'Invitation email could not be delivered.')
+                    .' Invitation was still created — share this link manually: '.$registerUrl,
+                'invitation' => $invitation,
+                'register_url' => $registerUrl,
             ];
         }
 
@@ -101,8 +121,9 @@ class ErpRegistrationInviteService
 
         return [
             'success' => true,
-            'message' => $message,
+            'message' => $message.' Registration link: '.$registerUrl,
             'invitation' => $invitation,
+            'register_url' => $registerUrl,
         ];
     }
 
