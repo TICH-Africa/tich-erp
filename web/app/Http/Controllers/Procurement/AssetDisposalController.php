@@ -7,8 +7,8 @@ use App\Models\Asset;
 use App\Models\AssetDisposal;
 use App\Models\Staff;
 use App\Services\Procurement\AssetDisposalService;
-use Illuminate\Http\RedirectResponse;
 use App\Support\Pagination;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +32,11 @@ class AssetDisposalController extends Controller
     public function create(): View
     {
         return view('procurement.asset-disposals.create', [
-            'assets' => Asset::query()->select(['id', 'asset_number', 'asset_name', 'current_value'])->where('asset_status', '!=', 'disposed')->orderBy('asset_name')->get(),
+            'assets' => Asset::query()
+                ->select(['id', 'asset_number', 'asset_name', 'current_value'])
+                ->where('asset_status', '!=', 'disposed')
+                ->orderBy('asset_name')
+                ->get(),
             'staff' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname']),
         ]);
     }
@@ -43,6 +47,7 @@ class AssetDisposalController extends Controller
             'asset_id' => ['required', 'exists:assets,id'],
             'disposal_type' => ['required', 'in:write_off,donation,auction'],
             'disposal_value' => ['nullable', 'numeric', 'min:0'],
+            'disposal_date' => ['nullable', 'date'],
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
@@ -56,28 +61,29 @@ class AssetDisposalController extends Controller
             ->with('status', 'Disposal request submitted.');
     }
 
-    public function show(AssetDisposal $record): View
+    public function show(AssetDisposal $assetDisposal): View
     {
-        $record->load(['asset', 'requestedBy', 'approvedBy']);
+        $assetDisposal->load(['asset', 'requestedBy', 'approvedBy']);
 
-        return view('procurement.asset-disposals.show', compact('record'));
+        return view('procurement.asset-disposals.show', ['record' => $assetDisposal]);
     }
 
-    public function approve(AssetDisposal $record, AssetDisposalService $service): RedirectResponse
+    public function approve(AssetDisposal $assetDisposal): RedirectResponse
     {
-        if ($record->approval_status === 'approved') {
+        if ($assetDisposal->approval_status === 'approved') {
             return back()->withErrors(['status' => 'Already approved.']);
         }
 
-        $service->approveDisposal($record);
+        $this->service->approveDisposal($assetDisposal);
+        $assetDisposal->refresh()->load('asset');
 
-        $asset = $record->asset;
+        $asset = $assetDisposal->asset;
         if ($asset) {
             $asset->update([
                 'asset_status' => 'disposed',
-                'disposed_date' => $record->disposal_date ?? now()->format('Y-m-d'),
-                'disposed_value' => $record->disposed_value,
-                'disposed_reason' => $record->reason,
+                'disposed_date' => $assetDisposal->disposal_date ?? now()->format('Y-m-d'),
+                'disposed_value' => $assetDisposal->disposed_value,
+                'disposed_reason' => $assetDisposal->reason,
             ]);
         }
 

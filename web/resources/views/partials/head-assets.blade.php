@@ -29,6 +29,7 @@
 <x-asset.script path="js/tich-toasts.js" />
 <x-asset.script path="js/tich-lazy-load.js" />
 <x-asset.script path="js/tich-form-submit-once.js" />
+<x-asset.script path="js/tich-uf-forms.js" />
 @if (config('security.block_inspect_ui', false))
     <x-asset.script path="js/tich-ui-protection.js" />
 @endif

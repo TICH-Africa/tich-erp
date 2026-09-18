@@ -9,45 +9,108 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.gl.journal.store') }}" data-uf="ready">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.gl.journal.store') }}" class="tich-card tich-form-grid">
-        @csrf
-        <div class="tich-form-row">
-            <label class="tich-label" for="date">Date <span class="tich-text--danger">*</span></label>
-            <input type="date" id="date" name="date" class="tich-input" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="description">Description <span class="tich-text--danger">*</span></label>
-            <textarea id="description" name="description" class="tich-input" rows="4" placeholder="Journal entry description..." required></textarea>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="debit_account_id">Debit account <span class="tich-text--danger">*</span></label>
-            <select id="debit_account_id" name="debit_account_id" class="tich-input" required>
-                <option value="">Select account</option>
-            </select>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="credit_account_id">Credit account <span class="tich-text--danger">*</span></label>
-            <select id="credit_account_id" name="credit_account_id" class="tich-input" required>
-                <option value="">Select account</option>
-            </select>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="amount">Amount (KES) <span class="tich-text--danger">*</span></label>
-            <input type="number" step="0.01" min="0" id="amount" name="amount" class="tich-input" placeholder="0.00" required>
-        </div>
-        <div class="tich-form-row">
-            <button type="submit" class="tich-btn tich-btn-primary">Post entry</button>
-            <a href="{{ route('finance.gl.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">GL · General ledger</div>
+                    <div class="uf-amount-bar__sum">Journal entry</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Entry Details</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="date">Date <span class="uf-req">*</span></label>
+                            <input
+                                type="date"
+                                id="date"
+                                name="date"
+                                required
+                                class="{{ $errors->has('date') ? 'is-invalid' : '' }}"
+                            >
+                            @error('date')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="amount">Amount (KES) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                id="amount"
+                                name="amount"
+                                placeholder="0.00"
+                                required
+                                class="{{ $errors->has('amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="debit_account_id">Debit account <span class="uf-req">*</span></label>
+                            <select
+                                id="debit_account_id"
+                                name="debit_account_id"
+                                required
+                                class="{{ $errors->has('debit_account_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select account</option>
+                            </select>
+                            @error('debit_account_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="credit_account_id">Credit account <span class="uf-req">*</span></label>
+                            <select
+                                id="credit_account_id"
+                                name="credit_account_id"
+                                required
+                                class="{{ $errors->has('credit_account_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select account</option>
+                            </select>
+                            @error('credit_account_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="description">Description <span class="uf-req">*</span></label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows="4"
+                            placeholder="Journal entry description..."
+                            required
+                            class="{{ $errors->has('description') ? 'is-invalid' : '' }}"
+                        ></textarea>
+                        @error('description')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Post entry</button>
+                        <a href="{{ route('finance.gl.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 @endsection

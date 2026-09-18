@@ -22,12 +22,12 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('mfa.verify') }}" data-client-context>
+    <form method="POST" action="{{ route('mfa.verify') }}" data-client-context data-uf="skip">
         @csrf
         @include('partials.client-context-fields')
 
-        <div class="tich-form-group">
-            <label for="code" class="tich-label">Verification code</label>
+        <div class="uf-field">
+            <label for="code">Verification code</label>
             <input
                 type="text"
                 id="code"
@@ -38,11 +38,11 @@
                 inputmode="numeric"
                 autocomplete="one-time-code"
                 maxlength="6"
-                class="tich-input tich-input--code @error('code') tich-input--error @enderror"
+                class="tich-input--code {{ $errors->has('code') ? 'is-invalid' : '' }}"
                 placeholder="000000"
             >
             @error('code')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
@@ -52,7 +52,7 @@
     </form>
 
     @if (($mfaMethod ?? '') === 'email')
-        <form method="POST" action="{{ route('mfa.resend') }}" class="tich-mt-4 tich-text-center">
+        <form method="POST" action="{{ route('mfa.resend') }}" class="tich-mt-4 tich-text-center" data-uf="skip">
             @csrf
             <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">
                 Resend email code
@@ -60,7 +60,7 @@
         </form>
     @endif
 
-    <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center">
+    <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center" data-uf="skip">
         @csrf
         <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">
             Cancel and sign out

@@ -10,12 +10,12 @@
     $assignedModules = is_array($assignedModules) ? $assignedModules : [];
 @endphp
 
-<div class="tich-form-group tich-dept-modules" data-dept-modules>
-    <label class="tich-label">Platform modules</label>
-    <p class="tich-caption tich-mb-3">
+<div class="uf-field tich-dept-modules" data-dept-modules>
+    <label>Platform modules</label>
+    <span class="uf-hint">
         Assign modules this department can access. Submodules (courses, lesson plans, payroll, etc.) are inherited automatically.
         For a top-level academic hub, tick <strong>Academics &amp; curriculum</strong>.
-    </p>
+    </span>
 
     <div class="tich-dept-modules__list" style="display: grid; gap: 0.75rem; max-height: 18rem; overflow-y: auto; padding-right: 0.25rem;">
         @forelse ($moduleCatalog as $module)
@@ -54,9 +54,9 @@
         @endforelse
     </div>
 
-    <p class="tich-caption tich-mt-2 tich-dept-modules-empty" style="display: none;">
+    <span class="uf-hint tich-dept-modules-empty" style="display: none;">
         No modules match the selected category. Change category or contact a platform administrator.
-    </p>
+    </span>
 </div>
 
 <script>

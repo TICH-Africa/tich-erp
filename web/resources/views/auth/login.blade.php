@@ -10,12 +10,12 @@
         <p class="tich-text tich-mt-2">Enter your credentials to continue to the ERP portal.</p>
     </div>
 
-    <form method="POST" action="{{ route('login') }}" data-client-context>
+    <form method="POST" action="{{ route('login') }}" data-client-context data-uf="skip">
         @csrf
         @include('partials.client-context-fields')
 
-        <div class="tich-form-group">
-            <label for="login" class="tich-label">Email address</label>
+        <div class="uf-field">
+            <label for="login">Email address</label>
             <input
                 type="email"
                 id="login"
@@ -24,17 +24,17 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="tich-input @error('login') tich-input--error @enderror"
+                class="{{ $errors->has('login') ? 'is-invalid' : '' }}"
                 placeholder="you@tich.ac.ke"
             >
             @error('login')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
+        <div class="uf-field">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.375rem;">
-                <label for="password" class="tich-label">Password</label>
+                <label for="password" style="margin: 0;">Password</label>
                 <a href="{{ route('password.request') }}" class="tich-link" style="font-size: var(--text-body);">Forgot password?</a>
             </div>
             <x-password-input
@@ -45,11 +45,11 @@
                 :has-error="$errors->has('password')"
             />
             @error('password')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+        <div class="uf-field" style="flex-direction: row; align-items: center; gap: 0.5rem;">
             <input
                 type="checkbox"
                 id="remember"
@@ -58,7 +58,7 @@
                 {{ old('remember') ? 'checked' : '' }}
                 class="tich-checkbox"
             >
-            <label for="remember" class="tich-text">Keep me signed in on this device</label>
+            <label for="remember" class="tich-text" style="font-weight: 400;">Keep me signed in on this device</label>
         </div>
 
         <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">

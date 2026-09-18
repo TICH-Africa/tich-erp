@@ -9,32 +9,56 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <article class="tich-card">
-        <form method="POST" action="{{ route('employee.relations.grievances.store') }}" class="tich-form-stack">
+    <div class="uf-form">
+        <form method="POST" action="{{ route('employee.relations.grievances.store') }}" data-uf="ready">
             @csrf
-            <div class="tich-grid tich-grid--2 tich-mb-6">
+
+            <div class="uf-amount-bar">
                 <div>
-                    <label for="grievance_type" class="tich-label">Grievance type</label>
-                    <input type="text" id="grievance_type" name="grievance_type" value="{{ old('grievance_type') }}" class="tich-input" placeholder="e.g. workplace, compensation, management">
+                    <div class="uf-amount-bar__ref">GRV · {{ $staff->employee_number }}</div>
+                    <div class="uf-amount-bar__sum">New grievance</div>
                 </div>
-                <div>
-                    <label for="incident_date" class="tich-label">Incident date</label>
-                    <input type="date" id="incident_date" name="incident_date" value="{{ old('incident_date') }}" class="tich-input">
-                </div>
-                <div class="tich-grid--span-2">
-                    <label for="description" class="tich-label">Description *</label>
-                    <textarea id="description" name="description" rows="5" required class="tich-input" placeholder="Describe your grievance...">{{ old('description') }}</textarea>
-                </div>
-                <div class="tich-grid--span-2">
-                    <label for="resolution_notes" class="tich-label">Suggested resolution</label>
-                    <textarea id="resolution_notes" name="resolution_notes" rows="3" class="tich-input" placeholder="How would you like this resolved...">{{ old('resolution_notes') }}</textarea>
+                <span class="uf-badge">Draft</span>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Grievance Details</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="grievance_type">Grievance type</label>
+                            <input type="text" id="grievance_type" name="grievance_type" value="{{ old('grievance_type') }}" placeholder="e.g. workplace, compensation, management">
+                        </div>
+                        <div class="uf-field">
+                            <label for="incident_date">Incident date</label>
+                            <input type="date" id="incident_date" name="incident_date" value="{{ old('incident_date') }}">
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="description">Description <span class="uf-req">*</span></label>
+                        <textarea id="description" name="description" rows="5" required class="{{ $errors->has('description') ? 'is-invalid' : '' }}" placeholder="Describe your grievance...">{{ old('description') }}</textarea>
+                        @error('description')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="uf-field">
+                        <label for="resolution_notes">Suggested resolution</label>
+                        <textarea id="resolution_notes" name="resolution_notes" rows="3" placeholder="How would you like this resolved...">{{ old('resolution_notes') }}</textarea>
+                    </div>
                 </div>
             </div>
 
-            <div class="tich-mt-6">
-                <button type="submit" class="tich-btn tich-btn-primary">Submit grievance</button>
-                <a href="{{ route('employee.relations.grievances.index') }}" class="tich-btn tich-btn-ghost">Cancel</a>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Submit grievance</button>
+                        <a href="{{ route('employee.relations.grievances.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
             </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
         </form>
-    </article>
+    </div>
 @endsection

@@ -9,62 +9,117 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.student-finance.refunds.store') }}" data-uf="ready">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.student-finance.refunds.store') }}" class="tich-card tich-form-grid tich-form-grid--2">
-        @csrf
-        <div class="tich-form-group">
-            <label class="tich-label" for="refund-student">Student <span class="tich-text--danger">*</span></label>
-            <select name="student_id" id="refund-student" class="tich-input" required>
-                <option value="">Search/select student</option>
-                @foreach ($students as $student)
-                    <option value="{{ $student->id }}">
-                        {{ $student->applicant?->surname ?? '' }}, {{ $student->applicant?->first_name ?? '' }} ({{ $student->registration_number }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="refund-payment">Payment</label>
-            <select name="payment_id" id="refund-payment" class="tich-input" required disabled>
-                <option value="">Select student first</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="refund-invoice">Invoice</label>
-            <select name="invoice_id" id="refund-invoice" class="tich-input" required disabled>
-                <option value="">Select student first</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="amount">Refund Amount (KES) <span class="tich-text--danger">*</span></label>
-            <input type="number" id="amount" name="amount" class="tich-input" step="0.01" placeholder="0.00" required>
-        </div>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">REF · Refund request</div>
+                    <div class="uf-amount-bar__sum">Maker-checker approval required</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
 
-        <div class="tich-form-group" style="grid-column: 1 / -1;">
-            <label class="tich-label" for="reason">Reason <span class="tich-text--danger">*</span></label>
-            <textarea id="reason" name="reason" class="tich-input" rows="4" placeholder="Explain the reason for this refund...">{{ old('reason') }}</textarea>
-        </div>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Student &amp; Payment</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="refund-student">Student <span class="uf-req">*</span></label>
+                            <select
+                                name="student_id"
+                                id="refund-student"
+                                required
+                                class="{{ $errors->has('student_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Search/select student</option>
+                                @foreach ($students as $student)
+                                    <option value="{{ $student->id }}">
+                                        {{ $student->applicant?->surname ?? '' }}, {{ $student->applicant?->first_name ?? '' }} ({{ $student->registration_number }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('student_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="refund-payment">Payment</label>
+                            <select
+                                name="payment_id"
+                                id="refund-payment"
+                                required
+                                disabled
+                                class="{{ $errors->has('payment_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select student first</option>
+                            </select>
+                            @error('payment_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="refund-invoice">Invoice</label>
+                            <select
+                                name="invoice_id"
+                                id="refund-invoice"
+                                required
+                                disabled
+                                class="{{ $errors->has('invoice_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select student first</option>
+                            </select>
+                            @error('invoice_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="amount">Refund Amount (KES) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                id="amount"
+                                name="amount"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                                class="{{ $errors->has('amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="reason">Reason <span class="uf-req">*</span></label>
+                        <textarea
+                            id="reason"
+                            name="reason"
+                            rows="4"
+                            placeholder="Explain the reason for this refund..."
+                            class="{{ $errors->has('reason') ? 'is-invalid' : '' }}"
+                        >{{ old('reason') }}</textarea>
+                        @error('reason')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <p class="uf-hint"><strong>Maker-checker rule:</strong> The person who creates this refund request must NOT approve their own refund.</p>
+                </div>
+            </div>
 
-        <div class="tich-inset-panel" style="grid-column: 1 / -1;">
-            <p class="tich-caption">
-                <strong>Maker-checker rule:</strong> The person who creates this refund request must NOT approve their own refund.
-            </p>
-        </div>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Create refund request</button>
+                        <a href="{{ route('finance.student-finance.refunds.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
 
-        <div class="tich-form-group" style="grid-column: 1 / -1;">
-            <button type="submit" class="tich-btn tich-btn-primary">Create refund request</button>
-            <a href="{{ route('finance.student-finance.refunds.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 
     @push('scripts')
         <script>

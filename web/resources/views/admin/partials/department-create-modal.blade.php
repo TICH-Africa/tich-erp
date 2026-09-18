@@ -23,7 +23,7 @@
             <button type="button" class="tich-modal__close" data-close-modal="department-create-modal" aria-label="Close">&times;</button>
         </header>
 
-        <form method="POST" action="{{ route('admin.departments.store') }}" class="tich-modal__body">
+        <form method="POST" action="{{ route('admin.departments.store') }}" class="tich-modal__body" data-uf="skip">
             @csrf
 
             @if ($errors->any() && old('_method') !== 'PUT')

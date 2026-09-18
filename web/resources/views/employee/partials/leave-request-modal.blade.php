@@ -15,7 +15,7 @@
             <button type="button" class="tich-modal__close" data-close-modal="{{ $modalId }}" aria-label="Close">&times;</button>
         </header>
 
-        <form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="tich-modal__body">
+        <form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="tich-modal__body" data-uf="skip">
             @csrf
             @if ($editing)
                 @method('PUT')
@@ -38,67 +38,65 @@
                 </div>
             @endif
 
-            <div class="tich-form-stack">
-                <div>
-                    <label for="leave_type_id" class="tich-label">Leave type</label>
-                    <select id="leave_type_id" name="leave_type_id" class="tich-input" required>
-                        <option value="">Select leave type</option>
-                        @foreach ($leaveTypes as $type)
-                            <option
-                                value="{{ $type->id }}"
-                                @selected(old('leave_type_id', $editRequest?->leave_type_id) == $type->id)
-                                data-calculation-type="{{ $type->calculation_type }}"
-                                data-accrual-type="{{ $type->accrual_type }}"
-                                data-accrual-rate="{{ $type->accrual_rate }}"
-                                data-notice-period="{{ $type->notice_period_days }}"
-                                data-max-consecutive="{{ $type->max_consecutive_days }}"
-                                data-requires-certificate="{{ $type->requires_certificate }}"
-                            >
-                                {{ $type->leave_name }}
-                                @if ($type->accrual_type === 'monthly')
-                                    (accrues monthly)
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="tich-caption tich-mt-1" id="leave-type-hint"></p>
-                </div>
+            <div class="uf-field">
+                <label for="leave_type_id">Leave type</label>
+                <select id="leave_type_id" name="leave_type_id" required>
+                    <option value="">Select leave type</option>
+                    @foreach ($leaveTypes as $type)
+                        <option
+                            value="{{ $type->id }}"
+                            @selected(old('leave_type_id', $editRequest?->leave_type_id) == $type->id)
+                            data-calculation-type="{{ $type->calculation_type }}"
+                            data-accrual-type="{{ $type->accrual_type }}"
+                            data-accrual-rate="{{ $type->accrual_rate }}"
+                            data-notice-period="{{ $type->notice_period_days }}"
+                            data-max-consecutive="{{ $type->max_consecutive_days }}"
+                            data-requires-certificate="{{ $type->requires_certificate }}"
+                        >
+                            {{ $type->leave_name }}
+                            @if ($type->accrual_type === 'monthly')
+                                (accrues monthly)
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                <span class="uf-hint" id="leave-type-hint"></span>
+            </div>
 
-                <div class="tich-grid tich-grid--2">
-                    <div>
-                        <label for="start_date" class="tich-label">Start date</label>
-                        <input type="date" id="start_date" name="start_date" class="tich-input" required
-                            value="{{ old('start_date', $editRequest?->start_date?->format('Y-m-d')) }}">
-                    </div>
-                    <div>
-                        <label for="end_date" class="tich-label">End date</label>
-                        <input type="date" id="end_date" name="end_date" class="tich-input" required
-                            value="{{ old('end_date', $editRequest?->end_date?->format('Y-m-d')) }}">
-                        <p class="tich-caption tich-mt-1" id="days-preview"></p>
-                    </div>
+            <div class="uf-form-grid-2">
+                <div class="uf-field">
+                    <label for="start_date">Start date</label>
+                    <input type="date" id="start_date" name="start_date" required
+                        value="{{ old('start_date', $editRequest?->start_date?->format('Y-m-d')) }}">
                 </div>
+                <div class="uf-field">
+                    <label for="end_date">End date</label>
+                    <input type="date" id="end_date" name="end_date" required
+                        value="{{ old('end_date', $editRequest?->end_date?->format('Y-m-d')) }}">
+                    <span class="uf-hint" id="days-preview"></span>
+                </div>
+            </div>
 
-                <div id="certificate-field">
-                    <label for="medical_certificate" class="tich-label">Medical certificate (if required)</label>
-                    <input type="file" id="medical_certificate" name="medical_certificate" class="tich-input" accept=".pdf,.jpg,.jpeg,.png">
-                </div>
+            <div class="uf-field" id="certificate-field">
+                <label for="medical_certificate">Medical certificate (if required)</label>
+                <input type="file" id="medical_certificate" name="medical_certificate" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
 
-                <div>
-                    <label for="reason" class="tich-label">Reason</label>
-                    <textarea id="reason" name="reason" class="tich-input" rows="4" required placeholder="Brief reason for your leave request">{{ old('reason', $editRequest?->reason) }}</textarea>
-                </div>
+            <div class="uf-field">
+                <label for="reason">Reason</label>
+                <textarea id="reason" name="reason" rows="4" required placeholder="Brief reason for your leave request">{{ old('reason', $editRequest?->reason) }}</textarea>
+            </div>
 
-                <div>
-                    <label for="handover_notes" class="tich-label">Handover notes</label>
-                    <textarea id="handover_notes" name="handover_notes" class="tich-input" rows="3" placeholder="Who covers your duties, key handover points…">{{ old('handover_notes', $editRequest?->handover_notes) }}</textarea>
-                </div>
+            <div class="uf-field">
+                <label for="handover_notes">Handover notes</label>
+                <textarea id="handover_notes" name="handover_notes" rows="3" placeholder="Who covers your duties, key handover points…">{{ old('handover_notes', $editRequest?->handover_notes) }}</textarea>
+            </div>
 
-                <div>
-                    <label class="tich-checkbox">
-                        <input type="checkbox" name="is_emergency" value="1" @checked(old('is_emergency', $editRequest?->is_emergency))>
-                        Emergency leave
-                    </label>
-                </div>
+            <div class="uf-field">
+                <label class="tich-checkbox">
+                    <input type="checkbox" name="is_emergency" value="1" @checked(old('is_emergency', $editRequest?->is_emergency))>
+                    Emergency leave
+                </label>
             </div>
 
             <script>
@@ -161,7 +159,6 @@
 
                         let days = 0;
                         if (calc === 'working_days') {
-                            const holidays = [];
                             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                                 const day = d.getDay();
                                 if (day !== 0 && day !== 6) {

@@ -7,8 +7,8 @@ use App\Models\Asset;
 use App\Models\AssetAudit;
 use App\Models\Staff;
 use App\Services\Procurement\AssetAuditService;
-use Illuminate\Http\RedirectResponse;
 use App\Support\Pagination;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +32,12 @@ class AssetAuditController extends Controller
     public function create(): View
     {
         return view('procurement.asset-audits.create', [
-            'assets' => Asset::query()->active()->select(['id', 'asset_number', 'asset_name', 'location_name'])->orderBy('asset_name')->get(),
+            // Assets default to status "new"; do not limit to "active" only.
+            'assets' => Asset::query()
+                ->select(['id', 'asset_number', 'asset_name', 'location_name', 'asset_status'])
+                ->where('asset_status', '!=', 'disposed')
+                ->orderBy('asset_name')
+                ->get(),
             'staff' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname']),
         ]);
     }
@@ -44,6 +49,7 @@ class AssetAuditController extends Controller
             'auditor_id' => ['required', 'exists:staff,id'],
             'verification_status' => ['required', 'in:verified,missing,damaged,transferred'],
             'condition' => ['required', 'in:excellent,good,fair,poor,damaged'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $record = $this->service->submitVerification($validated);
@@ -53,14 +59,14 @@ class AssetAuditController extends Controller
             ->with('status', 'Verification submitted.');
     }
 
-    public function show(AssetAudit $record): View
+    public function show(AssetAudit $assetAudit): View
     {
-        $record->load(['asset', 'auditor', 'reviewer']);
+        $assetAudit->load(['asset', 'auditor', 'reviewer']);
 
-        return view('procurement.asset-audits.show', compact('record'));
+        return view('procurement.asset-audits.show', ['record' => $assetAudit]);
     }
 
-    public function review(AssetAudit $record, AssetAuditService $service, Request $request): RedirectResponse
+    public function review(AssetAudit $assetAudit, Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'verification_status' => ['required', 'in:verified,missing,damaged,transferred'],
@@ -68,7 +74,7 @@ class AssetAuditController extends Controller
             'review_notes' => ['nullable', 'string'],
         ]);
 
-        $service->reviewVerification($record, $validated);
+        $this->service->reviewVerification($assetAudit, $validated);
 
         return back()->with('status', 'Verification reviewed.');
     }

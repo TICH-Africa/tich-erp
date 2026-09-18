@@ -13,11 +13,11 @@
         @endif
     </div>
 
-    <form method="POST" action="{{ route('password.update') }}">
+    <form method="POST" action="{{ route('password.update') }}" data-uf="skip">
         @csrf
 
-        <div class="tich-form-group">
-            <label for="email" class="tich-label">Email address</label>
+        <div class="uf-field">
+            <label for="email">Email address</label>
             <input
                 type="email"
                 id="email"
@@ -26,15 +26,15 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="tich-input @error('email') tich-input--error @enderror"
+                class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
             >
             @error('email')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="otp" class="tich-label">Reset code</label>
+        <div class="uf-field">
+            <label for="otp">Reset code</label>
             <input
                 type="text"
                 id="otp"
@@ -45,39 +45,38 @@
                 pattern="[0-9]{6}"
                 maxlength="6"
                 autocomplete="one-time-code"
-                class="tich-input @error('otp') tich-input--error @enderror"
+                class="tich-input--code {{ $errors->has('otp') ? 'is-invalid' : '' }}"
                 placeholder="6-digit code"
             >
             @error('otp')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="password" class="tich-label">New password</label>
+        <div class="uf-field">
+            <label for="password">New password</label>
             <input
                 type="password"
                 id="password"
                 name="password"
                 required
                 autocomplete="new-password"
-                class="tich-input @error('password') tich-input--error @enderror"
+                class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
                 placeholder="At least 8 characters"
             >
             @error('password')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="password_confirmation" class="tich-label">Confirm new password</label>
+        <div class="uf-field">
+            <label for="password_confirmation">Confirm new password</label>
             <input
                 type="password"
                 id="password_confirmation"
                 name="password_confirmation"
                 required
                 autocomplete="new-password"
-                class="tich-input"
                 placeholder="Repeat your new password"
             >
         </div>

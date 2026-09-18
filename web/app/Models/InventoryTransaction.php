@@ -9,6 +9,8 @@ class InventoryTransaction extends Model
 {
     protected $table = 'inventory_transactions';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'inventory_item_id',
         'transaction_type',
@@ -31,7 +33,6 @@ class InventoryTransaction extends Model
         'total_cost' => 'decimal:2',
         'transaction_date' => 'date',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     public function item(): BelongsTo

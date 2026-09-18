@@ -14,23 +14,22 @@
         @endif
     </div>
 
-    <form method="POST" action="{{ route('register.invite.store', $invitation->token) }}" data-client-context>
+    <form method="POST" action="{{ route('register.invite.store', $invitation->token) }}" data-client-context data-uf="skip">
         @csrf
         @include('partials.client-context-fields')
 
-        <div class="tich-form-group">
-            <label for="email" class="tich-label">Personal email</label>
+        <div class="uf-field">
+            <label for="email">Personal email</label>
             <input
                 type="email"
                 id="email"
                 value="{{ $invitation->email }}"
                 readonly
-                class="tich-input"
             >
         </div>
 
-        <div class="tich-form-group">
-            <label for="password" class="tich-label">Password</label>
+        <div class="uf-field">
+            <label for="password">Password</label>
             <x-password-input
                 id="password"
                 name="password"
@@ -39,12 +38,12 @@
                 :has-error="$errors->has('password')"
             />
             @error('password')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="password_confirmation" class="tich-label">Confirm password</label>
+        <div class="uf-field">
+            <label for="password_confirmation">Confirm password</label>
             <x-password-input
                 id="password_confirmation"
                 name="password_confirmation"
@@ -53,7 +52,7 @@
             />
         </div>
 
-        <div class="tich-form-group" style="display: flex; align-items: flex-start; gap: 0.5rem;">
+        <div class="uf-field" style="flex-direction: row; align-items: flex-start; gap: 0.5rem;">
             <input
                 type="checkbox"
                 id="terms"
@@ -64,7 +63,7 @@
                 class="tich-checkbox"
                 style="margin-top: 0.2rem;"
             >
-            <label for="terms" class="tich-text">
+            <label for="terms" class="tich-text" style="font-weight: 400;">
                 I agree to the
                 <a href="{{ route('privacy') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 and
