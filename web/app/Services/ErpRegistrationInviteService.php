@@ -67,18 +67,15 @@ class ErpRegistrationInviteService
         $registerUrl = $invitation->registerUrl();
 
         if (! $delivery['sent']) {
-            app(AuditService::class)->log(
+            $this->auditInvite(
                 'auth.registration_invite.mail_failed',
-                'erp_registration_invitations',
                 $invitation->id,
-                null,
                 [
                     'email' => $email,
                     'staff_id' => $staff?->id,
                     'mail_module' => $mailModule,
                     'error' => $delivery['error'],
                 ],
-                null,
                 'failure',
                 $invitedBy->id,
             );
@@ -93,18 +90,15 @@ class ErpRegistrationInviteService
             ];
         }
 
-        app(AuditService::class)->log(
+        $this->auditInvite(
             'auth.registration_invite.sent',
-            'erp_registration_invitations',
             $invitation->id,
-            null,
             [
                 'email' => $email,
                 'staff_id' => $staff?->id,
                 'mail_module' => $mailModule,
                 'resent' => $hadPriorInvite,
             ],
-            null,
             'success',
             $invitedBy->id,
         );
@@ -125,6 +119,31 @@ class ErpRegistrationInviteService
             'invitation' => $invitation,
             'register_url' => $registerUrl,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function auditInvite(string $action, int $invitationId, array $payload, string $status, int $userId): void
+    {
+        try {
+            app(AuditService::class)->log(
+                $action,
+                'erp_registration_invitations',
+                $invitationId,
+                null,
+                $payload,
+                null,
+                $status,
+                $userId,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Registration invite audit failed', [
+                'action' => $action,
+                'invitation_id' => $invitationId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -8,6 +8,15 @@ $smtpStream = [
 ];
 
 $moduleSmtpMailer = static function (?string $username, ?string $password) use ($smtpStream): array {
+    $ehloDomain = env('MAIL_EHLO_DOMAIN');
+    if (! is_string($ehloDomain) || $ehloDomain === '') {
+        // Never EHLO as a private APP_URL host (e.g. 192.168.x.x) — that harms deliverability.
+        $mailHost = (string) env('MAIL_HOST', 'localhost');
+        $ehloDomain = str_starts_with($mailHost, 'mail.')
+            ? substr($mailHost, 5)
+            : (preg_match('/(^|\.)tich\.africa$/i', $mailHost) === 1 ? 'tich.africa' : 'localhost');
+    }
+
     return [
         'transport' => 'smtp',
         'scheme' => env('MAIL_SCHEME'),
@@ -17,8 +26,8 @@ $moduleSmtpMailer = static function (?string $username, ?string $password) use (
         'encryption' => env('MAIL_ENCRYPTION'),
         'username' => $username,
         'password' => $password,
-        'timeout' => (int) env('MAIL_TIMEOUT', 8),
-        'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        'timeout' => (int) env('MAIL_TIMEOUT', 30),
+        'local_domain' => $ehloDomain,
         'stream' => $smtpStream,
     ];
 };
