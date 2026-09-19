@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">Administration command center</h1>
             <p class="tich-mod-dash__lede">Planning, admissions ops, compliance, budget routing, and fund distribution — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('administration.approvals.index') }}" class="tich-btn tich-btn-primary">Approvals</a>
-            <a href="{{ route('administration.planning.index') }}" class="tich-btn tich-btn-secondary">Planning</a>
-        </div>
     </header>
 
     @include('qa.partials.assigned-tasks-panel')

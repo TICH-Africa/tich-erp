@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">QA command center</h1>
             <p class="tich-mod-dash__lede">Quality plans, assessment sheets, and compliance oversight — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('qa.assessments.create') }}" class="tich-btn tich-btn-primary">Build sheet</a>
-            <a href="{{ route('qa.corrective-actions.index') }}" class="tich-btn tich-btn-secondary">Corrective actions</a>
-        </div>
     </header>
 
     <section class="tich-mod-dash__metrics" aria-label="Key QA metrics">

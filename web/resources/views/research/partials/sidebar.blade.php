@@ -4,6 +4,12 @@
     <nav class="tich-admin-sidebar__nav" aria-label="Research module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('research.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('research.dashboard')])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('research.activities.index'),
+            'label' => 'Research activities',
+            'icon' => 'layers',
+            'active' => request()->routeIs('research.activities.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('research.qa.tasks.index'),
             'label' => 'QA assessment tasks',
             'icon' => 'layers',
@@ -11,7 +17,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'research'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'research'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'research'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'research'])
     </nav>
     <div class="tich-admin-sidebar__footer">

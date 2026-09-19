@@ -19,7 +19,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'ict'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'ict'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'ict'])
 
         <p class="tich-admin-sidebar__title tich-mt-4">Website content</p>

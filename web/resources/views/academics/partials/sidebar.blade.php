@@ -206,7 +206,7 @@
                     ])
 
                     @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
-                    @include('partials.navigation.department-me-policy-sign-link', ['module' => 'academics'])
+                    @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'academics'])
                     @include('partials.navigation.department-me-reports-link', ['module' => 'academics'])
                 @endunless
             @endcan

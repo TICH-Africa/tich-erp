@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">Finance command center</h1>
             <p class="tich-mod-dash__lede">Student fees, accounts receivable, treasury, payroll, and compliance reporting — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('finance.invoices.create') }}" class="tich-btn tich-btn-primary">Generate invoice</a>
-            <a href="{{ route('finance.reports.index') }}" class="tich-btn tich-btn-secondary">Financial reports</a>
-        </div>
     </header>
 
     @include('qa.partials.assigned-tasks-panel')

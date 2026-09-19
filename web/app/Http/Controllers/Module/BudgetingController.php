@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Module;
 use App\Http\Controllers\Controller;
 use App\Models\Me\MeTechnicalPlan;
 use App\Services\DepartmentBudgetingService;
-use App\Services\Me\MePolicyService;
+use App\Services\Finance\FinancePolicyService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ class BudgetingController extends Controller
 {
     public function __construct(
         protected DepartmentBudgetingService $budgeting,
-        protected MePolicyService $mePolicies,
+        protected FinancePolicyService $financePolicies,
         protected MeTechnicalPlanService $mePlans,
     ) {}
 
@@ -45,9 +45,9 @@ class BudgetingController extends Controller
         $department = $this->budgeting->departmentForModule($module);
         $routes = $this->budgeting->routeNames($module);
 
-        $policy = $this->mePolicies->currentPublishedPolicy();
+        $policy = $this->financePolicies->currentPublishedPolicy();
         $policySigned = $policy
-            ? $this->mePolicies->userMaySubmitBudget($request->user(), $department)
+            ? $this->financePolicies->userMaySubmitBudget($request->user(), $department)
             : true;
 
         return view('module-budgeting.create', [
@@ -62,11 +62,11 @@ class BudgetingController extends Controller
             'submitLabel' => 'Submit budget & technical plan',
             'pageTitle' => 'New budget & departmental plan',
             'indexRoute' => $routes['index'],
-            'mePolicy' => $policy,
-            'mePolicySigned' => $policySigned,
-            'mePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.me-policy.sign')
-                ? $module.'.me-policy.sign'
-                : 'monitoring_evaluation.policy.sign',
+            'financePolicy' => $policy,
+            'financePolicySigned' => $policySigned,
+            'financePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.finance-policy.sign')
+                ? $module.'.finance-policy.sign'
+                : 'finance.financial-policies.sign',
         ]);
     }
 
@@ -104,9 +104,9 @@ class BudgetingController extends Controller
                 : $this->defaultPlanOutputs();
         }
 
-        $policy = $this->mePolicies->currentPublishedPolicy();
+        $policy = $this->financePolicies->currentPublishedPolicy();
         $policySigned = $policy
-            ? $this->mePolicies->userMaySubmitBudget($request->user(), $department)
+            ? $this->financePolicies->userMaySubmitBudget($request->user(), $department)
             : true;
 
         return view('module-budgeting.create', [
@@ -121,11 +121,11 @@ class BudgetingController extends Controller
             'submitLabel' => 'Resubmit budget & technical plan',
             'pageTitle' => 'Revise budget & departmental plan',
             'indexRoute' => $routes['index'],
-            'mePolicy' => $policy,
-            'mePolicySigned' => $policySigned,
-            'mePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.me-policy.sign')
-                ? $module.'.me-policy.sign'
-                : 'monitoring_evaluation.policy.sign',
+            'financePolicy' => $policy,
+            'financePolicySigned' => $policySigned,
+            'financePolicySignRoute' => \Illuminate\Support\Facades\Route::has($module.'.finance-policy.sign')
+                ? $module.'.finance-policy.sign'
+                : 'finance.financial-policies.sign',
         ]);
     }
 
@@ -144,9 +144,9 @@ class BudgetingController extends Controller
         $module = $this->moduleKey($request);
         $department = $this->budgeting->departmentForModule($module);
 
-        if (! $this->mePolicies->userMaySubmitBudget($request->user(), $department)) {
+        if (! $this->financePolicies->userMaySubmitBudget($request->user(), $department)) {
             return back()->withInput()->withErrors([
-                'budget' => $this->mePolicies->gateMessage($department),
+                'budget' => $this->financePolicies->gateMessage($department),
             ]);
         }
 

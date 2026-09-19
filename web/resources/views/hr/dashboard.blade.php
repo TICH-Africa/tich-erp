@@ -14,10 +14,6 @@
             <h1 class="tich-mod-dash__title">HR command center</h1>
             <p class="tich-mod-dash__lede">Staff lifecycle, onboarding, contracts, leave, and recruitment — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('hr.staff.create') }}" class="tich-btn tich-btn-primary">Register staff</a>
-            <a href="{{ route('hr.recruitment.index') }}" class="tich-btn tich-btn-secondary">Recruitment inbox</a>
-        </div>
     </header>
 
     <section class="tich-mod-dash__metrics" aria-label="Key HR metrics">

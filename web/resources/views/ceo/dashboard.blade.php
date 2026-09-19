@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">CEO command center</h1>
             <p class="tich-mod-dash__lede">Institution-wide authorizations across finance, academics, quality, and M&amp;E.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('ceo.budgets.index') }}" class="tich-btn tich-btn-primary">Budget queue</a>
-            <a href="{{ route('ceo.approvals.index') }}" class="tich-btn tich-btn-secondary">Approvals</a>
-        </div>
     </header>
 
     <section class="tich-mod-dash__metrics" aria-label="Executive queues">

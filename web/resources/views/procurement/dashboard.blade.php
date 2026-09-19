@@ -17,10 +17,6 @@
             <h1 class="tich-mod-dash__title">Procurement command center</h1>
             <p class="tich-mod-dash__lede">Suppliers, purchase orders, tenders, inventory, and fixed assets — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('procurement.assets.create') }}" class="tich-btn tich-btn-primary">Register asset</a>
-            <a href="{{ route('procurement.grns.create') }}" class="tich-btn tich-btn-secondary">Create GRN</a>
-        </div>
     </header>
 
     @include('qa.partials.assigned-tasks-panel')

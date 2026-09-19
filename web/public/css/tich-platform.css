@@ -56,7 +56,7 @@
     --tich-notice-info-border: #e2e8f0;
     --tich-focus-ring: rgba(22, 105, 166, 0.15);
 
-    /* Status tones (badges) — green / blue / grey */
+    /* Status tones (badges) ? green / blue / grey */
     --tich-status-success-bg: #d8f3dc;
     --tich-status-success-text: #1b4332;
     --tich-status-success-border: #d8f3dc;
@@ -569,7 +569,7 @@ select.tich-select optgroup {
     color: var(--tich-neutral-muted);
 }
 
-/* Custom dropdown (enhanced selects) — unified form look */
+/* Custom dropdown (enhanced selects) ? unified form look */
 .tich-dropdown {
     position: relative;
     display: block;
@@ -5135,7 +5135,7 @@ a.tich-notification-badge:hover {
     background: var(--tich-table-row-bg);
 }
 
-/* Table wrappers — no outer card; table fills the space */
+/* Table wrappers ? no outer card; table fills the space */
 .tich-table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -10285,9 +10285,29 @@ a.tich-tabs__btn {
     animation: tich-mod-rise 0.7s ease-out 0.08s both;
 }
 
+/* Table panels: no outer bordered card (match tich-table-panel) */
+.tich-mod-dash__panel:has(> .tich-table-wrap),
+.tich-mod-dash__panel:has(.tich-table-wrap) {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.tich-mod-dash__panel:has(.tich-table-wrap) .tich-mod-dash__panel-head {
+    margin-bottom: 0.75rem;
+    padding: 0;
+}
+
 .tich-mod-dash__panel--attention {
     border-color: var(--tich-status-warning-border);
     box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.tich-mod-dash__panel--attention:has(.tich-table-wrap) {
+    border: none;
+    box-shadow: none;
 }
 
 .tich-mod-dash__panel-head {
@@ -10483,8 +10503,52 @@ a.tich-tabs__btn {
 }
 
 [data-theme="dark"] .tich-mod-dash__hero {
-    background: var(--tich-blue-dark);
-    border-color: #0b3a5c;
+    background: #0a2540;
+    border-color: #061a2e;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tich-mod-dash__eyebrow {
+    color: #a8d08d;
+}
+
+[data-theme="dark"] .tich-mod-dash__title {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tich-mod-dash__lede {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+[data-theme="dark"] .tich-mod-dash__metric {
+    background: #0a2540;
+    border-color: #061a2e;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tich-mod-dash__metric--ok {
+    background: #1b4332;
+    border-color: #123026;
+}
+
+[data-theme="dark"] .tich-mod-dash__metric--info {
+    background: #0a2540;
+    border-color: #061a2e;
+}
+
+[data-theme="dark"] .tich-mod-dash__metric--alert {
+    background: #7c2d12;
+    border-color: #5c220e;
+}
+
+[data-theme="dark"] .tich-mod-dash__metric-label {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+[data-theme="dark"] .tich-mod-dash__metric-value,
+[data-theme="dark"] .tich-mod-dash__metric-hint,
+[data-theme="dark"] .tich-mod-dash__metric-link {
+    color: #ffffff;
 }
 
 [data-theme="dark"] .tich-mod-dash__panel,
@@ -10493,6 +10557,11 @@ a.tich-tabs__btn {
 [data-theme="dark"] .tich-mod-dash__invite > .tich-card {
     background: #0f172a;
     border-color: #334155;
+}
+
+[data-theme="dark"] .tich-mod-dash__panel:has(.tich-table-wrap) {
+    background: transparent;
+    border-color: transparent;
 }
 
 [data-theme="dark"] .tich-mod-dash__nav-card {
@@ -10895,7 +10964,7 @@ form.tich-form-grid.tich-card > .tich-form-row:last-child {
 }
 
 
-/* ??? Date / time fields � visible calendar icon (light + dark) ??? */
+/* ??? Date / time fields ? visible calendar icon (light + dark) ??? */
 
 input[type="date"],
 input[type="datetime-local"],

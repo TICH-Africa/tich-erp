@@ -79,7 +79,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'procurement'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'procurement'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'procurement'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'procurement'])
     </nav>
     <div class="tich-admin-sidebar__footer">

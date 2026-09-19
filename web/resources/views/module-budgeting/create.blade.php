@@ -12,15 +12,15 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if (!($mePolicySigned ?? true) && ($mePolicy ?? null))
+    @if (!($financePolicySigned ?? true) && ($financePolicy ?? null))
         <div class="tich-alert tich-alert--error tich-mt-4">
-            <strong>M&amp;E policy sign-off required.</strong>
+            <strong>Financial policy sign-off required.</strong>
             HODs must digitally sign
-            <em>{{ $mePolicy->title }}</em>
-            ({{ $mePolicy->fiscal_year }}) before submitting annual budgets and departmental plans.
-            <a href="{{ route($mePolicySignRoute ?? 'monitoring_evaluation.policy.sign') }}" class="tich-link">Sign the policy now</a>
+            <em>{{ $financePolicy->title }}</em>
+            ({{ $financePolicy->fiscal_year }}) before submitting annual budgets and departmental plans.
+            <a href="{{ route($financePolicySignRoute ?? 'finance.financial-policies.sign') }}" class="tich-link">Sign the policy now</a>
         </div>
-    @elseif ($mePolicy ?? null)
+    @elseif ($financePolicy ?? null)
         <div class="tich-alert tich-alert--info tich-mt-4">
             Dual submission: budget → Admin then Finance; technical plan → M&amp;E. Baseline locks after M&amp;E and budget approvals.
         </div>
@@ -238,7 +238,7 @@
                 <div class="uf-section-body">
                     <div class="uf-form-actions">
                         <a href="{{ route($indexRoute) }}" class="uf-btn uf-btn-secondary">Cancel</a>
-                        <button type="submit" class="uf-btn uf-btn-primary" @if(!($mePolicySigned ?? true)) disabled @endif>{{ $submitLabel }}</button>
+                        <button type="submit" class="uf-btn uf-btn-primary" @if(!($financePolicySigned ?? true)) disabled @endif>{{ $submitLabel }}</button>
                     </div>
                 </div>
             </div>

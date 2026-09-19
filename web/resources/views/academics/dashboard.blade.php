@@ -14,10 +14,6 @@
             <h1 class="tich-mod-dash__title">{{ $department->dept_name }}</h1>
             <p class="tich-mod-dash__lede">Learning departments, programmes, unit catalog, and curriculum approvals — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('departments.academics.programs.index', $hub) }}" class="tich-btn tich-btn-primary">Programmes</a>
-            <a href="{{ route('departments.academics.units.index', $hub) }}" class="tich-btn tich-btn-secondary">Unit catalog</a>
-        </div>
     </header>
 
     <section class="tich-mod-dash__metrics" aria-label="Key academics metrics">

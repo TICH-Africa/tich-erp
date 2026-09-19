@@ -39,6 +39,9 @@ Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/research', [HomeController::class, 'research'])->name('research');
+Route::get('/research/activity/{slug}', [\App\Http\Controllers\Public\ResearchPortalController::class, 'show'])->name('research.show');
+Route::get('/research/documents/{document}/view', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentViewer'])->name('research.documents.view');
+Route::get('/research/documents/{document}/stream', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentStream'])->name('research.documents.stream');
 Route::get('/support', [HomeController::class, 'support'])->name('support');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/events', [HomeController::class, 'events'])->name('events');
@@ -145,6 +148,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         ->name('departments.show');
 
     $registerModuleBudgeting = static function (string $module): void {
+        $financePolicyController = \App\Http\Controllers\Finance\FinancialPolicyController::class;
+
         if ($module === 'finance') {
             Route::get('/budgeting', [ModuleBudgetingController::class, 'index'])->name('finance.budget-requests.index');
             Route::get('/budgeting/create', [ModuleBudgetingController::class, 'create'])->name('finance.budget-requests.create');
@@ -154,6 +159,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
             Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('finance.me-policy.sign');
             Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('finance.me-policy.sign.store');
+
+            Route::get('/finance-policy/sign', [$financePolicyController, 'signForm'])->name('finance.finance-policy.sign');
+            Route::post('/finance-policy/sign', [$financePolicyController, 'sign'])->name('finance.finance-policy.sign.store');
 
             return;
         }
@@ -166,6 +174,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name("{$module}.me-policy.sign");
         Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name("{$module}.me-policy.sign.store");
+
+        Route::get('/finance-policy/sign', [$financePolicyController, 'signForm'])->name("{$module}.finance-policy.sign");
+        Route::post('/finance-policy/sign', [$financePolicyController, 'sign'])->name("{$module}.finance-policy.sign.store");
     };
 
     $registerModuleQaTasks = static function (string $module, ?string $namePrefix = null): void {
@@ -321,6 +332,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('finance');
         $registerModuleQaTasks('finance');
         $registerModuleMeReports('finance');
+
+        Route::get('/financial-policies', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'index'])->name('finance.financial-policies.index');
+        Route::get('/financial-policies/create', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'create'])->name('finance.financial-policies.create');
+        Route::post('/financial-policies', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'store'])->name('finance.financial-policies.store');
+        Route::get('/financial-policies/sign', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'signForm'])->name('finance.financial-policies.sign');
+        Route::post('/financial-policies/sign', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'sign'])->name('finance.financial-policies.sign.store');
+        Route::get('/financial-policies/{financePolicy}', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'show'])->name('finance.financial-policies.show');
+        Route::post('/financial-policies/{financePolicy}/publish', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'publish'])->name('finance.financial-policies.publish');
+        Route::get('/financial-policies/{financePolicy}/view', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'view'])->name('finance.financial-policies.view');
+        Route::get('/financial-policies/{financePolicy}/download', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'download'])->name('finance.financial-policies.download');
+
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
 
@@ -695,6 +717,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/dashboard', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+
+        Route::get('/activities', [\App\Http\Controllers\Research\ResearchActivityController::class, 'index'])->name('research.activities.index');
+        Route::get('/activities/create', [\App\Http\Controllers\Research\ResearchActivityController::class, 'create'])->name('research.activities.create');
+        Route::post('/activities', [\App\Http\Controllers\Research\ResearchActivityController::class, 'store'])->name('research.activities.store');
+        Route::post('/activities/upload-image', [\App\Http\Controllers\Research\ResearchActivityController::class, 'uploadImage'])->name('research.activities.upload-image');
+        Route::get('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'show'])->name('research.activities.show');
+        Route::get('/activities/{activity}/edit', [\App\Http\Controllers\Research\ResearchActivityController::class, 'edit'])->name('research.activities.edit');
+        Route::put('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'update'])->name('research.activities.update');
+        Route::delete('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroy'])->name('research.activities.destroy');
+        Route::delete('/activities/{activity}/documents/{document}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroyDocument'])->name('research.activities.documents.destroy');
+
         $registerModuleBudgeting('research');
         $registerModuleQaTasks('research');
         $registerModuleMeReports('research');

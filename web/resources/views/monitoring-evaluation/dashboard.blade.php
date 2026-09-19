@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">M&amp;E command center</h1>
             <p class="tich-mod-dash__lede">Policy alignment, baseline plans, PIME cycle, and executive reporting — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('monitoring_evaluation.pime.index') }}" class="tich-btn tich-btn-primary">PIME workspace</a>
-            <a href="{{ route('monitoring_evaluation.plans.index') }}" class="tich-btn tich-btn-secondary">Technical plans</a>
-        </div>
     </header>
 
     @include('qa.partials.assigned-tasks-panel')

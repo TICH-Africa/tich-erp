@@ -10,7 +10,7 @@
     ])
 
     @if ($recentInvitations->isNotEmpty())
-        <article class="tich-card tich-mt-8">
+        <div class="tich-table-panel tich-mt-8">
             <h2 class="tich-h3">Recent invitations</h2>
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
@@ -51,7 +51,7 @@
                                     @if ($invite->used_at)
                                         <span class="tich-caption">-</span>
                                     @else
-                                        <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;" data-allow-resubmit>
+                                        <form method="POST" action="{{ route('ict.registration-invites.resend', $invite) }}" style="display:inline;" data-allow-resubmit data-uf="skip">
                                             @csrf
                                             <button type="submit" class="tich-btn tich-btn-secondary tich-btn-sm">
                                                 {{ $invite->expires_at->isPast() ? 'Re-invite' : 'Resend' }}
@@ -64,6 +64,6 @@
                     </tbody>
                 </table>
             </div>
-        </article>
+        </div>
     @endif
 @endsection

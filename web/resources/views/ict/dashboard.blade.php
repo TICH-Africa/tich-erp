@@ -10,10 +10,6 @@
             <h1 class="tich-mod-dash__title">ICT command center</h1>
             <p class="tich-mod-dash__lede">ERP access, infrastructure, website content, and platform health — live overview.</p>
         </div>
-        <div class="tich-mod-dash__hero-actions">
-            <a href="{{ route('ict.platform-performance.index') }}" class="tich-btn tich-btn-primary">Platform performance</a>
-            <a href="{{ route('ict.registration-invites.index') }}" class="tich-btn tich-btn-secondary">Registration invites</a>
-        </div>
     </header>
 
     @include('qa.partials.assigned-tasks-panel')
