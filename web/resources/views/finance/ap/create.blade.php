@@ -9,54 +9,137 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.ap.store') }}" data-uf="ready" id="ap-create-form">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.ap.store') }}" class="tich-card tich-form-grid" id="ap-create-form">
-        @csrf
-        <div class="tich-form-row">
-            <label class="tich-label" for="supplier-search">Supplier <span class="tich-text--danger">*</span></label>
-            <input type="text" id="supplier-search" class="tich-input" placeholder="Search supplier..." autocomplete="off" required>
-            <select name="supplier_id" id="supplier-select" class="tich-input" required>
-                <option value="">Select supplier</option>
-                @foreach ($suppliers as $supplier)
-                    <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
-                @endforeach
-            </select>
-            <p class="tich-caption tich-mt-2">Search for a supplier to auto-fill the dropdown.</p>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="invoice_number">Invoice number <span class="tich-text--danger">*</span></label>
-            <input type="text" id="invoice_number" name="invoice_number" class="tich-input" placeholder="e.g. INV-2026-001" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="invoice_amount">Invoice amount (KES) <span class="tich-text--danger">*</span></label>
-            <input type="number" step="0.01" min="0" id="invoice_amount" name="invoice_amount" class="tich-input" placeholder="0.00" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="tax_amount">Tax amount (KES)</label>
-            <input type="number" step="0.01" min="0" id="tax_amount" name="tax_amount" class="tich-input" placeholder="0.00" value="0">
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="due_date">Due date <span class="tich-text--danger">*</span></label>
-            <input type="date" id="due_date" name="due_date" class="tich-input" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="description">Description</label>
-            <textarea id="description" name="description" class="tich-input" rows="4" placeholder="Optional notes..."></textarea>
-        </div>
-        <div class="tich-form-row">
-            <button type="submit" class="tich-btn tich-btn-primary">Create invoice</button>
-            <a href="{{ route('finance.ap.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">AP · Accounts payable</div>
+                    <div class="uf-amount-bar__sum">Supplier invoice</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Supplier &amp; Invoice</div>
+                <div class="uf-section-body">
+                    <div class="uf-field">
+                        <label for="supplier-search">Supplier <span class="uf-req">*</span></label>
+                        <input
+                            type="text"
+                            id="supplier-search"
+                            placeholder="Search supplier..."
+                            autocomplete="off"
+                            required
+                            class="{{ $errors->has('supplier_id') ? 'is-invalid' : '' }}"
+                        >
+                        <select
+                            name="supplier_id"
+                            id="supplier-select"
+                            required
+                            class="{{ $errors->has('supplier_id') ? 'is-invalid' : '' }}"
+                        >
+                            <option value="">Select supplier</option>
+                            @foreach ($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
+                            @endforeach
+                        </select>
+                        @error('supplier_id')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                        <span class="uf-hint">Search for a supplier to auto-fill the dropdown.</span>
+                    </div>
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="invoice_number">Invoice number <span class="uf-req">*</span></label>
+                            <input
+                                type="text"
+                                id="invoice_number"
+                                name="invoice_number"
+                                placeholder="e.g. INV-2026-001"
+                                required
+                                class="{{ $errors->has('invoice_number') ? 'is-invalid' : '' }}"
+                            >
+                            @error('invoice_number')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="due_date">Due date <span class="uf-req">*</span></label>
+                            <input
+                                type="date"
+                                id="due_date"
+                                name="due_date"
+                                required
+                                class="{{ $errors->has('due_date') ? 'is-invalid' : '' }}"
+                            >
+                            @error('due_date')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="invoice_amount">Invoice amount (KES) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                id="invoice_amount"
+                                name="invoice_amount"
+                                placeholder="0.00"
+                                required
+                                class="{{ $errors->has('invoice_amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('invoice_amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="tax_amount">Tax amount (KES)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                id="tax_amount"
+                                name="tax_amount"
+                                placeholder="0.00"
+                                value="0"
+                                class="{{ $errors->has('tax_amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('tax_amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows="4"
+                            placeholder="Optional notes..."
+                            class="{{ $errors->has('description') ? 'is-invalid' : '' }}"
+                        ></textarea>
+                        @error('description')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Create invoice</button>
+                        <a href="{{ route('finance.ap.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

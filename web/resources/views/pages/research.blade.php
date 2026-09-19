@@ -83,24 +83,27 @@
                 @if ($projects->isNotEmpty())
                     <x-animated-section animation="bottom">
                         <div class="tich-mt-10">
-                            <h2 class="tich-h2">Research projects</h2>
+                            <h2 class="tich-h2">Research activities</h2>
                             <div class="tich-grid tich-grid--3 tich-mt-6">
                                 @foreach ($projects as $project)
                                     <x-animated-card animation="scale" :delay="$loop->iteration * 80">
                                         <article class="tich-card">
-                                            @if ($project->cover_image_path)
-                                                <img
-                                                    src="{{ str_starts_with($project->cover_image_path, 'http') ? $project->cover_image_path : asset(ltrim($project->cover_image_path, '/')) }}"
-                                                    alt="{{ $project->title }}"
-                                                    class="tich-blog-card__image"
-                                                    style="margin-bottom: 1rem;"
-                                                >
-                                            @endif
-                                            <p class="tich-caption">{{ ucfirst($project->status ?? 'ongoing') }}@if ($project->is_featured) · Featured @endif</p>
-                                            <h3 class="tich-h3 tich-mt-2">{{ $project->title }}</h3>
-                                            @if ($project->summary)
-                                                <p class="tich-text tich-mt-2">{{ \Illuminate\Support\Str::limit($project->summary, 180) }}</p>
-                                            @endif
+                                            <a href="{{ route('research.show', $project->slug) }}" class="tich-link" style="text-decoration:none;color:inherit;display:block;">
+                                                @if ($project->coverUrl())
+                                                    <img
+                                                        src="{{ $project->coverUrl() }}"
+                                                        alt="{{ $project->title }}"
+                                                        class="tich-blog-card__image"
+                                                        style="margin-bottom: 1rem;"
+                                                    >
+                                                @endif
+                                                <p class="tich-caption">{{ $project->statusLabel() }}@if ($project->is_featured) · Featured @endif</p>
+                                                <h3 class="tich-h3 tich-mt-2">{{ $project->title }}</h3>
+                                                @if ($project->summary)
+                                                    <p class="tich-text tich-mt-2">{{ \Illuminate\Support\Str::limit($project->summary, 180) }}</p>
+                                                @endif
+                                                <p class="tich-caption tich-mt-4">Read more →</p>
+                                            </a>
                                         </article>
                                     </x-animated-card>
                                 @endforeach
@@ -113,6 +116,9 @@
                             <p class="tich-caption">Featured {{ $featured->status ?? 'ongoing' }} project</p>
                             <h2 class="tich-h3 tich-mt-2">{{ $featured->title }}</h2>
                             <p class="tich-text tich-mt-4">{{ $featured->summary }}</p>
+                            @if (!empty($featured->url))
+                                <p class="tich-mt-4"><a href="{{ $featured->url }}" class="tich-link">View activity →</a></p>
+                            @endif
                         </div>
                     </x-animated-card>
                 @endif

@@ -33,17 +33,17 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('mfa.setup') }}">
+    <form method="POST" action="{{ route('mfa.setup') }}" data-uf="skip">
         @csrf
 
-        <div class="tich-form-group">
-            <label class="tich-label">Verification method</label>
+        <div class="uf-field">
+            <label>Verification method</label>
             <div class="tich-mt-2" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 400;">
                     <input type="radio" name="method" value="email" {{ old('method', 'email') === 'email' ? 'checked' : '' }}>
                     <span>Email one-time code</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 400;">
                     <input type="radio" name="method" value="auth_app" {{ old('method') === 'auth_app' ? 'checked' : '' }}>
                     <span>Authenticator app (TOTP)</span>
                 </label>
@@ -51,8 +51,8 @@
         </div>
 
         @if (session('totp_uri') || old('method') === 'auth_app')
-            <div class="tich-form-group">
-                <label for="code" class="tich-label">Authenticator code</label>
+            <div class="uf-field">
+                <label for="code">Authenticator code</label>
                 <input
                     type="text"
                     id="code"
@@ -60,16 +60,16 @@
                     value="{{ old('code') }}"
                     inputmode="numeric"
                     maxlength="6"
-                    class="tich-input tich-input--code @error('code') tich-input--error @enderror"
+                    class="tich-input--code {{ $errors->has('code') ? 'is-invalid' : '' }}"
                     placeholder="000000"
                 >
                 @error('code')
-                    <p class="tich-field-error">{{ $message }}</p>
+                    <span class="uf-error">{{ $message }}</span>
                 @enderror
             </div>
         @else
-            <div class="tich-form-group">
-                <label for="code" class="tich-label">Email verification code <span class="tich-caption">(after requesting)</span></label>
+            <div class="uf-field">
+                <label for="code">Email verification code <span class="uf-hint">(after requesting)</span></label>
                 <input
                     type="text"
                     id="code"
@@ -77,11 +77,11 @@
                     value="{{ old('code') }}"
                     inputmode="numeric"
                     maxlength="6"
-                    class="tich-input tich-input--code @error('code') tich-input--error @enderror"
+                    class="tich-input--code {{ $errors->has('code') ? 'is-invalid' : '' }}"
                     placeholder="000000"
                 >
                 @error('code')
-                    <p class="tich-field-error">{{ $message }}</p>
+                    <span class="uf-error">{{ $message }}</span>
                 @enderror
             </div>
         @endif
@@ -95,7 +95,7 @@
         </button>
     </form>
 
-    <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center">
+    <form method="POST" action="{{ route('logout') }}" class="tich-mt-6 tich-text-center" data-uf="skip">
         @csrf
         <button type="submit" class="tich-link" style="background: none; border: none; cursor: pointer; font-weight: 500;">
             Cancel and sign out

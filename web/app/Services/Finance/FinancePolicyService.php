@@ -1,0 +1,239 @@
+<?php
+
+namespace App\Services\Finance;
+
+use App\Models\Department;
+use App\Models\Finance\FinancePolicy;
+use App\Models\Finance\FinancePolicySignoff;
+use App\Models\Staff;
+use App\Models\User;
+use App\Services\StaffPortalService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+
+class FinancePolicyService
+{
+    public function __construct(
+        protected StaffPortalService $staffPortal,
+    ) {}
+
+    public function currentPublishedPolicy(?string $fiscalYear = null): ?FinancePolicy
+    {
+        $query = FinancePolicy::query()->published()->orderByDesc('published_at')->orderByDesc('id');
+
+        if ($fiscalYear) {
+            $query->where('fiscal_year', $fiscalYear);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * @param  array{fiscal_year: string, title: string, version?: ?string, description?: ?string, effective_date?: ?string}  $data
+     */
+    public function uploadPolicy(array $data, UploadedFile $file, User $user): FinancePolicy
+    {
+        $staff = $this->staffPortal->staffForUser($user);
+        $path = $file->store('finance-policies/'.date('Y'), 'public');
+
+        return FinancePolicy::query()->create([
+            'fiscal_year' => $data['fiscal_year'],
+            'title' => $data['title'],
+            'version' => $data['version'] ?? null,
+            'file_path' => $path,
+            'description' => $data['description'] ?? null,
+            'effective_date' => $data['effective_date'] ?? null,
+            'status' => 'draft',
+            'uploaded_by' => $staff?->id,
+            'uploaded_at' => now(),
+        ]);
+    }
+
+    public function publish(FinancePolicy $policy): FinancePolicy
+    {
+        FinancePolicy::query()
+            ->where('fiscal_year', $policy->fiscal_year)
+            ->where('status', 'published')
+            ->where('id', '!=', $policy->id)
+            ->update(['status' => 'archived']);
+
+        $policy->update([
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        return $policy->fresh();
+    }
+
+    public function staffIsHod(Staff $staff, ?Department $department = null): bool
+    {
+        $department ??= $staff->department;
+
+        if (! $department) {
+            return false;
+        }
+
+        return (int) $department->hod_id === (int) $staff->id;
+    }
+
+    public function departmentHasHodSignoff(FinancePolicy $policy, Department $department): bool
+    {
+        return FinancePolicySignoff::query()
+            ->where('policy_id', $policy->id)
+            ->where('department_id', $department->id)
+            ->exists();
+    }
+
+    public function userMaySubmitBudget(User $user, Department $department): bool
+    {
+        $policy = $this->currentPublishedPolicy();
+        if (! $policy) {
+            return true;
+        }
+
+        return $this->departmentHasHodSignoff($policy, $department);
+    }
+
+    public function gateMessage(Department $department): string
+    {
+        $policy = $this->currentPublishedPolicy();
+        $title = $policy?->title ?? 'Financial Policy';
+
+        return "Heads of Department must view and digitally sign \"{$title}\" before submitting annual budgets and departmental plans. Sign off from the Financial Policy portal, then try again.";
+    }
+
+    /**
+     * @param  array{signed_name: string, employee_number?: ?string, signature?: ?string}  $data
+     */
+    public function signOff(
+        FinancePolicy $policy,
+        User $user,
+        array $data,
+        ?string $ip = null,
+        ?Department $department = null,
+    ): FinancePolicySignoff {
+        if (! $policy->isPublished()) {
+            throw new \RuntimeException('Only the published financial policy can be signed.');
+        }
+
+        $staff = $this->staffPortal->staffForUser($user);
+        if (! $staff) {
+            throw new \RuntimeException('Your account is not linked to a staff record.');
+        }
+
+        $department ??= $staff->department;
+        if (! $department) {
+            throw new \RuntimeException('Your staff profile has no department assignment.');
+        }
+
+        $isPrivileged = $user->hasAnyRole([
+            'Super Admin',
+            'CEO',
+            'Finance Manager',
+            'Assistant Finance Manager',
+        ]);
+
+        if (! $isPrivileged && ! $this->staffIsHod($staff, $department)) {
+            throw new \RuntimeException('Only the Head of Department can digitally sign the financial policy for this department.');
+        }
+
+        $role = $this->resolveSignRole($user, $staff, $department, $isPrivileged);
+
+        return FinancePolicySignoff::query()->updateOrCreate(
+            [
+                'policy_id' => $policy->id,
+                'department_id' => $department->id,
+                'staff_id' => $staff->id,
+            ],
+            [
+                'policy_version' => $policy->version,
+                'signed_role' => $role,
+                'user_id' => $user->id,
+                'signed_name' => $data['signed_name'],
+                'employee_number' => $data['employee_number'] ?? $staff->employee_number,
+                'signature' => $data['signature'] ?? $data['signed_name'],
+                'ip_address' => $ip,
+                'signed_at' => now(),
+            ]
+        );
+    }
+
+    private function resolveSignRole(User $user, Staff $staff, Department $department, bool $isPrivileged): string
+    {
+        if ($user->hasAnyRole(['CEO'])) {
+            return 'CEO';
+        }
+
+        if ($user->hasAnyRole(['Finance Manager', 'Assistant Finance Manager'])) {
+            return 'Finance Officer';
+        }
+
+        if ($user->hasAnyRole(['Super Admin'])) {
+            return 'Super Admin';
+        }
+
+        if ($this->staffIsHod($staff, $department)) {
+            return 'HOD';
+        }
+
+        return 'Staff';
+    }
+
+    public function signoffProgress(FinancePolicy $policy): array
+    {
+        $departments = Department::query()
+            ->where(function ($q) {
+                $q->whereNotNull('hod_id')
+                    ->orWhereNull('parent_dept_id');
+            })
+            ->where('is_active', 1)
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name', 'dept_code', 'hod_id']);
+
+        $signoffs = FinancePolicySignoff::query()
+            ->where('policy_id', $policy->id)
+            ->with(['staff', 'department'])
+            ->orderByDesc('signed_at')
+            ->get()
+            ->groupBy('department_id');
+
+        $signedIds = $signoffs->keys()->map(fn ($id) => (int) $id)->all();
+        $signedSet = array_fill_keys($signedIds, true);
+
+        return [
+            'total' => $departments->count(),
+            'signed' => count(array_intersect($departments->pluck('id')->all(), $signedIds)),
+            'departments' => $departments->map(function (Department $d) use ($signedSet, $signoffs) {
+                $deptSignoffs = $signoffs->get($d->id) ?? collect();
+                $latest = $deptSignoffs->first();
+
+                return [
+                    'id' => $d->id,
+                    'name' => $d->dept_name,
+                    'code' => $d->dept_code,
+                    'signed' => isset($signedSet[$d->id]),
+                    'signed_name' => $latest?->signed_name
+                        ?: ($latest?->staff ? $latest->staff->fullName() : null),
+                    'employee_number' => $latest?->employee_number,
+                    'signed_role' => $latest?->signed_role,
+                    'policy_version' => $latest?->policy_version,
+                    'signed_at' => $latest?->signed_at?->format('d M Y H:i'),
+                ];
+            }),
+            'signoffs' => $signoffs->flatten(1)->map(fn (FinancePolicySignoff $s) => [
+                'department' => $s->department?->dept_name ?? '-',
+                'department_code' => $s->department?->dept_code,
+                'signed_name' => $s->signed_name ?: ($s->staff?->fullName() ?? '-'),
+                'employee_number' => $s->employee_number,
+                'signed_role' => $s->signed_role,
+                'policy_version' => $s->policy_version,
+                'signed_at' => $s->signed_at?->format('d M Y H:i'),
+            ])->values()->all(),
+        ];
+    }
+
+    public function fileUrl(FinancePolicy $policy): string
+    {
+        return Storage::disk('public')->url($policy->file_path);
+    }
+}

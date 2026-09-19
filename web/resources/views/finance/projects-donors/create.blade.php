@@ -9,49 +9,128 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.projects-donors.store') }}" data-uf="ready">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.projects-donors.store') }}" class="tich-card tich-form-grid">
-        @csrf
-        <div class="tich-form-row">
-            <label class="tich-label" for="name">Project name <span class="tich-text--danger">*</span></label>
-            <input type="text" id="name" name="name" class="tich-input" placeholder="e.g. Community Health Outreach" value="{{ old('name') }}" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="donor_id">Donor <span class="tich-text--danger">*</span></label>
-            <select id="donor_id" name="donor_id" class="tich-input" required>
-                <option value="">Select donor</option>
-            </select>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="budget_usd">Budget (USD) <span class="tich-text--danger">*</span></label>
-            <input type="number" step="0.01" min="0" id="budget_usd" name="budget_usd" class="tich-input" placeholder="0.00" value="{{ old('budget_usd') }}" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="start_date">Start date <span class="tich-text--danger">*</span></label>
-            <input type="text" id="start_date" name="start_date" class="tich-input" placeholder="dd/mm/yyyy" value="{{ old('start_date') }}" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="end_date">End date <span class="tich-text--danger">*</span></label>
-            <input type="text" id="end_date" name="end_date" class="tich-input" placeholder="dd/mm/yyyy" value="{{ old('end_date') }}" required>
-        </div>
-        <div class="tich-form-row">
-            <label class="tich-label" for="notes">Notes</label>
-            <textarea id="notes" name="notes" class="tich-input" rows="4" placeholder="Optional notes...">{{ old('notes') }}</textarea>
-        </div>
-        <div class="tich-form-row">
-            <button type="submit" class="tich-btn tich-btn-primary">Create project</button>
-            <a href="{{ route('finance.projects-donors.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">PRJ · Projects &amp; donors</div>
+                    <div class="uf-amount-bar__sum">Create project</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Project Details</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="name">Project name <span class="uf-req">*</span></label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                placeholder="e.g. Community Health Outreach"
+                                value="{{ old('name') }}"
+                                required
+                                class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
+                            >
+                            @error('name')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="donor_id">Donor <span class="uf-req">*</span></label>
+                            <select
+                                id="donor_id"
+                                name="donor_id"
+                                required
+                                class="{{ $errors->has('donor_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select donor</option>
+                            </select>
+                            @error('donor_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="budget_usd">Budget (USD) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                id="budget_usd"
+                                name="budget_usd"
+                                placeholder="0.00"
+                                value="{{ old('budget_usd') }}"
+                                required
+                                class="{{ $errors->has('budget_usd') ? 'is-invalid' : '' }}"
+                            >
+                            @error('budget_usd')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="start_date">Start date <span class="uf-req">*</span></label>
+                            <input
+                                type="text"
+                                id="start_date"
+                                name="start_date"
+                                placeholder="dd/mm/yyyy"
+                                value="{{ old('start_date') }}"
+                                required
+                                class="{{ $errors->has('start_date') ? 'is-invalid' : '' }}"
+                            >
+                            @error('start_date')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="end_date">End date <span class="uf-req">*</span></label>
+                            <input
+                                type="text"
+                                id="end_date"
+                                name="end_date"
+                                placeholder="dd/mm/yyyy"
+                                value="{{ old('end_date') }}"
+                                required
+                                class="{{ $errors->has('end_date') ? 'is-invalid' : '' }}"
+                            >
+                            @error('end_date')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="notes">Notes</label>
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            rows="4"
+                            placeholder="Optional notes..."
+                            class="{{ $errors->has('notes') ? 'is-invalid' : '' }}"
+                        >{{ old('notes') }}</textarea>
+                        @error('notes')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Create project</button>
+                        <a href="{{ route('finance.projects-donors.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

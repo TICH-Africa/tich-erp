@@ -2,19 +2,19 @@
 
 @section('title', 'Forgot Password')
 @section('headline', 'Reset your password.')
-@section('subheadline', 'Enter the email linked to your account and we will send you a reset link.')
+@section('subheadline', 'Enter the email linked to your account and we will send a one-time reset code.')
 
 @section('content')
     <div class="tich-mb-8">
         <h2 class="tich-h2">Forgot password</h2>
-        <p class="tich-text tich-mt-2">We'll email you instructions to set a new password.</p>
+        <p class="tich-text tich-mt-2">We'll email a 6-digit reset code so you can set a new password.</p>
     </div>
 
-    <form method="POST" action="{{ route('password.email') }}">
+    <form method="POST" action="{{ route('password.email') }}" data-uf="skip">
         @csrf
 
-        <div class="tich-form-group">
-            <label for="email" class="tich-label">Email address</label>
+        <div class="uf-field">
+            <label for="email">Email address</label>
             <input
                 type="email"
                 id="email"
@@ -23,16 +23,16 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="tich-input @error('email') tich-input--error @enderror"
-                placeholder="you@tich.ac.ke"
+                class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
+                placeholder="you@example.com"
             >
             @error('email')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
         <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">
-            Send reset link
+            Send reset code
         </button>
     </form>
 

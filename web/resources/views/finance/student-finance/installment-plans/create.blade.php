@@ -9,44 +9,98 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.student-finance.installment-plans.store') }}" data-uf="ready">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.student-finance.installment-plans.store') }}" class="tich-card tich-form-grid tich-form-grid--2">
-        @csrf
-        <div class="tich-form-group">
-            <label class="tich-label" for="student_id">Student <span class="tich-text--danger">*</span></label>
-            <select name="student_id" id="student_id" class="tich-input" required>
-                <option value="">Loading students...</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="invoice_id">Invoice <span class="tich-text--danger">*</span></label>
-            <select name="invoice_id" id="invoice_id" class="tich-input" required>
-                <option value="">Loading invoices...</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="total_amount">Total Amount (KES) <span class="tich-text--danger">*</span></label>
-            <input type="number" id="total_amount" name="total_amount" class="tich-input" step="0.01" placeholder="0.00" required>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="installment_count">Number of Installments <span class="tich-text--danger">*</span></label>
-            <input type="number" id="installment_count" name="installment_count" class="tich-input" min="2" max="12" value="3" required>
-        </div>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">INS · Installment plan</div>
+                    <div class="uf-amount-bar__sum">Split invoice into payments</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
 
-        <div class="tich-form-group" style="grid-column: 1 / -1;">
-            <button type="submit" class="tich-btn tich-btn-primary">Create plan</button>
-            <a href="{{ route('finance.student-finance.installment-plans.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Plan Details</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="student_id">Student <span class="uf-req">*</span></label>
+                            <select
+                                name="student_id"
+                                id="student_id"
+                                required
+                                class="{{ $errors->has('student_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Loading students...</option>
+                            </select>
+                            @error('student_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="invoice_id">Invoice <span class="uf-req">*</span></label>
+                            <select
+                                name="invoice_id"
+                                id="invoice_id"
+                                required
+                                class="{{ $errors->has('invoice_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Loading invoices...</option>
+                            </select>
+                            @error('invoice_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="total_amount">Total Amount (KES) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                id="total_amount"
+                                name="total_amount"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                                class="{{ $errors->has('total_amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('total_amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="installment_count">Number of Installments <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                id="installment_count"
+                                name="installment_count"
+                                min="2"
+                                max="12"
+                                value="3"
+                                required
+                                class="{{ $errors->has('installment_count') ? 'is-invalid' : '' }}"
+                            >
+                            @error('installment_count')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Create plan</button>
+                        <a href="{{ route('finance.student-finance.installment-plans.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

@@ -43,7 +43,6 @@
                         <th>Job Title</th>
                         <th>Category</th>
                         <th>Status</th>
-                        <th>Profile</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -76,19 +75,22 @@
                                     {{ ucfirst($member->employment_status) }}
                                 </span>
                             </td>
-                            <td>
-                                @if ($member->is_profile_locked)
-                                    <span class="tich-caption">Locked</span>
-                                @else
-                                    <span class="tich-caption">Editable</span>
+                            <td style="white-space:nowrap;">
+                                @if (! $member->user_id && $member->primary_email)
+                                    <form method="POST" action="{{ route('hr.staff.invite', $member) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="tich-btn tich-btn-secondary" title="Send ERP registration invite to {{ $member->primary_email }}">
+                                            Invite
+                                        </button>
+                                    </form>
+                                @elseif ($member->user_id)
+                                    <span class="tich-caption">Has account</span>
                                 @endif
-                            </td>
-                            <td>
                                 <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No staff records found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No staff records found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

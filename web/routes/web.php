@@ -39,6 +39,9 @@ Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/research', [HomeController::class, 'research'])->name('research');
+Route::get('/research/activity/{slug}', [\App\Http\Controllers\Public\ResearchPortalController::class, 'show'])->name('research.show');
+Route::get('/research/documents/{document}/view', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentViewer'])->name('research.documents.view');
+Route::get('/research/documents/{document}/stream', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentStream'])->name('research.documents.stream');
 Route::get('/support', [HomeController::class, 'support'])->name('support');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/events', [HomeController::class, 'events'])->name('events');
@@ -67,7 +70,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])->name('register.invite.store');
     Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
-    Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::get('/reset-password', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset.legacy');
     Route::post('/reset-password', [WebAuthController::class, 'resetPassword'])->name('password.update');
 
     Route::get('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'show'])->name('portal.activate');
@@ -144,6 +148,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         ->name('departments.show');
 
     $registerModuleBudgeting = static function (string $module): void {
+        $financePolicyController = \App\Http\Controllers\Finance\FinancialPolicyController::class;
+
         if ($module === 'finance') {
             Route::get('/budgeting', [ModuleBudgetingController::class, 'index'])->name('finance.budget-requests.index');
             Route::get('/budgeting/create', [ModuleBudgetingController::class, 'create'])->name('finance.budget-requests.create');
@@ -153,6 +159,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
             Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('finance.me-policy.sign');
             Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('finance.me-policy.sign.store');
+
+            Route::get('/finance-policy/sign', [$financePolicyController, 'signForm'])->name('finance.finance-policy.sign');
+            Route::post('/finance-policy/sign', [$financePolicyController, 'sign'])->name('finance.finance-policy.sign.store');
 
             return;
         }
@@ -165,6 +174,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name("{$module}.me-policy.sign");
         Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name("{$module}.me-policy.sign.store");
+
+        Route::get('/finance-policy/sign', [$financePolicyController, 'signForm'])->name("{$module}.finance-policy.sign");
+        Route::post('/finance-policy/sign', [$financePolicyController, 'sign'])->name("{$module}.finance-policy.sign.store");
     };
 
     $registerModuleQaTasks = static function (string $module, ?string $namePrefix = null): void {
@@ -328,6 +340,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $registerModuleBudgeting('finance');
         $registerModuleQaTasks('finance');
         $registerModuleMeReports('finance');
+
+        Route::get('/financial-policies', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'index'])->name('finance.financial-policies.index');
+        Route::get('/financial-policies/create', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'create'])->name('finance.financial-policies.create');
+        Route::post('/financial-policies', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'store'])->name('finance.financial-policies.store');
+        Route::get('/financial-policies/sign', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'signForm'])->name('finance.financial-policies.sign');
+        Route::post('/financial-policies/sign', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'sign'])->name('finance.financial-policies.sign.store');
+        Route::get('/financial-policies/{financePolicy}', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'show'])->name('finance.financial-policies.show');
+        Route::post('/financial-policies/{financePolicy}/publish', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'publish'])->name('finance.financial-policies.publish');
+        Route::get('/financial-policies/{financePolicy}/view', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'view'])->name('finance.financial-policies.view');
+        Route::get('/financial-policies/{financePolicy}/download', [\App\Http\Controllers\Finance\FinancialPolicyController::class, 'download'])->name('finance.financial-policies.download');
+
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
         Route::get('/students', [\App\Http\Controllers\Finance\StudentDirectoryController::class, 'index'])->name('finance.students.index');
@@ -566,11 +589,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::post('/{qcaFlag}/ceo-override', [\App\Http\Controllers\Qa\QcaFlagController::class, 'ceoOverride'])->name('ceo-override');
             });
 
-            Route::prefix('capacity')->name('qa.capacity.')->group(function () {
-                Route::post('/register', [\App\Http\Controllers\Qa\CapacityController::class, 'register'])->name('register');
-                Route::get('/export', [\App\Http\Controllers\Qa\CapacityController::class, 'export'])->name('export');
-            });
-
             Route::prefix('training-credits')->name('qa.training-credits.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'store'])->name('store');
@@ -586,9 +604,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/executive-dashboard/chart/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartAuditTrail'])->name('qa.executive-dashboard.chart.audit-trail');
 
             Route::get('/downstream-lock/check', [\App\Http\Controllers\Qa\QcaDownstreamLockController::class, 'check'])->name('qa.downstream-lock.check');
-
-            Route::get('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'index'])->name('qa.capacity.index');
-            Route::post('/capacity', [\App\Http\Controllers\Qa\CapacityController::class, 'store'])->name('qa.capacity.store');
         });
 
         // Department respondents (HOD / department staff) - access checked in service.
@@ -646,6 +661,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'store' => 'procurement.assets.store',
             'show' => 'procurement.assets.show',
         ]);
+        Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Procurement\AssetController::class, 'transfer'])->name('procurement.assets.transfer');
         Route::resource('grns', \App\Http\Controllers\Procurement\GrnController::class)->only(['index', 'create', 'store', 'show'])->names([
             'index' => 'procurement.grns.index',
             'create' => 'procurement.grns.create',
@@ -664,20 +680,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'autoReorder' => 'procurement.stock-alerts.auto-reorder',
         ]);
 
-        Route::resource('asset-movements', \App\Http\Controllers\Procurement\AssetMovementController::class)->only(['index', 'create', 'store', 'show'])->names([
-            'index' => 'procurement.asset-movements.index',
-            'create' => 'procurement.asset-movements.create',
-            'store' => 'procurement.asset-movements.store',
-            'show' => 'procurement.asset-movements.show',
-        ]);
-        Route::post('asset-movements/{assetMovement}/approve', [\App\Http\Controllers\Procurement\AssetMovementController::class, 'approve'])->name('procurement.asset-movements.approve');
-        Route::resource('asset-maintenance', \App\Http\Controllers\Procurement\AssetMaintenanceController::class)->only(['index', 'create', 'store', 'show'])->names([
-            'index' => 'procurement.asset-maintenance.index',
-            'create' => 'procurement.asset-maintenance.create',
-            'store' => 'procurement.asset-maintenance.store',
-            'show' => 'procurement.asset-maintenance.show',
-        ]);
-        Route::post('asset-maintenance/{assetMaintenance}/complete', [\App\Http\Controllers\Procurement\AssetMaintenanceController::class, 'complete'])->name('procurement.asset-maintenance.complete');
         Route::resource('asset-disposals', \App\Http\Controllers\Procurement\AssetDisposalController::class)->only(['index', 'create', 'store', 'show'])->names([
             'index' => 'procurement.asset-disposals.index',
             'create' => 'procurement.asset-disposals.create',
@@ -730,6 +732,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('research')->middleware(['permission:research.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/dashboard', [\App\Http\Controllers\Research\DashboardController::class, '__invoke'])->name('research.dashboard');
+
+        Route::get('/activities', [\App\Http\Controllers\Research\ResearchActivityController::class, 'index'])->name('research.activities.index');
+        Route::get('/activities/create', [\App\Http\Controllers\Research\ResearchActivityController::class, 'create'])->name('research.activities.create');
+        Route::post('/activities', [\App\Http\Controllers\Research\ResearchActivityController::class, 'store'])->name('research.activities.store');
+        Route::post('/activities/upload-image', [\App\Http\Controllers\Research\ResearchActivityController::class, 'uploadImage'])->name('research.activities.upload-image');
+        Route::get('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'show'])->name('research.activities.show');
+        Route::get('/activities/{activity}/edit', [\App\Http\Controllers\Research\ResearchActivityController::class, 'edit'])->name('research.activities.edit');
+        Route::put('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'update'])->name('research.activities.update');
+        Route::delete('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroy'])->name('research.activities.destroy');
+        Route::delete('/activities/{activity}/documents/{document}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroyDocument'])->name('research.activities.documents.destroy');
+
         $registerModuleBudgeting('research');
         $registerModuleQaTasks('research');
         $registerModuleMeReports('research');
@@ -781,6 +794,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('ict')->middleware(['permission:ict.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
+        Route::get('/platform-performance', [\App\Http\Controllers\Ict\PlatformPerformanceController::class, 'index'])->name('ict.platform-performance.index');
+        Route::get('/platform-performance/metrics', [\App\Http\Controllers\Ict\PlatformPerformanceController::class, 'metrics'])->name('ict.platform-performance.metrics');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ict\SidebarNotificationController::class)->name('ict.sidebar-notifications');
         $registerModuleBudgeting('ict');
         $registerModuleQaTasks('ict');
@@ -855,6 +870,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::post('/staff/{staff}/invite', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'inviteStaff'])->name('hr.staff.invite');
             Route::get('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'create'])->name('hr.staff.profile-update-prompt.create');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'store'])->name('hr.staff.profile-update-prompt.store');
             Route::get('/profile-changes', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'index'])->name('hr.profile-changes.index');

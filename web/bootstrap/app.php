@@ -38,12 +38,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\CaptureClientContext::class,
             \App\Http\Middleware\PreventDuplicateFormSubmission::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\RecordPlatformMetrics::class,
         ]);
 
         $middleware->api(append: [
             \App\Http\Middleware\SanitizeInput::class,
             \App\Http\Middleware\PreventDuplicateFormSubmission::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\RecordPlatformMetrics::class,
         ]);
 
         $middleware->alias([
@@ -144,6 +146,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Never expose SQL / connection internals to end users (especially production).
         // Use a DB-free view so rendering the error cannot re-trigger the same failure.
+        $exceptions->report(function (\Illuminate\Database\QueryException $e) {
+            try {
+                app(\App\Services\Ict\PlatformPerformanceService::class)->recordQueryFailure();
+            } catch (\Throwable) {
+                // ignore
+            }
+        });
+
         $exceptions->render(function (\Throwable $e, Request $request) {
             if (! DatabaseAvailability::isUnavailable($e)) {
                 return null;

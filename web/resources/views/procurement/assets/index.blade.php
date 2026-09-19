@@ -3,7 +3,7 @@
 @section('title', 'Assets')
 
 @section('procurement-content')
-    <x-page-toolbar title="Asset registry" meta="Fixed assets, tagging, location, maintenance">
+    <x-page-toolbar title="Asset registry" meta="Fixed assets, tagging, location, and transfers">
         <x-slot:actions>
             <a href="{{ route('procurement.assets.create') }}" class="tich-btn tich-btn-primary">+ Register asset</a>
         </x-slot:actions>

@@ -3,6 +3,14 @@
     <p class="tich-admin-sidebar__title">ICT</p>
     <nav class="tich-admin-sidebar__nav" aria-label="ICT module navigation">
         @include('partials.navigation.sidebar-link', ['href' => route('ict.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard', 'active' => request()->routeIs('ict.dashboard')])
+        <p class="tich-admin-sidebar__title tich-mt-4">Platform Performance</p>
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ict.platform-performance.index'),
+            'label' => 'Live metrics',
+            'icon' => 'cpu',
+            'active' => request()->routeIs('ict.platform-performance.*'),
+        ])
+
         @include('partials.navigation.sidebar-link', [
             'href' => route('ict.qa.tasks.index'),
             'label' => 'QA assessment tasks',
@@ -11,7 +19,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'ict'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'ict'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'ict'])
 
         <p class="tich-admin-sidebar__title tich-mt-4">Website content</p>

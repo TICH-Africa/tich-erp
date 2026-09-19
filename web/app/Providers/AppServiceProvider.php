@@ -87,10 +87,8 @@ class AppServiceProvider extends ServiceProvider
         View::composer([
             'academics.dashboard',
             'layouts.academics',
-            'hr.dashboard',
             'finance.dashboard',
             'administration.dashboard',
-            'employee.dashboard',
             'ict.dashboard',
             'qa.dashboard',
             'monitoring-evaluation.dashboard',

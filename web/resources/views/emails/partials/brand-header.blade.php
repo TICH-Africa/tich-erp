@@ -12,7 +12,7 @@
         }
     }
 
-    $logoSrc = $logoSrc ?: ($brand['logo_url'] ?? asset('images/logo.png'));
+    $logoSrc = $logoSrc ?: ($brand['logo_url'] ?? \App\Support\MailPublicUrl::to('images/logo.png'));
     $shortName = $brand['short_name'] ?? 'TICH in Africa';
     $institution = $brand['institution_name'] ?? $shortName;
 @endphp

@@ -254,10 +254,11 @@ class HomepageService
     {
         if ($this->tableExists('research_projects')) {
             $project = ResearchProject::query()
+                ->published()
                 ->where('is_featured', 1)
                 ->orderByDesc('created_at')
                 ->first()
-                ?? ResearchProject::query()->orderByDesc('created_at')->first();
+                ?? ResearchProject::query()->published()->orderByDesc('created_at')->first();
 
             if ($project) {
                 return (object) [
@@ -265,7 +266,9 @@ class HomepageService
                     'summary' => $project->summary,
                     'status' => $project->status,
                     'cover_image_path' => $this->mediaUrl($project->cover_image_path),
-                    'url' => route('research'),
+                    'url' => $project->slug
+                        ? route('research.show', $project->slug)
+                        : route('research'),
                 ];
             }
         }

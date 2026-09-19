@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-09-16
+-- Last updated: 2026-09-18
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -1375,10 +1375,145 @@ SET @sql := (
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+
+
+
+
+-- PRESENT IN PRODUCTION UP TO HERE
+
+-- -----------------------------------------------------------------------------
+-- 26. Financial Policy (upload in Finance; HOD sign-off gates department budgets)
+--     Prefer deploy/production.sql (CREATE TABLE IF NOT EXISTS + ensure_* helpers).
+--     Idempotent CREATE below for hosts that only re-run this patches file.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `finance_policies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `fiscal_year` varchar(20) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `version` varchar(50) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `description` text DEFAULT NULL,
+  `effective_date` date DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `uploaded_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `published_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `finance_policies_uploaded_by_foreign` (`uploaded_by`),
+  KEY `finance_policies_year_status_idx` (`fiscal_year`,`status`),
+  CONSTRAINT `finance_policies_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `finance_policy_signoffs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `policy_id` bigint(20) unsigned NOT NULL,
+  `policy_version` varchar(50) DEFAULT NULL,
+  `signed_role` varchar(100) DEFAULT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `signed_name` varchar(200) NOT NULL,
+  `employee_number` varchar(100) DEFAULT NULL,
+  `signature` text DEFAULT NULL,
+  `ip_address` varchar(64) DEFAULT NULL,
+  `signed_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `finance_policy_signoffs_unique` (`policy_id`,`department_id`,`staff_id`),
+  KEY `finance_policy_signoffs_department_id_foreign` (`department_id`),
+  KEY `finance_policy_signoffs_staff_id_foreign` (`staff_id`),
+  KEY `finance_policy_signoffs_user_id_foreign` (`user_id`),
+  CONSTRAINT `finance_policy_signoffs_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `finance_policy_signoffs_policy_id_foreign` FOREIGN KEY (`policy_id`) REFERENCES `finance_policies` (`id`),
+  CONSTRAINT `finance_policy_signoffs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `finance_policy_signoffs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 27. Research activities (CMS body, schedule, documents vault)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='slug'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `slug` varchar(320) NULL DEFAULT NULL AFTER `title`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='body'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `body` longtext NULL AFTER `abstract`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='duration_value'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `duration_value` int unsigned NULL DEFAULT NULL AFTER `start_date`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='duration_unit'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `duration_unit` varchar(20) NULL DEFAULT NULL AFTER `duration_value`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='status_locked'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `status_locked` tinyint(1) NOT NULL DEFAULT 0 AFTER `status`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='visibility'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `visibility` varchar(30) NOT NULL DEFAULT \'draft\' AFTER `is_featured`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND COLUMN_NAME='published_at'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD COLUMN `published_at` datetime NULL DEFAULT NULL AFTER `visibility`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='research_projects' AND INDEX_NAME='research_projects_slug_unique'),
+  'SELECT 1',
+  'ALTER TABLE `research_projects` ADD UNIQUE KEY `research_projects_slug_unique` (`slug`)'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS `research_project_documents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `research_project_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `original_filename` varchar(300) DEFAULT NULL,
+  `mime_type` varchar(120) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `sort_order` int unsigned NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `rpd_project_sort_idx` (`research_project_id`,`sort_order`),
+  KEY `rpd_created_by_fk` (`created_by`),
+  CONSTRAINT `rpd_project_fk` FOREIGN KEY (`research_project_id`) REFERENCES `research_projects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rpd_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET time_zone = '+03:00';
 
--- New procurement tables (rfqs, asset_*, grn_items, stock_*) are created by
--- deploy/production.sql (CREATE TABLE IF NOT EXISTS). Run that file first.
+-- New procurement tables, financial policy tables, and research activity columns /
+-- documents are also covered by deploy/production.sql (CREATE / ensure_* helpers).
+-- Run that file first on fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

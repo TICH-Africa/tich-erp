@@ -15,7 +15,16 @@
             return false;
         }
 
-        return select.classList.contains('tich-input') || select.classList.contains('tich-select');
+        if (select.classList.contains('tich-input') || select.classList.contains('tich-select')) {
+            return true;
+        }
+
+        // Unified form fields and standard form groups (no class required)
+        if (select.closest('.uf-field, .tich-form-group, .tich-form-row, .tich-modal__body, form.uf-form-surface, .uf-form form')) {
+            return true;
+        }
+
+        return false;
     }
 
     function selectedMeta(select) {
@@ -274,7 +283,7 @@
             wrapper.classList.add('is-disabled');
         }
 
-        if (select.classList.contains('tich-input--error')) {
+        if (select.classList.contains('tich-input--error') || select.classList.contains('is-invalid')) {
             wrapper.classList.add('is-error');
         }
 

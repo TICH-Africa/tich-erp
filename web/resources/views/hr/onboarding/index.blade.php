@@ -11,6 +11,7 @@
                 <thead>
                     <tr>
                         <th>Onboarding No.</th>
+                        <th>Photo</th>
                         <th>Staff</th>
                         <th>Department</th>
                         <th>Step</th>
@@ -24,6 +25,13 @@
                     @forelse ($onboardings as $onboarding)
                         <tr>
                             <td>{{ $onboarding->onboarding_number }}</td>
+                            <td>
+                                @if ($onboarding->staff)
+                                    @include('hr.staff.partials.table-avatar', ['member' => $onboarding->staff])
+                                @else
+                                    <span class="tich-caption">-</span>
+                                @endif
+                            </td>
                             <td>
                                 <strong>{{ $onboarding->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $onboarding->staff->employee_number ?? '' }}</p>
@@ -43,15 +51,12 @@
                             </td>
                             <td>
                                 @if ($onboarding->staff)
-                                    <div class="tich-flex tich-flex--gap">
-                                        <a href="{{ route('hr.staff.show', $onboarding->staff) }}" class="tich-btn tich-btn-ghost">View staff</a>
-                                        <a href="{{ route('hr.contracts.create', ['staff_id' => $onboarding->staff->id]) }}" class="tich-btn tich-btn-primary">+ Contract</a>
-                                    </div>
+                                    <a href="{{ route('hr.contracts.create', ['staff_id' => $onboarding->staff->id]) }}" class="tich-btn tich-btn-primary">+ Contract</a>
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No onboarding records found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No onboarding records found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

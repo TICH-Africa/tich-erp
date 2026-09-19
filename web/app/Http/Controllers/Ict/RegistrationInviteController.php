@@ -30,13 +30,25 @@ class RegistrationInviteController extends Controller
 
         $result = $this->invites->send($validated['email'], $request->user(), 'ict');
 
-        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
+        return $this->flashInviteResult($result);
     }
 
     public function resend(Request $request, ErpRegistrationInvitation $invitation): RedirectResponse
     {
         $result = $this->invites->resend($invitation, $request->user(), 'ict');
 
-        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
+        return $this->flashInviteResult($result);
+    }
+
+    /**
+     * @param  array{success: bool, message: string}  $result
+     */
+    private function flashInviteResult(array $result): RedirectResponse
+    {
+        if (! $result['success']) {
+            return back()->with('error', $result['message']);
+        }
+
+        return back()->with('success', $result['message']);
     }
 }

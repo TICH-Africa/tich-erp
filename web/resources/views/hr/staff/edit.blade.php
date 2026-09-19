@@ -5,11 +5,16 @@
 @section('hr-content')
     <x-page-toolbar title="Edit Staff Member" />
 
-    <article class="tich-card">
-        <form method="POST" action="{{ route('hr.staff.update', $staff) }}">
-            @csrf
-            @method('PUT')
+    <form method="POST" action="{{ route('hr.staff.update', $staff) }}" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
 
+        @include('partials.staff-profile-photo-upload', [
+            'staff' => $staff,
+            'photoHelp' => 'Upload or replace this employee’s profile photo. Changes apply immediately (no approval needed).',
+        ])
+
+        <article class="tich-card">
             <div class="tich-grid tich-grid--2 tich-mb-6">
                 <div>
                     <label for="title" class="tich-label">Title</label>
@@ -110,11 +115,111 @@
                     <input type="number" step="0.01" id="gross_monthly_salary" name="gross_monthly_salary" value="{{ old('gross_monthly_salary', $staff->gross_monthly_salary) }}" required class="tich-input">
                 </div>
             </div>
+        </article>
+
+        <article class="tich-card tich-mt-6">
+            <h2 class="tich-h3">Statutory details</h2>
+            <p class="tich-caption tich-mt-2">KRA, NSSF, SHA, HELB, pension, and bank details used for payroll. Changes apply immediately.</p>
+
+            <div class="tich-grid tich-grid--2 tich-mt-4 tich-mb-6">
+                <div>
+                    <label for="kra_pin" class="tich-label">KRA PIN</label>
+                    <input type="text" id="kra_pin" name="kra_pin" value="{{ old('kra_pin', $staff->kra_pin) }}" class="tich-input @error('kra_pin') tich-input--error @enderror" maxlength="50" autocomplete="off">
+                    @error('kra_pin')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="nssf_number" class="tich-label">NSSF number</label>
+                    <input type="text" id="nssf_number" name="nssf_number" value="{{ old('nssf_number', $staff->nssf_number) }}" class="tich-input @error('nssf_number') tich-input--error @enderror" maxlength="50" autocomplete="off">
+                    @error('nssf_number')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="sha_number" class="tich-label">SHA number</label>
+                    <input type="text" id="sha_number" name="sha_number" value="{{ old('sha_number', $staff->sha_number) }}" class="tich-input @error('sha_number') tich-input--error @enderror" maxlength="50" autocomplete="off">
+                    @error('sha_number')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="helb_number" class="tich-label">HELB number</label>
+                    <input type="text" id="helb_number" name="helb_number" value="{{ old('helb_number', $staff->helb_number) }}" class="tich-input @error('helb_number') tich-input--error @enderror" maxlength="50" autocomplete="off">
+                    @error('helb_number')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="pension_scheme_id" class="tich-label">Pension scheme</label>
+                    <select id="pension_scheme_id" name="pension_scheme_id" class="tich-input @error('pension_scheme_id') tich-input--error @enderror">
+                        <option value="">None</option>
+                        @foreach ($pensionSchemes as $scheme)
+                            <option value="{{ $scheme->id }}" {{ (string) old('pension_scheme_id', $staff->pension_scheme_id) === (string) $scheme->id ? 'selected' : '' }}>
+                                {{ $scheme->scheme_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('pension_scheme_id')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <h3 class="tich-h3">Bank account</h3>
+            <p class="tich-caption tich-mt-2">Primary account for salary payment.</p>
+            @php
+                $bank = $staff->bankAccount;
+            @endphp
+            <div class="tich-grid tich-grid--2 tich-mt-4">
+                <div>
+                    <label for="bank_name" class="tich-label">Bank name</label>
+                    <input type="text" id="bank_name" name="bank_name" value="{{ old('bank_name', $bank?->bank_name) }}" class="tich-input @error('bank_name') tich-input--error @enderror" maxlength="200">
+                    @error('bank_name')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="bank_branch" class="tich-label">Branch</label>
+                    <input type="text" id="bank_branch" name="bank_branch" value="{{ old('bank_branch', $bank?->bank_branch) }}" class="tich-input @error('bank_branch') tich-input--error @enderror" maxlength="200">
+                    @error('bank_branch')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="bank_code" class="tich-label">Bank code</label>
+                    <input type="text" id="bank_code" name="bank_code" value="{{ old('bank_code', $bank?->bank_code) }}" class="tich-input @error('bank_code') tich-input--error @enderror" maxlength="20" autocomplete="off">
+                    @error('bank_code')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="account_name" class="tich-label">Account name</label>
+                    <input type="text" id="account_name" name="account_name" value="{{ old('account_name', $bank?->account_name) }}" class="tich-input @error('account_name') tich-input--error @enderror" maxlength="300">
+                    @error('account_name')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="account_number" class="tich-label">Account number</label>
+                    <input type="text" id="account_number" name="account_number" value="{{ old('account_number', $bank?->account_number) }}" class="tich-input @error('account_number') tich-input--error @enderror" maxlength="50" autocomplete="off">
+                    @error('account_number')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
 
             <div class="tich-mt-6">
                 <button type="submit" class="tich-btn tich-btn-primary">Update Staff Member</button>
                 <a href="{{ route('hr.staff.show', $staff) }}" class="tich-btn tich-btn-ghost">Cancel</a>
             </div>
-        </form>
-    </article>
+        </article>
+    </form>
+@endsection
+
+@section('scripts')
+    @parent
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <x-asset.script path="js/tich-employee-profile-photo.js" />
 @endsection

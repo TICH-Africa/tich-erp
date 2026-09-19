@@ -4,8 +4,6 @@ namespace App\Providers;
 
 use App\Models\AssetAudit;
 use App\Models\AssetDisposal;
-use App\Models\AssetMaintenance;
-use App\Models\AssetMovement;
 use App\Models\GoodsReceivedNote;
 use App\Models\ProcurementRequisition;
 use App\Models\Rfq;
@@ -29,8 +27,6 @@ class ProcurementSidebarNotificationServiceProvider extends ServiceProvider
             Rfq::class,
             GoodsReceivedNote::class,
             StockAlert::class,
-            AssetMovement::class,
-            AssetMaintenance::class,
             AssetDisposal::class,
             AssetAudit::class,
             StockIssue::class,

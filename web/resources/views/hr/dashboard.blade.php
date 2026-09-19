@@ -3,61 +3,72 @@
 @section('title', 'HR Dashboard')
 
 @section('hr-content')
-    <x-page-toolbar title="HR Dashboard" meta="Staff lifecycle, onboarding, contracts, and recruitment" />
+@php
+    $contractAlertTotal = $contractAlerts['contracts']->count() + $contractAlerts['licenses']->count() + $contractAlerts['certificates']->count();
+@endphp
 
-    @include('qa.partials.assigned-tasks-panel')
+<div class="tich-mod-dash">
+    <header class="tich-mod-dash__hero">
+        <div class="tich-mod-dash__hero-copy">
+            <p class="tich-mod-dash__eyebrow">People operations</p>
+            <h1 class="tich-mod-dash__title">HR command center</h1>
+            <p class="tich-mod-dash__lede">Staff lifecycle, onboarding, contracts, leave, and recruitment — live overview.</p>
+        </div>
+    </header>
 
-    <div class="tich-stat-row tich-stat-row--7 tich-mb-8">
-        <div class="tich-stat">
-            <p class="tich-stat__label">Total Staff</p>
-            <p class="tich-stat__value">{{ $staffCount }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Active</p>
-            <p class="tich-stat__value">{{ $activeStaffCount }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Onboarding</p>
-            <p class="tich-stat__value">{{ $onboardingCount }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Contract Alerts (30 days)</p>
-            <p class="tich-stat__value">{{ $contractAlerts['contracts']->count() + $contractAlerts['licenses']->count() + $contractAlerts['certificates']->count() }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Job applications</p>
-            <p class="tich-stat__value">{{ $applicationCount }}</p>
+    <section class="tich-mod-dash__metrics" aria-label="Key HR metrics">
+        <article class="tich-mod-dash__metric">
+            <p class="tich-mod-dash__metric-label">Total staff</p>
+            <p class="tich-mod-dash__metric-value">{{ $staffCount }}</p>
+        </article>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--ok">
+            <p class="tich-mod-dash__metric-label">Active</p>
+            <p class="tich-mod-dash__metric-value">{{ $activeStaffCount }}</p>
+        </article>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
+            <p class="tich-mod-dash__metric-label">Onboarding</p>
+            <p class="tich-mod-dash__metric-value">{{ $onboardingCount }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ $contractAlertTotal > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Contract alerts</p>
+            <p class="tich-mod-dash__metric-value">{{ $contractAlertTotal }}</p>
+            <p class="tich-mod-dash__metric-hint">Next 30 days</p>
+        </article>
+        <article class="tich-mod-dash__metric">
+            <p class="tich-mod-dash__metric-label">Applications</p>
+            <p class="tich-mod-dash__metric-value">{{ $applicationCount }}</p>
             @if ($newApplicationsCount > 0)
-                <p class="tich-caption" style="color: var(--tich-green);">{{ $newApplicationsCount }} new</p>
+                <p class="tich-mod-dash__metric-hint tich-mod-dash__metric-hint--pulse">{{ $newApplicationsCount }} new</p>
             @endif
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Leave awaiting HR</p>
-            <p class="tich-stat__value">{{ $pendingLeaveCount }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ $pendingLeaveCount > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Leave awaiting HR</p>
+            <p class="tich-mod-dash__metric-value">{{ $pendingLeaveCount }}</p>
             @if ($pendingLeaveCount > 0)
-                <p class="tich-caption"><a href="{{ route('hr.leave.index', ['status' => 'pending_hr']) }}">Review now</a></p>
+                <a href="{{ route('hr.leave.index', ['status' => 'pending_hr']) }}" class="tich-mod-dash__metric-link">Review</a>
             @endif
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Profile updates</p>
-            <p class="tich-stat__value">{{ $pendingProfileChangeCount }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ $pendingProfileChangeCount > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Profile updates</p>
+            <p class="tich-mod-dash__metric-value">{{ $pendingProfileChangeCount }}</p>
             @if ($pendingProfileChangeCount > 0)
-                <p class="tich-caption"><a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}">Review now</a></p>
+                <a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}" class="tich-mod-dash__metric-link">Review</a>
             @endif
-        </div>
-    </div>
+        </article>
+    </section>
 
     @if ($pendingProfileChanges->isNotEmpty())
-        <article class="tich-card tich-mb-8" id="profile-changes-inbox">
-            <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap:wrap; gap:0.75rem; align-items:flex-start;">
+        <article class="tich-mod-dash__panel tich-mod-dash__panel--attention" id="profile-changes-inbox">
+            <div class="tich-mod-dash__panel-head">
                 <div>
-                    <h2 class="tich-h3" style="margin:0;">Employee profile updates awaiting approval</h2>
-                    <p class="tich-caption tich-mt-2">Review contact, photo, and qualification changes submitted from the employee portal.</p>
+                    <p class="tich-mod-dash__panel-eyebrow">Action queue</p>
+                    <h2 class="tich-mod-dash__panel-title">Profile updates awaiting approval</h2>
+                    <p class="tich-mod-dash__panel-meta">Contact, photo, and qualification changes from the employee portal.</p>
                 </div>
                 <a href="{{ route('hr.profile-changes.index', ['status' => 'pending']) }}" class="tich-btn tich-btn-ghost">View all</a>
             </div>
             <div class="tich-table-wrap">
-                <table class="tich-admin-table">
+                <table class="tich-admin-table tich-mod-dash__table">
                     <thead>
                         <tr>
                             <th>Employee</th>
@@ -83,7 +94,7 @@
                                 <td class="tich-caption">{{ $summary ?: '-' }}</td>
                                 <td class="tich-caption">{{ $changeRequest->created_at->format('d M Y H:i') }}</td>
                                 <td>
-                                    <a href="{{ route('hr.profile-changes.show', $changeRequest) }}" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Review &amp; approve</a>
+                                    <a href="{{ route('hr.profile-changes.show', $changeRequest) }}" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Review</a>
                                 </td>
                             </tr>
                         @endforeach
@@ -93,73 +104,93 @@
         </article>
     @endif
 
-    <section class="tich-dashboard-charts tich-mb-8" aria-label="HR statistics charts">
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Staff by status</h3>
-            <p class="tich-chart-card__meta">Employment status breakdown</p>
+    <section class="tich-mod-dash__charts" aria-label="HR statistics charts">
+        <article class="tich-mod-dash__chart">
+            <div class="tich-mod-dash__chart-head">
+                <h3 class="tich-mod-dash__chart-title">Staff by status</h3>
+                <p class="tich-mod-dash__chart-meta">Employment status breakdown</p>
+            </div>
             <div class="tich-chart-card__canvas-wrap">
                 <canvas id="hr-chart-staff-status" aria-label="Staff by status chart"></canvas>
             </div>
         </article>
 
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Staff by department</h3>
-            <p class="tich-chart-card__meta">Top departments by headcount</p>
+        <article class="tich-mod-dash__chart">
+            <div class="tich-mod-dash__chart-head">
+                <h3 class="tich-mod-dash__chart-title">Staff by department</h3>
+                <p class="tich-mod-dash__chart-meta">Top departments by headcount</p>
+            </div>
             <div class="tich-chart-card__canvas-wrap">
                 <canvas id="hr-chart-staff-departments" aria-label="Staff by department chart"></canvas>
             </div>
         </article>
 
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Leave pipeline</h3>
-            <p class="tich-chart-card__meta">Open and completed leave requests</p>
+        <article class="tich-mod-dash__chart">
+            <div class="tich-mod-dash__chart-head">
+                <h3 class="tich-mod-dash__chart-title">Leave pipeline</h3>
+                <p class="tich-mod-dash__chart-meta">Open and completed leave requests</p>
+            </div>
             <div class="tich-chart-card__canvas-wrap">
                 <canvas id="hr-chart-leave-status" aria-label="Leave requests by status chart"></canvas>
             </div>
         </article>
 
-        <article class="tich-card tich-chart-card">
-            <h3 class="tich-h3">Recruitment pipeline</h3>
-            <p class="tich-chart-card__meta">Job applications by stage</p>
+        <article class="tich-mod-dash__chart">
+            <div class="tich-mod-dash__chart-head">
+                <h3 class="tich-mod-dash__chart-title">Recruitment pipeline</h3>
+                <p class="tich-mod-dash__chart-meta">Job applications by stage</p>
+            </div>
             <div class="tich-chart-card__canvas-wrap">
                 <canvas id="hr-chart-applications-status" aria-label="Job applications by status chart"></canvas>
             </div>
         </article>
     </section>
 
-    @include('partials.staff-registration-invite-form', [
-        'action' => route('hr.registration-invites.store'),
-    ])
-
-    <div class="tich-grid tich-grid--3">
-        <a href="{{ route('hr.staff.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Staff Directory</h3>
-            <p class="tich-text tich-mt-2">View and manage employee profiles.</p>
-        </a>
-        <a href="{{ route('hr.profile-changes.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Profile changes</h3>
-            <p class="tich-text tich-mt-2">Approve employee contact, photo, and qualification updates.</p>
-            @if ($pendingProfileChangeCount > 0)
-                <p class="tich-caption tich-mt-2" style="color:#b45309;">{{ $pendingProfileChangeCount }} pending</p>
-            @endif
-        </a>
-        <a href="{{ route('hr.onboarding.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Onboarding</h3>
-            <p class="tich-text tich-mt-2">Track new hire onboarding progress.</p>
-        </a>
-        <a href="{{ route('hr.contracts.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Contracts</h3>
-            <p class="tich-text tich-mt-2">Manage employment contracts and renewals.</p>
-        </a>
-        <a href="{{ route('hr.vacancies.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Vacancies</h3>
-            <p class="tich-text tich-mt-2">Publish job openings to the Careers page.</p>
-        </a>
-        <a href="{{ route('hr.recruitment.index') }}" class="tich-card tich-card--hover" style="text-decoration: none; color: inherit;">
-            <h3 class="tich-h3">Recruitment</h3>
-            <p class="tich-text tich-mt-2">Review applications submitted from the public Careers page.</p>
-        </a>
+    <div class="tich-mod-dash__invite">
+        @include('partials.staff-registration-invite-form', [
+            'action' => route('hr.registration-invites.store'),
+        ])
     </div>
+
+    <section class="tich-mod-dash__nav" aria-label="HR shortcuts">
+        <p class="tich-mod-dash__section-label">Quick routes</p>
+        <div class="tich-mod-dash__nav-grid">
+            <a href="{{ route('hr.staff.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">01</span>
+                <h3 class="tich-mod-dash__nav-title">Staff directory</h3>
+                <p class="tich-mod-dash__nav-text">View and manage employee profiles.</p>
+            </a>
+            <a href="{{ route('hr.profile-changes.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">02</span>
+                <h3 class="tich-mod-dash__nav-title">Profile changes</h3>
+                <p class="tich-mod-dash__nav-text">Approve contact, photo, and qualification updates.</p>
+                @if ($pendingProfileChangeCount > 0)
+                    <span class="tich-mod-dash__nav-badge">{{ $pendingProfileChangeCount }} pending</span>
+                @endif
+            </a>
+            <a href="{{ route('hr.onboarding.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">03</span>
+                <h3 class="tich-mod-dash__nav-title">Onboarding</h3>
+                <p class="tich-mod-dash__nav-text">Track new hire onboarding progress.</p>
+            </a>
+            <a href="{{ route('hr.contracts.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">04</span>
+                <h3 class="tich-mod-dash__nav-title">Contracts</h3>
+                <p class="tich-mod-dash__nav-text">Manage employment contracts and renewals.</p>
+            </a>
+            <a href="{{ route('hr.vacancies.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">05</span>
+                <h3 class="tich-mod-dash__nav-title">Vacancies</h3>
+                <p class="tich-mod-dash__nav-text">Publish job openings to the Careers page.</p>
+            </a>
+            <a href="{{ route('hr.recruitment.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">06</span>
+                <h3 class="tich-mod-dash__nav-title">Recruitment</h3>
+                <p class="tich-mod-dash__nav-text">Review applications from the public Careers page.</p>
+            </a>
+        </div>
+    </section>
+</div>
 @endsection
 
 @section('scripts')

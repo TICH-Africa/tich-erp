@@ -10,6 +10,7 @@
             @include('partials.navigation.sidebar-link', ['href' => route('monitoring_evaluation.pime.index'), 'label' => 'PIME workspace', 'icon' => 'bar-chart', 'active' => request()->routeIs('monitoring_evaluation.pime.*')])
             @include('partials.navigation.department-budgeting-link', ['module' => 'monitoring_evaluation'])
         @endcan
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'monitoring_evaluation'])
         @include('partials.navigation.sidebar-link', [
             'href' => route('monitoring_evaluation.policy.sign'),
             'label' => 'Sign M&E policy',

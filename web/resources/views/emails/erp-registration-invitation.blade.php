@@ -1,46 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Register on TICH ERP</title>
 </head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    @include('emails.partials.brand-header')
-    <div style="background: #1f2937; color: white; padding: 20px; text-align: center;">
-        <h1>{{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</h1>
-        <p>{{ $departmentLabel }}</p>
-    </div>
-
-    <div style="padding: 30px; background: #f9fafb;">
-        <h2 style="color: #1f2937;">Dear {{ $staff?->fullName() ?? 'Colleague' }},</h2>
-
-        <p>You have been invited to create your account on the TICH ERP portal. Use the button below to complete registration with your personal email address (<strong>{{ $invitation->email }}</strong>).</p>
-
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ $registerUrl }}" style="background: #1669a6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                Register on TICH ERP
-            </a>
-        </div>
-
-        <p style="color: #6b7280; font-size: 14px;">This invitation link expires on {{ $invitation->expires_at->format('j F Y, g:i A') }}. If you did not expect this email, please contact ICT or HR.</p>
-
-        @if ($staff)
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Your details</h3>
-            <p><strong>Employee number:</strong> {{ $staff->employee_number }}</p>
-            <p><strong>Job title:</strong> {{ $staff->job_title }}</p>
-            <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '-' }}</p>
-        </div>
-        @endif
-
-        <p>Best regards,<br>
-        <strong>{{ $departmentLabel }}</strong><br>
-        {{ $emailBrand['short_name'] ?? 'TICH in Africa' }}</p>
-    </div>
-
-    <div style="background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px;">
-        <p>This is an automated message. Please do not reply to this email.</p>
-        @include('emails.partials.legal-links')
-    </div>
+<body style="margin:0;padding:0;background:#f5f6f6;font-family:Georgia,serif;color:#494c50;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f6f6;padding:32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-top:4px solid #6cab33;border-bottom:3px solid #1669a6;">
+                    <tr>
+                        <td style="padding:32px 28px;">
+                            @include('emails.partials.brand-header')
+                            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#1669a6;">
+                                {{ $departmentLabel }}
+                            </p>
+                            <h1 style="margin:0 0 16px;font-size:24px;line-height:1.3;color:#6cab33;">
+                                You are invited to TICH ERP
+                            </h1>
+                            <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#494c50;">
+                                Dear {{ $staff?->fullName() ?? 'Colleague' }},
+                            </p>
+                            <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
+                                Create your ERP account using <strong>{{ $invitation->email }}</strong>. Click the button below to set your password and sign in.
+                            </p>
+                            <p style="margin:0 0 28px;text-align:center;">
+                                <a href="{{ $registerUrl }}" style="display:inline-block;background:#1669a6;color:#ffffff;padding:14px 28px;text-decoration:none;border-radius:6px;font-family:Arial,sans-serif;font-weight:700;font-size:14px;">
+                                    Register on TICH ERP
+                                </a>
+                            </p>
+                            <p style="margin:0 0 12px;font-size:12px;line-height:1.6;color:#6b6e72;word-break:break-all;">
+                                Or open this link:<br>{{ $registerUrl }}
+                            </p>
+                            <p style="margin:0;font-size:13px;line-height:1.6;color:#494c50;">
+                                This invitation expires on {{ $invitation->expires_at->format('j F Y, g:i A') }}. If you did not expect this email, contact ICT or HR.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 28px;background:#f5f6f6;border-top:1px solid #e2e4e5;font-family:Arial,sans-serif;font-size:11px;color:#6b6e72;">
+                            Tropical Institute of Community Health and Development in Africa
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

@@ -9,53 +9,110 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    @if ($errors->any())
-        <div class="tich-alert tich-alert--error tich-mt-4">
-            <ul style="margin:0; padding-left:1.25rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="uf-form">
+        <form method="POST" action="{{ route('finance.student-finance.adjustments.store') }}" data-uf="ready">
+            @csrf
 
-    <form method="POST" action="{{ route('finance.student-finance.adjustments.store') }}" class="tich-card tich-form-grid tich-form-grid--2">
-        @csrf
-        <div class="tich-form-group">
-            <label class="tich-label" for="student_id">Student <span class="tich-text--danger">*</span></label>
-            <select name="student_id" id="student_id" class="tich-input" required>
-                <option value="">Loading students...</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="adjustment_type">Adjustment Type <span class="tich-text--danger">*</span></label>
-            <select name="adjustment_type" id="adjustment_type" class="tich-input" required>
-                <option value="scholarship">Scholarship</option>
-                <option value="bursary">Bursary</option>
-                <option value="waiver">Waiver</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="invoice_id">Invoice (Optional)</label>
-            <select name="invoice_id" id="invoice_id" class="tich-input">
-                <option value="">Loading invoices...</option>
-            </select>
-        </div>
-        <div class="tich-form-group">
-            <label class="tich-label" for="amount">Amount (KES) <span class="tich-text--danger">*</span></label>
-            <input type="number" id="amount" name="amount" class="tich-input" step="0.01" placeholder="0.00" required>
-        </div>
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">ADJ · Adjustment</div>
+                    <div class="uf-amount-bar__sum">Scholarship, bursary, or waiver</div>
+                </div>
+                <span class="uf-badge">Draft</span>
+            </div>
 
-        <div class="tich-form-group" style="grid-column: 1 / -1;">
-            <label class="tich-label" for="reason">Reason <span class="tich-text--danger">*</span></label>
-            <textarea id="reason" name="reason" class="tich-input" rows="4" placeholder="Explain the reason for this adjustment...">{{ old('reason') }}</textarea>
-        </div>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Student &amp; Type</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="student_id">Student <span class="uf-req">*</span></label>
+                            <select
+                                name="student_id"
+                                id="student_id"
+                                required
+                                class="{{ $errors->has('student_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Loading students...</option>
+                            </select>
+                            @error('student_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="adjustment_type">Adjustment Type <span class="uf-req">*</span></label>
+                            <select
+                                name="adjustment_type"
+                                id="adjustment_type"
+                                required
+                                class="{{ $errors->has('adjustment_type') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="scholarship">Scholarship</option>
+                                <option value="bursary">Bursary</option>
+                                <option value="waiver">Waiver</option>
+                            </select>
+                            @error('adjustment_type')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="invoice_id">Invoice (Optional)</label>
+                            <select
+                                name="invoice_id"
+                                id="invoice_id"
+                                class="{{ $errors->has('invoice_id') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Loading invoices...</option>
+                            </select>
+                            @error('invoice_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="amount">Amount (KES) <span class="uf-req">*</span></label>
+                            <input
+                                type="number"
+                                id="amount"
+                                name="amount"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                                class="{{ $errors->has('amount') ? 'is-invalid' : '' }}"
+                            >
+                            @error('amount')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="reason">Reason <span class="uf-req">*</span></label>
+                        <textarea
+                            id="reason"
+                            name="reason"
+                            rows="4"
+                            placeholder="Explain the reason for this adjustment..."
+                            class="{{ $errors->has('reason') ? 'is-invalid' : '' }}"
+                        >{{ old('reason') }}</textarea>
+                        @error('reason')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+            </div>
 
-        <div class="tich-form-group" style="grid-column: 1 / -1;">
-            <button type="submit" class="tich-btn tich-btn-primary">Submit adjustment</button>
-            <a href="{{ route('finance.student-finance.adjustments.index') }}" class="tich-btn tich-btn-ghost" style="margin-left: 0.5rem;">Cancel</a>
-        </div>
-    </form>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Submit adjustment</button>
+                        <a href="{{ route('finance.student-finance.adjustments.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

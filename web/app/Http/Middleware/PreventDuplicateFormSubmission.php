@@ -110,6 +110,14 @@ class PreventDuplicateFormSubmission
             return true;
         }
 
+        // Business failures flash 'error' / 'warning' with a 302 — allow retry.
+        if ($request->hasSession() && (
+            $request->session()->has('error')
+            || $request->session()->has('warning')
+        )) {
+            return true;
+        }
+
         return false;
     }
 

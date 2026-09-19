@@ -10,12 +10,12 @@
         <p class="tich-text tich-mt-2">Register for access to the TICH ERP portal.</p>
     </div>
 
-    <form method="POST" action="{{ route('register') }}" data-client-context>
+    <form method="POST" action="{{ route('register') }}" data-client-context data-uf="skip">
         @csrf
         @include('partials.client-context-fields')
 
-        <div class="tich-form-group">
-            <label for="email" class="tich-label">Email address</label>
+        <div class="uf-field">
+            <label for="email">Email address</label>
             <input
                 type="email"
                 id="email"
@@ -24,33 +24,33 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="tich-input @error('email') tich-input--error @enderror"
+                class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
                 placeholder="you@example.com"
             >
             @error('email')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="user_type" class="tich-label">Account type</label>
+        <div class="uf-field">
+            <label for="user_type">Account type</label>
             <select
                 id="user_type"
                 name="user_type"
                 required
-                class="tich-select @error('user_type') tich-input--error @enderror"
+                class="{{ $errors->has('user_type') ? 'is-invalid' : '' }}"
             >
                 <option value="student" {{ old('user_type', 'student') === 'student' ? 'selected' : '' }}>Student / Applicant</option>
                 <option value="staff" {{ old('user_type') === 'staff' ? 'selected' : '' }}>Staff</option>
                 <option value="external" {{ old('user_type') === 'external' ? 'selected' : '' }}>External partner</option>
             </select>
             @error('user_type')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="password" class="tich-label">Password</label>
+        <div class="uf-field">
+            <label for="password">Password</label>
             <x-password-input
                 id="password"
                 name="password"
@@ -59,12 +59,12 @@
                 :has-error="$errors->has('password')"
             />
             @error('password')
-                <p class="tich-field-error">{{ $message }}</p>
+                <span class="uf-error">{{ $message }}</span>
             @enderror
         </div>
 
-        <div class="tich-form-group">
-            <label for="password_confirmation" class="tich-label">Confirm password</label>
+        <div class="uf-field">
+            <label for="password_confirmation">Confirm password</label>
             <x-password-input
                 id="password_confirmation"
                 name="password_confirmation"
@@ -73,7 +73,7 @@
             />
         </div>
 
-        <div class="tich-form-group" style="display: flex; align-items: flex-start; gap: 0.5rem;">
+        <div class="uf-field" style="flex-direction: row; align-items: flex-start; gap: 0.5rem;">
             <input
                 type="checkbox"
                 id="terms"
@@ -84,7 +84,7 @@
                 class="tich-checkbox"
                 style="margin-top: 0.2rem;"
             >
-            <label for="terms" class="tich-text">
+            <label for="terms" class="tich-text" style="font-weight: 400;">
                 I agree to the
                 <a href="{{ route('privacy') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 and

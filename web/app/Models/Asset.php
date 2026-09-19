@@ -105,7 +105,12 @@ class Asset extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('asset_status', 'active');
+        return $query->whereIn('asset_status', ['active', 'new']);
+    }
+
+    public function scopeAuditable($query)
+    {
+        return $query->where('asset_status', '!=', 'disposed');
     }
 
     public function scopeUnderMaintenance($query)

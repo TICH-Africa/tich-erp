@@ -3,37 +3,44 @@
 @section('title', 'Administration Dashboard')
 
 @section('administration-content')
-    <x-page-toolbar title="Administration" meta="Institutional planning, admissions ops, compliance, and procurement visibility" />
+<div class="tich-mod-dash">
+    <header class="tich-mod-dash__hero">
+        <div class="tich-mod-dash__hero-copy">
+            <p class="tich-mod-dash__eyebrow">Institutional operations</p>
+            <h1 class="tich-mod-dash__title">Administration command center</h1>
+            <p class="tich-mod-dash__lede">Planning, admissions ops, compliance, budget routing, and fund distribution — live overview.</p>
+        </div>
+    </header>
 
     @include('qa.partials.assigned-tasks-panel')
 
     @if ($department)
-        <article class="tich-card tich-mt-8">
-            <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+        <article class="tich-mod-dash__panel">
+            <div class="tich-mod-dash__panel-head">
                 <div>
-                    <p class="tich-caption">Administrative unit</p>
-                    <h2 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h2>
-                    <p class="tich-caption tich-mt-2">{{ $department->dept_code }} · Department operations, workflows, and records.</p>
+                    <p class="tich-mod-dash__panel-eyebrow">Administrative unit</p>
+                    <h2 class="tich-mod-dash__panel-title">{{ $department->dept_name }}</h2>
+                    <p class="tich-mod-dash__panel-meta">{{ $department->dept_code }} · Department operations, workflows, and records.</p>
                 </div>
-                <span class="tich-badge">Administration module enabled</span>
+                <span class="tich-badge">Module enabled</span>
             </div>
         </article>
     @endif
 
-    <div class="tich-stat-row tich-stat-row--4 tich-mt-8">
-        <div class="tich-stat">
-            <p class="tich-stat__label">Open planning cycles</p>
-            <p class="tich-stat__value">{{ number_format($planningOpen) }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Pending approvals</p>
-            <p class="tich-stat__value">{{ number_format($pendingApprovals) }}</p>
-        </div>
-        <div class="tich-stat">
-            <p class="tich-stat__label">Funds released</p>
-            <p class="tich-stat__value">KES {{ number_format($releasedFunds, 0) }}</p>
-        </div>
-    </div>
+    <section class="tich-mod-dash__metrics" aria-label="Key administration metrics">
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
+            <p class="tich-mod-dash__metric-label">Open planning cycles</p>
+            <p class="tich-mod-dash__metric-value">{{ number_format($planningOpen) }}</p>
+        </article>
+        <article class="tich-mod-dash__metric {{ ($pendingApprovals ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
+            <p class="tich-mod-dash__metric-label">Pending approvals</p>
+            <p class="tich-mod-dash__metric-value">{{ number_format($pendingApprovals) }}</p>
+        </article>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--ok">
+            <p class="tich-mod-dash__metric-label">Funds released</p>
+            <p class="tich-mod-dash__metric-value" style="font-size:1.05rem;">KES {{ number_format($releasedFunds, 0) }}</p>
+        </article>
+    </section>
 
     <div class="tich-mt-8" style="display:grid;gap:1.5rem;">
         <article class="tich-card">
@@ -315,33 +322,42 @@
         </article>
     </div>
 
-    <h3 class="tich-h3 tich-mt-8 tich-mb-4">Module hubs</h3>
-    <div class="tich-grid tich-grid--3" style="gap: 0.75rem;">
-        <a href="{{ route('administration.planning.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Multi-tier planning</h3>
-            <p class="tich-caption tich-mt-2">Annual, monthly, and weekly cycles with requisition deadlines.</p>
-        </a>
-        <a href="{{ route('administration.budget-aggregation.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Budget aggregation</h3>
-            <p class="tich-caption tich-mt-2">Cross-department consolidation and CBE frameworks.</p>
-        </a>
-        <a href="{{ route('administration.approvals.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Approval workflow</h3>
-            <p class="tich-caption tich-mt-2">Department → Finance → Executive/CEO authorization.</p>
-        </a>
-        <a href="{{ route('administration.fund-distribution.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Fund distribution</h3>
-            <p class="tich-caption tich-mt-2">Digital release of monthly allocations.</p>
-        </a>
-        <a href="{{ route('administration.statutory.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">Statutory tracking</h3>
-            <p class="tich-caption tich-mt-2">KRA, TVETA, and MoE certifications.</p>
-        </a>
-        <a href="{{ route('administration.ledger-sync.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
-            <h3 class="tich-h4">QuickBooks sync</h3>
-            <p class="tich-caption tich-mt-2">Payment and AP ledger synchronization.</p>
-        </a>
-    </div>
+    <section class="tich-mod-dash__nav" aria-label="Administration hubs">
+        <p class="tich-mod-dash__section-label">Module hubs</p>
+        <div class="tich-mod-dash__nav-grid">
+            <a href="{{ route('administration.planning.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">01</span>
+                <h3 class="tich-mod-dash__nav-title">Multi-tier planning</h3>
+                <p class="tich-mod-dash__nav-text">Annual, monthly, and weekly cycles with requisition deadlines.</p>
+            </a>
+            <a href="{{ route('administration.budget-aggregation.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">02</span>
+                <h3 class="tich-mod-dash__nav-title">Budget aggregation</h3>
+                <p class="tich-mod-dash__nav-text">Cross-department consolidation and CBE frameworks.</p>
+            </a>
+            <a href="{{ route('administration.approvals.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">03</span>
+                <h3 class="tich-mod-dash__nav-title">Approval workflow</h3>
+                <p class="tich-mod-dash__nav-text">Department → Finance → Executive/CEO authorization.</p>
+            </a>
+            <a href="{{ route('administration.fund-distribution.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">04</span>
+                <h3 class="tich-mod-dash__nav-title">Fund distribution</h3>
+                <p class="tich-mod-dash__nav-text">Digital release of monthly allocations.</p>
+            </a>
+            <a href="{{ route('administration.statutory.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">05</span>
+                <h3 class="tich-mod-dash__nav-title">Statutory tracking</h3>
+                <p class="tich-mod-dash__nav-text">KRA, TVETA, and MoE certifications.</p>
+            </a>
+            <a href="{{ route('administration.ledger-sync.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">06</span>
+                <h3 class="tich-mod-dash__nav-title">QuickBooks sync</h3>
+                <p class="tich-mod-dash__nav-text">Payment and AP ledger synchronization.</p>
+            </a>
+        </div>
+    </section>
+</div>
 @endsection
 
 @section('scripts')

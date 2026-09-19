@@ -34,6 +34,7 @@
             method="POST"
             action="{{ $openUserId ? $access->route('users.update', $openUserId) : '#' }}"
             class="tich-modal__body"
+            data-uf="skip"
         >
             @csrf
             @method('PUT')
@@ -76,18 +77,18 @@
 
 <template id="staff-assignment-row-template">
     <div class="staff-assignment-row" style="display: grid; gap: 0.65rem; padding: 0.85rem; border: 1px solid var(--tich-border, #e5e7eb); border-radius: 0.5rem;">
-        <div class="tich-form-group" style="margin: 0;">
-            <label class="tich-label staff-dept-label">Department <span class="staff-dept-required" style="color: #c0392b;">*</span></label>
-            <select name="assignments[__INDEX__][department_id]" class="tich-input staff-dept-select" required>
+        <div class="uf-field" style="margin: 0;">
+            <label class="staff-dept-label">Department <span class="staff-dept-required uf-req">*</span></label>
+            <select name="assignments[__INDEX__][department_id]" class="staff-dept-select" required>
                 <option value="">Select department…</option>
                 @foreach ($departments as $department)
                     <option value="{{ $department->id }}">{{ $department->dept_name }}</option>
                 @endforeach
             </select>
         </div>
-        <div class="tich-form-group" style="margin: 0;">
-            <label class="tich-label">Role <span style="color: #c0392b;">*</span></label>
-            <select name="assignments[__INDEX__][role_id]" class="tich-input staff-role-select" required disabled>
+        <div class="uf-field" style="margin: 0;">
+            <label>Role <span class="uf-req">*</span></label>
+            <select name="assignments[__INDEX__][role_id]" class="staff-role-select" required disabled>
                 <option value="">Select department first…</option>
                 @foreach ($roles as $role)
                     <option
@@ -99,16 +100,16 @@
                 @endforeach
             </select>
         </div>
-        <div class="tich-form-group staff-learning-dept-wrap" style="margin: 0; display: none;">
-            <label class="tich-label">Learning / training department <span class="staff-learning-dept-required" style="color: #c0392b;">*</span></label>
-            <select name="assignments[__INDEX__][learning_department_id]" class="tich-input staff-learning-dept-select">
+        <div class="uf-field staff-learning-dept-wrap" style="margin: 0; display: none;">
+            <label>Learning / training department <span class="staff-learning-dept-required uf-req">*</span></label>
+            <select name="assignments[__INDEX__][learning_department_id]" class="staff-learning-dept-select">
                 <option value="">Select learning department…</option>
             </select>
-            <p class="tich-caption tich-mt-1">Required for Head of Department - choose the school or training unit they lead.</p>
+            <span class="uf-hint">Required for Head of Department - choose the school or training unit they lead.</span>
         </div>
-        <div class="tich-form-group" style="margin: 0;">
-            <label class="tich-label">Campus (optional)</label>
-            <select name="assignments[__INDEX__][campus_id]" class="tich-input">
+        <div class="uf-field" style="margin: 0;">
+            <label>Campus (optional)</label>
+            <select name="assignments[__INDEX__][campus_id]">
                 <option value="">All campuses</option>
                 @foreach ($campuses as $campus)
                     <option value="{{ $campus->id }}">{{ $campus->campus_name }}</option>

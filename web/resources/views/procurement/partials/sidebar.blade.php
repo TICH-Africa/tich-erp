@@ -51,20 +51,6 @@
             'badgeKey' => 'stock-alerts.active',
         ])
         @include('partials.navigation.sidebar-link', [
-            'href' => route('procurement.asset-movements.index'),
-            'label' => 'Asset movements',
-            'icon' => 'arrow-left-right',
-            'active' => request()->routeIs('procurement.asset-movements.*'),
-            'badgeKey' => 'asset-movements.pending',
-        ])
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('procurement.asset-maintenance.index'),
-            'label' => 'Maintenance',
-            'icon' => 'wrench',
-            'active' => request()->routeIs('procurement.asset-maintenance.*'),
-            'badgeKey' => 'asset-maintenance.open',
-        ])
-        @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.asset-disposals.index'),
             'label' => 'Disposals',
             'icon' => 'trash',
@@ -100,7 +86,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'procurement'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'procurement'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'procurement'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'procurement'])
     </nav>
     <div class="tich-admin-sidebar__footer">

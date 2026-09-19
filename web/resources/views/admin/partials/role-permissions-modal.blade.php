@@ -21,7 +21,7 @@
             <h2 id="role-permissions-modal-title" class="tich-h3" style="margin: 0;">Permissions</h2>
             <button type="button" class="tich-modal__close" data-close-modal="role-permissions-modal" aria-label="Close">&times;</button>
         </header>
-        <form id="role-permissions-form" method="POST" action="#" class="tich-modal__body">
+        <form id="role-permissions-form" method="POST" action="#" class="tich-modal__body" data-uf="skip">
             @csrf
             @method('PUT')
             <p id="role-permissions-help" class="tich-caption tich-mb-4">

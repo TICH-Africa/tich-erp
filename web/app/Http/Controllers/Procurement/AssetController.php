@@ -7,12 +7,15 @@ use App\Models\Asset;
 use App\Models\PurchaseOrder;
 use App\Models\Staff;
 use App\Models\Supplier;
+use App\Services\Procurement\AssetMovementService;
 use App\Support\Pagination;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AssetController extends Controller
 {
+    public function __construct(protected AssetMovementService $movements) {}
     public function index(Request $request): View
     {
         $query = Asset::query()->with(['supplier', 'purchaseOrder', 'custodian']);
@@ -98,8 +101,33 @@ class AssetController extends Controller
 
     public function show(Asset $asset): View
     {
-        $asset->load(['supplier', 'purchaseOrder', 'custodian', 'movements', 'maintenances', 'disposals', 'audits']);
+        $asset->load(['supplier', 'purchaseOrder', 'custodian', 'movements', 'disposals', 'audits']);
 
-        return view('procurement.assets.show', compact('asset'));
+        return view('procurement.assets.show', [
+            'asset' => $asset,
+            'custodians' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'job_title']),
+        ]);
+    }
+
+    public function transfer(Request $request, Asset $asset): RedirectResponse
+    {
+        $validated = $request->validate([
+            'movement_type' => ['required', 'in:transfer,relocation,assignment'],
+            'to_location' => ['required', 'string', 'max:255'],
+            'building' => ['nullable', 'string', 'max:100'],
+            'room' => ['nullable', 'string', 'max:100'],
+            'custodian_id' => ['nullable', 'exists:staff,id'],
+            'movement_date' => ['required', 'date'],
+            'reason' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $validated['from_location'] = $asset->location_name;
+
+        $this->movements->transferAsset($asset, $validated);
+
+        return redirect()
+            ->route('procurement.assets.show', $asset)
+            ->with('status', 'Asset transferred successfully.');
     }
 }

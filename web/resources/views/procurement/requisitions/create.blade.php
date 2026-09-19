@@ -33,119 +33,136 @@
         $oldBudgetKey = old('budget_key', '');
     @endphp
 
-    <form method="POST" action="{{ route('procurement.requisitions.store') }}" class="tich-mt-6" enctype="multipart/form-data" id="requisition-create-form">
-        @csrf
-        <input type="hidden" name="budget_code" id="budget_code" value="{{ old('budget_code') }}">
-        <input type="hidden" name="requested_item" id="requested_item" value="{{ old('requested_item') }}">
-        <input type="hidden" name="budget_line" id="budget_line" value="{{ old('budget_line') }}">
-        <input type="hidden" name="estimated_unit_cost" id="estimated_unit_cost" value="{{ old('estimated_unit_cost') }}">
-        <input type="hidden" name="quantity" id="quantity" value="{{ old('quantity') }}">
-        <input type="hidden" name="estimated_cost" id="estimated_cost" value="{{ old('estimated_cost') }}">
+    <div class="uf-form">
+        <form method="POST" action="{{ route('procurement.requisitions.store') }}" enctype="multipart/form-data" id="requisition-create-form" data-uf="ready">
+            @csrf
+            <input type="hidden" name="budget_code" id="budget_code" value="{{ old('budget_code') }}">
+            <input type="hidden" name="requested_item" id="requested_item" value="{{ old('requested_item') }}">
+            <input type="hidden" name="budget_line" id="budget_line" value="{{ old('budget_line') }}">
+            <input type="hidden" name="estimated_unit_cost" id="estimated_unit_cost" value="{{ old('estimated_unit_cost') }}">
+            <input type="hidden" name="quantity" id="quantity" value="{{ old('quantity') }}">
+            <input type="hidden" name="estimated_cost" id="estimated_cost" value="{{ old('estimated_cost') }}">
 
-        <div class="tich-card tich-form-stack">
-            <div class="tich-grid tich-grid--2" style="gap:1rem;">
-                <div class="tich-form-group">
-                    <label class="tich-label" for="requesting_department_id">Requesting department <span class="tich-text--danger">*</span></label>
-                    <select id="requesting_department_id" name="requesting_department_id" class="tich-input" required>
-                        <option value="">Select department</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected(old('requesting_department_id') == $department->id)>{{ $department->dept_name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label" for="request_date">Request date <span class="tich-text--danger">*</span></label>
-                    <input type="text" id="request_date" name="request_date" class="tich-input" placeholder="dd/mm/yyyy" value="{{ old('request_date', now()->format('d/m/Y')) }}" required>
-                </div>
-            </div>
-
-            <div class="tich-form-group">
-                <label class="tich-label" for="budget_key">Budget <span class="tich-text--danger">*</span></label>
-                <select
-                    id="budget_key"
-                    name="budget_key"
-                    class="tich-input"
-                    data-tich-search="true"
-                    data-tich-search-placeholder="Search budget code, name, or department…"
-                    required
-                >
-                    <option value="">Search and select a budget…</option>
-                    @foreach ($budgetOptions as $option)
-                        @php $optionKey = $option['source'].':'.$option['id']; @endphp
-                        <option
-                            value="{{ $optionKey }}"
-                            data-source="{{ $option['source'] }}"
-                            data-id="{{ $option['id'] }}"
-                            data-code="{{ $option['code'] }}"
-                            data-department-id="{{ $option['department_id'] }}"
-                            @selected($oldBudgetKey === $optionKey || old('budget_code') === $option['code'])
-                        >{{ $option['label'] }}</option>
-                    @endforeach
-                </select>
-                <p class="tich-caption tich-mt-1" id="budget-lines-hint" style="margin:0;">Selecting a budget loads its line items below. You can edit quantities, prices, and remove lines.</p>
-            </div>
-
-            <div class="tich-form-group">
-                <label class="tich-label" for="justification">Justification <span class="tich-text--danger">*</span></label>
-                <textarea id="justification" name="justification" class="tich-input" rows="4" placeholder="Describe the purpose and business need for this requisition…" required>{{ old('justification') }}</textarea>
-            </div>
-
-            <div class="tich-form-group">
-                <label class="tich-label" for="attachments">Attachments</label>
-                <input type="file" id="attachments" name="attachments[]" class="tich-input" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                <p class="tich-caption tich-mt-1" style="margin:0;">Max 5 files, 5MB each. Accepted: PDF, DOC, DOCX, JPG, JPEG, PNG.</p>
-            </div>
-        </div>
-
-        <div class="tich-card tich-table-panel tich-mt-6">
-            <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem;">
+            <div class="uf-amount-bar">
                 <div>
-                    <h2 class="tich-h3" style="margin:0;">Requisition line items</h2>
-                    <p class="tich-caption tich-mt-1" style="margin:0;">Row total = quantity × unit price. Edit freely after loading from the budget.</p>
+                    <div class="uf-amount-bar__ref">REQ · Requisition</div>
+                    <div class="uf-amount-bar__sum">Budget-linked purchase request</div>
                 </div>
-                <button type="button" class="tich-btn tich-btn-secondary" id="requisition-add-line">+ Add line</button>
+                <span class="uf-badge">Draft</span>
             </div>
-            <div class="tich-table-wrap tich-mt-4">
-                <table class="tich-admin-table" id="requisition-lines-table">
-                    <thead>
-                        <tr>
-                            <th style="min-width:9rem;">Item</th>
-                            <th style="min-width:6rem;">Quantity</th>
-                            <th style="min-width:12rem;">Description</th>
-                            <th style="min-width:8rem;">Unit price</th>
-                            <th style="min-width:7rem;">Unit</th>
-                            <th style="min-width:8rem;">Total</th>
-                            <th style="width:3rem;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="requisition-lines-body">
-                        @foreach ($oldLines as $index => $line)
-                            <tr class="req-line">
-                                <td><input type="text" name="lines[{{ $index }}][item]" class="tich-input" required maxlength="255" placeholder="Item name" value="{{ $line['item'] ?? '' }}"></td>
-                                <td><input type="number" name="lines[{{ $index }}][quantity]" class="tich-input js-line-qty" value="{{ $line['quantity'] ?? '1' }}" min="0.0001" step="any" required></td>
-                                <td><input type="text" name="lines[{{ $index }}][description]" class="tich-input" maxlength="2000" placeholder="Optional" value="{{ $line['description'] ?? '' }}"></td>
-                                <td><input type="number" name="lines[{{ $index }}][unit_price]" class="tich-input js-line-price" min="0" step="0.01" required placeholder="0.00" value="{{ $line['unit_price'] ?? '' }}"></td>
-                                <td><input type="text" name="lines[{{ $index }}][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs" value="{{ $line['unit_of_measure'] ?? '' }}"></td>
-                                <td><input type="text" class="tich-input js-line-total" value="0.00" readonly tabindex="-1" aria-label="Line total"></td>
-                                <td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="5" style="text-align:right; font-weight:600;">Grand total (KES)</td>
-                            <td><strong id="requisition-grand-total">0.00</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
 
-        <div class="tich-mt-6">
-            <button type="submit" class="tich-btn tich-btn-primary">Save requisition draft</button>
-        </div>
-    </form>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Request Details</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-grid-2">
+                        <div class="uf-field">
+                            <label for="requesting_department_id">Requesting department <span class="uf-req">*</span></label>
+                            <select id="requesting_department_id" name="requesting_department_id" required>
+                                <option value="">Select department</option>
+                                @foreach ($departments as $department)
+                                    <option value="{{ $department->id }}" @selected(old('requesting_department_id') == $department->id)>{{ $department->dept_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="uf-field">
+                            <label for="request_date">Request date <span class="uf-req">*</span></label>
+                            <input type="text" id="request_date" name="request_date" placeholder="dd/mm/yyyy" value="{{ old('request_date', now()->format('d/m/Y')) }}" required>
+                        </div>
+                    </div>
+                    <div class="uf-field">
+                        <label for="budget_key">Budget <span class="uf-req">*</span></label>
+                        <select
+                            id="budget_key"
+                            name="budget_key"
+                            data-tich-search="true"
+                            data-tich-search-placeholder="Search budget code, name, or department…"
+                            required
+                        >
+                            <option value="">Search and select a budget…</option>
+                            @foreach ($budgetOptions as $option)
+                                @php $optionKey = $option['source'].':'.$option['id']; @endphp
+                                <option
+                                    value="{{ $optionKey }}"
+                                    data-source="{{ $option['source'] }}"
+                                    data-id="{{ $option['id'] }}"
+                                    data-code="{{ $option['code'] }}"
+                                    data-department-id="{{ $option['department_id'] }}"
+                                    @selected($oldBudgetKey === $optionKey || old('budget_code') === $option['code'])
+                                >{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <span class="uf-hint" id="budget-lines-hint">Selecting a budget loads its line items below. You can edit quantities, prices, and remove lines.</span>
+                    </div>
+                    <div class="uf-field">
+                        <label for="justification">Justification <span class="uf-req">*</span></label>
+                        <textarea id="justification" name="justification" rows="4" placeholder="Describe the purpose and business need for this requisition…" required>{{ old('justification') }}</textarea>
+                    </div>
+                    <div class="uf-field">
+                        <label for="attachments">Attachments</label>
+                        <input type="file" id="attachments" name="attachments[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <span class="uf-hint">Max 5 files, 5MB each. Accepted: PDF, DOC, DOCX, JPG, JPEG, PNG.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Requisition Line Items</div>
+                <div class="uf-section-body">
+                    <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <span class="uf-hint" style="margin:0;">Row total = quantity × unit price. Edit freely after loading from the budget.</span>
+                        <button type="button" class="uf-btn uf-btn-secondary" id="requisition-add-line">+ Add line</button>
+                    </div>
+                    <div class="tich-table-wrap">
+                        <table class="tich-admin-table" id="requisition-lines-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:9rem;">Item</th>
+                                    <th style="min-width:6rem;">Quantity</th>
+                                    <th style="min-width:12rem;">Description</th>
+                                    <th style="min-width:8rem;">Unit price</th>
+                                    <th style="min-width:7rem;">Unit</th>
+                                    <th style="min-width:8rem;">Total</th>
+                                    <th style="width:3rem;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="requisition-lines-body">
+                                @foreach ($oldLines as $index => $line)
+                                    <tr class="req-line">
+                                        <td><input type="text" name="lines[{{ $index }}][item]" class="tich-input" required maxlength="255" placeholder="Item name" value="{{ $line['item'] ?? '' }}"></td>
+                                        <td><input type="number" name="lines[{{ $index }}][quantity]" class="tich-input js-line-qty" value="{{ $line['quantity'] ?? '1' }}" min="0.0001" step="any" required></td>
+                                        <td><input type="text" name="lines[{{ $index }}][description]" class="tich-input" maxlength="2000" placeholder="Optional" value="{{ $line['description'] ?? '' }}"></td>
+                                        <td><input type="number" name="lines[{{ $index }}][unit_price]" class="tich-input js-line-price" min="0" step="0.01" required placeholder="0.00" value="{{ $line['unit_price'] ?? '' }}"></td>
+                                        <td><input type="text" name="lines[{{ $index }}][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs" value="{{ $line['unit_of_measure'] ?? '' }}"></td>
+                                        <td><input type="text" class="tich-input js-line-total" value="0.00" readonly tabindex="-1" aria-label="Line total"></td>
+                                        <td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" style="text-align:right; font-weight:600;">Grand total (KES)</td>
+                                    <td><strong id="requisition-grand-total">0.00</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Save requisition draft</button>
+                        <a href="{{ route('procurement.requisitions.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
+        </form>
+    </div>
 @endsection
 
 @section('scripts')

@@ -58,33 +58,54 @@ class ErpRegistrationInviteService
             'expires_at' => now()->addDays((int) config('tich.erp_registration.invite_days', 14)),
         ]);
 
+        // Same delivery path for HR and ICT invites: notification@ reaches external inboxes;
+        // hr@ / ict@ are accepted by SMTP but often never arrive.
+        $deliveryModule = (string) config('tich-mail.invite_delivery_module', ModuleMail::NOTIFICATION);
+        if ($deliveryModule === '' || ! config()->has("tich-mail.modules.{$deliveryModule}")) {
+            $deliveryModule = ModuleMail::NOTIFICATION;
+        }
+
         $delivery = ModuleMail::trySend(
-            $mailModule,
+            $deliveryModule,
             $email,
-            new ErpRegistrationInvitationEmail($invitation, $staff),
+            new ErpRegistrationInvitationEmail($invitation, $staff, $deliveryModule),
         );
 
         if (! $delivery['sent']) {
+            $invitationId = $invitation->id;
             $invitation->delete();
+
+            $this->auditInvite(
+                'auth.registration_invite.mail_failed',
+                $invitationId,
+                [
+                    'email' => $email,
+                    'staff_id' => $staff?->id,
+                    'mail_module' => $mailModule,
+                    'delivery_module' => $deliveryModule,
+                    'error' => $delivery['error'],
+                ],
+                'failure',
+                $invitedBy->id,
+            );
 
             return [
                 'success' => false,
-                'message' => $delivery['error'] ?? 'Could not send invitation email. Check mail settings and try again.',
+                'message' => 'Invitation email could not be sent to '.$email.'. '
+                    .($delivery['error'] ?? 'Check MAIL_HOST and MAIL_NOTIFICATION_* credentials in .env, then run php artisan config:clear.'),
             ];
         }
 
-        app(AuditService::class)->log(
+        $this->auditInvite(
             'auth.registration_invite.sent',
-            'erp_registration_invitations',
             $invitation->id,
-            null,
             [
                 'email' => $email,
                 'staff_id' => $staff?->id,
                 'mail_module' => $mailModule,
+                'delivery_module' => $deliveryModule,
                 'resent' => $hadPriorInvite,
             ],
-            null,
             'success',
             $invitedBy->id,
         );
@@ -104,6 +125,63 @@ class ErpRegistrationInviteService
             'message' => $message,
             'invitation' => $invitation,
         ];
+    }
+
+    /**
+     * Invite a specific staff record using the personal email HR captured.
+     *
+     * @return array{success: bool, message: string, invitation?: ErpRegistrationInvitation}
+     */
+    public function sendForStaff(Staff $staff, User $invitedBy, string $mailModule = 'hr'): array
+    {
+        $email = strtolower(trim((string) $staff->primary_email));
+
+        if ($email === '') {
+            return [
+                'success' => false,
+                'message' => 'Add a personal email on this staff record before sending an invite.',
+            ];
+        }
+
+        if ($staff->user_id) {
+            return [
+                'success' => false,
+                'message' => 'This employee already has an ERP account. They can sign in or use forgot password.',
+            ];
+        }
+
+        $result = $this->send($email, $invitedBy, $mailModule);
+
+        if (! empty($result['invitation']) && empty($result['invitation']->staff_id)) {
+            $result['invitation']->update(['staff_id' => $staff->id]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function auditInvite(string $action, int $invitationId, array $payload, string $status, int $userId): void
+    {
+        try {
+            app(AuditService::class)->log(
+                $action,
+                'erp_registration_invitations',
+                $invitationId,
+                null,
+                $payload,
+                null,
+                $status,
+                $userId,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Registration invite audit failed', [
+                'action' => $action,
+                'invitation_id' => $invitationId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -225,7 +303,7 @@ class ErpRegistrationInviteService
     private function findStaffByPersonalEmail(string $email): ?Staff
     {
         return Staff::query()
-            ->with('department')
+            ->with(['department'])
             ->whereRaw('LOWER(primary_email) = ?', [strtolower(trim($email))])
             ->first();
     }

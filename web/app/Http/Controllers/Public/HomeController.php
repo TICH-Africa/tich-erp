@@ -44,6 +44,7 @@ class HomeController extends Controller
 
         if (Schema::hasTable('research_projects')) {
             $projects = ResearchProject::query()
+                ->published()
                 ->orderByDesc('is_featured')
                 ->orderByDesc('start_date')
                 ->orderByDesc('id')

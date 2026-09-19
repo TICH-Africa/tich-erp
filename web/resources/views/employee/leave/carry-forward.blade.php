@@ -3,46 +3,64 @@
 @section('employee-content')
     <x-page-toolbar title="Leave Carry-Forward" meta="Request to carry forward unused annual leave days to the next year" />
 
-    <div class="tich-card tich-mb-6">
-        <h2 class="tich-h3">Request Carry-Forward</h2>
-        <p class="tich-text tich-mb-4">
-            Per the HR Manual, you may request to carry forward up to 10 days of unused annual leave to the next calendar year.
-            This requires written approval from HR.
-        </p>
-
-        <form method="POST" action="{{ route('employee.leave.carry-forward.store') }}">
+    <div class="uf-form">
+        <form method="POST" action="{{ route('employee.leave.carry-forward.store') }}" data-uf="ready">
             @csrf
-            <div class="tich-form-grid" style="max-width: 32rem;">
-                <div class="tich-form-group">
-                    <label class="tich-label" for="days_requested">Days to carry forward (max 10)</label>
-                    <input type="number" id="days_requested" name="days_requested" step="0.5" min="0.5" max="10"
-                        class="tich-input" value="{{ old('days_requested') }}" required>
-                    @error('days_requested')
-                        <p class="tich-form-error">{{ $message }}</p>
-                    @enderror
+
+            <div class="uf-amount-bar">
+                <div>
+                    <div class="uf-amount-bar__ref">LVE · Carry-forward</div>
+                    <div class="uf-amount-bar__sum">Request unused days</div>
                 </div>
+                <span class="uf-badge">Draft</span>
+            </div>
 
-                <div class="tich-form-group">
-                    <label class="tich-label" for="reason">Reason for carry-forward request</label>
-                    <textarea id="reason" name="reason" class="tich-input" rows="3" required
-                        placeholder="Explain the exceptional circumstances for this request">{{ old('reason') }}</textarea>
-                    @error('reason')
-                        <p class="tich-form-error">{{ $message }}</p>
+            <div class="uf-form-section">
+                <div class="uf-section-head">Request Carry-Forward</div>
+                <div class="uf-section-body">
+                    <p class="uf-hint">
+                        Per the HR Manual, you may request to carry forward up to 10 days of unused annual leave to the next calendar year.
+                        This requires written approval from HR.
+                    </p>
+                    <div class="uf-field">
+                        <label for="days_requested">Days to carry forward (max 10) <span class="uf-req">*</span></label>
+                        <input type="number" id="days_requested" name="days_requested" step="0.5" min="0.5" max="10"
+                            class="{{ $errors->has('days_requested') ? 'is-invalid' : '' }}"
+                            value="{{ old('days_requested') }}" required>
+                        @error('days_requested')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="uf-field">
+                        <label for="reason">Reason for carry-forward request <span class="uf-req">*</span></label>
+                        <textarea id="reason" name="reason" rows="3" required
+                            class="{{ $errors->has('reason') ? 'is-invalid' : '' }}"
+                            placeholder="Explain the exceptional circumstances for this request">{{ old('reason') }}</textarea>
+                        @error('reason')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    @error('carry_forward')
+                        <div class="tich-alert tich-alert--warning">{{ $message }}</div>
                     @enderror
-                </div>
-
-                @error('carry_forward')
-                    <div class="tich-notice tich-notice--warning">{{ $message }}</div>
-                @enderror
-
-                <div class="tich-form-group">
-                    <button type="submit" class="tich-btn tich-btn-primary">Submit request to HR</button>
                 </div>
             </div>
+
+            <div class="uf-form-section">
+                <div class="uf-section-head">Submit</div>
+                <div class="uf-section-body">
+                    <div class="uf-form-actions">
+                        <button type="submit" class="uf-btn uf-btn-primary">Submit request to HR</button>
+                    </div>
+                </div>
+            </div>
+
+            <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
         </form>
     </div>
 
-    <div class="tich-card">
+    <div class="tich-card tich-mt-6">
         <h2 class="tich-h3 tich-mb-4">Your Carry-Forward History</h2>
 
         <div class="tich-table-wrap">

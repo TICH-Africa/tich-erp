@@ -19,7 +19,7 @@
         <p>To complete your onboarding and activate your employee account, please click the button below:</p>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ url('/onboarding/activate/' . $staff->onboarding_token) }}" style="background: #1669a6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+            <a href="{{ \App\Support\MailPublicUrl::to('onboarding/activate/'.$staff->onboarding_token) }}" style="background: #1669a6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
                 Complete Onboarding
             </a>
         </div>
@@ -30,7 +30,7 @@
             <h3 style="margin-top: 0;">Your Details</h3>
             <p><strong>Employee Number:</strong> {{ $staff->employee_number }}</p>
             <p><strong>Job Title:</strong> {{ $staff->job_title }}</p>
-            <p><strong>Department:</strong> {{ $staff->department->dept_name ?? '-' }}</p>
+            <p><strong>Department:</strong> {{ $staff->department?->dept_name ?? '-' }}</p>
         </div>
 
         <p>Best regards,<br>

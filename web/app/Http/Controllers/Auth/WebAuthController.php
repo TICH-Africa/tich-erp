@@ -57,36 +57,43 @@ class WebAuthController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        $result = $this->passwordReset->requestReset((string) $request->input('email'), $request);
+        $email = (string) $request->input('email');
+        $result = $this->passwordReset->requestReset($email, $request);
 
-        return back()->with('status', $result['message']);
+        if ($result['status'] === 'escalated') {
+            return back()->with('status', $result['message']);
+        }
+
+        return redirect()
+            ->route('password.reset')
+            ->with('status', $result['message'])
+            ->with('reset_email', $email);
     }
 
-    public function showResetPassword(Request $request, string $token): View
+    public function showResetPassword(Request $request, ?string $token = null): View
     {
         return view('auth.reset-password', [
-            'token' => $token,
-            'email' => $request->query('email'),
+            'email' => old('email', $request->query('email', session('reset_email'))),
         ]);
     }
 
     public function resetPassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'token' => ['required'],
             'email' => ['required', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        $result = $this->passwordReset->resetWithToken(
+        $result = $this->passwordReset->resetWithOtp(
             (string) $validated['email'],
-            (string) $validated['token'],
+            (string) $validated['otp'],
             (string) $validated['password'],
             $request
         );
 
         if (! $result['ok']) {
-            return back()->withErrors(['email' => $result['message']]);
+            return back()->withInput($request->only('email'))->withErrors(['otp' => $result['message']]);
         }
 
         return redirect()

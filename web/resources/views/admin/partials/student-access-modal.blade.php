@@ -24,6 +24,7 @@
             method="POST"
             action="{{ $openUserId ? $access->route('users.update', $openUserId) : '#' }}"
             class="tich-modal__body"
+            data-uf="skip"
         >
             @csrf
             @method('PUT')
@@ -42,17 +43,16 @@
                 </div>
             @endif
 
-            <div class="tich-form-group">
-                <label class="tich-label">Role</label>
-                <select name="assignments[0][role_id]" id="student-access-role" class="tich-input" required>
+            <div class="uf-field">
+                <label for="student-access-role">Role</label>
+                <select name="assignments[0][role_id]" id="student-access-role" required>
                     <option value="">Select role…</option>
                     @foreach ($studentRoles as $role)
                         <option value="{{ $role->id }}" @selected(old('assignments.0.role_id') == $role->id)>{{ $role->role_name }}</option>
                     @endforeach
                 </select>
+                <span class="uf-hint">Programme and academic department are managed in admissions and the SIS.</span>
             </div>
-
-            <p class="tich-caption tich-mt-3">Programme and academic department are managed in admissions and the SIS.</p>
 
             <footer class="tich-modal__footer">
                 <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="student-access-modal">Cancel</button>

@@ -64,9 +64,12 @@ class HomepageContentSeeder extends Seeder
             if ($research) {
                 DB::table('research_projects')->insert([
                     'title' => $research['title'],
+                    'slug' => \Illuminate\Support\Str::slug($research['title']) ?: 'featured-research',
                     'status' => $research['status'] ?? 'ongoing',
                     'summary' => $research['summary'],
                     'is_featured' => 1,
+                    'visibility' => 'published',
+                    'published_at' => now(),
                     'created_at' => now(),
                 ]);
             }

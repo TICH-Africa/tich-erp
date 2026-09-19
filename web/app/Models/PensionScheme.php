@@ -3,26 +3,29 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PensionScheme extends Model
 {
     protected $table = 'pension_schemes';
 
+    public $timestamps = false;
+
     protected $fillable = [
+        'scheme_code',
         'scheme_name',
-        'scheme_number',
-        'provider_name',
-        'contribution_rate_employee',
-        'contribution_rate_employer',
+        'scheme_type',
+        'employer_contribution_pct',
+        'employee_contribution_pct',
         'is_active',
+        'created_at',
     ];
 
     protected $casts = [
-        'contribution_rate_employee' => 'decimal:2',
-        'contribution_rate_employer' => 'decimal:2',
+        'employer_contribution_pct' => 'decimal:2',
+        'employee_contribution_pct' => 'decimal:2',
         'is_active' => 'boolean',
+        'created_at' => 'datetime',
     ];
 
     public function staff(): HasMany

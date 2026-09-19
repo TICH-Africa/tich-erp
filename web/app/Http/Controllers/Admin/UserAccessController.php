@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\DepartmentModuleService;
 use App\Services\PasswordResetService;
 use App\Services\RBACService;
+use App\Support\UserPresence;
 use App\Support\UserType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,8 @@ class UserAccessController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $presenceByUserId = UserPresence::forUsers($users->getCollection());
+
         $staffCount = User::query()
             ->where('is_active', 1)
             ->whereIn('user_type', self::STAFF_USER_TYPES)
@@ -73,6 +76,7 @@ class UserAccessController extends Controller
 
         $viewData = [
             'users' => $users,
+            'presenceByUserId' => $presenceByUserId,
             'audience' => $audience,
             'staffCount' => $staffCount,
             'studentCount' => $studentCount,

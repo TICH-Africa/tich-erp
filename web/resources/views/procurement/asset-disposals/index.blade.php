@@ -27,7 +27,13 @@
                     @forelse($records as $record)
                         <tr>
                             <td class="tich-col-num">{{ $records->firstItem() + $loop->index }}</td>
-                            <td><a href="{{ route('procurement.assets.show', $record->asset) }}" class="tich-link">{{ $record->asset->asset_name }}</a></td>
+                            <td>
+                                @if ($record->asset)
+                                    <a href="{{ route('procurement.asset-disposals.show', $record) }}" class="tich-link">{{ $record->asset->asset_name }}</a>
+                                @else
+                                    <a href="{{ route('procurement.asset-disposals.show', $record) }}" class="tich-link">Request #{{ $record->id }}</a>
+                                @endif
+                            </td>
                             <td>{{ $record->disposal_type }}</td>
                             <td>KES {{ number_format((float) $record->disposed_value, 2) }}</td>
                             <td>{{ $record->created_at?->format('d M Y') ?? '-' }}</td>

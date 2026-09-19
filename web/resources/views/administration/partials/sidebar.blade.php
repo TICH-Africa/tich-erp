@@ -18,7 +18,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'administration'])
-        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'administration'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'administration'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'administration'])
 
         @foreach ($adminNav->sidebarGroups() as $group)
