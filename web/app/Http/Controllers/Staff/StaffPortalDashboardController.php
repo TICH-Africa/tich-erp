@@ -118,7 +118,7 @@ class StaffPortalDashboardController extends Controller
         }
 
         $hodManagement = null;
-        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])) {
+        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Super Admin'])) {
             $hodManagement = [
                 'lesson_plans' => $this-> hodLessonPlans($staff),
                 'allocations' => $this-> hodUnitAllocations($staff),
@@ -155,7 +155,7 @@ class StaffPortalDashboardController extends Controller
         $hodWorkload = null;
         if ($section === 'hod-workload') {
             abort_unless(
-                $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']),
+                $request->user()->hasAnyRole(['HOD', 'Super Admin']),
                 403
             );
             $departmentId = (int) ($staff->department_id ?? 0);

@@ -163,6 +163,12 @@
                             'active' => $studentServicesActive && ! request()->routeIs('departments.academics.lifecycle-requests.*'),
                             'items' => [
                                 [
+                                    'href' => route('academics.students.index'),
+                                    'label' => 'Student Directory',
+                                    'icon' => 'book-open',
+                                    'active' => request()->routeIs('academics.students.*'),
+                                ],
+                                [
                                     'href' => route('departments.academics.profile-changes.index', $hub),
                                     'label' => 'Profile approvals',
                                     'icon' => 'user',

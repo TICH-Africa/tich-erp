@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductionEssentialSeeder::class);
         $this->call(SyncDefaultRolesSeeder::class);
 
+        // Campus data (required before programs/departments).
+        $this->call(CampusSeeder::class);
+
         // Site / academic catalogue (usually wanted on a live campus).
         $this->call(SiteSettingsSeeder::class);
         $this->call(HomepageContentSeeder::class);

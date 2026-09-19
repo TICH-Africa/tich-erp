@@ -86,6 +86,13 @@
             'badgeKey' => 'stock-issues.pending',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('procurement.payment-verification.index'),
+            'label' => 'Payment & verification',
+            'icon' => 'currency-dollar',
+            'active' => request()->routeIs('procurement.payment-verification.*'),
+            'badgeKey' => 'procurement.payments.pending',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('procurement.qa.tasks.index'),
             'label' => 'QA assessment tasks',
             'icon' => 'layers',

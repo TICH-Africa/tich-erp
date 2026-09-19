@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\PrunesStoredFiles;
+use App\Models\AcademicRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +24,9 @@ class Student extends Model
     protected $fillable = [
         'registration_number',
         'application_id',
+        'first_name',
+        'middle_name',
+        'surname',
         'program_id',
         'cohort_intake',
         'enrollment_campus_id',
@@ -110,6 +114,11 @@ class Student extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function academicRecords(): HasMany
+    {
+        return $this->hasMany(AcademicRecord::class);
+    }
+
     public function suggestions(): HasMany
     {
         return $this->hasMany(StudentSuggestion::class);
@@ -152,6 +161,10 @@ class Student extends Model
 
     public function fullName(): string
     {
+        if ($this->first_name && $this->surname) {
+            return trim($this->first_name . ' ' . ($this->middle_name ? $this->middle_name . ' ' : '') . $this->surname);
+        }
+
         return $this->applicant?->fullName() ?? ($this->user?->name ?? 'N/A');
     }
 

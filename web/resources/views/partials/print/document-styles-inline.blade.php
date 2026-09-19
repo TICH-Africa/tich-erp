@@ -9,14 +9,16 @@ body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-heigh
 .tich-doc-letterhead__tagline { margin: 4pt 0 0; font-size: 10pt; color: #374151; }
 .tich-doc-title-block { text-align: center; margin-bottom: 30pt; }
 .tich-doc-title-block h1 { margin: 0 0 8pt; font-size: 24pt; color: #1e40af; font-weight: bold; }
-.tich-doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; margin-bottom: 25pt; }
-.tich-doc-meta dt { font-weight: bold; color: #6b7280; margin-bottom: 3pt; }
-.tich-doc-meta dd { margin: 0; }
+.tich-doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt 24pt; margin-bottom: 25pt; font-size: 0.95pt; border: 1pt solid #cbd5e1; padding: 10pt 14pt; background: #f8fafc; }
+.tich-doc-meta dt { font-weight: bold; color: #1e3a5f; margin-bottom: 3pt; font-size: 0.72pt; text-transform: uppercase; letter-spacing: 0.04em; }
+.tich-doc-meta dd { margin: 0 0 8pt; font-size: 10pt; color: #111827; }
 .tich-doc-table { width: 100%; border-collapse: collapse; margin-top: 12pt; }
 .tich-doc-table th, .tich-doc-table td { border: 1pt solid #000; padding: 8pt; text-align: left; }
-.tich-doc-table th { background: #f0f4f8; font-weight: bold; }
-.tich-doc-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.tich-doc-table tfoot th, .tich-doc-table tfoot td { background: #eef2f7; font-weight: bold; }
+.tich-doc-table th { background: #eef2f7; color: #1e3a5f; font-size: 0.72pt; text-transform: uppercase; letter-spacing: 0.03em; font-family: system-ui, sans-serif; }
+.tich-doc-table .num { text-align: right; }
+.tich-doc-table tfoot td { font-weight: bold; background: #f8fafc; }
+.tich-doc-section { margin-top: 12pt; }
+.tich-doc-section h2 { margin: 0 0 6pt; font-size: 12pt; color: #1e3a5f; border-bottom: 1pt solid #cbd5e1; padding-bottom: 4pt; }
 .tich-doc-session { margin-bottom: 8pt; }
 .tich-doc-session strong { display: block; margin-bottom: 4pt; }
 .tich-doc-timetable-grid table { width: 100%; border-collapse: collapse; }
