@@ -53,4 +53,43 @@ class BudgetRequest extends Model
     {
         return $this->hasMany(FundAllocation::class, 'budget_request_id');
     }
+
+    /**
+     * Flat expenditure lines for procurement / admin display.
+     * Supports legacy list payloads and annual_quarters_v1.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function expenditureLines(): array
+    {
+        $raw = is_array($this->standard_line_items) ? $this->standard_line_items : [];
+
+        if (($raw['format'] ?? null) === 'annual_quarters_v1') {
+            $lines = $raw['lines'] ?? [];
+
+            return array_values(array_filter(
+                is_array($lines) ? $lines : [],
+                static fn ($line) => is_array($line)
+            ));
+        }
+
+        return array_values(array_filter($raw, static function ($line) {
+            return is_array($line) && trim((string) ($line['item'] ?? '')) !== '';
+        }));
+    }
+
+    public function expenditureLineCount(): int
+    {
+        return count($this->expenditureLines());
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function annualQuartersPayload(): ?array
+    {
+        $raw = is_array($this->standard_line_items) ? $this->standard_line_items : [];
+
+        return ($raw['format'] ?? null) === 'annual_quarters_v1' ? $raw : null;
+    }
 }

@@ -1549,6 +1549,18 @@ CREATE TABLE IF NOT EXISTS `partnership_request_documents` (
   CONSTRAINT `prd_request_fk` FOREIGN KEY (`partnership_request_id`) REFERENCES `partnership_requests` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- 29. Technical plan outputs — quarter segmentation (independent module plans)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='me_plan_outputs' AND COLUMN_NAME='quarter'),
+  'SELECT 1',
+  'ALTER TABLE `me_plan_outputs` ADD COLUMN `quarter` tinyint(3) unsigned NULL DEFAULT NULL AFTER `planned_unit`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET time_zone = '+03:00';
 
 -- Research activities, financial policy, and partnership inquiry columns are also

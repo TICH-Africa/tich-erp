@@ -70,12 +70,31 @@
     </div>
 
     @php
-        $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
+        $annual = $budgetRequest->annualQuartersPayload();
+        $lines = $budgetRequest->expenditureLines();
         $structured = $lines !== [] && isset($lines[0]) && is_array($lines[0]) && array_key_exists('unit_price', $lines[0]);
     @endphp
 
+    @if ($annual)
+        <div class="tich-card tich-table-panel tich-mt-6">
+            <h2 class="tich-h3">Annual quarters</h2>
+            <p class="tich-caption tich-mt-2">
+                Income {{ number_format((float) ($annual['income_grand_total'] ?? 0), 2) }} KES ·
+                Expenditure {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 2) }} KES
+            </p>
+            @foreach (['q1' => 'Q1', 'q2' => 'Q2', 'q3' => 'Q3', 'q4' => 'Q4'] as $qKey => $qLabel)
+                @php $block = $annual['quarters'][$qKey] ?? []; @endphp
+                <h3 class="tich-h4 tich-mt-4">{{ $qLabel }}</h3>
+                <p class="tich-caption">
+                    Income {{ number_format((float) ($block['income_total'] ?? 0), 2) }} ·
+                    Expenditure {{ number_format((float) ($block['expenditure_total'] ?? 0), 2) }}
+                </p>
+            @endforeach
+        </div>
+    @endif
+
     <div class="tich-card tich-table-panel tich-mt-6">
-        <h2 class="tich-h3">Line items</h2>
+        <h2 class="tich-h3">{{ $annual ? 'Expenditure lines' : 'Line items' }}</h2>
         <div class="tich-table-wrap tich-mt-4">
             @if ($structured)
                 <table class="tich-admin-table">

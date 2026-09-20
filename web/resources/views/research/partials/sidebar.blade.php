@@ -23,6 +23,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'research'])
+        @include('partials.navigation.department-technical-plan-link', ['module' => 'research'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'research'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'research'])
     </nav>

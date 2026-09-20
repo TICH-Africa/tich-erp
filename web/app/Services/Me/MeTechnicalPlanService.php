@@ -25,7 +25,7 @@ class MeTechnicalPlanService
     /**
      * Dual-ingestion: create/update technical plan when a budget request is submitted.
      *
-     * @param  list<array{output: string, activity: string, costable_item?: ?string, planned: float|int|string, planned_unit?: ?string}>  $outputs
+     * @param  list<array{output: string, activity: string, costable_item?: ?string, planned: float|int|string, planned_unit?: ?string, quarter?: int|null}>  $outputs
      */
     public function ingestFromBudgetSubmission(
         BudgetRequest $budgetRequest,
@@ -76,21 +76,102 @@ class MeTechnicalPlanService
                 ]));
             }
 
-            foreach (array_values($outputs) as $i => $row) {
-                MePlanOutput::query()->create([
-                    'technical_plan_id' => $plan->id,
-                    'output' => trim((string) $row['output']),
-                    'activity' => trim((string) $row['activity']),
-                    'costable_item' => isset($row['costable_item']) ? trim((string) $row['costable_item']) : null,
-                    'planned' => round((float) $row['planned'], 2),
-                    'planned_unit' => isset($row['planned_unit']) ? trim((string) $row['planned_unit']) : null,
-                    'display_order' => $i,
-                    'created_at' => now(),
-                ]);
-            }
+            $this->writeOutputs($plan, $outputs);
 
             return $plan->fresh(['outputs', 'department']);
         });
+    }
+
+    /**
+     * Independent departmental technical plan — routes straight to M&E review.
+     *
+     * @param  list<array{output: string, activity: string, costable_item?: ?string, planned: float|int|string, planned_unit?: ?string, quarter?: int|null}>  $outputs
+     */
+    public function submitIndependentPlan(
+        Department $department,
+        User $user,
+        string $title,
+        array $outputs,
+        ?string $summary = null,
+        ?string $fiscalYear = null,
+        ?MeTechnicalPlan $existing = null,
+    ): MeTechnicalPlan {
+        return DB::transaction(function () use ($department, $user, $title, $outputs, $summary, $fiscalYear, $existing) {
+            if ($existing) {
+                if ((int) $existing->department_id !== (int) $department->id) {
+                    abort(403);
+                }
+                if ($existing->isBaselineLocked()) {
+                    throw new \RuntimeException('This technical plan is baseline-locked and cannot be revised.');
+                }
+                if (! in_array($existing->status, ['draft', 'returned'], true)) {
+                    throw new \RuntimeException('Only draft or returned plans can be revised.');
+                }
+
+                $existing->update([
+                    'budget_request_id' => null,
+                    'planning_cycle_id' => null,
+                    'title' => $title,
+                    'fiscal_year' => $fiscalYear ?: ($existing->fiscal_year ?: (string) now()->year),
+                    'status' => 'me_review',
+                    'summary' => $summary,
+                    'submitted_by' => $user->id,
+                    'submitted_at' => now(),
+                    'me_reviewed_by' => null,
+                    'me_reviewed_at' => null,
+                    'me_notes' => null,
+                ]);
+                $existing->outputs()->delete();
+                $existing->quarters()->delete();
+                $plan = $existing;
+            } else {
+                $plan = MeTechnicalPlan::query()->create([
+                    'budget_request_id' => null,
+                    'planning_cycle_id' => null,
+                    'department_id' => $department->id,
+                    'title' => $title,
+                    'fiscal_year' => $fiscalYear ?: (string) now()->year,
+                    'status' => 'me_review',
+                    'summary' => $summary,
+                    'submitted_by' => $user->id,
+                    'submitted_at' => now(),
+                ]);
+            }
+
+            $this->writeOutputs($plan, $outputs);
+            $fresh = $plan->fresh(['outputs', 'department']);
+            $this->notifyMeOfficers($fresh);
+
+            try {
+                app(\App\Services\Sidebar\MeSidebarNotificationService::class)->broadcastCounts();
+            } catch (\Throwable) {
+                // Non-fatal.
+            }
+
+            return $fresh;
+        });
+    }
+
+    /**
+     * @param  list<array{output: string, activity: string, costable_item?: ?string, planned: float|int|string, planned_unit?: ?string, quarter?: int|null}>  $outputs
+     */
+    protected function writeOutputs(MeTechnicalPlan $plan, array $outputs): void
+    {
+        foreach (array_values($outputs) as $i => $row) {
+            MePlanOutput::query()->create([
+                'technical_plan_id' => $plan->id,
+                'output' => trim((string) $row['output']),
+                'activity' => trim((string) $row['activity']),
+                'costable_item' => isset($row['costable_item']) ? trim((string) $row['costable_item']) : null,
+                'planned' => round((float) $row['planned'], 2),
+                'planned_unit' => isset($row['planned_unit']) ? trim((string) $row['planned_unit']) : null,
+                'quarter' => isset($row['quarter']) && $row['quarter'] !== null && $row['quarter'] !== ''
+                    ? (int) $row['quarter']
+                    : null,
+                'display_order' => $i,
+                'created_at' => now(),
+            ]);
+        }
     }
 
     /**
@@ -172,7 +253,7 @@ class MeTechnicalPlanService
      */
     protected function outputsFromBudgetLines(BudgetRequest $budgetRequest): array
     {
-        $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
+        $lines = $budgetRequest->expenditureLines();
         $outputs = [];
 
         foreach ($lines as $line) {
@@ -292,7 +373,8 @@ class MeTechnicalPlanService
     }
 
     /**
-     * Lock baseline when M&E has approved and linked budget is approved by Admin/Finance/CEO path.
+     * Lock baseline when M&E has approved.
+     * Linked budget plans also require the budget to be approved; independent plans lock on M&E approval alone.
      */
     public function tryBaselineLock(MeTechnicalPlan $plan, ?User $user = null): ?MeTechnicalPlan
     {
@@ -307,7 +389,7 @@ class MeTechnicalPlanService
         }
 
         $budget = $plan->budgetRequest;
-        if (! $budget || $budget->status !== 'approved') {
+        if ($budget && $budget->status !== 'approved') {
             return null;
         }
 
@@ -357,7 +439,8 @@ class MeTechnicalPlanService
     }
 
     /**
-     * Ensure a draft quarterly report exists with standardised grid lines (planned = annual/4).
+     * Ensure a draft quarterly report exists with standardised grid lines.
+     * Quarter-tagged outputs use full planned values; legacy (no quarter) still divide annual/4.
      */
     public function ensureQuarterlyReportDraft(MeTechnicalPlan $plan, MeQuarter $quarter): MeQuarterlyReport
     {
@@ -378,8 +461,15 @@ class MeTechnicalPlanService
             return $report->load('lines');
         }
 
-        foreach ($plan->outputs as $i => $output) {
-            $planned = round(((float) $output->planned) / 4, 2);
+        $hasQuarterTags = $plan->outputs->contains(fn ($o) => $o->quarter !== null);
+        $outputs = $hasQuarterTags
+            ? $plan->outputs->filter(fn ($o) => (int) $o->quarter === (int) $quarter->quarter_number)->values()
+            : $plan->outputs;
+
+        foreach ($outputs as $i => $output) {
+            $planned = $hasQuarterTags
+                ? round((float) $output->planned, 2)
+                : round(((float) $output->planned) / 4, 2);
             MeQuarterlyReportLine::query()->create([
                 'quarterly_report_id' => $report->id,
                 'plan_output_id' => $output->id,
@@ -419,7 +509,11 @@ class MeTechnicalPlanService
             $this->notifications->notifyUsers(
                 $userIds,
                 'Technical plan awaiting M&E review',
-                ($plan->department?->dept_name ?? 'A department').' technical plan was released by Administration for M&E review (alongside Finance).',
+                ($plan->department?->dept_name ?? 'A department').(
+                    $plan->budget_request_id
+                        ? ' technical plan was released by Administration for M&E review (alongside Finance).'
+                        : ' submitted an independent technical plan for M&E review.'
+                ),
                 'me_technical_plan',
                 (string) $plan->id,
                 'high',

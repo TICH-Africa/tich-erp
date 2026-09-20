@@ -18,6 +18,7 @@
 
     <p class="tich-text tich-mt-4">
         Submitted requests appear in Administration → <strong>Budget aggregation</strong> for cross-department consolidation and approval routing.
+        Technical plans are submitted separately under <strong>Technical plan</strong>.
     </p>
 
     <div class="tich-card tich-table-panel tich-mt-8">
@@ -39,7 +40,7 @@
                 <tbody>
                     @forelse ($requests as $item)
                         @php
-                            $lineCount = is_array($item->standard_line_items) ? count($item->standard_line_items) : 0;
+                            $lineCount = $item->expenditureLineCount();
                         @endphp
                         <tr>
                             <td><strong>{{ $item->request_code }}</strong></td>

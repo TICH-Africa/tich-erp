@@ -91,7 +91,6 @@ class RequisitionController extends Controller
         }
 
         foreach ($budgetRequests as $budgetRequest) {
-            $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
             $budgetOptions->push([
                 'source' => 'request',
                 'id' => $budgetRequest->id,
@@ -102,11 +101,11 @@ class RequisitionController extends Controller
                     $budgetRequest->title,
                     $budgetRequest->department?->dept_name ?? 'Department',
                     str_replace('_', ' ', $budgetRequest->status),
-                    count($lines),
+                    $budgetRequest->expenditureLineCount(),
                     number_format((float) $budgetRequest->requested_amount, 0)
                 ),
                 'department_id' => $budgetRequest->department_id,
-                'line_count' => count($lines),
+                'line_count' => $budgetRequest->expenditureLineCount(),
             ]);
         }
 
@@ -138,7 +137,7 @@ class RequisitionController extends Controller
 
         if ($source === 'request') {
             $budgetRequest = BudgetRequest::query()->findOrFail($id);
-            $lines = collect(is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [])
+            $lines = collect($budgetRequest->expenditureLines())
                 ->filter(fn ($line) => is_array($line) && trim((string) ($line['item'] ?? '')) !== '')
                 ->map(function (array $line) {
                     $quantity = (float) ($line['quantity'] ?? 1);

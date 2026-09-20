@@ -19,6 +19,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
+        @include('partials.navigation.department-technical-plan-link', ['module' => 'ict'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'ict'])
         @include('partials.navigation.department-me-reports-link', ['module' => 'ict'])
 

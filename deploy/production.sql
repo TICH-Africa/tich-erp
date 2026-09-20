@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-19 11:02:42 EAT
+-- Generated: 2026-09-20 12:39:36 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5327,6 +5327,7 @@ CREATE TABLE IF NOT EXISTS `me_plan_outputs` (
   `costable_item` varchar(500) DEFAULT NULL,
   `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
   `planned_unit` varchar(50) DEFAULT NULL,
+  `quarter` tinyint(3) unsigned DEFAULT NULL,
   `display_order` int(11) NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
@@ -5342,6 +5343,7 @@ CALL `tich_ensure_column`('me_plan_outputs', 'activity', 'text NOT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'costable_item', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'planned', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('me_plan_outputs', 'planned_unit', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'quarter', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('me_plan_outputs', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
@@ -6297,7 +6299,7 @@ CREATE TABLE IF NOT EXISTS `partnership_requests` (
   `organization_name` varchar(300) DEFAULT NULL,
   `organisation_details` text DEFAULT NULL,
   `individual_details` text DEFAULT NULL,
-  `organization_type` varchar(50) DEFAULT NULL,
+  `organization_type` varchar(120) DEFAULT NULL,
   `contact_person` varchar(200) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `alternative_email` varchar(255) DEFAULT NULL,
@@ -6337,7 +6339,7 @@ CALL `tich_ensure_column`('partnership_requests', 'last_name', 'varchar(120) NUL
 CALL `tich_ensure_column`('partnership_requests', 'organization_name', 'varchar(300) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'organisation_details', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'individual_details', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(120) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'contact_person', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'email', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'alternative_email', 'varchar(255) NULL DEFAULT NULL');

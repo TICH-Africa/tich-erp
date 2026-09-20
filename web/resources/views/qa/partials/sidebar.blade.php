@@ -8,6 +8,7 @@
             @include('partials.navigation.sidebar-link', ['href' => route('qa.corrective-actions.index'), 'label' => 'Corrective actions', 'icon' => 'shield', 'active' => request()->routeIs('qa.corrective-actions.*'), 'badgeKey' => 'corrective-actions'])
             @include('partials.navigation.sidebar-link', ['href' => route('qa.qca-flags.index'), 'label' => 'QCA flags', 'icon' => 'alert-triangle', 'active' => request()->routeIs('qa.qca-flags.*')])
             @include('partials.navigation.department-budgeting-link', ['module' => 'qa'])
+            @include('partials.navigation.department-technical-plan-link', ['module' => 'qa'])
             @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'qa'])
             @include('partials.navigation.department-me-reports-link', ['module' => 'qa'])
         @endcan

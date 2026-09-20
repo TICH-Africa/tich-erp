@@ -3036,12 +3036,144 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 
 .tich-event-card__placeholder,
 .tich-blog-card__placeholder {
-    background: linear-gradient(135deg, var(--tich-blue-light), var(--tich-neutral));
+    background: #d6e8f5;
 }
 
 .tich-event-card__body,
 .tich-blog-card__body {
     padding: 1.5rem;
+}
+
+/* Events listing — image overlay cards (inspiration card 02) */
+.tich-events-grid > * {
+    min-width: 0;
+}
+
+.tich-event-card--overlay {
+    position: relative;
+    min-height: 280px;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0a2540;
+    box-shadow: none;
+}
+
+.tich-event-card--overlay:hover {
+    border-color: transparent;
+}
+
+.tich-event-card--overlay .tich-event-card__hit {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    height: 100%;
+    min-height: 280px;
+}
+
+.tich-event-card--overlay .tich-event-card__media {
+    position: absolute;
+    inset: 0;
+}
+
+.tich-event-card--overlay .tich-event-card__media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(10, 37, 64, 0.92) 0%,
+        rgba(10, 37, 64, 0.2) 55%,
+        transparent 100%
+    );
+}
+
+.tich-event-card--overlay .tich-event-card__image,
+.tich-event-card--overlay .tich-event-card__placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 280px;
+    object-fit: cover;
+}
+
+.tich-event-card--overlay .tich-event-card__placeholder {
+    background: #125a8c;
+}
+
+.tich-event-card--overlay .tich-event-card__body {
+    position: relative;
+    z-index: 1;
+    min-height: 280px;
+    height: 100%;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: #ffffff;
+    background: transparent;
+}
+
+.tich-event-card--overlay .tich-event-card__tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 0.625rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    background: #40916c;
+    color: #ffffff;
+    font-family: var(--font-ui);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.tich-event-card--overlay .tich-event-card__title {
+    margin: 0 0 0.375rem;
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #ffffff;
+}
+
+.tich-event-card--overlay .tich-event-card__meta {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    color: #c4cad2;
+}
+
+.tich-event-card--overlay .tich-event-card__excerpt {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #e2e6ea;
+}
+
+.tich-event-card--overlay .tich-event-card__cta {
+    margin-top: 0.875rem;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #74c69d;
+}
+
+.tich-event-card--overlay .tich-event-card__hit:hover .tich-event-card__cta {
+    text-decoration: underline;
+}
+
+[data-theme="dark"] .tich-event-card--overlay {
+    background: #0a2540;
+}
+
+[data-theme="dark"] .tich-event-card--overlay .tich-event-card__title,
+[data-theme="dark"] .tich-event-card--overlay .tich-event-card__excerpt,
+[data-theme="dark"] .tich-event-card--overlay .tich-event-card__meta,
+[data-theme="dark"] .tich-event-card--overlay .tich-event-card__cta {
+    color: inherit;
 }
 
 .tich-research-card__image {

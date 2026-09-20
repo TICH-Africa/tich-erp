@@ -3,20 +3,24 @@
 namespace App\Http\Controllers\Module;
 
 use App\Http\Controllers\Controller;
-use App\Models\Me\MeTechnicalPlan;
 use App\Services\DepartmentBudgetingService;
 use App\Services\Finance\FinancePolicyService;
-use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class BudgetingController extends Controller
 {
+    public const ANNUAL_QUARTERS = [
+        'q1' => 'Q1 · Jan–Mar',
+        'q2' => 'Q2 · Apr–Jun',
+        'q3' => 'Q3 · Jul–Sep',
+        'q4' => 'Q4 · Oct–Dec',
+    ];
+
     public function __construct(
         protected DepartmentBudgetingService $budgeting,
         protected FinancePolicyService $financePolicies,
-        protected MeTechnicalPlanService $mePlans,
     ) {}
 
     public function index(Request $request): View
@@ -55,12 +59,13 @@ class BudgetingController extends Controller
             'moduleContext' => $context,
             'department' => $department,
             'cycles' => $this->budgeting->openCycles(),
-            'lines' => $this->defaultLines(),
-            'planOutputs' => $this->defaultPlanOutputs(),
+            'quarters' => self::ANNUAL_QUARTERS,
+            'quarterData' => $this->defaultQuarterData(),
+            'lines' => $this->defaultFlatLines(),
             'budgetRequest' => null,
             'formAction' => route($routes['store']),
-            'submitLabel' => 'Submit budget & technical plan',
-            'pageTitle' => 'New budget & departmental plan',
+            'submitLabel' => 'Submit budget',
+            'pageTitle' => 'New budget request',
             'indexRoute' => $routes['index'],
             'financePolicy' => $policy,
             'financePolicySigned' => $policySigned,
@@ -80,28 +85,22 @@ class BudgetingController extends Controller
 
         abort_unless($record->status === 'returned', 403, 'Only returned requests can be revised.');
 
-        $lines = old('lines');
-        if (! is_array($lines) || $lines === []) {
-            $stored = is_array($record->standard_line_items) ? $record->standard_line_items : [];
-            $lines = $stored !== [] ? $stored : $this->defaultLines();
+        $quarterData = old('quarters');
+        if (! is_array($quarterData) || $quarterData === []) {
+            $stored = $record->annualQuartersPayload();
+            $quarterData = $stored
+                ? $this->quarterDataFromStored($stored)
+                : $this->defaultQuarterData();
         }
 
-        $existingPlan = MeTechnicalPlan::query()
-            ->with('outputs')
-            ->where('budget_request_id', $record->id)
-            ->first();
-
-        $planOutputs = old('plan_outputs');
-        if (! is_array($planOutputs) || $planOutputs === []) {
-            $planOutputs = $existingPlan
-                ? $existingPlan->outputs->map(fn ($o) => [
-                    'output' => $o->output,
-                    'activity' => $o->activity,
-                    'costable_item' => $o->costable_item,
-                    'planned' => (string) $o->planned,
-                    'planned_unit' => $o->planned_unit,
-                ])->all()
-                : $this->defaultPlanOutputs();
+        $lines = old('lines');
+        if (! is_array($lines) || $lines === []) {
+            $stored = $record->annualQuartersPayload();
+            $lines = $stored
+                ? $this->defaultFlatLines()
+                : (($record->expenditureLines() !== [])
+                    ? $record->expenditureLines()
+                    : $this->defaultFlatLines());
         }
 
         $policy = $this->financePolicies->currentPublishedPolicy();
@@ -114,12 +113,13 @@ class BudgetingController extends Controller
             'moduleContext' => $context,
             'department' => $department,
             'cycles' => $this->budgeting->openCycles(),
+            'quarters' => self::ANNUAL_QUARTERS,
+            'quarterData' => $quarterData,
             'lines' => $lines,
-            'planOutputs' => $planOutputs,
             'budgetRequest' => $record,
             'formAction' => route($routes['update'], $record->id),
-            'submitLabel' => 'Resubmit budget & technical plan',
-            'pageTitle' => 'Revise budget & departmental plan',
+            'submitLabel' => 'Resubmit budget',
+            'pageTitle' => 'Revise budget request',
             'indexRoute' => $routes['index'],
             'financePolicy' => $policy,
             'financePolicySigned' => $policySigned,
@@ -150,48 +150,66 @@ class BudgetingController extends Controller
             ]);
         }
 
-        $data = $request->validate([
-            'planning_cycle_id' => ['nullable', 'exists:admin_planning_cycles,id'],
+        $budgetType = $request->input('budget_type', 'annual') ?: 'annual';
+
+        $rules = [
+            'planning_cycle_id' => ['required', 'exists:admin_planning_cycles,id'],
             'title' => ['required', 'string', 'max:300'],
-            'budget_type' => ['nullable', 'in:annual,quarterly,monthly,weekly'],
+            'budget_type' => ['required', 'in:annual,quarterly,monthly,weekly'],
             'justification' => ['nullable', 'string', 'max:3000'],
-            'plan_summary' => ['nullable', 'string', 'max:5000'],
-            'lines' => ['required', 'array', 'min:1'],
-            'lines.*.item' => ['required', 'string', 'max:255'],
-            'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
-            'lines.*.description' => ['nullable', 'string', 'max:2000'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
-            'plan_outputs' => ['required', 'array', 'min:1'],
-            'plan_outputs.*.output' => ['required', 'string', 'max:2000'],
-            'plan_outputs.*.activity' => ['required', 'string', 'max:2000'],
-            'plan_outputs.*.costable_item' => ['nullable', 'string', 'max:500'],
-            'plan_outputs.*.planned' => ['required', 'numeric', 'min:0'],
-            'plan_outputs.*.planned_unit' => ['nullable', 'string', 'max:50'],
-        ], [
+        ];
+
+        if ($budgetType === 'annual') {
+            $rules = array_merge($rules, [
+                'quarters' => ['required', 'array'],
+                'quarters.q1' => ['required', 'array'],
+                'quarters.q2' => ['required', 'array'],
+                'quarters.q3' => ['required', 'array'],
+                'quarters.q4' => ['required', 'array'],
+                'quarters.*.income' => ['required', 'array', 'min:1'],
+                'quarters.*.income.*.source' => ['nullable', 'string', 'max:255'],
+                'quarters.*.income.*.amount' => ['nullable', 'numeric', 'min:0'],
+                'quarters.*.expenditure' => ['required', 'array', 'min:1'],
+                'quarters.*.expenditure.*.item' => ['nullable', 'string', 'max:255'],
+                'quarters.*.expenditure.*.quantity' => ['nullable', 'numeric', 'min:0'],
+                'quarters.*.expenditure.*.description' => ['nullable', 'string', 'max:2000'],
+                'quarters.*.expenditure.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+                'quarters.*.expenditure.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
+            ]);
+        } else {
+            $rules = array_merge($rules, [
+                'lines' => ['required', 'array', 'min:1'],
+                'lines.*.item' => ['required', 'string', 'max:255'],
+                'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+                'lines.*.description' => ['nullable', 'string', 'max:2000'],
+                'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+                'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
+            ]);
+        }
+
+        $data = $request->validate($rules, [
+            'planning_cycle_id.required' => 'Select a planning cycle. The fiscal year is taken from that cycle.',
             'lines.required' => 'Add at least one budget line item.',
-            'lines.*.item.required' => 'Each line needs an item name.',
-            'lines.*.quantity.required' => 'Each line needs a quantity.',
-            'lines.*.unit_price.required' => 'Each line needs a price per item.',
-            'plan_outputs.required' => 'Add at least one technical plan output for M&E routing.',
-            'plan_outputs.*.output.required' => 'Each plan row needs an output.',
-            'plan_outputs.*.activity.required' => 'Each plan row needs an activity.',
-            'plan_outputs.*.planned.required' => 'Each plan row needs a planned baseline value.',
+            'quarters.required' => 'Complete income and expenditure for each quarter.',
         ]);
 
-        [$lineItems, $requestedAmount] = $this->normalizeLines($data['lines']);
+        if ($budgetType === 'annual') {
+            [$lineItems, $requestedAmount] = $this->normalizeAnnualQuarters($data['quarters']);
+        } else {
+            [$lineItems, $requestedAmount] = $this->normalizeFlatLines($data['lines']);
+        }
 
         if ($requestedAmount <= 0) {
             return back()->withInput()->withErrors([
-                'lines' => 'The budget total must be greater than zero.',
+                'budget' => 'Expenditure total must be greater than zero.',
             ]);
         }
 
         $payload = [
-            'planning_cycle_id' => $data['planning_cycle_id'] ?? null,
+            'planning_cycle_id' => $data['planning_cycle_id'],
             'title' => $data['title'],
             'framework' => 'standard',
-            'budget_type' => $data['budget_type'] ?? null,
+            'budget_type' => $budgetType,
             'requested_amount' => $requestedAmount,
             'standard_line_items' => $lineItems,
             'cbe_details' => null,
@@ -201,20 +219,12 @@ class BudgetingController extends Controller
         try {
             if ($budgetRequestId) {
                 $record = $this->budgeting->findDepartmentRequest($department, $budgetRequestId);
-                $record = $this->budgeting->resubmit($record, $department, $payload, $request->user());
-                $message = 'Budget revised (Admin/Finance) and technical plan re-routed to M&E concurrently.';
+                $this->budgeting->resubmit($record, $department, $payload, $request->user());
+                $message = 'Budget revised and re-submitted to Administration/Finance.';
             } else {
-                $record = $this->budgeting->submit($department, $payload, $request->user());
-                $message = 'Dual submission complete: budget → Administration/Finance; technical plan → M&E.';
+                $this->budgeting->submit($department, $payload, $request->user());
+                $message = 'Budget submitted to Administration/Finance.';
             }
-
-            $this->mePlans->ingestFromBudgetSubmission(
-                $record,
-                $department,
-                $request->user(),
-                $data['plan_outputs'],
-                $data['plan_summary'] ?? null,
-            );
         } catch (\RuntimeException $e) {
             return back()->withInput()->withErrors(['budget' => $e->getMessage()]);
         }
@@ -225,10 +235,111 @@ class BudgetingController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $quarters
+     * @return array{0: array<string, mixed>, 1: float}
+     */
+    private function normalizeAnnualQuarters(array $quarters): array
+    {
+        $payloadQuarters = [];
+        $flatLines = [];
+        $incomeGrand = 0.0;
+        $expenditureGrand = 0.0;
+
+        foreach (array_keys(self::ANNUAL_QUARTERS) as $key) {
+            $block = is_array($quarters[$key] ?? null) ? $quarters[$key] : [];
+            $incomeRows = [];
+            $incomeTotal = 0.0;
+
+            foreach (array_values($block['income'] ?? []) as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $source = trim((string) ($row['source'] ?? ''));
+                $amount = round((float) ($row['amount'] ?? 0), 2);
+                if ($source === '' && $amount <= 0) {
+                    continue;
+                }
+                $incomeRows[] = [
+                    'source' => $source !== '' ? $source : 'Unnamed source',
+                    'amount' => $amount,
+                ];
+                $incomeTotal += $amount;
+            }
+
+            if ($incomeRows === []) {
+                $incomeRows[] = ['source' => '', 'amount' => 0.0];
+            }
+
+            $expenditureRows = [];
+            $expenditureTotal = 0.0;
+
+            foreach (array_values($block['expenditure'] ?? []) as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $item = trim((string) ($row['item'] ?? ''));
+                $quantity = round((float) ($row['quantity'] ?? 0), 4);
+                $unitPrice = round((float) ($row['unit_price'] ?? 0), 2);
+                if ($item === '' && $quantity <= 0 && $unitPrice <= 0) {
+                    continue;
+                }
+                if ($item === '') {
+                    continue;
+                }
+                if ($quantity <= 0) {
+                    $quantity = 1.0;
+                }
+                $total = round($quantity * $unitPrice, 2);
+                $normalized = [
+                    'item' => $item,
+                    'quantity' => $quantity,
+                    'description' => trim((string) ($row['description'] ?? '')),
+                    'unit_price' => $unitPrice,
+                    'unit_of_measure' => trim((string) ($row['unit_of_measure'] ?? '')) ?: null,
+                    'total' => $total,
+                    'quarter' => $key,
+                ];
+                $expenditureRows[] = $normalized;
+                $flatLines[] = $normalized;
+                $expenditureTotal += $total;
+            }
+
+            if ($expenditureRows === []) {
+                $expenditureRows[] = [
+                    'item' => '',
+                    'quantity' => 1.0,
+                    'description' => '',
+                    'unit_price' => 0.0,
+                    'unit_of_measure' => null,
+                    'total' => 0.0,
+                    'quarter' => $key,
+                ];
+            }
+
+            $payloadQuarters[$key] = [
+                'income' => $incomeRows,
+                'income_total' => round($incomeTotal, 2),
+                'expenditure' => $expenditureRows,
+                'expenditure_total' => round($expenditureTotal, 2),
+            ];
+            $incomeGrand += $incomeTotal;
+            $expenditureGrand += $expenditureTotal;
+        }
+
+        return [[
+            'format' => 'annual_quarters_v1',
+            'quarters' => $payloadQuarters,
+            'income_grand_total' => round($incomeGrand, 2),
+            'expenditure_grand_total' => round($expenditureGrand, 2),
+            'lines' => $flatLines,
+        ], round($expenditureGrand, 2)];
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $lines
      * @return array{0: list<array<string, mixed>>, 1: float}
      */
-    private function normalizeLines(array $lines): array
+    private function normalizeFlatLines(array $lines): array
     {
         $lineItems = [];
         $requestedAmount = 0.0;
@@ -253,9 +364,60 @@ class BudgetingController extends Controller
     }
 
     /**
+     * @return array<string, array{income: list<array{source: string, amount: string}>, expenditure: list<array{item: string, quantity: string, description: string, unit_price: string, unit_of_measure: string}>}>
+     */
+    private function defaultQuarterData(): array
+    {
+        $old = old('quarters');
+        if (is_array($old) && $old !== []) {
+            return $old;
+        }
+
+        $emptyIncome = [['source' => '', 'amount' => '']];
+        $emptyExp = [['item' => '', 'quantity' => '1', 'description' => '', 'unit_price' => '', 'unit_of_measure' => '']];
+        $data = [];
+        foreach (array_keys(self::ANNUAL_QUARTERS) as $key) {
+            $data[$key] = [
+                'income' => $emptyIncome,
+                'expenditure' => $emptyExp,
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stored
+     * @return array<string, array{income: list<array<string, mixed>>, expenditure: list<array<string, mixed>>}>
+     */
+    private function quarterDataFromStored(array $stored): array
+    {
+        $data = [];
+        foreach (array_keys(self::ANNUAL_QUARTERS) as $key) {
+            $block = is_array($stored['quarters'][$key] ?? null) ? $stored['quarters'][$key] : [];
+            $income = array_values(array_filter(
+                is_array($block['income'] ?? null) ? $block['income'] : [],
+                static fn ($r) => is_array($r)
+            ));
+            $expenditure = array_values(array_filter(
+                is_array($block['expenditure'] ?? null) ? $block['expenditure'] : [],
+                static fn ($r) => is_array($r)
+            ));
+            $data[$key] = [
+                'income' => $income !== [] ? $income : [['source' => '', 'amount' => '']],
+                'expenditure' => $expenditure !== [] ? $expenditure : [[
+                    'item' => '', 'quantity' => '1', 'description' => '', 'unit_price' => '', 'unit_of_measure' => '',
+                ]],
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
      * @return list<array{item: string, quantity: string, description: string, unit_price: string, unit_of_measure: string}>
      */
-    private function defaultLines(): array
+    private function defaultFlatLines(): array
     {
         $oldLines = old('lines');
         if (is_array($oldLines) && $oldLines !== []) {
@@ -264,21 +426,6 @@ class BudgetingController extends Controller
 
         return [
             ['item' => '', 'quantity' => '1', 'description' => '', 'unit_price' => '', 'unit_of_measure' => ''],
-        ];
-    }
-
-    /**
-     * @return list<array{output: string, activity: string, costable_item: string, planned: string, planned_unit: string}>
-     */
-    private function defaultPlanOutputs(): array
-    {
-        $old = old('plan_outputs');
-        if (is_array($old) && $old !== []) {
-            return $old;
-        }
-
-        return [
-            ['output' => '', 'activity' => '', 'costable_item' => '', 'planned' => '', 'planned_unit' => ''],
         ];
     }
 

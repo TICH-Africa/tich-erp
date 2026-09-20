@@ -16,7 +16,8 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Auth\ErpRegistrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentDashboardController;
-use App\Http\Controllers\Module\BudgetingController as ModuleBudgetingController;
+    use App\Http\Controllers\Module\BudgetingController as ModuleBudgetingController;
+use App\Http\Controllers\Module\TechnicalPlanController as ModuleTechnicalPlanController;
 use App\Http\Controllers\Public\ApplicationController;
 use App\Http\Controllers\Public\ApplicationPaymentController;
 use App\Http\Controllers\Public\FaviconController;
@@ -158,6 +159,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name('finance.budget-requests.edit');
             Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name('finance.budget-requests.update');
 
+            Route::get('/technical-plans', [ModuleTechnicalPlanController::class, 'index'])->name('finance.technical-plans.index');
+            Route::get('/technical-plans/create', [ModuleTechnicalPlanController::class, 'create'])->name('finance.technical-plans.create');
+            Route::post('/technical-plans', [ModuleTechnicalPlanController::class, 'store'])->name('finance.technical-plans.store');
+            Route::get('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'show'])->name('finance.technical-plans.show');
+            Route::get('/technical-plans/{plan}/edit', [ModuleTechnicalPlanController::class, 'edit'])->name('finance.technical-plans.edit');
+            Route::put('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'update'])->name('finance.technical-plans.update');
+
             Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('finance.me-policy.sign');
             Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('finance.me-policy.sign.store');
 
@@ -172,6 +180,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/budgeting', [ModuleBudgetingController::class, 'store'])->name("{$module}.budgeting.store");
         Route::get('/budgeting/{budgetRequest}/edit', [ModuleBudgetingController::class, 'edit'])->name("{$module}.budgeting.edit");
         Route::put('/budgeting/{budgetRequest}', [ModuleBudgetingController::class, 'update'])->name("{$module}.budgeting.update");
+
+        Route::get('/technical-plans', [ModuleTechnicalPlanController::class, 'index'])->name("{$module}.technical-plans.index");
+        Route::get('/technical-plans/create', [ModuleTechnicalPlanController::class, 'create'])->name("{$module}.technical-plans.create");
+        Route::post('/technical-plans', [ModuleTechnicalPlanController::class, 'store'])->name("{$module}.technical-plans.store");
+        Route::get('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'show'])->name("{$module}.technical-plans.show");
+        Route::get('/technical-plans/{plan}/edit', [ModuleTechnicalPlanController::class, 'edit'])->name("{$module}.technical-plans.edit");
+        Route::put('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'update'])->name("{$module}.technical-plans.update");
 
         Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name("{$module}.me-policy.sign");
         Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name("{$module}.me-policy.sign.store");

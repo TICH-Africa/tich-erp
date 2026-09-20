@@ -144,6 +144,25 @@ class DepartmentBudgetingService
         ];
     }
 
+    /**
+     * @return array{index: string, create: string, store: string, show: string, edit: string, update: string}
+     */
+    public function technicalPlanRouteNames(string $module): array
+    {
+        $this->moduleContext($module);
+
+        $base = $module.'.technical-plans';
+
+        return [
+            'index' => $base.'.index',
+            'create' => $base.'.create',
+            'store' => $base.'.store',
+            'show' => $base.'.show',
+            'edit' => $base.'.edit',
+            'update' => $base.'.update',
+        ];
+    }
+
     public function departmentByCode(string $code): ?Department
     {
         return Department::query()
