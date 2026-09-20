@@ -10,6 +10,12 @@
             'active' => request()->routeIs('research.activities.*'),
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('research.partnerships.index'),
+            'label' => 'Partnership inquiries',
+            'icon' => 'users',
+            'active' => request()->routeIs('research.partnerships.*'),
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('research.qa.tasks.index'),
             'label' => 'QA assessment tasks',
             'icon' => 'layers',

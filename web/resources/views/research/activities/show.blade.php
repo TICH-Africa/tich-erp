@@ -17,7 +17,7 @@
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
     @endif
 
-    <div class="tich-grid tich-grid--2 tich-mt-6" style="gap:1.5rem;align-items:start;">
+    <div class="tich-grid tich-grid--2 tich-mt-6 research-activity-admin" style="gap:1.5rem;align-items:start;">
         <section>
             @if ($activity->coverUrl())
                 <img src="{{ $activity->coverUrl() }}" alt="" style="width:100%;max-height:16rem;object-fit:cover;border-radius:4px;">

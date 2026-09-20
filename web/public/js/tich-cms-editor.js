@@ -398,7 +398,11 @@
                     var cleaned = text
                         .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
                         .replace(/\son\w+="[^"]*"/gi, '')
-                        .replace(/\son\w+='[^']*'/gi, '');
+                        .replace(/\son\w+='[^']*'/gi, '')
+                        .replace(/<\/?font\b[^>]*>/gi, '')
+                        .replace(/\sface=("([^"]*)"|'([^']*)'|[^\s>]+)/gi, '')
+                        .replace(/font-family\s*:\s*[^;"]+;?/gi, '')
+                        .replace(/font-family\s*:\s*[^;']+;?/gi, '');
                     insertHtml(cleaned);
                 }
             }

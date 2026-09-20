@@ -39,6 +39,7 @@ Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/research', [HomeController::class, 'research'])->name('research');
+Route::post('/research/partnerships', [\App\Http\Controllers\Public\PartnershipInquiryController::class, 'store'])->name('research.partnerships.store');
 Route::get('/research/activity/{slug}', [\App\Http\Controllers\Public\ResearchPortalController::class, 'show'])->name('research.show');
 Route::get('/research/documents/{document}/view', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentViewer'])->name('research.documents.view');
 Route::get('/research/documents/{document}/stream', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentStream'])->name('research.documents.stream');
@@ -727,6 +728,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'update'])->name('research.activities.update');
         Route::delete('/activities/{activity}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroy'])->name('research.activities.destroy');
         Route::delete('/activities/{activity}/documents/{document}', [\App\Http\Controllers\Research\ResearchActivityController::class, 'destroyDocument'])->name('research.activities.documents.destroy');
+
+        Route::get('/partnerships', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'index'])->name('research.partnerships.index');
+        Route::get('/partnerships/{partnership}', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'show'])->name('research.partnerships.show');
+        Route::put('/partnerships/{partnership}/status', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'updateStatus'])->name('research.partnerships.status');
+        Route::get('/partnerships/{partnership}/documents/{document}/download', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'downloadDocument'])->name('research.partnerships.documents.download');
 
         $registerModuleBudgeting('research');
         $registerModuleQaTasks('research');

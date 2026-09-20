@@ -48,6 +48,21 @@
             </div>
         </form>
     </div>
+
+    @if ($activity && $activity->documents->isNotEmpty())
+        @foreach ($activity->documents as $doc)
+            <form
+                id="delete-research-doc-{{ $doc->id }}"
+                method="POST"
+                action="{{ route('research.activities.documents.destroy', [$activity, $doc]) }}"
+                class="u-hidden"
+                hidden
+            >
+                @csrf
+                @method('DELETE')
+            </form>
+        @endforeach
+    @endif
 @endsection
 
 @section('scripts')

@@ -49,7 +49,7 @@
             @enderror
         </div>
 
-        <div class="uf-field" style="flex-direction: row; align-items: center; gap: 0.5rem;">
+        <div class="uf-field tich-auth-remember">
             <input
                 type="checkbox"
                 id="remember"
@@ -58,7 +58,7 @@
                 {{ old('remember') ? 'checked' : '' }}
                 class="tich-checkbox"
             >
-            <label for="remember" class="tich-text" style="font-weight: 400;">Keep me signed in on this device</label>
+            <label for="remember">Keep me signed in on this device</label>
         </div>
 
         <button type="submit" class="tich-btn tich-btn-primary tich-btn-block">

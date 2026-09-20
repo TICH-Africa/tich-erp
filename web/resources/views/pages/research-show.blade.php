@@ -4,73 +4,93 @@
 @section('meta_description', \Illuminate\Support\Str::limit(strip_tags($activity->summary ?: $activity->subtitle ?: $activity->title), 160, ''))
 
 @section('content')
-    <x-animated-section animation="top">
-        <article class="tich-section tich-article">
-            <div class="tich-container" style="max-width: 52rem;">
-                <p class="tich-caption tich-article-back">
-                    <a href="{{ route('research') }}" class="tich-link">← Back to Research</a>
-                </p>
+    <article class="research-public-show">
+        <div class="research-public-show__inner">
+            <p class="research-public-show__back">
+                <a href="{{ route('research') }}">← Back to Research</a>
+            </p>
 
-                <header class="tich-mt-6">
-                    <p class="tich-caption">
-                        {{ $activity->statusLabel() }}
-                        @if ($activity->start_date)
-                            · {{ $activity->start_date->format('d M Y') }}
-                            @if ($activity->end_date)
-                                – {{ $activity->end_date->format('d M Y') }}
-                            @endif
+            <header class="research-public-show__header">
+                <p class="research-public-show__meta">
+                    <span class="research-public-show__status">{{ $activity->statusLabel() }}</span>
+                    @if ($activity->start_date)
+                        <span>· {{ $activity->start_date->format('d M Y') }}
+                        @if ($activity->end_date)
+                            – {{ $activity->end_date->format('d M Y') }}
                         @endif
-                        @if ($activity->is_featured) · Featured @endif
-                    </p>
-                    <h1 class="tich-h1 tich-mt-2">{{ $activity->title }}</h1>
-                    @if ($activity->subtitle)
-                        <p class="tich-text tich-mt-2">{{ $activity->subtitle }}</p>
+                        </span>
                     @endif
-                </header>
-
-                @if ($activity->coverUrl())
-                    <figure class="tich-mt-8">
-                        <img
-                            src="{{ $activity->coverUrl() }}"
-                            alt="{{ $activity->title }}"
-                            style="width: 100%; height: auto; max-height: 26rem; object-fit: cover; border-radius: var(--radius-md, 0.5rem);"
-                        >
-                    </figure>
+                    @if ($activity->is_featured)
+                        <span>· Featured</span>
+                    @endif
+                </p>
+                <h1 class="research-public-show__title">{{ $activity->title }}</h1>
+                @if ($activity->subtitle)
+                    <p class="research-public-show__subtitle">{{ $activity->subtitle }}</p>
                 @endif
+            </header>
 
-                @if ($activity->summary)
-                    <p class="tich-text tich-mt-8" style="font-size:1.05rem;">{{ $activity->summary }}</p>
-                @endif
+            @if ($activity->coverUrl())
+                <figure class="research-public-show__cover">
+                    <img src="{{ $activity->coverUrl() }}" alt="{{ $activity->title }}">
+                </figure>
+            @endif
 
-                @if ($activity->body)
-                    <div class="tich-prose-article tich-mt-8">
-                        {!! $activity->body !!}
-                    </div>
-                @elseif ($activity->abstract)
-                    <div class="tich-prose-article tich-mt-8">
-                        <p>{{ $activity->abstract }}</p>
-                    </div>
-                @endif
+            <div class="research-public-show__layout">
+                <div class="research-public-show__main">
+                    @if ($activity->summary)
+                        <p class="research-public-show__summary">{{ $activity->summary }}</p>
+                    @endif
 
-                @if ($activity->documents->isNotEmpty())
-                    <section class="tich-mt-10" aria-labelledby="research-docs-heading">
-                        <h2 id="research-docs-heading" class="tich-h2">Documents</h2>
-                        <p class="tich-caption tich-mt-2">Open a document to read it online. Downloads are not permitted.</p>
-                        <ul class="tich-mt-4" style="list-style:none;padding:0;margin:0;display:grid;gap:0.75rem;">
+                    @if ($activity->body)
+                        <div class="research-public-show__body tich-prose-article research-public-show__body--locked-font">
+                            {!! $activity->body !!}
+                        </div>
+                    @elseif ($activity->abstract)
+                        <div class="research-public-show__body">
+                            <p>{{ $activity->abstract }}</p>
+                        </div>
+                    @endif
+                </div>
+
+                <aside class="research-public-show__aside">
+                    <h2 class="research-public-show__aside-title">Timeline</h2>
+                    <dl class="research-public-show__facts">
+                        <div>
+                            <dt>Start</dt>
+                            <dd>{{ $activity->start_date?->format('d M Y') ?? '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Duration</dt>
+                            <dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else — @endif</dd>
+                        </div>
+                        <div>
+                            <dt>Expected completion</dt>
+                            <dd>{{ $activity->end_date?->format('d M Y') ?? '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Status</dt>
+                            <dd>{{ $activity->statusLabel() }}</dd>
+                        </div>
+                    </dl>
+
+                    @if ($activity->documents->isNotEmpty())
+                        <h2 class="research-public-show__aside-title">Documents</h2>
+                        <p class="research-public-show__doc-note">Read online only — downloads are not available.</p>
+                        <ul class="research-public-show__docs">
                             @foreach ($activity->documents as $doc)
                                 <li>
                                     <a
                                         href="{{ route('research.documents.view', $doc) }}"
-                                        class="tich-link"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >{{ $doc->title }}</a>
                                 </li>
                             @endforeach
                         </ul>
-                    </section>
-                @endif
+                    @endif
+                </aside>
             </div>
-        </article>
-    </x-animated-section>
+        </div>
+    </article>
 @endsection

@@ -1509,11 +1509,51 @@ CREATE TABLE IF NOT EXISTS `research_project_documents` (
   CONSTRAINT `rpd_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- 28. Research partnership inquiries (extended public partner form)
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='applicant_type'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `applicant_type` varchar(30) NOT NULL DEFAULT \'organisation\' AFTER `request_number`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='first_name'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `first_name` varchar(120) NULL AFTER `applicant_type`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='last_name'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `last_name` varchar(120) NULL AFTER `first_name`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='alternative_email'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `alternative_email` varchar(255) NULL AFTER `email`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='alternative_phone'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `alternative_phone` varchar(30) NULL AFTER `phone`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='research_area'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `research_area` varchar(200) NULL AFTER `alternative_phone`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='what_they_do'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `what_they_do` text NULL AFTER `research_area`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='why_partnership'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `why_partnership` text NULL AFTER `what_they_do`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='organisation_details'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `organisation_details` text NULL AFTER `organization_name`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql := (SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='partnership_requests' AND COLUMN_NAME='individual_details'),'SELECT 1','ALTER TABLE `partnership_requests` ADD COLUMN `individual_details` text NULL AFTER `organisation_details`'));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS `partnership_request_documents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `partnership_request_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `original_filename` varchar(300) DEFAULT NULL,
+  `mime_type` varchar(120) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `prd_request_fk` (`partnership_request_id`),
+  CONSTRAINT `prd_request_fk` FOREIGN KEY (`partnership_request_id`) REFERENCES `partnership_requests` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET time_zone = '+03:00';
 
--- New procurement tables, financial policy tables, and research activity columns /
--- documents are also covered by deploy/production.sql (CREATE / ensure_* helpers).
--- Run that file first on fresh hosts.
+-- Research activities, financial policy, and partnership inquiry columns are also
+-- covered by deploy/production.sql / Laravel migrations. Run production.sql first
+-- on fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

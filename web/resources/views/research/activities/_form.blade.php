@@ -40,20 +40,16 @@
                 <label for="cover_image">Cover image</label>
                 <input id="cover_image" type="file" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
                 @if ($activity?->coverUrl())
-                    <div class="tich-mt-2" style="display:flex;gap:0.75rem;align-items:center;">
-                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:cover;border-radius:4px;">
-                        <label style="display:flex;gap:0.5rem;align-items:center;font-weight:400;">
-                            <input type="checkbox" name="remove_cover" value="1">
-                            <span class="tich-text">Remove current image</span>
-                        </label>
+                    <div class="uf-field--check tich-mt-2" style="flex-wrap:nowrap;">
+                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:cover;border-radius:4px;flex-shrink:0;">
+                        <input type="checkbox" id="remove_cover" name="remove_cover" value="1" class="tich-checkbox">
+                        <label for="remove_cover">Remove current image</label>
                     </div>
                 @endif
             </div>
-            <div class="uf-field">
-                <label style="display:flex;gap:0.5rem;align-items:center;">
-                    <input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $activity->is_featured ?? false))>
-                    <span>Feature on Research portal</span>
-                </label>
+            <div class="uf-field uf-field--check" style="grid-column: 1 / -1;">
+                <input type="checkbox" id="is_featured" name="is_featured" value="1" class="tich-checkbox" @checked(old('is_featured', $activity->is_featured ?? false))>
+                <label for="is_featured">Feature on Research portal</label>
             </div>
         </div>
     </div>
@@ -87,10 +83,10 @@
                 <span class="uf-hint">Auto-calculated from start + duration; you can override it.</span>
             </div>
             <div class="uf-field">
-                <label style="display:flex;gap:0.5rem;align-items:center;">
-                    <input type="checkbox" name="status_locked" value="1" data-status-locked @checked($statusLocked)>
-                    <span>Manual status override</span>
-                </label>
+                <div class="uf-field--check">
+                    <input type="checkbox" id="status_locked" name="status_locked" value="1" class="tich-checkbox" data-status-locked @checked($statusLocked)>
+                    <label for="status_locked">Manual status override</label>
+                </div>
                 <select id="status" name="status" data-status-select class="tich-mt-2">
                     @foreach ($lifecycleStatuses as $st)
                         <option value="{{ $st }}" @selected(old('status', $activity->status ?? 'upcoming') === $st)>{{ ucfirst($st) }}</option>
@@ -108,7 +104,7 @@
         <div class="uf-field">
             <label for="research_body">Full description</label>
             <div
-                class="tich-cms-editor"
+                class="tich-cms-editor tich-cms-editor--locked-font"
                 data-cms-editor
                 data-upload-url="{{ $uploadUrl }}"
                 data-input-id="research_body"
@@ -167,11 +163,12 @@
                 @foreach ($activity->documents as $doc)
                     <li style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;justify-content:space-between;">
                         <span class="tich-text"><strong>{{ $doc->title }}</strong> <span class="tich-caption">({{ $doc->original_filename }})</span></span>
-                        <form method="POST" action="{{ route('research.activities.documents.destroy', [$activity, $doc]) }}" onsubmit="return confirm('Remove this document?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="uf-btn uf-btn-secondary">Remove</button>
-                        </form>
+                        <button
+                            type="submit"
+                            class="uf-btn uf-btn-secondary"
+                            form="delete-research-doc-{{ $doc->id }}"
+                            onclick="return confirm('Remove this document?');"
+                        >Remove</button>
                     </li>
                 @endforeach
             </ul>

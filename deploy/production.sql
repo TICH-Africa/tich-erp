@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-18 23:10:43 EAT
+-- Generated: 2026-09-19 11:02:42 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -6291,12 +6291,22 @@ CALL `tich_ensure_index`('offboarding_requests', 'offboarding_requests_staff_id_
 CREATE TABLE IF NOT EXISTS `partnership_requests` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `request_number` varchar(50) NOT NULL,
-  `organization_name` varchar(300) NOT NULL,
-  `organization_type` varchar(50) NOT NULL,
-  `contact_person` varchar(200) NOT NULL,
+  `applicant_type` varchar(30) NOT NULL DEFAULT 'organisation',
+  `first_name` varchar(120) DEFAULT NULL,
+  `last_name` varchar(120) DEFAULT NULL,
+  `organization_name` varchar(300) DEFAULT NULL,
+  `organisation_details` text DEFAULT NULL,
+  `individual_details` text DEFAULT NULL,
+  `organization_type` varchar(50) DEFAULT NULL,
+  `contact_person` varchar(200) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
+  `alternative_email` varchar(255) DEFAULT NULL,
   `phone` varchar(30) NOT NULL,
-  `proposed_scope` text NOT NULL,
+  `alternative_phone` varchar(30) DEFAULT NULL,
+  `research_area` varchar(200) DEFAULT NULL,
+  `what_they_do` text DEFAULT NULL,
+  `why_partnership` text DEFAULT NULL,
+  `proposed_scope` text DEFAULT NULL,
   `target_sub_counties` varchar(500) DEFAULT NULL,
   `supporting_document_path` varchar(500) DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'pending_review',
@@ -6321,12 +6331,22 @@ CREATE TABLE IF NOT EXISTS `partnership_requests` (
 -- Columns for `partnership_requests` (add only if missing)
 CALL `tich_ensure_column`('partnership_requests', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('partnership_requests', 'request_number', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'organization_name', 'varchar(300) NOT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'contact_person', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'applicant_type', 'varchar(30) NOT NULL DEFAULT \'\\\'organisation\\\'\'');
+CALL `tich_ensure_column`('partnership_requests', 'first_name', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'last_name', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'organization_name', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'organisation_details', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'individual_details', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'contact_person', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'email', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'alternative_email', 'varchar(255) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'phone', 'varchar(30) NOT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'proposed_scope', 'text NOT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'alternative_phone', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'research_area', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'what_they_do', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'why_partnership', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'proposed_scope', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'target_sub_counties', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'supporting_document_path', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending_review\\\'\'');
@@ -6344,6 +6364,36 @@ CALL `tich_ensure_index`('partnership_requests', 'partnership_requests_created_b
 CALL `tich_ensure_unique`('partnership_requests', 'partnership_requests_request_number_unique', '`request_number`');
 CALL `tich_ensure_index`('partnership_requests', 'partnership_requests_reviewed_by_foreign', '`reviewed_by`');
 CALL `tich_ensure_index`('partnership_requests', 'partnership_requests_updated_by_foreign', '`updated_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `partnership_request_documents`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `partnership_request_documents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `partnership_request_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `original_filename` varchar(300) DEFAULT NULL,
+  `mime_type` varchar(120) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `prd_request_fk` (`partnership_request_id`),
+  CONSTRAINT `prd_request_fk` FOREIGN KEY (`partnership_request_id`) REFERENCES `partnership_requests` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `partnership_request_documents` (add only if missing)
+CALL `tich_ensure_column`('partnership_request_documents', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('partnership_request_documents', 'partnership_request_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'title', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'file_path', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'original_filename', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'mime_type', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'file_size', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_request_documents', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `partnership_request_documents` (add only if missing)
+CALL `tich_ensure_index`('partnership_request_documents', 'prd_request_fk', '`partnership_request_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `partner_logos`
@@ -12479,6 +12529,9 @@ CALL `tich_ensure_fk`('offboarding_requests', 'offboarding_requests_staff_id_for
 CALL `tich_ensure_fk`('partnership_requests', 'partnership_requests_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('partnership_requests', 'partnership_requests_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('partnership_requests', 'partnership_requests_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `partnership_request_documents`
+CALL `tich_ensure_fk`('partnership_request_documents', 'prd_request_fk', '`partnership_request_id`', 'partnership_requests', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `partner_logos`
 CALL `tich_ensure_fk`('partner_logos', 'partner_logos_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
