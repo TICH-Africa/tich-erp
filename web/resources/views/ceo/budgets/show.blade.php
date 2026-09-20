@@ -45,50 +45,16 @@
         @if ($budgetRequest->justification)
             <div class="tich-mt-4">
                 <p class="tich-caption">Justification</p>
-                <p>{{ $budgetRequest->justification }}</p>
+                <p class="budrev-justification">{{ $budgetRequest->justification }}</p>
             </div>
         @endif
     </div>
 
+    @include('partials.budget-request-breakdown', ['budgetRequest' => $budgetRequest, 'idPrefix' => 'ceo-budrev'])
+
     @php
-        $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
-        $structured = $lines !== [] && isset($lines[0]) && is_array($lines[0]) && array_key_exists('unit_price', $lines[0]);
         $groups = is_array($budgetRequest->group_allocations) ? $budgetRequest->group_allocations : [];
     @endphp
-
-    @if ($lines !== [])
-        <div class="tich-card tich-table-panel tich-mt-6">
-            <h2 class="tich-h3">Line items</h2>
-            <div class="tich-table-wrap tich-mt-4">
-                @if ($structured)
-                    <table class="tich-admin-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                                <th>Description</th>
-                                <th>Unit price</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($lines as $line)
-                                <tr>
-                                    <td>{{ $line['item'] ?? '-' }}</td>
-                                    <td>{{ $line['quantity'] ?? '-' }}</td>
-                                    <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
-                                    <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                    <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <pre class="tich-pre" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; overflow:auto;">{{ json_encode($lines, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                @endif
-            </div>
-        </div>
-    @endif
 
     @if ($groups !== [])
         <div class="tich-card tich-table-panel tich-mt-6">
@@ -119,7 +85,7 @@
     @if ($budgetRequest->workflow_notes)
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Workflow notes</h2>
-            <pre class="tich-pre tich-mt-4" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; white-space:pre-wrap;">{{ $budgetRequest->workflow_notes }}</pre>
+            <pre class="tich-pre tich-mt-4 budrev-notes">{{ $budgetRequest->workflow_notes }}</pre>
         </div>
     @endif
 

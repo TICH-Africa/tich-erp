@@ -50,68 +50,24 @@
         @if ($budgetRequest->justification)
             <div class="tich-mt-4">
                 <p class="tich-caption">Justification</p>
-                <p>{{ $budgetRequest->justification }}</p>
+                <p class="budrev-justification">{{ $budgetRequest->justification }}</p>
             </div>
         @endif
+    </div>
 
-        @if ($budgetRequest->standard_line_items)
-            @php
-                $lines = is_array($budgetRequest->standard_line_items) ? $budgetRequest->standard_line_items : [];
-                $structured = $lines !== [] && isset($lines[0]) && is_array($lines[0]) && array_key_exists('unit_price', $lines[0]);
-            @endphp
+    @include('partials.budget-request-breakdown', ['budgetRequest' => $budgetRequest, 'idPrefix' => 'fin-budrev'])
 
-            <div class="tich-mt-4">
-                <p class="tich-caption">Standard line items</p>
+    @if ($budgetRequest->cbe_details)
+        <div class="tich-card tich-mt-6">
+            <p class="tich-caption">CBE details</p>
+            <pre class="tich-pre budrev-notes tich-mt-2">{{ json_encode($budgetRequest->cbe_details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+        </div>
+    @endif
 
-                @if ($structured)
-                    <div class="tich-table-wrap">
-                        <table class="tich-admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Quantity</th>
-                                    <th>Description</th>
-                                    <th>Price per item</th>
-                                    <th>UoM</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($lines as $line)
-                                    <tr>
-                                        <td>{{ $line['item'] ?? '-' }}</td>
-                                        <td>{{ $line['quantity'] ?? '-' }}</td>
-                                        <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
-                                        <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                        <td class="tich-caption">{{ $line['unit_of_measure'] ?? '-' }}</td>
-                                        <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="5" style="text-align:right; font-weight:600;">Grand total</td>
-                                    <td><strong>KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</strong></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                @else
-                    <pre class="tich-pre" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; overflow:auto;">{{ json_encode($lines, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                @endif
-            </div>
-        @endif
-
-        @if ($budgetRequest->cbe_details)
-            <div class="tich-mt-4">
-                <p class="tich-caption">CBE details</p>
-                <pre class="tich-pre" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; overflow:auto;">{{ json_encode($budgetRequest->cbe_details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-            </div>
-        @endif
-
-        @if ($budgetRequest->group_allocations)
-            <div class="tich-mt-4">
-                <p class="tich-caption">Group allocations</p>
+    @if ($budgetRequest->group_allocations)
+        <div class="tich-card tich-mt-6">
+            <h2 class="tich-h3">Group allocations</h2>
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -131,8 +87,8 @@
                     </tbody>
                 </table>
             </div>
-        @endif
-    </div>
+        </div>
+    @endif
 
     @if (in_array($budgetRequest->status, ['finance_review', 'submitted']) && auth()->user()->hasAnyRole(['Finance Manager', 'Assistant Finance Manager', 'CEO', 'Super Admin']))
         <div class="tich-card tich-mt-6">

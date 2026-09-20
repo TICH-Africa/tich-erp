@@ -31,6 +31,7 @@
                     <tr>
                         <th>Request</th>
                         <th>Department</th>
+                        <th>Type</th>
                         <th>Requested</th>
                         <th>Verified</th>
                         <th>Approved</th>
@@ -40,13 +41,20 @@
                 </thead>
                 <tbody>
                     @forelse ($requests as $item)
+                        @php $annual = $item->annualQuartersPayload(); @endphp
                         <tr>
                             <td>
                                 <strong>{{ $item->request_code }}</strong>
                                 <p class="tich-caption">{{ $item->title }}</p>
                             </td>
                             <td>{{ $item->department?->dept_name }}</td>
-                            <td>KES {{ number_format($item->requested_amount, 0) }}</td>
+                            <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : '—' }}</td>
+                            <td>
+                                KES {{ number_format($item->requested_amount, 0) }}
+                                @if ($annual)
+                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                @endif
+                            </td>
                             <td>KES {{ number_format($item->verified_amount ?? 0, 0) }}</td>
                             <td>KES {{ number_format($item->approved_amount ?? 0, 0) }}</td>
                             <td><span class="tich-badge">{{ match($item->status) {
@@ -64,7 +72,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>@include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No budget requests found.', 'icon' => 'inbox'])</tr>
+                        <tr>@include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No budget requests found.', 'icon' => 'inbox'])</tr>
                     @endforelse
                 </tbody>
             </table>

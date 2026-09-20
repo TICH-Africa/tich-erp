@@ -3,14 +3,97 @@
 @section('title', 'Fund distribution')
 
 @section('administration-content')
-    <x-page-toolbar title="Fund distribution" meta="Approved budgets from Finance and released monthly allocations to departments">
+    <x-page-toolbar title="Fund distribution" meta="Approved budgets and monthly allocations released to departments">
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="fund-release-modal">+ Release allocation</button>
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if (session('status'))
+        <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
+    @endif
+    @error('allocation')
+        <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
+    @enderror
+
     <div class="tich-card tich-table-panel tich-mt-8">
-        <div class="tich-table-wrap">
+        <h2 class="tich-h3">Budget pipeline</h2>
+        <p class="tich-caption tich-mt-1">Department budgets in Finance / CEO / disbursement stages. Open a request to see the full quarterly income and expenditure layout.</p>
+        <div class="tich-table-wrap tich-mt-4">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Request</th>
+                        <th>Department</th>
+                        <th>Type</th>
+                        <th>Cycle</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($approvedRequests as $approved)
+                        @php
+                            $annual = $approved->annualQuartersPayload();
+                            $amount = (float) ($approved->approved_amount ?? $approved->verified_amount ?? $approved->requested_amount ?? 0);
+                        @endphp
+                        <tr>
+                            <td>
+                                <strong>{{ $approved->request_code }}</strong>
+                                <p class="tich-caption">{{ $approved->title }}</p>
+                            </td>
+                            <td>{{ $approved->department?->dept_name }}</td>
+                            <td>
+                                <span class="tich-badge">{{ $approved->budget_type ? ucfirst($approved->budget_type) : '—' }}</span>
+                            </td>
+                            <td class="tich-caption">
+                                {{ $approved->planningCycle?->title ?? ($approved->planningCycle?->fiscal_year ?? '—') }}
+                            </td>
+                            <td>
+                                <strong>KES {{ number_format($amount, 0) }}</strong>
+                                @if ($annual)
+                                    <p class="tich-caption">Income {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }}</p>
+                                    <p class="tich-caption">Expenditure {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($approved->status === 'disbursed')
+                                    <span class="tich-badge tich-badge--success">Disbursed</span>
+                                @elseif ($approved->status === 'approved')
+                                    <span class="tich-badge tich-badge--warning">Waiting disbursement</span>
+                                @elseif ($approved->status === 'executive_review')
+                                    <span class="tich-badge tich-badge--warning">Awaiting CEO</span>
+                                @elseif ($approved->status === 'finance_review')
+                                    <span class="tich-badge tich-badge--info">Finance review</span>
+                                @else
+                                    <span class="tich-badge tich-badge--info">{{ str_replace('_', ' ', ucfirst($approved->status)) }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="tich-flex-wrap" style="gap:0.5rem; align-items:center;">
+                                    <a href="{{ route('administration.fund-distribution.budget.show', $approved->id) }}" class="tich-btn tich-btn-secondary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">View</a>
+                                    @if ($approved->status === 'approved')
+                                        <form method="POST" action="{{ route('administration.fund-distribution.budget.disburse', $approved->id) }}" onsubmit="return confirm('Mark this budget request as disbursed?')" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark disbursed</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No budgets in the approval pipeline', 'icon' => 'inbox'])
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tich-card tich-table-panel tich-mt-8">
+        <h2 class="tich-h3">Monthly allocations</h2>
+        <p class="tich-caption tich-mt-1">Digital releases to departments against approved budgets.</p>
+        <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
                     <tr>
@@ -19,43 +102,11 @@
                         <th>Period</th>
                         <th>Amount</th>
                         <th>Linked request</th>
-                        <th>Date</th>
+                        <th>Released</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($approvedRequests as $approved)
-                        <tr>
-                            <td><strong>{{ $approved->request_code }}</strong></td>
-                            <td>{{ $approved->department?->dept_name }}</td>
-                            <td class="tich-caption">
-                                {{ $approved->planningCycle?->fiscal_year ?? now()->year }}
-                            </td>
-                            <td>KES {{ number_format((float) ($approved->approved_amount ?? $approved->requested_amount ?? 0), 0) }}</td>
-                            <td class="tich-caption">{{ $approved->request_code }}</td>
-                            <td class="tich-caption">{{ $approved->disbursed_at?->format('d M Y H:i') ?? ($approved->executive_approved_at?->format('d M Y H:i') ?? ($approved->finance_verified_at?->format('d M Y H:i') ?? ($approved->submitted_at?->format('d M Y H:i') ?? '-'))) }}</td>
-                            <td>
-                                @if ($approved->status === 'disbursed')
-                                    <span class="tich-badge tich-badge--success">Disbursed</span>
-                                @elseif ($approved->status === 'approved')
-                                    <span class="tich-badge tich-badge--warning">Waiting disbursement</span>
-                                    <form method="POST" action="{{ route('administration.fund-distribution.budget.disburse', $approved->id) }}" onsubmit="return confirm('Mark this budget request as disbursed?')" style="display:inline; margin-left: 0.5rem;">
-                                        @csrf
-                                        <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark as disbursed</button>
-                                    </form>
-                                @elseif ($approved->status === 'executive_review')
-                                    <span class="tich-badge tich-badge--warning">Awaiting CEO Approval</span>
-                                @elseif ($approved->status === 'finance_review')
-                                    <span class="tich-badge tich-badge--info">In Finance Review</span>
-                                @else
-                                    <span class="tich-badge tich-badge--info">Awaiting Finance Review</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No budgets in the approval pipeline', 'icon' => 'inbox'])
-                    @endforelse
-
                     @forelse ($allocations as $allocation)
                         <tr>
                             <td><strong>{{ $allocation->allocation_code }}</strong></td>
@@ -67,13 +118,19 @@
                                 @endif
                             </td>
                             <td>KES {{ number_format((float) $allocation->amount, 0) }}</td>
-                            <td class="tich-caption">{{ $allocation->budgetRequest?->request_code ?? '-' }}</td>
-                            <td class="tich-caption">{{ $allocation->released_at?->format('d M Y H:i') ?? '-' }}</td>
+                            <td class="tich-caption">
+                                @if ($allocation->budgetRequest)
+                                    <a href="{{ route('administration.fund-distribution.budget.show', $allocation->budgetRequest->id) }}" class="tich-link">{{ $allocation->budgetRequest->request_code }}</a>
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="tich-caption">{{ $allocation->released_at?->format('d M Y H:i') ?? '—' }}</td>
                             <td>
                                 @if ($allocation->status === 'released')
                                     <form method="POST" action="{{ route('administration.fund-distribution.disburse', $allocation) }}" onsubmit="return confirm('Mark this allocation as disbursed?')" style="display:inline;">
                                         @csrf
-                                        <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark as disbursed</button>
+                                        <button type="submit" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Mark disbursed</button>
                                     </form>
                                 @else
                                     <span class="tich-badge tich-badge--success">{{ ucfirst($allocation->status) }}</span>
@@ -107,7 +164,8 @@
                             <option value="">Optional</option>
                             @foreach ($approvedRequests->where('status', 'approved') as $approved)
                                 <option value="{{ $approved->id }}">
-                                    {{ $approved->request_code }} - {{ $approved->department?->dept_name }} (KES {{ number_format($approved->approved_amount ?? 0, 0) }})
+                                    {{ $approved->request_code }} — {{ $approved->title }} · {{ $approved->department?->dept_name }}
+                                    (KES {{ number_format((float) ($approved->approved_amount ?? $approved->requested_amount ?? 0), 0) }})
                                 </option>
                             @endforeach
                         </select>

@@ -3,7 +3,25 @@
 @section('title', 'Review budget request')
 
 @section('administration-content')
-    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} - {{ $budgetRequest->title }}">
+    @php
+        $annual = $budgetRequest->annualQuartersPayload();
+        $incomeGrand = (float) ($annual['income_grand_total'] ?? 0);
+        $expGrand = (float) ($annual['expenditure_grand_total'] ?? $budgetRequest->requested_amount);
+        $balance = $incomeGrand - $expGrand;
+        $statusLabel = match ($budgetRequest->status) {
+            'submitted' => 'Awaiting Administration review',
+            'draft' => 'Draft',
+            'returned' => 'Returned to sender',
+            'finance_review' => 'In Finance review',
+            'executive_review' => 'Awaiting Executive/CEO',
+            'approved' => 'Approved',
+            'disbursed' => 'Disbursed',
+            'rejected' => 'Rejected',
+            default => str_replace('_', ' ', ucfirst($budgetRequest->status)),
+        };
+    @endphp
+
+    <x-page-toolbar title="Review budget request" meta="{{ $budgetRequest->request_code }} · {{ $budgetRequest->title }}">
         <x-slot:actions>
             <a href="{{ route('administration.approvals.index') }}" class="tich-btn tich-btn-ghost">Back to queue</a>
         </x-slot:actions>
@@ -13,132 +31,78 @@
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
     @enderror
 
-    <div class="tich-card tich-mt-6">
-        <h2 class="tich-h3">Request details</h2>
-        <div class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem;">
-            <div>
-                <p class="tich-caption">Department</p>
-                <p><strong>{{ $budgetRequest->department?->dept_name }}</strong> <span class="tich-caption">({{ $budgetRequest->department?->dept_code }})</span></p>
-            </div>
-            <div>
-                <p class="tich-caption">Status</p>
-                <p><span class="tich-badge">{{ match($budgetRequest->status) {
-                    'submitted' => 'Awaiting Administration review',
-                    'draft' => 'Draft',
-                    'returned' => 'Returned to sender',
-                    'finance_review' => 'In Finance review',
-                    'executive_review' => 'Awaiting Executive/CEO',
-                    'approved' => 'Approved',
-                    'disbursed' => 'Disbursed',
-                    'rejected' => 'Rejected',
-                    default => str_replace('_', ' ', ucfirst($budgetRequest->status)),
-                } }}</span></p>
-            </div>
-            <div>
-                <p class="tich-caption">Requested amount</p>
-                <p><strong>KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</strong></p>
-            </div>
-            <div>
-                <p class="tich-caption">Budget type</p>
-                <p>{{ $budgetRequest->budget_type ? ucfirst($budgetRequest->budget_type) : '-' }}</p>
-            </div>
-            <div>
-                <p class="tich-caption">Planning cycle</p>
-                <p>{{ $budgetRequest->planningCycle?->cycle_code ?? '-' }} {{ $budgetRequest->planningCycle?->title ? '- '.$budgetRequest->planningCycle->title : '' }}</p>
-            </div>
-            <div>
-                <p class="tich-caption">Submitted by</p>
-                @if ($submitter)
-                    <p><strong>{{ $submitter['name'] }}</strong></p>
-                    <p class="tich-caption">{{ $submitter['email'] ?? 'No email on file' }}</p>
-                @else
-                    <p class="tich-caption">Unknown submitter</p>
+    <div class="budrev-summary tich-mt-6">
+        <div class="budrev-summary__main">
+            <p class="budrev-summary__code">{{ $budgetRequest->request_code }}</p>
+            <h2 class="budrev-summary__title">{{ $budgetRequest->title }}</h2>
+            <p class="budrev-summary__meta">
+                <strong>{{ $budgetRequest->department?->dept_name }}</strong>
+                <span aria-hidden="true">·</span>
+                {{ $budgetRequest->department?->dept_code }}
+                <span aria-hidden="true">·</span>
+                {{ $budgetRequest->budget_type ? ucfirst($budgetRequest->budget_type) : 'Budget' }}
+                @if ($budgetRequest->planningCycle)
+                    <span aria-hidden="true">·</span>
+                    {{ $budgetRequest->planningCycle->title ?? $budgetRequest->planningCycle->cycle_code }}
+                    @if ($budgetRequest->planningCycle->fiscal_year)
+                        (FY{{ $budgetRequest->planningCycle->fiscal_year }})
+                    @endif
                 @endif
-            </div>
-            <div>
-                <p class="tich-caption">Submitted at</p>
-                <p>{{ $budgetRequest->submitted_at?->format('d M Y H:i') ?? '-' }}</p>
-            </div>
-        </div>
-
-        @if ($budgetRequest->justification)
-            <div class="tich-mt-4">
-                <p class="tich-caption">Justification</p>
-                <p>{{ $budgetRequest->justification }}</p>
-            </div>
-        @endif
-    </div>
-
-    @php
-        $annual = $budgetRequest->annualQuartersPayload();
-        $lines = $budgetRequest->expenditureLines();
-        $structured = $lines !== [] && isset($lines[0]) && is_array($lines[0]) && array_key_exists('unit_price', $lines[0]);
-    @endphp
-
-    @if ($annual)
-        <div class="tich-card tich-table-panel tich-mt-6">
-            <h2 class="tich-h3">Annual quarters</h2>
-            <p class="tich-caption tich-mt-2">
-                Income {{ number_format((float) ($annual['income_grand_total'] ?? 0), 2) }} KES ·
-                Expenditure {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 2) }} KES
             </p>
-            @foreach (['q1' => 'Q1', 'q2' => 'Q2', 'q3' => 'Q3', 'q4' => 'Q4'] as $qKey => $qLabel)
-                @php $block = $annual['quarters'][$qKey] ?? []; @endphp
-                <h3 class="tich-h4 tich-mt-4">{{ $qLabel }}</h3>
-                <p class="tich-caption">
-                    Income {{ number_format((float) ($block['income_total'] ?? 0), 2) }} ·
-                    Expenditure {{ number_format((float) ($block['expenditure_total'] ?? 0), 2) }}
-                </p>
-            @endforeach
+            <div class="budrev-summary__status">
+                <span class="tich-badge">{{ $statusLabel }}</span>
+                <span class="tich-caption">
+                    Submitted {{ $budgetRequest->submitted_at?->format('d M Y · H:i') ?? '—' }}
+                    @if ($submitter)
+                        by {{ $submitter['name'] }}
+                    @endif
+                </span>
+            </div>
         </div>
-    @endif
-
-    <div class="tich-card tich-table-panel tich-mt-6">
-        <h2 class="tich-h3">{{ $annual ? 'Expenditure lines' : 'Line items' }}</h2>
-        <div class="tich-table-wrap tich-mt-4">
-            @if ($structured)
-                <table class="tich-admin-table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Description</th>
-                            <th>Price per item</th>
-                            <th>UoM</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($lines as $line)
-                            <tr>
-                                <td>{{ $line['item'] ?? '-' }}</td>
-                                <td>{{ $line['quantity'] ?? '-' }}</td>
-                                <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
-                                <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                <td class="tich-caption">{{ $line['unit_of_measure'] ?? '-' }}</td>
-                                <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="5" style="text-align:right; font-weight:600;">Grand total</td>
-                            <td><strong>KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</strong></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            @elseif ($lines !== [])
-                <pre class="tich-pre" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; overflow:auto;">{{ json_encode($lines, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+        <div class="budrev-summary__figures">
+            @if ($annual)
+                <div class="budrev-stat">
+                    <span class="budrev-stat__label">Total income</span>
+                    <span class="budrev-stat__value">KES {{ number_format($incomeGrand, 2) }}</span>
+                </div>
+                <div class="budrev-stat budrev-stat--exp">
+                    <span class="budrev-stat__label">Total expenditure</span>
+                    <span class="budrev-stat__value">KES {{ number_format($expGrand, 2) }}</span>
+                </div>
+                <div class="budrev-stat {{ $balance >= 0 ? 'budrev-stat--ok' : 'budrev-stat--warn' }}">
+                    <span class="budrev-stat__label">{{ $balance >= 0 ? 'Surplus' : 'Shortfall' }}</span>
+                    <span class="budrev-stat__value">KES {{ number_format(abs($balance), 2) }}</span>
+                </div>
             @else
-                <p class="tich-caption">No line items were provided with this request.</p>
+                <div class="budrev-stat budrev-stat--exp">
+                    <span class="budrev-stat__label">Requested amount</span>
+                    <span class="budrev-stat__value">KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</span>
+                </div>
             @endif
         </div>
     </div>
 
+    @if ($budgetRequest->justification)
+        <div class="tich-card tich-mt-6">
+            <h2 class="tich-h3">Justification</h2>
+            <p class="budrev-justification tich-mt-3">{{ $budgetRequest->justification }}</p>
+            @if ($submitter)
+                <p class="tich-caption tich-mt-3">
+                    Contact: {{ $submitter['name'] }}
+                    @if (! empty($submitter['email']))
+                        · {{ $submitter['email'] }}
+                    @endif
+                </p>
+            @endif
+        </div>
+    @endif
+
+    @include('partials.budget-request-breakdown', ['budgetRequest' => $budgetRequest, 'idPrefix' => 'admin-budrev'])
+
     @if ($budgetRequest->workflow_notes)
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Workflow notes</h2>
-            <pre class="tich-pre tich-mt-4" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; white-space:pre-wrap;">{{ $budgetRequest->workflow_notes }}</pre>
+            <pre class="tich-pre tich-mt-4 budrev-notes">{{ $budgetRequest->workflow_notes }}</pre>
         </div>
     @endif
 

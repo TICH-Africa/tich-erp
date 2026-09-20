@@ -37,6 +37,17 @@ class FundDistributionController extends Controller
         ]);
     }
 
+    public function show(int $id): View
+    {
+        $budgetRequest = BudgetRequest::query()
+            ->with(['department', 'planningCycle'])
+            ->findOrFail($id);
+
+        return view('administration.fund-distribution.show', [
+            'budgetRequest' => $budgetRequest,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([

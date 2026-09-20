@@ -77,23 +77,33 @@
                         <th>Code</th>
                         <th>Department</th>
                         <th>Title</th>
-                        <th>Framework</th>
+                        <th>Type</th>
                         <th>Amount</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($requests as $item)
+                        @php $annual = $item->annualQuartersPayload(); @endphp
                         <tr>
                             <td><strong>{{ $item->request_code }}</strong></td>
                             <td>{{ $item->department?->dept_name }}</td>
                             <td>{{ $item->title }}</td>
-                            <td class="tich-caption">{{ strtoupper($item->framework) }}</td>
-                            <td>KES {{ number_format($item->requested_amount, 0) }}</td>
+                            <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : strtoupper($item->framework) }}</td>
+                            <td>
+                                KES {{ number_format($item->requested_amount, 0) }}
+                                @if ($annual)
+                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                @endif
+                            </td>
                             <td><x-status-badge :status="$item->status" /></td>
+                            <td>
+                                <a href="{{ route('administration.approvals.show', $item) }}" class="tich-btn tich-btn-secondary" style="padding:0.35rem 0.6rem; font-size:0.85rem;">View</a>
+                            </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No requests yet', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No requests yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

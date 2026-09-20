@@ -537,6 +537,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/approvals/{budget_request}/reject', [\App\Http\Controllers\Administration\ApprovalWorkflowController::class, 'reject'])->name('administration.approvals.reject');
 
         Route::get('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'index'])->name('administration.fund-distribution.index');
+        Route::get('/fund-distribution/budget-requests/{id}', [\App\Http\Controllers\Administration\FundDistributionController::class, 'show'])->name('administration.fund-distribution.budget.show');
         Route::post('/fund-distribution', [\App\Http\Controllers\Administration\FundDistributionController::class, 'store'])->name('administration.fund-distribution.store');
         Route::post('/fund-distribution/budget-requests/{id}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAsDisbursed'])->name('administration.fund-distribution.budget.disburse');
         Route::post('/fund-distribution/allocations/{allocation}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAllocationAsDisbursed'])->name('administration.fund-distribution.disburse');

@@ -24,6 +24,7 @@
                     <tr>
                         <th>Request</th>
                         <th>Department</th>
+                        <th>Type</th>
                         <th>Requested</th>
                         <th>Verified</th>
                         <th>Stage</th>
@@ -32,13 +33,20 @@
                 </thead>
                 <tbody>
                     @forelse ($requests as $item)
+                        @php $annual = $item->annualQuartersPayload(); @endphp
                         <tr>
                             <td>
                                 <strong>{{ $item->request_code }}</strong>
                                 <p class="tich-caption">{{ $item->title }}</p>
                             </td>
                             <td>{{ $item->department?->dept_name }}</td>
-                            <td>KES {{ number_format((float) $item->requested_amount, 0) }}</td>
+                            <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : '—' }}</td>
+                            <td>
+                                KES {{ number_format((float) $item->requested_amount, 0) }}
+                                @if ($annual)
+                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                @endif
+                            </td>
                             <td>KES {{ number_format((float) ($item->verified_amount ?? 0), 0) }}</td>
                             <td><x-status-badge :status="$item->status" /></td>
                             <td>
@@ -46,7 +54,7 @@
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No budget requests in this queue', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No budget requests in this queue', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

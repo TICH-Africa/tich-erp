@@ -26,11 +26,15 @@
                     @forelse ($queue as $item)
                         @php
                             $submitter = $submitters[(int) $item->submitted_by] ?? null;
+                            $annual = $item->annualQuartersPayload();
                         @endphp
                         <tr>
                             <td>
                                 <strong>{{ $item->request_code }}</strong>
                                 <p class="tich-caption">{{ $item->title }}</p>
+                                @if ($item->budget_type)
+                                    <p class="tich-caption">{{ ucfirst($item->budget_type) }}</p>
+                                @endif
                             </td>
                             <td>{{ $item->department?->dept_name }}</td>
                             <td>
@@ -43,6 +47,9 @@
                             </td>
                             <td>
                                 <p>Req: KES {{ number_format($item->requested_amount, 0) }}</p>
+                                @if ($annual)
+                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                @endif
                                 @if ($item->verified_amount !== null)
                                     <p class="tich-caption">Verified: KES {{ number_format($item->verified_amount, 0) }}</p>
                                 @endif

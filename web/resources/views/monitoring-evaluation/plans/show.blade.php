@@ -5,8 +5,6 @@
 @section('monitoring-evaluation-content')
     @php
         $budget = $plan->budgetRequest;
-        $budgetLines = is_array($budget?->standard_line_items) ? $budget->standard_line_items : [];
-        $budgetStructured = $budgetLines !== [] && isset($budgetLines[0]) && is_array($budgetLines[0]) && array_key_exists('unit_price', $budgetLines[0]);
     @endphp
 
     <x-page-toolbar :title="$plan->title" :meta="($plan->department?->dept_name ?? 'Department').' · '.\App\Support\StatusTone::label($plan->status)">
@@ -152,41 +150,10 @@
                 {{ str_replace('_', ' ', $budget->status) }}
             </p>
             @if ($budget->justification)
-                <p class="tich-text tich-mt-3">{{ $budget->justification }}</p>
+                <p class="budrev-justification tich-mt-3">{{ $budget->justification }}</p>
             @endif
-
-            <div class="tich-table-wrap tich-mt-4">
-                @if ($budgetStructured)
-                    <table class="tich-admin-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                                <th>Description</th>
-                                <th>Unit price</th>
-                                <th>UoM</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($budgetLines as $line)
-                                <tr>
-                                    <td>{{ $line['item'] ?? '-' }}</td>
-                                    <td>{{ $line['quantity'] ?? '-' }}</td>
-                                    <td class="tich-caption">{{ $line['description'] ?: '-' }}</td>
-                                    <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
-                                    <td class="tich-caption">{{ $line['unit_of_measure'] ?: '-' }}</td>
-                                    <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @elseif ($budgetLines !== [])
-                    <pre class="tich-pre" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; overflow:auto;">{{ json_encode($budgetLines, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                @else
-                    <p class="tich-caption">No budget line items on the linked request.</p>
-                @endif
-            </div>
         </div>
+
+        @include('partials.budget-request-breakdown', ['budgetRequest' => $budget, 'idPrefix' => 'me-budrev'])
     @endif
 @endsection

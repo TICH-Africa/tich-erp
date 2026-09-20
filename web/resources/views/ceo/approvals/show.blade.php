@@ -41,15 +41,17 @@
         @if ($budgetRequest->justification)
             <div class="tich-mt-4">
                 <p class="tich-caption">Justification</p>
-                <p>{{ $budgetRequest->justification }}</p>
+                <p class="budrev-justification">{{ $budgetRequest->justification }}</p>
             </div>
         @endif
     </div>
 
+    @include('partials.budget-request-breakdown', ['budgetRequest' => $budgetRequest, 'idPrefix' => 'ceo-approval-budrev'])
+
     @if ($budgetRequest->workflow_notes)
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Workflow notes</h2>
-            <pre class="tich-pre tich-mt-4" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; white-space:pre-wrap;">{{ $budgetRequest->workflow_notes }}</pre>
+            <pre class="tich-pre tich-mt-4 budrev-notes">{{ $budgetRequest->workflow_notes }}</pre>
         </div>
     @endif
 
