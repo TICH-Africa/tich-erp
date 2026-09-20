@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Services\PrintDocumentService;
 use App\Services\StudentRecordService;
 use App\Services\TranscriptService;
-use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class TranscriptController extends Controller
 {
@@ -26,7 +26,7 @@ class TranscriptController extends Controller
         );
     }
 
-    public function pdf(int $student): Response
+    public function pdf(int $student): SymfonyResponse
     {
         $transcript = $this->buildTranscript($student);
         $registration = $transcript['student']->registration_number;
@@ -38,6 +38,18 @@ class TranscriptController extends Controller
         );
     }
 
+    public function termPdf(int $student, int $semester): SymfonyResponse
+    {
+        $transcript = $this->buildTermTranscript($student, $semester);
+        $registration = $transcript['student']->registration_number;
+
+        return $this->printDocuments->downloadPdf(
+            'sis.transcript.print',
+            $this->documentData($transcript, includeActions: false),
+            'transcript-'.Str::slug($registration).'-term-'.$semester.'.pdf',
+        );
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -46,6 +58,16 @@ class TranscriptController extends Controller
         $record = $this->studentRecords->findForHub($student);
 
         return $this->transcripts->build($record);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function buildTermTranscript(int $student, int $semester): array
+    {
+        $record = $this->studentRecords->findForHub($student);
+
+        return $this->transcripts->buildForSemester($record, $semester);
     }
 
     /**

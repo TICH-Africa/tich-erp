@@ -5,7 +5,8 @@
 @section('administration-content')
     <x-page-toolbar title="Application framework" meta="View submitted applications and forward them to academics for review">
         <x-slot:actions>
-            <a href="{{ $applyUrl }}" class="tich-btn tich-btn-primary" target="_blank" rel="noopener">Open apply portal</a>
+            <a href="{{ route('administration.applications.existing-student.create') }}" class="tich-btn tich-btn-primary">Add Existing Student</a>
+            <a href="{{ $applyUrl }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Open apply portal</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -35,6 +36,43 @@
             <h3 class="tich-h4">Applicant package</h3>
             <p class="tich-caption tich-mt-2">After academic approval, applicants receive their letter, fee structure, and payment link.</p>
         </article>
+    </div>
+
+    <div class="tich-card tich-table-panel tich-mt-8">
+        <h2 class="tich-h3">Existing Students</h2>
+        <div class="tich-table-wrap tich-mt-4">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Reg. Number</th>
+                        <th>Student</th>
+                        <th>Programme</th>
+                        <th>Campus</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($existingStudents as $student)
+                        <tr>
+                            <td><strong>{{ $student->registration_number }}</strong></td>
+                            <td>{{ $student->fullName() }}</td>
+                            <td class="tich-caption">{{ $student->program?->program_name ?? '-' }}</td>
+                            <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                            <td>{{ ucfirst($student->enrollment_status) }}</td>
+                            <td>
+                                <a href="{{ route('administration.applications.existing-student.show', $student->id) }}" class="tich-link">View</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="tich-caption">No existing students found.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if ($existingStudents instanceof \Illuminate\Contracts\Pagination\Paginator && $existingStudents->hasPages())
+            <div class="tich-mt-4">{{ $existingStudents->links() }}</div>
+        @endif
     </div>
 
     <div class="tich-card tich-table-panel tich-mt-8">

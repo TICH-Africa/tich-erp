@@ -50,6 +50,44 @@ class TranscriptService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function buildForSemester(Student $student, int $semesterId): array
+    {
+        $student->loadMissing(['applicant', 'program.department', 'campus']);
+
+        $rows = $this->transcriptRows($student)->where('semester_id', $semesterId);
+        $semesterBlocks = $this->groupBySemester($rows);
+        $cumulativeGpa = $this->calculateGpa($rows);
+
+        $this->auditService->log(
+            'sis.transcript.generated',
+            'students',
+            $student->id,
+            null,
+            [
+                'units_completed' => $rows->count(),
+                'cumulative_gpa' => $cumulativeGpa,
+                'semester_id' => $semesterId,
+            ],
+            'Student term transcript generated',
+            'success',
+            Auth::id(),
+        );
+
+        return [
+            'student' => $student,
+            'program' => $student->program,
+            'rows' => $rows->values()->all(),
+            'semester_blocks' => $semesterBlocks,
+            'cumulative_gpa' => $cumulativeGpa,
+            'total_credits' => round((float) $rows->sum('credit_hours'), 2),
+            'units_completed' => $rows->count(),
+            'generated_at' => now(),
+        ];
+    }
+
+    /**
      * @return Collection<int, object>
      */
     private function transcriptRows(Student $student): Collection

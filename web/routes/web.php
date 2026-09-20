@@ -325,6 +325,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/students/{student}', [\App\Http\Controllers\Sis\StudentController::class, 'show'])->name('sis.students.show');
         Route::get('/students/{student}/transcript', [\App\Http\Controllers\Sis\TranscriptController::class, 'show'])->name('sis.students.transcript');
         Route::get('/students/{student}/transcript/pdf', [\App\Http\Controllers\Sis\TranscriptController::class, 'pdf'])->name('sis.students.transcript.pdf');
+        Route::get('/students/{student}/transcript/{semester}/pdf', [\App\Http\Controllers\Sis\TranscriptController::class, 'termPdf'])->name('sis.students.transcript.term.pdf');
+    });
+
+    Route::prefix('academics')->middleware(['permission:academics.read'])->group(function () {
+        Route::get('/students', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'index'])->name('academics.students.index');
+        Route::get('/students/create', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'create'])->name('academics.students.create');
+        Route::get('/students/{student}', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'show'])->name('academics.students.show');
+        Route::post('/students', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'store'])->name('academics.students.store');
     });
 
     Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () use ($registerModuleBudgeting, $registerModuleQaTasks, $registerModuleMeReports) {
@@ -346,6 +354,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::get('/records', [\App\Http\Controllers\Finance\FinanceHubController::class, 'records'])->name('finance.records.index');
         Route::get('/employee', [\App\Http\Controllers\Finance\FinanceHubController::class, 'employee'])->name('finance.employee.index');
+        Route::get('/students', [\App\Http\Controllers\Finance\StudentDirectoryController::class, 'index'])->name('finance.students.index');
+        Route::get('/students/{student}', [\App\Http\Controllers\Finance\StudentDirectoryController::class, 'show'])->name('finance.students.show');
+        Route::post('/students/{student}/add-past-record', [\App\Http\Controllers\Finance\StudentDirectoryController::class, 'createPastRecord'])->name('finance.students.add-past-record');
 
         Route::middleware([\App\Http\Middleware\BindFinanceDepartment::class])->group(function () {
             Route::get('/student-finance', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'index'])->name('finance.student-finance.index');
@@ -516,6 +527,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/fund-distribution/allocations/{allocation}/disburse', [\App\Http\Controllers\Administration\FundDistributionController::class, 'markAllocationAsDisbursed'])->name('administration.fund-distribution.disburse');
 
         Route::get('/applications', [\App\Http\Controllers\Administration\AdmissionsOpsController::class, 'applications'])->name('administration.applications.index');
+        Route::get('/applications/existing-student', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'index'])->name('administration.applications.existing-student.index');
+        Route::get('/applications/existing-student/create', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'create'])->name('administration.applications.existing-student.create');
+        Route::post('/applications/existing-student', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'store'])->name('administration.applications.existing-student.store');
+        Route::get('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'show'])->name('administration.applications.existing-student.show');
         Route::get('/applications/{id}', [\App\Http\Controllers\Administration\ApplicationController::class, 'show'])->name('administration.applications.show');
         Route::post('/applications/{id}/handoff-to-academics', [\App\Http\Controllers\Administration\ApplicationController::class, 'handoffToAcademics'])
             ->name('administration.applications.handoff-to-academics');

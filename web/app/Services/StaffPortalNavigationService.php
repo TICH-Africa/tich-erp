@@ -16,16 +16,18 @@ class StaffPortalNavigationService
      */
     public function sections(): array
     {
-        $sections = [
-            'overview' => 'Overview',
-            'units' => 'My units',
-            'timetable' => 'Timetable',
-            'attendance' => 'Attendance',
-            'grading' => 'Marks & assessments',
-            'lesson-plans' => 'Lesson plans',
-            'content' => 'Learning content',
-            'exam-papers' => 'Exam papers',
-        ];
+        $sections = [];
+
+        if ($this->userIsTeachingStaff()) {
+            $sections['overview'] = 'Overview';
+            $sections['units'] = 'My units';
+            $sections['timetable'] = 'Timetable';
+            $sections['attendance'] = 'Attendance';
+            $sections['grading'] = 'Marks & assessments';
+            $sections['lesson-plans'] = 'Lesson plans';
+            $sections['content'] = 'Learning content';
+            $sections['exam-papers'] = 'Exam papers';
+        }
 
         if ($this->userIsHod()) {
             $sections['hod-management'] = 'HOD management';
@@ -52,17 +54,19 @@ class StaffPortalNavigationService
      */
     public function sidebarNavigation(): array
     {
-        $items = [
-            ['type' => 'link', 'label' => 'Overview', 'section' => 'overview', 'icon' => 'dashboard'],
-            ['type' => 'heading', 'label' => 'Teaching'],
-            ['type' => 'link', 'label' => 'My units', 'section' => 'units', 'icon' => 'book-open'],
-            ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable', 'icon' => 'calendar'],
-            ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance', 'icon' => 'clipboard-check'],
-            ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'],
-            ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'],
-            ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'],
-            ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'],
-        ];
+        $items = [];
+
+        if ($this->userIsTeachingStaff()) {
+            $items[] = ['type' => 'link', 'label' => 'Overview', 'section' => 'overview', 'icon' => 'dashboard'];
+            $items[] = ['type' => 'heading', 'label' => 'Teaching'];
+            $items[] = ['type' => 'link', 'label' => 'My units', 'section' => 'units', 'icon' => 'book-open'];
+            $items[] = ['type' => 'link', 'label' => 'Timetable', 'section' => 'timetable', 'icon' => 'calendar'];
+            $items[] = ['type' => 'link', 'label' => 'Attendance', 'section' => 'attendance', 'icon' => 'clipboard-check'];
+            $items[] = ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'];
+            $items[] = ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'];
+            $items[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'];
+            $items[] = ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'];
+        }
 
         if ($this->userIsHod()) {
             $items[] = ['type' => 'heading', 'label' => 'Management'];
@@ -89,6 +93,23 @@ class StaffPortalNavigationService
     {
         $user = Auth::user();
 
-        return $user && $user->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']);
+        return $user && $user->hasAnyRole(['HOD', 'Super Admin']);
+    }
+
+    private function userIsTeachingStaff(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('Lecturer/Tutor')) {
+            return true;
+        }
+
+        $staff = app(StaffPortalService::class)->staffForUser($user);
+
+        return $staff && $staff->is_teaching_staff;
     }
 }
