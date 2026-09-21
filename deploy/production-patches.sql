@@ -1561,11 +1561,73 @@ SET @sql := (SELECT IF(
 ));
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- -----------------------------------------------------------------------------
+-- 30. Staff weekly time logs (digitized STAFF WEEKLY TIME LOG form)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `log_code` varchar(40) NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `log_year` smallint(5) unsigned NOT NULL,
+  `log_month` tinyint(3) unsigned NOT NULL,
+  `week_number` tinyint(3) unsigned NOT NULL,
+  `week_ref` varchar(30) NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `total_hours` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `total_units` decimal(10,2) DEFAULT NULL,
+  `employee_signed_name` varchar(200) DEFAULT NULL,
+  `employee_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `manager_signed_name` varchar(200) DEFAULT NULL,
+  `manager_signature` varchar(300) DEFAULT NULL,
+  `manager_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_self_endorsed` tinyint(1) NOT NULL DEFAULT 0,
+  `hr_reviewed_by_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `hr_reviewed_at` timestamp NULL DEFAULT NULL,
+  `hr_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `staff_weekly_time_logs_log_code_unique` (`log_code`),
+  UNIQUE KEY `swtl_staff_week_unique` (`staff_id`,`log_year`,`log_month`,`week_number`),
+  KEY `swtl_status_submitted_idx` (`status`,`employee_signed_at`),
+  KEY `swtl_period_idx` (`log_year`,`log_month`,`week_number`),
+  KEY `swtl_manager_staff_fk` (`manager_staff_id`),
+  KEY `swtl_hr_reviewer_fk` (`hr_reviewed_by_staff_id`),
+  CONSTRAINT `staff_weekly_time_logs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `staff_weekly_time_logs_manager_staff_id_foreign` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign` FOREIGN KEY (`hr_reviewed_by_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `weekly_time_log_id` bigint(20) unsigned NOT NULL,
+  `work_date` date NOT NULL,
+  `day_label` varchar(10) NOT NULL,
+  `in_month` tinyint(1) NOT NULL DEFAULT 1,
+  `time_in` time DEFAULT NULL,
+  `time_out` time DEFAULT NULL,
+  `tasks_accomplished` text DEFAULT NULL,
+  `initials` varchar(20) DEFAULT NULL,
+  `department_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`department_ids`)),
+  `approval_sign` varchar(120) DEFAULT NULL,
+  `total_hours` decimal(6,2) DEFAULT NULL,
+  `total_units` decimal(8,2) DEFAULT NULL,
+  `display_order` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `swtld_log_date_unique` (`weekly_time_log_id`,`work_date`),
+  CONSTRAINT `swtld_log_fk` FOREIGN KEY (`weekly_time_log_id`) REFERENCES `staff_weekly_time_logs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET time_zone = '+03:00';
 
--- Research activities, financial policy, and partnership inquiry columns are also
--- covered by deploy/production.sql / Laravel migrations. Run production.sql first
--- on fresh hosts.
+-- Research activities, financial policy, partnership inquiry columns, and weekly
+-- time logs are also covered by deploy/production.sql / Laravel migrations.
+-- Run production.sql first on fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

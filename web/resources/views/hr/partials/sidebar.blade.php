@@ -26,6 +26,13 @@
             'badgeKey' => 'attendance',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.time-logs.index'),
+            'label' => 'Time logs',
+            'icon' => 'calendar',
+            'active' => request()->routeIs('hr.time-logs.*'),
+            'badgeKey' => 'time-logs',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('hr.onboarding.index'),
             'label' => 'Onboarding',
             'icon' => 'user-plus',

@@ -50,7 +50,7 @@ final class StatusTone
             'me_review', 'returned', 'attention', 'warning', 'major', 'action_required',
             'needs_attention', 'submitted', 'dispatched' => self::WARNING,
 
-            'pending', 'draft', 'awaiting', 'awaiting_review', 'caution', 'on_hold',
+            'pending', 'pending_hr', 'draft', 'awaiting', 'awaiting_review', 'caution', 'on_hold',
             'hold', 'queued', 'scheduled', 'not_started', 'unverified' => self::CAUTION,
 
             'info', 'informational', 'review', 'new', 'received', 'assigned',
@@ -89,6 +89,8 @@ final class StatusTone
             'finance_review' => 'Finance review',
             'executive_review' => 'Executive review',
             'ceo_delivered' => 'CEO delivered',
+            'pending_hr' => 'Pending HR',
+            'pending_manager' => 'Pending manager',
         ];
 
         if (isset($labels[$key])) {

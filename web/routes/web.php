@@ -1027,6 +1027,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/attendance/{attendance}/approve', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'approve'])->name('hr.attendance.approve');
             Route::post('/attendance/{attendance}/reject', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'reject'])->name('hr.attendance.reject');
 
+            Route::get('/time-logs', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'index'])->name('hr.time-logs.index');
+            Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'show'])->name('hr.time-logs.show');
+            Route::post('/time-logs/{timeLog}/approve', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'approve'])->name('hr.time-logs.approve');
+            Route::post('/time-logs/{timeLog}/reject', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'reject'])->name('hr.time-logs.reject');
+            Route::post('/time-logs/{timeLog}/return', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'returnLog'])->name('hr.time-logs.return');
+
             Route::prefix('employee-relations')->name('hr.employee-relations.')->group(function () {
                 Route::get('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'index'])->name('disciplinary.index');
                 Route::get('/disciplinary/create', [\App\Http\Controllers\HR\DisciplinaryController::class, 'create'])->name('disciplinary.create');
@@ -1190,6 +1196,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/attendance', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'index'])->name('employee.attendance.index');
         Route::post('/attendance/clock-in', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'clockIn'])->name('employee.attendance.clock-in');
         Route::post('/attendance/clock-out', [\App\Http\Controllers\Employee\EmployeeAttendanceController::class, 'clockOut'])->name('employee.attendance.clock-out');
+
+        Route::get('/time-logs', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'index'])->name('employee.time-logs.index');
+        Route::get('/time-logs/weeks', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'weeks'])->name('employee.time-logs.weeks');
+        Route::post('/time-logs', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'create'])->name('employee.time-logs.create');
+        Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'show'])->name('employee.time-logs.show');
+        Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'update'])->name('employee.time-logs.update');
+        Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'submit'])->name('employee.time-logs.submit');
+        Route::post('/time-logs/{timeLog}/endorse', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'endorse'])->name('employee.time-logs.endorse');
 
         Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('policies.assigned');
         Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('policies.acknowledge');

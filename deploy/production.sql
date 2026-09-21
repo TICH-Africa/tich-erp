@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-20 12:39:36 EAT
+-- Generated: 2026-09-21 17:50:01 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -10621,6 +10621,126 @@ CALL `tich_ensure_index`('staff_status_history', 'staff_status_history_effective
 CALL `tich_ensure_index`('staff_status_history', 'staff_status_history_staff_id_change_type_index', '`staff_id`, `change_type`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `staff_weekly_time_logs`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `log_code` varchar(40) NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `log_year` smallint(5) unsigned NOT NULL,
+  `log_month` tinyint(3) unsigned NOT NULL,
+  `week_number` tinyint(3) unsigned NOT NULL,
+  `week_ref` varchar(30) NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `total_hours` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `total_units` decimal(10,2) DEFAULT NULL,
+  `employee_signed_name` varchar(200) DEFAULT NULL,
+  `employee_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `manager_signed_name` varchar(200) DEFAULT NULL,
+  `manager_signature` varchar(300) DEFAULT NULL,
+  `manager_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_self_endorsed` tinyint(1) NOT NULL DEFAULT 0,
+  `hr_reviewed_by_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `hr_reviewed_at` timestamp NULL DEFAULT NULL,
+  `hr_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `swtl_staff_week_unique` (`staff_id`,`log_year`,`log_month`,`week_number`),
+  UNIQUE KEY `staff_weekly_time_logs_log_code_unique` (`log_code`),
+  KEY `swtl_status_submitted_idx` (`status`,`employee_signed_at`),
+  KEY `swtl_period_idx` (`log_year`,`log_month`,`week_number`),
+  KEY `staff_weekly_time_logs_manager_staff_id_foreign` (`manager_staff_id`),
+  KEY `staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign` (`hr_reviewed_by_staff_id`),
+  CONSTRAINT `staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign` FOREIGN KEY (`hr_reviewed_by_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_weekly_time_logs_manager_staff_id_foreign` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_weekly_time_logs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `staff_weekly_time_logs` (add only if missing)
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_code', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_year', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_month', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'week_number', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'week_ref', 'varchar(30) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'period_start', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'period_end', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'total_hours', 'decimal(8,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'total_units', 'decimal(10,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'employee_signed_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'employee_signed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signed_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signature', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_self_endorsed', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_reviewed_by_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `staff_weekly_time_logs` (add only if missing)
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`');
+CALL `tich_ensure_unique`('staff_weekly_time_logs', 'staff_weekly_time_logs_log_code_unique', '`log_code`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'staff_weekly_time_logs_manager_staff_id_foreign', '`manager_staff_id`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'swtl_period_idx', '`log_year`, `log_month`, `week_number`');
+CALL `tich_ensure_unique`('staff_weekly_time_logs', 'swtl_staff_week_unique', '`staff_id`, `log_year`, `log_month`, `week_number`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'swtl_status_submitted_idx', '`status`, `employee_signed_at`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `staff_weekly_time_log_days`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `weekly_time_log_id` bigint(20) unsigned NOT NULL,
+  `work_date` date NOT NULL,
+  `day_label` varchar(10) NOT NULL,
+  `in_month` tinyint(1) NOT NULL DEFAULT 1,
+  `time_in` time DEFAULT NULL,
+  `time_out` time DEFAULT NULL,
+  `tasks_accomplished` text DEFAULT NULL,
+  `initials` varchar(20) DEFAULT NULL,
+  `department_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`department_ids`)),
+  `approval_sign` varchar(120) DEFAULT NULL,
+  `total_hours` decimal(6,2) DEFAULT NULL,
+  `total_units` decimal(8,2) DEFAULT NULL,
+  `display_order` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `swtld_log_date_unique` (`weekly_time_log_id`,`work_date`),
+  CONSTRAINT `swtld_log_fk` FOREIGN KEY (`weekly_time_log_id`) REFERENCES `staff_weekly_time_logs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `staff_weekly_time_log_days` (add only if missing)
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'weekly_time_log_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'work_date', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'day_label', 'varchar(10) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'in_month', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'time_in', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'time_out', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'tasks_accomplished', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'initials', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'department_ids', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'approval_sign', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'total_hours', 'decimal(6,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'total_units', 'decimal(8,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'display_order', 'tinyint(3) unsigned NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `staff_weekly_time_log_days` (add only if missing)
+CALL `tich_ensure_unique`('staff_weekly_time_log_days', 'swtld_log_date_unique', '`weekly_time_log_id`, `work_date`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `statutory_deductions`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `statutory_deductions` (
@@ -12889,6 +13009,14 @@ CALL `tich_ensure_fk`('staff_qualifications', 'staff_qualifications_verified_by_
 -- Foreign keys for `staff_status_history`
 CALL `tich_ensure_fk`('staff_status_history', 'staff_status_history_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_status_history', 'staff_status_history_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `staff_weekly_time_logs`
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_manager_staff_id_foreign', '`manager_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `staff_weekly_time_log_days`
+CALL `tich_ensure_fk`('staff_weekly_time_log_days', 'swtld_log_fk', '`weekly_time_log_id`', 'staff_weekly_time_logs', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `statutory_deductions`
 CALL `tich_ensure_fk`('statutory_deductions', 'statutory_deductions_payroll_item_id_foreign', '`payroll_item_id`', 'payroll_items', '`id`', 'RESTRICT', 'RESTRICT');

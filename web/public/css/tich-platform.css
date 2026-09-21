@@ -11735,3 +11735,9 @@ input[type="time"]::-moz-calendar-picker-indicator {
 [data-theme="dark"] .budrev-panel--exp {
     background: color-mix(in srgb, #243442 45%, transparent);
 }
+
+/* Weekly time log — days outside the week/month period */
+.wtl-table tr.wtl-row--outside td {
+    opacity: 0.45;
+    background: color-mix(in srgb, var(--tich-border, #e5e7eb) 35%, transparent);
+}

@@ -14,6 +14,7 @@ use App\Models\StaffDocument;
 use App\Models\StaffOnboarding;
 use App\Models\StaffAttendance;
 use App\Models\StaffProfileChangeRequest;
+use App\Models\StaffWeeklyTimeLog;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -36,6 +37,7 @@ class HrSidebarNotificationService
         'contracts' => 'Contracts',
         'profile-changes' => 'Profile changes',
         'attendance' => 'Attendance reviews',
+        'time-logs' => 'Time logs',
         'policies' => 'HR Policies',
         'grievances' => 'Grievances',
         'feedback' => 'Feedback',
@@ -102,6 +104,7 @@ class HrSidebarNotificationService
             'contracts' => $this->contractsNeedingAction(),
             'profile-changes' => $this->pendingProfileChangesCount(),
             'attendance' => $this->pendingAttendanceCount(),
+            'time-logs' => $this->pendingTimeLogsCount(),
             'policies' => $this->pendingPolicyAcknowledgementsCount(),
             'grievances' => $grievances,
             'feedback' => $feedback,
@@ -199,6 +202,17 @@ class HrSidebarNotificationService
             ->where('hr_review_status', StaffAttendance::HR_STATUS_PENDING)
             ->whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')
+            ->count();
+    }
+
+    private function pendingTimeLogsCount(): int
+    {
+        if (! Schema::hasTable('staff_weekly_time_logs')) {
+            return 0;
+        }
+
+        return StaffWeeklyTimeLog::query()
+            ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
             ->count();
     }
 }
