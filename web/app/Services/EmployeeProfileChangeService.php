@@ -494,6 +494,16 @@ class EmployeeProfileChangeService
 
     private function notifyHrSelfServiceCompletion(Staff $staff): void
     {
+        // Invitees already trigger a signup email to the inviter only — do not fan out to all HR.
+        $invitedViaErp = \App\Models\ErpRegistrationInvitation::query()
+            ->where('staff_id', $staff->id)
+            ->whereNotNull('used_at')
+            ->exists();
+
+        if ($invitedViaErp) {
+            return;
+        }
+
         $rbac = app(RBACService::class);
         $userIds = User::query()
             ->where('is_active', 1)

@@ -285,7 +285,49 @@ class ErpRegistrationInviteService
             $request,
         );
 
+        $this->notifyInviterOfSignup($invitation->fresh(), $staff->fresh(), $user);
+
         return $user->fresh(['staff']);
+    }
+
+    /**
+     * Only the user who sent the invite (typically HR) gets signup confirmation.
+     */
+    private function notifyInviterOfSignup(ErpRegistrationInvitation $invitation, Staff $staff, User $newUser): void
+    {
+        $inviterId = (int) ($invitation->invited_by ?? 0);
+        if ($inviterId <= 0) {
+            return;
+        }
+
+        $inviter = User::query()->where('id', $inviterId)->where('is_active', 1)->first();
+        if (! $inviter) {
+            return;
+        }
+
+        $name = $staff->fullName() ?: $newUser->email;
+
+        $actionUrl = $invitation->sent_via_module === 'ict'
+            ? route('ict.registration-invites.index')
+            : route('hr.staff.show', $staff);
+
+        try {
+            app(PlatformNotificationService::class)->notifyUser(
+                $inviter->id,
+                'Invitee signed up for TICH ERP',
+                "{$name} ({$newUser->email}) completed registration using your invitation.",
+                'erp_registration_invitations',
+                (string) $invitation->id,
+                'normal',
+                $actionUrl,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to notify inviter of signup', [
+                'invitation_id' => $invitation->id,
+                'inviter_id' => $inviterId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
