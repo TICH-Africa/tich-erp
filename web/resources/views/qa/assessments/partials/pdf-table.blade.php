@@ -21,7 +21,7 @@
     <tbody>
         @foreach ($rows as $ri => $row)
             <tr>
-                <td>{{ $ri + 1 }}</td>
+                <td class="num">{{ $ri + 1 }}</td>
                 @foreach ($columns as $col)
                     <td>{{ $row[$col] ?? '' }}</td>
                 @endforeach

@@ -283,6 +283,75 @@ class LessonPlanApprovalService
     }
 
     /**
+     * QA inbox: submitted / visible plans awaiting or with acknowledgement (parallel to HOD).
+     *
+     * @return Collection<int, object>
+     */
+    public function qaInbox(?string $filter = null): Collection
+    {
+        $query = $this->basePlanQuery()
+            ->where('lp.registrar_visible', 1)
+            ->whereIn('lp.status', ['submitted', 'approved', 'modified', 'rejected'])
+            ->orderByRaw('CASE WHEN lp.qa_acknowledged_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByDesc('lp.planned_date');
+
+        if ($filter === 'pending') {
+            $query->whereNull('lp.qa_acknowledged_at');
+        } elseif ($filter === 'acknowledged') {
+            $query->whereNotNull('lp.qa_acknowledged_at');
+        }
+
+        return $query->get();
+    }
+
+    public function userIsQaReviewer(User $user): bool
+    {
+        return $user->hasAnyRole(['QA Officer', 'Assistant QA Officer', 'Super Admin']);
+    }
+
+    /**
+     * Parallel, non-blocking QA acknowledgement / comment.
+     */
+    public function acknowledgeByQa(LessonPlan $plan, Staff $qaStaff, string $comments): LessonPlan
+    {
+        abort_unless($this->userIsQaReviewer(auth()->user()), 403, 'Only QA can acknowledge lesson plans.');
+        abort_unless((int) $plan->registrar_visible === 1, 422, 'This lesson plan is not yet available for QA review.');
+        abort_unless(
+            in_array($plan->status, ['submitted', 'approved', 'modified', 'rejected'], true),
+            422,
+            'This lesson plan cannot be acknowledged in its current state.'
+        );
+
+        $plan->update([
+            'qa_acknowledged_by' => $qaStaff->id,
+            'qa_acknowledged_at' => now(),
+            'qa_comments' => $comments,
+            'updated_at' => now(),
+        ]);
+
+        $this->recordDecision($plan, $qaStaff, 'qa', 'acknowledged', $comments);
+
+        $this->notifyTutor(
+            $plan,
+            'Lesson plan acknowledged by QA',
+            'QA has acknowledged your lesson plan '.$plan->plan_number.'. Comments: '.$comments
+        );
+
+        $this->auditService->log(
+            'staff.lesson_plan.qa_acknowledged',
+            'lesson_plans',
+            $plan->id,
+            null,
+            ['qa_comments' => $comments],
+            'Lesson plan acknowledged by QA',
+            'success',
+            $qaStaff->user_id ?? auth()->id(),
+        );
+
+        return $plan->fresh(['qaAcknowledgedByStaff', 'approvals.approver']);
+    }
+
+    /**
      * @return Collection<int, LessonPlanApproval>
      */
     public function approvalHistory(LessonPlan $plan): Collection
@@ -478,12 +547,15 @@ class LessonPlanApprovalService
             ->join('unit_allocations as ua', 'ua.id', '=', 'lp.unit_allocation_id')
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->join('staff as tutor', 'tutor.id', '=', 'lp.prepared_by')
+            ->leftJoin('departments as d', 'd.id', '=', 'u.department_id')
             ->leftJoin('semesters as sem', 'sem.id', '=', 'ua.semester_id')
             ->select([
                 'lp.*',
                 'u.unit_code',
                 'u.unit_name',
                 'u.department_id',
+                'd.dept_name as department_name',
+                DB::raw("TRIM(CONCAT(COALESCE(tutor.first_name, ''), ' ', COALESCE(tutor.surname, ''))) as tutor_name"),
                 'tutor.first_name as tutor_first_name',
                 'tutor.surname as tutor_surname',
                 'sem.semester_label',

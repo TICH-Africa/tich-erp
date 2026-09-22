@@ -65,7 +65,7 @@ class IqaAssessmentService
         abort_unless($assessment->isEditable(), 403, 'Published assessments are locked.');
         abort_unless($section >= 1 && $section <= 8, 404);
 
-        $payload = $assessment->payload ?? IqaAssessmentSchema::emptyPayload();
+        $payload = IqaAssessmentSchema::normalizePayload($assessment->payload);
         if ($section <= 7) {
             $payload = IqaAssessmentSchema::mergeSectionInput($payload, $section, $input);
         }
@@ -152,22 +152,26 @@ class IqaAssessmentService
     {
         $filename = 'IQA-'.$assessment->id.'-'.($assessment->assessment_year ?: now()->format('Y')).'.pdf';
 
+        $payload = IqaAssessmentSchema::normalizePayload($assessment->payload);
+
         return $this->printDocuments->downloadPdf(
             'qa.assessments.pdf',
             [
                 'assessment' => $assessment,
                 'schema' => IqaAssessmentSchema::class,
                 'meta' => IqaAssessmentSchema::sectionMeta(),
-                'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+                'payload' => $payload,
             ],
             $filename,
-            'landscape'
+            'landscape',
+            $this->printDocuments->websiteTableFontOptions()
         );
     }
 
     public function inlinePdf(IqaAssessment $assessment): Response
     {
         $filename = 'IQA-'.$assessment->id.'-'.($assessment->assessment_year ?: now()->format('Y')).'.pdf';
+        $payload = IqaAssessmentSchema::normalizePayload($assessment->payload);
 
         return $this->printDocuments->inlinePdf(
             'qa.assessments.pdf',
@@ -175,10 +179,21 @@ class IqaAssessmentService
                 'assessment' => $assessment,
                 'schema' => IqaAssessmentSchema::class,
                 'meta' => IqaAssessmentSchema::sectionMeta(),
-                'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+                'payload' => $payload,
             ],
             $filename,
-            'landscape'
+            'landscape',
+            $this->printDocuments->websiteTableFontOptions()
         );
+    }
+
+    /**
+     * Prefer normalized payload for views so legacy drafts drop the Target column.
+     *
+     * @return array<string, mixed>
+     */
+    public function payloadFor(IqaAssessment $assessment): array
+    {
+        return IqaAssessmentSchema::normalizePayload($assessment->payload);
     }
 }

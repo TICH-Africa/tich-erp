@@ -3,65 +3,77 @@
     $items = $sectionData['items'] ?? [];
     $tables = $sectionData['tables'] ?? [];
     $tableTitles = IqaAssessmentSchema::tableTitles();
+    $layout = $sectionData['layout'] ?? (($section ?? 0) === 5 ? 'numbered' : 'areas');
+    $groups = IqaAssessmentSchema::groupItemsByArea($items);
+    $flatIndex = 0;
 @endphp
 
-{{-- Section 2: sampling tables 2.1–2.4 first, then checklist 2.5–2.8 --}}
 @if ($section === 2)
     @foreach (['admin_offices', 'theory_rooms', 'workshops_labs', 'tools_equipment'] as $tableKey)
         @if (! empty($tables[$tableKey]))
             @include('qa.assessments.partials.sampling-table', [
                 'tableKey' => $tableKey,
                 'table' => $tables[$tableKey],
-                'title' => $tableTitles[$tableKey] ?? $tableKey,
+                'title' => $tables[$tableKey]['title'] ?? ($tableTitles[$tableKey] ?? $tableKey),
                 'readonly' => $readonly,
             ])
+            @if (! empty($tables[$tableKey]['note']))
+                <p class="tich-caption tich-mt-2">{{ $tables[$tableKey]['note'] }}</p>
+            @endif
         @endif
     @endforeach
 @endif
 
 @if (count($items) > 0)
     <div class="tich-card tich-table-panel tich-mt-6">
-        <h2 class="tich-h3" style="padding:1rem 1rem 0;">Checklist</h2>
-        <div class="tich-table-wrap tich-mt-2">
-            <table class="tich-admin-table">
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table" style="white-space:normal;">
                 <thead>
                     <tr>
-                        <th style="width:3.5rem;">S/No</th>
-                        <th style="width:12rem;">Audit Area</th>
-                        <th>Indicator / Question</th>
-                        <th style="width:10rem;">Target</th>
-                        <th style="width:12rem;">Observations / Remarks</th>
-                        <th style="width:12rem;">Recommendations</th>
+                        <th style="width:4.5rem;">S/No.</th>
+                        @if ($layout !== 'numbered')
+                            <th style="width:11rem;">Audit Area</th>
+                        @endif
+                        <th>Indicator/Question Target</th>
+                        <th style="width:16rem;">Observations/Remarks</th>
+                        <th style="width:16rem;">Recommendations</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @php $lastArea = null; @endphp
-                    @foreach ($items as $i => $item)
-                        <tr>
-                            <td>{{ $item['sno'] }}</td>
-                            <td>
-                                @if ($lastArea !== ($item['audit_area'] ?? ''))
-                                    <strong>{{ $item['audit_area'] }}</strong>
-                                    @php $lastArea = $item['audit_area'] ?? ''; @endphp
+                    @foreach ($groups as $group)
+                        @php
+                            $rowCount = count($group['rows']);
+                            $firstIndex = $flatIndex;
+                            $first = $group['rows'][0] ?? [];
+                            // Area-level answers live on the first indicator row (original form layout).
+                            $obs = (string) ($first['observations'] ?? '');
+                            $rec = (string) ($first['recommendations'] ?? '');
+                        @endphp
+                        @foreach ($group['rows'] as $ri => $item)
+                            <tr>
+                                @if ($ri === 0)
+                                    <td rowspan="{{ $rowCount }}" style="vertical-align:top;font-weight:700;">{{ $group['area_code'] }}</td>
+                                    @if ($layout !== 'numbered')
+                                        <td rowspan="{{ $rowCount }}" style="vertical-align:top;">{{ $group['audit_area'] }}</td>
+                                    @endif
                                 @endif
-                            </td>
-                            <td>{{ $item['indicator'] }}</td>
-                            @if ($readonly)
-                                <td>{{ $item['target'] ?: '—' }}</td>
-                                <td>{{ $item['observations'] ?: '—' }}</td>
-                                <td>{{ $item['recommendations'] ?: '—' }}</td>
-                            @else
-                                <td>
-                                    <textarea name="items[{{ $i }}][target]" class="tich-input" rows="2">{{ old('items.'.$i.'.target', $item['target'] ?? '') }}</textarea>
-                                </td>
-                                <td>
-                                    <textarea name="items[{{ $i }}][observations]" class="tich-input" rows="2">{{ old('items.'.$i.'.observations', $item['observations'] ?? '') }}</textarea>
-                                </td>
-                                <td>
-                                    <textarea name="items[{{ $i }}][recommendations]" class="tich-input" rows="2">{{ old('items.'.$i.'.recommendations', $item['recommendations'] ?? '') }}</textarea>
-                                </td>
-                            @endif
-                        </tr>
+                                <td style="white-space:normal;">{{ $item['indicator'] }}</td>
+                                @if ($ri === 0)
+                                    @if ($readonly)
+                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $obs !== '' ? $obs : '—' }}</td>
+                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $rec !== '' ? $rec : '—' }}</td>
+                                    @else
+                                        <td rowspan="{{ $rowCount }}" style="vertical-align:top;">
+                                            <textarea name="items[{{ $firstIndex }}][observations]" class="tich-input" rows="{{ max(3, $rowCount) }}">{{ old('items.'.$firstIndex.'.observations', $obs) }}</textarea>
+                                        </td>
+                                        <td rowspan="{{ $rowCount }}" style="vertical-align:top;">
+                                            <textarea name="items[{{ $firstIndex }}][recommendations]" class="tich-input" rows="{{ max(3, $rowCount) }}">{{ old('items.'.$firstIndex.'.recommendations', $rec) }}</textarea>
+                                        </td>
+                                    @endif
+                                @endif
+                            </tr>
+                            @php $flatIndex++; @endphp
+                        @endforeach
                     @endforeach
                 </tbody>
             </table>
@@ -69,22 +81,20 @@
     </div>
 @endif
 
-{{-- Section 3: trainers analysis after 3.1 / 3.2 checklist --}}
 @if ($section === 3 && ! empty($tables['trainers_analysis']))
     @include('qa.assessments.partials.sampling-table', [
         'tableKey' => 'trainers_analysis',
         'table' => $tables['trainers_analysis'],
-        'title' => $tableTitles['trainers_analysis'],
+        'title' => $tables['trainers_analysis']['title'] ?? $tableTitles['trainers_analysis'],
         'readonly' => $readonly,
     ])
 @endif
 
-{{-- Section 5: programmes data after indicators --}}
 @if ($section === 5 && ! empty($tables['programmes_data']))
     @include('qa.assessments.partials.sampling-table', [
         'tableKey' => 'programmes_data',
         'table' => $tables['programmes_data'],
-        'title' => $tableTitles['programmes_data'],
+        'title' => $tables['programmes_data']['title'] ?? $tableTitles['programmes_data'],
         'readonly' => $readonly,
     ])
 @endif

@@ -635,20 +635,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/assessments/{assessment}/publish', [\App\Http\Controllers\Qa\AssessmentController::class, 'publish'])->name('qa.assessments.publish');
             Route::get('/assessments/{assessment}/pdf', [\App\Http\Controllers\Qa\AssessmentController::class, 'pdf'])->name('qa.assessments.pdf');
 
-            Route::get('/corrective-actions', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'index'])->name('qa.corrective-actions.index');
-            Route::post('/corrective-actions/{action}/resolve', [\App\Http\Controllers\Qa\CorrectiveActionController::class, 'resolve'])->name('qa.corrective-actions.resolve');
+            Route::get('/lesson-plans', [\App\Http\Controllers\Qa\LessonPlanController::class, 'index'])->name('qa.lesson-plans.index');
+            Route::get('/lesson-plans/{plan}', [\App\Http\Controllers\Qa\LessonPlanController::class, 'show'])->name('qa.lesson-plans.show');
+            Route::post('/lesson-plans/{plan}/acknowledge', [\App\Http\Controllers\Qa\LessonPlanController::class, 'acknowledge'])->name('qa.lesson-plans.acknowledge');
 
-            Route::prefix('qca-flags')->name('qa.qca-flags.')->group(function () {
-                Route::get('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'index'])->name('index');
-                Route::get('/create', [\App\Http\Controllers\Qa\QcaFlagController::class, 'create'])->name('create');
-                Route::post('/', [\App\Http\Controllers\Qa\QcaFlagController::class, 'store'])->name('store');
-                Route::get('/{qcaFlag}', [\App\Http\Controllers\Qa\QcaFlagController::class, 'show'])->name('show');
-                Route::post('/{qcaFlag}/update-status', [\App\Http\Controllers\Qa\QcaFlagController::class, 'updateStatus'])->name('update-status');
-                Route::post('/{qcaFlag}/add-milestone', [\App\Http\Controllers\Qa\QcaFlagController::class, 'addMilestone'])->name('add-milestone');
-                Route::post('/{qcaFlag}/resolve', [\App\Http\Controllers\Qa\QcaFlagController::class, 'resolve'])->name('resolve');
-                Route::post('/{qcaFlag}/close', [\App\Http\Controllers\Qa\QcaFlagController::class, 'close'])->name('close');
-                Route::post('/{qcaFlag}/ceo-override', [\App\Http\Controllers\Qa\QcaFlagController::class, 'ceoOverride'])->name('ceo-override');
-            });
+            Route::get('/workplans', [\App\Http\Controllers\Qa\WorkplanController::class, 'index'])->name('qa.workplans.index');
+            Route::get('/workplans/{workplan}', [\App\Http\Controllers\Qa\WorkplanController::class, 'show'])->name('qa.workplans.show');
+            Route::post('/workplans/{workplan}/approve', [\App\Http\Controllers\Qa\WorkplanController::class, 'approve'])->name('qa.workplans.approve');
+            Route::post('/workplans/{workplan}/reject', [\App\Http\Controllers\Qa\WorkplanController::class, 'reject'])->name('qa.workplans.reject');
+            Route::post('/workplans/{workplan}/request-changes', [\App\Http\Controllers\Qa\WorkplanController::class, 'requestChanges'])->name('qa.workplans.request-changes');
 
             Route::prefix('training-credits')->name('qa.training-credits.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Qa\TrainingCreditsController::class, 'index'])->name('index');
@@ -660,11 +655,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/executive-dashboard/compliance-hub', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'complianceByHub'])->name('qa.executive-dashboard.compliance-hub');
             Route::get('/executive-dashboard/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'auditTrail'])->name('qa.executive-dashboard.audit-trail');
             Route::get('/executive-dashboard/chart/compliance', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartCompliance'])->name('qa.executive-dashboard.chart.compliance');
-            Route::get('/executive-dashboard/chart/flags', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartFlags'])->name('qa.executive-dashboard.chart.flags');
-            Route::get('/executive-dashboard/chart/actions', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartActions'])->name('qa.executive-dashboard.chart.actions');
             Route::get('/executive-dashboard/chart/audit-trail', [\App\Http\Controllers\Qa\ExecutiveDashboardController::class, 'chartAuditTrail'])->name('qa.executive-dashboard.chart.audit-trail');
-
-            Route::get('/downstream-lock/check', [\App\Http\Controllers\Qa\QcaDownstreamLockController::class, 'check'])->name('qa.downstream-lock.check');
         });
 
         // Department respondents (HOD / department staff) - access checked in service.
@@ -1282,6 +1273,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/lesson-plans/{plan}', [StaffPortalActionController::class, 'updateLessonPlan'])->name('staff.lesson-plans.update');
         Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
         Route::post('/lesson-plans/{plan}/verify', [StaffPortalActionController::class, 'verifyLessonPlan'])->name('staff.lesson-plans.verify');
+
+        Route::get('/workplans', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'index'])->name('staff.workplans.index');
+        Route::get('/workplans/create', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'create'])->name('staff.workplans.create');
+        Route::post('/workplans', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'store'])->name('staff.workplans.store');
+        Route::get('/workplans/{workplan}', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'show'])->name('staff.workplans.show');
+        Route::get('/workplans/{workplan}/edit', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'edit'])->name('staff.workplans.edit');
+        Route::put('/workplans/{workplan}', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'update'])->name('staff.workplans.update');
+        Route::post('/workplans/{workplan}/submit', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'submit'])->name('staff.workplans.submit');
+
         Route::post('/attendance', [StaffPortalActionController::class, 'storeAttendanceSession'])->name('staff.attendance.store');
         Route::post('/attendance/sync-timetable', [StaffPortalActionController::class, 'syncAttendanceFromTimetable'])->name('staff.attendance.sync-timetable');
         Route::post('/attendance/{session}/submit-roster', [StaffPortalActionController::class, 'submitForRosterVerification'])->name('staff.attendance.submit-roster');

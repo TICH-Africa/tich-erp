@@ -4,7 +4,6 @@ namespace App\Services\Sidebar;
 
 use App\Events\QaSidebarCountsUpdated;
 use App\Models\Qa\IqaAssessment;
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\User;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
@@ -23,11 +22,10 @@ class QaSidebarNotificationService
     /** @var array<string, string> */
     public const MENU_KEYS = [
         'assessments' => 'IQA assessments',
-        'corrective-actions' => 'Corrective actions',
     ];
 
     /** @var list<string> */
-    public const DASHBOARD_LEAF_KEYS = ['assessments', 'corrective-actions'];
+    public const DASHBOARD_LEAF_KEYS = ['assessments'];
 
     /**
      * @return array<string, int>
@@ -73,7 +71,6 @@ class QaSidebarNotificationService
     private function computeOfficerCounts(): array
     {
         $assessments = 0;
-        $corrective = 0;
 
         if (Schema::hasTable('iqa_assessments')) {
             $assessments = IqaAssessment::query()
@@ -81,15 +78,8 @@ class QaSidebarNotificationService
                 ->count();
         }
 
-        if (Schema::hasTable('qa_corrective_actions')) {
-            $corrective = QaCorrectiveAction::query()
-                ->whereIn('status', ['open', 'in_progress', 'overdue'])
-                ->count();
-        }
-
         return [
             'assessments' => $assessments,
-            'corrective-actions' => $corrective,
         ];
     }
 }

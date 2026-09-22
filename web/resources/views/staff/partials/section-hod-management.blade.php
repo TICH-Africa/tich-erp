@@ -109,6 +109,35 @@
     </div>
 
     <div class="tich-grid tich-grid--2 tich-mt-6" style="align-items:start; gap: 1.5rem;">
+        <article class="tich-card">
+            <h2 class="tich-h3">Semester workplans</h2>
+            <p class="tich-text tich-mt-2">Department semester academic workplans submitted to the Academic Registrar and QA.</p>
+            @if (($hodManagement['workplans'] ?? collect())->isEmpty())
+                <p class="tich-text tich-mt-4">No semester workplans yet.</p>
+            @else
+                <div class="tich-table-wrap tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead><tr><th>Number</th><th>Title</th><th>Status</th><th>Registrar</th><th>QA</th></tr></thead>
+                        <tbody>
+                            @foreach ($hodManagement['workplans']->take(5) as $plan)
+                                <tr>
+                                    <td>{{ $plan->workplan_number }}</td>
+                                    <td>{{ $plan->title }}</td>
+                                    <td><x-status-badge :status="$plan->status" /></td>
+                                    <td>{{ $plan->registrar_status === 'approved' ? '✓' : 'pending' }}</td>
+                                    <td>{{ $plan->qa_status === 'approved' ? '✓' : 'pending' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+            <p class="tich-caption tich-mt-2">
+                <a href="{{ route('staff.dashboard', ['section' => 'hod-workplans']) }}" class="tich-link">Open workplans</a>
+                · <a href="{{ route('staff.workplans.create') }}" class="tich-link">Create new</a>
+            </p>
+        </article>
+
         <article class="tich-card" style="grid-column: 1 / -1;">
             <h2 class="tich-h3">Department leave</h2>
             <p class="tich-text tich-mt-2">Lecturers and tutors in your department who have requested leave, with HR approval status and expected return dates.</p>

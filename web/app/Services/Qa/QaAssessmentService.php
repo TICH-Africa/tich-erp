@@ -5,8 +5,6 @@ namespace App\Services\Qa;
 use App\Models\Department;
 use App\Models\Qa\QaAuditChecklist;
 use App\Models\Qa\QaComplianceScore;
-use App\Models\Qa\QcaFlag;
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaDepartmentSubmission;
 use App\Models\Qa\QaEvidenceAttachment;
 use App\Models\Qa\QaPlan;
@@ -334,7 +332,7 @@ class QaAssessmentService
                 // Non-fatal: M&E health sync may run later from PIME workspace.
             }
 
-            return $plan->fresh(['complianceScores.department', 'correctiveActions']);
+            return $plan->fresh(['complianceScores.department']);
         });
     }
 
@@ -389,37 +387,7 @@ class QaAssessmentService
             ],
         );
 
-        if ($below && $submittedCount === $items->count()) {
-            $this->flagCorrectiveAction($plan, $department, $weighted);
-        }
-
         return $score;
-    }
-
-    public function resolveCorrectiveAction(User $user, QaCorrectiveAction $action, string $notes): QaCorrectiveAction
-    {
-        $staffId = $user->staff_id;
-
-        $action->update([
-            'status' => 'resolved',
-            'resolved_at' => now(),
-            'resolved_by' => $staffId,
-            'resolution_notes' => $notes,
-            'is_module_lock_active' => 0,
-        ]);
-
-        $this->audit->log(
-            'qa.corrective_action.resolved',
-            'qa_corrective_actions',
-            $action->id,
-            null,
-            ['status' => 'resolved'],
-            null,
-            'success',
-            $user->id,
-        );
-
-        return $action->fresh();
     }
 
     public function userCanRespondForDepartment(User $user, Department $department): bool
@@ -563,73 +531,6 @@ class QaAssessmentService
             ->exists();
     }
 
-    private function flagCorrectiveAction(QaPlan $plan, Department $department, float $score): void
-    {
-        $existing = QaCorrectiveAction::query()
-            ->where('qa_plan_id', $plan->id)
-            ->where('department_id', $department->id)
-            ->whereIn('status', ['open', 'in_progress', 'overdue'])
-            ->exists();
-
-        if ($existing) {
-            return;
-        }
-
-        $category = 'Evidence';
-        if ($plan->plan_name && stripos($plan->plan_name, 'training') !== false) {
-            $category = 'Training';
-        }
-
-        $action = QaCorrectiveAction::query()->create([
-            'qa_plan_id' => $plan->id,
-            'department_id' => $department->id,
-            'checklist_item_id' => null,
-            'flagged_reason' => "Compliance score {$score}% fell below the {$plan->pass_threshold}% threshold for assessment \"{$plan->plan_name}\".",
-            'compliance_score_at_flag' => $score,
-            'resolution_deadline' => now()->addDays(14)->toDateString(),
-            'status' => 'open',
-            'responsible_officer_id' => $department->hod_id,
-            'is_module_lock_active' => 0,
-        ]);
-
-        if ($score < 50) {
-            try {
-                $flag = QcaFlag::query()->create([
-                    'flag_number' => 'QCA-'.now()->format('Y').'-'.str_pad(QcaFlag::query()->count() + 1, 5, '0', STR_PAD_LEFT),
-                    'category' => $category,
-                    'severity' => 'High',
-                    'status' => 'open',
-                    'description' => "Compliance score {$score}% below threshold ({$plan->pass_threshold}%) for \"{$plan->plan_name}\" at {$department->dept_name}.",
-                    'assigned_to' => $department->hod_id,
-                    'raised_by' => auth()?->user()?->staff_id ?? $action->responsible_officer_id,
-                    'target_entity_type' => 'department',
-                    'target_entity_id' => $department->id,
-                    'resolution_deadline' => $action->resolution_deadline,
-                    'source_module' => 'qa',
-                    'source_entity_id' => $plan->id,
-                    'downstream_locks' => ['modules' => ['Student Portal', 'HR']],
-                ]);
-
-                if ($flag->isHighOrCritical()) {
-                    $this->audit->log(
-                        'qca.flag.downstream_lock',
-                        'qca_flags',
-                        $flag->id,
-                        null,
-                        ['locked_modules' => $flag->lockedModules()],
-                        'Downstream lock applied for High/Critical QCA flag: '.$flag->flag_number,
-                        'success',
-                        auth()?->user()?->id,
-                    );
-                }
-            } catch (\Throwable) {
-                // Non-fatal: QCA flag creation failure doesn't block corrective action.
-            }
-        }
-
-        $this->notifyCorrectiveAction($action);
-    }
-
     private function storeEvidence(QaDepartmentSubmission $submission, UploadedFile $file, int $staffId): QaEvidenceAttachment
     {
         $path = $this->files->store($file, 'qa/evidence', 'public');
@@ -733,34 +634,11 @@ class QaAssessmentService
         $this->notifications->notifyUsers(
             $userIds,
             'Quality Level Report ready',
-            "Assessment \"{$plan->plan_name}\" has been compiled. Review compliance scores and corrective actions in the CEO office.",
+            "Assessment \"{$plan->plan_name}\" has been compiled. Review compliance scores in the CEO office.",
             'qa_plan',
             (string) $plan->id,
             'high',
             route('ceo.quality.index'),
-        );
-    }
-
-    private function notifyCorrectiveAction(QaCorrectiveAction $action): void
-    {
-        $action->loadMissing('department', 'plan');
-        $userIds = $this->respondentUserIdsForDepartment($action->department);
-
-        $qaIds = DB::table('user_roles as ur')
-            ->join('roles as r', 'r.id', '=', 'ur.role_id')
-            ->whereIn('r.role_name', ['QA Officer', 'Assistant QA Officer', 'CEO', 'Super Admin'])
-            ->pluck('ur.user_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        $this->notifications->notifyUsers(
-            array_values(array_unique(array_merge($userIds, $qaIds))),
-            'Quality Corrective Action flagged',
-            $action->flagged_reason,
-            'qa_corrective_action',
-            (string) $action->id,
-            'high',
-            route('qa.corrective-actions.index'),
         );
     }
 

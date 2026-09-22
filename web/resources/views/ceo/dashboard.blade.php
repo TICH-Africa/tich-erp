@@ -55,7 +55,7 @@
             <a href="{{ route('ceo.quality.index') }}" class="tich-mod-dash__nav-card">
                 <span class="tich-mod-dash__nav-index">05</span>
                 <h3 class="tich-mod-dash__nav-title">Quality reports</h3>
-                <p class="tich-mod-dash__nav-text">Compiled QA compliance scores and corrective action flags.</p>
+                <p class="tich-mod-dash__nav-text">Compiled QA compliance scores and quality reports.</p>
             </a>
             <a href="{{ route('ceo.me.index') }}" class="tich-mod-dash__nav-card">
                 <span class="tich-mod-dash__nav-index">06</span>

@@ -6,7 +6,6 @@ use App\Events\CeoSidebarCountsUpdated;
 use App\Models\Administration\BudgetRequest;
 use App\Models\CurriculumVersion;
 use App\Models\Me\MeQuarterlyReport;
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaPlan;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
@@ -97,11 +96,6 @@ class CeoSidebarNotificationService
                 ->where('status', 'compiled')
                 ->whereNotNull('compiled_at')
                 ->where('compiled_at', '>=', now()->subDays(30))
-                ->count();
-        }
-        if (Schema::hasTable('qa_corrective_actions')) {
-            $quality += QaCorrectiveAction::query()
-                ->whereIn('status', ['open', 'in_progress', 'overdue'])
                 ->count();
         }
 

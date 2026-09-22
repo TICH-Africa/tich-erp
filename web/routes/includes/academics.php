@@ -21,6 +21,7 @@ use App\Http\Controllers\Academics\SuggestionBoxController;
 use App\Http\Controllers\Academics\SupplementaryRequestController;
 use App\Http\Controllers\Academics\TranscriptRequestController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
+use App\Http\Controllers\Academics\WorkplanController as AcademicsWorkplanController;
 use Illuminate\Support\Facades\Route;
 
 return function (bool $named = true): void {
@@ -86,6 +87,8 @@ return function (bool $named = true): void {
         $register('get', '/lesson-plans', [LessonPlanController::class, 'index'], 'departments.academics.lesson-plans.index');
         $register('get', '/lesson-plans/audit', [LessonPlanController::class, 'audit'], 'departments.academics.lesson-plans.audit');
         $register('get', '/lesson-plans/{plan}', [LessonPlanController::class, 'show'], 'departments.academics.lesson-plans.show');
+        $register('get', '/workplans', [AcademicsWorkplanController::class, 'index'], 'departments.academics.workplans.index');
+        $register('get', '/workplans/{workplan}', [AcademicsWorkplanController::class, 'show'], 'departments.academics.workplans.show');
         $register('get', '/performance', [PerformanceTerminalController::class, 'index'], 'departments.academics.performance.index');
     });
 
@@ -134,6 +137,9 @@ return function (bool $named = true): void {
         $register('post', '/lesson-plans/{plan}/approve', [LessonPlanController::class, 'approve'], 'departments.academics.lesson-plans.approve');
         $register('post', '/lesson-plans/{plan}/reject', [LessonPlanController::class, 'reject'], 'departments.academics.lesson-plans.reject');
         $register('post', '/lesson-plans/{plan}/request-modification', [LessonPlanController::class, 'requestModification'], 'departments.academics.lesson-plans.request-modification');
+        $register('post', '/workplans/{workplan}/approve', [AcademicsWorkplanController::class, 'approve'], 'departments.academics.workplans.approve');
+        $register('post', '/workplans/{workplan}/reject', [AcademicsWorkplanController::class, 'reject'], 'departments.academics.workplans.reject');
+        $register('post', '/workplans/{workplan}/request-changes', [AcademicsWorkplanController::class, 'requestChanges'], 'departments.academics.workplans.request-changes');
         $register('put', '/learning-departments/{learningDepartment}/profile', [AcademicsDepartmentController::class, 'updateProfile'], 'departments.academics.departments.update-profile');
         $register('post', '/units', [AcademicsUnitController::class, 'store'], 'departments.academics.units.store');
         $register('put', '/units/{unit}', [AcademicsUnitController::class, 'update'], 'departments.academics.units.update');

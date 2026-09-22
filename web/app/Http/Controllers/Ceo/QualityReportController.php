@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Ceo;
 
 use App\Http\Controllers\Controller;
 use App\Models\Qa\QaComplianceScore;
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaPlan;
 use Illuminate\View\View;
 
@@ -14,17 +13,10 @@ class QualityReportController extends Controller
     {
         $plans = QaPlan::query()
             ->whereIn('status', ['compiled', 'closed', 'in_progress', 'dispatched'])
-            ->with(['complianceScores.department', 'correctiveActions'])
+            ->with(['complianceScores.department'])
             ->orderByDesc('compiled_at')
             ->orderByDesc('id')
             ->paginate(15);
-
-        $openActions = QaCorrectiveAction::query()
-            ->with(['department', 'plan'])
-            ->whereIn('status', ['open', 'in_progress', 'overdue'])
-            ->orderBy('resolution_deadline')
-            ->limit(10)
-            ->get();
 
         $failing = QaComplianceScore::query()
             ->with(['plan', 'department'])
@@ -33,12 +25,12 @@ class QualityReportController extends Controller
             ->limit(10)
             ->get();
 
-        return view('ceo.quality.index', compact('plans', 'openActions', 'failing'));
+        return view('ceo.quality.index', compact('plans', 'failing'));
     }
 
     public function show(QaPlan $plan): View
     {
-        $plan->load(['complianceScores.department', 'correctiveActions.department', 'checklists']);
+        $plan->load(['complianceScores.department', 'checklists']);
 
         return view('ceo.quality.show', compact('plan'));
     }

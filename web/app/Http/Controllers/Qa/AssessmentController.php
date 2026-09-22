@@ -56,7 +56,7 @@ class AssessmentController extends Controller
         return view('qa.assessments.show', [
             'assessment' => $assessment,
             'meta' => IqaAssessmentSchema::sectionMeta(),
-            'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+            'payload' => $this->iqa->payloadFor($assessment),
             'canManage' => $this->iqa->isQaOfficer($request->user()),
         ]);
     }
@@ -76,7 +76,7 @@ class AssessmentController extends Controller
             'assessment' => $assessment,
             'section' => $section,
             'meta' => IqaAssessmentSchema::sectionMeta(),
-            'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+            'payload' => $this->iqa->payloadFor($assessment),
             'mode' => 'edit',
             'canManage' => true,
         ]);
@@ -120,7 +120,7 @@ class AssessmentController extends Controller
         $this->iqa->markWalkthrough($request->user(), $assessment, $section);
         $assessment->refresh();
 
-        $payload = $assessment->payload ?? IqaAssessmentSchema::emptyPayload();
+        $payload = $this->iqa->payloadFor($assessment);
         $walked = array_map('intval', $payload['walkthrough'] ?? []);
         $complete = count(array_intersect(range(1, 8), $walked)) === 8;
 

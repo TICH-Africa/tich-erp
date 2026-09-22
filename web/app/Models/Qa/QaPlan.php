@@ -59,11 +59,6 @@ class QaPlan extends Model
         return $this->hasMany(QaComplianceScore::class, 'qa_plan_id');
     }
 
-    public function correctiveActions(): HasMany
-    {
-        return $this->hasMany(QaCorrectiveAction::class, 'qa_plan_id');
-    }
-
     public function deployedBy(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'deployed_by');

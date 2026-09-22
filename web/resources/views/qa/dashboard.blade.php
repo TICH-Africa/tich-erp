@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Quality assurance</p>
             <h1 class="tich-mod-dash__title">QA command center</h1>
-            <p class="tich-mod-dash__lede">Quality plans, assessment sheets, and compliance oversight — live overview.</p>
+            <p class="tich-mod-dash__lede">IQA assessments and compliance oversight — live overview.</p>
         </div>
     </header>
 
@@ -17,17 +17,17 @@
             <p class="tich-mod-dash__metric-label">Draft IQA</p>
             <p class="tich-mod-dash__metric-value">{{ $stats['draft'] }}</p>
         </article>
-        <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
-            <p class="tich-mod-dash__metric-label">QCA flags open</p>
-            <p class="tich-mod-dash__metric-value">{{ $openFlags }}</p>
-        </article>
         <article class="tich-mod-dash__metric tich-mod-dash__metric--ok">
             <p class="tich-mod-dash__metric-label">Published IQA</p>
             <p class="tich-mod-dash__metric-value">{{ $stats['compiled'] }}</p>
         </article>
-        <article class="tich-mod-dash__metric {{ ($stats['corrective'] ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
-            <p class="tich-mod-dash__metric-label">Open corrective actions</p>
-            <p class="tich-mod-dash__metric-value">{{ $stats['corrective'] }}</p>
+        <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
+            <p class="tich-mod-dash__metric-label">Overall compliance</p>
+            <p class="tich-mod-dash__metric-value">{{ $totalCompliance }}%</p>
+        </article>
+        <article class="tich-mod-dash__metric">
+            <p class="tich-mod-dash__metric-label">Compliance status</p>
+            <p class="tich-mod-dash__metric-value" style="font-size:1.25rem;text-transform:uppercase;">{{ $complianceStatus }}</p>
         </article>
     </section>
 
@@ -35,7 +35,7 @@
         <article class="tich-mod-dash__chart">
             <div class="tich-mod-dash__chart-head">
                 <h3 class="tich-mod-dash__chart-title">Compliance overview</h3>
-                <p class="tich-mod-dash__chart-meta">Overall: {{ $totalCompliance }}% ({{ $complianceStatus }}) — {{ $openFlags }} open QCA flags ({{ $criticalFlags }} high/critical)</p>
+                <p class="tich-mod-dash__chart-meta">Overall: {{ $totalCompliance }}% ({{ $complianceStatus }})</p>
             </div>
             <div class="tich-chart-card__canvas-wrap">
                 <canvas id="complianceDoughnut" aria-label="Compliance overview chart"></canvas>
@@ -49,31 +49,11 @@
 
         <article class="tich-mod-dash__chart">
             <div class="tich-mod-dash__chart-head">
-                <h3 class="tich-mod-dash__chart-title">QCA flags by severity</h3>
-                <p class="tich-mod-dash__chart-meta">Active flags — High/Critical lock downstream modules</p>
+                <h3 class="tich-mod-dash__chart-title">IQA assessments</h3>
+                <p class="tich-mod-dash__chart-meta">Current assessment lifecycle distribution</p>
             </div>
             <div class="tich-chart-card__canvas-wrap">
-                <canvas id="flagsBar" aria-label="QCA flags chart"></canvas>
-            </div>
-        </article>
-
-        <article class="tich-mod-dash__chart">
-            <div class="tich-mod-dash__chart-head">
-                <h3 class="tich-mod-dash__chart-title">Corrective actions status</h3>
-                <p class="tich-mod-dash__chart-meta">Lifecycle of all corrective actions</p>
-            </div>
-            <div class="tich-chart-card__canvas-wrap">
-                <canvas id="actionsBar" aria-label="Corrective actions chart"></canvas>
-            </div>
-        </article>
-
-        <article class="tich-mod-dash__chart">
-            <div class="tich-mod-dash__chart-head">
-                <h3 class="tich-mod-dash__chart-title">Assessment plans</h3>
-                <p class="tich-mod-dash__chart-meta">Current plan lifecycle distribution</p>
-            </div>
-            <div class="tich-chart-card__canvas-wrap">
-                <canvas id="plansDoughnut" aria-label="Assessment plans chart"></canvas>
+                <canvas id="plansDoughnut" aria-label="IQA assessments chart"></canvas>
             </div>
         </article>
     </section>
@@ -101,27 +81,6 @@
                 @endforelse
             </ul>
             <a href="{{ route('qa.assessments.index') }}" class="tich-btn tich-btn-secondary" style="margin-top:1rem;">View all</a>
-        </article>
-
-        <article class="tich-mod-dash__panel" style="margin-top:0;">
-            <div class="tich-mod-dash__panel-head">
-                <div>
-                    <p class="tich-mod-dash__panel-eyebrow">Work queue</p>
-                    <h2 class="tich-mod-dash__panel-title">Corrective actions</h2>
-                </div>
-            </div>
-            <ul style="margin:0;padding-left:1.25rem;">
-                @forelse ($openActions as $action)
-                    <li class="tich-text" style="margin-top:0.5rem;">
-                        <strong>{{ $action->department?->dept_name }}</strong>
-                        <span class="tich-caption">due {{ $action->resolution_deadline?->format('d M Y') }}</span>
-                        <p class="tich-caption">{{ \Illuminate\Support\Str::limit($action->flagged_reason, 120) }}</p>
-                    </li>
-                @empty
-                    <li class="tich-text">No open corrective actions.</li>
-                @endforelse
-            </ul>
-            <a href="{{ route('qa.corrective-actions.index') }}" class="tich-btn tich-btn-secondary" style="margin-top:1rem;">Manage actions</a>
         </article>
     </div>
 
@@ -176,9 +135,7 @@
                 amber: '#f59e0b',
                 red: '#ef4444',
                 blue: '#1669a6',
-                indigo: '#125a8c',
                 teal: '#0f766e',
-                orange: '#f97316',
             };
 
             var chartData = @json($chartData);
@@ -211,69 +168,10 @@
                 }
             });
 
-            new Chart(document.getElementById('flagsBar'), {
-                type: 'bar',
-                data: {
-                    labels: ['Low', 'Medium', 'High', 'Critical'],
-                    datasets: [{
-                        label: 'Active flags',
-                        data: [chartData.flagsBySeverity.Low, chartData.flagsBySeverity.Medium, chartData.flagsBySeverity.High, chartData.flagsBySeverity.Critical],
-                        backgroundColor: [chartColors.blue, chartColors.indigo, chartColors.orange, chartColors.red],
-                        borderRadius: 6,
-                        barThickness: 40,
-                        borderWidth: 0,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1, color: ink }, border: { display: false } },
-                        x: { grid: { display: false }, ticks: { color: ink }, border: { display: false } },
-                    }
-                }
-            });
-
-            var actionsData = {
-                labels: Object.keys(chartData.actionsByStatus),
-                datasets: [{
-                    label: 'Count',
-                    data: Object.values(chartData.actionsByStatus),
-                    backgroundColor: Object.keys(chartData.actionsByStatus).map(function(s) {
-                        if (s === 'overdue') return chartColors.red;
-                        if (s === 'open') return chartColors.orange;
-                        if (s === 'in_progress') return chartColors.blue;
-                        return chartColors.green;
-                    }),
-                    borderRadius: 6,
-                    barThickness: 30,
-                    borderWidth: 0,
-                }]
-            };
-            if (actionsData.labels.length > 0) {
-                new Chart(document.getElementById('actionsBar'), {
-                    type: 'bar',
-                    data: actionsData,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { beginAtZero: true, ticks: { stepSize: 1, color: ink }, border: { display: false } },
-                            y: { grid: { display: false }, ticks: { color: ink }, border: { display: false } },
-                        }
-                    }
-                });
-            }
-
             var plansLabels = Object.keys(chartData.plansByStatus);
             var plansColors = plansLabels.map(function(s) {
                 if (s === 'draft') return '#94a3b8';
-                if (s === 'dispatched') return chartColors.blue;
-                if (s === 'in_progress') return chartColors.amber;
-                if (s === 'compiled') return chartColors.green;
+                if (s === 'published') return chartColors.green;
                 return chartColors.teal;
             });
             new Chart(document.getElementById('plansDoughnut'), {

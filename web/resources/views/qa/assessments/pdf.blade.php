@@ -9,24 +9,86 @@
     <meta charset="utf-8">
     <title>{{ $assessment->title }}</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 8pt; color: #111; }
-        h1 { font-size: 14pt; text-align: center; margin: 0 0 6pt; text-transform: uppercase; }
-        h2 { font-size: 11pt; margin: 14pt 0 6pt; border-bottom: 1pt solid #333; padding-bottom: 3pt; }
-        h3 { font-size: 9pt; margin: 10pt 0 4pt; }
-        .meta { text-align: center; margin-bottom: 10pt; font-size: 8pt; }
-        table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; }
-        th, td { border: 1pt solid #000; padding: 3pt 4pt; vertical-align: top; }
-        th { background: #e8e8e8; font-size: 7.5pt; }
-        .remarks { margin: 2pt 0 8pt; }
-        .page-break { page-break-before: always; }
-        .small { font-size: 7.5pt; color: #333; }
+        /* Single type system for the whole document — matches §2 sampling tables */
+        body, table, th, td, h1, h2, h3, p, span, strong, em {
+            font-family: tichbody, georgia, 'Times New Roman', Times, serif;
+            color: #111111;
+        }
+        body {
+            font-size: 9pt;
+            line-height: 1.35;
+        }
+        h1 {
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 0 6pt;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+        h2 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin: 12pt 0 5pt;
+            line-height: 1.3;
+        }
+        h3 {
+            font-size: 9pt;
+            font-weight: bold;
+            margin: 10pt 0 4pt;
+            line-height: 1.3;
+        }
+        p, .meta, .remarks, .note, .small {
+            font-size: 9pt;
+            line-height: 1.35;
+            margin: 0 0 6pt;
+        }
+        .meta {
+            text-align: center;
+            margin-bottom: 8pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 6pt;
+            font-size: 9pt;
+        }
+        th, td {
+            border: 0.6pt solid #000000;
+            padding: 3pt 4pt;
+            vertical-align: top;
+            font-size: 9pt;
+            line-height: 1.3;
+            text-align: left;
+        }
+        th {
+            background-color: #e8e8e8;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+        td.num {
+            text-align: center;
+            font-weight: bold;
+            width: 4%;
+        }
+        td.area-code {
+            text-align: center;
+            font-weight: bold;
+            vertical-align: top;
+        }
+        .remarks {
+            margin: 2pt 0 10pt;
+        }
+        .page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
     <h1>{{ $assessment->title }}</h1>
     <p class="meta">
         Assessment year: {{ $assessment->assessment_year ?: '—' }}
-        &nbsp;|&nbsp; Status: {{ strtoupper($assessment->status) }}
         @if ($assessment->isPublished())
             &nbsp;|&nbsp; Published: {{ $assessment->published_at?->format('d M Y') }}
             &nbsp;|&nbsp; Publisher: {{ $assessment->publisher_name }}
@@ -38,9 +100,11 @@
             @continue
         @endif
         @php
-            $sectionData = $payload['sections'][(string) $n] ?? ['items' => [], 'tables' => [], 'overall_recommendations' => ''];
+            $sectionData = $payload['sections'][(string) $n] ?? ['items' => [], 'tables' => [], 'overall_recommendations' => '', 'layout' => 'areas'];
             $items = $sectionData['items'] ?? [];
             $tables = $sectionData['tables'] ?? [];
+            $layout = $sectionData['layout'] ?? ($n === 5 ? 'numbered' : 'areas');
+            $groups = IqaAssessmentSchema::groupItemsByArea($items);
         @endphp
 
         <div class="{{ $n > 1 ? 'page-break' : '' }}">
@@ -51,8 +115,11 @@
                     @include('qa.assessments.partials.pdf-table', [
                         'tableKey' => $tableKey,
                         'table' => $tables[$tableKey] ?? null,
-                        'title' => $tableTitles[$tableKey] ?? $tableKey,
+                        'title' => ($tables[$tableKey]['title'] ?? null) ?: ($tableTitles[$tableKey] ?? $tableKey),
                     ])
+                    @if (! empty($tables[$tableKey]['note']))
+                        <p class="note">{{ $tables[$tableKey]['note'] }}</p>
+                    @endif
                 @endforeach
             @endif
 
@@ -60,26 +127,38 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:6%;">S/No</th>
-                            <th style="width:16%;">Audit Area</th>
-                            <th style="width:30%;">Indicator / Question</th>
-                            <th style="width:14%;">Target</th>
-                            <th style="width:17%;">Observations / Remarks</th>
-                            <th style="width:17%;">Recommendations</th>
+                            <th style="width:7%;">S/No.</th>
+                            @if ($layout !== 'numbered')
+                                <th style="width:16%;">Audit Area</th>
+                            @endif
+                            <th style="width:{{ $layout === 'numbered' ? '48%' : '32%' }};">Indicator/Question Target</th>
+                            <th style="width:22%;">Observations/Remarks</th>
+                            <th style="width:23%;">Recommendations</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php $lastArea = null; @endphp
-                        @foreach ($items as $item)
-                            <tr>
-                                <td>{{ $item['sno'] }}</td>
-                                <td>{{ $lastArea !== ($item['audit_area'] ?? '') ? $item['audit_area'] : '' }}</td>
-                                <td>{{ $item['indicator'] }}</td>
-                                <td>{{ $item['target'] ?? '' }}</td>
-                                <td>{{ $item['observations'] ?? '' }}</td>
-                                <td>{{ $item['recommendations'] ?? '' }}</td>
-                            </tr>
-                            @php $lastArea = $item['audit_area'] ?? ''; @endphp
+                        @foreach ($groups as $group)
+                            @php
+                                $rowCount = count($group['rows']);
+                                $first = $group['rows'][0] ?? [];
+                                $obs = (string) ($first['observations'] ?? '');
+                                $rec = (string) ($first['recommendations'] ?? '');
+                            @endphp
+                            @foreach ($group['rows'] as $ri => $item)
+                                <tr>
+                                    @if ($ri === 0)
+                                        <td class="area-code" rowspan="{{ $rowCount }}">{{ $group['area_code'] }}</td>
+                                        @if ($layout !== 'numbered')
+                                            <td rowspan="{{ $rowCount }}">{{ $group['audit_area'] }}</td>
+                                        @endif
+                                    @endif
+                                    <td>{{ $item['indicator'] }}</td>
+                                    @if ($ri === 0)
+                                        <td rowspan="{{ $rowCount }}">{{ $obs }}</td>
+                                        <td rowspan="{{ $rowCount }}">{{ $rec }}</td>
+                                    @endif
+                                </tr>
+                            @endforeach
                         @endforeach
                     </tbody>
                 </table>
@@ -89,7 +168,7 @@
                 @include('qa.assessments.partials.pdf-table', [
                     'tableKey' => 'trainers_analysis',
                     'table' => $tables['trainers_analysis'] ?? null,
-                    'title' => $tableTitles['trainers_analysis'],
+                    'title' => ($tables['trainers_analysis']['title'] ?? null) ?: $tableTitles['trainers_analysis'],
                 ])
             @endif
 
@@ -97,47 +176,37 @@
                 @include('qa.assessments.partials.pdf-table', [
                     'tableKey' => 'programmes_data',
                     'table' => $tables['programmes_data'] ?? null,
-                    'title' => $tableTitles['programmes_data'],
+                    'title' => ($tables['programmes_data']['title'] ?? null) ?: $tableTitles['programmes_data'],
                 ])
             @endif
 
-            <p class="remarks"><strong>Overall Recommendations:</strong><br>
-                {!! nl2br(e($sectionData['overall_recommendations'] ?? '')) !!}
-            </p>
+            <p class="remarks"><strong>Overall Recommendations:</strong> {!! nl2br(e($sectionData['overall_recommendations'] ?? '')) !!}</p>
         </div>
     @endforeach
 
     <div class="page-break">
-        <h2>8.0 QUALITY AUDITORS</h2>
+        <h2>QUALITY AUDITORS</h2>
+        <p>PARTICIPANTS IN QUALITY ASSURANCE</p>
         <table>
             <thead>
                 <tr>
-                    <th style="width:8%;">S/No</th>
+                    <th style="width:8%;">S/No.</th>
                     <th style="width:40%;">Name</th>
                     <th style="width:32%;">Signature</th>
                     <th style="width:20%;">Date</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (($payload['auditors'] ?? []) as $i => $auditor)
+                @foreach (($payload['auditors'] ?? [['name'=>'','date'=>'','signature'=>''],['name'=>'','date'=>'','signature'=>''],['name'=>'','date'=>'','signature'=>'']]) as $i => $auditor)
                     <tr>
-                        <td>{{ $i + 1 }}</td>
+                        <td class="num">{{ $i + 1 }}.</td>
                         <td>{{ $auditor['name'] ?? '' }}</td>
-                        <td style="height:28pt;">{{ $auditor['signature'] ?? '' }}</td>
+                        <td style="height:22pt;">{{ $auditor['signature'] ?? '' }}</td>
                         <td>{{ $auditor['date'] ?? '' }}</td>
                     </tr>
                 @endforeach
-                @if (empty($payload['auditors']))
-                    <tr>
-                        <td>1</td>
-                        <td></td>
-                        <td style="height:28pt;"></td>
-                        <td></td>
-                    </tr>
-                @endif
             </tbody>
         </table>
-        <p class="small">Signature column left blank for wet-ink signature on the printed copy.</p>
     </div>
 </body>
 </html>

@@ -34,6 +34,7 @@ class StaffPortalNavigationService
             $sections['hod-lesson-plans'] = 'Lesson plans';
             $sections['hod-unit-allocations'] = 'Unit allocations';
             $sections['hod-workload'] = 'Workload matrix';
+            $sections['hod-workplans'] = 'Semester workplans';
             $sections['hod-attendance'] = 'Attendance review';
             $sections['hod-leave'] = 'Department leave';
             $sections['hod-performance'] = 'Performance';
@@ -79,6 +80,7 @@ class StaffPortalNavigationService
                     ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'hod-lesson-plans', 'icon' => 'notebook'],
                     ['type' => 'link', 'label' => 'Unit allocations', 'section' => 'hod-unit-allocations', 'icon' => 'users'],
                     ['type' => 'link', 'label' => 'Workload matrix', 'section' => 'hod-workload', 'icon' => 'bar-chart'],
+                    ['type' => 'link', 'label' => 'Semester workplans', 'section' => 'hod-workplans', 'icon' => 'file-text'],
                     ['type' => 'link', 'label' => 'Attendance review', 'section' => 'hod-attendance', 'icon' => 'clipboard-check'],
                     ['type' => 'link', 'label' => 'Department leave', 'section' => 'hod-leave', 'icon' => 'calendar-off'],
                     ['type' => 'link', 'label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],

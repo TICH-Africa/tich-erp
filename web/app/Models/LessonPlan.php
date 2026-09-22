@@ -42,12 +42,16 @@ class LessonPlan extends Model
         'hod_id',
         'hod_action_at',
         'registrar_visible',
+        'qa_acknowledged_by',
+        'qa_acknowledged_at',
+        'qa_comments',
     ];
 
     protected $casts = [
         'planned_date' => 'date',
         'hod_action_at' => 'datetime',
         'tutor_verified_at' => 'datetime',
+        'qa_acknowledged_at' => 'datetime',
         'form_payload' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -66,6 +70,16 @@ class LessonPlan extends Model
     public function hodStaff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'hod_id');
+    }
+
+    public function qaAcknowledgedByStaff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'qa_acknowledged_by');
+    }
+
+    public function isQaAcknowledged(): bool
+    {
+        return $this->qa_acknowledged_at !== null;
     }
 
     public function approvals(): \Illuminate\Database\Eloquent\Relations\HasMany

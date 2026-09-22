@@ -38,7 +38,7 @@
                         <td>
                             <x-status-badge :status="$score->pass_fail_status" />
                             @if ($score->is_below_threshold)
-                                <span class="tich-caption" style="color:#b91c1c;">corrective action flagged</span>
+                                <span class="tich-caption" style="color:#b91c1c;">below threshold</span>
                             @endif
                         </td>
                     </tr>
@@ -48,18 +48,4 @@
             </tbody>
         </table>
     </div>
-
-    @if ($plan->correctiveActions->isNotEmpty())
-        <div class="tich-card tich-mt-6">
-            <h2 class="tich-h3">Corrective actions</h2>
-            <ul class="tich-mt-4" style="margin:0;padding-left:1.25rem;">
-                @foreach ($plan->correctiveActions as $action)
-                    <li class="tich-text tich-mt-2">
-                        <strong>{{ $action->department?->dept_name }}</strong> · {{ $action->status }}
-                        <p class="tich-caption">{{ $action->flagged_reason }}</p>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
 @endsection
