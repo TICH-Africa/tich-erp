@@ -3,7 +3,6 @@
 namespace App\View\Composers\Concerns;
 
 use App\Models\User;
-use App\Services\Qa\QaAssessmentService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 
 trait InjectsQaTaskSidebarBadge
@@ -11,6 +10,8 @@ trait InjectsQaTaskSidebarBadge
     use FormatsSidebarBadgeCounts;
 
     /**
+     * Department QA assessment tasks removed — IQA is QA-module only.
+     *
      * @param  array<string, int>  $counts
      * @param  array<string, string|null>  $labels
      * @param  array<string, string>  $menuKeys
@@ -18,21 +19,9 @@ trait InjectsQaTaskSidebarBadge
      */
     protected function withQaTaskSidebarBadge(array $counts, array $labels, array $menuKeys, ?User $user = null, ?string $moduleKey = null): array
     {
-        $user ??= auth()->user();
-        $scopeIds = null;
-        if ($moduleKey) {
-            $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
-                \App\Support\QaTaskModuleContext::forModule($moduleKey)
-            );
-        }
-
-        $taskCount = $user
-            ? app(QaAssessmentService::class)->outstandingTaskCountForUser($user, $scopeIds)
-            : 0;
-
-        $counts['qa.tasks'] = $taskCount;
-        $labels['qa.tasks'] = $this->formatCount($taskCount);
-        $menuKeys['qa.tasks'] = 'QA assessment tasks';
+        unset($user, $moduleKey);
+        $counts['qa.tasks'] = 0;
+        $labels['qa.tasks'] = null;
 
         return [$counts, $labels, $menuKeys];
     }

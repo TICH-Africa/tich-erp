@@ -3,21 +3,18 @@
 namespace App\Http\Controllers\Qa;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
+use App\Models\Qa\IqaAssessment;
 use App\Models\Qa\QaComplianceScore;
 use App\Models\Qa\QaCorrectiveAction;
-use App\Models\Qa\QaPlan;
 use App\Models\Qa\QcaFlag;
-use App\Services\AuditService;
-use App\Services\Qa\QaAssessmentService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(QaAssessmentService $qa): View
+    public function __invoke(): View
     {
-        $openPlans = QaPlan::query()
-            ->whereIn('status', ['draft', 'dispatched', 'in_progress'])
+        $openPlans = IqaAssessment::query()
+            ->where('status', IqaAssessment::STATUS_DRAFT)
             ->orderByDesc('id')
             ->limit(8)
             ->get();
@@ -28,13 +25,6 @@ class DashboardController extends Controller
             ->orderBy('resolution_deadline')
             ->limit(8)
             ->get();
-
-        $qaPendingTasks = $qa->outstandingTasksForUser(
-            auth()->user(),
-            \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
-                \App\Support\QaTaskModuleContext::forModule('qa')
-            )
-        );
 
         $totalCompliance = QaComplianceScore::query()
             ->where('items_submitted', '>', 0)
@@ -64,6 +54,7 @@ class DashboardController extends Controller
                 } else {
                     $carry['red']++;
                 }
+
                 return $carry;
             }, ['green' => 0, 'amber' => 0, 'red' => 0]);
 
@@ -78,7 +69,7 @@ class DashboardController extends Controller
             ->selectRaw('status, count(*) as count')
             ->pluck('count', 'status');
 
-        $plansByStatus = QaPlan::query()
+        $plansByStatus = IqaAssessment::query()
             ->groupBy('status')
             ->selectRaw('status, count(*) as count')
             ->pluck('count', 'status');
@@ -90,8 +81,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $recentPlans = QaPlan::query()
-            ->whereIn('status', ['dispatched', 'in_progress', 'compiled'])
+        $recentPlans = IqaAssessment::query()
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get();
@@ -99,12 +89,12 @@ class DashboardController extends Controller
         return view('qa.dashboard', [
             'openPlans' => $openPlans,
             'openActions' => $openActions,
-            'pendingTasks' => $qaPendingTasks->count(),
-            'qaPendingTasks' => $qaPendingTasks,
+            'pendingTasks' => 0,
+            'qaPendingTasks' => collect(),
             'stats' => [
-                'draft' => QaPlan::query()->where('status', 'draft')->count(),
-                'active' => QaPlan::query()->whereIn('status', ['dispatched', 'in_progress'])->count(),
-                'compiled' => QaPlan::query()->where('status', 'compiled')->count(),
+                'draft' => IqaAssessment::query()->where('status', IqaAssessment::STATUS_DRAFT)->count(),
+                'active' => 0,
+                'compiled' => IqaAssessment::query()->where('status', IqaAssessment::STATUS_PUBLISHED)->count(),
                 'corrective' => QaCorrectiveAction::query()->whereIn('status', ['open', 'in_progress', 'overdue'])->count(),
             ],
             'totalCompliance' => $totalCompliance,
@@ -119,14 +109,9 @@ class DashboardController extends Controller
                     'amber' => $complianceDist['amber'],
                     'red' => $complianceDist['red'],
                 ],
-                'flagsBySeverity' => [
-                    'Low' => $flagsBySeverity->get('Low', 0),
-                    'Medium' => $flagsBySeverity->get('Medium', 0),
-                    'High' => $flagsBySeverity->get('High', 0),
-                    'Critical' => $flagsBySeverity->get('Critical', 0),
-                ],
-                'actionsByStatus' => $actionsByStatus,
-                'plansByStatus' => $plansByStatus,
+                'flags' => $flagsBySeverity,
+                'actions' => $actionsByStatus,
+                'plans' => $plansByStatus,
             ],
         ]);
     }

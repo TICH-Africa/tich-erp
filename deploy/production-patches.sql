@@ -1630,12 +1630,39 @@ CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
 
 
 
+-- -----------------------------------------------------------------------------
+-- 31. IQA assessments (NATIONAL POLYTECHNIC QUALITY AUDIT TOOL)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `iqa_assessments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL DEFAULT 'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL',
+  `assessment_year` smallint(5) unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `current_section` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `updated_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `published_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `publisher_name` varchar(200) DEFAULT NULL,
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `iqa_status_year_idx` (`status`,`assessment_year`),
+  KEY `iqa_assessments_created_by_user_id_foreign` (`created_by_user_id`),
+  KEY `iqa_assessments_updated_by_user_id_foreign` (`updated_by_user_id`),
+  KEY `iqa_assessments_published_by_user_id_foreign` (`published_by_user_id`),
+  CONSTRAINT `iqa_assessments_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_updated_by_user_id_foreign` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_published_by_user_id_foreign` FOREIGN KEY (`published_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- PRESENT IN PRODUCTION UP TO HERE
 SET time_zone = '+03:00';
 
--- Research activities, financial policy, partnership inquiry columns, and weekly
--- time logs are also covered by deploy/production.sql / Laravel migrations.
--- Run production.sql first on fresh hosts.
+-- Research activities, financial policy, partnership inquiry columns, weekly
+-- time logs, and IQA assessments are also covered by deploy/production.sql /
+-- Laravel migrations. Run production.sql first on fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

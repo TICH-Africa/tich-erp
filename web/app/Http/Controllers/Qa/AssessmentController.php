@@ -3,177 +3,164 @@
 namespace App\Http\Controllers\Qa;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
-use App\Models\Qa\QaPlan;
-use App\Services\Qa\QaAssessmentService;
+use App\Models\Qa\IqaAssessment;
+use App\Services\Qa\IqaAssessmentSchema;
+use App\Services\Qa\IqaAssessmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AssessmentController extends Controller
 {
-    public function __construct(protected QaAssessmentService $qa) {}
+    public function __construct(protected IqaAssessmentService $iqa) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $plans = QaPlan::query()
-            ->withCount([
-                'checklists',
-                'correctiveActions',
-                'submissions as awaiting_review_count' => fn ($query) => $query->where('submission_status', 'submitted'),
-            ])
+        $this->iqa->ensureCanView($request->user());
+
+        $assessments = IqaAssessment::query()
             ->orderByDesc('id')
             ->paginate(20);
 
-        return view('qa.assessments.index', compact('plans'));
-    }
-
-    public function create(): View
-    {
-        return view('qa.assessments.create', [
-            'departments' => Department::query()->active()->orderBy('dept_name')->get(),
+        return view('qa.assessments.index', [
+            'assessments' => $assessments,
+            'canManage' => $this->iqa->isQaOfficer($request->user()),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        [$data, $items, $departmentIds] = $this->validated($request);
+        $this->iqa->ensureQaOfficer($request->user());
 
-        $plan = $this->qa->createPlan($request->user(), $data, $items, $departmentIds);
-
-        return redirect()
-            ->route('qa.assessments.show', $plan)
-            ->with('status', 'Assessment sheet created as draft. Review criteria, then dispatch.');
-    }
-
-    public function show(QaPlan $plan): View
-    {
-        $plan->load(['checklists', 'complianceScores.department', 'correctiveActions.department', 'deployedBy']);
-
-        $departments = $plan->targetDepartments();
-        $submissionStats = \App\Models\Qa\QaDepartmentSubmission::query()
-            ->where('qa_plan_id', $plan->id)
-            ->selectRaw('department_id, COUNT(*) as total_rows, SUM(CASE WHEN submission_status IN (\'submitted\', \'verified\', \'approved\') THEN 1 ELSE 0 END) as submitted_rows, SUM(CASE WHEN submission_status IN (\'pending\', \'draft\', \'rejected\') THEN 1 ELSE 0 END) as open_rows, MAX(submitted_at) as last_activity_at')
-            ->groupBy('department_id')
-            ->get()
-            ->keyBy('department_id');
-
-        return view('qa.assessments.show', compact('plan', 'departments', 'submissionStats'));
-    }
-
-    public function reviewResponses(QaPlan $plan, Department $department): View
-    {
-        abort_unless(in_array((int) $department->id, $plan->targetDepartmentIds(), true), 404);
-
-        $plan->load('checklists');
-        $submissions = \App\Models\Qa\QaDepartmentSubmission::query()
-            ->where('qa_plan_id', $plan->id)
-            ->where('department_id', $department->id)
-            ->with(['evidence', 'submittedByStaff'])
-            ->get()
-            ->keyBy('checklist_item_id');
-
-        $compliance = $plan->complianceScores()
-            ->where('department_id', $department->id)
-            ->first();
-
-        return view('qa.assessments.responses', compact('plan', 'department', 'submissions', 'compliance'));
-    }
-
-    public function edit(QaPlan $plan): View
-    {
-        abort_unless($plan->isDraft(), 404);
-
-        $plan->load('checklists');
-
-        return view('qa.assessments.edit', [
-            'plan' => $plan,
-            'departments' => Department::query()->active()->orderBy('dept_name')->get(),
-        ]);
-    }
-
-    public function update(Request $request, QaPlan $plan): RedirectResponse
-    {
-        [$data, $items, $departmentIds] = $this->validated($request);
-        $this->qa->updatePlan($request->user(), $plan, $data, $items, $departmentIds);
-
-        return redirect()
-            ->route('qa.assessments.show', $plan)
-            ->with('status', 'Assessment sheet updated.');
-    }
-
-    public function dispatch(Request $request, QaPlan $plan): RedirectResponse
-    {
-        try {
-            $this->qa->dispatchPlan($request->user(), $plan);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-            return back()->withErrors(['dispatch' => $e->getMessage()]);
-        }
-
-        return redirect()
-            ->route('qa.assessments.show', $plan)
-            ->with('status', 'Assessment sheet dispatched. Departments have been notified.');
-    }
-
-    public function compile(Request $request, QaPlan $plan): RedirectResponse
-    {
-        try {
-            $this->qa->compilePlan($request->user(), $plan);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-            return back()->withErrors(['compile' => $e->getMessage()]);
-        }
-
-        return redirect()
-            ->route('qa.assessments.show', $plan)
-            ->with('status', 'Quality Level Report compiled and sent to the CEO office.');
-    }
-
-    /**
-     * @return array{0: array<string, mixed>, 1: list<array<string, mixed>>, 2: list<int>}
-     */
-    private function validated(Request $request): array
-    {
         $validated = $request->validate([
-            'plan_name' => ['required', 'string', 'max:300'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'instructions' => ['nullable', 'string', 'max:5000'],
-            'period_start' => ['required', 'date'],
-            'period_end' => ['required', 'date', 'after_or_equal:period_start'],
-            'due_at' => ['nullable', 'date'],
-            'pass_threshold' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'department_ids' => ['required', 'array', 'min:1'],
-            'department_ids.*' => ['integer', 'exists:departments,id'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.text' => ['required', 'string', 'max:2000'],
-            'items.*.category' => ['nullable', 'string', 'max:100'],
-            'items.*.weight' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
-            'items.*.max_score' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'items.*.requires_evidence' => ['nullable', 'boolean'],
+            'assessment_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
         ]);
 
-        $items = [];
-        foreach ($validated['items'] as $item) {
-            $items[] = [
-                'text' => $item['text'],
-                'category' => $item['category'] ?? null,
-                'weight' => $item['weight'] ?? 1,
-                'max_score' => (int) ($item['max_score'] ?? 100),
-                'requires_evidence' => ! empty($item['requires_evidence']),
-            ];
+        $assessment = $this->iqa->createDraft(
+            $request->user(),
+            isset($validated['assessment_year']) ? (int) $validated['assessment_year'] : null
+        );
+
+        return redirect()
+            ->route('qa.assessments.edit', ['assessment' => $assessment, 'section' => 1])
+            ->with('status', 'Draft IQA assessment created. Complete each section, then publish.');
+    }
+
+    public function show(Request $request, IqaAssessment $assessment): View
+    {
+        $this->iqa->ensureCanView($request->user());
+
+        return view('qa.assessments.show', [
+            'assessment' => $assessment,
+            'meta' => IqaAssessmentSchema::sectionMeta(),
+            'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+            'canManage' => $this->iqa->isQaOfficer($request->user()),
+        ]);
+    }
+
+    public function edit(Request $request, IqaAssessment $assessment, int $section): View|RedirectResponse
+    {
+        $this->iqa->ensureQaOfficer($request->user());
+        abort_unless($section >= 1 && $section <= 8, 404);
+
+        if ($assessment->isPublished()) {
+            return redirect()
+                ->route('qa.assessments.show', $assessment)
+                ->withErrors(['assessment' => 'Published assessments are locked. Create a new assessment to capture another audit.']);
         }
 
-        return [
-            [
-                'plan_name' => $validated['plan_name'],
-                'description' => $validated['description'] ?? null,
-                'instructions' => $validated['instructions'] ?? null,
-                'period_start' => $validated['period_start'],
-                'period_end' => $validated['period_end'],
-                'due_at' => $validated['due_at'] ?? null,
-                'pass_threshold' => $validated['pass_threshold'] ?? 70,
-            ],
-            $items,
-            array_map('intval', $validated['department_ids']),
-        ];
+        return view('qa.assessments.wizard', [
+            'assessment' => $assessment,
+            'section' => $section,
+            'meta' => IqaAssessmentSchema::sectionMeta(),
+            'payload' => $assessment->payload ?? IqaAssessmentSchema::emptyPayload(),
+            'mode' => 'edit',
+            'canManage' => true,
+        ]);
+    }
+
+    public function update(Request $request, IqaAssessment $assessment, int $section): RedirectResponse
+    {
+        $this->iqa->ensureQaOfficer($request->user());
+        abort_unless($section >= 1 && $section <= 8, 404);
+        abort_unless($assessment->isEditable(), 403, 'Published assessments are locked.');
+
+        $direction = (string) $request->input('direction', 'stay');
+        $next = match ($direction) {
+            'next' => min(8, $section + 1),
+            'back' => max(1, $section - 1),
+            'publish-review' => null,
+            default => $section,
+        };
+
+        $input = $request->except(['_token', '_method', 'direction']);
+        $this->iqa->saveSection($request->user(), $assessment, $section, $input, $next);
+
+        if ($direction === 'publish-review') {
+            return redirect()->route('qa.assessments.publish-review', [
+                'assessment' => $assessment,
+                'section' => 1,
+            ]);
+        }
+
+        return redirect()
+            ->route('qa.assessments.edit', ['assessment' => $assessment, 'section' => $next ?? $section])
+            ->with('status', 'Section saved.');
+    }
+
+    public function publishReview(Request $request, IqaAssessment $assessment, ?int $section = 1): View|RedirectResponse
+    {
+        $this->iqa->ensureQaOfficer($request->user());
+        abort_unless($assessment->isEditable(), 403, 'Published assessments are locked.');
+
+        $section = max(1, min(8, (int) ($section ?: 1)));
+        $this->iqa->markWalkthrough($request->user(), $assessment, $section);
+        $assessment->refresh();
+
+        $payload = $assessment->payload ?? IqaAssessmentSchema::emptyPayload();
+        $walked = array_map('intval', $payload['walkthrough'] ?? []);
+        $complete = count(array_intersect(range(1, 8), $walked)) === 8;
+
+        return view('qa.assessments.wizard', [
+            'assessment' => $assessment,
+            'section' => $section,
+            'meta' => IqaAssessmentSchema::sectionMeta(),
+            'payload' => $payload,
+            'mode' => 'publish-review',
+            'walked' => $walked,
+            'walkthroughComplete' => $complete,
+            'canManage' => true,
+        ]);
+    }
+
+    public function publish(Request $request, IqaAssessment $assessment): RedirectResponse
+    {
+        $this->iqa->ensureQaOfficer($request->user());
+
+        $request->validate([
+            'confirm' => ['accepted'],
+        ]);
+
+        try {
+            $this->iqa->publish($request->user(), $assessment, true);
+        } catch (HttpException $e) {
+            return redirect()
+                ->route('qa.assessments.publish-review', ['assessment' => $assessment, 'section' => 1])
+                ->withErrors(['publish' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('qa.assessments.show', $assessment)
+            ->with('status', 'IQA assessment published and locked. Download the PDF for printing.');
+    }
+
+    public function pdf(Request $request, IqaAssessment $assessment): StreamedResponse|Response
+    {
+        $this->iqa->ensureCanView($request->user());
+
+        return $this->iqa->downloadPdf($assessment);
     }
 }

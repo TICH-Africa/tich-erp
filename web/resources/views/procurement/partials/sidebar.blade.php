@@ -78,13 +78,6 @@
             'active' => request()->routeIs('procurement.payment-verification.*'),
             'badgeKey' => 'procurement.payments.pending',
         ])
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('procurement.qa.tasks.index'),
-            'label' => 'QA assessment tasks',
-            'icon' => 'layers',
-            'active' => request()->routeIs('procurement.qa.tasks.*'),
-            'badgeKey' => 'qa.tasks',
-        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'procurement'])
         @include('partials.navigation.department-technical-plan-link', ['module' => 'procurement'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'procurement'])

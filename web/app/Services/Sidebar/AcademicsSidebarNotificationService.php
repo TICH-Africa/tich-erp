@@ -37,7 +37,6 @@ class AcademicsSidebarNotificationService
         'lifecycle.pending' => 'Deferment requests',
         'applications.pending' => 'Application review',
         'student-voice' => 'Student voice',
-        'qa.tasks' => 'QA assessment tasks',
     ];
 
     public function __construct(

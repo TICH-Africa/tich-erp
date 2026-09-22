@@ -12,8 +12,6 @@
         </div>
     </header>
 
-    @include('qa.partials.assigned-tasks-panel')
-
     <section class="tich-mod-dash__metrics" aria-label="Key M&E metrics">
         <article class="tich-mod-dash__metric {{ ($stats['plans_review'] ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
             <p class="tich-mod-dash__metric-label">Plans in review</p>

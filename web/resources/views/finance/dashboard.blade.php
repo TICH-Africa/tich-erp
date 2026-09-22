@@ -12,8 +12,6 @@
         </div>
     </header>
 
-    @include('qa.partials.assigned-tasks-panel')
-
     <section class="tich-mod-dash__metrics" aria-label="Key finance metrics">
         <article class="tich-mod-dash__metric">
             <p class="tich-mod-dash__metric-label">Accounts receivable</p>

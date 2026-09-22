@@ -11,13 +11,6 @@
             'active' => request()->routeIs('ict.platform-performance.*'),
         ])
 
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('ict.qa.tasks.index'),
-            'label' => 'QA assessment tasks',
-            'icon' => 'layers',
-            'active' => request()->routeIs('ict.qa.tasks.*'),
-            'badgeKey' => 'qa.tasks',
-        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'ict'])
         @include('partials.navigation.department-technical-plan-link', ['module' => 'ict'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'ict'])

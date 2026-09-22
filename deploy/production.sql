@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-21 17:50:01 EAT
+-- Generated: 2026-09-22 17:09:53 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4797,6 +4797,54 @@ CALL `tich_ensure_column`('invoice_items', 'created_at', 'datetime NOT NULL DEFA
 
 -- Indexes for `invoice_items` (add only if missing)
 CALL `tich_ensure_index`('invoice_items', 'invoice_items_invoice_id_foreign', '`invoice_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `iqa_assessments`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `iqa_assessments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL DEFAULT 'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL',
+  `assessment_year` smallint(5) unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `current_section` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `updated_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `published_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `publisher_name` varchar(200) DEFAULT NULL,
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `iqa_status_year_idx` (`status`,`assessment_year`),
+  KEY `iqa_assessments_created_by_user_id_foreign` (`created_by_user_id`),
+  KEY `iqa_assessments_updated_by_user_id_foreign` (`updated_by_user_id`),
+  KEY `iqa_assessments_published_by_user_id_foreign` (`published_by_user_id`),
+  CONSTRAINT `iqa_assessments_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_published_by_user_id_foreign` FOREIGN KEY (`published_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_updated_by_user_id_foreign` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `iqa_assessments` (add only if missing)
+CALL `tich_ensure_column`('iqa_assessments', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('iqa_assessments', 'title', 'varchar(200) NOT NULL DEFAULT \'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL\'');
+CALL `tich_ensure_column`('iqa_assessments', 'assessment_year', 'smallint(5) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'status', 'varchar(20) NOT NULL DEFAULT \'draft\'');
+CALL `tich_ensure_column`('iqa_assessments', 'current_section', 'tinyint(3) unsigned NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('iqa_assessments', 'payload', 'longtext NOT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'created_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'updated_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'published_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'publisher_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'published_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `iqa_assessments` (add only if missing)
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_created_by_user_id_foreign', '`created_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_published_by_user_id_foreign', '`published_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_updated_by_user_id_foreign', '`updated_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_status_year_idx', '`status`, `assessment_year`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `job_vacancies`
@@ -12520,6 +12568,11 @@ CALL `tich_ensure_fk`('invoices', 'invoices_waived_by_foreign', '`waived_by`', '
 
 -- Foreign keys for `invoice_items`
 CALL `tich_ensure_fk`('invoice_items', 'invoice_items_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `iqa_assessments`
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_created_by_user_id_foreign', '`created_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_published_by_user_id_foreign', '`published_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_updated_by_user_id_foreign', '`updated_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `job_vacancies`
 CALL `tich_ensure_fk`('job_vacancies', 'job_vacancies_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');

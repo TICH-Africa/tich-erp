@@ -14,13 +14,6 @@
 
         @unless ($mustCompleteProfile ?? false)
             @include('partials.navigation.sidebar-link', ['href' => route('employee.dashboard'), 'label' => 'My profile', 'icon' => 'user', 'active' => request()->routeIs('employee.dashboard')])
-            @include('partials.navigation.sidebar-link', [
-                'href' => route('employee.qa.tasks.index'),
-                'label' => 'QA assessment tasks',
-                'icon' => 'layers',
-                'active' => request()->routeIs('employee.qa.tasks.*'),
-                'badgeKey' => 'qa.tasks',
-            ])
             @include('partials.navigation.department-me-reports-link', ['module' => 'employee'])
             @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.leave.index'),

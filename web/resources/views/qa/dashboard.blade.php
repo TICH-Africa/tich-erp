@@ -14,15 +14,15 @@
 
     <section class="tich-mod-dash__metrics" aria-label="Key QA metrics">
         <article class="tich-mod-dash__metric">
-            <p class="tich-mod-dash__metric-label">Draft sheets</p>
+            <p class="tich-mod-dash__metric-label">Draft IQA</p>
             <p class="tich-mod-dash__metric-value">{{ $stats['draft'] }}</p>
         </article>
         <article class="tich-mod-dash__metric tich-mod-dash__metric--info">
-            <p class="tich-mod-dash__metric-label">In the field</p>
-            <p class="tich-mod-dash__metric-value">{{ $stats['active'] }}</p>
+            <p class="tich-mod-dash__metric-label">QCA flags open</p>
+            <p class="tich-mod-dash__metric-value">{{ $openFlags }}</p>
         </article>
         <article class="tich-mod-dash__metric tich-mod-dash__metric--ok">
-            <p class="tich-mod-dash__metric-label">Compiled reports</p>
+            <p class="tich-mod-dash__metric-label">Published IQA</p>
             <p class="tich-mod-dash__metric-value">{{ $stats['compiled'] }}</p>
         </article>
         <article class="tich-mod-dash__metric {{ ($stats['corrective'] ?? 0) > 0 ? 'tich-mod-dash__metric--alert' : '' }}">
@@ -83,18 +83,21 @@
             <div class="tich-mod-dash__panel-head">
                 <div>
                     <p class="tich-mod-dash__panel-eyebrow">Work queue</p>
-                    <h2 class="tich-mod-dash__panel-title">Assessment sheets</h2>
+                    <h2 class="tich-mod-dash__panel-title">IQA assessments</h2>
                 </div>
-                <a href="{{ route('qa.assessments.create') }}" class="tich-btn tich-btn-primary">Build sheet</a>
+                <form method="POST" action="{{ route('qa.assessments.store') }}" class="tich-inline-form">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-primary">New assessment</button>
+                </form>
             </div>
             <ul style="margin:0;padding-left:1.25rem;">
                 @forelse ($openPlans as $plan)
                     <li class="tich-text" style="margin-top:0.5rem;">
-                        <a href="{{ route('qa.assessments.show', $plan) }}" class="tich-link">{{ $plan->plan_name }}</a>
+                        <a href="{{ route('qa.assessments.show', $plan) }}" class="tich-link">{{ $plan->title }} #{{ $plan->id }}</a>
                         <span class="tich-caption">· {{ str_replace('_', ' ', $plan->status) }}</span>
                     </li>
                 @empty
-                    <li class="tich-text">No open assessment sheets yet.</li>
+                    <li class="tich-text">No draft IQA assessments yet.</li>
                 @endforelse
             </ul>
             <a href="{{ route('qa.assessments.index') }}" class="tich-btn tich-btn-secondary" style="margin-top:1rem;">View all</a>

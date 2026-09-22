@@ -15,13 +15,6 @@
             'icon' => 'users',
             'active' => request()->routeIs('research.partnerships.*'),
         ])
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('research.qa.tasks.index'),
-            'label' => 'QA assessment tasks',
-            'icon' => 'layers',
-            'active' => request()->routeIs('research.qa.tasks.*'),
-            'badgeKey' => 'qa.tasks',
-        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'research'])
         @include('partials.navigation.department-technical-plan-link', ['module' => 'research'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'research'])
