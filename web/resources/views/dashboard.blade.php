@@ -34,23 +34,23 @@
                     </article>
                 @endif
 
-                @can('admin.access')
+                @if (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Core</p>
                         <h3 class="tich-h3 tich-mt-2">Platform administration</h3>
                         <p class="tich-text tich-mt-2">Campuses, departments, users, roles, and module access.</p>
                         <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
                     </article>
-                @endcan
+                @endif
 
-                @can('site_settings.read')
+                @if (app(\App\Services\RBACService::class)->canAccessSiteSettings(auth()->user()))
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Core</p>
                         <h3 class="tich-h3 tich-mt-2">Site settings</h3>
                         <p class="tich-text tich-mt-2">Manage the public site logo, hero slides, contact details, and branding.</p>
                         <a href="{{ route('site-settings.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open site settings</a>
                     </article>
-                @endcan
+                @endif
 
                 @forelse ($departments as $department)
                     @php
@@ -78,7 +78,7 @@
                         @endif
                     </article>
                 @empty
-                    @unless (auth()->user()->can('admin.access'))
+                    @unless (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
                         <article class="tich-card">
                             <h3 class="tich-h3">No departments assigned</h3>
                             <p class="tich-text">You are not assigned to any department yet. Contact a platform administrator if you need access.</p>

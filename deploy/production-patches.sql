@@ -1624,14 +1624,6 @@ CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
 
 
 
-
-
-
-
-
--- PRESENT IN PRODUCTION UP TO HERE
-
-
 -- -----------------------------------------------------------------------------
 -- 31. IQA assessments (NATIONAL POLYTECHNIC QUALITY AUDIT TOOL)
 -- -----------------------------------------------------------------------------
@@ -1723,8 +1715,15 @@ CREATE TABLE IF NOT EXISTS `academic_workplan_activities` (
   KEY `academic_workplan_activities_workplan_id_foreign` (`workplan_id`),
   CONSTRAINT `academic_workplan_activities_workplan_id_foreign` FOREIGN KEY (`workplan_id`) REFERENCES `academic_workplans` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- PRESENT IN PRODUCTION UP TO HERE
+
+
+
+
+
+
+
+
 SET time_zone = '+03:00';
 
 -- Research activities, financial policy, partnership inquiry columns, weekly

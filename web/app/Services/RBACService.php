@@ -2,12 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
+    /** @var list<string> */
+    private const PLATFORM_ADMIN_DEPARTMENT_CODES = ['ICT', 'ICTO', 'ADM'];
+
+    /** @var list<string> */
+    private const SITE_SETTINGS_DEPARTMENT_CODES = ['ICT', 'ICTO', 'MKT'];
+
+    /** @var list<string> */
+    private const PLATFORM_ADMIN_ROLES = ['CEO', 'Academic Registrar'];
+
     public function __construct(
         protected AuditService $auditService,
         protected PlatformNotificationService $notificationService,
@@ -29,6 +39,14 @@ class RBACService
             return true;
         }
 
+        if ($this->isPlatformAdministrationPermission($permission)) {
+            return $this->canAccessPlatformAdministration($user);
+        }
+
+        if ($this->isSiteSettingsPermission($permission)) {
+            return $this->canAccessSiteSettings($user);
+        }
+
         $slug = $this->resolvePermissionSlug($permission);
 
         if ($this->userHasPermissionSlug($user, $slug)) {
@@ -42,6 +60,156 @@ class RBACService
 
         if ($this->hasPermissionViaDepartmentModule($user, $permission)) {
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Dashboard "Platform administration" + /admin hub.
+     * ICT + Administration department members, CEO, Academic Registrar (and Super Admin via hasPermission).
+     */
+    public function canAccessPlatformAdministration(User $user): bool
+    {
+        if ($this->isPlatformAdministrator($user)) {
+            return true;
+        }
+
+        if ($this->hasAnyRole($user, self::PLATFORM_ADMIN_ROLES)) {
+            return true;
+        }
+
+        return $this->userBelongsToDepartmentsByCodes($user, self::PLATFORM_ADMIN_DEPARTMENT_CODES);
+    }
+
+    /**
+     * Dashboard "Site settings" + branding routes.
+     * ICT + Marketing department members only (and Super Admin via hasPermission).
+     */
+    public function canAccessSiteSettings(User $user): bool
+    {
+        if ($this->isPlatformAdministrator($user)) {
+            return true;
+        }
+
+        return $this->userBelongsToDepartmentsByCodes($user, self::SITE_SETTINGS_DEPARTMENT_CODES);
+    }
+
+    private function isPlatformAdministrationPermission(string $permission): bool
+    {
+        $keys = [
+            'admin.access',
+            'campuses.manage',
+            'departments.read',
+            'departments.manage',
+            'programs.read',
+            'programs.manage',
+            'users.access.manage',
+            'roles.assign',
+            'admin.manage_staff.view',
+            'admin.manage_staff.assign',
+            'admin.manage_staff.revoke',
+        ];
+
+        if (in_array($permission, $keys, true)) {
+            return true;
+        }
+
+        if (str_starts_with($permission, 'admin.manage_staff.')) {
+            return true;
+        }
+
+        $slug = $this->resolvePermissionSlug($permission);
+
+        // Do not include core_manage_campuses_view — that slug also backs dashboard.access.
+        return in_array($slug, [
+            'core_manage_campuses_manage',
+            'core_manage_departments_view',
+            'core_manage_departments_manage',
+            'core_manage_programs_view',
+            'core_manage_programs_manage',
+            'admin_manage_staff_view',
+            'admin_manage_staff_manage',
+            'admin_manage_staff_assign',
+            'admin_manage_staff_revoke',
+        ], true)
+            || str_starts_with($slug, 'admin_manage_staff_');
+    }
+
+    private function isSiteSettingsPermission(string $permission): bool
+    {
+        if (in_array($permission, [
+            'site_settings.read',
+            'site_settings.manage',
+            'marketing.site_settings.read',
+        ], true)) {
+            return true;
+        }
+
+        $slug = $this->resolvePermissionSlug($permission);
+
+        return str_starts_with($slug, 'site_settings_');
+    }
+
+    /**
+     * @param  list<string>  $codes
+     */
+    public function userBelongsToDepartmentsByCodes(User $user, array $codes): bool
+    {
+        $codes = array_values(array_unique(array_map(
+            static fn (string $code) => strtoupper(trim($code)),
+            $codes
+        )));
+
+        if ($codes === []) {
+            return false;
+        }
+
+        $userDepartmentIds = $this->getUserDepartmentIds($user);
+        if ($userDepartmentIds === []) {
+            return false;
+        }
+
+        $targetIds = Department::query()
+            ->whereIn('dept_code', $codes)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($targetIds === []) {
+            // Case-insensitive fallback for oddly cased legacy codes.
+            $targetIds = Department::query()
+                ->get(['id', 'dept_code'])
+                ->filter(fn ($row) => in_array(strtoupper((string) $row->dept_code), $codes, true))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        if ($targetIds === []) {
+            return false;
+        }
+
+        $scopeIds = [];
+        foreach ($targetIds as $targetId) {
+            $department = Department::query()->find($targetId);
+            if ($department) {
+                $scopeIds = array_merge($scopeIds, $department->selfAndDescendantIds());
+            }
+        }
+        $scopeIds = array_values(array_unique($scopeIds));
+
+        $parentMap = Department::parentMap();
+
+        foreach ($userDepartmentIds as $userDepartmentId) {
+            if (in_array($userDepartmentId, $scopeIds, true)) {
+                return true;
+            }
+
+            $rootId = Department::resolveRootIdFromMap($userDepartmentId, $parentMap);
+            if (in_array($rootId, $targetIds, true) || in_array($rootId, $scopeIds, true)) {
+                return true;
+            }
         }
 
         return false;
