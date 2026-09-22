@@ -105,17 +105,20 @@ class FinanceDashboardStatsService
     private function staffByPayrollScheme(): array
     {
         $employee = Staff::query()
+            ->excludePlatformOperators()
             ->where('employment_status', 'active')
             ->whereNotNull('payroll_scheme')
             ->where('payroll_scheme', '!=', 'withholding')
             ->count();
 
         $withholding = Staff::query()
+            ->excludePlatformOperators()
             ->where('employment_status', 'active')
             ->where('payroll_scheme', 'withholding')
             ->count();
 
         $unset = Staff::query()
+            ->excludePlatformOperators()
             ->where('employment_status', 'active')
             ->whereNull('payroll_scheme')
             ->count();

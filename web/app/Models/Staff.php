@@ -334,6 +334,49 @@ class Staff extends Model
         return $query->where('employment_status', 'onboarding');
     }
 
+    /**
+     * Exclude Super Admin / platform operator accounts from HR workforce lists
+     * (onboarding, contracts, etc.).
+     */
+    public function scopeExcludePlatformOperators($query)
+    {
+        $operatorTypes = [\App\Support\UserType::ADMIN, \App\Support\UserType::SUPER_ADMIN];
+
+        return $query
+            ->whereDoesntHave('user', function ($u) use ($operatorTypes) {
+                $u->where(function ($inner) use ($operatorTypes) {
+                    $inner->whereIn('user_type', $operatorTypes)
+                        ->orWhereHas('roles', fn ($r) => $r->where('role_name', 'Super Admin'));
+                });
+            })
+            ->whereNotIn('id', function ($sub) use ($operatorTypes) {
+                $sub->select('staff_id')
+                    ->from('users')
+                    ->whereNotNull('staff_id')
+                    ->where(function ($u) use ($operatorTypes) {
+                        $u->whereIn('user_type', $operatorTypes)
+                            ->orWhereExists(function ($roleSub) {
+                                $roleSub->selectRaw('1')
+                                    ->from('user_roles')
+                                    ->join('roles', 'roles.id', '=', 'user_roles.role_id')
+                                    ->whereColumn('user_roles.user_id', 'users.id')
+                                    ->where('roles.role_name', 'Super Admin');
+                            });
+                    });
+            });
+    }
+
+    public function isLinkedPlatformOperator(): bool
+    {
+        $user = $this->relationLoaded('user') ? $this->user : $this->user()->first();
+
+        if (! $user) {
+            $user = \App\Models\User::query()->where('staff_id', $this->id)->first();
+        }
+
+        return $user?->isPlatformOperator() ?? false;
+    }
+
     public function usesWithholdingPayroll(): bool
     {
         return $this->resolvedPayrollScheme() === 'withholding';

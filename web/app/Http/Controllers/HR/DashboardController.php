@@ -20,9 +20,9 @@ class DashboardController extends Controller
 
     public function __invoke(): View
     {
-        $staffCount = Staff::count();
-        $activeStaffCount = Staff::where('employment_status', 'active')->count();
-        $onboardingCount = Staff::where('employment_status', 'onboarding')->count();
+        $staffCount = Staff::excludePlatformOperators()->count();
+        $activeStaffCount = Staff::excludePlatformOperators()->where('employment_status', 'active')->count();
+        $onboardingCount = Staff::excludePlatformOperators()->where('employment_status', 'onboarding')->count();
         $contractAlerts = $this->contractService->getExpiryAlerts(30);
 
         $applicationCount = RecruitmentApplication::count();

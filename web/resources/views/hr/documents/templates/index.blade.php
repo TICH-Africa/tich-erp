@@ -16,7 +16,7 @@
                 <select id="template-staff-id" class="tich-input">
                     <option value="">-- Select staff --</option>
                     @php
-                        $allStaff = \App\Models\Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
+                        $allStaff = \App\Models\Staff::excludePlatformOperators()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
                     @endphp
                     @foreach ($allStaff as $s)
                         <option value="{{ $s->id }}">{{ $s->fullName() }} ({{ $s->employee_number }})</option>

@@ -17,6 +17,7 @@
                     <option value="">- or calculate manually below -</option>
                     @php
                         $staffList = \App\Models\Staff::query()
+                            ->excludePlatformOperators()
                             ->orderBy('surname')
                             ->orderBy('first_name')
                             ->get(['id', 'first_name', 'surname', 'employee_number', 'gross_monthly_salary']);

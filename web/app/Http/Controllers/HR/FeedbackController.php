@@ -40,6 +40,7 @@ class FeedbackController extends Controller
     public function create(): View
     {
         $staffList = Staff::query()
+            ->excludePlatformOperators()
             ->orderBy('surname')
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
@@ -89,6 +90,7 @@ class FeedbackController extends Controller
     {
         $feedback->load('staff');
         $staffList = Staff::query()
+            ->excludePlatformOperators()
             ->orderBy('surname')
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);

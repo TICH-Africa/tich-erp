@@ -543,6 +543,7 @@ class WeeklyTimeLogService
     {
         $q = StaffWeeklyTimeLog::query()
             ->with(['staff.department', 'manager'])
+            ->whereHas('staff', fn ($query) => $query->excludePlatformOperators())
             ->whereIn('status', [
                 StaffWeeklyTimeLog::STATUS_PENDING_HR,
                 StaffWeeklyTimeLog::STATUS_APPROVED,

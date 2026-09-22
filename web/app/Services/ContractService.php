@@ -40,6 +40,12 @@ class ContractService
     {
         $staff = Staff::findOrFail($staffId);
 
+        if ($staff->isLinkedPlatformOperator()) {
+            throw new \InvalidArgumentException(
+                'Super Admin / platform administrator accounts cannot be issued employment contracts.'
+            );
+        }
+
         $contract = DB::transaction(function () use ($staffId, $data, $createdBy) {
             $contractNumber = $this->generateContractNumber();
 

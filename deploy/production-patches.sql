@@ -1379,8 +1379,6 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 
 
--- PRESENT IN PRODUCTION UP TO HERE
-
 -- -----------------------------------------------------------------------------
 -- 26. Financial Policy (upload in Finance; HOD sign-off gates department budgets)
 --     Prefer deploy/production.sql (CREATE TABLE IF NOT EXISTS + ensure_* helpers).
@@ -1623,6 +1621,16 @@ CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
   CONSTRAINT `swtld_log_fk` FOREIGN KEY (`weekly_time_log_id`) REFERENCES `staff_weekly_time_logs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+
+
+
+
+
+
+
+-- PRESENT IN PRODUCTION UP TO HERE
 SET time_zone = '+03:00';
 
 -- Research activities, financial policy, partnership inquiry columns, and weekly

@@ -27,7 +27,7 @@ class StaffViewController extends Controller
     public function index(): View
     {
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
-        $query = Staff::with(['department', 'campus', 'lineManager']);
+        $query = Staff::excludePlatformOperators()->with(['department', 'campus', 'lineManager']);
 
         if ($search = request('search')) {
             $query->where(function ($q) use ($search) {
@@ -60,7 +60,8 @@ class StaffViewController extends Controller
     {
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
-        $lineManagers = Staff::whereIn('employment_status', ['active', 'onboarding'])
+        $lineManagers = Staff::excludePlatformOperators()
+            ->whereIn('employment_status', ['active', 'onboarding'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number']);
 
@@ -154,7 +155,7 @@ class StaffViewController extends Controller
 
     public function show(int $id): View
     {
-        $staff = Staff::with([
+        $staff = Staff::excludePlatformOperators()->with([
             'department',
             'campus',
             'lineManager',
@@ -178,10 +179,11 @@ class StaffViewController extends Controller
 
     public function edit(int $id): View
     {
-        $staff = Staff::with(['bankAccount', 'pensionScheme'])->findOrFail($id);
+        $staff = Staff::excludePlatformOperators()->with(['bankAccount', 'pensionScheme'])->findOrFail($id);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
-        $lineManagers = Staff::where('id', '!=', $id)
+        $lineManagers = Staff::excludePlatformOperators()
+            ->where('id', '!=', $id)
             ->whereIn('employment_status', ['active', 'onboarding'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number']);
@@ -206,7 +208,7 @@ class StaffViewController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $staff = Staff::findOrFail($id);
+        $staff = Staff::excludePlatformOperators()->findOrFail($id);
 
         $validated = $request->validate([
             'title' => 'nullable|string|max:100',
@@ -338,7 +340,7 @@ class StaffViewController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        $staff = Staff::findOrFail($id);
+        $staff = Staff::excludePlatformOperators()->findOrFail($id);
 
         DB::transaction(function () use ($staff, $request) {
             $this->auditService->log(

@@ -15,6 +15,7 @@ class ContractViewController extends Controller
     public function index(): View
     {
         $contracts = StaffContract::with(['staff', 'staff.department', 'department'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->orderByDesc('start_date')
             ->paginate(25);
 
@@ -23,7 +24,9 @@ class ContractViewController extends Controller
 
     public function create(): View
     {
-        $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
+        $staff = Staff::excludePlatformOperators()
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
 
@@ -63,7 +66,11 @@ class ContractViewController extends Controller
             }
         }
 
-        $contract = app(\App\Services\ContractService::class)->createContract($validated['staff_id'], $validated, $request->user()->id);
+        try {
+            $contract = app(\App\Services\ContractService::class)->createContract($validated['staff_id'], $validated, $request->user()->id);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->withErrors(['staff_id' => $e->getMessage()]);
+        }
 
         return redirect()->route('hr.contracts.show', $contract)->with('success', 'Contract created successfully.');
     }
@@ -84,7 +91,9 @@ class ContractViewController extends Controller
     public function edit(int $id): View
     {
         $contract = StaffContract::findOrFail($id);
-        $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
+        $staff = Staff::excludePlatformOperators()
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
 

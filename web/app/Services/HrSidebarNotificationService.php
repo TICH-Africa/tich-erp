@@ -85,6 +85,7 @@ class HrSidebarNotificationService
     private function computeCounts(): array
     {
         $leaveRequests = LeaveRequest::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('overall_status', 'pending_hr')
             ->where('is_cancelled', false)
             ->count();
@@ -93,7 +94,10 @@ class HrSidebarNotificationService
         $feedback = $this->openFeedbackCount();
 
         return [
-            'onboarding' => StaffOnboarding::query()->where('status', 'pending_hr_review')->count(),
+            'onboarding' => StaffOnboarding::query()
+                ->where('status', 'pending_hr_review')
+                ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
+                ->count(),
             'recruitment' => RecruitmentApplication::query()
                 ->whereIn('status', ['submitted', 'under_review'])
                 ->count(),
@@ -145,11 +149,13 @@ class HrSidebarNotificationService
             ->active()
             ->expiringSoon(30)
             ->where('renewal_status', 'pending')
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->count();
 
         $unsigned = StaffContract::query()
             ->active()
             ->where('is_signed', 0)
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->count();
 
         return $expiring + $unsigned;
@@ -162,10 +168,14 @@ class HrSidebarNotificationService
         }
 
         if (Schema::hasColumn('staff_documents', 'status')) {
-            return StaffDocument::query()->where('status', 'pending')->count();
+            return StaffDocument::query()
+                ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
+                ->where('status', 'pending')
+                ->count();
         }
 
         return StaffDocument::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('is_verified', 0)
             ->where('is_missing', 0)
             ->whereNotNull('file_path')
@@ -178,7 +188,10 @@ class HrSidebarNotificationService
             return 0;
         }
 
-        return OffboardingRequest::query()->where('status', 'pending')->count();
+        return OffboardingRequest::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
+            ->where('status', 'pending')
+            ->count();
     }
 
     private function pendingProfileChangesCount(): int
@@ -188,6 +201,7 @@ class HrSidebarNotificationService
         }
 
         return StaffProfileChangeRequest::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
             ->count();
     }
@@ -199,6 +213,7 @@ class HrSidebarNotificationService
         }
 
         return StaffAttendance::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('hr_review_status', StaffAttendance::HR_STATUS_PENDING)
             ->whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')
@@ -212,6 +227,7 @@ class HrSidebarNotificationService
         }
 
         return StaffWeeklyTimeLog::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
             ->count();
     }

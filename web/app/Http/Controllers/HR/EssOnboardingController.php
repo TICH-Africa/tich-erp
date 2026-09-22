@@ -166,6 +166,7 @@ class EssOnboardingController extends Controller
     public function review(int $onboarding): View
     {
         $onboarding = StaffOnboarding::with(['staff', 'staff.department', 'staff.documents'])->findOrFail($onboarding);
+        abort_if($onboarding->staff?->isLinkedPlatformOperator(), 404);
 
         return view('hr.onboarding.review', ['onboarding' => $onboarding]);
     }
@@ -173,6 +174,7 @@ class EssOnboardingController extends Controller
     public function approve(Request $request, int $onboarding)
     {
         $onboarding = StaffOnboarding::with('staff')->findOrFail($onboarding);
+        abort_if($onboarding->staff?->isLinkedPlatformOperator(), 404);
 
         if ($onboarding->status === 'approved') {
             return redirect()->route('hr.onboarding.show', $onboarding)->with('success', 'Onboarding already approved.');
@@ -215,6 +217,7 @@ class EssOnboardingController extends Controller
     public function reject(Request $request, int $onboarding)
     {
         $onboarding = StaffOnboarding::with('staff')->findOrFail($onboarding);
+        abort_if($onboarding->staff?->isLinkedPlatformOperator(), 404);
 
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:2000',

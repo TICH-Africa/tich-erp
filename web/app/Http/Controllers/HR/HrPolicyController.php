@@ -132,6 +132,7 @@ class HrPolicyController extends Controller
     {
         $policy = HrPolicy::findOrFail($id);
         $staffList = Staff::query()
+            ->excludePlatformOperators()
             ->orderBy('surname')
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id']);
@@ -153,9 +154,12 @@ class HrPolicyController extends Controller
         ]);
 
         if (! empty($validated['send_to_all'])) {
-            $staffIds = Staff::query()->pluck('id')->toArray();
+            $staffIds = Staff::excludePlatformOperators()->pluck('id')->toArray();
         } else {
-            $staffIds = $validated['staff_ids'];
+            $staffIds = Staff::excludePlatformOperators()
+                ->whereIn('id', $validated['staff_ids'])
+                ->pluck('id')
+                ->toArray();
         }
 
         $sent = 0;

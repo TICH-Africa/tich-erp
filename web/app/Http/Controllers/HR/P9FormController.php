@@ -32,6 +32,8 @@ class P9FormController extends Controller
 
     public function show(Request $request, Staff $staff): View
     {
+        abort_if($staff->isLinkedPlatformOperator(), 404);
+
         $year = $request->filled('year')
             ? $request->integer('year')
             : $this->p9Service->defaultYear();
@@ -47,6 +49,8 @@ class P9FormController extends Controller
 
     public function download(Request $request, Staff $staff): StreamedResponse
     {
+        abort_if($staff->isLinkedPlatformOperator(), 404);
+
         $year = $request->filled('year')
             ? $request->integer('year')
             : $this->p9Service->defaultYear();

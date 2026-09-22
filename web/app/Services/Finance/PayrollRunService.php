@@ -65,6 +65,7 @@ class PayrollRunService
             PayrollItem::query()->where('payroll_run_id', $run->id)->delete();
 
             $staffMembers = Staff::query()
+                ->excludePlatformOperators()
                 ->with('activeAllowances')
                 ->whereIn('employment_status', ['active', 'on_leave'])
                 ->orderBy('surname')

@@ -26,6 +26,7 @@ class LeaveAccrualService
         }
 
         $staff = Staff::query()
+            ->excludePlatformOperators()
             ->whereIn('employment_status', ['active', 'onboarding', 'probation'])
             ->get(['id', 'employment_start_date', 'employment_status']);
 

@@ -22,6 +22,7 @@ class HrDashboardStatsService
     private function staffByStatus(): array
     {
         $rows = Staff::query()
+            ->excludePlatformOperators()
             ->select('employment_status', DB::raw('COUNT(*) as total'))
             ->groupBy('employment_status')
             ->orderByDesc('total')
@@ -36,6 +37,7 @@ class HrDashboardStatsService
     private function staffByDepartment(): array
     {
         $rows = Staff::query()
+            ->excludePlatformOperators()
             ->leftJoin('departments', 'staff.department_id', '=', 'departments.id')
             ->select(DB::raw("COALESCE(departments.dept_name, 'Unassigned') as label"), DB::raw('COUNT(*) as total'))
             ->groupBy('label')

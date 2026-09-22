@@ -32,15 +32,19 @@ class HrLeaveOverviewService
 
         return LeaveRequest::query()
             ->with(['staff.department', 'leaveType'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('overall_status', 'approved')
             ->where('is_cancelled', false)
             ->whereDate('start_date', '<=', $today)
             ->whereDate('end_date', '>=', $today)
             ->when($search, function ($query, $term) {
                 $query->whereHas('staff', function ($staffQuery) use ($term) {
-                    $staffQuery->where('first_name', 'like', "%{$term}%")
-                        ->orWhere('surname', 'like', "%{$term}%")
-                        ->orWhere('employee_number', 'like', "%{$term}%");
+                    $staffQuery->excludePlatformOperators()
+                        ->where(function ($inner) use ($term) {
+                            $inner->where('first_name', 'like', "%{$term}%")
+                                ->orWhere('surname', 'like', "%{$term}%")
+                                ->orWhere('employee_number', 'like', "%{$term}%");
+                        });
                 });
             })
             ->orderBy('start_date')
@@ -85,6 +89,7 @@ class HrLeaveOverviewService
         $today = now()->toDateString();
 
         $staffMembers = Staff::query()
+            ->excludePlatformOperators()
             ->with('department')
             ->whereIn('employment_status', ['active', 'on_leave', 'onboarding'])
             ->when($search, function ($query, $term) {

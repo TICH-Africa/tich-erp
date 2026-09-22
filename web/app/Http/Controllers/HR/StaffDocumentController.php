@@ -22,7 +22,8 @@ class StaffDocumentController extends Controller
 
     public function index(): View
     {
-        $staff = Staff::withCount('documents')
+        $staff = Staff::excludePlatformOperators()
+            ->withCount('documents')
             ->with(['documents' => fn ($q) => $q->orderByDesc('created_at')])
             ->orderBy('first_name')
             ->get(['id', 'employee_number', 'first_name', 'surname', 'job_title', 'department_id']);
@@ -32,21 +33,21 @@ class StaffDocumentController extends Controller
 
     public function show(int $staffId): View
     {
-        $staff = Staff::with(['documents', 'department'])->findOrFail($staffId);
+        $staff = Staff::excludePlatformOperators()->with(['documents', 'department'])->findOrFail($staffId);
 
         return view('hr.documents.show', ['staff' => $staff]);
     }
 
     public function create(int $staffId): View
     {
-        $staff = Staff::findOrFail($staffId);
+        $staff = Staff::excludePlatformOperators()->findOrFail($staffId);
 
         return view('hr.staff.documents.create', ['staff' => $staff]);
     }
 
     public function store(Request $request, int $staffId)
     {
-        $staff = Staff::findOrFail($staffId);
+        $staff = Staff::excludePlatformOperators()->findOrFail($staffId);
 
         $validated = $request->validate([
             'document_type' => 'required|string|in:cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other',

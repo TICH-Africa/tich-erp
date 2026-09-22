@@ -51,14 +51,18 @@ class LeaveRequestService
     {
         return LeaveRequest::query()
             ->with(['staff.department', 'leaveType'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->when($status, fn ($query, $value) => $query->where('overall_status', $value))
             ->when($search, function ($query, $term) {
                 $query->where(function ($inner) use ($term) {
                     $inner->where('leave_number', 'like', "%{$term}%")
                         ->orWhereHas('staff', function ($staffQuery) use ($term) {
-                            $staffQuery->where('first_name', 'like', "%{$term}%")
-                                ->orWhere('surname', 'like', "%{$term}%")
-                                ->orWhere('employee_number', 'like', "%{$term}%");
+                            $staffQuery->excludePlatformOperators()
+                                ->where(function ($nameQuery) use ($term) {
+                                    $nameQuery->where('first_name', 'like', "%{$term}%")
+                                        ->orWhere('surname', 'like', "%{$term}%")
+                                        ->orWhere('employee_number', 'like', "%{$term}%");
+                                });
                         });
                 });
             })
@@ -70,6 +74,7 @@ class LeaveRequestService
     public function pendingHrCount(): int
     {
         return LeaveRequest::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('overall_status', 'pending_hr')
             ->count();
     }

@@ -15,6 +15,7 @@ class OffboardingController extends Controller
     public function index(): View
     {
         $offboardings = OffboardingRequest::with(['staff', 'initiator', 'approver'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->orderByDesc('created_at')
             ->paginate(25);
 
@@ -23,7 +24,8 @@ class OffboardingController extends Controller
 
     public function create(): View
     {
-        $staff = Staff::whereNotIn('employment_status', ['terminated', 'resigned', 'retired', 'deceased'])
+        $staff = Staff::excludePlatformOperators()
+            ->whereNotIn('employment_status', ['terminated', 'resigned', 'retired', 'deceased'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
 
@@ -42,7 +44,7 @@ class OffboardingController extends Controller
             'notes' => 'nullable|string|max:2000',
         ]);
 
-        $staff = Staff::findOrFail($validated['staff_id']);
+        $staff = Staff::excludePlatformOperators()->findOrFail($validated['staff_id']);
 
         DB::transaction(function () use ($validated, $staff, $request) {
             $lastWorkingDay = $validated['exit_date'];

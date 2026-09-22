@@ -25,6 +25,7 @@ class AttendanceReviewController extends Controller
 
         $attendance = StaffAttendance::query()
             ->with(['staff.department', 'hrReviewedBy'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->when($start, fn ($q) => $q->whereDate('attendance_date', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('attendance_date', '<=', $end))
             ->when($request->filled('hr_status'), fn ($q) => $q->where('hr_review_status', $request->string('hr_status')))
@@ -35,6 +36,7 @@ class AttendanceReviewController extends Controller
             ->withQueryString();
 
         $pendingCount = StaffAttendance::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('hr_review_status', StaffAttendance::HR_STATUS_PENDING)
             ->whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')

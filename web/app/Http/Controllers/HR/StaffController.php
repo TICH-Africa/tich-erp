@@ -22,6 +22,7 @@ class StaffController extends Controller
     {
         $user = $request->user();
         $query = Staff::query()
+            ->excludePlatformOperators()
             ->with(['department', 'campus', 'lineManager', 'user'])
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($sub) use ($search) {
@@ -57,7 +58,7 @@ class StaffController extends Controller
 
     public function show(int $id)
     {
-        $staff = Staff::with([
+        $staff = Staff::excludePlatformOperators()->with([
             'department',
             'campus',
             'lineManager',

@@ -40,6 +40,7 @@ class PayrollController extends Controller
     public function index(Request $request): View
     {
         $staff = Staff::query()
+            ->excludePlatformOperators()
             ->with(['department', 'activeAllowances'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.$request->string('search').'%';
@@ -372,7 +373,13 @@ class PayrollController extends Controller
     private function runCalculation(Request $request): ?array
     {
         if ($request->filled('staff_id')) {
-            $staff = Staff::query()->with('activeAllowances')->find($request->input('staff_id'));
+            $staff = Staff::query()
+                ->excludePlatformOperators()
+                ->with('activeAllowances')
+                ->find($request->input('staff_id'));
+            if ($staff?->isLinkedPlatformOperator()) {
+                return null;
+            }
             $basic = (float) ($request->input('amount') ?: $staff?->gross_monthly_salary);
             $allowances = (float) ($request->input('allowances') ?: $staff?->activeAllowances->sum('amount'));
 

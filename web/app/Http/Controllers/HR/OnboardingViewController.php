@@ -13,6 +13,7 @@ class OnboardingViewController extends Controller
     public function index(): View
     {
         $onboardings = StaffOnboarding::with(['staff', 'staff.department', 'staff.campus', 'staff.documents'])
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->orderByDesc('created_at')
             ->paginate(25);
 
@@ -21,7 +22,8 @@ class OnboardingViewController extends Controller
 
     public function create(): View
     {
-        $staff = Staff::whereIn('employment_status', ['onboarding', 'active'])
+        $staff = Staff::excludePlatformOperators()
+            ->whereIn('employment_status', ['onboarding', 'active'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number']);
 
@@ -36,11 +38,11 @@ class OnboardingViewController extends Controller
             'status' => 'required|string|in:in_progress,pending_hr_review,approved,rejected,completed',
         ]);
 
-        $staff = Staff::findOrFail($validated['staff_id']);
+        $staff = Staff::excludePlatformOperators()->findOrFail($validated['staff_id']);
 
         $onboarding = StaffOnboarding::create([
             'staff_id' => $staff->id,
-            'onboarding_number' => 'ONB-' . strtoupper(\Illuminate\Support\Str::random(8)),
+            'onboarding_number' => 'ONB-'.strtoupper(\Illuminate\Support\Str::random(8)),
             'current_step' => $validated['current_step'],
             'status' => $validated['status'],
             'completed_steps' => [$validated['current_step']],

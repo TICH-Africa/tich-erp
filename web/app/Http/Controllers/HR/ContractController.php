@@ -84,7 +84,11 @@ class ContractController extends Controller
             }
         }
 
-        $contract = $this->contractService->createContract($staffId, $validated, $request->user()->id);
+        try {
+            $contract = $this->contractService->createContract($staffId, $validated, $request->user()->id);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json(['data' => $contract->load('staff', 'department')], 201);
     }

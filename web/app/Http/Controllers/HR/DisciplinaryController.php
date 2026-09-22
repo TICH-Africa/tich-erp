@@ -194,6 +194,7 @@ class DisciplinaryController extends Controller
     private function staffList()
     {
         return Staff::query()
+            ->excludePlatformOperators()
             ->orderBy('surname')
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);

@@ -61,6 +61,7 @@ class P9FormService
             ->pluck('staff_id');
 
         return Staff::query()
+            ->excludePlatformOperators()
             ->whereIn('id', $staffIds)
             ->orderBy('surname')
             ->orderBy('first_name')

@@ -22,7 +22,7 @@ class TrainingController extends Controller
 
     public function create(): View
     {
-        $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
+        $staff = Staff::excludePlatformOperators()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
 
         return view('hr.training.create', ['staff' => $staff]);
     }
@@ -68,11 +68,11 @@ class TrainingController extends Controller
 
             $assignedStaffIds = $training->assigned_staff_ids;
             if (empty($assignedStaffIds)) {
-                $assignedStaffIds = Staff::pluck('id')->toArray();
+                $assignedStaffIds = Staff::excludePlatformOperators()->pluck('id')->toArray();
             }
 
             foreach ($assignedStaffIds as $staffId) {
-                $staff = Staff::find($staffId);
+                $staff = Staff::excludePlatformOperators()->find($staffId);
                 if ($staff && $staff->user_id) {
                     \App\Services\PlatformNotificationService::notifyUser(
                         $staff->user_id,
@@ -92,7 +92,7 @@ class TrainingController extends Controller
     public function edit(int $id): View
     {
         $training = ProfessionalDevelopment::findOrFail($id);
-        $staff = Staff::orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
+        $staff = Staff::excludePlatformOperators()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'employee_number']);
 
         return view('hr.training.edit', ['training' => $training, 'staff' => $staff]);
     }

@@ -7,7 +7,7 @@
         $chartData = $chartData ?? [];
         $dept = $departmentParams ?? [];
         $totalRuns = \App\Models\PayrollRun::count();
-        $totalStaffOnPayroll = \App\Models\Staff::whereIn('employment_status', ['active', 'on_leave'])->count();
+        $totalStaffOnPayroll = \App\Models\Staff::excludePlatformOperators()->whereIn('employment_status', ['active', 'on_leave'])->count();
         $approvedRuns = \App\Models\PayrollRun::where('status', 'approved')->count();
         $postedRuns = \App\Models\PayrollRun::where('status', 'posted')->count();
     @endphp
