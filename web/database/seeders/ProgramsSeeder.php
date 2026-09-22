@@ -113,7 +113,7 @@ class ProgramsSeeder extends Seeder
             ['code' => 'ICTO', 'name' => 'ICT', 'group' => 'OTH', 'order' => 2],
             ['code' => 'ACAD', 'name' => 'Academics', 'group' => 'OTH', 'order' => 3],
             ['code' => 'ADM', 'name' => 'Admin', 'group' => 'OTH', 'order' => 4],
-            ['code' => 'MKT', 'name' => 'Marketing', 'group' => 'OTH', 'order' => 5],
+            ['code' => 'MKT', 'name' => 'Marketing and Communication', 'group' => 'OTH', 'order' => 5],
         ];
 
         $learningDepartments = [

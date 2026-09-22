@@ -50,6 +50,12 @@ class DepartmentBudgetingService
             'content_section' => 'qa-content',
             'dashboard_route' => 'qa.dashboard',
         ],
+        'marketing' => [
+            'dept_code' => 'MKT',
+            'layout' => 'layouts.marketing',
+            'content_section' => 'department-content',
+            'dashboard_route' => 'marketing.portal.index',
+        ],
         'procurement' => [
             'dept_code' => 'PRC',
             'layout' => 'layouts.procurement',

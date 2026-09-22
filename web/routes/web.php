@@ -305,6 +305,78 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         });
     });
 
+    Route::prefix('marketing')->middleware(['permission:site_settings.read'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Marketing\PortalController::class, 'index'])->name('marketing.portal.index');
+        Route::get('/about', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'index'])->name('marketing.about.index');
+        Route::post('/about', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'store'])->name('marketing.about.store');
+        Route::post('/about/reorder', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'reorder'])->name('marketing.about.reorder');
+        Route::put('/about/{block}', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'update'])->name('marketing.about.update');
+        Route::delete('/about/{block}', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'destroy'])->name('marketing.about.destroy');
+
+        Route::get('/blogs', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'index'])->name('marketing.blogs.index');
+        Route::get('/blogs/create', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'create'])->name('marketing.blogs.create');
+        Route::post('/blogs', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'store'])->name('marketing.blogs.store');
+        Route::post('/blogs/upload-image', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'uploadImage'])->name('marketing.blogs.upload-image');
+        Route::get('/blogs/{post}/edit', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'edit'])->name('marketing.blogs.edit');
+        Route::put('/blogs/{post}', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'update'])->name('marketing.blogs.update');
+        Route::delete('/blogs/{post}', [\App\Http\Controllers\Marketing\Content\BlogController::class, 'destroy'])->name('marketing.blogs.destroy');
+
+        Route::get('/pages', [\App\Http\Controllers\Marketing\Content\PageController::class, 'index'])->name('marketing.pages.index');
+        Route::post('/pages/upload-image', [\App\Http\Controllers\Marketing\Content\PageController::class, 'uploadImage'])->name('marketing.pages.upload-image');
+        Route::get('/pages/{page}/edit', [\App\Http\Controllers\Marketing\Content\PageController::class, 'edit'])->name('marketing.pages.edit');
+        Route::put('/pages/{page}', [\App\Http\Controllers\Marketing\Content\PageController::class, 'update'])->name('marketing.pages.update');
+        Route::delete('/pages/{page}', [\App\Http\Controllers\Marketing\Content\PageController::class, 'destroy'])->name('marketing.pages.destroy');
+
+        Route::get('/events', [\App\Http\Controllers\Marketing\Content\EventController::class, 'index'])->name('marketing.events.index');
+        Route::post('/events', [\App\Http\Controllers\Marketing\Content\EventController::class, 'store'])->name('marketing.events.store');
+        Route::put('/events/{event}', [\App\Http\Controllers\Marketing\Content\EventController::class, 'update'])->name('marketing.events.update');
+        Route::delete('/events/{event}', [\App\Http\Controllers\Marketing\Content\EventController::class, 'destroy'])->name('marketing.events.destroy');
+
+        Route::get('/site-settings', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'index'])->name('marketing.site-settings.index');
+        Route::put('/site-settings/general', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'updateGeneral'])->name('marketing.site-settings.general.update');
+        Route::post('/site-settings/hero-slides', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'storeSlide'])->name('marketing.site-settings.hero-slides.store');
+        Route::put('/site-settings/hero-slides/{slide}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'updateSlide'])->name('marketing.site-settings.hero-slides.update');
+        Route::delete('/site-settings/hero-slides/{slide}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'destroySlide'])->name('marketing.site-settings.hero-slides.destroy');
+        Route::post('/site-settings/hero-slides/reorder', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'reorderSlides'])->name('marketing.site-settings.hero-slides.reorder');
+        Route::post('/site-settings/contacts', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'storeContact'])->name('marketing.site-settings.contacts.store');
+        Route::put('/site-settings/contacts/{contact}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'updateContact'])->name('marketing.site-settings.contacts.update');
+        Route::delete('/site-settings/contacts/{contact}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'destroyContact'])->name('marketing.site-settings.contacts.destroy');
+        Route::post('/site-settings/contacts/reorder', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'reorderContacts'])->name('marketing.site-settings.contacts.reorder');
+        Route::post('/site-settings/social-links', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'storeSocialLink'])->name('marketing.site-settings.social-links.store');
+        Route::put('/site-settings/social-links/{socialLink}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'updateSocialLink'])->name('marketing.site-settings.social-links.update');
+        Route::delete('/site-settings/social-links/{socialLink}', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'destroySocialLink'])->name('marketing.site-settings.social-links.destroy');
+        Route::post('/site-settings/social-links/reorder', [\App\Http\Controllers\Marketing\SiteSettingsController::class, 'reorderSocialLinks'])->name('marketing.site-settings.social-links.reorder');
+
+        Route::get('/enrolled-students', [\App\Http\Controllers\Marketing\EnrolledStudentsController::class, 'index'])->name('marketing.enrolled-students.index');
+        Route::get('/enrolled-students/compare', [\App\Http\Controllers\Marketing\EnrolledStudentsController::class, 'compare'])->name('marketing.enrolled-students.compare');
+
+        Route::get('/leads', [\App\Http\Controllers\Marketing\LeadsController::class, 'index'])->name('marketing.leads.index');
+        Route::get('/leads/create', [\App\Http\Controllers\Marketing\LeadsController::class, 'create'])->name('marketing.leads.create');
+        Route::post('/leads', [\App\Http\Controllers\Marketing\LeadsController::class, 'store'])->name('marketing.leads.store');
+        Route::get('/leads/{lead}/edit', [\App\Http\Controllers\Marketing\LeadsController::class, 'edit'])->name('marketing.leads.edit');
+        Route::put('/leads/{lead}', [\App\Http\Controllers\Marketing\LeadsController::class, 'update'])->name('marketing.leads.update');
+        Route::delete('/leads/{lead}', [\App\Http\Controllers\Marketing\LeadsController::class, 'destroy'])->name('marketing.leads.destroy');
+
+        Route::get('/lead-activities', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'index'])->name('marketing.lead-activities.index');
+        Route::get('/lead-activities/create', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'create'])->name('marketing.lead-activities.create');
+        Route::post('/lead-activities', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'store'])->name('marketing.lead-activities.store');
+        Route::get('/lead-activities/{activity}/edit', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'edit'])->name('marketing.lead-activities.edit');
+        Route::put('/lead-activities/{activity}', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'update'])->name('marketing.lead-activities.update');
+        Route::delete('/lead-activities/{activity}', [\App\Http\Controllers\Marketing\LeadActivitiesController::class, 'destroy'])->name('marketing.lead-activities.destroy');
+
+        Route::get('/reports', [\App\Http\Controllers\Marketing\ReportsController::class, 'index'])->name('marketing.reports.index');
+        Route::get('/reports/create', [\App\Http\Controllers\Marketing\ReportsController::class, 'create'])->name('marketing.reports.create');
+        Route::post('/reports', [\App\Http\Controllers\Marketing\ReportsController::class, 'store'])->name('marketing.reports.store');
+        Route::get('/reports/{report}', [\App\Http\Controllers\Marketing\ReportsController::class, 'show'])->name('marketing.reports.show');
+        Route::get('/reports/{report}/edit', [\App\Http\Controllers\Marketing\ReportsController::class, 'edit'])->name('marketing.reports.edit');
+        Route::put('/reports/{report}', [\App\Http\Controllers\Marketing\ReportsController::class, 'update'])->name('marketing.reports.update');
+        Route::post('/reports/{report}/submit', [\App\Http\Controllers\Marketing\ReportsController::class, 'submit'])->name('marketing.reports.submit');
+        Route::post('/reports/{report}/approve', [\App\Http\Controllers\Marketing\ReportsController::class, 'approve'])->name('marketing.reports.approve');
+        Route::post('/reports/{report}/distribute', [\App\Http\Controllers\Marketing\ReportsController::class, 'distribute'])->name('marketing.reports.distribute');
+
+        Route::get('/analytics', [\App\Http\Controllers\Marketing\AnalyticsController::class, 'index'])->name('marketing.analytics.index');
+    });
+
     Route::prefix('site-settings')->middleware(['permission:site_settings.read'])->group(function () {
         Route::get('/', [SiteSettingsController::class, 'index'])->name('site-settings.index');
 

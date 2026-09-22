@@ -368,7 +368,11 @@ class DepartmentModuleService
         $permissions = [];
 
         foreach (config('tich-department-modules.dashboard_permission_modules', []) as $permission => $moduleKey) {
-            if ($moduleKey === null || in_array($moduleKey, $assigned, true)) {
+            $granted = $moduleKey === null
+                || (is_array($moduleKey) && array_intersect($moduleKey, $assigned))
+                || in_array($moduleKey, $assigned, true);
+
+            if ($granted) {
                 $permissions[] = $permission;
             }
         }
@@ -382,6 +386,10 @@ class DepartmentModuleService
 
         if ($moduleKey === null) {
             return true;
+        }
+
+        if (is_array($moduleKey)) {
+            return collect($moduleKey)->contains(fn (string $key) => $this->departmentHasModule($department, $key));
         }
 
         return $this->departmentHasModule($department, $moduleKey);
@@ -402,8 +410,14 @@ class DepartmentModuleService
         }
 
         foreach (config('tich-department-modules.dashboard_permission_modules', []) as $permissionKey => $moduleKey) {
-            if ($permissionKey === $permission && is_string($moduleKey)) {
-                return $moduleKey;
+            if ($permissionKey === $permission) {
+                if (is_array($moduleKey)) {
+                    return $moduleKey[0] ?? null;
+                }
+
+                if (is_string($moduleKey)) {
+                    return $moduleKey;
+                }
             }
         }
 

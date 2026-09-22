@@ -7,6 +7,7 @@ use App\Services\DepartmentBudgetingService;
 use App\Services\DepartmentDashboardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DepartmentDashboardController extends Controller
@@ -16,7 +17,7 @@ class DepartmentDashboardController extends Controller
         Department $department,
         DepartmentDashboardService $departmentDashboard,
         DepartmentBudgetingService $budgeting,
-    ): RedirectResponse {
+    ): RedirectResponse|View {
         if (! $department->is_active) {
             throw new NotFoundHttpException();
         }
@@ -30,6 +31,15 @@ class DepartmentDashboardController extends Controller
         $moduleHome = $budgeting->moduleHomeUrlForDepartment($department);
         if ($moduleHome) {
             return redirect()->to($moduleHome);
+        }
+
+        $modules = $departmentDashboard->modulesForDepartment($user, $department);
+
+        if ($modules !== []) {
+            return view('departments.dashboard', [
+                'department' => $department,
+                'modules' => $modules,
+            ]);
         }
 
         return redirect()

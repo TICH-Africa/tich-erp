@@ -1,8 +1,8 @@
-@extends('layouts.ict')
+@extends('layouts.marketing')
 
 @section('title', 'Events')
 
-@section('ict-content')
+@section('department-content')
     @php
         $openCreateModal = $errors->any() && old('_method') !== 'PUT';
         $openEditEventId = old('_method') === 'PUT' ? (int) old('edit_event_id') : null;
@@ -46,20 +46,20 @@
                                 type="button"
                                 class="tich-squircle-btn event-edit-trigger"
                                 data-open-modal="event-edit-modal"
-                                data-update-url="{{ route('ict.content.events.update', ['event' => $event->id]) }}"
+                                data-update-url="{{ route('marketing.events.update', ['event' => $event->id]) }}"
                                 data-event-id="{{ $event->id }}"
                                 data-title="{{ $event->title }}"
                                 data-subtitle="{{ $event->subtitle }}"
                                 data-event-type="{{ $event->event_type }}"
                                 data-description="{{ $event->description }}"
-                                data-start-datetime="{{ $event->start_datetime?->format('Y-m-d\\TH:i') }}"
-                                data-end-datetime="{{ $event->end_datetime?->format('Y-m-d\\TH:i') }}"
+                                data-start-datetime="{{ $event->start_datetime?->format('Y-m-d\TH:i') }}"
+                                data-end-datetime="{{ $event->end_datetime?->format('Y-m-d\TH:i') }}"
                                 data-venue="{{ $event->venue }}"
                                 data-registration="{{ $event->registration_url_or_form }}"
                                 data-is-public="{{ $event->is_public ? '1' : '0' }}"
                                 data-is-featured="{{ $event->is_featured ? '1' : '0' }}"
                             >Edit</button>
-                            <form method="POST" action="{{ route('ict.content.events.destroy', ['event' => $event->id]) }}" onsubmit="return confirm('Delete this event?');">
+                            <form method="POST" action="{{ route('marketing.events.destroy', ['event' => $event->id]) }}" onsubmit="return confirm('Delete this event?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="tich-squircle-btn">×</button>
@@ -77,7 +77,7 @@
         <div class="tich-modal__backdrop" data-close-modal="event-create-modal"></div>
         <div class="tich-modal__dialog">
             <div class="tich-modal__header"><h2 class="tich-h3">Add event</h2><button type="button" class="tich-squircle-btn" data-close-modal="event-create-modal">×</button></div>
-            <form method="POST" action="{{ route('ict.content.events.store') }}" class="tich-modal__body" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('marketing.events.store') }}" class="tich-modal__body" enctype="multipart/form-data">
                 @csrf
                 @include('admin.partials.event-form-fields', ['eventTypes' => $eventTypes, 'fieldIdPrefix' => 'create_'])
                 <div class="tich-modal__footer">
@@ -92,7 +92,7 @@
         <div class="tich-modal__backdrop" data-close-modal="event-edit-modal"></div>
         <div class="tich-modal__dialog">
             <div class="tich-modal__header"><h2 class="tich-h3">Edit event</h2><button type="button" class="tich-squircle-btn" data-close-modal="event-edit-modal">×</button></div>
-            <form id="event-edit-form" method="POST" action="{{ $editEvent ? route('ict.content.events.update', ['event' => $editEvent->id]) : '#' }}" class="tich-modal__body" enctype="multipart/form-data">
+            <form id="event-edit-form" method="POST" action="{{ $editEvent ? route('marketing.events.update', ['event' => $editEvent->id]) : '#' }}" class="tich-modal__body" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="edit_event_id" id="edit_event_id" value="{{ $editEvent?->id }}">
