@@ -438,8 +438,8 @@ class DepartmentDashboardService
             ->sortBy(fn (array $module) => array_search($module['route'], self::ENTRY_ROUTE_PRIORITY, true) ?: 99)
             ->values();
 
-        foreach ($modules as $module) {
-            return route($module['route'], $module['params'] ?? []);
+        if ($modules->isNotEmpty()) {
+            return route('departments.show', $department);
         }
 
         return route('dashboard');

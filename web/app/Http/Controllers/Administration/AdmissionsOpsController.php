@@ -27,8 +27,17 @@ class AdmissionsOpsController extends Controller
             ? Applicant::query()->with(['program'])->latest('id')->paginate(20)
             : collect();
 
+        $existingStudents = Schema::hasTable('students')
+            ? Student::query()
+                ->with(['program', 'campus'])
+                ->where('is_active', 1)
+                ->latest('id')
+                ->paginate(15)
+            : collect();
+
         return view('administration.applications.index', [
             'applications' => $applications,
+            'existingStudents' => $existingStudents,
             'applyUrl' => route('apply.index'),
         ]);
     }
