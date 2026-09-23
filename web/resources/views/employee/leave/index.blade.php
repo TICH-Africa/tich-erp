@@ -8,6 +8,7 @@
 
     <x-page-toolbar title="My leave" meta="Balances, requests, and applications">
         <x-slot:actions>
+            <a href="{{ route('employee.leave.carry-forward') }}" class="tich-btn tich-btn-secondary">Carry-forward</a>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="leave-request-modal">
                 + New leave request
             </button>
@@ -105,5 +106,10 @@
         'editRequest' => $editRequest,
         'leaveTypes' => $leaveTypes,
         'openModal' => $openModal,
+        'familyRelations' => $familyRelations,
+        'coverageDepartments' => $coverageDepartments,
+        'eligibleCoverStaff' => $eligibleCoverStaff,
+        'leaveTypeMeta' => $leaveTypeMeta,
+        'staff' => $staff,
     ])
 @endsection

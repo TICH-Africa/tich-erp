@@ -48,7 +48,7 @@ class KenyaPayrollTaxService
         if ($otherDeductions > 0) {
             $employeeDeductions->push([
                 'code' => 'other',
-                'label' => 'Other deductions',
+                'label' => (string) ($options['other_deductions_label'] ?? 'Other deductions'),
                 'amount' => round($otherDeductions, 2),
                 'base' => null,
                 'rate' => null,
@@ -192,7 +192,7 @@ class KenyaPayrollTaxService
         if ($otherDeductions > 0) {
             $employeeDeductions->push([
                 'code' => 'other',
-                'label' => 'Other deductions',
+                'label' => (string) ($options['other_deductions_label'] ?? 'Other deductions'),
                 'amount' => round($otherDeductions, 2),
                 'base' => null,
                 'rate' => null,

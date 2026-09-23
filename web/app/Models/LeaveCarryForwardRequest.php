@@ -18,6 +18,11 @@ class LeaveCarryForwardRequest extends Model
         'days_approved',
         'reason',
         'status',
+        'line_manager_status',
+        'line_manager_staff_id',
+        'line_manager_acted_at',
+        'line_manager_notes',
+        'hr_status',
         'reviewed_by',
         'reviewed_at',
         'review_notes',
@@ -29,6 +34,7 @@ class LeaveCarryForwardRequest extends Model
         'from_year' => 'integer',
         'to_year' => 'integer',
         'reviewed_at' => 'datetime',
+        'line_manager_acted_at' => 'datetime',
     ];
 
     public function staff(): BelongsTo
@@ -46,13 +52,38 @@ class LeaveCarryForwardRequest extends Model
         return $this->belongsTo(Staff::class, 'reviewed_by');
     }
 
+    public function lineManager(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'line_manager_staff_id');
+    }
+
     public function statusLabel(): string
     {
+        if ($this->status === 'approved') {
+            return 'Approved';
+        }
+        if ($this->status === 'rejected') {
+            return 'Rejected';
+        }
+
+        $lm = $this->line_manager_status ?? 'pending';
+        if ($lm === 'pending') {
+            return 'Awaiting line manager';
+        }
+        if ($lm === 'approved' && ($this->hr_status ?? 'pending') === 'pending') {
+            return 'Awaiting HR approval';
+        }
+
         return match ($this->status) {
-            'pending' => 'Awaiting HR approval',
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
-            default => ucfirst($this->status),
+            'pending' => 'Pending',
+            default => ucfirst((string) $this->status),
         };
+    }
+
+    public function awaitingHr(): bool
+    {
+        return $this->status === 'pending'
+            && ($this->line_manager_status ?? 'pending') === 'approved'
+            && ($this->hr_status ?? 'pending') === 'pending';
     }
 }

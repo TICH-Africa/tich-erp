@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-19 11:02:42 EAT
+-- Generated: 2026-09-23 15:28:44 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -235,6 +235,110 @@ CALL `tich_ensure_index`('academic_programs', 'academic_programs_approved_by_ceo
 CALL `tich_ensure_index`('academic_programs', 'academic_programs_department_status_index', '`department_id`, `status`');
 CALL `tich_ensure_unique`('academic_programs', 'academic_programs_program_code_unique', '`program_code`');
 CALL `tich_ensure_index`('academic_programs', 'academic_programs_status_index', '`status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `academic_workplans`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `academic_workplans` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workplan_number` varchar(40) NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `semester_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `objectives` text DEFAULT NULL,
+  `resources` text DEFAULT NULL,
+  `kpis` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `prepared_by_staff_id` bigint(20) unsigned NOT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `registrar_status` varchar(40) NOT NULL DEFAULT 'pending',
+  `registrar_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `registrar_acted_at` timestamp NULL DEFAULT NULL,
+  `registrar_comments` text DEFAULT NULL,
+  `qa_status` varchar(40) NOT NULL DEFAULT 'pending',
+  `qa_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `qa_acted_at` timestamp NULL DEFAULT NULL,
+  `qa_comments` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `academic_workplans_workplan_number_unique` (`workplan_number`),
+  KEY `awp_dept_sem_status_idx` (`department_id`,`semester_id`,`status`),
+  KEY `academic_workplans_semester_id_foreign` (`semester_id`),
+  KEY `academic_workplans_prepared_by_staff_id_foreign` (`prepared_by_staff_id`),
+  KEY `academic_workplans_registrar_staff_id_foreign` (`registrar_staff_id`),
+  KEY `academic_workplans_qa_staff_id_foreign` (`qa_staff_id`),
+  CONSTRAINT `academic_workplans_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `academic_workplans_prepared_by_staff_id_foreign` FOREIGN KEY (`prepared_by_staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `academic_workplans_qa_staff_id_foreign` FOREIGN KEY (`qa_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_workplans_registrar_staff_id_foreign` FOREIGN KEY (`registrar_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_workplans_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `academic_workplans` (add only if missing)
+CALL `tich_ensure_column`('academic_workplans', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('academic_workplans', 'workplan_number', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'semester_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'objectives', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'resources', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'kpis', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'status', 'varchar(40) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('academic_workplans', 'prepared_by_staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'submitted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'registrar_status', 'varchar(40) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('academic_workplans', 'registrar_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'registrar_acted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'registrar_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'qa_status', 'varchar(40) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('academic_workplans', 'qa_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'qa_acted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'qa_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplans', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `academic_workplans` (add only if missing)
+CALL `tich_ensure_index`('academic_workplans', 'academic_workplans_prepared_by_staff_id_foreign', '`prepared_by_staff_id`');
+CALL `tich_ensure_index`('academic_workplans', 'academic_workplans_qa_staff_id_foreign', '`qa_staff_id`');
+CALL `tich_ensure_index`('academic_workplans', 'academic_workplans_registrar_staff_id_foreign', '`registrar_staff_id`');
+CALL `tich_ensure_index`('academic_workplans', 'academic_workplans_semester_id_foreign', '`semester_id`');
+CALL `tich_ensure_unique`('academic_workplans', 'academic_workplans_workplan_number_unique', '`workplan_number`');
+CALL `tich_ensure_index`('academic_workplans', 'awp_dept_sem_status_idx', '`department_id`, `semester_id`, `status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `academic_workplan_activities`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `academic_workplan_activities` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workplan_id` bigint(20) unsigned NOT NULL,
+  `activity` varchar(500) NOT NULL,
+  `timeline_start` date DEFAULT NULL,
+  `timeline_end` date DEFAULT NULL,
+  `kpi` varchar(500) DEFAULT NULL,
+  `resources` varchar(500) DEFAULT NULL,
+  `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_workplan_activities_workplan_id_foreign` (`workplan_id`),
+  CONSTRAINT `academic_workplan_activities_workplan_id_foreign` FOREIGN KEY (`workplan_id`) REFERENCES `academic_workplans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `academic_workplan_activities` (add only if missing)
+CALL `tich_ensure_column`('academic_workplan_activities', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('academic_workplan_activities', 'workplan_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'activity', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'timeline_start', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'timeline_end', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'kpi', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'resources', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'sort_order', 'smallint(5) unsigned NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('academic_workplan_activities', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_workplan_activities', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `academic_workplan_activities` (add only if missing)
+CALL `tich_ensure_index`('academic_workplan_activities', 'academic_workplan_activities_workplan_id_foreign', '`workplan_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `academic_years`
@@ -4799,6 +4903,54 @@ CALL `tich_ensure_column`('invoice_items', 'created_at', 'datetime NOT NULL DEFA
 CALL `tich_ensure_index`('invoice_items', 'invoice_items_invoice_id_foreign', '`invoice_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `iqa_assessments`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `iqa_assessments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL DEFAULT 'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL',
+  `assessment_year` smallint(5) unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `current_section` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `updated_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `published_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `publisher_name` varchar(200) DEFAULT NULL,
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `iqa_status_year_idx` (`status`,`assessment_year`),
+  KEY `iqa_assessments_created_by_user_id_foreign` (`created_by_user_id`),
+  KEY `iqa_assessments_updated_by_user_id_foreign` (`updated_by_user_id`),
+  KEY `iqa_assessments_published_by_user_id_foreign` (`published_by_user_id`),
+  CONSTRAINT `iqa_assessments_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_published_by_user_id_foreign` FOREIGN KEY (`published_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_updated_by_user_id_foreign` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `iqa_assessments` (add only if missing)
+CALL `tich_ensure_column`('iqa_assessments', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('iqa_assessments', 'title', 'varchar(200) NOT NULL DEFAULT \'\\\'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL\\\'\'');
+CALL `tich_ensure_column`('iqa_assessments', 'assessment_year', 'smallint(5) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'status', 'varchar(20) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('iqa_assessments', 'current_section', 'tinyint(3) unsigned NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('iqa_assessments', 'payload', 'longtext NOT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'created_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'updated_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'published_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'publisher_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'published_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('iqa_assessments', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `iqa_assessments` (add only if missing)
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_created_by_user_id_foreign', '`created_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_published_by_user_id_foreign', '`published_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_assessments_updated_by_user_id_foreign', '`updated_by_user_id`');
+CALL `tich_ensure_index`('iqa_assessments', 'iqa_status_year_idx', '`status`, `assessment_year`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `job_vacancies`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `job_vacancies` (
@@ -4911,6 +5063,11 @@ CREATE TABLE IF NOT EXISTS `leave_carry_forward_requests` (
   `days_approved` decimal(5,2) DEFAULT NULL,
   `reason` text NOT NULL,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `line_manager_status` varchar(30) NOT NULL DEFAULT 'pending',
+  `line_manager_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `line_manager_acted_at` timestamp NULL DEFAULT NULL,
+  `line_manager_notes` text DEFAULT NULL,
+  `hr_status` varchar(30) NOT NULL DEFAULT 'pending',
   `reviewed_by` bigint(20) unsigned DEFAULT NULL,
   `reviewed_at` timestamp NULL DEFAULT NULL,
   `review_notes` text DEFAULT NULL,
@@ -4936,6 +5093,11 @@ CALL `tich_ensure_column`('leave_carry_forward_requests', 'days_requested', 'dec
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'days_approved', 'decimal(5,2) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'reason', 'text NOT NULL');
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'status', 'enum(\'pending\',\'approved\',\'rejected\') NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('leave_carry_forward_requests', 'line_manager_status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('leave_carry_forward_requests', 'line_manager_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_carry_forward_requests', 'line_manager_acted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_carry_forward_requests', 'line_manager_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_carry_forward_requests', 'hr_status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'reviewed_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_carry_forward_requests', 'review_notes', 'text NULL DEFAULT NULL');
@@ -4949,6 +5111,51 @@ CALL `tich_ensure_index`('leave_carry_forward_requests', 'leave_carry_forward_re
 CALL `tich_ensure_index`('leave_carry_forward_requests', 'leave_carry_forward_requests_status_index', '`status`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `leave_coverage_access_grants`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `leave_coverage_access_grants` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_coverage_id` bigint(20) unsigned NOT NULL,
+  `cover_user_id` bigint(20) unsigned NOT NULL,
+  `role_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `campus_id` bigint(20) unsigned DEFAULT NULL,
+  `was_preexisting` tinyint(1) NOT NULL DEFAULT 0,
+  `granted_at` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `leave_cov_grant_cov_fk` (`leave_request_coverage_id`),
+  KEY `leave_coverage_access_grants_cover_user_id_foreign` (`cover_user_id`),
+  KEY `leave_coverage_access_grants_role_id_foreign` (`role_id`),
+  KEY `leave_coverage_access_grants_department_id_foreign` (`department_id`),
+  CONSTRAINT `leave_cov_grant_cov_fk` FOREIGN KEY (`leave_request_coverage_id`) REFERENCES `leave_request_coverages` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_cover_user_id_foreign` FOREIGN KEY (`cover_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `leave_coverage_access_grants` (add only if missing)
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'leave_request_coverage_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'cover_user_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'role_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'was_preexisting', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'granted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'revoked_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_coverage_access_grants', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `leave_coverage_access_grants` (add only if missing)
+CALL `tich_ensure_index`('leave_coverage_access_grants', 'leave_coverage_access_grants_cover_user_id_foreign', '`cover_user_id`');
+CALL `tich_ensure_index`('leave_coverage_access_grants', 'leave_coverage_access_grants_department_id_foreign', '`department_id`');
+CALL `tich_ensure_index`('leave_coverage_access_grants', 'leave_coverage_access_grants_role_id_foreign', '`role_id`');
+CALL `tich_ensure_index`('leave_coverage_access_grants', 'leave_cov_grant_cov_fk', '`leave_request_coverage_id`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `leave_requests`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `leave_requests` (
@@ -4959,9 +5166,14 @@ CREATE TABLE IF NOT EXISTS `leave_requests` (
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `days_requested` int(10) unsigned NOT NULL,
+  `sick_full_pay_days` smallint(5) unsigned DEFAULT NULL,
+  `sick_half_pay_days` smallint(5) unsigned DEFAULT NULL,
   `reason` text NOT NULL,
+  `family_relation` varchar(30) DEFAULT NULL,
   `is_emergency` tinyint(4) NOT NULL DEFAULT 0,
   `medical_certificate_path` varchar(500) DEFAULT NULL,
+  `supporting_document_path` varchar(500) DEFAULT NULL,
+  `supporting_document_name` varchar(255) DEFAULT NULL,
   `hod_approval_status` varchar(50) NOT NULL DEFAULT 'pending',
   `hod_approved_by` bigint(20) unsigned DEFAULT NULL,
   `hod_approved_at` datetime DEFAULT NULL,
@@ -4974,6 +5186,9 @@ CREATE TABLE IF NOT EXISTS `leave_requests` (
   `return_date` date DEFAULT NULL,
   `is_completed` tinyint(4) NOT NULL DEFAULT 0,
   `handover_notes` text DEFAULT NULL,
+  `contact_mobile` varchar(40) DEFAULT NULL,
+  `contact_email` varchar(191) DEFAULT NULL,
+  `contact_postal_address` varchar(255) DEFAULT NULL,
   `hr_review_notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
@@ -5000,9 +5215,14 @@ CALL `tich_ensure_column`('leave_requests', 'leave_type_id', 'bigint(20) unsigne
 CALL `tich_ensure_column`('leave_requests', 'start_date', 'date NOT NULL');
 CALL `tich_ensure_column`('leave_requests', 'end_date', 'date NOT NULL');
 CALL `tich_ensure_column`('leave_requests', 'days_requested', 'int(10) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_requests', 'sick_full_pay_days', 'smallint(5) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'sick_half_pay_days', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'reason', 'text NOT NULL');
+CALL `tich_ensure_column`('leave_requests', 'family_relation', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'is_emergency', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('leave_requests', 'medical_certificate_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'supporting_document_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'supporting_document_name', 'varchar(255) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'hod_approval_status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending\\\'\'');
 CALL `tich_ensure_column`('leave_requests', 'hod_approved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'hod_approved_at', 'datetime NULL DEFAULT NULL');
@@ -5015,6 +5235,9 @@ CALL `tich_ensure_column`('leave_requests', 'cancellation_reason', 'text NULL DE
 CALL `tich_ensure_column`('leave_requests', 'return_date', 'date NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'is_completed', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('leave_requests', 'handover_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'contact_mobile', 'varchar(40) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'contact_email', 'varchar(191) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_requests', 'contact_postal_address', 'varchar(255) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'hr_review_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_requests', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('leave_requests', 'updated_at', 'datetime NULL DEFAULT NULL');
@@ -5028,6 +5251,87 @@ CALL `tich_ensure_index`('leave_requests', 'leave_requests_overall_status_create
 CALL `tich_ensure_index`('leave_requests', 'leave_requests_overall_status_index', '`overall_status`');
 CALL `tich_ensure_index`('leave_requests', 'leave_requests_staff_id_index', '`staff_id`');
 CALL `tich_ensure_index`('leave_requests', 'leave_requests_staff_overall_status_index', '`staff_id`, `overall_status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `leave_request_coverages`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `leave_request_coverages` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `cover_staff_id` bigint(20) unsigned NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'accepted',
+  `notified_at` timestamp NULL DEFAULT NULL,
+  `access_granted_at` timestamp NULL DEFAULT NULL,
+  `access_revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `leave_cov_req_dept_unique` (`leave_request_id`,`department_id`),
+  KEY `leave_request_coverages_department_id_foreign` (`department_id`),
+  KEY `leave_request_coverages_cover_staff_id_foreign` (`cover_staff_id`),
+  CONSTRAINT `leave_request_coverages_cover_staff_id_foreign` FOREIGN KEY (`cover_staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `leave_request_coverages_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_request_coverages_leave_request_id_foreign` FOREIGN KEY (`leave_request_id`) REFERENCES `leave_requests` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `leave_request_coverages` (add only if missing)
+CALL `tich_ensure_column`('leave_request_coverages', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('leave_request_coverages', 'leave_request_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'department_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'cover_staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'accepted\\\'\'');
+CALL `tich_ensure_column`('leave_request_coverages', 'notified_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'access_granted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'access_revoked_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `leave_request_coverages` (add only if missing)
+CALL `tich_ensure_unique`('leave_request_coverages', 'leave_cov_req_dept_unique', '`leave_request_id`, `department_id`');
+CALL `tich_ensure_index`('leave_request_coverages', 'leave_request_coverages_cover_staff_id_foreign', '`cover_staff_id`');
+CALL `tich_ensure_index`('leave_request_coverages', 'leave_request_coverages_department_id_foreign', '`department_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `leave_sick_pay_adjustments`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `leave_sick_pay_adjustments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `year` smallint(5) unsigned NOT NULL,
+  `month` tinyint(3) unsigned NOT NULL,
+  `half_pay_days` smallint(5) unsigned NOT NULL,
+  `daily_rate` decimal(12,2) DEFAULT NULL,
+  `deduction_amount` decimal(12,2) DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `applied_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `leave_sick_pay_unique` (`leave_request_id`,`year`,`month`),
+  KEY `leave_sick_pay_adjustments_staff_id_foreign` (`staff_id`),
+  CONSTRAINT `leave_sick_pay_adjustments_leave_request_id_foreign` FOREIGN KEY (`leave_request_id`) REFERENCES `leave_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_sick_pay_adjustments_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `leave_sick_pay_adjustments` (add only if missing)
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'leave_request_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'year', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'month', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'half_pay_days', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'daily_rate', 'decimal(12,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'deduction_amount', 'decimal(12,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'applied_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_sick_pay_adjustments', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `leave_sick_pay_adjustments` (add only if missing)
+CALL `tich_ensure_index`('leave_sick_pay_adjustments', 'leave_sick_pay_adjustments_staff_id_foreign', '`staff_id`');
+CALL `tich_ensure_unique`('leave_sick_pay_adjustments', 'leave_sick_pay_unique', '`leave_request_id`, `year`, `month`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `leave_types`
@@ -5115,6 +5419,9 @@ CREATE TABLE IF NOT EXISTS `lesson_plans` (
   `hod_id` bigint(20) unsigned DEFAULT NULL,
   `hod_action_at` datetime DEFAULT NULL,
   `registrar_visible` tinyint(4) NOT NULL DEFAULT 0,
+  `qa_acknowledged_by` bigint(20) unsigned DEFAULT NULL,
+  `qa_acknowledged_at` datetime DEFAULT NULL,
+  `qa_comments` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -5123,8 +5430,10 @@ CREATE TABLE IF NOT EXISTS `lesson_plans` (
   KEY `lesson_plans_hod_id_foreign` (`hod_id`),
   KEY `lesson_plans_status_index` (`status`),
   KEY `lesson_plans_allocation_status_date_index` (`unit_allocation_id`,`status`,`planned_date`),
+  KEY `lesson_plans_qa_acknowledged_by_foreign` (`qa_acknowledged_by`),
   CONSTRAINT `lesson_plans_hod_id_foreign` FOREIGN KEY (`hod_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `lesson_plans_prepared_by_foreign` FOREIGN KEY (`prepared_by`) REFERENCES `staff` (`id`),
+  CONSTRAINT `lesson_plans_qa_acknowledged_by_foreign` FOREIGN KEY (`qa_acknowledged_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `lesson_plans_unit_allocation_id_foreign` FOREIGN KEY (`unit_allocation_id`) REFERENCES `unit_allocations` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -5152,6 +5461,9 @@ CALL `tich_ensure_column`('lesson_plans', 'hod_comments', 'text NULL DEFAULT NUL
 CALL `tich_ensure_column`('lesson_plans', 'hod_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('lesson_plans', 'hod_action_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('lesson_plans', 'registrar_visible', 'tinyint(4) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('lesson_plans', 'qa_acknowledged_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('lesson_plans', 'qa_acknowledged_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('lesson_plans', 'qa_comments', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('lesson_plans', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('lesson_plans', 'updated_at', 'datetime NULL DEFAULT NULL');
 
@@ -5160,6 +5472,7 @@ CALL `tich_ensure_index`('lesson_plans', 'lesson_plans_allocation_status_date_in
 CALL `tich_ensure_index`('lesson_plans', 'lesson_plans_hod_id_foreign', '`hod_id`');
 CALL `tich_ensure_unique`('lesson_plans', 'lesson_plans_plan_number_unique', '`plan_number`');
 CALL `tich_ensure_index`('lesson_plans', 'lesson_plans_prepared_by_foreign', '`prepared_by`');
+CALL `tich_ensure_index`('lesson_plans', 'lesson_plans_qa_acknowledged_by_foreign', '`qa_acknowledged_by`');
 CALL `tich_ensure_index`('lesson_plans', 'lesson_plans_status_index', '`status`');
 
 -- -----------------------------------------------------------------------------
@@ -5327,6 +5640,7 @@ CREATE TABLE IF NOT EXISTS `me_plan_outputs` (
   `costable_item` varchar(500) DEFAULT NULL,
   `planned` decimal(14,2) NOT NULL DEFAULT 0.00,
   `planned_unit` varchar(50) DEFAULT NULL,
+  `quarter` tinyint(3) unsigned DEFAULT NULL,
   `display_order` int(11) NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
@@ -5342,6 +5656,7 @@ CALL `tich_ensure_column`('me_plan_outputs', 'activity', 'text NOT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'costable_item', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'planned', 'decimal(14,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('me_plan_outputs', 'planned_unit', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_plan_outputs', 'quarter', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('me_plan_outputs', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('me_plan_outputs', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
@@ -6297,7 +6612,7 @@ CREATE TABLE IF NOT EXISTS `partnership_requests` (
   `organization_name` varchar(300) DEFAULT NULL,
   `organisation_details` text DEFAULT NULL,
   `individual_details` text DEFAULT NULL,
-  `organization_type` varchar(50) DEFAULT NULL,
+  `organization_type` varchar(120) DEFAULT NULL,
   `contact_person` varchar(200) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `alternative_email` varchar(255) DEFAULT NULL,
@@ -6337,7 +6652,7 @@ CALL `tich_ensure_column`('partnership_requests', 'last_name', 'varchar(120) NUL
 CALL `tich_ensure_column`('partnership_requests', 'organization_name', 'varchar(300) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'organisation_details', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'individual_details', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('partnership_requests', 'organization_type', 'varchar(120) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'contact_person', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'email', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('partnership_requests', 'alternative_email', 'varchar(255) NULL DEFAULT NULL');
@@ -7858,64 +8173,6 @@ CALL `tich_ensure_index`('qa_compliance_scores', 'qa_compliance_scores_departmen
 CALL `tich_ensure_unique`('qa_compliance_scores', 'qa_compliance_scores_qa_plan_id_department_id_unique', '`qa_plan_id`, `department_id`');
 
 -- -----------------------------------------------------------------------------
--- Table: `qa_corrective_actions`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `qa_corrective_actions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `qa_plan_id` bigint(20) unsigned NOT NULL,
-  `department_id` bigint(20) unsigned NOT NULL,
-  `checklist_item_id` bigint(20) unsigned DEFAULT NULL,
-  `flagged_reason` text NOT NULL,
-  `compliance_score_at_flag` decimal(5,2) DEFAULT NULL,
-  `resolution_deadline` date NOT NULL,
-  `resolution_plan` text DEFAULT NULL,
-  `responsible_officer_id` bigint(20) unsigned DEFAULT NULL,
-  `status` varchar(50) NOT NULL DEFAULT 'open',
-  `resolved_at` datetime DEFAULT NULL,
-  `resolved_by` bigint(20) unsigned DEFAULT NULL,
-  `resolution_notes` text DEFAULT NULL,
-  `is_module_lock_active` tinyint(4) NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `qa_corrective_actions_qa_plan_id_foreign` (`qa_plan_id`),
-  KEY `qa_corrective_actions_department_id_foreign` (`department_id`),
-  KEY `qa_corrective_actions_checklist_item_id_foreign` (`checklist_item_id`),
-  KEY `qa_corrective_actions_responsible_officer_id_foreign` (`responsible_officer_id`),
-  KEY `qa_corrective_actions_resolved_by_foreign` (`resolved_by`),
-  CONSTRAINT `qa_corrective_actions_checklist_item_id_foreign` FOREIGN KEY (`checklist_item_id`) REFERENCES `qa_audit_checklists` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `qa_corrective_actions_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
-  CONSTRAINT `qa_corrective_actions_qa_plan_id_foreign` FOREIGN KEY (`qa_plan_id`) REFERENCES `qa_plans` (`id`),
-  CONSTRAINT `qa_corrective_actions_resolved_by_foreign` FOREIGN KEY (`resolved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `qa_corrective_actions_responsible_officer_id_foreign` FOREIGN KEY (`responsible_officer_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `qa_corrective_actions` (add only if missing)
-CALL `tich_ensure_column`('qa_corrective_actions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('qa_corrective_actions', 'qa_plan_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'department_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'checklist_item_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'flagged_reason', 'text NOT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'compliance_score_at_flag', 'decimal(5,2) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'resolution_deadline', 'date NOT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'resolution_plan', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'responsible_officer_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'open\\\'\'');
-CALL `tich_ensure_column`('qa_corrective_actions', 'resolved_at', 'datetime NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'resolved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'resolution_notes', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qa_corrective_actions', 'is_module_lock_active', 'tinyint(4) NOT NULL DEFAULT \'0\'');
-CALL `tich_ensure_column`('qa_corrective_actions', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
-CALL `tich_ensure_column`('qa_corrective_actions', 'updated_at', 'datetime NULL DEFAULT NULL');
-
--- Indexes for `qa_corrective_actions` (add only if missing)
-CALL `tich_ensure_index`('qa_corrective_actions', 'qa_corrective_actions_checklist_item_id_foreign', '`checklist_item_id`');
-CALL `tich_ensure_index`('qa_corrective_actions', 'qa_corrective_actions_department_id_foreign', '`department_id`');
-CALL `tich_ensure_index`('qa_corrective_actions', 'qa_corrective_actions_qa_plan_id_foreign', '`qa_plan_id`');
-CALL `tich_ensure_index`('qa_corrective_actions', 'qa_corrective_actions_resolved_by_foreign', '`resolved_by`');
-CALL `tich_ensure_index`('qa_corrective_actions', 'qa_corrective_actions_responsible_officer_id_foreign', '`responsible_officer_id`');
-
--- -----------------------------------------------------------------------------
 -- Table: `qa_department_submissions`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `qa_department_submissions` (
@@ -8167,120 +8424,6 @@ CALL `tich_ensure_column`('qa_training_event_registrations', 'updated_at', 'time
 -- Indexes for `qa_training_event_registrations` (add only if missing)
 CALL `tich_ensure_index`('qa_training_event_registrations', 'qa_training_event_registrations_created_by_foreign', '`created_by`');
 CALL `tich_ensure_index`('qa_training_event_registrations', 'qa_training_event_registrations_status_start_at_index', '`status`, `start_at`');
-
--- -----------------------------------------------------------------------------
--- Table: `qca_flags`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `qca_flags` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `flag_number` varchar(50) NOT NULL,
-  `category` varchar(50) NOT NULL,
-  `severity` varchar(20) NOT NULL,
-  `status` varchar(30) NOT NULL DEFAULT 'open',
-  `description` text NOT NULL,
-  `assigned_to` bigint(20) unsigned DEFAULT NULL,
-  `raised_by` bigint(20) unsigned NOT NULL,
-  `target_entity_type` varchar(50) DEFAULT NULL,
-  `target_entity_id` bigint(20) unsigned DEFAULT NULL,
-  `resolution_description` text DEFAULT NULL,
-  `root_cause` text DEFAULT NULL,
-  `evidence_of_correction` text DEFAULT NULL,
-  `resolution_deadline` date DEFAULT NULL,
-  `resolved_at` datetime DEFAULT NULL,
-  `resolved_by` bigint(20) unsigned DEFAULT NULL,
-  `resolution_notes` text DEFAULT NULL,
-  `ceo_override_reason` text DEFAULT NULL,
-  `ceo_overridden_by` bigint(20) unsigned DEFAULT NULL,
-  `ceo_overridden_at` datetime DEFAULT NULL,
-  `downstream_locks` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`downstream_locks`)),
-  `source_module` varchar(50) DEFAULT NULL,
-  `source_entity_id` bigint(20) unsigned DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `qca_flags_flag_number_unique` (`flag_number`),
-  KEY `qca_flags_raised_by_foreign` (`raised_by`),
-  KEY `qca_flags_resolved_by_foreign` (`resolved_by`),
-  KEY `qca_flags_ceo_overridden_by_foreign` (`ceo_overridden_by`),
-  KEY `qca_flags_category_severity_status_index` (`category`,`severity`,`status`),
-  KEY `qca_flags_assigned_to_index` (`assigned_to`),
-  KEY `qca_flags_target_entity_type_target_entity_id_index` (`target_entity_type`,`target_entity_id`),
-  KEY `qca_flags_created_at_index` (`created_at`),
-  CONSTRAINT `qca_flags_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `qca_flags_ceo_overridden_by_foreign` FOREIGN KEY (`ceo_overridden_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `qca_flags_raised_by_foreign` FOREIGN KEY (`raised_by`) REFERENCES `staff` (`id`),
-  CONSTRAINT `qca_flags_resolved_by_foreign` FOREIGN KEY (`resolved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `qca_flags` (add only if missing)
-CALL `tich_ensure_column`('qca_flags', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('qca_flags', 'flag_number', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('qca_flags', 'category', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('qca_flags', 'severity', 'varchar(20) NOT NULL');
-CALL `tich_ensure_column`('qca_flags', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'open\\\'\'');
-CALL `tich_ensure_column`('qca_flags', 'description', 'text NOT NULL');
-CALL `tich_ensure_column`('qca_flags', 'assigned_to', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'raised_by', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qca_flags', 'target_entity_type', 'varchar(50) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'target_entity_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'resolution_description', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'root_cause', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'evidence_of_correction', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'resolution_deadline', 'date NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'resolved_at', 'datetime NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'resolved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'resolution_notes', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'ceo_override_reason', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'ceo_overridden_by', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'ceo_overridden_at', 'datetime NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'downstream_locks', 'longtext NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'source_module', 'varchar(50) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'source_entity_id', 'bigint(20) unsigned NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'created_at', 'timestamp NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_flags', 'updated_at', 'timestamp NULL DEFAULT NULL');
-
--- Indexes for `qca_flags` (add only if missing)
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_assigned_to_index', '`assigned_to`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_category_severity_status_index', '`category`, `severity`, `status`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_ceo_overridden_by_foreign', '`ceo_overridden_by`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_created_at_index', '`created_at`');
-CALL `tich_ensure_unique`('qca_flags', 'qca_flags_flag_number_unique', '`flag_number`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_raised_by_foreign', '`raised_by`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_resolved_by_foreign', '`resolved_by`');
-CALL `tich_ensure_index`('qca_flags', 'qca_flags_target_entity_type_target_entity_id_index', '`target_entity_type`, `target_entity_id`');
-
--- -----------------------------------------------------------------------------
--- Table: `qca_milestones`
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `qca_milestones` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `qca_flag_id` bigint(20) unsigned NOT NULL,
-  `milestone_type` varchar(50) NOT NULL,
-  `description` text NOT NULL,
-  `recorded_by` bigint(20) unsigned NOT NULL,
-  `evidence` text DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `qca_milestones_recorded_by_foreign` (`recorded_by`),
-  KEY `qca_milestones_qca_flag_id_created_at_index` (`qca_flag_id`,`created_at`),
-  CONSTRAINT `qca_milestones_qca_flag_id_foreign` FOREIGN KEY (`qca_flag_id`) REFERENCES `qca_flags` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `qca_milestones_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `staff` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Columns for `qca_milestones` (add only if missing)
-CALL `tich_ensure_column`('qca_milestones', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('qca_milestones', 'qca_flag_id', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'milestone_type', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'description', 'text NOT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'recorded_by', 'bigint(20) unsigned NOT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'evidence', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'created_at', 'timestamp NULL DEFAULT NULL');
-CALL `tich_ensure_column`('qca_milestones', 'updated_at', 'timestamp NULL DEFAULT NULL');
-
--- Indexes for `qca_milestones` (add only if missing)
-CALL `tich_ensure_index`('qca_milestones', 'qca_milestones_qca_flag_id_created_at_index', '`qca_flag_id`, `created_at`');
-CALL `tich_ensure_index`('qca_milestones', 'qca_milestones_recorded_by_foreign', '`recorded_by`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `receipts`
@@ -9721,6 +9864,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `pension_scheme_id` bigint(20) unsigned DEFAULT NULL,
   `employment_status` varchar(50) NOT NULL DEFAULT 'active',
   `exit_date` date DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL,
   `exit_reason` varchar(500) DEFAULT NULL,
   `user_id` bigint(20) unsigned DEFAULT NULL,
   `onboarding_token` varchar(64) DEFAULT NULL,
@@ -9733,6 +9877,8 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `created_by` bigint(20) unsigned DEFAULT NULL,
   `archived_by` bigint(20) unsigned DEFAULT NULL,
+  `archive_reason` text DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `staff_employee_number_unique` (`employee_number`),
   UNIQUE KEY `staff_organisation_email_unique` (`organisation_email`),
@@ -9747,13 +9893,13 @@ CREATE TABLE IF NOT EXISTS `staff` (
   KEY `staff_line_manager_id_foreign` (`line_manager_id`),
   KEY `staff_department_employment_status_index` (`department_id`,`employment_status`),
   KEY `staff_archived_by_foreign` (`archived_by`),
+  CONSTRAINT `staff_archived_by_foreign` FOREIGN KEY (`archived_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_bank_id_foreign` FOREIGN KEY (`bank_id`) REFERENCES `staff_bank_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_campus_id_foreign` FOREIGN KEY (`campus_id`) REFERENCES `campuses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
   CONSTRAINT `staff_line_manager_id_foreign` FOREIGN KEY (`line_manager_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_pension_scheme_id_foreign` FOREIGN KEY (`pension_scheme_id`) REFERENCES `pension_schemes` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `staff_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `staff_archived_by_foreign` FOREIGN KEY (`archived_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+  CONSTRAINT `staff_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `staff` (add only if missing)
@@ -9806,6 +9952,7 @@ CALL `tich_ensure_column`('staff', 'helb_number', 'varchar(50) NULL DEFAULT NULL
 CALL `tich_ensure_column`('staff', 'pension_scheme_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'employment_status', 'varchar(50) NOT NULL DEFAULT \'\\\'active\\\'\'');
 CALL `tich_ensure_column`('staff', 'exit_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff', 'archived_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'exit_reason', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'onboarding_token', 'varchar(64) NULL DEFAULT NULL');
@@ -9818,8 +9965,11 @@ CALL `tich_ensure_column`('staff', 'created_at', 'datetime NOT NULL DEFAULT curr
 CALL `tich_ensure_column`('staff', 'updated_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'archived_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff', 'archive_reason', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff', 'deleted_at', 'timestamp NULL DEFAULT NULL');
 
 -- Indexes for `staff` (add only if missing)
+CALL `tich_ensure_index`('staff', 'staff_archived_by_foreign', '`archived_by`');
 CALL `tich_ensure_index`('staff', 'staff_bank_id_foreign', '`bank_id`');
 CALL `tich_ensure_index`('staff', 'staff_campus_id_foreign', '`campus_id`');
 CALL `tich_ensure_index`('staff', 'staff_department_employment_status_index', '`department_id`, `employment_status`');
@@ -9832,7 +9982,6 @@ CALL `tich_ensure_unique`('staff', 'staff_onboarding_token_unique', '`onboarding
 CALL `tich_ensure_unique`('staff', 'staff_organisation_email_unique', '`organisation_email`');
 CALL `tich_ensure_index`('staff', 'staff_pension_scheme_id_foreign', '`pension_scheme_id`');
 CALL `tich_ensure_index`('staff', 'staff_user_id_foreign', '`user_id`');
-CALL `tich_ensure_index`('staff', 'staff_archived_by_foreign', '`archived_by`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `staff_allowances`
@@ -10622,6 +10771,126 @@ CALL `tich_ensure_column`('staff_status_history', 'created_at', 'datetime NOT NU
 CALL `tich_ensure_index`('staff_status_history', 'staff_status_history_approved_by_foreign', '`approved_by`');
 CALL `tich_ensure_index`('staff_status_history', 'staff_status_history_effective_date_index', '`effective_date`');
 CALL `tich_ensure_index`('staff_status_history', 'staff_status_history_staff_id_change_type_index', '`staff_id`, `change_type`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `staff_weekly_time_logs`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `log_code` varchar(40) NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `log_year` smallint(5) unsigned NOT NULL,
+  `log_month` tinyint(3) unsigned NOT NULL,
+  `week_number` tinyint(3) unsigned NOT NULL,
+  `week_ref` varchar(30) NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `total_hours` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `total_units` decimal(10,2) DEFAULT NULL,
+  `employee_signed_name` varchar(200) DEFAULT NULL,
+  `employee_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `manager_signed_name` varchar(200) DEFAULT NULL,
+  `manager_signature` varchar(300) DEFAULT NULL,
+  `manager_signed_at` timestamp NULL DEFAULT NULL,
+  `manager_self_endorsed` tinyint(1) NOT NULL DEFAULT 0,
+  `hr_reviewed_by_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `hr_reviewed_at` timestamp NULL DEFAULT NULL,
+  `hr_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `swtl_staff_week_unique` (`staff_id`,`log_year`,`log_month`,`week_number`),
+  UNIQUE KEY `staff_weekly_time_logs_log_code_unique` (`log_code`),
+  KEY `swtl_status_submitted_idx` (`status`,`employee_signed_at`),
+  KEY `swtl_period_idx` (`log_year`,`log_month`,`week_number`),
+  KEY `staff_weekly_time_logs_manager_staff_id_foreign` (`manager_staff_id`),
+  KEY `staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign` (`hr_reviewed_by_staff_id`),
+  CONSTRAINT `staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign` FOREIGN KEY (`hr_reviewed_by_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_weekly_time_logs_manager_staff_id_foreign` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `staff_weekly_time_logs_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `staff_weekly_time_logs` (add only if missing)
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_code', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_year', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'log_month', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'week_number', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'week_ref', 'varchar(30) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'period_start', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'period_end', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'total_hours', 'decimal(8,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'total_units', 'decimal(10,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'employee_signed_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'employee_signed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signed_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signature', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_signed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'manager_self_endorsed', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_reviewed_by_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'hr_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_logs', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `staff_weekly_time_logs` (add only if missing)
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`');
+CALL `tich_ensure_unique`('staff_weekly_time_logs', 'staff_weekly_time_logs_log_code_unique', '`log_code`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'staff_weekly_time_logs_manager_staff_id_foreign', '`manager_staff_id`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'swtl_period_idx', '`log_year`, `log_month`, `week_number`');
+CALL `tich_ensure_unique`('staff_weekly_time_logs', 'swtl_staff_week_unique', '`staff_id`, `log_year`, `log_month`, `week_number`');
+CALL `tich_ensure_index`('staff_weekly_time_logs', 'swtl_status_submitted_idx', '`status`, `employee_signed_at`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `staff_weekly_time_log_days`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `weekly_time_log_id` bigint(20) unsigned NOT NULL,
+  `work_date` date NOT NULL,
+  `day_label` varchar(10) NOT NULL,
+  `in_month` tinyint(1) NOT NULL DEFAULT 1,
+  `time_in` time DEFAULT NULL,
+  `time_out` time DEFAULT NULL,
+  `tasks_accomplished` text DEFAULT NULL,
+  `initials` varchar(20) DEFAULT NULL,
+  `department_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`department_ids`)),
+  `approval_sign` varchar(120) DEFAULT NULL,
+  `total_hours` decimal(6,2) DEFAULT NULL,
+  `total_units` decimal(8,2) DEFAULT NULL,
+  `display_order` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `swtld_log_date_unique` (`weekly_time_log_id`,`work_date`),
+  CONSTRAINT `swtld_log_fk` FOREIGN KEY (`weekly_time_log_id`) REFERENCES `staff_weekly_time_logs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `staff_weekly_time_log_days` (add only if missing)
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'weekly_time_log_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'work_date', 'date NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'day_label', 'varchar(10) NOT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'in_month', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'time_in', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'time_out', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'tasks_accomplished', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'initials', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'department_ids', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'approval_sign', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'total_hours', 'decimal(6,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'total_units', 'decimal(8,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'display_order', 'tinyint(3) unsigned NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_weekly_time_log_days', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `staff_weekly_time_log_days` (add only if missing)
+CALL `tich_ensure_unique`('staff_weekly_time_log_days', 'swtld_log_date_unique', '`weekly_time_log_id`, `work_date`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `statutory_deductions`
@@ -12035,6 +12304,16 @@ CALL `tich_ensure_fk`('about_content_blocks', 'about_content_blocks_updated_by_f
 CALL `tich_ensure_fk`('academic_programs', 'academic_programs_approved_by_ceo_id_foreign', '`approved_by_ceo_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('academic_programs', 'academic_programs_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `academic_workplans`
+CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_prepared_by_staff_id_foreign', '`prepared_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_qa_staff_id_foreign', '`qa_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_registrar_staff_id_foreign', '`registrar_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `academic_workplan_activities`
+CALL `tich_ensure_fk`('academic_workplan_activities', 'academic_workplan_activities_workplan_id_foreign', '`workplan_id`', 'academic_workplans', '`id`', 'RESTRICT', 'CASCADE');
+
 -- Foreign keys for `accounts_payable`
 CALL `tich_ensure_fk`('accounts_payable', 'accounts_payable_finance_approved_by_foreign', '`finance_approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('accounts_payable', 'accounts_payable_purchase_order_id_foreign', '`purchase_order_id`', 'purchase_orders', '`id`', 'RESTRICT', 'SET NULL');
@@ -12404,6 +12683,11 @@ CALL `tich_ensure_fk`('invoices', 'invoices_waived_by_foreign', '`waived_by`', '
 -- Foreign keys for `invoice_items`
 CALL `tich_ensure_fk`('invoice_items', 'invoice_items_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `iqa_assessments`
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_created_by_user_id_foreign', '`created_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_published_by_user_id_foreign', '`published_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('iqa_assessments', 'iqa_assessments_updated_by_user_id_foreign', '`updated_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
 -- Foreign keys for `job_vacancies`
 CALL `tich_ensure_fk`('job_vacancies', 'job_vacancies_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('job_vacancies', 'job_vacancies_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
@@ -12417,15 +12701,31 @@ CALL `tich_ensure_fk`('leave_carry_forward_requests', 'leave_carry_forward_reque
 CALL `tich_ensure_fk`('leave_carry_forward_requests', 'leave_carry_forward_requests_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('leave_carry_forward_requests', 'leave_carry_forward_requests_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
 
+-- Foreign keys for `leave_coverage_access_grants`
+CALL `tich_ensure_fk`('leave_coverage_access_grants', 'leave_coverage_access_grants_cover_user_id_foreign', '`cover_user_id`', 'users', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('leave_coverage_access_grants', 'leave_coverage_access_grants_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('leave_coverage_access_grants', 'leave_coverage_access_grants_role_id_foreign', '`role_id`', 'roles', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('leave_coverage_access_grants', 'leave_cov_grant_cov_fk', '`leave_request_coverage_id`', 'leave_request_coverages', '`id`', 'RESTRICT', 'CASCADE');
+
 -- Foreign keys for `leave_requests`
 CALL `tich_ensure_fk`('leave_requests', 'leave_requests_hod_approved_by_foreign', '`hod_approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('leave_requests', 'leave_requests_hr_approved_by_foreign', '`hr_approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('leave_requests', 'leave_requests_leave_type_id_foreign', '`leave_type_id`', 'leave_types', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('leave_requests', 'leave_requests_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `leave_request_coverages`
+CALL `tich_ensure_fk`('leave_request_coverages', 'leave_request_coverages_cover_staff_id_foreign', '`cover_staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('leave_request_coverages', 'leave_request_coverages_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('leave_request_coverages', 'leave_request_coverages_leave_request_id_foreign', '`leave_request_id`', 'leave_requests', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `leave_sick_pay_adjustments`
+CALL `tich_ensure_fk`('leave_sick_pay_adjustments', 'leave_sick_pay_adjustments_leave_request_id_foreign', '`leave_request_id`', 'leave_requests', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('leave_sick_pay_adjustments', 'leave_sick_pay_adjustments_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+
 -- Foreign keys for `lesson_plans`
 CALL `tich_ensure_fk`('lesson_plans', 'lesson_plans_hod_id_foreign', '`hod_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('lesson_plans', 'lesson_plans_prepared_by_foreign', '`prepared_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('lesson_plans', 'lesson_plans_qa_acknowledged_by_foreign', '`qa_acknowledged_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('lesson_plans', 'lesson_plans_unit_allocation_id_foreign', '`unit_allocation_id`', 'unit_allocations', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `lesson_plan_approvals`
@@ -12659,13 +12959,6 @@ CALL `tich_ensure_fk`('qa_certification_reminders', 'qa_certification_reminders_
 CALL `tich_ensure_fk`('qa_compliance_scores', 'qa_compliance_scores_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('qa_compliance_scores', 'qa_compliance_scores_qa_plan_id_foreign', '`qa_plan_id`', 'qa_plans', '`id`', 'RESTRICT', 'RESTRICT');
 
--- Foreign keys for `qa_corrective_actions`
-CALL `tich_ensure_fk`('qa_corrective_actions', 'qa_corrective_actions_checklist_item_id_foreign', '`checklist_item_id`', 'qa_audit_checklists', '`id`', 'RESTRICT', 'SET NULL');
-CALL `tich_ensure_fk`('qa_corrective_actions', 'qa_corrective_actions_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
-CALL `tich_ensure_fk`('qa_corrective_actions', 'qa_corrective_actions_qa_plan_id_foreign', '`qa_plan_id`', 'qa_plans', '`id`', 'RESTRICT', 'RESTRICT');
-CALL `tich_ensure_fk`('qa_corrective_actions', 'qa_corrective_actions_resolved_by_foreign', '`resolved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
-CALL `tich_ensure_fk`('qa_corrective_actions', 'qa_corrective_actions_responsible_officer_id_foreign', '`responsible_officer_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
-
 -- Foreign keys for `qa_department_submissions`
 CALL `tich_ensure_fk`('qa_department_submissions', 'qa_department_submissions_checklist_item_id_foreign', '`checklist_item_id`', 'qa_audit_checklists', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('qa_department_submissions', 'qa_department_submissions_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
@@ -12690,16 +12983,6 @@ CALL `tich_ensure_fk`('qa_training_event_enrolments', 'qa_training_event_enrolme
 
 -- Foreign keys for `qa_training_event_registrations`
 CALL `tich_ensure_fk`('qa_training_event_registrations', 'qa_training_event_registrations_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
-
--- Foreign keys for `qca_flags`
-CALL `tich_ensure_fk`('qca_flags', 'qca_flags_assigned_to_foreign', '`assigned_to`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
-CALL `tich_ensure_fk`('qca_flags', 'qca_flags_ceo_overridden_by_foreign', '`ceo_overridden_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
-CALL `tich_ensure_fk`('qca_flags', 'qca_flags_raised_by_foreign', '`raised_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
-CALL `tich_ensure_fk`('qca_flags', 'qca_flags_resolved_by_foreign', '`resolved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
-
--- Foreign keys for `qca_milestones`
-CALL `tich_ensure_fk`('qca_milestones', 'qca_milestones_qca_flag_id_foreign', '`qca_flag_id`', 'qca_flags', '`id`', 'RESTRICT', 'CASCADE');
-CALL `tich_ensure_fk`('qca_milestones', 'qca_milestones_recorded_by_foreign', '`recorded_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `receipts`
 CALL `tich_ensure_fk`('receipts', 'receipts_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'RESTRICT');
@@ -12818,13 +13101,13 @@ CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_student_id
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `staff`
+CALL `tich_ensure_fk`('staff', 'staff_archived_by_foreign', '`archived_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_bank_id_foreign', '`bank_id`', 'staff_bank_accounts', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_campus_id_foreign', '`campus_id`', 'campuses', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('staff', 'staff_line_manager_id_foreign', '`line_manager_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_pension_scheme_id_foreign', '`pension_scheme_id`', 'pension_schemes', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_user_id_foreign', '`user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
-CALL `tich_ensure_fk`('staff', 'staff_archived_by_foreign', '`archived_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `staff_allowances`
 CALL `tich_ensure_fk`('staff_allowances', 'staff_allowances_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
@@ -12893,6 +13176,14 @@ CALL `tich_ensure_fk`('staff_qualifications', 'staff_qualifications_verified_by_
 -- Foreign keys for `staff_status_history`
 CALL `tich_ensure_fk`('staff_status_history', 'staff_status_history_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_status_history', 'staff_status_history_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `staff_weekly_time_logs`
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_manager_staff_id_foreign', '`manager_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('staff_weekly_time_logs', 'staff_weekly_time_logs_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `staff_weekly_time_log_days`
+CALL `tich_ensure_fk`('staff_weekly_time_log_days', 'swtld_log_fk', '`weekly_time_log_id`', 'staff_weekly_time_logs', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `statutory_deductions`
 CALL `tich_ensure_fk`('statutory_deductions', 'statutory_deductions_payroll_item_id_foreign', '`payroll_item_id`', 'payroll_items', '`id`', 'RESTRICT', 'RESTRICT');

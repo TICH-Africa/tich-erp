@@ -18,31 +18,17 @@
         <h2 class="tich-h3">Leave policy reference</h2>
         <p class="tich-text tich-mt-2 tich-text--secondary">Use this when reviewing the request below.</p>
         <div class="tich-grid tich-grid--2 tich-mt-4">
-            <div>
-                <strong>Annual Leave</strong>
-                <p class="tich-caption tich-mt-1">21 working days per year. Accrues monthly at 1.75 days/month. Counts working days only (Mon-Fri, excludes public holidays). Carry forward max 10 days.</p>
-            </div>
-            <div>
-                <strong>Sick Leave</strong>
-                <p class="tich-caption tich-mt-1">7 calendar days. Full salary. HR approval required. No carry forward.</p>
-            </div>
-            <div>
-                <strong>Maternity Leave</strong>
-                <p class="tich-caption tich-mt-1">90 calendar days. Includes weekends and public holidays. No carry forward.</p>
-            </div>
-            <div>
-                <strong>Paternity Leave</strong>
-                <p class="tich-caption tich-mt-1">14 calendar days. No carry forward.</p>
-            </div>
-            <div>
-                <strong>Adoption Leave</strong>
-                <p class="tich-caption tich-mt-1">30 calendar days. Includes weekends and public holidays. No carry forward.</p>
-            </div>
-            <div>
-                <strong>Compassionate Leave</strong>
-                <p class="tich-caption tich-mt-1">7 calendar days. No carry forward.</p>
-            </div>
+            @foreach (($catalogTypes ?? config('tich-leave.types', [])) as $code => $type)
+                @continue(($type['available'] ?? true) !== true)
+                <div>
+                    <strong>{{ $type['leave_name'] }}</strong>
+                    <p class="tich-caption tich-mt-1">{{ $type['description'] ?? '' }}</p>
+                </div>
+            @endforeach
         </div>
+        @if (! empty($catalogDef['description']))
+            <p class="tich-caption tich-mt-4"><strong>This request:</strong> {{ $catalogDef['description'] }}</p>
+        @endif
     </article>
 
     <div class="tich-mb-6">
@@ -143,6 +129,12 @@
                 <span class="tich-kv-grid__label">Leave type</span>
                 <span class="tich-kv-grid__value">{{ $leaveRequest->leaveType?->leave_name }}</span>
             </div>
+            @if ($leaveRequest->family_relation)
+                <div>
+                    <span class="tich-kv-grid__label">Family member</span>
+                    <span class="tich-kv-grid__value">{{ ucfirst($leaveRequest->family_relation) }}</span>
+                </div>
+            @endif
             <div>
                 <span class="tich-kv-grid__label">Start date</span>
                 <span class="tich-kv-grid__value">{{ $leaveRequest->start_date->format('d M Y') }}</span>
@@ -151,10 +143,61 @@
                 <span class="tich-kv-grid__label">End date</span>
                 <span class="tich-kv-grid__value">{{ $leaveRequest->end_date->format('d M Y') }}</span>
             </div>
+            @if ($leaveRequest->return_date)
+                <div>
+                    <span class="tich-kv-grid__label">Resume work on</span>
+                    <span class="tich-kv-grid__value">{{ $leaveRequest->return_date->format('d M Y') }}</span>
+                </div>
+            @endif
+            @if ($leaveRequest->contact_mobile || $leaveRequest->contact_email || $leaveRequest->contact_postal_address)
+                <div style="grid-column: 1 / -1;">
+                    <span class="tich-kv-grid__label">Contact while on leave</span>
+                    <p class="tich-kv-grid__value tich-kv-grid__value--block tich-mt-2">
+                        @if ($leaveRequest->contact_mobile) Mobile: {{ $leaveRequest->contact_mobile }}<br>@endif
+                        @if ($leaveRequest->contact_email) Email: {{ $leaveRequest->contact_email }}<br>@endif
+                        @if ($leaveRequest->contact_postal_address) Postal: {{ $leaveRequest->contact_postal_address }}@endif
+                    </p>
+                </div>
+            @endif
+            @if ($leaveRequest->sick_full_pay_days !== null || $leaveRequest->sick_half_pay_days !== null)
+                <div>
+                    <span class="tich-kv-grid__label">Sick pay split</span>
+                    <span class="tich-kv-grid__value">
+                        {{ (int) $leaveRequest->sick_full_pay_days }} full-pay /
+                        {{ (int) $leaveRequest->sick_half_pay_days }} half-pay day(s)
+                    </span>
+                </div>
+            @endif
+            @php
+                $docPath = $leaveRequest->supporting_document_path ?: $leaveRequest->medical_certificate_path;
+                $docName = $leaveRequest->supporting_document_name ?: 'Supporting document';
+            @endphp
+            @if ($docPath)
+                <div>
+                    <span class="tich-kv-grid__label">Document</span>
+                    <span class="tich-kv-grid__value">
+                        <a href="{{ route('hr.leave.document', $leaveRequest) }}" class="tich-link">{{ $docName }}</a>
+                    </span>
+                </div>
+            @endif
             <div style="grid-column: 1 / -1;">
                 <span class="tich-kv-grid__label">Reason</span>
                 <p class="tich-kv-grid__value tich-kv-grid__value--block tich-mt-2">{{ $leaveRequest->reason }}</p>
             </div>
+            @if ($leaveRequest->coverages->isNotEmpty())
+                <div style="grid-column: 1 / -1;">
+                    <span class="tich-kv-grid__label">Department takeover</span>
+                    <ul class="tich-mt-2" style="margin-bottom:0; padding-left:1.25rem;">
+                        @foreach ($leaveRequest->coverages as $coverage)
+                            <li>
+                                {{ $coverage->department?->dept_name ?? 'Department' }}:
+                                {{ $coverage->coverStaff?->fullName() ?? '—' }}
+                                <span class="tich-caption">({{ $coverage->status }})</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             @if ($leaveRequest->handover_notes)
                 <div style="grid-column: 1 / -1;">
                     <span class="tich-kv-grid__label">Handover notes</span>

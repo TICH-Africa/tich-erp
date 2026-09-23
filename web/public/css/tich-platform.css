@@ -7807,7 +7807,80 @@ a.tich-tabs__btn {
 /* ??? Leave portal UI ??????????????????????????????????????????????????? */
 
 .tich-modal__dialog--leave {
-    width: min(100%, 36rem);
+    width: min(100%, 44rem);
+    max-height: min(92vh, 56rem);
+}
+
+.tich-leave-app-form__letterhead {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--tich-border);
+    text-align: center;
+}
+
+.tich-leave-app-form__letterhead strong {
+    display: block;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.tich-leave-app-form__letterhead p {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: var(--tich-text-secondary);
+}
+
+.tich-leave-app-form__section {
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--tich-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface);
+}
+
+.tich-leave-app-form__section-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-text-secondary);
+}
+
+.tich-leave-app-form__readonly-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.tich-leave-app-form__remarks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 0.75rem 0 1rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--tich-green) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tich-green) 22%, var(--tich-border));
+}
+
+.tich-leave-app-form__metric {
+    margin: 0.2rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--tich-text);
+}
+
+.tich-leave-app-form__footnote {
+    margin: 0 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .tich-leave-app-form__readonly-grid,
+    .tich-leave-app-form__remarks {
+        grid-template-columns: 1fr;
+    }
 }
 
 .tich-leave-hero {

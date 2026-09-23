@@ -3,11 +3,11 @@
 @section('title', 'Leave Carry-Forward Requests')
 
 @section('hr-content')
-    <x-page-toolbar title="Leave Carry-Forward Requests" meta="Review employee requests to carry forward unused annual leave days">
+    <x-page-toolbar title="Leave Carry-Forward Requests" meta="Line manager approval required, then HR final decision (max 10 days)">
         <x-slot:actions>
             <form method="GET" style="display:inline-flex;gap:0.5rem;">
                 <select name="status" class="tich-input tich-input--compact" onchange="this.form.submit()">
-                    <option value="pending" @selected($filter === 'pending')>Pending</option>
+                    <option value="pending" @selected($filter === 'pending')>Awaiting HR</option>
                     <option value="approved" @selected($filter === 'approved')>Approved</option>
                     <option value="rejected" @selected($filter === 'rejected')>Rejected</option>
                     <option value="all" @selected($filter === 'all')>All</option>
@@ -22,9 +22,9 @@
                 <thead>
                     <tr>
                         <th>Employee</th>
-                        <th>Leave type</th>
                         <th>Period</th>
-                        <th>Days requested</th>
+                        <th>Days</th>
+                        <th>Line manager</th>
                         <th>Reason</th>
                         <th>Status</th>
                         <th>Submitted</th>
@@ -38,9 +38,14 @@
                                 <strong>{{ $cfr->staff->fullName() }}</strong>
                                 <p class="tich-caption">{{ $cfr->staff->employee_number }}</p>
                             </td>
-                            <td class="tich-caption">{{ $cfr->leaveType->leave_name }}</td>
                             <td>{{ $cfr->from_year }} &rarr; {{ $cfr->to_year }}</td>
                             <td><strong>{{ number_format($cfr->days_requested, 1) }}</strong></td>
+                            <td class="tich-caption">
+                                {{ ucfirst($cfr->line_manager_status ?? 'pending') }}
+                                @if ($cfr->lineManager)
+                                    <br>{{ $cfr->lineManager->fullName() }}
+                                @endif
+                            </td>
                             <td class="tich-caption" style="max-width:14rem;">{{ Str::limit($cfr->reason, 80) }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ match($cfr->status) {
@@ -51,7 +56,7 @@
                             </td>
                             <td class="tich-caption">{{ $cfr->created_at?->format('d M Y') }}</td>
                             <td>
-                                @if ($cfr->status === 'pending')
+                                @if ($cfr->awaitingHr())
                                     <div style="display:flex;gap:0.25rem;flex-wrap:wrap;">
                                         <form method="POST" action="{{ route('hr.leave.carry-forward.approve', $cfr) }}" style="display:inline;">
                                             @csrf

@@ -1715,20 +1715,128 @@ CREATE TABLE IF NOT EXISTS `academic_workplan_activities` (
   KEY `academic_workplan_activities_workplan_id_foreign` (`workplan_id`),
   CONSTRAINT `academic_workplan_activities_workplan_id_foreign` FOREIGN KEY (`workplan_id`) REFERENCES `academic_workplans` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 34. Staff archive + soft delete (HR archive)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `staff`
+    ADD COLUMN IF NOT EXISTS `archived_at` timestamp NULL DEFAULT NULL AFTER `exit_date`,
+    ADD COLUMN IF NOT EXISTS `archived_by` bigint(20) unsigned NULL DEFAULT NULL AFTER `archived_at`,
+    ADD COLUMN IF NOT EXISTS `archive_reason` text NULL DEFAULT NULL AFTER `archived_by`,
+    ADD COLUMN IF NOT EXISTS `deleted_at` timestamp NULL DEFAULT NULL AFTER `updated_at`;
+
+-- -----------------------------------------------------------------------------
+-- 35. Leave catalog overhaul (coverages, sick half-pay, carry-forward LM+HR)
+-- -----------------------------------------------------------------------------
+-- Prefer: php artisan migrate  (2026_09_23_140000_hardcode_leave_catalog_and_coverages)
+-- Catalog source of truth: web/config/tich-leave.php (LeaveCatalogService::ensureSynced).
+
+ALTER TABLE `leave_requests`
+    ADD COLUMN IF NOT EXISTS `family_relation` varchar(30) NULL DEFAULT NULL AFTER `reason`,
+    ADD COLUMN IF NOT EXISTS `supporting_document_path` varchar(500) NULL DEFAULT NULL AFTER `medical_certificate_path`,
+    ADD COLUMN IF NOT EXISTS `supporting_document_name` varchar(255) NULL DEFAULT NULL AFTER `supporting_document_path`,
+    ADD COLUMN IF NOT EXISTS `sick_full_pay_days` smallint(5) unsigned NULL DEFAULT NULL AFTER `days_requested`,
+    ADD COLUMN IF NOT EXISTS `sick_half_pay_days` smallint(5) unsigned NULL DEFAULT NULL AFTER `sick_full_pay_days`;
+
+CREATE TABLE IF NOT EXISTS `leave_request_coverages` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `cover_staff_id` bigint(20) unsigned NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'accepted',
+  `notified_at` timestamp NULL DEFAULT NULL,
+  `access_granted_at` timestamp NULL DEFAULT NULL,
+  `access_revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `leave_cov_req_dept_unique` (`leave_request_id`,`department_id`),
+  KEY `leave_request_coverages_department_id_foreign` (`department_id`),
+  KEY `leave_request_coverages_cover_staff_id_foreign` (`cover_staff_id`),
+  CONSTRAINT `leave_request_coverages_leave_request_id_foreign` FOREIGN KEY (`leave_request_id`) REFERENCES `leave_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_request_coverages_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_request_coverages_cover_staff_id_foreign` FOREIGN KEY (`cover_staff_id`) REFERENCES `staff` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `leave_coverage_access_grants` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_coverage_id` bigint(20) unsigned NOT NULL,
+  `cover_user_id` bigint(20) unsigned NOT NULL,
+  `role_id` bigint(20) unsigned NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `campus_id` bigint(20) unsigned NULL DEFAULT NULL,
+  `was_preexisting` tinyint(1) NOT NULL DEFAULT 0,
+  `granted_at` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `leave_cov_grant_cov_fk` (`leave_request_coverage_id`),
+  KEY `leave_coverage_access_grants_cover_user_id_foreign` (`cover_user_id`),
+  KEY `leave_coverage_access_grants_role_id_foreign` (`role_id`),
+  KEY `leave_coverage_access_grants_department_id_foreign` (`department_id`),
+  CONSTRAINT `leave_cov_grant_cov_fk` FOREIGN KEY (`leave_request_coverage_id`) REFERENCES `leave_request_coverages` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_cover_user_id_foreign` FOREIGN KEY (`cover_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_coverage_access_grants_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `leave_sick_pay_adjustments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `leave_request_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `year` smallint(5) unsigned NOT NULL,
+  `month` tinyint(3) unsigned NOT NULL,
+  `half_pay_days` smallint(5) unsigned NOT NULL,
+  `daily_rate` decimal(12,2) NULL DEFAULT NULL,
+  `deduction_amount` decimal(12,2) NULL DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `applied_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `leave_sick_pay_unique` (`leave_request_id`,`year`,`month`),
+  KEY `leave_sick_pay_adjustments_staff_id_foreign` (`staff_id`),
+  CONSTRAINT `leave_sick_pay_adjustments_leave_request_id_foreign` FOREIGN KEY (`leave_request_id`) REFERENCES `leave_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `leave_sick_pay_adjustments_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `leave_carry_forward_requests`
+    ADD COLUMN IF NOT EXISTS `line_manager_status` varchar(30) NOT NULL DEFAULT 'pending' AFTER `status`,
+    ADD COLUMN IF NOT EXISTS `line_manager_staff_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `line_manager_status`,
+    ADD COLUMN IF NOT EXISTS `line_manager_acted_at` timestamp NULL DEFAULT NULL AFTER `line_manager_staff_id`,
+    ADD COLUMN IF NOT EXISTS `line_manager_notes` text NULL DEFAULT NULL AFTER `line_manager_acted_at`,
+    ADD COLUMN IF NOT EXISTS `hr_status` varchar(30) NOT NULL DEFAULT 'pending' AFTER `line_manager_notes`;
+
+UPDATE `leave_types` SET `days_allowed_per_year`=5, `calculation_type`='working_days', `is_active`=1, `requires_certificate`=0, `requires_hod_approval`=0, `requires_hr_approval`=1, `description`='5 working days when mother, father, child, or spouse is sick.' WHERE `leave_code`='COMP';
+UPDATE `leave_types` SET `days_allowed_per_year`=14, `calculation_type`='working_days', `requires_medical_certificate`=1, `requires_certificate`=1, `requires_hod_approval`=0, `requires_hr_approval`=1, `description`='14 working days: first 7 full pay, next 7 half pay.' WHERE `leave_code`='SICK';
+UPDATE `leave_types` SET `days_allowed_per_year`=30, `calculation_type`='calendar_days', `requires_certificate`=1, `requires_hod_approval`=0, `requires_hr_approval`=1, `description`='30 calendar days (includes weekends and public holidays).' WHERE `leave_code`='ADOPT';
+INSERT INTO `leave_types` (`leave_code`, `leave_name`, `days_allowed_per_year`, `accrual_type`, `calculation_type`, `is_paid`, `requires_medical_certificate`, `requires_certificate`, `requires_hod_approval`, `requires_hr_approval`, `gender_restriction`, `min_service_months`, `carry_forward_days`, `notice_period_days`, `is_active`, `description`)
+SELECT 'BEREAVEMENT', 'Bereavement Leave', 5, 'none', 'working_days', 1, 0, 0, 0, 1, 'any', 0, 0, 0, 1, '5 working days when mother, father, child, or spouse passes away.'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `leave_types` WHERE `leave_code`='BEREAVEMENT');
+INSERT INTO `leave_types` (`leave_code`, `leave_name`, `days_allowed_per_year`, `accrual_type`, `calculation_type`, `is_paid`, `requires_medical_certificate`, `requires_certificate`, `requires_hod_approval`, `requires_hr_approval`, `gender_restriction`, `min_service_months`, `carry_forward_days`, `notice_period_days`, `is_active`, `description`)
+SELECT 'COMPOFF', 'Compensatory Leave', 0, 'none', 'working_days', 1, 0, 0, 0, 1, 'any', 0, 0, 0, 0, 'Unavailable — on hold.'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `leave_types` WHERE `leave_code`='COMPOFF');
+UPDATE `leave_types` SET `is_active`=0 WHERE `leave_code`='COMPOFF';
+
+-- -----------------------------------------------------------------------------
+-- 36. Leave application form contact fields (paper sheet parity)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `leave_requests`
+    ADD COLUMN IF NOT EXISTS `contact_mobile` varchar(40) NULL DEFAULT NULL AFTER `handover_notes`,
+    ADD COLUMN IF NOT EXISTS `contact_email` varchar(191) NULL DEFAULT NULL AFTER `contact_mobile`,
+    ADD COLUMN IF NOT EXISTS `contact_postal_address` varchar(255) NULL DEFAULT NULL AFTER `contact_email`;
 -- PRESENT IN PRODUCTION UP TO HERE
-
-
-
-
-
 
 
 
 SET time_zone = '+03:00';
 
 -- Research activities, financial policy, partnership inquiry columns, weekly
--- time logs, IQA assessments, and academic workplans are also covered by
--- deploy/production.sql / Laravel migrations. Run production.sql first on fresh hosts.
+-- time logs, IQA assessments, academic workplans, staff archive columns, and
+-- leave catalog/coverages/sick-pay/carry-forward/contact columns are also covered by
+-- deploy/production.sql / Laravel migrations. Run production.sql first on
+-- fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

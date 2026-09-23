@@ -17,6 +17,7 @@ class PayrollRunService
         protected KenyaPayrollTaxService $taxService,
         protected LedgerService $ledger,
         protected FinanceAuditService $audit,
+        protected \App\Services\Leave\LeaveSickPayService $sickPay,
     ) {}
 
     public function createRun(int $year, int $month, ?int $createdByStaffId = null, ?string $notes = null): PayrollRun
@@ -241,6 +242,12 @@ class PayrollRunService
 
         $breakdown = $this->taxService->calculateForStaff($staff, $basic, [
             'allowances' => $allowances,
+            'other_deductions' => $this->sickPay->deductionForStaffMonth(
+                (int) $staff->id,
+                (int) $run->pay_period_year,
+                (int) $run->pay_period_month
+            ),
+            'other_deductions_label' => 'Sick leave (half pay)',
         ]);
 
         $item = PayrollItem::query()->create([
