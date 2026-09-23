@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-23 15:28:44 EAT
+-- Generated: 2026-09-23 17:02:07 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -235,6 +235,64 @@ CALL `tich_ensure_index`('academic_programs', 'academic_programs_approved_by_ceo
 CALL `tich_ensure_index`('academic_programs', 'academic_programs_department_status_index', '`department_id`, `status`');
 CALL `tich_ensure_unique`('academic_programs', 'academic_programs_program_code_unique', '`program_code`');
 CALL `tich_ensure_index`('academic_programs', 'academic_programs_status_index', '`status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `academic_records`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `academic_records` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `program_id` bigint(20) unsigned NOT NULL,
+  `academic_year_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
+  `enrollment_date` date NOT NULL,
+  `completion_date` date DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'active',
+  `gpa` decimal(4,2) DEFAULT NULL,
+  `units_registered` int(11) NOT NULL DEFAULT 0,
+  `units_completed` int(11) NOT NULL DEFAULT 0,
+  `entry_pathway` varchar(100) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_records_academic_year_id_foreign` (`academic_year_id`),
+  KEY `academic_records_semester_id_foreign` (`semester_id`),
+  KEY `academic_records_created_by_foreign` (`created_by`),
+  KEY `academic_records_student_id_status_index` (`student_id`,`status`),
+  KEY `academic_records_program_id_status_index` (`program_id`,`status`),
+  CONSTRAINT `academic_records_academic_year_id_foreign` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_program_id_foreign` FOREIGN KEY (`program_id`) REFERENCES `academic_programs` (`id`),
+  CONSTRAINT `academic_records_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `academic_records` (add only if missing)
+CALL `tich_ensure_column`('academic_records', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('academic_records', 'student_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_records', 'program_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('academic_records', 'academic_year_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'semester_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'enrollment_date', 'date NOT NULL');
+CALL `tich_ensure_column`('academic_records', 'completion_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'active\\\'\'');
+CALL `tich_ensure_column`('academic_records', 'gpa', 'decimal(4,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'units_registered', 'int(11) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('academic_records', 'units_completed', 'int(11) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('academic_records', 'entry_pathway', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('academic_records', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `academic_records` (add only if missing)
+CALL `tich_ensure_index`('academic_records', 'academic_records_academic_year_id_foreign', '`academic_year_id`');
+CALL `tich_ensure_index`('academic_records', 'academic_records_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('academic_records', 'academic_records_program_id_status_index', '`program_id`, `status`');
+CALL `tich_ensure_index`('academic_records', 'academic_records_semester_id_foreign', '`semester_id`');
+CALL `tich_ensure_index`('academic_records', 'academic_records_student_id_status_index', '`student_id`, `status`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `academic_workplans`
@@ -2640,6 +2698,60 @@ CALL `tich_ensure_index`('credit_memos', 'credit_memos_student_account_id_foreig
 CALL `tich_ensure_index`('credit_memos', 'credit_memos_student_id_foreign', '`student_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `credit_notes`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `credit_notes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `discrepancy_id` bigint(20) unsigned NOT NULL,
+  `invoice_id` bigint(20) unsigned NOT NULL,
+  `supplier_id` bigint(20) unsigned NOT NULL,
+  `credit_note_number` varchar(50) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `reason` text NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `applied_to_invoice_id` bigint(20) unsigned DEFAULT NULL,
+  `created_by` bigint(20) unsigned NOT NULL,
+  `applied_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `credit_notes_credit_note_number_unique` (`credit_note_number`),
+  KEY `credit_notes_discrepancy_id_foreign` (`discrepancy_id`),
+  KEY `credit_notes_invoice_id_foreign` (`invoice_id`),
+  KEY `credit_notes_applied_to_invoice_id_foreign` (`applied_to_invoice_id`),
+  KEY `credit_notes_created_by_foreign` (`created_by`),
+  KEY `credit_notes_supplier_id_status_index` (`supplier_id`,`status`),
+  CONSTRAINT `credit_notes_applied_to_invoice_id_foreign` FOREIGN KEY (`applied_to_invoice_id`) REFERENCES `procurement_invoices` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `credit_notes_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`),
+  CONSTRAINT `credit_notes_discrepancy_id_foreign` FOREIGN KEY (`discrepancy_id`) REFERENCES `discrepancies` (`id`),
+  CONSTRAINT `credit_notes_invoice_id_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `procurement_invoices` (`id`),
+  CONSTRAINT `credit_notes_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `credit_notes` (add only if missing)
+CALL `tich_ensure_column`('credit_notes', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('credit_notes', 'discrepancy_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'invoice_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'supplier_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'credit_note_number', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'amount', 'decimal(12,2) NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'reason', 'text NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('credit_notes', 'applied_to_invoice_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('credit_notes', 'created_by', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('credit_notes', 'applied_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('credit_notes', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('credit_notes', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `credit_notes` (add only if missing)
+CALL `tich_ensure_index`('credit_notes', 'credit_notes_applied_to_invoice_id_foreign', '`applied_to_invoice_id`');
+CALL `tich_ensure_index`('credit_notes', 'credit_notes_created_by_foreign', '`created_by`');
+CALL `tich_ensure_unique`('credit_notes', 'credit_notes_credit_note_number_unique', '`credit_note_number`');
+CALL `tich_ensure_index`('credit_notes', 'credit_notes_discrepancy_id_foreign', '`discrepancy_id`');
+CALL `tich_ensure_index`('credit_notes', 'credit_notes_invoice_id_foreign', '`invoice_id`');
+CALL `tich_ensure_index`('credit_notes', 'credit_notes_supplier_id_status_index', '`supplier_id`, `status`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `curriculum_versions`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `curriculum_versions` (
@@ -3119,6 +3231,84 @@ CALL `tich_ensure_index`('disciplinary_records', 'disciplinary_records_assigned_
 CALL `tich_ensure_unique`('disciplinary_records', 'disciplinary_records_case_number_unique', '`case_number`');
 CALL `tich_ensure_index`('disciplinary_records', 'disciplinary_records_reported_by_foreign', '`reported_by`');
 CALL `tich_ensure_index`('disciplinary_records', 'disciplinary_records_student_id_foreign', '`student_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `discrepancies`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `discrepancies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint(20) unsigned NOT NULL,
+  `three_way_match_id` bigint(20) unsigned NOT NULL,
+  `supplier_id` bigint(20) unsigned NOT NULL,
+  `discrepancy_type` varchar(50) NOT NULL,
+  `field_name` varchar(100) DEFAULT NULL,
+  `po_value` text DEFAULT NULL,
+  `quotation_value` text DEFAULT NULL,
+  `invoice_value` text DEFAULT NULL,
+  `deviation_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `status` varchar(50) NOT NULL DEFAULT 'open',
+  `raised_by` bigint(20) unsigned NOT NULL,
+  `resolved_by` bigint(20) unsigned DEFAULT NULL,
+  `resolution_note` text DEFAULT NULL,
+  `resolution_type` varchar(50) DEFAULT NULL,
+  `credit_note_id` bigint(20) unsigned DEFAULT NULL,
+  `supplier_response_at` datetime DEFAULT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  `escalated_at` datetime DEFAULT NULL,
+  `supplier_response` text DEFAULT NULL,
+  `is_escalated` tinyint(1) NOT NULL DEFAULT 0,
+  `is_fraud_suspected` tinyint(1) NOT NULL DEFAULT 0,
+  `escalation_note` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `discrepancies_three_way_match_id_foreign` (`three_way_match_id`),
+  KEY `discrepancies_raised_by_foreign` (`raised_by`),
+  KEY `discrepancies_resolved_by_foreign` (`resolved_by`),
+  KEY `discrepancies_invoice_id_status_index` (`invoice_id`,`status`),
+  KEY `discrepancies_supplier_id_status_index` (`supplier_id`,`status`),
+  KEY `discrepancies_status_is_escalated_index` (`status`,`is_escalated`),
+  CONSTRAINT `discrepancies_invoice_id_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `procurement_invoices` (`id`),
+  CONSTRAINT `discrepancies_raised_by_foreign` FOREIGN KEY (`raised_by`) REFERENCES `staff` (`id`),
+  CONSTRAINT `discrepancies_resolved_by_foreign` FOREIGN KEY (`resolved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `discrepancies_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
+  CONSTRAINT `discrepancies_three_way_match_id_foreign` FOREIGN KEY (`three_way_match_id`) REFERENCES `three_way_matches` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `discrepancies` (add only if missing)
+CALL `tich_ensure_column`('discrepancies', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('discrepancies', 'invoice_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('discrepancies', 'three_way_match_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('discrepancies', 'supplier_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('discrepancies', 'discrepancy_type', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('discrepancies', 'field_name', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'po_value', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'quotation_value', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'invoice_value', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'deviation_amount', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('discrepancies', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'open\\\'\'');
+CALL `tich_ensure_column`('discrepancies', 'raised_by', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('discrepancies', 'resolved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'resolution_note', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'resolution_type', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'credit_note_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'supplier_response_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'resolved_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'escalated_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'supplier_response', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'is_escalated', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('discrepancies', 'is_fraud_suspected', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('discrepancies', 'escalation_note', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('discrepancies', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `discrepancies` (add only if missing)
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_invoice_id_status_index', '`invoice_id`, `status`');
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_raised_by_foreign', '`raised_by`');
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_resolved_by_foreign', '`resolved_by`');
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_status_is_escalated_index', '`status`, `is_escalated`');
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_supplier_id_status_index', '`supplier_id`, `status`');
+CALL `tich_ensure_index`('discrepancies', 'discrepancies_three_way_match_id_foreign', '`three_way_match_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `donations`
@@ -5507,6 +5697,203 @@ CALL `tich_ensure_index`('lesson_plan_approvals', 'lesson_plan_approvals_approve
 CALL `tich_ensure_index`('lesson_plan_approvals', 'lesson_plan_approvals_lesson_plan_id_foreign', '`lesson_plan_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `marketing_leads`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `marketing_leads` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(300) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `source` varchar(255) DEFAULT NULL,
+  `stage` varchar(255) NOT NULL DEFAULT 'new',
+  `program_id` bigint(20) unsigned DEFAULT NULL,
+  `intake` varchar(255) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `next_followup` date DEFAULT NULL,
+  `assigned_to` bigint(20) unsigned DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `marketing_leads_program_id_foreign` (`program_id`),
+  KEY `marketing_leads_assigned_to_foreign` (`assigned_to`),
+  KEY `marketing_leads_created_by_foreign` (`created_by`),
+  KEY `marketing_leads_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `marketing_leads_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_leads_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_leads_program_id_foreign` FOREIGN KEY (`program_id`) REFERENCES `academic_programs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_leads_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `marketing_leads` (add only if missing)
+CALL `tich_ensure_column`('marketing_leads', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('marketing_leads', 'name', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'email', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'phone', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'source', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'stage', 'varchar(255) NOT NULL DEFAULT \'\\\'new\\\'\'');
+CALL `tich_ensure_column`('marketing_leads', 'program_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'intake', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'next_followup', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'assigned_to', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_leads', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `marketing_leads` (add only if missing)
+CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_assigned_to_foreign', '`assigned_to`');
+CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_program_id_foreign', '`program_id`');
+CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_updated_by_foreign', '`updated_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `marketing_lead_activities`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `marketing_lead_activities` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `lead_id` bigint(20) unsigned NOT NULL,
+  `activity_type` varchar(255) NOT NULL,
+  `scheduled_date` date NOT NULL,
+  `scheduled_time` time DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `completed` tinyint(1) NOT NULL DEFAULT 0,
+  `completed_date` date DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `marketing_lead_activities_lead_id_foreign` (`lead_id`),
+  KEY `marketing_lead_activities_created_by_foreign` (`created_by`),
+  KEY `marketing_lead_activities_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `marketing_lead_activities_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_lead_activities_lead_id_foreign` FOREIGN KEY (`lead_id`) REFERENCES `marketing_leads` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `marketing_lead_activities_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `marketing_lead_activities` (add only if missing)
+CALL `tich_ensure_column`('marketing_lead_activities', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('marketing_lead_activities', 'lead_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'activity_type', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'scheduled_date', 'date NOT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'scheduled_time', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'completed', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('marketing_lead_activities', 'completed_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_lead_activities', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `marketing_lead_activities` (add only if missing)
+CALL `tich_ensure_index`('marketing_lead_activities', 'marketing_lead_activities_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('marketing_lead_activities', 'marketing_lead_activities_lead_id_foreign', '`lead_id`');
+CALL `tich_ensure_index`('marketing_lead_activities', 'marketing_lead_activities_updated_by_foreign', '`updated_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `marketing_reports`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `marketing_reports` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `report_type` varchar(255) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `report_date` date NOT NULL,
+  `summary` text DEFAULT NULL,
+  `commentary` text DEFAULT NULL,
+  `anomalies` text DEFAULT NULL,
+  `status` enum('draft','submitted','approved','distributed','archived') NOT NULL DEFAULT 'draft',
+  `prepared_by` bigint(20) unsigned NOT NULL,
+  `reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
+  `distributed_by` bigint(20) unsigned DEFAULT NULL,
+  `distribution_list` text DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `marketing_reports_prepared_by_foreign` (`prepared_by`),
+  KEY `marketing_reports_reviewed_by_foreign` (`reviewed_by`),
+  KEY `marketing_reports_approved_by_foreign` (`approved_by`),
+  KEY `marketing_reports_distributed_by_foreign` (`distributed_by`),
+  KEY `marketing_reports_created_by_foreign` (`created_by`),
+  KEY `marketing_reports_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `marketing_reports_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_reports_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_reports_distributed_by_foreign` FOREIGN KEY (`distributed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_reports_prepared_by_foreign` FOREIGN KEY (`prepared_by`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `marketing_reports_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `marketing_reports_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `marketing_reports` (add only if missing)
+CALL `tich_ensure_column`('marketing_reports', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('marketing_reports', 'report_type', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'title', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'report_date', 'date NOT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'summary', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'commentary', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'anomalies', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'status', 'enum(\'draft\',\'submitted\',\'approved\',\'distributed\',\'archived\') NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('marketing_reports', 'prepared_by', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'approved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'distributed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'distribution_list', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_reports', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `marketing_reports` (add only if missing)
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_approved_by_foreign', '`approved_by`');
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_distributed_by_foreign', '`distributed_by`');
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_prepared_by_foreign', '`prepared_by`');
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_reviewed_by_foreign', '`reviewed_by`');
+CALL `tich_ensure_index`('marketing_reports', 'marketing_reports_updated_by_foreign', '`updated_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `marketing_report_attachments`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `marketing_report_attachments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `report_id` bigint(20) unsigned NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `mime_type` varchar(255) NOT NULL,
+  `size` bigint(20) unsigned NOT NULL,
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `marketing_report_attachments_report_id_foreign` (`report_id`),
+  KEY `marketing_report_attachments_uploaded_by_foreign` (`uploaded_by`),
+  CONSTRAINT `marketing_report_attachments_report_id_foreign` FOREIGN KEY (`report_id`) REFERENCES `marketing_reports` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `marketing_report_attachments_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `marketing_report_attachments` (add only if missing)
+CALL `tich_ensure_column`('marketing_report_attachments', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('marketing_report_attachments', 'report_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'file_path', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'original_name', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'mime_type', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'size', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'uploaded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `marketing_report_attachments` (add only if missing)
+CALL `tich_ensure_index`('marketing_report_attachments', 'marketing_report_attachments_report_id_foreign', '`report_id`');
+CALL `tich_ensure_index`('marketing_report_attachments', 'marketing_report_attachments_uploaded_by_foreign', '`uploaded_by`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `media_attachments`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `media_attachments` (
@@ -6931,6 +7318,36 @@ CALL `tich_ensure_column`('payment_allocations', 'allocated_at', 'datetime NOT N
 -- Indexes for `payment_allocations` (add only if missing)
 CALL `tich_ensure_index`('payment_allocations', 'payment_allocations_invoice_id_foreign', '`invoice_id`');
 CALL `tich_ensure_index`('payment_allocations', 'payment_allocations_payment_id_foreign', '`payment_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `payment_audits`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payment_audits` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint(20) unsigned NOT NULL,
+  `invoice_number` varchar(50) NOT NULL,
+  `actor` varchar(100) NOT NULL,
+  `action` varchar(200) NOT NULL,
+  `result` text NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `payment_audits_invoice_id_created_at_index` (`invoice_id`,`created_at`),
+  CONSTRAINT `payment_audits_invoice_id_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `procurement_invoices` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `payment_audits` (add only if missing)
+CALL `tich_ensure_column`('payment_audits', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('payment_audits', 'invoice_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('payment_audits', 'invoice_number', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('payment_audits', 'actor', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('payment_audits', 'action', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('payment_audits', 'result', 'text NOT NULL');
+CALL `tich_ensure_column`('payment_audits', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payment_audits', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `payment_audits` (add only if missing)
+CALL `tich_ensure_index`('payment_audits', 'payment_audits_invoice_id_created_at_index', '`invoice_id`, `created_at`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `payment_milestones`
@@ -11043,7 +11460,10 @@ CALL `tich_ensure_index`('stock_issues', 'stock_issues_requested_by_foreign', '`
 CREATE TABLE IF NOT EXISTS `students` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `registration_number` varchar(50) NOT NULL,
-  `application_id` bigint(20) unsigned NOT NULL,
+  `application_id` bigint(20) unsigned DEFAULT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `surname` varchar(100) NOT NULL,
   `program_id` bigint(20) unsigned NOT NULL,
   `cohort_intake` varchar(20) NOT NULL,
   `enrollment_campus_id` bigint(20) unsigned NOT NULL,
@@ -11099,7 +11519,10 @@ CREATE TABLE IF NOT EXISTS `students` (
 -- Columns for `students` (add only if missing)
 CALL `tich_ensure_column`('students', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('students', 'registration_number', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('students', 'application_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('students', 'application_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'first_name', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('students', 'middle_name', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'surname', 'varchar(100) NOT NULL');
 CALL `tich_ensure_column`('students', 'program_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('students', 'cohort_intake', 'varchar(20) NOT NULL');
 CALL `tich_ensure_column`('students', 'enrollment_campus_id', 'bigint(20) unsigned NOT NULL');
@@ -11312,6 +11735,57 @@ CALL `tich_ensure_index`('student_document_requests', 'student_document_requests
 CALL `tich_ensure_index`('student_document_requests', 'student_document_requests_reviewed_by_user_id_foreign', '`reviewed_by_user_id`');
 CALL `tich_ensure_index`('student_document_requests', 'student_document_requests_status_created_at_index', '`status`, `created_at`');
 CALL `tich_ensure_index`('student_document_requests', 'student_document_requests_student_id_foreign', '`student_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `student_financial_records`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `student_financial_records` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `academic_year_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
+  `total_chargeable` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_paid` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `outstanding_balance` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_reference` varchar(100) DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `student_financial_records_academic_year_id_foreign` (`academic_year_id`),
+  KEY `student_financial_records_semester_id_foreign` (`semester_id`),
+  KEY `student_financial_records_recorded_by_foreign` (`recorded_by`),
+  KEY `student_financial_records_student_id_payment_date_index` (`student_id`,`payment_date`),
+  CONSTRAINT `student_financial_records_academic_year_id_foreign` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `student_financial_records` (add only if missing)
+CALL `tich_ensure_column`('student_financial_records', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('student_financial_records', 'student_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'academic_year_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'semester_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'total_chargeable', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('student_financial_records', 'total_paid', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('student_financial_records', 'outstanding_balance', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('student_financial_records', 'payment_method', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'payment_reference', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'payment_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'recorded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_financial_records', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `student_financial_records` (add only if missing)
+CALL `tich_ensure_index`('student_financial_records', 'student_financial_records_academic_year_id_foreign', '`academic_year_id`');
+CALL `tich_ensure_index`('student_financial_records', 'student_financial_records_recorded_by_foreign', '`recorded_by`');
+CALL `tich_ensure_index`('student_financial_records', 'student_financial_records_semester_id_foreign', '`semester_id`');
+CALL `tich_ensure_index`('student_financial_records', 'student_financial_records_student_id_payment_date_index', '`student_id`, `payment_date`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `student_lifecycle_requests`
@@ -12304,6 +12778,13 @@ CALL `tich_ensure_fk`('about_content_blocks', 'about_content_blocks_updated_by_f
 CALL `tich_ensure_fk`('academic_programs', 'academic_programs_approved_by_ceo_id_foreign', '`approved_by_ceo_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('academic_programs', 'academic_programs_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `academic_records`
+CALL `tich_ensure_fk`('academic_records', 'academic_records_academic_year_id_foreign', '`academic_year_id`', 'academic_years', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('academic_records', 'academic_records_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('academic_records', 'academic_records_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('academic_records', 'academic_records_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('academic_records', 'academic_records_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+
 -- Foreign keys for `academic_workplans`
 CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');
 CALL `tich_ensure_fk`('academic_workplans', 'academic_workplans_prepared_by_staff_id_foreign', '`prepared_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
@@ -12484,6 +12965,13 @@ CALL `tich_ensure_fk`('credit_memos', 'credit_memos_issued_by_foreign', '`issued
 CALL `tich_ensure_fk`('credit_memos', 'credit_memos_student_account_id_foreign', '`student_account_id`', 'student_accounts', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('credit_memos', 'credit_memos_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `credit_notes`
+CALL `tich_ensure_fk`('credit_notes', 'credit_notes_applied_to_invoice_id_foreign', '`applied_to_invoice_id`', 'procurement_invoices', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('credit_notes', 'credit_notes_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('credit_notes', 'credit_notes_discrepancy_id_foreign', '`discrepancy_id`', 'discrepancies', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('credit_notes', 'credit_notes_invoice_id_foreign', '`invoice_id`', 'procurement_invoices', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('credit_notes', 'credit_notes_supplier_id_foreign', '`supplier_id`', 'suppliers', '`id`', 'RESTRICT', 'RESTRICT');
+
 -- Foreign keys for `curriculum_versions`
 CALL `tich_ensure_fk`('curriculum_versions', 'curriculum_versions_academic_year_id_foreign', '`academic_year_id`', 'academic_years', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('curriculum_versions', 'curriculum_versions_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'RESTRICT');
@@ -12527,6 +13015,13 @@ CALL `tich_ensure_fk`('disciplinary_documents', 'disciplinary_documents_discipli
 CALL `tich_ensure_fk`('disciplinary_records', 'disciplinary_records_assigned_officer_id_foreign', '`assigned_officer_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('disciplinary_records', 'disciplinary_records_reported_by_foreign', '`reported_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('disciplinary_records', 'disciplinary_records_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `discrepancies`
+CALL `tich_ensure_fk`('discrepancies', 'discrepancies_invoice_id_foreign', '`invoice_id`', 'procurement_invoices', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('discrepancies', 'discrepancies_raised_by_foreign', '`raised_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('discrepancies', 'discrepancies_resolved_by_foreign', '`resolved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('discrepancies', 'discrepancies_supplier_id_foreign', '`supplier_id`', 'suppliers', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('discrepancies', 'discrepancies_three_way_match_id_foreign', '`three_way_match_id`', 'three_way_matches', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `donations`
 CALL `tich_ensure_fk`('donations', 'donations_campaign_id_foreign', '`campaign_id`', 'donation_campaigns', '`id`', 'RESTRICT', 'SET NULL');
@@ -12732,6 +13227,29 @@ CALL `tich_ensure_fk`('lesson_plans', 'lesson_plans_unit_allocation_id_foreign',
 CALL `tich_ensure_fk`('lesson_plan_approvals', 'lesson_plan_approvals_approver_id_foreign', '`approver_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('lesson_plan_approvals', 'lesson_plan_approvals_lesson_plan_id_foreign', '`lesson_plan_id`', 'lesson_plans', '`id`', 'RESTRICT', 'RESTRICT');
 
+-- Foreign keys for `marketing_leads`
+CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_assigned_to_foreign', '`assigned_to`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `marketing_lead_activities`
+CALL `tich_ensure_fk`('marketing_lead_activities', 'marketing_lead_activities_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_lead_activities', 'marketing_lead_activities_lead_id_foreign', '`lead_id`', 'marketing_leads', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('marketing_lead_activities', 'marketing_lead_activities_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `marketing_reports`
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_distributed_by_foreign', '`distributed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_prepared_by_foreign', '`prepared_by`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_reviewed_by_foreign', '`reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `marketing_report_attachments`
+CALL `tich_ensure_fk`('marketing_report_attachments', 'marketing_report_attachments_report_id_foreign', '`report_id`', 'marketing_reports', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('marketing_report_attachments', 'marketing_report_attachments_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
 -- Foreign keys for `media_attachments`
 CALL `tich_ensure_fk`('media_attachments', 'media_attachments_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('media_attachments', 'media_attachments_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
@@ -12856,6 +13374,9 @@ CALL `tich_ensure_fk`('payments', 'payments_student_id_foreign', '`student_id`',
 -- Foreign keys for `payment_allocations`
 CALL `tich_ensure_fk`('payment_allocations', 'payment_allocations_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('payment_allocations', 'payment_allocations_payment_id_foreign', '`payment_id`', 'payments', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `payment_audits`
+CALL `tich_ensure_fk`('payment_audits', 'payment_audits_invoice_id_foreign', '`invoice_id`', 'procurement_invoices', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `payment_milestones`
 CALL `tich_ensure_fk`('payment_milestones', 'payment_milestones_invoice_id_foreign', '`invoice_id`', 'invoices', '`id`', 'RESTRICT', 'SET NULL');
@@ -13223,6 +13744,12 @@ CALL `tich_ensure_fk`('student_clearance_items', 'student_clearance_items_studen
 CALL `tich_ensure_fk`('student_document_requests', 'student_document_requests_requested_by_user_id_foreign', '`requested_by_user_id`', 'users', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('student_document_requests', 'student_document_requests_reviewed_by_user_id_foreign', '`reviewed_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('student_document_requests', 'student_document_requests_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `student_financial_records`
+CALL `tich_ensure_fk`('student_financial_records', 'student_financial_records_academic_year_id_foreign', '`academic_year_id`', 'academic_years', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('student_financial_records', 'student_financial_records_recorded_by_foreign', '`recorded_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('student_financial_records', 'student_financial_records_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('student_financial_records', 'student_financial_records_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `student_lifecycle_requests`
 CALL `tich_ensure_fk`('student_lifecycle_requests', 'student_lifecycle_requests_requested_by_user_id_foreign', '`requested_by_user_id`', 'users', '`id`', 'RESTRICT', 'RESTRICT');

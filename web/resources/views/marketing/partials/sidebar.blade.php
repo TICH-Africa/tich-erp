@@ -20,6 +20,13 @@
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.enrolled-students.index'), 'label' => 'Enrolled Students', 'icon' => 'graduation-cap', 'active' => request()->routeIs('marketing.enrolled-students.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.reports.index'), 'label' => 'Reports', 'icon' => 'bar-chart', 'active' => request()->routeIs('marketing.reports.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.analytics.index'), 'label' => 'Analytics', 'icon' => 'bar-chart', 'active' => request()->routeIs('marketing.analytics.*')])
+
+        <p class="tich-admin-sidebar__title tich-mt-4">Department</p>
+        @include('partials.navigation.department-budgeting-link', ['module' => 'marketing'])
+        @include('partials.navigation.department-technical-plan-link', ['module' => 'marketing'])
+        @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'marketing'])
+        @include('partials.navigation.department-me-policy-sign-link', ['module' => 'marketing'])
+        @include('partials.navigation.department-me-reports-link', ['module' => 'marketing'])
     </nav>
     <div class="tich-admin-sidebar__footer">
         @include('partials.navigation.sidebar-link', ['href' => route('dashboard'), 'label' => 'Back to dashboard', 'icon' => 'arrow-left', 'muted' => true])

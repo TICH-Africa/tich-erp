@@ -1826,7 +1826,7 @@ ALTER TABLE `leave_requests`
     ADD COLUMN IF NOT EXISTS `contact_mobile` varchar(40) NULL DEFAULT NULL AFTER `handover_notes`,
     ADD COLUMN IF NOT EXISTS `contact_email` varchar(191) NULL DEFAULT NULL AFTER `contact_mobile`,
     ADD COLUMN IF NOT EXISTS `contact_postal_address` varchar(255) NULL DEFAULT NULL AFTER `contact_email`;
--- PRESENT IN PRODUCTION UP TO HERE
+
 
 -- -----------------------------------------------------------------------------
 -- 37. Marketing roles (CMO / Marketing Officer) + Marketing department modules
@@ -1877,6 +1877,14 @@ WHERE d.`is_active` = 1
       SELECT 1 FROM `department_modules` dm
       WHERE dm.`department_id` = d.`id` AND dm.`module_key` = m.`module_key`
   );
+-- PRESENT IN PRODUCTION UP TO HERE
+
+
+
+
+
+
+
 
 SET time_zone = '+03:00';
 

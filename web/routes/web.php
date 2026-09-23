@@ -280,7 +280,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         });
     });
 
-    Route::prefix('marketing')->middleware(['permission:site_settings.read'])->group(function () {
+    Route::prefix('marketing')->middleware(['permission:site_settings.read'])->group(function () use ($registerModuleBudgeting, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\Marketing\PortalController::class, 'index'])->name('marketing.portal.index');
         Route::get('/about', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'index'])->name('marketing.about.index');
         Route::post('/about', [\App\Http\Controllers\Marketing\Content\AboutController::class, 'store'])->name('marketing.about.store');
@@ -350,6 +350,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/reports/{report}/distribute', [\App\Http\Controllers\Marketing\ReportsController::class, 'distribute'])->name('marketing.reports.distribute');
 
         Route::get('/analytics', [\App\Http\Controllers\Marketing\AnalyticsController::class, 'index'])->name('marketing.analytics.index');
+
+        $registerModuleBudgeting('marketing');
+        $registerModuleMeReports('marketing');
     });
 
     Route::prefix('site-settings')->middleware(['permission:site_settings.read'])->group(function () {

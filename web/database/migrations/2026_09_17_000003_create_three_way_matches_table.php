@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('three_way_matches')) {
+            return;
+        }
+
         Schema::create('three_way_matches', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('invoice_id');
