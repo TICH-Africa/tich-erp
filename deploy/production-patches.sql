@@ -1828,12 +1828,55 @@ ALTER TABLE `leave_requests`
     ADD COLUMN IF NOT EXISTS `contact_postal_address` varchar(255) NULL DEFAULT NULL AFTER `contact_email`;
 -- PRESENT IN PRODUCTION UP TO HERE
 
+-- -----------------------------------------------------------------------------
+-- 37. Marketing roles (CMO / Marketing Officer) + Marketing department modules
+--     Roles are also materialized by RbacCatalogService on boot when app code is
+--     deployed; this patch covers hosts that only apply SQL and/or never ran the
+--     2026_09_22 marketing department_modules migrations.
+-- -----------------------------------------------------------------------------
+INSERT INTO `roles` (`role_name`, `display_name`, `role_category`, `module_key`, `description`, `is_system_role`, `created_at`)
+SELECT 'Chief Marketing Officer', 'Chief Marketing Officer', 'administrative', 'marketing',
+       'Marketing leadership - website content, branding, and site settings.', 1, NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `roles` WHERE `role_name` = 'Chief Marketing Officer');
 
+INSERT INTO `roles` (`role_name`, `display_name`, `role_category`, `module_key`, `description`, `is_system_role`, `created_at`)
+SELECT 'Marketing Officer', 'Marketing Officer', 'administrative', 'marketing',
+       'Marketing operations - website content, branding, and site settings.', 1, NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `roles` WHERE `role_name` = 'Marketing Officer');
 
+UPDATE `roles`
+SET `display_name` = 'Chief Marketing Officer',
+    `role_category` = 'administrative',
+    `module_key` = 'marketing',
+    `description` = 'Marketing leadership - website content, branding, and site settings.',
+    `is_system_role` = 1
+WHERE `role_name` = 'Chief Marketing Officer';
 
+UPDATE `roles`
+SET `display_name` = 'Marketing Officer',
+    `role_category` = 'administrative',
+    `module_key` = 'marketing',
+    `description` = 'Marketing operations - website content, branding, and site settings.',
+    `is_system_role` = 1
+WHERE `role_name` = 'Marketing Officer';
 
-
-
+INSERT INTO `department_modules` (`department_id`, `module_key`, `assigned_at`, `assigned_by`)
+SELECT d.`id`, m.`module_key`, NOW(), NULL
+FROM `departments` d
+CROSS JOIN (
+    SELECT 'portal' AS `module_key`
+    UNION ALL SELECT 'site_settings'
+) m
+WHERE d.`is_active` = 1
+  AND (
+      d.`dept_code` = 'MKT'
+      OR d.`dept_code` LIKE 'MKT%'
+      OR d.`dept_name` LIKE '%Marketing%'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM `department_modules` dm
+      WHERE dm.`department_id` = d.`id` AND dm.`module_key` = m.`module_key`
+  );
 
 SET time_zone = '+03:00';
 
