@@ -3,7 +3,7 @@
 @section('title', 'IQA assessments')
 
 @section('qa-content')
-    <x-page-toolbar title="IQA assessments" meta="NATIONAL POLYTECHNIC QUALITY AUDIT TOOL — drafts editable; published locked">
+    <x-page-toolbar title="IQA assessments" meta="NATIONAL POLYTECHNIC QUALITY AUDIT TOOL — multiple drafts allowed; published locked">
         <x-slot:actions>
             @if ($canManage)
                 <form method="POST" action="{{ route('qa.assessments.store') }}" class="tich-inline-form">

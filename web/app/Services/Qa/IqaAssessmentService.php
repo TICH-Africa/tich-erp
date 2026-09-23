@@ -19,7 +19,8 @@ class IqaAssessmentService
 
     public function isQaOfficer(User $user): bool
     {
-        return $this->rbac->hasRole($user, 'QA Officer');
+        return $this->rbac->hasAnyRole($user, ['QA Officer', 'Assistant QA Officer'])
+            || $this->rbac->isPlatformAdministrator($user);
     }
 
     public function canView(User $user): bool
@@ -44,6 +45,9 @@ class IqaAssessmentService
         }
     }
 
+    /**
+     * Always creates a new draft. Existing drafts stay editable — there is no one-draft limit.
+     */
     public function createDraft(User $user, ?int $assessmentYear = null): IqaAssessment
     {
         $this->ensureQaOfficer($user);

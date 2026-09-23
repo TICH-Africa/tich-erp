@@ -47,7 +47,7 @@
     </nav>
 
     @if ($isPublishReview)
-        <div class="tich-alert tich-mt-4" style="background:#eff6ff;border:1px solid #bfdbfe;">
+        <div class="tich-alert tich-alert--info tich-mt-4" role="status">
             <p class="tich-text">Walk through each section using Next. When all eight are reviewed, confirm publish below.</p>
             <p class="tich-caption tich-mt-2">Reviewed: {{ count($walked ?? []) }}/8</p>
         </div>
