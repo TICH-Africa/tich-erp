@@ -6981,6 +6981,11 @@ body.is-photo-crop-open {
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+.tich-squircle-btn svg {
+    display: block;
+    flex-shrink: 0;
+}
+
 .tich-squircle-btn:hover {
     background: var(--tich-blue-light);
     border-color: var(--tich-blue);
@@ -6989,6 +6994,45 @@ body.is-photo-crop-open {
 .tich-squircle-btn:focus-visible {
     outline: 2px solid var(--tich-blue);
     outline-offset: 2px;
+}
+
+.tich-squircle-btn--ok {
+    color: var(--tich-green);
+}
+
+.tich-squircle-btn--ok:hover {
+    background: color-mix(in srgb, var(--tich-green) 12%, transparent);
+    border-color: var(--tich-green);
+}
+
+.tich-squircle-btn--warn {
+    color: #b45309;
+}
+
+.tich-squircle-btn--warn:hover {
+    background: #fff7ed;
+    border-color: #b45309;
+}
+
+.tich-squircle-btn--danger {
+    color: var(--tich-error, #b91c1c);
+}
+
+.tich-squircle-btn--danger:hover {
+    background: #fef2f2;
+    border-color: var(--tich-error, #b91c1c);
+}
+
+.tich-archive-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.tich-archive-actions form {
+    display: inline;
+    margin: 0;
 }
 
 /* Readable typography inside modals (overrides global dark blue headings/captions) */

@@ -19,72 +19,68 @@
                 @if ($awaitingDepartmentAssignment ?? false)
                     <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
                         <strong>Department assignment pending.</strong>
-                        Browse institutional departments below. HR or ICT will assign you to a unit before module tools unlock.
+                        Department modules are locked. Use <strong>My Employee Portal</strong> for your personal tools until HR or ICT assigns you to a unit.
                     </div>
                 @endif
             </div>
 
             <div class="tich-grid tich-grid--3 tich-dashboard__grid">
-                @if (auth()->user()->hasAnyRole(['CEO', 'Super Admin']))
-                    <article class="tich-card tich-card--highlight">
-                        <p class="tich-caption">Executive</p>
-                        <h3 class="tich-h3 tich-mt-2">Chief Executive Officer</h3>
-                        <p class="tich-text tich-mt-2">Budget authorizations, curriculum sign-off, and institution-wide executive oversight.</p>
-                        <a href="{{ route('ceo.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open CEO office</a>
-                    </article>
-                @endif
-
-                @if (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
-                    <article class="tich-card tich-card--highlight">
-                        <p class="tich-caption">Core</p>
-                        <h3 class="tich-h3 tich-mt-2">Platform administration</h3>
-                        <p class="tich-text tich-mt-2">Campuses, departments, users, roles, and module access.</p>
-                        <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
-                    </article>
-                @endif
-
-                @if (app(\App\Services\RBACService::class)->canAccessSiteSettings(auth()->user()))
-                    <article class="tich-card tich-card--highlight">
-                        <p class="tich-caption">Core</p>
-                        <h3 class="tich-h3 tich-mt-2">Site settings</h3>
-                        <p class="tich-text tich-mt-2">Manage the public site logo, hero slides, contact details, and branding.</p>
-                        <a href="{{ route('site-settings.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open site settings</a>
-                    </article>
-                @endif
-
-                @forelse ($departments as $department)
-                    @php
-                        $notificationCount = (int) ($departmentNotificationCounts[$department->id] ?? 0);
-                        $notificationLabel = $formatNotificationCount($notificationCount);
-                        $awaiting = $awaitingDepartmentAssignment ?? false;
-                    @endphp
-                    <article class="tich-card">
-                        <div class="tich-flex" style="justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
-                            <p class="tich-caption">{{ $categoryLabel($department) }}</p>
-                            @if ($notificationLabel)
-                                <span class="tich-notification-badge" aria-label="{{ $notificationCount }} pending notifications">{{ $notificationLabel }}</span>
-                            @endif
-                        </div>
-                        <h3 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h3>
-                        <p class="tich-text tich-mt-2">{{ $cardDescription($department) }}</p>
-                        @if ($department->group)
-                            <p class="tich-caption tich-mt-2">{{ $department->group->group_name }}</p>
-                        @endif
-                        @if ($awaiting)
-                            <p class="tich-caption tich-mt-4" style="color: #b45309;">Open after HR assigns you to this department.</p>
-                            <span class="tich-btn tich-btn-secondary tich-mt-4" aria-disabled="true">{{ $cardActionLabel }}</span>
-                        @else
-                            <a href="{{ $entryUrl($department) }}" class="tich-btn tich-btn-secondary tich-mt-4">{{ $cardActionLabel }}</a>
-                        @endif
-                    </article>
-                @empty
-                    @unless (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
-                        <article class="tich-card">
-                            <h3 class="tich-h3">No departments assigned</h3>
-                            <p class="tich-text">You are not assigned to any department yet. Contact a platform administrator if you need access.</p>
+                @unless ($awaitingDepartmentAssignment ?? false)
+                    @if (auth()->user()->hasAnyRole(['CEO', 'Super Admin']))
+                        <article class="tich-card tich-card--highlight">
+                            <p class="tich-caption">Executive</p>
+                            <h3 class="tich-h3 tich-mt-2">Chief Executive Officer</h3>
+                            <p class="tich-text tich-mt-2">Budget authorizations, curriculum sign-off, and institution-wide executive oversight.</p>
+                            <a href="{{ route('ceo.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open CEO office</a>
                         </article>
-                    @endunless
-                @endforelse
+                    @endif
+
+                    @if (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
+                        <article class="tich-card tich-card--highlight">
+                            <p class="tich-caption">Core</p>
+                            <h3 class="tich-h3 tich-mt-2">Platform administration</h3>
+                            <p class="tich-text tich-mt-2">Campuses, departments, users, roles, and module access.</p>
+                            <a href="{{ route('admin.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open admin panel</a>
+                        </article>
+                    @endif
+
+                    @if (app(\App\Services\RBACService::class)->canAccessSiteSettings(auth()->user()))
+                        <article class="tich-card tich-card--highlight">
+                            <p class="tich-caption">Core</p>
+                            <h3 class="tich-h3 tich-mt-2">Site settings</h3>
+                            <p class="tich-text tich-mt-2">Manage the public site logo, hero slides, contact details, and branding.</p>
+                            <a href="{{ route('site-settings.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open site settings</a>
+                        </article>
+                    @endif
+
+                    @forelse ($departments as $department)
+                        @php
+                            $notificationCount = (int) ($departmentNotificationCounts[$department->id] ?? 0);
+                            $notificationLabel = $formatNotificationCount($notificationCount);
+                        @endphp
+                        <article class="tich-card">
+                            <div class="tich-flex" style="justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                                <p class="tich-caption">{{ $categoryLabel($department) }}</p>
+                                @if ($notificationLabel)
+                                    <span class="tich-notification-badge" aria-label="{{ $notificationCount }} pending notifications">{{ $notificationLabel }}</span>
+                                @endif
+                            </div>
+                            <h3 class="tich-h3 tich-mt-2">{{ $department->dept_name }}</h3>
+                            <p class="tich-text tich-mt-2">{{ $cardDescription($department) }}</p>
+                            @if ($department->group)
+                                <p class="tich-caption tich-mt-2">{{ $department->group->group_name }}</p>
+                            @endif
+                            <a href="{{ $entryUrl($department) }}" class="tich-btn tich-btn-secondary tich-mt-4">{{ $cardActionLabel }}</a>
+                        </article>
+                    @empty
+                        @unless (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
+                            <article class="tich-card">
+                                <h3 class="tich-h3">No departments assigned</h3>
+                                <p class="tich-text">You are not assigned to any department yet. Contact a platform administrator if you need access.</p>
+                            </article>
+                        @endunless
+                    @endforelse
+                @endunless
 
                 @if (auth()->user()->hasEmployeeProfile() && ! auth()->user()->isEnrolledStudent())
                     <article class="tich-card tich-card--highlight">
@@ -95,7 +91,7 @@
                     </article>
                 @endif
 
-                @if (auth()->user()->isTeachingStaff())
+                @if (! ($awaitingDepartmentAssignment ?? false) && auth()->user()->isTeachingStaff())
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Teaching & Training</p>
                         <h3 class="tich-h3 tich-mt-2">Staff portal</h3>
@@ -104,7 +100,7 @@
                     </article>
                 @endif
 
-                @if (auth()->user()->student_id || auth()->user()->student)
+                @if (! ($awaitingDepartmentAssignment ?? false) && (auth()->user()->student_id || auth()->user()->student))
                     <article class="tich-card tich-card--highlight">
                         <p class="tich-caption">Student</p>
                         <h3 class="tich-h3 tich-mt-2">Student portal</h3>
@@ -113,14 +109,16 @@
                     </article>
                 @endif
 
-                @can('audit_logs.read')
-                    <article class="tich-card">
-                        <p class="tich-caption">Security</p>
-                        <h3 class="tich-h3 tich-mt-2">Audit logs</h3>
-                        <p class="tich-text tich-mt-2">Security and compliance activity trail.</p>
-                        <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View audit logs</a>
-                    </article>
-                @endcan
+                @if (! ($awaitingDepartmentAssignment ?? false))
+                    @can('audit_logs.read')
+                        <article class="tich-card">
+                            <p class="tich-caption">Security</p>
+                            <h3 class="tich-h3 tich-mt-2">Audit logs</h3>
+                            <p class="tich-text tich-mt-2">Security and compliance activity trail.</p>
+                            <a href="{{ route('admin.audit-logs.index') }}" class="tich-btn tich-btn-secondary tich-mt-4">View audit logs</a>
+                        </article>
+                    @endcan
+                @endif
             </div>
         </div>
     </section>

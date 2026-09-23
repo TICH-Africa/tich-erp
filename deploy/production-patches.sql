@@ -1830,6 +1830,11 @@ ALTER TABLE `leave_requests`
 
 
 
+
+
+
+
+
 SET time_zone = '+03:00';
 
 -- Research activities, financial policy, partnership inquiry columns, weekly

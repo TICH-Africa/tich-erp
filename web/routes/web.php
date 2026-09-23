@@ -919,6 +919,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::middleware('permission:hr.staff.view')->group(function () {
             Route::get('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'index'])->name('hr.staff.index');
             Route::get('/staff/create', [\App\Http\Controllers\HR\StaffViewController::class, 'create'])->name('hr.staff.create');
+            Route::get('/staff/check-email', [\App\Http\Controllers\HR\StaffViewController::class, 'checkEmail'])->name('hr.staff.check-email');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
             Route::post('/staff/{staff}/invite', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'inviteStaff'])->name('hr.staff.invite');

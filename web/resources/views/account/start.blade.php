@@ -22,11 +22,12 @@
         </p>
     @elseif ($awaitingDepartmentAssignment ?? false)
         <p class="tich-text tich-mt-6">
-            Your profile is ready. Open the main dashboard to browse departments while HR or ICT assigns you to a unit.
+            Your profile is ready. Department modules stay locked until HR or ICT assigns you to a unit. Use My Employee Portal for personal tools.
         </p>
         <div class="tich-flex tich-mt-6" style="gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-primary">Open employee portal</a>
             @if ($canOpenDashboard)
-                <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-primary">Open department dashboard</a>
+                <a href="{{ route('dashboard') }}" class="tich-btn tich-btn-secondary">Main dashboard</a>
             @endif
         </div>
     @elseif ($canOpenEmployeePortal)
