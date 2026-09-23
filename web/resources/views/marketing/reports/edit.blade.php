@@ -54,7 +54,7 @@
             </div>
         </div>
         <div class="tich-mt-4 tich-blog-compose__footer">
-            <a href="{{ route('marketing.reports.edit', $report) }}" class="tich-btn tich-btn-secondary">Cancel</a>
+            <a href="{{ route('marketing.reports.index') }}" class="tich-btn tich-btn-secondary">Cancel</a>
             <button type="submit" class="tich-btn tich-btn-primary">Update Report</button>
         </div>
     </form>

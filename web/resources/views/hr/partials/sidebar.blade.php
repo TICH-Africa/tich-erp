@@ -11,6 +11,7 @@
             'badgeKey' => 'qa.tasks',
         ])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.staff.index'), 'label' => 'Staff Directory', 'icon' => 'users', 'active' => request()->routeIs('hr.staff.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('hr.archive.index'), 'label' => 'Staff Archive', 'icon' => 'archive', 'active' => request()->routeIs('hr.archive.*')])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.profile-changes.index'),
             'label' => 'Profile changes',

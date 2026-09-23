@@ -1130,6 +1130,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::put('/feedback/{feedback}', [\App\Http\Controllers\HR\FeedbackController::class, 'update'])->name('feedback.update');
                 Route::delete('/feedback/{feedback}', [\App\Http\Controllers\HR\FeedbackController::class, 'destroy'])->name('feedback.destroy');
             });
+
+            Route::prefix('archive')->name('hr.archive.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\HR\ArchiveController::class, 'index'])->name('index');
+            Route::post('/{staff}/archive', [\App\Http\Controllers\HR\ArchiveController::class, 'archive'])->name('store');
+            Route::post('/{staff}/restore', [\App\Http\Controllers\HR\ArchiveController::class, 'restore'])->name('restore');
+            Route::post('/{staff}/deactivate', [\App\Http\Controllers\HR\ArchiveController::class, 'deactivate'])->name('deactivate');
+            Route::delete('/{staff}', [\App\Http\Controllers\HR\ArchiveController::class, 'destroy'])->name('destroy');
+            });
         });
     });
 

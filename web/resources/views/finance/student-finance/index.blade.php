@@ -65,6 +65,10 @@
 
     <h3 class="tich-h3 tich-mt-8 tich-mb-4">Modules</h3>
     <div class="tich-grid tich-grid--2" style="gap: 0.75rem;">
+        <a href="{{ route('finance.students.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+            <h3 class="tich-h4">Student directory</h3>
+            <p class="tich-caption tich-mt-2">Search and view student records and enrolments.</p>
+        </a>
         <a href="{{ route('finance.student-finance.accounts.index') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
             <h3 class="tich-h4">Student accounts</h3>
             <p class="tich-caption tich-mt-2">Charges, payments, credits, outstanding balance, and clearance status.</p>

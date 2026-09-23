@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Staff extends Model
 {
     use HasFactory;
     use PrunesStoredFiles;
+    use SoftDeletes;
 
     protected $table = 'staff';
 
@@ -79,6 +81,9 @@ class Staff extends Model
         'project_code',
         'is_profile_locked',
         'onboarding_completed_at',
+        'archived_at',
+        'archived_by',
+        'archive_reason',
     ];
 
     protected $casts = [
@@ -96,8 +101,8 @@ class Staff extends Model
         'exit_date' => 'date',
         'onboarding_token_expires_at' => 'datetime',
         'onboarding_completed_at' => 'datetime',
-        'onboarding_completed_at' => 'datetime',
         'gross_monthly_salary' => 'decimal:2',
+        'archived_at' => 'datetime',
     ];
 
     public function department(): BelongsTo
@@ -118,6 +123,11 @@ class Staff extends Model
     public function lineManager(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'line_manager_id');
+    }
+
+    public function archivedBy(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'archived_by');
     }
 
     public function subordinates(): HasMany
@@ -349,7 +359,7 @@ class Staff extends Model
                         ->orWhereHas('roles', fn ($r) => $r->where('role_name', 'Super Admin'));
                 });
             })
-            ->whereNotIn('id', function ($sub) use ($operatorTypes) {
+            ->whereNotIn('staff.id', function ($sub) use ($operatorTypes) {
                 $sub->select('staff_id')
                     ->from('users')
                     ->whereNotNull('staff_id')

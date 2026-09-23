@@ -9,6 +9,13 @@
         <x-slot:actions>
             <a href="{{ route('hr.staff.profile-update-prompt.create', $staff) }}" class="tich-btn tich-btn-secondary">Request profile update</a>
             <a href="{{ route('hr.staff.edit', $staff) }}" class="tich-btn tich-btn-primary">Edit staff</a>
+            @if (! $staff->trashed())
+                <form method="POST" action="{{ route('hr.archive.store', $staff) }}" onsubmit="return confirm('Archive this staff member?');" style="display:inline;">
+                    @csrf
+                    <input type="hidden" name="archive_reason" value="Archived from staff profile">
+                    <button type="submit" class="tich-btn tich-btn--sm tich-btn--warning">Archive</button>
+                </form>
+            @endif
         </x-slot:actions>
     </x-page-toolbar>
 

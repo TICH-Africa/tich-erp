@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-22 15:00:59 EAT
+-- Generated: 2026-09-23 09:28:21 EAT
 -- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5483,6 +5483,41 @@ CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_program_id_foreign'
 CALL `tich_ensure_index`('marketing_leads', 'marketing_leads_updated_by_foreign', '`updated_by`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `marketing_report_attachments`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `marketing_report_attachments` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `report_id` bigint unsigned NOT NULL,
+  `file_path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `original_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `size` bigint unsigned NOT NULL,
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `marketing_report_attachments_report_id_foreign` (`report_id`),
+  KEY `marketing_report_attachments_uploaded_by_foreign` (`uploaded_by`),
+  CONSTRAINT `marketing_report_attachments_report_id_foreign` FOREIGN KEY (`report_id`) REFERENCES `marketing_reports` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `marketing_report_attachments_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `marketing_report_attachments` (add only if missing)
+CALL `tich_ensure_column`('marketing_report_attachments', 'id', 'bigint unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('marketing_report_attachments', 'report_id', 'bigint unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'file_path', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'original_name', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'mime_type', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'size', 'bigint unsigned NOT NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'uploaded_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'created_at', 'timestamp NULL');
+CALL `tich_ensure_column`('marketing_report_attachments', 'updated_at', 'timestamp NULL');
+
+-- Indexes for `marketing_report_attachments` (add only if missing)
+CALL `tich_ensure_index`('marketing_report_attachments', 'marketing_report_attachments_report_id_foreign', '`report_id`');
+CALL `tich_ensure_index`('marketing_report_attachments', 'marketing_report_attachments_uploaded_by_foreign', '`uploaded_by`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `marketing_reports`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `marketing_reports` (
@@ -10107,6 +10142,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `pension_scheme_id` bigint unsigned DEFAULT NULL,
   `employment_status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `exit_date` date DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL,
   `exit_reason` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_id` bigint unsigned DEFAULT NULL,
   `onboarding_token` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -10118,6 +10154,9 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `created_by` bigint unsigned DEFAULT NULL,
+  `archived_by` bigint unsigned DEFAULT NULL,
+  `archive_reason` text COLLATE utf8mb4_unicode_ci,
+  `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `staff_employee_number_unique` (`employee_number`),
   UNIQUE KEY `staff_organisation_email_unique` (`organisation_email`),
@@ -10131,6 +10170,8 @@ CREATE TABLE IF NOT EXISTS `staff` (
   KEY `staff_campus_id_foreign` (`campus_id`),
   KEY `staff_line_manager_id_foreign` (`line_manager_id`),
   KEY `staff_department_employment_status_index` (`department_id`,`employment_status`),
+  KEY `staff_archived_by_foreign` (`archived_by`),
+  CONSTRAINT `staff_archived_by_foreign` FOREIGN KEY (`archived_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_bank_id_foreign` FOREIGN KEY (`bank_id`) REFERENCES `staff_bank_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_campus_id_foreign` FOREIGN KEY (`campus_id`) REFERENCES `campuses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
@@ -10189,6 +10230,7 @@ CALL `tich_ensure_column`('staff', 'helb_number', 'varchar(50) NULL');
 CALL `tich_ensure_column`('staff', 'pension_scheme_id', 'bigint unsigned NULL');
 CALL `tich_ensure_column`('staff', 'employment_status', 'varchar(50) NOT NULL DEFAULT \'active\'');
 CALL `tich_ensure_column`('staff', 'exit_date', 'date NULL');
+CALL `tich_ensure_column`('staff', 'archived_at', 'timestamp NULL');
 CALL `tich_ensure_column`('staff', 'exit_reason', 'varchar(500) NULL');
 CALL `tich_ensure_column`('staff', 'user_id', 'bigint unsigned NULL');
 CALL `tich_ensure_column`('staff', 'onboarding_token', 'varchar(64) NULL');
@@ -10200,8 +10242,12 @@ CALL `tich_ensure_column`('staff', 'is_nursing_license_required', 'tinyint NOT N
 CALL `tich_ensure_column`('staff', 'created_at', 'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP');
 CALL `tich_ensure_column`('staff', 'updated_at', 'datetime NULL');
 CALL `tich_ensure_column`('staff', 'created_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('staff', 'archived_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('staff', 'archive_reason', 'text NULL');
+CALL `tich_ensure_column`('staff', 'deleted_at', 'timestamp NULL');
 
 -- Indexes for `staff` (add only if missing)
+CALL `tich_ensure_index`('staff', 'staff_archived_by_foreign', '`archived_by`');
 CALL `tich_ensure_index`('staff', 'staff_bank_id_foreign', '`bank_id`');
 CALL `tich_ensure_index`('staff', 'staff_campus_id_foreign', '`campus_id`');
 CALL `tich_ensure_index`('staff', 'staff_department_employment_status_index', '`department_id`, `employment_status`');
@@ -13047,6 +13093,10 @@ CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_created_by_foreign', '
 CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'NO ACTION', 'SET NULL');
 CALL `tich_ensure_fk`('marketing_leads', 'marketing_leads_updated_by_foreign', '`updated_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');
 
+-- Foreign keys for `marketing_report_attachments`
+CALL `tich_ensure_fk`('marketing_report_attachments', 'marketing_report_attachments_report_id_foreign', '`report_id`', 'marketing_reports', '`id`', 'NO ACTION', 'CASCADE');
+CALL `tich_ensure_fk`('marketing_report_attachments', 'marketing_report_attachments_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');
+
 -- Foreign keys for `marketing_reports`
 CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');
 CALL `tich_ensure_fk`('marketing_reports', 'marketing_reports_created_by_foreign', '`created_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');
@@ -13444,6 +13494,7 @@ CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_student_id
 CALL `tich_ensure_fk`('special_exam_requests', 'special_exam_requests_unit_id_foreign', '`unit_id`', 'units', '`id`', 'NO ACTION', 'SET NULL');
 
 -- Foreign keys for `staff`
+CALL `tich_ensure_fk`('staff', 'staff_archived_by_foreign', '`archived_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_bank_id_foreign', '`bank_id`', 'staff_bank_accounts', '`id`', 'NO ACTION', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_campus_id_foreign', '`campus_id`', 'campuses', '`id`', 'NO ACTION', 'SET NULL');
 CALL `tich_ensure_fk`('staff', 'staff_department_id_foreign', '`department_id`', 'departments', '`id`', 'NO ACTION', 'RESTRICT');

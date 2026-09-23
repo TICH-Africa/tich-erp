@@ -184,7 +184,7 @@
                 })();
             </script>
 
-            <footer class="tich-modal__footer">
+            <footer class="tich-modal__footer tich-mt-4">
                 <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="{{ $modalId }}">Cancel</button>
                 <button type="submit" class="tich-btn tich-btn-primary">
                     {{ $editing ? 'Resubmit to HR' : 'Submit to HR' }}
