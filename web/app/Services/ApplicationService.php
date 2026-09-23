@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Applicant;
 use App\Models\ApplicationDocument;
+use App\Models\Campus;
 use App\Models\CurriculumVersion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -191,7 +192,10 @@ class ApplicationService
         $intakes = $this->intakesForProgram($programId);
         $rules = [
             'program_id' => ['required', 'integer'],
-            'preferred_campus_id' => ['nullable', 'integer'],
+            'campus_selection_type' => ['nullable', 'in:campus,community_college,online'],
+            'preferred_campus_id' => ['nullable', 'integer', 'exists:campuses,id'],
+            'community_college_county' => ['nullable', 'string', 'max:100'],
+            'community_college_site_id' => ['nullable', 'integer', 'exists:campuses,id'],
         ];
 
         if ($intakes->isNotEmpty()) {
@@ -203,6 +207,67 @@ class ApplicationService
         }
 
         $validated = Validator::make($request->all(), $rules)->validate();
+        $selectionType = $validated['campus_selection_type'] ?? null;
+        $normalCampusId = $validated['preferred_campus_id'] ?? null;
+        $siteId = $validated['community_college_site_id'] ?? null;
+
+        if ($selectionType === 'campus') {
+            if (! $normalCampusId) {
+                throw ValidationException::withMessages([
+                    'preferred_campus_id' => 'Please select an available campus.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($normalCampusId)
+                ->where('is_active', 1)
+                ->first();
+
+            if (! $campus || $campus->campus_type === 'community_college') {
+                throw ValidationException::withMessages([
+                    'preferred_campus_id' => 'Please select a valid campus.',
+                ]);
+            }
+
+            $validated['preferred_campus_id'] = (int) $normalCampusId;
+            $validated['community_college_county'] = null;
+            $validated['community_college_site_id'] = null;
+        } elseif ($selectionType === 'community_college') {
+            if (! $siteId || ! $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_site_id' => 'Please select a county and community college site.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($siteId)
+                ->where('is_active', 1)
+                ->where('campus_type', 'community_college')
+                ->first();
+
+            if (! $campus || $campus->county !== $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_county' => 'Please select a site from the selected county.',
+                ]);
+            }
+
+            $validated['preferred_campus_id'] = (int) $siteId;
+            $validated['community_college_site_id'] = null;
+        } elseif ($selectionType === 'online') {
+            $validated['preferred_campus_id'] = null;
+            $validated['community_college_county'] = null;
+            $validated['community_college_site_id'] = null;
+        } else {
+            if ($normalCampusId || $siteId) {
+                throw ValidationException::withMessages([
+                    'campus_selection_type' => 'Please choose a campus or community college site.',
+                ]);
+            }
+
+            $validated['preferred_campus_id'] = null;
+            $validated['community_college_county'] = null;
+            $validated['community_college_site_id'] = null;
+        }
 
         if ($intakes->isNotEmpty()) {
             $validIntake = $intakes->contains(

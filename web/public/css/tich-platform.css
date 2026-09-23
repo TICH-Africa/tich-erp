@@ -11053,7 +11053,6 @@ form.uf-form-surface,
     color: var(--uf-text, #1a1d21);
     background: var(--uf-surface, #ffffff);
     border-radius: 4px;
-    overflow: hidden;
     border: 1px solid var(--uf-border, #c4cad2);
     width: 100%;
     max-width: none;
@@ -11072,7 +11071,6 @@ form.tich-form-grid.tich-card {
     width: 100%;
     max-width: none;
     border-radius: 4px;
-    overflow: hidden;
     border: 1px solid #c4cad2;
     padding: 0;
 }

@@ -18,7 +18,7 @@
         <dl class="tich-review-list tich-mt-4">
             <div><dt>Programme</dt><dd>{{ $review['program']->program_name ?? '-' }} ({{ $review['program']->program_code ?? ($reviewData['program_code'] ?? '-') }})</dd></div>
             <div><dt>Target intake</dt><dd>{{ $review['intakeLabel'] ?? 'Not selected' }}</dd></div>
-            <div><dt>Preferred campus</dt><dd>{{ $review['campus']->campus_name ?? 'No preference' }}</dd></div>
+            <div><dt>Preferred location</dt><dd>{{ match($reviewData['campus_selection_type'] ?? '') { 'campus' => ($review['campus']->campus_name ?? 'No preference'), 'community_college' => ($review['campus']->campus_name ?? 'No preference'), 'online' => 'Online', default => ($review['campus']->campus_name ?? 'No preference') } }}</dd></div>
         </dl>
     </section>
 

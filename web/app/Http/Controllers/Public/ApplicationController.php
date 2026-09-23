@@ -122,6 +122,7 @@ class ApplicationController extends Controller
             'draft' => $draft['data'] ?? [],
             'programs' => $this->programsService->getProgramOptions()->filter(fn ($program) => ! empty($program->id))->values(),
             'campuses' => $catalog['campuses'],
+            'campusSelectionOptions' => $this->programsService->getCampusSelectionOptions(),
             'entryQualifications' => config('tich-application.entry_qualifications', []),
             'documentTypes' => config('tich-application.document_types', []),
             'counties' => config('tich-application.counties', []),

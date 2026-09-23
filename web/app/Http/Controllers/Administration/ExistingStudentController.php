@@ -7,8 +7,11 @@ use App\Models\AcademicProgram;
 use App\Models\Campus;
 use App\Models\Student;
 use App\Services\AcademicRecordService;
+use App\Services\ProgramsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ExistingStudentController extends Controller
@@ -16,14 +19,15 @@ class ExistingStudentController extends Controller
     public function __construct(
         protected AcademicRecordService $academicService,
         protected \App\Services\Finance\StudentAccountService $accountService,
+        protected ProgramsService $programsService,
     ) {}
 
     public function create(): View
     {
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
-        $campuses = Campus::where('is_active', 1)->orderBy('campus_name')->get();
+        $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
 
-        return view('administration.applications.existing-student', compact('programs', 'campuses'));
+        return view('administration.applications.existing-student', compact('programs', 'campusSelectionOptions'));
     }
 
     public function index(Request $request): View
@@ -71,9 +75,63 @@ class ExistingStudentController extends Controller
             'program_type' => 'required|in:diploma,certificate',
             'duration_months' => 'required|integer|min:1',
             'semester' => 'required|in:first,second,third',
-            'campus_id' => 'required|exists:campuses,id',
+            'campus_selection_type' => 'required|in:campus,community_college,online',
+            'campus_id' => 'nullable|exists:campuses,id',
+            'community_college_county' => 'nullable|string|max:100',
+            'community_college_site_id' => 'nullable|exists:campuses,id',
             'notes' => 'nullable|string',
         ]);
+
+        $selectionType = $validated['campus_selection_type'];
+        $normalCampusId = $validated['campus_id'] ?? null;
+        $siteId = $validated['community_college_site_id'] ?? null;
+
+        if ($selectionType === 'campus') {
+            if (! $normalCampusId) {
+                throw ValidationException::withMessages([
+                    'campus_id' => 'Please select an available campus.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($normalCampusId)
+                ->where('is_active', 1)
+                ->first();
+
+            if (! $campus || $campus->campus_type === 'community_college') {
+                throw ValidationException::withMessages([
+                    'campus_id' => 'Please select a valid campus.',
+                ]);
+            }
+
+            $validated['campus_id'] = (int) $normalCampusId;
+        } elseif ($selectionType === 'community_college') {
+            if (! $siteId || ! $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_site_id' => 'Please select a county and community college site.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($siteId)
+                ->where('is_active', 1)
+                ->where('campus_type', 'community_college')
+                ->first();
+
+            if (! $campus || $campus->county !== $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_county' => 'Please select a site from the selected county.',
+                ]);
+            }
+
+            $validated['campus_id'] = (int) $siteId;
+        } elseif ($selectionType === 'online') {
+            $validated['campus_id'] = null;
+        } else {
+            throw ValidationException::withMessages([
+                'campus_selection_type' => 'Please choose a campus or community college site.',
+            ]);
+        }
 
         $yearJoined = \Carbon\Carbon::parse($validated['year_joined']);
 

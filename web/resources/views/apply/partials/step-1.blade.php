@@ -6,6 +6,11 @@
     $selectedProgramCode = strtoupper(old('program_code', $draft['program_code'] ?? ''));
     $selectedIntakeYear = old('intake_year', $draft['intake_year'] ?? '');
     $selectedIntakeMonth = old('intake_month', $draft['intake_month'] ?? '');
+    $selectedCampusId = old('preferred_campus_id', $draft['preferred_campus_id'] ?? '');
+    $selectedCampus = collect($campuses)->first(fn ($campus) => ($campus->id ?? null) == $selectedCampusId);
+    $selectedCounty = old('community_college_county', $draft['community_college_county'] ?? ($selectedCampus?->county ?? ''));
+    $selectedSiteId = old('community_college_site_id', $draft['community_college_site_id'] ?? ($selectedCampus?->campus_type === 'community_college' ? $selectedCampusId : ''));
+    $campusSelectionType = old('campus_selection_type', $draft['campus_selection_type'] ?? ($selectedCampus?->campus_type === 'community_college' ? 'community_college' : ($selectedCampusId ? 'campus' : '')));
 @endphp
 
 @if ($programs->isEmpty())
@@ -48,15 +53,52 @@
 </div>
 
 <div class="tich-form-group">
-    <label for="preferred_campus_id" class="tich-label">Preferred campus</label>
-    <select id="preferred_campus_id" name="preferred_campus_id" class="tich-input">
+    <label for="campus_selection_type" class="tich-label">Preferred location type</label>
+    <select id="campus_selection_type" name="campus_selection_type" class="tich-input">
         <option value="">No preference</option>
-        @foreach ($campuses as $campus)
-            <option value="{{ $campus->id }}" @selected(old('preferred_campus_id', $draft['preferred_campus_id'] ?? '') == $campus->id)>
+        @if($campusSelectionOptions['campuses']->isNotEmpty())
+            <option value="campus" @selected($campusSelectionType === 'campus')>Campus</option>
+        @endif
+        @if($campusSelectionOptions['community_college_sites']->isNotEmpty())
+            <option value="community_college" @selected($campusSelectionType === 'community_college')>Community College</option>
+        @endif
+        <option value="online" @selected($campusSelectionType === 'online')>Online</option>
+    </select>
+    @error('campus_selection_type')<p class="tich-field-error">{{ $message }}</p>@enderror
+</div>
+
+<div class="tich-form-group" id="campus-selection-campus-field" @if($campusSelectionType !== 'campus') hidden @endif>
+    <label for="preferred_campus_id" class="tich-label">Preferred campus</label>
+    <select id="preferred_campus_id" name="preferred_campus_id" class="tich-input" @if($campusSelectionType !== 'campus') disabled @endif>
+        <option value="">Select campus</option>
+        @foreach ($campusSelectionOptions['campuses'] as $campus)
+            <option value="{{ $campus->id }}" @selected($selectedCampusId == $campus->id)>
                 {{ $campus->campus_name }}
             </option>
         @endforeach
     </select>
+    @error('preferred_campus_id')<p class="tich-field-error">{{ $message }}</p>@enderror
+</div>
+
+<div class="tich-form-group" id="campus-selection-community-field" @if($campusSelectionType !== 'community_college') hidden @endif>
+    <label for="community_college_county" class="tich-label">County</label>
+    <select id="community_college_county" name="community_college_county" class="tich-input" @if($campusSelectionType !== 'community_college') disabled @endif>
+        <option value="">Select county</option>
+        @foreach($campusSelectionOptions['community_college_sites']->keys() as $county)
+            <option value="{{ $county }}" @selected($selectedCounty == $county)>{{ $county }}</option>
+        @endforeach
+    </select>
+    @error('community_college_county')<p class="tich-field-error">{{ $message }}</p>@enderror
+    <label for="community_college_site_id" class="tich-label">Community college site</label>
+    <select id="community_college_site_id" name="community_college_site_id" class="tich-input" @if($campusSelectionType !== 'community_college') disabled @endif>
+        <option value="">Select site</option>
+        @foreach(($campusSelectionOptions['community_college_sites'][$selectedCounty] ?? collect()) as $site)
+            <option value="{{ $site->id }}" @selected($selectedSiteId == $site->id)>
+                {{ $site->campus_name }}
+            </option>
+        @endforeach
+    </select>
+    @error('community_college_site_id')<p class="tich-field-error">{{ $message }}</p>@enderror
 </div>
 
 @php
@@ -121,6 +163,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (programSelect.value) {
         renderIntakes(programSelect.value);
+    }
+
+    const campusSelectionType = document.getElementById('campus_selection_type');
+    const campusSelectionField = document.getElementById('campus-selection-campus-field');
+    const campusSelect = document.getElementById('preferred_campus_id');
+    const communityField = document.getElementById('campus-selection-community-field');
+    const countySelect = document.getElementById('community_college_county');
+    const siteSelect = document.getElementById('community_college_site_id');
+    const ccSites = @json($campusSelectionOptions['community_college_sites']);
+
+    function renderCcSites(county) {
+        siteSelect.innerHTML = '<option value="">Select site</option>';
+        (ccSites[county] || []).forEach(function (site) {
+            const option = document.createElement('option');
+            option.value = site.id;
+            option.textContent = site.campus_name;
+            siteSelect.appendChild(option);
+        });
+    }
+
+    function syncCampusSelection() {
+        const type = campusSelectionType.value;
+        const isCampus = type === 'campus';
+        const isCommunity = type === 'community_college';
+        const isOnline = type === 'online';
+        campusSelectionField.hidden = !isCampus;
+        campusSelect.disabled = !isCampus;
+        communityField.hidden = !isCommunity;
+        countySelect.disabled = !isCommunity;
+        siteSelect.disabled = !isCommunity;
+        if (isCommunity && countySelect.value) {
+            renderCcSites(countySelect.value);
+        } else {
+            siteSelect.innerHTML = '<option value="">Select site</option>';
+        }
+    }
+
+    if (campusSelectionType) {
+        campusSelectionType.addEventListener('change', syncCampusSelection);
+        countySelect.addEventListener('change', function () {
+            renderCcSites(countySelect.value);
+        });
+        syncCampusSelection();
     }
 });
 </script>

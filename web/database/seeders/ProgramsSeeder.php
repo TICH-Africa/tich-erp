@@ -46,11 +46,14 @@ class ProgramsSeeder extends Seeder
 
     private function ensureMainCampus(): int
     {
-        $campusId = DB::table('campuses')->where('campus_code', 'MAIN')->value('id');
+        $campusId = DB::table('campuses')
+            ->where('campus_type', 'main')
+            ->where('county', 'Kisumu')
+            ->orderBy('id')
+            ->value('id');
 
         if (! $campusId) {
             $campusId = DB::table('campuses')->insertGetId([
-                'campus_code' => 'MAIN',
                 'campus_name' => 'TICH Main Campus',
                 'campus_type' => 'main',
                 'county' => 'Kisumu',

@@ -14,17 +14,16 @@ class CampusSeeder extends Seeder
             return;
         }
 
-        $this->ensureCampus('MAIN', 'Main Campus', 'main', null);
-        $this->ensureCampus('MLIMANI', 'Mlimani Campus', 'campus', null);
+        $this->ensureCampus('Main Campus', 'main', null);
+        $this->ensureCampus('Mlimani Campus', 'campus', null);
     }
 
-    private function ensureCampus(string $code, string $name, string $type, ?int $parentId): int
+    private function ensureCampus(string $name, string $type, ?int $parentId): int
     {
-        $id = DB::table('campuses')->where('campus_code', $code)->value('id');
+        $id = DB::table('campuses')->where('campus_name', $name)->value('id');
 
         if (! $id) {
             $id = DB::table('campuses')->insertGetId([
-                'campus_code' => $code,
                 'campus_name' => $name,
                 'campus_type' => $type,
                 'parent_campus_id' => $parentId,

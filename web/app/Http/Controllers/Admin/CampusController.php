@@ -7,6 +7,7 @@ use App\Models\Campus;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\View\View;
 
 class CampusController extends Controller
@@ -29,18 +30,37 @@ class CampusController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'campus_code' => ['required', 'string', 'max:20', 'unique:campuses,campus_code'],
+        $rules = [
             'campus_name' => ['required', 'string', 'max:200'],
             'campus_type' => ['required', 'in:'.implode(',', Campus::typeKeys())],
             'parent_campus_id' => ['nullable', 'exists:campuses,id'],
             'county' => ['nullable', 'string', 'max:100'],
             'sub_county' => ['nullable', 'string', 'max:100'],
             'physical_address' => ['nullable', 'string', 'max:500'],
+        ];
+
+        if ($request->input('campus_type') === 'community_college') {
+            $rules['county'] = ['required', 'string', 'max:100'];
+        }
+
+        $validated = $request->validate($rules);
+        $attributes = Arr::only($validated, [
+            'campus_name',
+            'campus_type',
+            'parent_campus_id',
+            'county',
+            'sub_county',
+            'physical_address',
         ]);
 
+        if ($request->input('campus_type') === 'community_college') {
+            $attributes['parent_campus_id'] = null;
+            $attributes['sub_county'] = null;
+            $attributes['physical_address'] = null;
+        }
+
         $campus = Campus::create([
-            ...$validated,
+            ...$attributes,
             'is_active' => 1,
             'created_by' => $request->user()->id,
         ]);
@@ -50,7 +70,14 @@ class CampusController extends Controller
             'campuses',
             $campus->id,
             null,
-            $campus->only(['campus_code', 'campus_name', 'campus_type']),
+            $campus->only([
+                'campus_name',
+                'campus_type',
+                'parent_campus_id',
+                'county',
+                'sub_county',
+                'physical_address',
+            ]),
             null,
             'success',
             $request->user()->id,
@@ -62,8 +89,7 @@ class CampusController extends Controller
 
     public function update(Request $request, Campus $campus): RedirectResponse
     {
-        $validated = $request->validate([
-            'campus_code' => ['required', 'string', 'max:20', 'unique:campuses,campus_code,'.$campus->id],
+        $rules = [
             'campus_name' => ['required', 'string', 'max:200'],
             'campus_type' => ['required', 'in:'.implode(',', Campus::typeKeys())],
             'parent_campus_id' => ['nullable', 'exists:campuses,id'],
@@ -71,11 +97,39 @@ class CampusController extends Controller
             'sub_county' => ['nullable', 'string', 'max:100'],
             'physical_address' => ['nullable', 'string', 'max:500'],
             'is_active' => ['nullable', 'boolean'],
+        ];
+
+        if ($request->input('campus_type') === 'community_college') {
+            $rules['county'] = ['required', 'string', 'max:100'];
+        }
+
+        $validated = $request->validate($rules);
+        $old = $campus->only([
+            'campus_name',
+            'campus_type',
+            'parent_campus_id',
+            'county',
+            'sub_county',
+            'physical_address',
+            'is_active',
+        ]);
+        $attributes = Arr::only($validated, [
+            'campus_name',
+            'campus_type',
+            'parent_campus_id',
+            'county',
+            'sub_county',
+            'physical_address',
         ]);
 
-        $old = $campus->only(['campus_code', 'campus_name', 'campus_type', 'is_active']);
+        if ($request->input('campus_type') === 'community_college') {
+            $attributes['parent_campus_id'] = null;
+            $attributes['sub_county'] = null;
+            $attributes['physical_address'] = null;
+        }
+
         $campus->update([
-            ...$validated,
+            ...$attributes,
             'is_active' => $request->boolean('is_active'),
         ]);
 
@@ -84,7 +138,15 @@ class CampusController extends Controller
             'campuses',
             $campus->id,
             $old,
-            $campus->only(['campus_code', 'campus_name', 'campus_type', 'is_active']),
+            $campus->only([
+                'campus_name',
+                'campus_type',
+                'parent_campus_id',
+                'county',
+                'sub_county',
+                'physical_address',
+                'is_active',
+            ]),
             null,
             'success',
             $request->user()->id,

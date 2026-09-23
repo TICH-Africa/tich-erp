@@ -158,17 +158,42 @@ class ProgramsService
         return 'Contact admissions for current fee structure';
     }
 
+    public function getCampusSelectionOptions(): array
+    {
+        $campuses = $this->getCampuses();
+        $normalCampuses = $campuses
+            ->filter(fn ($campus) => ($campus->campus_type ?? '') !== 'community_college')
+            ->sortBy('campus_name')
+            ->values();
+        $communityCollegeSites = $campuses
+            ->filter(fn ($campus) => ($campus->campus_type ?? '') === 'community_college')
+            ->filter(fn ($campus) => filled($campus->county ?? null))
+            ->groupBy('county')
+            ->map(fn ($sites) => $sites->sortBy('campus_name')->values())
+            ->sortKeys();
+
+        return [
+            'campuses' => $normalCampuses,
+            'community_college_sites' => $communityCollegeSites,
+        ];
+    }
+
     private function getCampuses(): Collection
     {
         if ($this->tableExists('campuses')) {
             return Campus::query()
                 ->where('is_active', 1)
                 ->orderBy('campus_name')
-                ->get(['id', 'campus_name', 'campus_code']);
+                ->get(['id', 'campus_name', 'campus_type', 'county']);
         }
 
         return collect([
-            (object) ['id' => null, 'campus_name' => 'Main Campus, Kisumu', 'campus_code' => 'MAIN'],
+            (object) [
+                'id' => null,
+                'campus_name' => 'Main Campus, Kisumu',
+                'campus_type' => 'main',
+                'county' => 'Kisumu',
+            ],
         ]);
     }
 

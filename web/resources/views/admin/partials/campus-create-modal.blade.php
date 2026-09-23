@@ -36,6 +36,7 @@
             @include('admin.partials.campus-form-fields', [
                 'parentCampuses' => $parentCampuses,
                 'campusTypes' => $campusTypes,
+                'counties' => config('tich-application.counties', []),
             ])
 
             <footer class="tich-modal__footer">
