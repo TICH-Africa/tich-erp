@@ -2,6 +2,9 @@
  * Prevent double form submissions across the platform.
  * - Injects a one-time _submit_nonce per form
  * - Disables submit controls after the first click/submit
+ * - Preserves the clicked submitter's name/value as a hidden field BEFORE disabling
+ *   (disabled controls are omitted from the POST body — that broke wizards using
+ *   name="direction" value="next|back|stay")
  * Opt out: add data-allow-resubmit on the <form>
  */
 (function () {
@@ -25,6 +28,23 @@
         input.name = '_submit_nonce';
         input.value = uuid();
         form.appendChild(input);
+    }
+
+    function preserveSubmitter(form, submitter) {
+        if (!submitter || !submitter.name) {
+            return;
+        }
+
+        form.querySelectorAll('input[data-submit-once-value]').forEach(function (el) {
+            el.parentNode.removeChild(el);
+        });
+
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = submitter.name;
+        hidden.value = submitter.value;
+        hidden.setAttribute('data-submit-once-value', '1');
+        form.appendChild(hidden);
     }
 
     function lockForm(form) {
@@ -71,8 +91,24 @@
         if (form.hasAttribute('data-allow-resubmit')) {
             return;
         }
+        if (form.getAttribute('data-submit-once-bound') === '1') {
+            return;
+        }
+        form.setAttribute('data-submit-once-bound', '1');
 
         ensureNonce(form);
+
+        var lastSubmitter = null;
+
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                lastSubmitter = btn;
+                // Capture click before HTML5 validation fails and re-enables.
+                if (form.checkValidity && !form.checkValidity()) {
+                    return;
+                }
+            });
+        });
 
         form.addEventListener('submit', function (event) {
             if (form.getAttribute('data-submit-locked') === '1') {
@@ -81,17 +117,9 @@
                 return;
             }
             ensureNonce(form);
+            preserveSubmitter(form, event.submitter || lastSubmitter);
             lockForm(form);
         }, true);
-
-        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                // Capture click before HTML5 validation fails and re-enables.
-                if (form.checkValidity && !form.checkValidity()) {
-                    return;
-                }
-            });
-        });
     }
 
     function init() {

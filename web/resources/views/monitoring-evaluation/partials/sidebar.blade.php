@@ -19,13 +19,6 @@
             'active' => request()->routeIs('monitoring_evaluation.policy.sign*') || request()->routeIs('monitoring_evaluation.me-policy.sign*'),
             'badgeKey' => 'policy.sign',
         ])
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('monitoring_evaluation.qa.tasks.index'),
-            'label' => 'QA assessment tasks',
-            'icon' => 'layers',
-            'active' => request()->routeIs('monitoring_evaluation.qa.tasks.*'),
-            'badgeKey' => 'qa.tasks',
-        ])
         @include('partials.navigation.department-me-reports-link', ['module' => 'monitoring_evaluation', 'label' => 'My department reports'])
     </nav>
     <div class="tich-admin-sidebar__footer">

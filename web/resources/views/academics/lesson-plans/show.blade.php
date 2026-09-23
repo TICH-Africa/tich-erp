@@ -57,6 +57,18 @@
                     @if ($plan->hod_comments)
                         <dt>HOD comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
                     @endif
+                    @if ($plan->qa_acknowledged_at)
+                        <dt>QA acknowledgement</dt>
+                        <dd>
+                            {{ $plan->qaAcknowledgedByStaff?->fullName() ?? 'QA' }}
+                            · {{ $plan->qa_acknowledged_at->format('d M Y H:i') }}
+                            @if ($plan->qa_comments)
+                                <p class="tich-caption" style="white-space:pre-wrap;margin-top:0.35rem;">{{ $plan->qa_comments }}</p>
+                            @endif
+                        </dd>
+                    @else
+                        <dt>QA acknowledgement</dt><dd>Pending</dd>
+                    @endif
                 </dl>
             @endif
         </article>

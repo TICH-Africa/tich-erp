@@ -42,7 +42,6 @@ class HrSidebarNotificationService
         'grievances' => 'Grievances',
         'feedback' => 'Feedback',
         'employee-relations' => 'Employee Relations',
-        'qa.tasks' => 'QA assessment tasks',
     ];
 
     public function counts(bool $fresh = false): array

@@ -840,6 +840,17 @@ select.tich-select:focus {
     color: var(--tich-green-dark);
 }
 
+.tich-alert--info {
+    background-color: var(--tich-status-info-bg);
+    border-color: var(--tich-status-info-border);
+    color: var(--tich-status-info-text);
+}
+
+.tich-alert--info .tich-text,
+.tich-alert--info .tich-caption {
+    color: inherit;
+}
+
 .tich-alert--error {
     background-color: var(--tich-error-bg);
     border-color: var(--tich-error-border);
@@ -11736,7 +11747,7 @@ input[type="time"]::-moz-calendar-picker-indicator {
     background: color-mix(in srgb, #243442 45%, transparent);
 }
 
-/* Weekly time log ó days outside the week/month period */
+/* Weekly time log ù days outside the week/month period */
 .wtl-table tr.wtl-row--outside td {
     opacity: 0.45;
     background: color-mix(in srgb, var(--tich-border, #e5e7eb) 35%, transparent);

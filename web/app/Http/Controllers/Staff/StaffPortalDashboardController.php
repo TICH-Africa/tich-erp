@@ -8,6 +8,7 @@ use App\Models\LessonPlan;
 use App\Models\Semester;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use App\Services\AcademicWorkplanService;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
@@ -38,6 +39,7 @@ class StaffPortalDashboardController extends Controller
         protected StaffExamMarksService $examMarks,
         protected LessonPlanApprovalService $lessonPlanApprovals,
         protected DepartmentPerformanceService $performance,
+        protected AcademicWorkplanService $academicWorkplans,
     ) {}
 
     public function __invoke(Request $request): View
@@ -118,14 +120,17 @@ class StaffPortalDashboardController extends Controller
         }
 
         $hodManagement = null;
-        if ($section === 'hod-management' || $request->user()->hasAnyRole(['HOD', 'Super Admin'])) {
+        $hodWorkplans = collect();
+        if ($section === 'hod-management' || $section === 'hod-workplans' || $request->user()->hasAnyRole(['HOD', 'Super Admin'])) {
             $hodManagement = [
-                'lesson_plans' => $this-> hodLessonPlans($staff),
-                'allocations' => $this-> hodUnitAllocations($staff),
-                'attendance' => $this-> hodAttendance($staff),
-                'performance' => $this-> hodPerformance($staff),
-                'leave' => $this-> hodDepartmentLeave($staff),
+                'lesson_plans' => $this->hodLessonPlans($staff),
+                'allocations' => $this->hodUnitAllocations($staff),
+                'attendance' => $this->hodAttendance($staff),
+                'performance' => $this->hodPerformance($staff),
+                'leave' => $this->hodDepartmentLeave($staff),
+                'workplans' => $this->academicWorkplans->forDepartment((int) ($staff->department_id ?? 0)),
             ];
+            $hodWorkplans = $hodManagement['workplans'];
         }
 
         $staffDocuments = null;
@@ -189,6 +194,7 @@ class StaffPortalDashboardController extends Controller
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
             'hodManagement' => $hodManagement,
+            'hodWorkplans' => $hodWorkplans,
             'staffDocuments' => $staffDocuments,
             'leaveBalances' => $leaveBalances,
             'leaveRequests' => $leaveRequests,

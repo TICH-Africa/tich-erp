@@ -16,7 +16,7 @@
                 <p class="tich-admin-sidebar__section">{{ $item['label'] }}</p>
             @elseif ($item['type'] === 'dropdown')
                 @php
-                    $isHodSubSection = in_array($section, ['hod-management', 'hod-lesson-plans', 'hod-unit-allocations', 'hod-attendance', 'hod-leave', 'hod-performance']);
+                    $isHodSubSection = in_array($section, ['hod-management', 'hod-lesson-plans', 'hod-unit-allocations', 'hod-workload', 'hod-workplans', 'hod-attendance', 'hod-leave', 'hod-performance']);
                 @endphp
                 <div data-sidebar-group class="tich-sidebar-group{{ $isHodSubSection ? ' is-open' : '' }}">
                     <button type="button" data-sidebar-group-toggle class="tich-admin-sidebar__group-toggle" aria-expanded="{{ $isHodSubSection ? 'true' : 'false' }}">

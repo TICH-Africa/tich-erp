@@ -30,7 +30,6 @@ class EmployeeSidebarNotificationService
         'concerns' => 'Concerns & issues',
         'feedback' => 'My feedback',
         'policies' => 'HR Policies',
-        'qa.tasks' => 'QA assessment tasks',
     ];
 
     /**

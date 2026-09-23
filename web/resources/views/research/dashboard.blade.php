@@ -12,8 +12,6 @@
         </div>
     </header>
 
-    @include('qa.partials.assigned-tasks-panel')
-
     <div class="tich-mod-dash__metrics">
         <article class="tich-mod-dash__metric">
             <p class="tich-mod-dash__metric-label">Activities</p>

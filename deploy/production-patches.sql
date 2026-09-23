@@ -1624,18 +1624,111 @@ CREATE TABLE IF NOT EXISTS `staff_weekly_time_log_days` (
 
 
 
+-- -----------------------------------------------------------------------------
+-- 31. IQA assessments (NATIONAL POLYTECHNIC QUALITY AUDIT TOOL)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `iqa_assessments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL DEFAULT 'NATIONAL POLYTECHNIC QUALITY AUDIT TOOL',
+  `assessment_year` smallint(5) unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `current_section` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `updated_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `published_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `publisher_name` varchar(200) DEFAULT NULL,
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `iqa_status_year_idx` (`status`,`assessment_year`),
+  KEY `iqa_assessments_created_by_user_id_foreign` (`created_by_user_id`),
+  KEY `iqa_assessments_updated_by_user_id_foreign` (`updated_by_user_id`),
+  KEY `iqa_assessments_published_by_user_id_foreign` (`published_by_user_id`),
+  CONSTRAINT `iqa_assessments_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_updated_by_user_id_foreign` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `iqa_assessments_published_by_user_id_foreign` FOREIGN KEY (`published_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 32. Retire QCA flags and QA corrective actions
+DROP TABLE IF EXISTS `qca_milestones`;
+DROP TABLE IF EXISTS `qca_flags`;
+DROP TABLE IF EXISTS `qa_corrective_actions`;
 
+-- -----------------------------------------------------------------------------
+-- 33. Academic workplans + lesson plan QA acknowledgement columns
+-- -----------------------------------------------------------------------------
+ALTER TABLE `lesson_plans`
+    ADD COLUMN IF NOT EXISTS `qa_acknowledged_by` bigint(20) unsigned NULL DEFAULT NULL AFTER `registrar_visible`,
+    ADD COLUMN IF NOT EXISTS `qa_acknowledged_at` datetime NULL DEFAULT NULL AFTER `qa_acknowledged_by`,
+    ADD COLUMN IF NOT EXISTS `qa_comments` text NULL DEFAULT NULL AFTER `qa_acknowledged_at`;
 
+CREATE TABLE IF NOT EXISTS `academic_workplans` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workplan_number` varchar(40) NOT NULL,
+  `department_id` bigint(20) unsigned NOT NULL,
+  `semester_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `objectives` text DEFAULT NULL,
+  `resources` text DEFAULT NULL,
+  `kpis` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `prepared_by_staff_id` bigint(20) unsigned NOT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `registrar_status` varchar(40) NOT NULL DEFAULT 'pending',
+  `registrar_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `registrar_acted_at` timestamp NULL DEFAULT NULL,
+  `registrar_comments` text DEFAULT NULL,
+  `qa_status` varchar(40) NOT NULL DEFAULT 'pending',
+  `qa_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `qa_acted_at` timestamp NULL DEFAULT NULL,
+  `qa_comments` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `academic_workplans_workplan_number_unique` (`workplan_number`),
+  KEY `awp_dept_sem_status_idx` (`department_id`,`semester_id`,`status`),
+  KEY `academic_workplans_semester_id_foreign` (`semester_id`),
+  KEY `academic_workplans_prepared_by_staff_id_foreign` (`prepared_by_staff_id`),
+  KEY `academic_workplans_registrar_staff_id_foreign` (`registrar_staff_id`),
+  KEY `academic_workplans_qa_staff_id_foreign` (`qa_staff_id`),
+  CONSTRAINT `academic_workplans_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `academic_workplans_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`),
+  CONSTRAINT `academic_workplans_prepared_by_staff_id_foreign` FOREIGN KEY (`prepared_by_staff_id`) REFERENCES `staff` (`id`),
+  CONSTRAINT `academic_workplans_registrar_staff_id_foreign` FOREIGN KEY (`registrar_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_workplans_qa_staff_id_foreign` FOREIGN KEY (`qa_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
-
+CREATE TABLE IF NOT EXISTS `academic_workplan_activities` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workplan_id` bigint(20) unsigned NOT NULL,
+  `activity` varchar(500) NOT NULL,
+  `timeline_start` date DEFAULT NULL,
+  `timeline_end` date DEFAULT NULL,
+  `kpi` varchar(500) DEFAULT NULL,
+  `resources` varchar(500) DEFAULT NULL,
+  `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_workplan_activities_workplan_id_foreign` (`workplan_id`),
+  CONSTRAINT `academic_workplan_activities_workplan_id_foreign` FOREIGN KEY (`workplan_id`) REFERENCES `academic_workplans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- PRESENT IN PRODUCTION UP TO HERE
+
+
+
+
+
+
+
+
 SET time_zone = '+03:00';
 
--- Research activities, financial policy, partnership inquiry columns, and weekly
--- time logs are also covered by deploy/production.sql / Laravel migrations.
--- Run production.sql first on fresh hosts.
+-- Research activities, financial policy, partnership inquiry columns, weekly
+-- time logs, IQA assessments, and academic workplans are also covered by
+-- deploy/production.sql / Laravel migrations. Run production.sql first on fresh hosts.
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';

@@ -3,38 +3,19 @@
 namespace App\Http\Controllers\Qa;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
+use App\Models\Qa\IqaAssessment;
 use App\Models\Qa\QaComplianceScore;
-use App\Models\Qa\QaCorrectiveAction;
-use App\Models\Qa\QaPlan;
-use App\Models\Qa\QcaFlag;
-use App\Services\AuditService;
-use App\Services\Qa\QaAssessmentService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(QaAssessmentService $qa): View
+    public function __invoke(): View
     {
-        $openPlans = QaPlan::query()
-            ->whereIn('status', ['draft', 'dispatched', 'in_progress'])
+        $openPlans = IqaAssessment::query()
+            ->where('status', IqaAssessment::STATUS_DRAFT)
             ->orderByDesc('id')
             ->limit(8)
             ->get();
-
-        $openActions = QaCorrectiveAction::query()
-            ->with(['department', 'plan'])
-            ->whereIn('status', ['open', 'in_progress', 'overdue'])
-            ->orderBy('resolution_deadline')
-            ->limit(8)
-            ->get();
-
-        $qaPendingTasks = $qa->outstandingTasksForUser(
-            auth()->user(),
-            \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
-                \App\Support\QaTaskModuleContext::forModule('qa')
-            )
-        );
 
         $totalCompliance = QaComplianceScore::query()
             ->where('items_submitted', '>', 0)
@@ -42,15 +23,6 @@ class DashboardController extends Controller
         $totalCompliance = round($totalCompliance ?? 0, 2);
 
         $complianceStatus = $totalCompliance >= 80 ? 'green' : ($totalCompliance >= 60 ? 'amber' : 'red');
-
-        $openFlags = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->count();
-
-        $criticalFlags = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->whereIn('severity', ['High', 'Critical'])
-            ->count();
 
         $complianceDist = QaComplianceScore::query()
             ->where('items_submitted', '>', 0)
@@ -64,21 +36,11 @@ class DashboardController extends Controller
                 } else {
                     $carry['red']++;
                 }
+
                 return $carry;
             }, ['green' => 0, 'amber' => 0, 'red' => 0]);
 
-        $flagsBySeverity = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->get()
-            ->groupBy('severity')
-            ->map(fn ($flags) => $flags->count());
-
-        $actionsByStatus = QaCorrectiveAction::query()
-            ->groupBy('status')
-            ->selectRaw('status, count(*) as count')
-            ->pluck('count', 'status');
-
-        $plansByStatus = QaPlan::query()
+        $plansByStatus = IqaAssessment::query()
             ->groupBy('status')
             ->selectRaw('status, count(*) as count')
             ->pluck('count', 'status');
@@ -90,27 +52,22 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $recentPlans = QaPlan::query()
-            ->whereIn('status', ['dispatched', 'in_progress', 'compiled'])
+        $recentPlans = IqaAssessment::query()
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get();
 
         return view('qa.dashboard', [
             'openPlans' => $openPlans,
-            'openActions' => $openActions,
-            'pendingTasks' => $qaPendingTasks->count(),
-            'qaPendingTasks' => $qaPendingTasks,
+            'pendingTasks' => 0,
+            'qaPendingTasks' => collect(),
             'stats' => [
-                'draft' => QaPlan::query()->where('status', 'draft')->count(),
-                'active' => QaPlan::query()->whereIn('status', ['dispatched', 'in_progress'])->count(),
-                'compiled' => QaPlan::query()->where('status', 'compiled')->count(),
-                'corrective' => QaCorrectiveAction::query()->whereIn('status', ['open', 'in_progress', 'overdue'])->count(),
+                'draft' => IqaAssessment::query()->where('status', IqaAssessment::STATUS_DRAFT)->count(),
+                'active' => 0,
+                'compiled' => IqaAssessment::query()->where('status', IqaAssessment::STATUS_PUBLISHED)->count(),
             ],
             'totalCompliance' => $totalCompliance,
             'complianceStatus' => $complianceStatus,
-            'openFlags' => $openFlags,
-            'criticalFlags' => $criticalFlags,
             'topFailing' => $topFailing,
             'recentPlans' => $recentPlans,
             'chartData' => [
@@ -119,13 +76,6 @@ class DashboardController extends Controller
                     'amber' => $complianceDist['amber'],
                     'red' => $complianceDist['red'],
                 ],
-                'flagsBySeverity' => [
-                    'Low' => $flagsBySeverity->get('Low', 0),
-                    'Medium' => $flagsBySeverity->get('Medium', 0),
-                    'High' => $flagsBySeverity->get('High', 0),
-                    'Critical' => $flagsBySeverity->get('Critical', 0),
-                ],
-                'actionsByStatus' => $actionsByStatus,
                 'plansByStatus' => $plansByStatus,
             ],
         ]);

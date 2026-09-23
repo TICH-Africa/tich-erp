@@ -44,7 +44,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $hub = $this->authorizeHub($request, $department);
         $staff = $this->staffPortal->staffForUser($request->user());
 
-        $plan->load(['allocation.unit', 'allocation.semester', 'preparedByStaff', 'hodStaff', 'approvals.approver']);
+        $plan->load(['allocation.unit', 'allocation.semester', 'preparedByStaff', 'hodStaff', 'qaAcknowledgedByStaff', 'approvals.approver']);
 
         abort_unless($plan->allocation?->unit, 404);
 

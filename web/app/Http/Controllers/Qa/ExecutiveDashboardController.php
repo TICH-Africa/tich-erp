@@ -3,11 +3,8 @@
 namespace App\Http\Controllers\Qa;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
 use App\Models\Qa\QaComplianceScore;
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaPlan;
-use App\Models\Qa\QcaFlag;
 use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
@@ -26,19 +23,6 @@ class ExecutiveDashboardController extends Controller
         $totalCompliance = round($totalCompliance ?? 0, 2);
 
         $status = $totalCompliance >= 80 ? 'green' : ($totalCompliance >= 60 ? 'amber' : 'red');
-
-        $openFlags = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->count();
-
-        $criticalFlags = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->whereIn('severity', ['High', 'Critical'])
-            ->count();
-
-        $actionCount = QaCorrectiveAction::query()
-            ->whereIn('status', ['open', 'in_progress', 'overdue'])
-            ->count();
 
         $failingDepartments = QaComplianceScore::query()
             ->with(['department', 'plan'])
@@ -62,17 +46,6 @@ class ExecutiveDashboardController extends Controller
                 return $carry;
             }, ['green' => 0, 'amber' => 0, 'red' => 0]);
 
-        $flagsBySeverity = QcaFlag::query()
-            ->whereIn('status', ['open', 'in_progress'])
-            ->get()
-            ->groupBy('severity')
-            ->map(fn ($flags) => $flags->count());
-
-        $actionsByStatus = QaCorrectiveAction::query()
-            ->groupBy('status')
-            ->selectRaw('status, count(*) as count')
-            ->pluck('count', 'status');
-
         $plansByStatus = QaPlan::query()
             ->whereIn('status', ['draft', 'dispatched', 'in_progress', 'compiled'])
             ->groupBy('status')
@@ -89,9 +62,6 @@ class ExecutiveDashboardController extends Controller
         return view('qa.executive-dashboard.index', [
             'totalCompliance' => $totalCompliance,
             'complianceStatus' => $status,
-            'openFlags' => $openFlags,
-            'criticalFlags' => $criticalFlags,
-            'actionCount' => $actionCount,
             'complianceByHub' => QaComplianceScore::query()
                 ->with(['department'])
                 ->where('items_submitted', '>', 0)
@@ -107,13 +77,6 @@ class ExecutiveDashboardController extends Controller
                     'amber' => $complianceDist['amber'],
                     'red' => $complianceDist['red'],
                 ],
-                'flagsBySeverity' => [
-                    'Low' => $flagsBySeverity->get('Low', 0),
-                    'Medium' => $flagsBySeverity->get('Medium', 0),
-                    'High' => $flagsBySeverity->get('High', 0),
-                    'Critical' => $flagsBySeverity->get('Critical', 0),
-                ],
-                'actionsByStatus' => $actionsByStatus,
                 'plansByStatus' => $plansByStatus,
                 'complianceByHub' => $complianceByHubData,
             ],
@@ -159,34 +122,6 @@ class ExecutiveDashboardController extends Controller
         }
 
         return response()->json($dist);
-    }
-
-    public function chartFlags(Request $request): JsonResponse
-    {
-        $query = QcaFlag::query();
-
-        if ($request->boolean('active')) {
-            $query->whereIn('status', ['open', 'in_progress']);
-        }
-
-        $flags = $query->get()->groupBy('severity')->map(fn ($f) => $f->count());
-
-        return response()->json([
-            'Low' => $flags->get('Low', 0),
-            'Medium' => $flags->get('Medium', 0),
-            'High' => $flags->get('High', 0),
-            'Critical' => $flags->get('Critical', 0),
-        ]);
-    }
-
-    public function chartActions(Request $request): JsonResponse
-    {
-        $actions = QaCorrectiveAction::query()
-            ->groupBy('status')
-            ->selectRaw('status, count(*) as count')
-            ->pluck('count', 'status');
-
-        return response()->json($actions);
     }
 
     public function chartAuditTrail(Request $request): JsonResponse

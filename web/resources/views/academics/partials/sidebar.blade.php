@@ -47,7 +47,8 @@
                     'departments.academics.evaluation-windows.*',
                     'departments.academics.document-requests.*'
                 );
-                $planningActive = request()->routeIs('departments.academics.calendar.*', 'admin.departments.*');
+                $planningActive = request()->routeIs('departments.academics.calendar.*', 'departments.academics.workplans.*', 'admin.departments.*');
+                $canReviewWorkplans = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
 
                 $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
                 $canManageStudentServices = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
@@ -61,14 +62,6 @@
                         'label' => 'Overview',
                         'icon' => 'dashboard',
                         'active' => request()->routeIs('departments.academics.dashboard'),
-                    ])
-
-                    @include('partials.navigation.sidebar-link', [
-                        'href' => route('departments.academics.qa.tasks.index'),
-                        'label' => 'QA assessment tasks',
-                        'icon' => 'layers',
-                        'active' => request()->routeIs('departments.academics.qa.tasks.*'),
-                        'badgeKey' => 'qa.tasks',
                     ])
 
                     @include('partials.navigation.sidebar-link', [
@@ -201,14 +194,20 @@
                         'icon' => 'calendar',
                         'open' => $planningActive,
                         'active' => $planningActive,
-                        'items' => [
+                        'items' => array_values(array_filter([
                             [
                                 'href' => route('departments.academics.calendar.index', $hub),
                                 'label' => 'Academic calendar',
                                 'icon' => 'calendar',
                                 'active' => request()->routeIs('departments.academics.calendar.*'),
                             ],
-                        ],
+                            $canReviewWorkplans ? [
+                                'href' => route('departments.academics.workplans.index', $hub),
+                                'label' => 'Workplans',
+                                'icon' => 'file-text',
+                                'active' => request()->routeIs('departments.academics.workplans.*'),
+                            ] : null,
+                        ])),
                     ])
 
                     @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])

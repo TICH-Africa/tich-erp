@@ -3,10 +3,8 @@
 namespace App\Services\Sidebar;
 
 use App\Events\QaSidebarCountsUpdated;
-use App\Models\Qa\QaCorrectiveAction;
-use App\Models\Qa\QaPlan;
+use App\Models\Qa\IqaAssessment;
 use App\Models\User;
-use App\Services\Qa\QaAssessmentService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
@@ -23,34 +21,22 @@ class QaSidebarNotificationService
 
     /** @var array<string, string> */
     public const MENU_KEYS = [
-        'assessments' => 'Assessment sheets',
-        'corrective-actions' => 'Corrective actions',
-        'tasks' => 'My department tasks',
+        'assessments' => 'IQA assessments',
     ];
 
     /** @var list<string> */
-    public const DASHBOARD_LEAF_KEYS = ['assessments', 'corrective-actions'];
-
-    public function __construct(
-        protected QaAssessmentService $qa,
-    ) {}
+    public const DASHBOARD_LEAF_KEYS = ['assessments'];
 
     /**
      * @return array<string, int>
      */
     public function counts(?User $user = null, bool $fresh = false): array
     {
-        $base = $fresh
+        unset($user);
+
+        return $fresh
             ? $this->computeOfficerCounts()
             : Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, fn () => $this->computeOfficerCounts());
-
-        if (! $user) {
-            return $base;
-        }
-
-        return array_merge($base, [
-            'tasks' => $this->pendingTasksForUser($user),
-        ]);
     }
 
     /**
@@ -85,32 +71,15 @@ class QaSidebarNotificationService
     private function computeOfficerCounts(): array
     {
         $assessments = 0;
-        $corrective = 0;
 
-        if (Schema::hasTable('qa_plans')) {
-            $assessments = QaPlan::query()
-                ->whereIn('status', ['draft', 'dispatched', 'in_progress'])
-                ->count();
-        }
-
-        if (Schema::hasTable('qa_corrective_actions')) {
-            $corrective = QaCorrectiveAction::query()
-                ->whereIn('status', ['open', 'in_progress', 'overdue'])
+        if (Schema::hasTable('iqa_assessments')) {
+            $assessments = IqaAssessment::query()
+                ->where('status', IqaAssessment::STATUS_DRAFT)
                 ->count();
         }
 
         return [
             'assessments' => $assessments,
-            'corrective-actions' => $corrective,
         ];
-    }
-
-    private function pendingTasksForUser(User $user): int
-    {
-        $scopeIds = \App\Support\QaTaskModuleContext::taskScopeDepartmentIds(
-            \App\Support\QaTaskModuleContext::forModule('qa')
-        );
-
-        return $this->qa->outstandingTaskCountForUser($user, $scopeIds);
     }
 }

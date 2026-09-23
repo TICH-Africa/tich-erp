@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\Qa\QaCorrectiveAction;
 use App\Models\Qa\QaDepartmentSubmission;
 use App\Models\Qa\QaPlan;
 use App\Services\Sidebar\CeoSidebarNotificationService;
@@ -23,7 +22,6 @@ class QaSidebarNotificationServiceProvider extends ServiceProvider
 
         foreach ([
             QaPlan::class,
-            QaCorrectiveAction::class,
             QaDepartmentSubmission::class,
         ] as $model) {
             $model::saved($broadcast);

@@ -204,20 +204,6 @@ class DepartmentDashboardService
             ],
         ];
 
-        $qaModule = \App\Support\QaTaskModuleContext::moduleKeyForDepartment($department);
-        $qaCount = app(\App\Services\Qa\QaAssessmentService::class)
-            ->outstandingTaskCountForDepartment($user, $department);
-        if ($qaCount > 0 || app(\App\Services\Qa\QaAssessmentService::class)->userCanRespondForDepartment($user, $department)) {
-            $items[] = [
-                'type' => 'link',
-                'label' => 'QA assessment tasks',
-                'route' => \App\Support\QaTaskModuleContext::routeNames($qaModule)['index'],
-                'params' => [],
-                'icon' => 'layers',
-                'badge' => $qaCount > 0 ? ($qaCount > 99 ? '99+' : (string) $qaCount) : null,
-            ];
-        }
-
         $children = $this->accessibleChildDepartments($user, $department);
 
         if ($children->isNotEmpty()) {
@@ -308,17 +294,6 @@ class DepartmentDashboardService
                 'target_id' => $department->id,
                 'section' => 'overview',
             ],
-        ];
-
-        $qaCount = app(\App\Services\Qa\QaAssessmentService::class)
-            ->outstandingTaskCountForDepartment($user, $department);
-        $items[] = [
-            'type' => 'link',
-            'label' => 'QA assessment tasks',
-            'route' => 'departments.academics.qa.tasks.index',
-            'params' => [],
-            'icon' => 'layers',
-            'badge' => $qaCount > 0 ? ($qaCount > 99 ? '99+' : (string) $qaCount) : null,
         ];
 
         $modules = $this->modulesForDepartment($user, $department);

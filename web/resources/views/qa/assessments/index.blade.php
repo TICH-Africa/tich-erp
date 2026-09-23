@@ -1,64 +1,76 @@
 @extends('layouts.qa')
 
-@section('title', 'Assessment sheets')
+@section('title', 'IQA assessments')
 
 @section('qa-content')
-    <x-page-toolbar title="Assessment sheets" meta="Build, dispatch, track, and compile departmental evaluation forms">
+    <x-page-toolbar title="IQA assessments" meta="NATIONAL POLYTECHNIC QUALITY AUDIT TOOL — multiple drafts allowed; published locked">
         <x-slot:actions>
-            <a href="{{ route('qa.assessments.create') }}" class="tich-btn tich-btn-primary">Build new sheet</a>
+            @if ($canManage)
+                <form method="POST" action="{{ route('qa.assessments.store') }}" class="tich-inline-form">
+                    @csrf
+                    <input type="hidden" name="assessment_year" value="{{ now()->format('Y') }}">
+                    <button type="submit" class="tich-btn tich-btn-primary">New assessment</button>
+                </form>
+            @endif
         </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-card tich-table-panel tich-mt-8">
-        <table class="tich-admin-table">
-            <thead>
-                <tr>
-                    <th>Sheet</th>
-                    <th>Period</th>
-                    <th>Departments</th>
-                    <th>Criteria</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($plans as $plan)
-                    @php
-                        $awaitingReview = $plan->status === 'in_progress' && (int) ($plan->awaiting_review_count ?? 0) > 0;
-                    @endphp
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
                     <tr>
-                        <td>
-                            <a href="{{ route('qa.assessments.show', $plan) }}" class="tich-link">{{ $plan->plan_name }}</a>
-                            @if ($plan->due_at)
-                                <p class="tich-caption">Due {{ $plan->due_at->format('d M Y') }}</p>
-                            @endif
-                        </td>
-                        <td>{{ $plan->period_start?->format('d M Y') }} - {{ $plan->period_end?->format('d M Y') }}</td>
-                        <td>{{ count($plan->targetDepartmentIds()) }}</td>
-                        <td>{{ $plan->checklists_count }}</td>
-                        <td>
-                            <span class="tich-badge tich-badge--with-signal">
-                                {{ str_replace('_', ' ', $plan->status) }}
-                                @if ($awaitingReview)
-                                    <span class="tich-signal-dot" title="Department responses awaiting review" aria-label="Department responses awaiting review"></span>
-                                @endif
-                            </span>
-                        </td>
-                        <td>
-                            @if ($awaitingReview)
-                                <a href="{{ route('qa.assessments.show', $plan) }}#department-responses" class="tich-btn tich-btn-success">Review</a>
-                            @else
-                                <a href="{{ route('qa.assessments.show', $plan) }}" class="tich-btn tich-btn-secondary">Open</a>
-                            @endif
-                        </td>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                        <th>Published</th>
+                        <th></th>
                     </tr>
-                @empty
-                    @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No assessment sheets yet', 'icon' => 'inbox'])
-                @endforelse
-            </tbody>
-        </table>
-        @if ($plans->hasPages())
-            <div class="tich-mt-4">{{ $plans->links() }}</div>
+                </thead>
+                <tbody>
+                    @forelse ($assessments as $row)
+                        <tr>
+                            <td>
+                                <a href="{{ route('qa.assessments.show', $row) }}" class="tich-link">{{ $row->title }}</a>
+                                <p class="tich-caption">#{{ $row->id }}</p>
+                            </td>
+                            <td>{{ $row->assessment_year ?: '—' }}</td>
+                            <td>
+                                <x-status-badge :status="$row->status" />
+                            </td>
+                            <td>{{ $row->updated_at?->format('d M Y H:i') }}</td>
+                            <td>
+                                @if ($row->isPublished())
+                                    {{ $row->published_at?->format('d M Y') }}
+                                    @if ($row->publisher_name)
+                                        <p class="tich-caption">{{ $row->publisher_name }}</p>
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="tich-table-actions">
+                                @if ($row->isDraft() && $canManage)
+                                    <a href="{{ route('qa.assessments.edit', ['assessment' => $row, 'section' => $row->current_section ?: 1]) }}" class="tich-btn tich-btn-primary tich-btn--sm">Continue</a>
+                                @else
+                                    <a href="{{ route('qa.assessments.show', $row) }}" class="tich-btn tich-btn-secondary tich-btn--sm">Open</a>
+                                @endif
+                                <a href="{{ route('qa.assessments.pdf', $row) }}" class="tich-btn tich-btn-ghost tich-btn--sm">PDF</a>
+                            </td>
+                        </tr>
+                    @empty
+                        @include('partials.states.table-empty', [
+                            'colspan' => 6,
+                            'title' => 'No IQA assessments yet',
+                            'icon' => 'inbox',
+                        ])
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if ($assessments->hasPages())
+            <div class="tich-mt-4">{{ $assessments->links() }}</div>
         @endif
     </div>
 @endsection
