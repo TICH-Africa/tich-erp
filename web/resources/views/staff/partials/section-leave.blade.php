@@ -90,4 +90,9 @@
     'editRequest' => null,
     'leaveTypes' => $leaveTypes,
     'openModal' => false,
+    'familyRelations' => $familyRelations ?? [],
+    'coverageDepartments' => $coverageDepartments ?? collect(),
+    'eligibleCoverStaff' => $eligibleCoverStaff ?? collect(),
+    'leaveTypeMeta' => $leaveTypeMeta ?? [],
+    'staff' => $staff,
 ])

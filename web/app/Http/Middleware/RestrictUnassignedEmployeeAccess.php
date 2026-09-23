@@ -11,19 +11,14 @@ use Symfony\Component\HttpFoundation\Response;
 class RestrictUnassignedEmployeeAccess
 {
     /**
-     * Routes employees without a department assignment may still open.
+     * Exact route names employees without a department assignment may still open
+     * (beyond the employee.* and notifications.* prefixes).
      *
      * @var list<string>
      */
     private const ALLOWED_ROUTE_NAMES = [
         'dashboard',
         'account.start',
-        'employee.profile.edit',
-        'employee.profile.update',
-        'notifications.index',
-        'notifications.open',
-        'notifications.read',
-        'notifications.read-all',
         'logout',
         'mfa.setup',
         'mfa.verify',
@@ -49,19 +44,37 @@ class RestrictUnassignedEmployeeAccess
 
         $routeName = $request->route()?->getName();
 
-        if ($routeName && in_array($routeName, self::ALLOWED_ROUTE_NAMES, true)) {
+        if ($routeName && $this->isAllowedWhileUnassigned($routeName)) {
             return $next($request);
         }
 
         if ($request->expectsJson()) {
-            abort(403, 'Your account is not assigned to a department yet. Open the main dashboard and wait for HR or ICT to assign you.');
+            abort(403, 'Your account is not assigned to a department yet. Use My Employee Portal until HR or ICT assigns you to a unit.');
         }
 
         return redirect()
-            ->route('dashboard')
+            ->route('employee.dashboard')
             ->with(
                 'warning',
-                'You are not assigned to a department yet. Browse departments on the dashboard until HR or ICT links your profile to a unit.'
+                'You are not assigned to a department yet. Department modules stay locked until HR or ICT links your profile to a unit. Use My Employee Portal for personal tools.'
             );
+    }
+
+    private function isAllowedWhileUnassigned(string $routeName): bool
+    {
+        if (in_array($routeName, self::ALLOWED_ROUTE_NAMES, true)) {
+            return true;
+        }
+
+        // Personal employee portal (profile, leave, attendance, documents, etc.)
+        if (str_starts_with($routeName, 'employee.')) {
+            return true;
+        }
+
+        if (str_starts_with($routeName, 'notifications.')) {
+            return true;
+        }
+
+        return false;
     }
 }

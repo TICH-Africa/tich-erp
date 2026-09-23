@@ -38,6 +38,16 @@ return [
         'Dean' => 'Dean of Students',
     ],
 
+    /**
+     * Role catalog module_key → department_modules keys that unlock those roles
+     * in the Users & access picker (e.g. Marketing roles sit under Marketing's portal tools).
+     *
+     * @var array<string, list<string>>
+     */
+    'role_module_department_keys' => [
+        'marketing' => ['portal', 'site_settings'],
+    ],
+
     'modules' => [
         'academics' => [
             'label' => 'Academics',
@@ -258,6 +268,28 @@ return [
                 ],
             ],
         ],
+        'marketing' => [
+            'label' => 'Marketing',
+            'description' => 'Public website content, branding, and institutional marketing.',
+            'roles' => [
+                [
+                    'role_name' => 'Chief Marketing Officer',
+                    'display_name' => 'Chief Marketing Officer',
+                    'role_category' => 'administrative',
+                    'description' => 'Marketing leadership - website content, branding, and site settings.',
+                    'permission_modules' => ['core', 'portal', 'site_settings'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+                [
+                    'role_name' => 'Marketing Officer',
+                    'display_name' => 'Marketing Officer',
+                    'role_category' => 'administrative',
+                    'description' => 'Marketing operations - website content, branding, and site settings.',
+                    'permission_modules' => ['core', 'portal', 'site_settings'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+            ],
+        ],
         'admissions' => [
             'label' => 'Admissions',
             'description' => 'Applicant intake, screening, and onboarding.',
@@ -328,11 +360,11 @@ return [
                 ],
                 [
                     'role_name' => 'Staff',
-                    'display_name' => 'General Staff',
+                    'display_name' => 'Staff',
                     'role_category' => 'administrative',
-                    'description' => 'General institutional staff access.',
-                    'permission_modules' => ['core', 'hr'],
-                    'permission_categories' => ['view'],
+                    'description' => 'Baseline staff identity for the employee portal only. Department modules require a department assignment and a department role (not this role).',
+                    'permission_modules' => [],
+                    'permission_categories' => [],
                 ],
                 [
                     'role_name' => 'Student',

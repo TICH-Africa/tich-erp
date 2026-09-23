@@ -28,6 +28,7 @@ return [
         'qa.budgeting.index' => 'wallet',
         'procurement.budgeting.index' => 'wallet',
         'research.budgeting.index' => 'wallet',
+        'marketing.budgeting.index' => 'wallet',
         'academics.budgeting.index' => 'wallet',
         'administration.approvals.index' => 'clipboard-check',
         'administration.fund-distribution.index' => 'wallet',

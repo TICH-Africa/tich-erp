@@ -79,11 +79,12 @@ class LeaveAccrualService
             return;
         }
 
-        if ($balance->entitled_days !== $totalAccrued) {
+        if ((float) $balance->entitled_days !== $totalAccrued) {
             $oldEntitlement = $balance->entitled_days;
             $taken = (float) $balance->days_taken;
             $pending = (float) $balance->days_pending;
-            $newBalance = max(0, $totalAccrued - $taken - $pending);
+            $carried = (float) ($balance->carried_forward_days ?? 0);
+            $newBalance = max(0, $totalAccrued + $carried - $taken - $pending);
 
             $balance->update([
                 'entitled_days' => $totalAccrued,

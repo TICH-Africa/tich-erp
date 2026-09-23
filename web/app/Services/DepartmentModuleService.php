@@ -257,22 +257,77 @@ class DepartmentModuleService
      */
     public function assignedModulesByDepartmentIds(array $departmentIds): array
     {
-        if ($departmentIds === [] || ! \Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
+        if ($departmentIds === []) {
             return [];
         }
 
-        $rows = DB::table('department_modules')
-            ->whereIn('department_id', $departmentIds)
-            ->orderBy('module_key')
-            ->get(['department_id', 'module_key']);
-
         $map = [];
 
-        foreach ($rows as $row) {
-            $map[(int) $row->department_id][] = $row->module_key;
+        if (\Illuminate\Support\Facades\Schema::hasTable('department_modules')) {
+            $rows = DB::table('department_modules')
+                ->whereIn('department_id', $departmentIds)
+                ->orderBy('module_key')
+                ->get(['department_id', 'module_key']);
+
+            foreach ($rows as $row) {
+                $map[(int) $row->department_id][] = $row->module_key;
+            }
         }
 
+        // Unlock role catalog keys (e.g. marketing) when the department has the matching tools.
+        $roleModuleMap = config('tich-module-roles.role_module_department_keys', []);
+        foreach ($map as $departmentId => $keys) {
+            foreach ($roleModuleMap as $roleModuleKey => $departmentKeys) {
+                if (array_intersect($departmentKeys, $keys) !== []) {
+                    $keys[] = $roleModuleKey;
+                }
+            }
+            $map[$departmentId] = array_values(array_unique($keys));
+        }
+
+        // Production safety: Marketing depts often lack department_modules rows when
+        // only SQL patches (not Laravel migrations) were applied. Still unlock roles.
+        $this->unlockMarketingRolesForMarketingDepartments($departmentIds, $map);
+
         return $map;
+    }
+
+    /**
+     * @param  list<int>  $departmentIds
+     * @param  array<int, list<string>>  $map
+     */
+    private function unlockMarketingRolesForMarketingDepartments(array $departmentIds, array &$map): void
+    {
+        if ($departmentIds === [] || ! \Illuminate\Support\Facades\Schema::hasTable('departments')) {
+            return;
+        }
+
+        $marketingDeptIds = DB::table('departments')
+            ->whereIn('id', $departmentIds)
+            ->where(function ($query) {
+                $query->where('dept_code', 'MKT')
+                    ->orWhere('dept_code', 'like', 'MKT%')
+                    ->orWhere('dept_name', 'like', '%Marketing%');
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($marketingDeptIds === []) {
+            return;
+        }
+
+        $unlockKeys = array_values(array_unique(array_merge(
+            ['marketing'],
+            config('tich-module-roles.role_module_department_keys.marketing', ['portal', 'site_settings'])
+        )));
+
+        foreach ($marketingDeptIds as $departmentId) {
+            $map[$departmentId] = array_values(array_unique(array_merge(
+                $map[$departmentId] ?? [],
+                $unlockKeys
+            )));
+        }
     }
 
     /**

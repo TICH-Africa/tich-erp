@@ -61,6 +61,13 @@ class AppServiceProvider extends ServiceProvider
             // DB may be unavailable during early install / migrate.
         }
 
+        // Sync hard-coded leave catalog into leave_types (FK identity only).
+        try {
+            app(\App\Services\Leave\LeaveCatalogService::class)->ensureSynced();
+        } catch (\Throwable) {
+            // DB may be unavailable during early install / migrate.
+        }
+
         Route::bind('budgetRequest', function ($value) {
             return \App\Models\Administration\BudgetRequest::query()->findOrFail($value);
         });

@@ -22,10 +22,16 @@ class LeaveCarryForwardController extends Controller
         $filter = $request->get('status', 'pending');
 
         $query = LeaveCarryForwardRequest::query()
-            ->with(['staff', 'leaveType', 'reviewer'])
+            ->with(['staff', 'leaveType', 'reviewer', 'lineManager'])
             ->orderByDesc('created_at');
 
-        if ($filter !== 'all') {
+        if ($filter === 'pending') {
+            $query->where('status', 'pending')
+                ->where('line_manager_status', 'approved')
+                ->where(function ($q) {
+                    $q->whereNull('hr_status')->orWhere('hr_status', 'pending');
+                });
+        } elseif ($filter !== 'all') {
             $query->where('status', $filter);
         }
 

@@ -142,39 +142,7 @@ class HrDemoSeeder extends Seeder
 
     private function seedLeaveTypes(): void
     {
-        $types = [
-            ['leave_code' => 'ANNUAL', 'leave_name' => 'Annual Leave', 'days_allowed_per_year' => 21, 'accrual_type' => 'monthly', 'accrual_rate' => 1.75, 'calculation_type' => 'working_days', 'carry_forward_days' => 10, 'notice_period_days' => 7],
-            ['leave_code' => 'SICK', 'leave_name' => 'Sick Leave', 'days_allowed_per_year' => 7, 'calculation_type' => 'calendar_days', 'requires_medical_certificate' => 1, 'requires_hod_approval' => 0, 'notice_period_days' => 0],
-            ['leave_code' => 'MAT', 'leave_name' => 'Maternity Leave', 'days_allowed_per_year' => 90, 'calculation_type' => 'calendar_days', 'gender_restriction' => 'female_only', 'requires_hod_approval' => 0, 'notice_period_days' => 14],
-            ['leave_code' => 'PAT', 'leave_name' => 'Paternity Leave', 'days_allowed_per_year' => 14, 'calculation_type' => 'calendar_days', 'gender_restriction' => 'male_only', 'requires_hod_approval' => 0, 'notice_period_days' => 7],
-            ['leave_code' => 'ADOPT', 'leave_name' => 'Adoption Leave', 'days_allowed_per_year' => 30, 'calculation_type' => 'calendar_days', 'requires_hod_approval' => 0, 'notice_period_days' => 14],
-            ['leave_code' => 'COMP', 'leave_name' => 'Compassionate Leave', 'days_allowed_per_year' => 7, 'calculation_type' => 'calendar_days', 'notice_period_days' => 0],
-        ];
-
-        foreach ($types as $type) {
-            DB::table('leave_types')->updateOrInsert(
-                ['leave_code' => $type['leave_code']],
-                [
-                    'leave_name' => $type['leave_name'],
-                    'days_allowed_per_year' => $type['days_allowed_per_year'],
-                    'accrual_type' => $type['accrual_type'] ?? 'none',
-                    'accrual_rate' => $type['accrual_rate'] ?? null,
-                    'calculation_type' => $type['calculation_type'] ?? 'calendar_days',
-                    'is_paid' => 1,
-                    'requires_medical_certificate' => $type['requires_medical_certificate'] ?? 0,
-                    'requires_certificate' => $type['requires_certificate'] ?? 0,
-                    'requires_hod_approval' => $type['requires_hod_approval'] ?? 1,
-                    'requires_hr_approval' => $type['requires_hr_approval'] ?? 1,
-                    'gender_restriction' => $type['gender_restriction'] ?? 'any',
-                    'min_service_months' => 0,
-                    'carry_forward_days' => $type['carry_forward_days'] ?? 0,
-                    'max_consecutive_days' => $type['max_consecutive_days'] ?? null,
-                    'notice_period_days' => $type['notice_period_days'] ?? 0,
-                    'is_active' => 1,
-                    'description' => $type['description'] ?? null,
-                ]
-            );
-        }
+        app(\App\Services\Leave\LeaveCatalogService::class)->ensureSynced();
     }
 
     private function seedStaffMembers(int $hrDeptId, int $financeDeptId, int $academicDeptId, ?int $campusId): array

@@ -1497,6 +1497,8 @@ select.tich-select:focus {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--tich-blue);
+    padding: 0;
+    margin: 0;
 }
 
 .tich-staff-table-avatar img {
@@ -1504,6 +1506,100 @@ select.tich-select:focus {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+button.tich-staff-table-avatar--clickable {
+    cursor: zoom-in;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+button.tich-staff-table-avatar--clickable:hover,
+button.tich-staff-table-avatar--clickable:focus-visible {
+    box-shadow: 0 0 0 2px var(--tich-blue, #1d4ed8);
+    outline: none;
+    transform: scale(1.05);
+}
+
+.tich-photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.tich-photo-lightbox[hidden] {
+    display: none !important;
+}
+
+.tich-photo-lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(15, 23, 42, 0.72);
+    cursor: pointer;
+}
+
+.tich-photo-lightbox__dialog {
+    position: relative;
+    z-index: 1;
+    max-width: min(90vw, 36rem);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.tich-photo-lightbox__img {
+    max-width: 100%;
+    max-height: calc(90vh - 3rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+}
+
+.tich-photo-lightbox__caption {
+    margin: 0;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.tich-photo-lightbox__close {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: #0f172a;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.tich-photo-lightbox__close:hover,
+.tich-photo-lightbox__close:focus-visible {
+    background: var(--tich-blue, #1d4ed8);
+    color: #fff;
+    outline: none;
 }
 
 @media (max-width: 1200px) {
@@ -6981,6 +7077,11 @@ body.is-photo-crop-open {
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+.tich-squircle-btn svg {
+    display: block;
+    flex-shrink: 0;
+}
+
 .tich-squircle-btn:hover {
     background: var(--tich-blue-light);
     border-color: var(--tich-blue);
@@ -6989,6 +7090,45 @@ body.is-photo-crop-open {
 .tich-squircle-btn:focus-visible {
     outline: 2px solid var(--tich-blue);
     outline-offset: 2px;
+}
+
+.tich-squircle-btn--ok {
+    color: var(--tich-green);
+}
+
+.tich-squircle-btn--ok:hover {
+    background: color-mix(in srgb, var(--tich-green) 12%, transparent);
+    border-color: var(--tich-green);
+}
+
+.tich-squircle-btn--warn {
+    color: #b45309;
+}
+
+.tich-squircle-btn--warn:hover {
+    background: #fff7ed;
+    border-color: #b45309;
+}
+
+.tich-squircle-btn--danger {
+    color: var(--tich-error, #b91c1c);
+}
+
+.tich-squircle-btn--danger:hover {
+    background: #fef2f2;
+    border-color: var(--tich-error, #b91c1c);
+}
+
+.tich-archive-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.tich-archive-actions form {
+    display: inline;
+    margin: 0;
 }
 
 /* Readable typography inside modals (overrides global dark blue headings/captions) */
@@ -7807,7 +7947,80 @@ a.tich-tabs__btn {
 /* ??? Leave portal UI ??????????????????????????????????????????????????? */
 
 .tich-modal__dialog--leave {
-    width: min(100%, 36rem);
+    width: min(100%, 44rem);
+    max-height: min(92vh, 56rem);
+}
+
+.tich-leave-app-form__letterhead {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--tich-border);
+    text-align: center;
+}
+
+.tich-leave-app-form__letterhead strong {
+    display: block;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.tich-leave-app-form__letterhead p {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: var(--tich-text-secondary);
+}
+
+.tich-leave-app-form__section {
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--tich-border);
+    border-radius: var(--radius-md);
+    background: var(--tich-surface);
+}
+
+.tich-leave-app-form__section-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tich-text-secondary);
+}
+
+.tich-leave-app-form__readonly-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.tich-leave-app-form__remarks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 0.75rem 0 1rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--tich-green) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tich-green) 22%, var(--tich-border));
+}
+
+.tich-leave-app-form__metric {
+    margin: 0.2rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--tich-text);
+}
+
+.tich-leave-app-form__footnote {
+    margin: 0 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .tich-leave-app-form__readonly-grid,
+    .tich-leave-app-form__remarks {
+        grid-template-columns: 1fr;
+    }
 }
 
 .tich-leave-hero {

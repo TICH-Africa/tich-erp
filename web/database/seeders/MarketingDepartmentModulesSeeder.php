@@ -16,7 +16,14 @@ class MarketingDepartmentModulesSeeder extends Seeder
             return;
         }
 
-        $marketing = Department::query()->where('dept_code', 'MKT')->where('is_active', 1)->first();
+        $marketing = Department::query()
+            ->where('is_active', 1)
+            ->where(function ($query) {
+                $query->where('dept_code', 'MKT')
+                    ->orWhere('dept_code', 'like', 'MKT%')
+                    ->orWhere('dept_name', 'like', '%Marketing%');
+            })
+            ->first();
 
         if (! $marketing) {
             return;

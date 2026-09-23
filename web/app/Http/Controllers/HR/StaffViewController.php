@@ -8,9 +8,11 @@ use App\Models\PensionScheme;
 use App\Models\Staff;
 use App\Models\StaffBankAccount;
 use App\Models\StaffOnboarding;
+use App\Models\User;
 use App\Services\AuditService;
 use App\Services\EmployeeProfileChangeService;
 use App\Services\StaffLifecycleService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +74,49 @@ class StaffViewController extends Controller
         ]);
     }
 
+    public function checkEmail(Request $request): JsonResponse
+    {
+        $email = strtolower(trim((string) $request->query('email', '')));
+
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'exists' => false,
+                'message' => null,
+            ]);
+        }
+
+        $inUsers = User::query()->whereRaw('LOWER(email) = ?', [$email])->exists();
+        $inStaff = Staff::query()
+            ->withTrashed()
+            ->where(function ($q) use ($email) {
+                $q->whereRaw('LOWER(primary_email) = ?', [$email])
+                    ->orWhereRaw('LOWER(organisation_email) = ?', [$email]);
+            })
+            ->exists();
+
+        if (! $inUsers && ! $inStaff) {
+            return response()->json([
+                'exists' => false,
+                'message' => null,
+            ]);
+        }
+
+        $parts = [];
+        if ($inUsers) {
+            $parts[] = 'a user account';
+        }
+        if ($inStaff) {
+            $parts[] = 'a staff record';
+        }
+
+        return response()->json([
+            'exists' => true,
+            'in_users' => $inUsers,
+            'in_staff' => $inStaff,
+            'message' => 'This email is already used by '.implode(' and ', $parts).'. Choose a different email or open the existing record — you cannot continue with this email.',
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -86,7 +131,23 @@ class StaffViewController extends Controller
             'passport_number' => 'nullable|string|max:50|unique:staff,passport_number',
             'nationality' => 'nullable|string|max:100|default:Kenyan',
             'home_county' => 'nullable|string|max:100',
-            'primary_email' => 'required|email|max:255',
+            'primary_email' => [
+                'required',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $email = strtolower(trim((string) $value));
+                    if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('A user account with this email already exists. You cannot onboard with this email.');
+                    }
+                    if (Staff::query()->withTrashed()->where(function ($q) use ($email) {
+                        $q->whereRaw('LOWER(primary_email) = ?', [$email])
+                            ->orWhereRaw('LOWER(organisation_email) = ?', [$email]);
+                    })->exists()) {
+                        $fail('A staff record with this email already exists. You cannot onboard with this email.');
+                    }
+                },
+            ],
             'phone_number' => 'required|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'postal_address' => 'nullable|string|max:300',

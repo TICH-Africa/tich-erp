@@ -15,6 +15,7 @@ class LeaveRequest extends Model
     /** @var array<string, string> */
     protected array $storedFiles = [
         'medical_certificate_path' => 'local',
+        'supporting_document_path' => 'local',
     ];
 
     public $timestamps = true;
@@ -30,9 +31,14 @@ class LeaveRequest extends Model
         'start_date',
         'end_date',
         'days_requested',
+        'sick_full_pay_days',
+        'sick_half_pay_days',
         'reason',
+        'family_relation',
         'is_emergency',
         'medical_certificate_path',
+        'supporting_document_path',
+        'supporting_document_name',
         'hod_approval_status',
         'hod_approved_by',
         'hod_approved_at',
@@ -45,6 +51,9 @@ class LeaveRequest extends Model
         'return_date',
         'is_completed',
         'handover_notes',
+        'contact_mobile',
+        'contact_email',
+        'contact_postal_address',
         'hr_review_notes',
     ];
 
@@ -55,6 +64,8 @@ class LeaveRequest extends Model
         'hod_approved_at' => 'datetime',
         'hr_approved_at' => 'datetime',
         'days_requested' => 'integer',
+        'sick_full_pay_days' => 'integer',
+        'sick_half_pay_days' => 'integer',
         'is_emergency' => 'boolean',
         'is_cancelled' => 'boolean',
         'is_completed' => 'boolean',
@@ -68,6 +79,11 @@ class LeaveRequest extends Model
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class);
+    }
+
+    public function coverages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LeaveRequestCoverage::class);
     }
 
     public function hodApprovedBy(): BelongsTo

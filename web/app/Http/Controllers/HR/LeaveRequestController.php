@@ -53,11 +53,23 @@ class LeaveRequestController extends Controller
 
     public function show(LeaveRequest $leaveRequest): View
     {
-        $leaveRequest->load(['staff.department', 'staff.lineManager', 'leaveType', 'hrApprovedBy']);
+        $leaveRequest->load([
+            'staff.department',
+            'staff.lineManager',
+            'leaveType',
+            'hrApprovedBy',
+            'coverages.coverStaff',
+            'coverages.department',
+        ]);
+
+        $catalogDef = app(\App\Services\Leave\LeaveCatalogService::class)
+            ->definitionForType($leaveRequest->leaveType);
 
         return view('hr.leave.show', [
             'leaveRequest' => $leaveRequest,
             'leaveBalances' => $this->employeePortal->leaveBalancesFor($leaveRequest->staff),
+            'catalogDef' => $catalogDef,
+            'catalogTypes' => config('tich-leave.types', []),
         ]);
     }
 
@@ -128,5 +140,18 @@ class LeaveRequestController extends Controller
         return redirect()
             ->route('hr.leave.index')
             ->with('success', 'Leave request returned to employee for changes.');
+    }
+
+    public function downloadDocument(LeaveRequest $leaveRequest): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
+    {
+        abort_unless(auth()->user()?->hasPermission('hr.manage_leave'), 403);
+
+        $path = $leaveRequest->supporting_document_path ?: $leaveRequest->medical_certificate_path;
+        abort_unless($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
+
+        $name = $leaveRequest->supporting_document_name
+            ?: basename($path);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($path, $name);
     }
 }

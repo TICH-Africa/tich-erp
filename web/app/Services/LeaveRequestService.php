@@ -19,6 +19,9 @@ class LeaveRequestService
         protected PlatformNotificationService $notifications,
         protected AuditService $auditService,
         protected StoredFileService $files,
+        protected \App\Services\Leave\LeaveCatalogService $catalog,
+        protected \App\Services\Leave\LeaveCoverageService $coverages,
+        protected \App\Services\Leave\LeaveSickPayService $sickPay,
     ) {}
 
     /**
@@ -26,10 +29,7 @@ class LeaveRequestService
      */
     public function activeLeaveTypes(): Collection
     {
-        return LeaveType::query()
-            ->where('is_active', 1)
-            ->orderBy('leave_name')
-            ->get();
+        return $this->catalog->availableTypes();
     }
 
     /**
@@ -82,6 +82,12 @@ class LeaveRequestService
     public function submit(Staff $staff, array $data, ?UploadedFile $certificate = null): LeaveRequest
     {
         $leaveType = LeaveType::query()->findOrFail($data['leave_type_id']);
+        $def = $this->catalog->definitionForType($leaveType);
+        if (($def['available'] ?? true) !== true) {
+            throw new \InvalidArgumentException('This leave type is not available.');
+        }
+
+        $this->assertGenderAllowed($staff, $def);
         $startDate = Carbon::parse($data['start_date'])->startOfDay();
         $endDate = Carbon::parse($data['end_date'])->startOfDay();
 
@@ -90,26 +96,46 @@ class LeaveRequestService
         }
 
         $days = $this->calculateDays($startDate, $endDate, $leaveType);
-        $this->validateMaxDays($leaveType, $days);
-        $certificatePath = $this->storeCertificate($certificate);
+        $this->validateMaxDays($leaveType, $days, $staff);
+        $this->assertDocumentRequirements($leaveType, $def, $certificate, $data);
+        $this->assertFamilyRelation($leaveType, $def, $data);
 
-        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $days, $certificatePath) {
+        $returnDate = ! empty($data['return_date'])
+            ? Carbon::parse($data['return_date'])->startOfDay()
+            : $endDate->copy()->addDay();
+
+        $certificatePath = $this->storeCertificate($certificate);
+        $sickSplit = $this->sickPaySplit($leaveType, $staff, $days);
+
+        $coverMap = is_array($data['cover_staff_id'] ?? null) ? $data['cover_staff_id'] : [];
+
+        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $sickSplit, $coverMap, $certificate) {
             $leaveRequest = LeaveRequest::create([
                 'leave_number' => $this->generateLeaveNumber(),
                 'staff_id' => $staff->id,
                 'leave_type_id' => $leaveType->id,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
+                'return_date' => $returnDate,
                 'days_requested' => $days,
+                'sick_full_pay_days' => $sickSplit['full'],
+                'sick_half_pay_days' => $sickSplit['half'],
                 'reason' => $data['reason'],
+                'family_relation' => $data['family_relation'] ?? null,
                 'is_emergency' => ! empty($data['is_emergency']),
-                'medical_certificate_path' => $certificatePath,
+                'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $certificatePath,
+                'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : null,
+                'supporting_document_name' => $certificate?->getClientOriginalName(),
                 'hod_approval_status' => 'not_required',
                 'hr_approval_status' => 'pending',
                 'overall_status' => 'pending_hr',
                 'handover_notes' => $data['handover_notes'] ?? null,
+                'contact_mobile' => $data['contact_mobile'] ?? null,
+                'contact_email' => $data['contact_email'] ?? null,
+                'contact_postal_address' => $data['contact_postal_address'] ?? null,
             ]);
 
+            $this->coverages->assignCoverages($leaveRequest, $staff, $coverMap);
             $this->adjustBalance($staff->id, (int) $leaveType->id, $days, 'add_pending');
 
             $this->auditService->log(
@@ -122,7 +148,7 @@ class LeaveRequestService
 
             $this->notifyHrOfSubmission($leaveRequest, $staff);
 
-            return $leaveRequest->fresh(['leaveType']);
+            return $leaveRequest->fresh(['leaveType', 'coverages.coverStaff', 'coverages.department']);
         });
     }
 
@@ -135,6 +161,12 @@ class LeaveRequestService
         $previousTypeId = (int) $leaveRequest->leave_type_id;
 
         $leaveType = LeaveType::query()->findOrFail($data['leave_type_id']);
+        $def = $this->catalog->definitionForType($leaveType);
+        if (($def['available'] ?? true) !== true) {
+            throw new \InvalidArgumentException('This leave type is not available.');
+        }
+
+        $this->assertGenderAllowed($staff, $def);
         $startDate = Carbon::parse($data['start_date'])->startOfDay();
         $endDate = Carbon::parse($data['end_date'])->startOfDay();
 
@@ -143,10 +175,22 @@ class LeaveRequestService
         }
 
         $days = $this->calculateDays($startDate, $endDate, $leaveType);
-        $this->validateMaxDays($leaveType, $days);
-        $certificatePath = $this->storeCertificate($certificate) ?? $leaveRequest->medical_certificate_path;
+        $this->validateMaxDays($leaveType, $days, $staff);
+        $this->assertDocumentRequirements($leaveType, $def, $certificate, $data, $leaveRequest);
+        $this->assertFamilyRelation($leaveType, $def, $data);
 
-        return DB::transaction(function () use ($leaveRequest, $staff, $data, $leaveType, $startDate, $endDate, $days, $certificatePath, $previousDays, $previousTypeId) {
+        $returnDate = ! empty($data['return_date'])
+            ? Carbon::parse($data['return_date'])->startOfDay()
+            : $endDate->copy()->addDay();
+
+        $newCertPath = $this->storeCertificate($certificate);
+        $certificatePath = $newCertPath
+            ?? $leaveRequest->supporting_document_path
+            ?? $leaveRequest->medical_certificate_path;
+        $sickSplit = $this->sickPaySplit($leaveType, $staff, $days);
+        $coverMap = is_array($data['cover_staff_id'] ?? null) ? $data['cover_staff_id'] : [];
+
+        return DB::transaction(function () use ($leaveRequest, $staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $previousDays, $previousTypeId, $sickSplit, $coverMap, $certificate) {
             $this->adjustBalance($staff->id, $previousTypeId, $previousDays, 'remove_pending');
 
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
@@ -155,16 +199,27 @@ class LeaveRequestService
                 'leave_type_id' => $leaveType->id,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
+                'return_date' => $returnDate,
                 'days_requested' => $days,
+                'sick_full_pay_days' => $sickSplit['full'],
+                'sick_half_pay_days' => $sickSplit['half'],
                 'reason' => $data['reason'],
+                'family_relation' => $data['family_relation'] ?? null,
                 'is_emergency' => ! empty($data['is_emergency']),
-                'medical_certificate_path' => $certificatePath,
+                'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $leaveRequest->medical_certificate_path,
+                'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : $leaveRequest->supporting_document_path,
+                'supporting_document_name' => $certificate?->getClientOriginalName() ?? $leaveRequest->supporting_document_name,
                 'hr_approval_status' => 'pending',
                 'overall_status' => 'pending_hr',
                 'hr_review_notes' => null,
                 'handover_notes' => $data['handover_notes'] ?? null,
+                'contact_mobile' => $data['contact_mobile'] ?? null,
+                'contact_email' => $data['contact_email'] ?? null,
+                'contact_postal_address' => $data['contact_postal_address'] ?? null,
             ]);
 
+            $leaveRequest->coverages()->delete();
+            $this->coverages->assignCoverages($leaveRequest->fresh(), $staff, $coverMap);
             $this->adjustBalance($staff->id, (int) $leaveType->id, $days, 'add_pending');
 
             $this->auditService->log(
@@ -177,7 +232,7 @@ class LeaveRequestService
 
             $this->notifyHrOfSubmission($leaveRequest->fresh(['leaveType']), $staff, resubmitted: true);
 
-            return $leaveRequest->fresh(['leaveType']);
+            return $leaveRequest->fresh(['leaveType', 'coverages']);
         });
     }
 
@@ -202,6 +257,8 @@ class LeaveRequestService
                 'cancellation_reason' => $reason,
                 'hr_approval_status' => 'cancelled',
             ]);
+
+            $this->coverages->revokeAccessForLeave($leaveRequest);
 
             $this->auditService->log(
                 'hr.leave.cancelled',
@@ -252,17 +309,23 @@ class LeaveRequestService
                 'add_taken'
             );
 
+            $fresh = $leaveRequest->fresh(['leaveType', 'staff', 'coverages']);
+            $this->coverages->grantAccessForApprovedLeave($fresh);
+            if ($fresh->staff && strtoupper((string) $fresh->leaveType?->leave_code) === 'SICK') {
+                $this->sickPay->recordOnApproval($fresh, $fresh->staff);
+            }
+
             $this->auditService->log(
                 'hr.leave.approved',
                 'leave_request',
                 $leaveRequest->id,
                 $oldSnapshot,
-                $this->auditSnapshot($leaveRequest->fresh()),
+                $this->auditSnapshot($fresh),
             );
 
-            $this->notifyEmployeeDecision($leaveRequest->fresh(['leaveType', 'staff']), 'approved');
+            $this->notifyEmployeeDecision($fresh, 'approved');
 
-            return $leaveRequest->fresh(['leaveType', 'staff']);
+            return $fresh;
         });
     }
 
@@ -285,6 +348,8 @@ class LeaveRequestService
                 'overall_status' => 'rejected',
                 'cancellation_reason' => $reason,
             ]);
+
+            $this->coverages->revokeAccessForLeave($leaveRequest);
 
             $this->auditService->log(
                 'hr.leave.rejected',
@@ -338,7 +403,12 @@ class LeaveRequestService
 
     public function calculateDays(Carbon $startDate, Carbon $endDate, ?LeaveType $leaveType = null): int
     {
-        if ($leaveType && $leaveType->calculation_type === 'working_days') {
+        $code = $leaveType?->leave_code;
+        $usesWorking = $code
+            ? $this->catalog->usesWorkingDays((string) $code)
+            : ($leaveType?->calculation_type === 'working_days');
+
+        if ($usesWorking) {
             return $this->calculateWorkingDays($startDate, $endDate);
         }
 
@@ -436,7 +506,7 @@ class LeaveRequestService
             ->update([
                 'days_pending' => $pending,
                 'days_taken' => $taken,
-                'balance_days' => max(0, $entitled - $taken - $pending),
+                'balance_days' => max(0, $entitled + (float) ($balance->carried_forward_days ?? 0) - $taken - $pending),
                 'last_updated' => now()->toDateString(),
             ]);
     }
@@ -540,20 +610,132 @@ class LeaveRequestService
         ];
     }
 
-    public function validateMaxDays(LeaveType $leaveType, int $requestedDays): void
+    public function validateMaxDays(LeaveType $leaveType, int $requestedDays, ?Staff $staff = null): void
     {
-        $normalEntitlement = (int) ($leaveType->days_allowed_per_year ?? 0);
-        $carryForward = $leaveType->leave_code === 'ANNUAL' ? (int) ($leaveType->carry_forward_days ?? 0) : 0;
+        $def = $this->catalog->definitionForType($leaveType);
+        $normalEntitlement = (int) ($def['days_allowed_per_year'] ?? $leaveType->days_allowed_per_year ?? 0);
+        $carryForward = strtoupper((string) $leaveType->leave_code) === 'ANNUAL'
+            ? (int) ($def['carry_forward_days'] ?? 10)
+            : 0;
         $maxAllowed = $normalEntitlement + $carryForward;
 
-        if ($requestedDays > $maxAllowed) {
-            $message = "{$leaveType->leave_name} allows a maximum of {$maxAllowed} days";
-            if ($carryForward > 0) {
-                $message .= " (entitlement {$normalEntitlement} + carry forward {$carryForward})";
+        if ($staff && strtoupper((string) $leaveType->leave_code) === 'ANNUAL') {
+            $balance = DB::table('leave_balances')
+                ->where('staff_id', $staff->id)
+                ->where('leave_type_id', $leaveType->id)
+                ->where('year', now()->year)
+                ->first();
+            if ($balance) {
+                $available = (float) $balance->entitled_days
+                    + (float) ($balance->carried_forward_days ?? 0)
+                    - (float) $balance->days_taken
+                    - (float) $balance->days_pending;
+                $maxAllowed = (int) max(0, floor($available));
             }
-            $message .= ". You requested {$requestedDays} days.";
-
-            throw new \InvalidArgumentException($message);
         }
+
+        if ($requestedDays > $maxAllowed) {
+            throw new \InvalidArgumentException(
+                "{$leaveType->leave_name} allows a maximum of {$maxAllowed} day(s). You requested {$requestedDays}."
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $def
+     */
+    private function assertGenderAllowed(Staff $staff, array $def): void
+    {
+        $restriction = $def['gender_restriction'] ?? 'any';
+        $gender = strtolower((string) ($staff->gender ?? ''));
+
+        if ($restriction === 'female_only' && ! in_array($gender, ['female', 'f'], true)) {
+            throw new \InvalidArgumentException('This leave type is only available to female staff.');
+        }
+        if ($restriction === 'male_only' && ! in_array($gender, ['male', 'm'], true)) {
+            throw new \InvalidArgumentException('This leave type is only available to male staff.');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $def
+     * @param  array<string, mixed>  $data
+     */
+    private function assertDocumentRequirements(
+        LeaveType $leaveType,
+        array $def,
+        ?UploadedFile $certificate,
+        array $data,
+        ?LeaveRequest $existing = null
+    ): void {
+        if (empty($def['requires_document'])) {
+            return;
+        }
+
+        $hasExisting = $existing && (
+            filled($existing->medical_certificate_path) || filled($existing->supporting_document_path)
+        );
+
+        if (! $certificate && ! $hasExisting) {
+            $label = $def['document_label'] ?? 'Supporting document';
+            throw new \InvalidArgumentException($label.' is required for '.$leaveType->leave_name.'.');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $def
+     * @param  array<string, mixed>  $data
+     */
+    private function assertFamilyRelation(LeaveType $leaveType, array $def, array $data): void
+    {
+        if (empty($def['requires_family_relation'])) {
+            return;
+        }
+
+        $relation = strtolower(trim((string) ($data['family_relation'] ?? '')));
+        $allowed = $this->catalog->familyRelations();
+        if (! in_array($relation, $allowed, true)) {
+            throw new \InvalidArgumentException(
+                'Select the family member (mother, father, child, or spouse) for '.$leaveType->leave_name.'.'
+            );
+        }
+    }
+
+    /**
+     * @return array{full: int|null, half: int|null}
+     */
+    private function sickPaySplit(LeaveType $leaveType, Staff $staff, int $requestedDays): array
+    {
+        if (strtoupper((string) $leaveType->leave_code) !== 'SICK') {
+            return ['full' => null, 'half' => null];
+        }
+
+        $year = now()->year;
+        $takenFull = (int) LeaveRequest::query()
+            ->where('staff_id', $staff->id)
+            ->where('leave_type_id', $leaveType->id)
+            ->whereYear('start_date', $year)
+            ->where('overall_status', 'approved')
+            ->sum('sick_full_pay_days');
+        $takenHalf = (int) LeaveRequest::query()
+            ->where('staff_id', $staff->id)
+            ->where('leave_type_id', $leaveType->id)
+            ->whereYear('start_date', $year)
+            ->where('overall_status', 'approved')
+            ->sum('sick_half_pay_days');
+
+        $fullRemaining = max(0, 7 - $takenFull);
+        $halfRemaining = max(0, 7 - $takenHalf);
+
+        $full = min($requestedDays, $fullRemaining);
+        $half = min(max(0, $requestedDays - $full), $halfRemaining);
+
+        if ($full + $half < $requestedDays) {
+            throw new \InvalidArgumentException(
+                'Sick leave remaining this year is only '.($fullRemaining + $halfRemaining).' working day(s) (7 full-pay + 7 half-pay).'
+            );
+        }
+
+        return ['full' => $full, 'half' => $half];
     }
 }

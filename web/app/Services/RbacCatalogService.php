@@ -301,6 +301,10 @@ class RbacCatalogService
             return ['admin'];
         }
 
+        if ($moduleKey === 'marketing') {
+            return ['core', 'portal', 'site_settings'];
+        }
+
         $modules = [$moduleKey];
 
         if (in_array($moduleKey, ['finance', 'hr', 'procurement', 'qa', 'administration', 'research', 'ict', 'academics', 'monitoring_evaluation'], true)) {

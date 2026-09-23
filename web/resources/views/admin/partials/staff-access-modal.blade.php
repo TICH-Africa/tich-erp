@@ -124,6 +124,7 @@
 (function () {
     var institutionWideRoles = @json($institutionWideRoles);
     var departmentModuleAssignments = @json($departmentModuleAssignments);
+    var roleModuleDepartmentKeys = @json(config('tich-module-roles.role_module_department_keys', []));
     var academicsHostDepartmentIds = @json($academicsHostDepartmentIds);
     var learningDepartmentsByParent = @json($learningDepartmentsByParent);
     var hodRoleName = 'HOD';
@@ -145,6 +146,22 @@
         var roleName = option.getAttribute('data-role-name') || '';
 
         return moduleKey === '' || institutionWideRoles.indexOf(roleName) !== -1;
+    }
+
+    function roleMatchesDepartmentModules(moduleKey, allowedModules) {
+        if (!moduleKey) {
+            return true;
+        }
+        if (allowedModules.indexOf(moduleKey) !== -1) {
+            return true;
+        }
+        var aliases = roleModuleDepartmentKeys[moduleKey] || [];
+        for (var i = 0; i < aliases.length; i++) {
+            if (allowedModules.indexOf(aliases[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function syncRoleOptionsForDepartment(row, preferredRoleId) {
@@ -170,7 +187,7 @@
 
             var moduleKey = option.getAttribute('data-module-key') || '';
             var isInstitutionWide = isInstitutionWideRoleOption(option);
-            option.hidden = !isInstitutionWide && allowedModules.indexOf(moduleKey) === -1;
+            option.hidden = !isInstitutionWide && !roleMatchesDepartmentModules(moduleKey, allowedModules);
         });
 
         if (placeholder) {

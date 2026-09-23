@@ -143,10 +143,41 @@ class StaffPortalDashboardController extends Controller
         $leaveBalances = collect();
         $leaveRequests = collect();
         $leaveTypes = collect();
+        $familyRelations = [];
+        $coverageDepartments = collect();
+        $eligibleCoverStaff = collect();
+        $leaveTypeMeta = [];
         if ($section === 'leave') {
-            $leaveTypes = app(\App\Services\LeaveRequestService::class)->activeLeaveTypes();
+            $leaveService = app(\App\Services\LeaveRequestService::class);
+            $catalog = app(\App\Services\Leave\LeaveCatalogService::class);
+            $coverageService = app(\App\Services\Leave\LeaveCoverageService::class);
+            $leaveTypes = $leaveService->activeLeaveTypes();
             $leaveBalances = app(\App\Services\EmployeePortalService::class)->leaveBalancesFor($staff);
-            $leaveRequests = app(\App\Services\LeaveRequestService::class)->requestsForStaff($staff);
+            $leaveRequests = $leaveService->requestsForStaff($staff);
+            $familyRelations = $catalog->familyRelations();
+            $coverageDepartments = $coverageService->departmentsRequiringCoverage($staff);
+            $eligibleCoverStaff = $coverageService->eligibleCoverStaff($staff->id);
+            $leaveTypeMeta = $leaveTypes->mapWithKeys(function ($type) use ($catalog, $leaveBalances) {
+                $def = $catalog->definitionForType($type);
+
+                return [
+                    $type->id => [
+                        'id' => $type->id,
+                        'code' => strtoupper((string) $type->leave_code),
+                        'name' => $type->leave_name,
+                        'calculation_type' => $def['calculation'] ?? $type->calculation_type,
+                        'accrual_type' => ($def['accrual'] ?? 'none') === 'monthly' ? 'monthly' : 'none',
+                        'accrual_rate' => $def['accrual_rate'] ?? $type->accrual_rate,
+                        'requires_document' => ! empty($def['requires_document']),
+                        'document_label' => $def['document_label'] ?? 'Supporting document',
+                        'requires_family_relation' => ! empty($def['requires_family_relation']),
+                        'gender_restriction' => $def['gender_restriction'] ?? 'any',
+                        'days_allowed' => (int) ($def['days_allowed_per_year'] ?? 0),
+                        'description' => $def['description'] ?? null,
+                        'available_balance' => (float) ($leaveBalances->firstWhere('leave_type_name', $type->leave_name)?->balance_days ?? 0),
+                    ],
+                ];
+            })->all();
         }
 
         $examPapers = collect();
@@ -199,6 +230,10 @@ class StaffPortalDashboardController extends Controller
             'leaveBalances' => $leaveBalances,
             'leaveRequests' => $leaveRequests,
             'leaveTypes' => $leaveTypes,
+            'familyRelations' => $familyRelations,
+            'coverageDepartments' => $coverageDepartments,
+            'eligibleCoverStaff' => $eligibleCoverStaff,
+            'leaveTypeMeta' => $leaveTypeMeta,
             'examPapers' => $examPapers,
             'canModerateExamPapers' => $canModerateExamPapers,
             'hodWorkload' => $hodWorkload,

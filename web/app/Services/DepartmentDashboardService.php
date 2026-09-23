@@ -50,8 +50,9 @@ class DepartmentDashboardService
             return $query->get();
         }
 
+        // Unassigned staff: no department cards — employee portal only.
         if ($this->employeeAssignment->isAwaitingDepartmentAssignment($user)) {
-            return $query->get();
+            return collect();
         }
 
         $userDepartmentIds = $this->rbacService->getUserDepartmentIds($user);

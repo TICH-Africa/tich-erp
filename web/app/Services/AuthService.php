@@ -304,7 +304,7 @@ class AuthService
             }
 
             if (app(EmployeeAssignmentService::class)->isAwaitingDepartmentAssignment($user)) {
-                return route('dashboard');
+                return route('employee.dashboard');
             }
 
             if ($employeePortal->hasEmployeeProfile($user)) {

@@ -8,7 +8,7 @@
             <a href="{{ route('hr.staff.create') }}" class="tich-btn tich-btn-primary">+ Add Staff</a>
         </x-slot:actions>
         <x-slot:filters>
-            <form method="GET" action="{{ route('hr.staff.index') }}" class="tich-page-toolbar__filters-form">
+            <form method="GET" action="{{ route('hr.staff.index') }}" class="tich-page-toolbar__filters-form" data-live-filter>
                 @include('partials.search-field', ['placeholder' => 'Name, employee no, email...', 'value' => request('search')])
                 <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>

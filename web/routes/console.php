@@ -203,3 +203,5 @@ Artisan::command('mpesa:clear-token-cache', function () {
 Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
 Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');
 Schedule::command('finance:send-invoice-reminders')->dailyAt('09:00');
+Schedule::command('leave:accrual')->monthlyOn(1, '00:05');
+Schedule::command('leave:carry-forward')->yearlyOn(1, 1, '00:30');

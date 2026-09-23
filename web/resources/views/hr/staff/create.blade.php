@@ -92,11 +92,22 @@
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
                             <label for="primary_email">Primary email <span class="uf-req">*</span></label>
-                            <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email') }}" required class="{{ $errors->has('primary_email') ? 'is-invalid' : '' }}" placeholder="Personal email address">
+                            <input
+                                type="email"
+                                id="primary_email"
+                                name="primary_email"
+                                value="{{ old('primary_email') }}"
+                                required
+                                class="{{ $errors->has('primary_email') ? 'is-invalid' : '' }}"
+                                placeholder="Personal email address"
+                                autocomplete="email"
+                                data-email-check-url="{{ route('hr.staff.check-email') }}"
+                            >
                             @error('primary_email')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
-                            <span class="uf-hint">Organisation email (@tich.africa) is assigned separately by ICT when issued.</span>
+                            <span class="uf-hint" id="primary_email_hint">Organisation email (@tich.africa) is assigned separately by ICT when issued.</span>
+                            <span class="uf-error" id="primary_email_exists" hidden role="alert"></span>
                         </div>
                         <div class="uf-field">
                             <label for="phone_number">Phone Number <span class="uf-req">*</span></label>
@@ -170,7 +181,7 @@
                 <div class="uf-section-head">Submit</div>
                 <div class="uf-section-body">
                     <div class="uf-form-actions">
-                        <button type="submit" class="uf-btn uf-btn-primary">Create Staff Member</button>
+                        <button type="submit" class="uf-btn uf-btn-primary" id="staff-create-submit">Create Staff Member</button>
                         <a href="{{ route('hr.staff.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
                     </div>
                 </div>
@@ -179,4 +190,84 @@
             <p class="uf-form-footnote"><span class="uf-req">*</span> Required field</p>
         </form>
     </div>
+
+    <script>
+        (function () {
+            const input = document.getElementById('primary_email');
+            const hint = document.getElementById('primary_email_hint');
+            const alertEl = document.getElementById('primary_email_exists');
+            const submitBtn = document.getElementById('staff-create-submit');
+            const form = input ? input.closest('form') : null;
+            if (!input || !form || !alertEl || !submitBtn) return;
+
+            const checkUrl = input.dataset.emailCheckUrl;
+            let timer = null;
+            let blocked = false;
+            let lastChecked = '';
+
+            function setBlocked(message) {
+                blocked = true;
+                input.classList.add('is-invalid');
+                alertEl.hidden = false;
+                alertEl.textContent = message;
+                if (hint) hint.hidden = true;
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-disabled', 'true');
+            }
+
+            function clearBlocked() {
+                blocked = false;
+                input.classList.remove('is-invalid');
+                alertEl.hidden = true;
+                alertEl.textContent = '';
+                if (hint) hint.hidden = false;
+                submitBtn.disabled = false;
+                submitBtn.removeAttribute('aria-disabled');
+            }
+
+            function checkEmail() {
+                const email = (input.value || '').trim().toLowerCase();
+                if (!email || email.indexOf('@') === -1) {
+                    clearBlocked();
+                    lastChecked = '';
+                    return;
+                }
+                if (email === lastChecked) return;
+                lastChecked = email;
+
+                fetch(checkUrl + '?email=' + encodeURIComponent(email), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if ((input.value || '').trim().toLowerCase() !== email) return;
+                        if (data.exists) {
+                            setBlocked(data.message || 'This email is already in use.');
+                        } else {
+                            clearBlocked();
+                        }
+                    })
+                    .catch(function () { /* ignore network blips; server validates on submit */ });
+            }
+
+            input.addEventListener('input', function () {
+                clearTimeout(timer);
+                timer = setTimeout(checkEmail, 350);
+            });
+            input.addEventListener('blur', checkEmail);
+
+            form.addEventListener('submit', function (event) {
+                if (blocked) {
+                    event.preventDefault();
+                    alertEl.focus?.();
+                    return false;
+                }
+            });
+
+            if (input.value) {
+                checkEmail();
+            }
+        })();
+    </script>
 @endsection
