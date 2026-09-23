@@ -272,6 +272,17 @@ class DepartmentModuleService
             $map[(int) $row->department_id][] = $row->module_key;
         }
 
+        // Unlock role catalog keys (e.g. marketing) when the department has the matching tools.
+        $roleModuleMap = config('tich-module-roles.role_module_department_keys', []);
+        foreach ($map as $departmentId => $keys) {
+            foreach ($roleModuleMap as $roleModuleKey => $departmentKeys) {
+                if (array_intersect($departmentKeys, $keys) !== []) {
+                    $keys[] = $roleModuleKey;
+                }
+            }
+            $map[$departmentId] = array_values(array_unique($keys));
+        }
+
         return $map;
     }
 

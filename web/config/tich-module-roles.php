@@ -38,6 +38,16 @@ return [
         'Dean' => 'Dean of Students',
     ],
 
+    /**
+     * Role catalog module_key → department_modules keys that unlock those roles
+     * in the Users & access picker (e.g. Marketing roles sit under Marketing's portal tools).
+     *
+     * @var array<string, list<string>>
+     */
+    'role_module_department_keys' => [
+        'marketing' => ['portal', 'site_settings'],
+    ],
+
     'modules' => [
         'academics' => [
             'label' => 'Academics',
