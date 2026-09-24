@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicProgram;
+use App\Models\AcademicYear;
 use App\Models\Campus;
 use App\Models\Department;
+use App\Models\FeeStructure;
 use App\Services\AuditService;
 use App\Services\ProgramCarouselSyncService;
 use App\Services\StoredFileService;
@@ -59,6 +61,7 @@ class ProgramController extends Controller
             'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_featured_on_homepage' => ['nullable', 'boolean'],
             'cover_image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
+            'total_semester_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);
@@ -77,6 +80,11 @@ class ProgramController extends Controller
             'created_by' => $request->user()->id,
             'created_at' => now(),
         ]);
+
+        // Create fee structure if fee provided
+        if (! empty($validated['total_semester_fee'])) {
+            $this->createOrUpdateFeeStructure($program, $validated['total_semester_fee']);
+        }
 
         $this->auditService->log(
             'core.program.created',
@@ -116,6 +124,7 @@ class ProgramController extends Controller
                 'image',
                 'mimes:jpeg,jpg,png,gif,webp',
             ],
+            'total_semester_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $department = Department::query()->find($validated['department_id']);
@@ -146,6 +155,11 @@ class ProgramController extends Controller
 
         $program->update($updates);
 
+        // Update fee structure if fee provided
+        if (! empty($validated['total_semester_fee'])) {
+            $this->createOrUpdateFeeStructure($program, $validated['total_semester_fee']);
+        }
+
         $this->auditService->log(
             'core.program.updated',
             'academic_programs',
@@ -161,5 +175,42 @@ class ProgramController extends Controller
         $this->programCarousel->sync($program->fresh());
 
         return back()->with('status', 'Program updated successfully.');
+    }
+
+    private function createOrUpdateFeeStructure(AcademicProgram $program, float $totalSemesterFee): void
+    {
+        $currentYear = AcademicYear::query()->where('is_current', 1)->first();
+        if (! $currentYear) {
+            return;
+        }
+
+        $feeStructure = FeeStructure::query()
+            ->where('program_id', $program->id)
+            ->where('academic_year_id', $currentYear->id)
+            ->first();
+
+        $tuitionFee = round($totalSemesterFee * 0.8, 2); // 80% tuition
+        $otherFees = round($totalSemesterFee * 0.2, 2); // 20% other fees
+
+        $data = [
+            'program_id' => $program->id,
+            'academic_year_id' => $currentYear->id,
+            'effective_from' => now()->toDateString(),
+            'is_active' => true,
+            'is_approved' => true,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+            'tuition_fee' => $tuitionFee,
+            'total_semester_fee' => $totalSemesterFee,
+            'application_fee' => 1000,
+            'qa_annual_fee' => 1000,
+            'graduation_fee' => 4000,
+        ];
+
+        if ($feeStructure) {
+            $feeStructure->update($data);
+        } else {
+            FeeStructure::create($data);
+        }
     }
 }

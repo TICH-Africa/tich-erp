@@ -162,3 +162,18 @@
     >
     <span class="tich-text">Featured on homepage</span>
 </label>
+
+<div class="tich-form-group">
+    <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}total_semester_fee" @endif>Total semester fee (KES)</label>
+    <input
+        type="number"
+        name="total_semester_fee"
+        @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}total_semester_fee" @endif
+        class="tich-input"
+        value="{{ old('total_semester_fee', $program->feeStructure?->total_semester_fee ?? '') }}"
+        min="0"
+        step="0.01"
+        placeholder="Enter total fee per semester"
+    >
+    <p class="tich-caption tich-mt-2">Optional: Enter the total fee per semester. This will create/update the fee structure for the current academic year.</p>
+</div>

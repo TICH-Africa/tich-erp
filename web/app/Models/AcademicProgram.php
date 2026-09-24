@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AcademicProgram extends Model
 {
@@ -132,5 +133,12 @@ class AcademicProgram extends Model
         }
 
         return \App\Support\PublicAsset::media($path);
+    }
+
+    public function feeStructure(): HasOne
+    {
+        return $this->hasOne(\App\Models\FeeStructure::class, 'program_id')
+            ->where('is_active', 1)
+            ->latest('effective_from');
     }
 }

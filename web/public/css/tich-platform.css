@@ -9346,6 +9346,7 @@ a.tich-tabs__btn {
     opacity: 0;
     transform: translateY(18px);
     transition: opacity 0.55s ease, transform 0.55s ease;
+    overflow: visible;
 }
 
 .tich-animate.is-visible {
