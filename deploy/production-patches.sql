@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-09-18
+-- Last updated: 2026-09-24
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -1877,6 +1877,13 @@ WHERE d.`is_active` = 1
       SELECT 1 FROM `department_modules` dm
       WHERE dm.`department_id` = d.`id` AND dm.`module_key` = m.`module_key`
   );
+-- -----------------------------------------------------------------------------
+-- 38. Remove campuses.campus_code (2026_09_23_000006)
+--     production.sql CREATE TABLE no longer includes the column; this drops it
+--     on hosts that still have it from earlier schema.
+-- -----------------------------------------------------------------------------
+ALTER TABLE `campuses` DROP INDEX IF EXISTS `campuses_campus_code_unique`;
+ALTER TABLE `campuses` DROP COLUMN IF EXISTS `campus_code`;
 -- PRESENT IN PRODUCTION UP TO HERE
 
 

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-23 17:02:07 EAT
+-- Generated: 2026-09-24 08:47:57 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -2141,7 +2141,6 @@ CALL `tich_ensure_index`('cafeteria_staff_memberships', 'cafeteria_staff_members
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `campuses` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `campus_code` varchar(20) NOT NULL,
   `campus_name` varchar(200) NOT NULL,
   `campus_type` varchar(50) NOT NULL,
   `parent_campus_id` bigint(20) unsigned DEFAULT NULL,
@@ -2153,14 +2152,12 @@ CREATE TABLE IF NOT EXISTS `campuses` (
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `created_by` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `campuses_campus_code_unique` (`campus_code`),
   KEY `campuses_parent_campus_id_foreign` (`parent_campus_id`),
   CONSTRAINT `campuses_parent_campus_id_foreign` FOREIGN KEY (`parent_campus_id`) REFERENCES `campuses` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `campuses` (add only if missing)
 CALL `tich_ensure_column`('campuses', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
-CALL `tich_ensure_column`('campuses', 'campus_code', 'varchar(20) NOT NULL');
 CALL `tich_ensure_column`('campuses', 'campus_name', 'varchar(200) NOT NULL');
 CALL `tich_ensure_column`('campuses', 'campus_type', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('campuses', 'parent_campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
@@ -2173,7 +2170,6 @@ CALL `tich_ensure_column`('campuses', 'updated_at', 'datetime NULL DEFAULT NULL'
 CALL `tich_ensure_column`('campuses', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 
 -- Indexes for `campuses` (add only if missing)
-CALL `tich_ensure_unique`('campuses', 'campuses_campus_code_unique', '`campus_code`');
 CALL `tich_ensure_index`('campuses', 'campuses_parent_campus_id_foreign', '`parent_campus_id`');
 
 -- -----------------------------------------------------------------------------
