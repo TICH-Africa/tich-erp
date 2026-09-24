@@ -23,6 +23,9 @@ class DepartmentDashboardService
         'qa.dashboard',
         'procurement.dashboard',
         'research.dashboard',
+        'ict.dashboard',
+        'monitoring_evaluation.dashboard',
+        'marketing.portal.index',
         'sis.dashboard',
         'sis.students.index',
         'departments.academics.dashboard',
@@ -435,12 +438,20 @@ class DepartmentDashboardService
         }
 
         $modules = collect($this->modulesForDepartment($user, $department))
-            ->filter(fn (array $module) => empty($module['coming_soon']))
-            ->sortBy(fn (array $module) => array_search($module['route'], self::ENTRY_ROUTE_PRIORITY, true) ?: 99)
+            ->filter(fn (array $module) => empty($module['coming_soon']) && ! empty($module['route']))
+            ->sortBy(function (array $module) {
+                $priority = array_search($module['route'], self::ENTRY_ROUTE_PRIORITY, true);
+
+                return $priority === false ? 99 : $priority;
+            })
             ->values();
 
         if ($modules->isNotEmpty()) {
-            return route('departments.show', $department);
+            $first = $modules->first();
+
+            if (\Illuminate\Support\Facades\Route::has($first['route'])) {
+                return route($first['route'], $first['params'] ?? []);
+            }
         }
 
         return route('dashboard');

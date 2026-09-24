@@ -121,6 +121,8 @@ class DepartmentBudgetingService
         $aliases = match ($module) {
             'monitoring_evaluation' => ['MNE', 'M&E', 'ME'],
             'ict' => ['ICTO', 'ICT'],
+            'administration' => ['ADM', 'ADMIN', 'ADMISSIONS'],
+            'procurement' => ['PRC', 'PROC'],
             default => $primary ? [$primary] : [],
         };
 
@@ -193,6 +195,20 @@ class DepartmentBudgetingService
             if (in_array($department->dept_code, $codes, true)) {
                 return route($config['dashboard_route']);
             }
+        }
+
+        // Production safety: resolve from assigned department_modules when dept_code drifts.
+        $assigned = app(DepartmentModuleService::class)->assignedModuleKeys($department);
+        foreach (self::MODULES as $module => $config) {
+            if (in_array($module, $assigned, true) && \Illuminate\Support\Facades\Route::has($config['dashboard_route'])) {
+                return route($config['dashboard_route']);
+            }
+        }
+
+        if (array_intersect(['portal', 'site_settings'], $assigned) !== []
+            && isset(self::MODULES['marketing'])
+            && \Illuminate\Support\Facades\Route::has(self::MODULES['marketing']['dashboard_route'])) {
+            return route(self::MODULES['marketing']['dashboard_route']);
         }
 
         if ($department->isLearningDepartment()) {

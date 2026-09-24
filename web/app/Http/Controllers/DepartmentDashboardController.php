@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
-use App\Services\DepartmentBudgetingService;
 use App\Services\DepartmentDashboardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DepartmentDashboardController extends Controller
@@ -16,8 +14,7 @@ class DepartmentDashboardController extends Controller
         Request $request,
         Department $department,
         DepartmentDashboardService $departmentDashboard,
-        DepartmentBudgetingService $budgeting,
-    ): RedirectResponse|View {
+    ): RedirectResponse {
         if (! $department->is_active) {
             throw new NotFoundHttpException();
         }
@@ -28,22 +25,14 @@ class DepartmentDashboardController extends Controller
             abort(403, 'You do not have access to this department.');
         }
 
-        $moduleHome = $budgeting->moduleHomeUrlForDepartment($department);
-        if ($moduleHome) {
-            return redirect()->to($moduleHome);
+        $entryUrl = $departmentDashboard->entryUrlForDepartment($user, $department);
+
+        if ($entryUrl === route('dashboard')) {
+            return redirect()
+                ->route('dashboard')
+                ->with('status', 'Open this area from its module dashboard instead of the legacy department hub.');
         }
 
-        $modules = $departmentDashboard->modulesForDepartment($user, $department);
-
-        if ($modules !== []) {
-            return view('departments.dashboard', [
-                'department' => $department,
-                'modules' => $modules,
-            ]);
-        }
-
-        return redirect()
-            ->route('dashboard')
-            ->with('status', 'Open this area from its module dashboard instead of the legacy department hub.');
+        return redirect()->to($entryUrl);
     }
 }
