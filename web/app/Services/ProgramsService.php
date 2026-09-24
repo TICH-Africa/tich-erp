@@ -52,7 +52,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $program = AcademicProgram::query()
-                ->with('department:id,dept_name')
+                ->with(['department:id,dept_name', 'feeStructure'])
                 ->where('status', 'active')
                 ->whereRaw('LOWER(program_code) = ?', [strtolower($code)])
                 ->first();
@@ -78,7 +78,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $query = AcademicProgram::query()
-                ->with('department:id,dept_name')
+                ->with(['department:id,dept_name', 'feeStructure'])
                 ->where('status', 'active');
 
             if ($search) {
@@ -119,7 +119,7 @@ class ProgramsService
 
     private function mapProgram(AcademicProgram $program): object
     {
-        $feeDisplay = $this->resolveProgramFee($program->id);
+        $feeDisplay = $this->resolveProgramFee($program);
 
         return (object) [
             'id' => $program->id,
@@ -139,17 +139,13 @@ class ProgramsService
         ];
     }
 
-    private function resolveProgramFee(int $programId): string
+    private function resolveProgramFee(AcademicProgram $program): string
     {
         if (! $this->tableExists('fee_structures')) {
             return 'Contact admissions for current fee structure';
         }
 
-        $fee = DB::table('fee_structures')
-            ->where('program_id', $programId)
-            ->where('is_active', 1)
-            ->orderByDesc('effective_from')
-            ->value('total_semester_fee');
+        $fee = $program->feeStructure?->total_semester_fee;
 
         if ($fee) {
             return 'KES '.number_format((float) $fee, 0).' per semester';

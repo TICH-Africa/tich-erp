@@ -23,6 +23,6 @@
     $style = $delay ? "transition-delay: {$delay}ms;" : '';
 @endphp
 
-<section {{ $attributes->merge(['class' => implode(' ', array_filter(array_merge((array) $attributes->get('class', []), $classes))), 'style' => $style]) }}>
+<section {{ $attributes->merge(['class' => implode(' ', array_filter(array_merge((array) $attributes->get('class', []), $classes))), 'style' => $style . 'overflow: visible;']) }}>
     {{ $slot }}
 </section>
