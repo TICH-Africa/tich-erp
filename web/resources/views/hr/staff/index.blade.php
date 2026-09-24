@@ -39,7 +39,7 @@
                         <th>Employee No.</th>
                         <th>Photo</th>
                         <th>Name</th>
-                        <th>Department</th>
+                        <th>Departments</th>
                         <th>Job Title</th>
                         <th>Category</th>
                         <th>Status</th>
@@ -48,6 +48,20 @@
                 </thead>
                 <tbody>
                     @forelse ($staff as $member)
+                        @php
+                            $memberDepartmentIds = collect([$member->department_id])
+                                ->merge($member->user?->roles->pluck('pivot.department_id') ?? [])
+                                ->filter()
+                                ->map(fn ($id) => (int) $id)
+                                ->unique()
+                                ->values();
+                            $memberDepartments = $memberDepartmentIds
+                                ->map(fn ($id) => $departmentsById[$id] ?? null)
+                                ->filter()
+                                ->unique()
+                                ->sort()
+                                ->values();
+                        @endphp
                         <tr>
                             <td>{{ $member->employee_number }}</td>
                             <td>
@@ -67,7 +81,13 @@
                                     <p class="tich-caption">Status: onboarding</p>
                                 @endif
                             </td>
-                            <td>{{ $member->department->dept_name ?? '-' }}</td>
+                            <td>
+                                @forelse ($memberDepartments as $departmentName)
+                                    <span class="tich-badge tich-badge--sm tich-staff-dept-badge">{{ $departmentName }}</span>
+                                @empty
+                                    <span class="tich-caption">-</span>
+                                @endforelse
+                            </td>
                             <td>{{ $member->job_title }}</td>
                             <td class="tich-caption">{{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', $member->employment_category))) }}</td>
                             <td>
@@ -75,18 +95,39 @@
                                     {{ ucfirst($member->employment_status) }}
                                 </span>
                             </td>
-                            <td style="white-space:nowrap;">
-                                @if (! $member->user_id && $member->primary_email)
-                                    <form method="POST" action="{{ route('hr.staff.invite', $member) }}" style="display:inline;">
-                                        @csrf
-                                        <button type="submit" class="tich-btn tich-btn-secondary" title="Send ERP registration invite to {{ $member->primary_email }}">
-                                            Invite
-                                        </button>
-                                    </form>
-                                @elseif ($member->user_id)
-                                    <span class="tich-caption">Has account</span>
-                                @endif
-                                <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
+                            <td>
+                                <div class="tich-staff-row-actions">
+                                    @if (! $member->user_id && $member->primary_email)
+                                        <form method="POST" action="{{ route('hr.staff.invite', $member) }}">
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="tich-squircle-btn"
+                                                title="Invite"
+                                                aria-label="Invite"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="9" cy="7" r="4"/>
+                                                    <line x1="19" y1="8" x2="19" y2="14"/>
+                                                    <line x1="22" y1="11" x2="16" y2="11"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @elseif ($member->user_id)
+                                        <span
+                                            class="tich-staff-account-icon"
+                                            title="Has account"
+                                            aria-label="Has account"
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </span>
+                                    @endif
+                                    <a href="{{ route('hr.staff.show', $member) }}" class="tich-btn tich-btn-ghost">View</a>
+                                </div>
                             </td>
                         </tr>
                     @empty

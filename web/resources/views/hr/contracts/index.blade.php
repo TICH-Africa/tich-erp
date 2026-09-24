@@ -15,6 +15,7 @@
                 <thead>
                     <tr>
                         <th>Contract No.</th>
+                        <th>Photo</th>
                         <th>Staff</th>
                         <th>Type</th>
                         <th>Start Date</th>
@@ -28,6 +29,15 @@
                     @forelse ($contracts as $contract)
                         <tr>
                             <td>{{ $contract->contract_number }}</td>
+                            <td>
+                                @if ($contract->staff)
+                                    @include('hr.staff.partials.table-avatar', ['member' => $contract->staff])
+                                @else
+                                    <div class="tich-staff-table-avatar" aria-hidden="true">
+                                        <span>?</span>
+                                    </div>
+                                @endif
+                            </td>
                             <td>
                                 <strong>{{ $contract->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $contract->staff->employee_number ?? '' }}</p>
@@ -52,7 +62,7 @@
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No contracts found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No contracts found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

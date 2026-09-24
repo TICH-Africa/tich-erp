@@ -3151,7 +3151,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     padding: 1.5rem;
 }
 
-/* Events listing ù image overlay cards (inspiration card 02) */
+/* Events listing ? image overlay cards (inspiration card 02) */
 .tich-events-grid > * {
     min-width: 0;
 }
@@ -7117,6 +7117,37 @@ body.is-photo-crop-open {
 .tich-squircle-btn--danger:hover {
     background: #fef2f2;
     border-color: var(--tich-error, #b91c1c);
+}
+
+.tich-staff-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.tich-staff-row-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.tich-staff-account-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.65rem;
+    color: var(--tich-blue, #1d4ed8);
+}
+
+.tich-staff-account-icon svg {
+    display: block;
+}
+
+.tich-staff-dept-badge {
+    display: inline-block;
+    margin: 0.1rem 0.15rem 0.1rem 0;
 }
 
 .tich-archive-actions {
@@ -11711,7 +11742,7 @@ input[type="time"]::-moz-calendar-picker-indicator {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Budget approval review ù quarterly income / expenditure                    */
+/* Budget approval review ? quarterly income / expenditure                    */
 /* -------------------------------------------------------------------------- */
 .budrev-summary {
     display: grid;
@@ -11958,7 +11989,7 @@ input[type="time"]::-moz-calendar-picker-indicator {
     background: color-mix(in srgb, #243442 45%, transparent);
 }
 
-/* Weekly time log ù days outside the week/month period */
+/* Weekly time log ? days outside the week/month period */
 .wtl-table tr.wtl-row--outside td {
     opacity: 0.45;
     background: color-mix(in srgb, var(--tich-border, #e5e7eb) 35%, transparent);

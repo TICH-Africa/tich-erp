@@ -29,7 +29,12 @@ class StaffViewController extends Controller
     public function index(): View
     {
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
-        $query = Staff::excludePlatformOperators()->with(['department', 'campus', 'lineManager']);
+        $query = Staff::excludePlatformOperators()->with([
+            'department:id,dept_name',
+            'campus',
+            'lineManager',
+            'user.roles',
+        ]);
 
         if ($search = request('search')) {
             $query->where(function ($q) use ($search) {
@@ -47,14 +52,41 @@ class StaffViewController extends Controller
         }
 
         if ($departmentId = request('department_id')) {
-            $query->where('department_id', $departmentId);
+            $departmentId = (int) $departmentId;
+            $query->where(function ($q) use ($departmentId) {
+                $q->where('department_id', $departmentId)
+                    ->orWhereHas('user.roles', fn ($roles) => $roles->where('user_roles.department_id', $departmentId));
+            });
         }
 
         $staff = $query->orderByDesc('created_at')->paginate(25)->appends(request()->query());
 
+        $roleDepartmentIds = $staff->getCollection()
+            ->flatMap(fn (Staff $member) => $member->user?->roles->pluck('pivot.department_id') ?? [])
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $missingDepartmentIds = $roleDepartmentIds
+            ->diff($staff->getCollection()->pluck('department_id')->filter())
+            ->values();
+
+        $departmentsById = $staff->getCollection()
+            ->pluck('department')
+            ->filter()
+            ->mapWithKeys(fn (Department $department) => [$department->id => $department->dept_name]);
+
+        if ($missingDepartmentIds->isNotEmpty()) {
+            $departmentsById = $departmentsById->union(
+                Department::query()->whereIn('id', $missingDepartmentIds)->pluck('dept_name', 'id')
+            );
+        }
+
         return view('hr.staff.index', [
             'staff' => $staff,
             'departments' => $departments,
+            'departmentsById' => $departmentsById,
         ]);
     }
 
