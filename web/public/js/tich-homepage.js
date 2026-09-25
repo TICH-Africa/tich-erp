@@ -5,84 +5,246 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initCarousel() {
-    const carousel = document.querySelector('[data-carousel]');
-    if (!carousel) return;
+    const hero = document.querySelector('[data-carousel]');
+    if (!hero) {
+        return;
+    }
 
-    const slides = [...carousel.querySelectorAll('[data-carousel-slide]')];
-    const dots = [...carousel.querySelectorAll('[data-carousel-dot]')];
-    const prev = carousel.querySelector('[data-carousel-prev]');
-    const next = carousel.querySelector('[data-carousel-next]');
+    const track = hero.querySelector('[data-carousel-track]');
+    const realSlides = [...hero.querySelectorAll('[data-carousel-slide]')];
+    const panels = [...hero.querySelectorAll('[data-carousel-panel]')];
+    const dots = [...hero.querySelectorAll('[data-carousel-dot]')];
+    const prev = hero.querySelector('[data-carousel-prev]');
+    const next = hero.querySelector('[data-carousel-next]');
+    const realTotal = realSlides.length;
 
-    if (slides.length === 0) return;
+    if (!track || realTotal === 0) {
+        return;
+    }
 
-    let current = 0;
-    let autoplayTimer = null;
-    const SLIDE_MS = 5500;
+    // Clone first slide so last → first can keep sliding left-to-right.
+    let cloneSlide = null;
+    if (realTotal > 1) {
+        cloneSlide = realSlides[0].cloneNode(true);
+        cloneSlide.setAttribute('aria-hidden', 'true');
+        cloneSlide.removeAttribute('data-carousel-slide');
+        cloneSlide.dataset.carouselClone = 'true';
+        track.appendChild(cloneSlide);
+    }
 
-    const clearAutoplay = () => {
-        if (autoplayTimer) {
-            window.clearTimeout(autoplayTimer);
-            autoplayTimer = null;
+    const trackSlides = [...track.children];
+    let index = 0;
+    let isFirst = true;
+    let timer = null;
+    let isJumping = false;
+    const interval = 6000;
+    const animMs = 850;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function logicalIndex(i) {
+        return ((i % realTotal) + realTotal) % realTotal;
+    }
+
+    function setTrackPosition(i, instant) {
+        if (instant) {
+            track.style.transition = 'none';
         }
-    };
+        track.style.transform = `translateX(-${i * 100}%)`;
+        if (instant) {
+            void track.offsetWidth;
+            track.style.transition = '';
+        }
+    }
 
-    const scheduleAutoplay = () => {
-        clearAutoplay();
+    function syncVideo(logical) {
+        realSlides.forEach((slide, i) => {
+            const video = slide.querySelector('video');
+            if (!video) {
+                return;
+            }
+            if (i === logical) {
+                video.play().catch(() => {});
+            } else {
+                video.pause();
+            }
+        });
+        if (cloneSlide) {
+            const cloneVideo = cloneSlide.querySelector('video');
+            if (cloneVideo) {
+                cloneVideo.pause();
+            }
+        }
+    }
 
-        if (slides.length < 2) {
+    function updatePanels(fromLogical, toLogical, direction) {
+        const outgoing = panels[fromLogical];
+        const incoming = panels[toLogical];
+
+        if (isFirst || prefersReducedMotion || !outgoing || !incoming || direction === 0) {
+            panels.forEach((panel, j) => {
+                panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
+                panel.classList.toggle('is-active', j === toLogical);
+                panel.setAttribute('aria-hidden', j === toLogical ? 'false' : 'true');
+            });
             return;
         }
 
-        autoplayTimer = window.setTimeout(() => {
-            show(current + 1);
-        }, SLIDE_MS);
-    };
-
-    const show = (index) => {
-        current = (index + slides.length) % slides.length;
-        clearAutoplay();
-
-        slides.forEach((slide, i) => {
-            const isActive = i === current;
-            slide.classList.toggle('is-active', isActive);
-            slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
-
-            const content = slide.querySelector('[data-carousel-content]');
-            if (!content) {
-                return;
-            }
-
-            content.classList.remove('is-visible');
-
-            if (isActive) {
-                // Force reflow so entrance animations restart on every slide change.
-                void content.offsetWidth;
-                requestAnimationFrame(() => {
-                    content.classList.add('is-visible');
-                });
+        panels.forEach((panel) => {
+            if (panel !== outgoing && panel !== incoming) {
+                panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right', 'is-active');
+                panel.setAttribute('aria-hidden', 'true');
             }
         });
 
-        dots.forEach((dot, i) => {
-            const active = i === current;
-            dot.classList.toggle('is-active', active);
-            dot.setAttribute('aria-current', active ? 'true' : 'false');
-        });
-
-        scheduleAutoplay();
-    };
-
-    if (slides.length > 1) {
-        prev?.addEventListener('click', () => show(current - 1));
-        next?.addEventListener('click', () => show(current + 1));
-        dots.forEach((dot) => {
-            dot.addEventListener('click', () => {
-                show(Number(dot.dataset.carouselDot));
+        if (outgoing !== incoming) {
+            outgoing.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
+            requestAnimationFrame(() => {
+                outgoing.classList.remove('is-active');
+                outgoing.classList.add(direction === 1 ? 'exit-left' : 'exit-right');
+                outgoing.setAttribute('aria-hidden', 'true');
             });
+        }
+
+        incoming.classList.remove('exit-left', 'exit-right', 'is-active');
+        incoming.classList.add(direction === 1 ? 'from-right' : 'from-left');
+        void incoming.offsetWidth;
+        incoming.classList.add('is-active');
+        incoming.setAttribute('aria-hidden', 'false');
+
+        window.setTimeout(() => {
+            panels.forEach((panel, j) => {
+                panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
+                panel.classList.toggle('is-active', j === toLogical);
+                panel.setAttribute('aria-hidden', j === toLogical ? 'false' : 'true');
+            });
+        }, animMs);
+    }
+
+    function updateDots(logical) {
+        dots.forEach((dot, j) => {
+            const active = j === logical;
+            dot.classList.toggle('is-active', active);
+            dot.setAttribute('aria-selected', active ? 'true' : 'false');
         });
     }
 
-    show(0);
+    function updateSlideAria(trackIndex) {
+        trackSlides.forEach((slide, j) => {
+            const active = j === trackIndex || (trackIndex === realTotal && j === 0);
+            slide.setAttribute('aria-hidden', active && j < realTotal ? 'false' : 'true');
+        });
+    }
+
+    function goTo(targetTrackIndex, direction) {
+        if (isJumping) {
+            return;
+        }
+
+        const nextTrackIndex = targetTrackIndex;
+        if (nextTrackIndex === index && !isFirst) {
+            return;
+        }
+
+        const fromLogical = logicalIndex(index);
+        const toLogical = logicalIndex(nextTrackIndex);
+        const animDirection = isFirst || prefersReducedMotion ? 0 : direction;
+
+        setTrackPosition(nextTrackIndex, false);
+        updateSlideAria(nextTrackIndex);
+        updatePanels(fromLogical, toLogical, animDirection);
+        updateDots(toLogical);
+
+        index = nextTrackIndex;
+        isFirst = false;
+        syncVideo(toLogical);
+
+        // After animating onto the clone, snap back to the real first slide.
+        if (cloneSlide && nextTrackIndex === realTotal) {
+            window.setTimeout(() => {
+                isJumping = true;
+                setTrackPosition(0, true);
+                index = 0;
+                updateSlideAria(0);
+                isJumping = false;
+            }, prefersReducedMotion ? 0 : animMs);
+        }
+    }
+
+    function nextSlide() {
+        if (realTotal < 2) {
+            return;
+        }
+        // Always advance left-to-right, including last → first via the clone.
+        if (index >= realTotal - 1) {
+            goTo(realTotal, 1);
+        } else {
+            goTo(index + 1, 1);
+        }
+    }
+
+    function prevSlide() {
+        if (realTotal < 2) {
+            return;
+        }
+        if (index === 0 && cloneSlide) {
+            // Jump to clone instantly, then slide back to last real slide.
+            isJumping = true;
+            setTrackPosition(realTotal, true);
+            index = realTotal;
+            isJumping = false;
+            goTo(realTotal - 1, -1);
+            return;
+        }
+        goTo(index - 1, -1);
+    }
+
+    function startAutoplay() {
+        stopAutoplay();
+        if (realTotal < 2 || prefersReducedMotion) {
+            return;
+        }
+        timer = window.setInterval(nextSlide, interval);
+    }
+
+    function stopAutoplay() {
+        if (timer) {
+            window.clearInterval(timer);
+            timer = null;
+        }
+    }
+
+    if (realTotal > 1) {
+        next?.addEventListener('click', () => {
+            nextSlide();
+            startAutoplay();
+        });
+        prev?.addEventListener('click', () => {
+            prevSlide();
+            startAutoplay();
+        });
+        dots.forEach((dot) => {
+            dot.addEventListener('click', () => {
+                const target = Number(dot.dataset.carouselDot);
+                const currentLogical = logicalIndex(index);
+                const direction = target >= currentLogical || (currentLogical === realTotal - 1 && target === 0)
+                    ? 1
+                    : (target < currentLogical ? -1 : 1);
+                // Prefer forward when wrapping last → first via dot.
+                if (currentLogical === realTotal - 1 && target === 0) {
+                    nextSlide();
+                } else {
+                    goTo(target, direction);
+                }
+                startAutoplay();
+            });
+        });
+
+        hero.addEventListener('mouseenter', stopAutoplay);
+        hero.addEventListener('mouseleave', startAutoplay);
+    }
+
+    goTo(0, 0);
+    startAutoplay();
 }
 
 function initHeaderOverHero() {
@@ -94,7 +256,7 @@ function initHeaderOverHero() {
     }
 
     const update = () => {
-        const threshold = hero ? Math.max(80, hero.offsetHeight * 0.12) : 80;
+        const threshold = 8;
         header.classList.toggle('tich-header--solid', window.scrollY > threshold);
     };
 
@@ -141,7 +303,6 @@ function initHomeReveal() {
             } else if (cols === 2) {
                 direction = index % 2 === 0 ? 'from-left' : 'from-right';
             } else {
-                // Mobile single column: alternate sides.
                 direction = index % 2 === 0 ? 'from-left' : 'from-right';
             }
 
@@ -159,45 +320,20 @@ function initHomeReveal() {
         return;
     }
 
-    if (!('IntersectionObserver' in window)) {
-        groups.forEach((group) => {
-            group.classList.add('is-revealed');
-            group.querySelectorAll('.tich-home-reveal').forEach((item) => item.classList.add('is-revealed'));
-        });
-        return;
-    }
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (!entry.isIntersecting) {
                 return;
             }
-
-            const group = entry.target;
-            group.classList.add('is-revealed');
-            group.querySelectorAll('.tich-home-reveal').forEach((item) => {
-                if (item.closest('[data-home-reveal]') === group) {
-                    item.classList.add('is-revealed');
-                }
-            });
-            observer.unobserve(group);
+            entry.target.classList.add('is-revealed');
+            entry.target.querySelectorAll('.tich-home-reveal').forEach((item) => item.classList.add('is-revealed'));
+            observer.unobserve(entry.target);
         });
-    }, {
-        threshold: 0.18,
-        rootMargin: '0px 0px -8% 0px',
-    });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
 
     groups.forEach((group) => observer.observe(group));
 
-    let resizeTimer = null;
     window.addEventListener('resize', () => {
-        window.clearTimeout(resizeTimer);
-        resizeTimer = window.setTimeout(() => {
-            groups.forEach((group) => {
-                if (!group.classList.contains('is-revealed')) {
-                    assignDirections(group);
-                }
-            });
-        }, 120);
+        groups.forEach(assignDirections);
     });
 }

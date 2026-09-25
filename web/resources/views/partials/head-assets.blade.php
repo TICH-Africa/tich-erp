@@ -22,7 +22,7 @@
 <link rel="apple-touch-icon" href="{{ $appleIcon }}" sizes="180x180">
 <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
 @include('partials.theme-init')
-<link href="https://fonts.bunny.net/css?family=merriweather:400,700" rel="stylesheet" type="text/css" />
+<link href="https://fonts.bunny.net/css?family=merriweather:400,700,900" rel="stylesheet" type="text/css" />
 <x-asset.stylesheet path="css/tich-platform.css" />
 <x-asset.script path="js/tich-theme.js" />
 <x-asset.script path="js/tich-select.js" />
@@ -55,7 +55,7 @@
                     },
                 },
                 fontFamily: {
-                    heading: ['"Times New Roman"', 'Times', 'serif'],
+                    heading: ['Merriweather', 'Georgia', 'serif'],
                     body: ['Merriweather', 'Georgia', 'serif'],
                     ui: ['Arial', 'Calibri', 'ui-sans-serif', 'sans-serif'],
                 },

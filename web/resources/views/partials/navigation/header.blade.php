@@ -46,12 +46,6 @@
                         </span>
                         <span class="tich-nav__label">Sign in</span>
                     </a>
-                    <a href="{{ route('apply.index') }}" class="tich-nav__action-btn tich-nav__action-btn--primary">
-                        <span class="tich-nav__icon" aria-hidden="true">
-                            @include('partials.navigation.sidebar-icon', ['name' => 'user-plus'])
-                        </span>
-                        <span class="tich-nav__label">Apply now</span>
-                    </a>
                 @endauth
             </div>
         </nav>
@@ -93,7 +87,6 @@
                     </form>
                 @else
                     <a href="{{ route('login') }}" class="tich-btn tich-btn-blue tich-btn-block">Sign in</a>
-                    <a href="{{ route('apply.index') }}" class="tich-btn tich-btn-primary tich-btn-block">Apply now</a>
                 @endauth
             </div>
         </div>

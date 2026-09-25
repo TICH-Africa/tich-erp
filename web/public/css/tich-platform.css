@@ -22,7 +22,7 @@
     --tich-neutral-muted: #6b6e72;
 
     /* Typography families */
-    --font-heading: "Times New Roman", Times, serif;
+    --font-heading: Merriweather, Georgia, serif;
     --font-body: Merriweather, Georgia, serif;
     --font-ui: Arial, Calibri, ui-sans-serif, sans-serif;
 
@@ -1758,41 +1758,95 @@ body.tich-body--autohide-header #main-content {
     }
 }
 
-/* Transparent header over full-bleed home hero (Animal IQ / Onagi style) */
+/* Transparent header over full-bleed home hero */
 body.page-home .tich-header--over-hero {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
+    z-index: 20;
     background: transparent;
     border-bottom-color: transparent;
     box-shadow: none;
 }
 
 body.page-home .tich-header--over-hero .tich-nav__link,
+body.page-home .tich-header--over-hero .tich-nav__more-toggle,
 body.page-home .tich-header--over-hero .tich-nav__action-btn--ghost {
-    color: rgba(255, 255, 255, 0.92);
+    font-family: var(--font-body);
+    font-size: clamp(0.55rem, 0.68vw, 0.65rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #e8f3dc;
+    background: transparent;
+    gap: 0.2rem;
+    padding: 0.3rem 0.4rem;
+}
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+    body.page-home .tich-header--over-hero .tich-nav--desktop .tich-nav__link,
+    body.page-home .tich-header--over-hero .tich-nav--desktop .tich-nav__more-toggle {
+        font-size: clamp(0.55rem, 0.68vw, 0.65rem);
+        gap: 0.2rem;
+        padding: 0.3rem 0.4rem;
+    }
+
+    body.page-home .tich-header--over-hero .tich-nav--desktop .tich-nav__link .tich-nav__icon,
+    body.page-home .tich-header--over-hero .tich-nav--desktop .tich-nav__more-toggle .tich-nav__icon {
+        display: inline-flex;
+    }
+}
+
+body.page-home .tich-header--over-hero .tich-nav__icon {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+}
+
+body.page-home .tich-header--over-hero .tich-nav__icon .tich-admin-sidebar__icon-svg svg {
+    width: 12px;
+    height: 12px;
+}
+
+body.page-home .tich-header--over-hero .tich-nav__link:hover .tich-nav__icon,
+body.page-home .tich-header--over-hero .tich-nav__link.is-active .tich-nav__icon,
+body.page-home .tich-header--over-hero .tich-nav__action-btn:hover .tich-nav__icon,
+body.page-home .tich-header--over-hero .tich-nav__action-btn .tich-nav__icon {
+    background: transparent;
+    color: inherit;
 }
 
 body.page-home .tich-header--over-hero .tich-nav__link:hover,
+body.page-home .tich-header--over-hero .tich-nav__more-toggle:hover,
 body.page-home .tich-header--over-hero .tich-nav__action-btn--ghost:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 body.page-home .tich-header--over-hero .tich-nav__link.is-active {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.12);
 }
 
-body.page-home .tich-header--over-hero .tich-nav__link.is-active .tich-nav__icon {
-    background: rgba(255, 255, 255, 0.2);
+body.page-home .tich-header--over-hero .tich-brand__name {
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: #ffffff;
 }
 
+body.page-home .tich-header--over-hero .tich-brand__tagline {
+    color: rgba(255, 255, 255, 0.88);
+}
+
 body.page-home .tich-header--over-hero .tich-nav-toggle {
-    border-color: rgba(255, 255, 255, 0.35);
-    background: rgba(0, 0, 0, 0.2);
+    border-color: #6cab33;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 body.page-home .tich-header--over-hero .tich-nav-toggle span {
@@ -1800,50 +1854,59 @@ body.page-home .tich-header--over-hero .tich-nav-toggle span {
 }
 
 body.page-home .tich-header--over-hero .tich-nav__action-btn--primary {
-    background: var(--tich-green);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: #6cab33;
+    border-color: #6cab33;
+    color: #ffffff;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+    border-radius: 0;
 }
 
 body.page-home .tich-header--over-hero .tich-nav__action-btn--primary:hover {
-    background: var(--tich-green-dark);
-    border-color: var(--tich-green-dark);
+    background: #5a9430;
+    border-color: #5a9430;
 }
 
 body.page-home .tich-header--over-hero .tich-nav__actions {
     border-left-color: rgba(255, 255, 255, 0.2);
 }
 
+body.page-home .tich-header--over-hero .tich-theme-toggle {
+    border: 1px solid #6cab33;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-radius: 50%;
+}
+
+body.page-home .tich-header--over-hero .tich-theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
 body.page-home .tich-header--over-hero .tich-nav__more-menu {
-    background: rgba(15, 23, 42, 0.96);
+    background: rgba(18, 90, 140, 0.94);
+    backdrop-filter: blur(10px);
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    border-radius: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 body.page-home .tich-header--over-hero .tich-nav__more-link {
-    color: rgba(255, 255, 255, 0.92);
+    color: #e8f3dc;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    gap: 0.2rem;
 }
 
 body.page-home .tich-header--over-hero .tich-nav__more-link:hover,
 body.page-home .tich-header--over-hero .tich-nav__more-link.is-active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-}
-
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-menu {
-    background: var(--tich-white);
-    border-color: var(--tich-neutral-border);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-}
-
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link {
-    color: var(--tich-grey);
-}
-
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link:hover,
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link.is-active {
-    color: var(--tich-blue);
-    background: var(--tich-blue-light);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid {
@@ -1851,65 +1914,78 @@ body.page-home .tich-header--over-hero.tich-header--solid {
     left: 0;
     right: 0;
     top: 0;
-    /* Keep blur on a pseudo so it does not create a containing block for the mobile drawer */
-    background: transparent;
-    border-bottom-color: var(--tich-neutral-border);
-    box-shadow: 0 1px 0 rgba(22, 105, 166, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
+    z-index: 100;
+    background: rgba(18, 90, 140, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    pointer-events: none;
+    display: none;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__name,
 body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline {
-    color: var(--tich-grey);
+    color: #ffffff;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline {
-    color: var(--tich-blue);
+    color: #d6e8f5;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link,
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__action-btn--ghost {
-    color: var(--tich-grey);
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__action-btn--ghost,
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-toggle {
+    color: #e8f3dc;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link:hover,
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__action-btn--ghost:hover {
-    color: var(--tich-blue);
-    background-color: var(--tich-blue-light);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link.is-active {
-    color: var(--tich-blue);
-    background: var(--tich-blue-light);
-}
-
-body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link.is-active .tich-nav__icon {
-    background: var(--tich-blue);
-    color: #fff;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle {
-    border-color: var(--tich-neutral-border);
-    background: var(--tich-white);
+    border-color: #6cab33;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle span {
-    background: var(--tich-grey);
+    background: #ffffff;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
-    color: var(--tich-grey);
-    border-color: var(--tich-neutral-border);
+    color: #e8f3dc;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-menu {
+    background: rgba(18, 90, 140, 0.97);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link {
+    color: #e8f3dc;
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link:hover,
+body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link.is-active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
+    border-color: #6cab33;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-radius: 50%;
 }
 
 .tich-header__inner {
@@ -2628,52 +2704,79 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
 .tich-mr-2 { margin-right: 0.5rem; }
 .tich-text-center { text-align: center; }
 
-/* ??? Homepage hero carousel (Animal IQ / Onagi style) ??????????????? */
+/* --- Homepage hero carousel (campus digital design) ------------------- */
 
 .tich-hero-carousel {
-    --hero-white: #ffffff;
-    --hero-green: #6cab33;
-    --hero-green-dark: #5a9430;
-    --hero-green-light: #e8f3dc;
-    --hero-blue: #1669a6;
-    --hero-grey: #494c50;
+    /* Literal brand tones — dark theme remaps --tich-white / --tich-green-light */
+    --hero-text: #ffffff;
+    --hero-text-muted: #d6e8f5;
+    --hero-overlay: #125a8c;
+    --hero-overlay-opacity: 0.68;
+    --hero-fallback: #125a8c;
+    --hero-grid: #1669a6;
+    --hero-accent: #6cab33;
+    --hero-btn-ghost: #e8f3dc;
+    --hero-status-bg: #125a8c;
+    --hero-status-text: #e8f3dc;
     position: relative;
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
-    overflow: hidden;
-    background: #0f172a;
-}
-
-.tich-hero-carousel__slide {
-    position: absolute;
-    inset: 0;
     display: flex;
-    align-items: center;
-    padding: 4rem 0 3.5rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.9s ease, visibility 0.9s ease;
-    z-index: 0;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--hero-fallback);
+    color: var(--hero-text);
+    font-family: var(--font-body);
 }
 
-.tich-hero-carousel__slide.is-active {
-    opacity: 1;
-    visibility: visible;
-    z-index: 1;
+[data-theme="dark"] .tich-hero-carousel {
+    --hero-overlay: #1a1c1e;
+    --hero-overlay-opacity: 0.75;
+    --hero-fallback: #1a1c1e;
+    --hero-text-muted: #b8bcc0;
+    --hero-status-bg: #494c50;
+    --hero-status-text: #e8f3dc;
 }
 
 .tich-hero-carousel__bg {
     position: absolute;
     inset: 0;
     z-index: 0;
+    overflow: hidden;
 }
 
-.tich-hero-carousel__image {
+.tich-hero-carousel__viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.tich-hero-carousel__track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+.tich-hero-carousel__slide {
+    flex: 0 0 100%;
+    height: 100%;
+    position: relative;
+    background: var(--hero-fallback);
+}
+
+.tich-hero-carousel__media {
+    position: absolute;
+    inset: 0;
+}
+
+.tich-hero-carousel__image,
+.tich-hero-carousel__video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    display: block;
 }
 
 .tich-hero-carousel__placeholder {
@@ -2681,155 +2784,284 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     height: 100%;
 }
 
-.tich-hero-carousel__placeholder--1 {
-    background: var(--hero-blue);
-}
-
-.tich-hero-carousel__placeholder--2 {
-    background: var(--hero-green);
-}
-
-.tich-hero-carousel__placeholder--3 {
-    background: var(--hero-grey);
-}
+.tich-hero-carousel__placeholder--1 { background: var(--tich-blue); }
+.tich-hero-carousel__placeholder--2 { background: var(--tich-green); }
+.tich-hero-carousel__placeholder--3 { background: var(--tich-grey); }
 
 .tich-hero-carousel__overlay {
     position: absolute;
     inset: 0;
-    background: rgba(15, 23, 42, 0.55);
+    background: var(--hero-overlay);
+    opacity: var(--hero-overlay-opacity);
+    pointer-events: none;
 }
 
-.tich-hero-carousel__content {
-    position: relative;
+.tich-hero-carousel__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--hero-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.28;
+    pointer-events: none;
+}
+
+.tich-hero-carousel__bracket {
+    position: absolute;
     z-index: 2;
+    width: clamp(4.5rem, 12vw, 9rem);
+    height: clamp(4.5rem, 12vw, 9rem);
+    border: 2px solid var(--hero-accent);
+    pointer-events: none;
+}
+
+.tich-hero-carousel__bracket--tl {
+    top: 5rem;
+    left: clamp(1.25rem, 4vw, 3rem);
+    border-right: none;
+    border-bottom: none;
+}
+
+.tich-hero-carousel__bracket--br {
+    bottom: 2.75rem;
+    right: clamp(1.25rem, 4vw, 3rem);
+    border-left: none;
+    border-top: none;
+}
+
+.tich-hero-carousel__body {
+    flex: 1;
+    position: relative;
+    z-index: 5;
+    min-height: 0;
     width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.tich-hero-carousel__inner {
-    max-width: 52rem;
-    margin: 0 auto;
-    text-align: center;
-    padding: 1.5rem 1rem 4.5rem;
-}
-
-.tich-hero-carousel__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 0.45rem 1rem;
-    font-family: var(--font-ui);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--hero-green-light);
-    background: rgba(108, 171, 51, 0.18);
-    border: 1px solid rgba(108, 171, 51, 0.35);
-    border-radius: var(--radius-sm);
+.tich-hero-carousel__panel {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    max-width: 65%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: clamp(1.5rem, 5vw, 4rem);
+    padding-top: calc(var(--tich-header-bar-height, 4rem) + 2rem);
+    padding-left: clamp(3.5rem, 11vw, 7.75rem);
+    padding-right: clamp(1rem, 3vw, 2rem);
+    padding-bottom: 5.5rem;
     opacity: 0;
-    transform: translateY(18px);
-    transition: opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s;
+    visibility: hidden;
+    transform: translateX(0);
+    transition:
+        opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.85s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.85s;
+    pointer-events: none;
 }
 
-.tich-hero-carousel__eyebrow-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 2px;
-    background: var(--hero-green);
+.tich-hero-carousel__panel.from-right { transform: translateX(18%); }
+.tich-hero-carousel__panel.from-left { transform: translateX(-18%); }
+
+.tich-hero-carousel__panel.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.tich-hero-carousel__panel.exit-left {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-18%);
+    pointer-events: none;
+}
+
+.tich-hero-carousel__panel.exit-right {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(18%);
+    pointer-events: none;
 }
 
 .tich-hero-carousel__title {
-    font-family: var(--font-heading);
-    font-size: clamp(2.7rem, 6.75vw, 4.725rem);
-    font-weight: 700;
-    line-height: 1.15;
-    color: var(--hero-white);
-    margin: 0 0 0.75rem;
-    text-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.85),
-        0 2px 8px rgba(0, 0, 0, 0.65),
-        0 8px 28px rgba(0, 0, 0, 0.45);
-    opacity: 0;
-    transform: translateY(-2.75rem);
-    will-change: transform, opacity;
+    font-family: var(--font-body);
+    font-weight: 900;
+    font-size: clamp(2rem, 5.5vw, 4.25rem);
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--hero-text);
+    margin: 0;
+    max-width: 100%;
 }
 
 .tich-hero-carousel__lead {
+    margin-top: 1.25rem;
     font-family: var(--font-body);
-    font-size: clamp(1rem, 2.2vw, 1.25rem);
-    line-height: 1.75;
-    color: rgba(255, 255, 255, 0.92);
-    max-width: 42rem;
-    margin: 0 auto;
-    text-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.8),
-        0 4px 16px rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transform: translateY(2.25rem);
-    will-change: transform, opacity;
+    font-size: clamp(0.9375rem, 2vw, 1.125rem);
+    max-width: 100%;
+    line-height: 1.65;
+    color: var(--hero-text-muted);
 }
 
 .tich-hero-carousel__actions {
-    margin-top: 1.25rem;
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 0.75rem;
-    opacity: 0;
-    transform: translateY(2.25rem);
-    will-change: transform, opacity;
+    margin-top: 2rem;
 }
 
-.tich-hero-carousel__inner.is-visible .tich-hero-carousel__title {
-    animation: tich-hero-title-in 0.75s ease-out both;
+.tich-hero-carousel__btn {
+    min-width: 11.5rem;
+    padding: 0.875rem 2.25rem;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    clip-path: none;
+    transform: skewX(-10deg);
+    border-radius: 0.45rem;
 }
 
-.tich-hero-carousel__inner.is-visible .tich-hero-carousel__lead {
-    animation: tich-hero-rise-in 0.75s ease-out 0.18s both;
+.tich-hero-carousel__btn-label {
+    display: inline-block;
+    transform: skewX(10deg);
 }
 
-.tich-hero-carousel__inner.is-visible .tich-hero-carousel__actions {
-    animation: tich-hero-rise-in 0.75s ease-out 0.32s both;
+.tich-hero-carousel .tich-btn-primary {
+    background-color: #6cab33;
+    border-color: #6cab33;
+    color: #ffffff;
 }
 
-.tich-hero-carousel__inner.is-visible .tich-hero-carousel__eyebrow {
-    opacity: 1;
-    transform: translateY(0);
-    animation: tich-hero-rise-in 0.7s ease-out 0.08s both;
+.tich-hero-carousel .tich-btn-primary:hover {
+    background-color: #5a9430;
+    border-color: #5a9430;
+    color: #ffffff;
 }
 
-@keyframes tich-hero-title-in {
-    0% {
-        opacity: 0;
-        transform: translateY(-2.75rem);
+.tich-hero-carousel__btn--ghost {
+    background: transparent;
+    color: var(--hero-btn-ghost);
+    border: 2px solid #6cab33;
+}
+
+.tich-hero-carousel__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: #6cab33;
+}
+
+.tich-hero-carousel__controls {
+    position: absolute;
+    bottom: 4rem;
+    right: clamp(1.25rem, 4vw, 3rem);
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tich-hero-carousel__arrow {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--hero-accent);
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--hero-text);
+    cursor: pointer;
+    padding: 0;
+}
+
+.tich-hero-carousel__arrow:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tich-hero-carousel__indicators {
+    position: absolute;
+    bottom: 4.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 12;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tich-hero-carousel__indicator {
+    width: 2rem;
+    height: 3px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: background 0.3s, width 0.3s;
+}
+
+.tich-hero-carousel__indicator.is-active {
+    background: #6cab33;
+    width: 2.75rem;
+}
+
+.tich-hero-ticker {
+    position: relative;
+    z-index: 10;
+    margin-top: auto;
+    background: var(--hero-status-bg);
+    padding: 0.5rem clamp(1.25rem, 4vw, 3rem);
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hero-status-text);
+}
+
+.tich-hero-ticker__inner {
+    overflow: hidden;
+}
+
+.tich-hero-ticker__item {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+    .tich-hero-carousel__panel {
+        max-width: 100%;
+        padding-left: clamp(1.25rem, 4vw, 3rem);
+        padding-right: clamp(1.25rem, 4vw, 3rem);
+        padding-bottom: 5.5rem;
     }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
-@keyframes tich-hero-rise-in {
-    0% {
-        opacity: 0;
-        transform: translateY(2.25rem);
+    .tich-hero-carousel__controls {
+        bottom: 2.75rem;
+        right: 1.25rem;
     }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
+
+    .tich-hero-carousel__indicators {
+        bottom: 2.85rem;
+    }
+
+    .tich-hero-carousel__bracket--tl,
+    .tich-hero-carousel__bracket--br {
+        width: 4.5rem;
+        height: 4.5rem;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .tich-hero-carousel__title,
-    .tich-hero-carousel__lead,
-    .tich-hero-carousel__actions,
-    .tich-hero-carousel__eyebrow {
-        opacity: 1;
-        transform: none;
-        animation: none !important;
-        will-change: auto;
+    .tich-hero-carousel__track,
+    .tich-hero-carousel__panel {
+        transition: none;
     }
 }
 
@@ -2839,73 +3071,34 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     will-change: transform, opacity;
 }
 
-.tich-home-reveal--from-left {
-    transform: translate3d(-3.5rem, 0, 0);
-}
-
-.tich-home-reveal--from-right {
-    transform: translate3d(3.5rem, 0, 0);
-}
-
-.tich-home-reveal--from-bottom {
-    transform: translate3d(0, 3.25rem, 0);
-}
+.tich-home-reveal--from-left { transform: translate3d(-3.5rem, 0, 0); }
+.tich-home-reveal--from-right { transform: translate3d(3.5rem, 0, 0); }
+.tich-home-reveal--from-bottom { transform: translate3d(0, 3.25rem, 0); }
 
 .tich-home-reveal.is-revealed.tich-home-reveal--from-left {
     animation: tich-home-reveal-left 0.85s cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
-
 .tich-home-reveal.is-revealed.tich-home-reveal--from-right {
     animation: tich-home-reveal-right 0.85s cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
-
 .tich-home-reveal.is-revealed.tich-home-reveal--from-bottom {
     animation: tich-home-reveal-bottom 0.85s cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
 
 @keyframes tich-home-reveal-left {
-    0% {
-        opacity: 0;
-        transform: translate3d(-3.5rem, 0, 0);
-    }
-    72% {
-        opacity: 1;
-        transform: translate3d(0.45rem, 0, 0);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
+    0% { opacity: 0; transform: translate3d(-3.5rem, 0, 0); }
+    72% { opacity: 1; transform: translate3d(0.45rem, 0, 0); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes tich-home-reveal-right {
-    0% {
-        opacity: 0;
-        transform: translate3d(3.5rem, 0, 0);
-    }
-    72% {
-        opacity: 1;
-        transform: translate3d(-0.45rem, 0, 0);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
+    0% { opacity: 0; transform: translate3d(3.5rem, 0, 0); }
+    72% { opacity: 1; transform: translate3d(-0.45rem, 0, 0); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes tich-home-reveal-bottom {
-    0% {
-        opacity: 0;
-        transform: translate3d(0, 3.25rem, 0);
-    }
-    72% {
-        opacity: 1;
-        transform: translate3d(0, -0.4rem, 0);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
+    0% { opacity: 0; transform: translate3d(0, 3.25rem, 0); }
+    72% { opacity: 1; transform: translate3d(0, -0.4rem, 0); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2915,145 +3108,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-btn-ghost {
     .tich-home-reveal.is-revealed.tich-home-reveal--from-bottom {
         opacity: 1;
         transform: none;
-        animation: none;
-    }
-}
-
-.tich-hero-carousel .tich-btn-primary {
-    background-color: var(--hero-green);
-    border-color: var(--hero-green);
-    color: var(--hero-white);
-}
-
-.tich-hero-carousel .tich-btn-primary:hover {
-    background-color: var(--hero-green-dark);
-    border-color: var(--hero-green-dark);
-    color: var(--hero-white);
-}
-
-.tich-hero-carousel__arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 5;
-    width: 2.75rem;
-    height: 2.75rem;
-    border: none;
-    border-radius: 9999px;
-    background: rgba(0, 0, 0, 0.42);
-    color: var(--hero-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.tich-hero-carousel__arrow:hover {
-    background: rgba(0, 0, 0, 0.62);
-}
-
-.tich-hero-carousel__arrow--prev { left: 1rem; }
-.tich-hero-carousel__arrow--next { right: 1rem; }
-
-@media (min-width: 768px) {
-    .tich-hero-carousel__arrow {
-        width: 3rem;
-        height: 3rem;
-    }
-
-    .tich-hero-carousel__arrow--prev { left: 1.5rem; }
-    .tich-hero-carousel__arrow--next { right: 1.5rem; }
-}
-
-.tich-hero-carousel__indicators {
-    position: absolute;
-    bottom: 2.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-    display: flex;
-    gap: 0.5rem;
-}
-
-.tich-hero-carousel__indicator {
-    width: 2rem;
-    height: 0.25rem;
-    padding: 0;
-    border: none;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.28);
-    cursor: pointer;
-    transition: background 0.3s ease, width 0.3s ease;
-}
-
-.tich-hero-carousel__indicator.is-active {
-    width: 3rem;
-    background: var(--hero-green);
-}
-
-@media (max-width: 767px) {
-    .tich-hero-carousel__slide {
-        padding: 5.5rem 0 4.5rem;
-    }
-
-    .tich-hero-carousel__inner {
-        padding-top: 1.5rem;
-    }
-
-    .tich-hero-carousel__indicators {
-        bottom: 1.75rem;
-    }
-}
-
-/* ??? Hero ticker / marquee ??????????????????????????????????????????? */
-
-.tich-hero-ticker {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 10;
-    background: rgba(15, 23, 42, 0.85);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    overflow: hidden;
-    padding: 0.35rem 0;
-    backdrop-filter: blur(4px);
-}
-
-.tich-hero-ticker__track {
-    display: flex;
-    width: max-content;
-    animation: tich-ticker-scroll 40s linear infinite;
-}
-
-.tich-hero-ticker__item {
-    flex-shrink: 0;
-    white-space: nowrap;
-    padding: 0 2rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #ffffff;
-    letter-spacing: 0.02em;
-}
-
-.tich-hero-ticker__item::after {
-    content: ' \2022';
-    margin-left: 2rem;
-    opacity: 0.7;
-}
-
-@keyframes tich-ticker-scroll {
-    0% {
-        transform: translateX(-33.333%);
-    }
-    100% {
-        transform: translateX(0);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .tich-hero-ticker__track {
         animation: none;
     }
 }
@@ -6347,37 +6401,39 @@ body.page-home .tich-header--over-hero .tich-nav-notification.is-active {
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification {
-    border-color: var(--tich-neutral-border);
-    color: var(--tich-grey);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #ffffff;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification:hover,
 body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification.is-active {
-    background: var(--tich-blue-light);
-    border-color: var(--tich-blue);
-    color: var(--tich-blue);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #ffffff;
 }
 
 body.page-home .tich-header--over-hero .tich-theme-toggle {
-    border-color: rgba(255, 255, 255, 0.35);
-    color: rgba(255, 255, 255, 0.95);
+    border-color: #6cab33;
+    color: #ffffff;
+    border-radius: 50%;
 }
 
 body.page-home .tich-header--over-hero .tich-theme-toggle:hover {
     background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: #6cab33;
     color: #fff;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
-    border-color: var(--tich-neutral-border);
-    color: var(--tich-grey);
+    border-color: #6cab33;
+    color: #ffffff;
+    border-radius: 50%;
 }
 
 body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hover {
-    background: var(--tich-blue-light);
-    border-color: var(--tich-blue);
-    color: var(--tich-blue);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #6cab33;
+    color: #ffffff;
 }
 
 .tich-nav-drawer__theme {
@@ -6653,7 +6709,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__more-toggle,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav-notification {
-    color: rgba(255, 255, 255, 0.92);
+    color: #e8f3dc;
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__link:hover,
@@ -6671,8 +6727,8 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__link.is-active .tich-nav__icon,
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav__icon {
-    background: rgba(255, 255, 255, 0.18);
-    color: #ffffff;
+    background: transparent;
+    color: inherit;
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-nav-toggle {
@@ -6742,8 +6798,8 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link.is-active .tich-nav__icon {
-    background: var(--tich-blue);
-    color: #fff;
+    background: transparent;
+    color: inherit;
 }
 
 [data-theme="dark"] .tich-section--hero-plain {
@@ -6755,33 +6811,67 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid {
-    background: transparent;
-    border-bottom-color: var(--tich-neutral-border);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+    background: rgba(26, 28, 30, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid::before {
-    background: rgba(15, 20, 25, 0.96);
+    display: none;
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__name,
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline,
-[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link {
-    color: var(--tich-grey);
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__action-btn--ghost,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-toggle {
+    color: #e8f3dc;
 }
 
-[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link:hover {
-    background: var(--tich-blue-light);
-    color: var(--tich-blue);
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__name {
+    color: #ffffff;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-brand__tagline {
+    color: #b8bcc0;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__link:hover,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__action-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle {
-    background: var(--tich-white);
-    border-color: var(--tich-neutral-border);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #6cab33;
 }
 
 [data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-toggle span {
-    background: var(--tich-grey);
+    background: #ffffff;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-menu {
+    background: rgba(26, 28, 30, 0.97);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav__more-link {
+    color: #e8f3dc;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification {
+    border-color: #6cab33;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--solid .tich-nav-notification {
+    border-radius: 0.4rem;
 }
 
 [data-theme="dark"] .tich-admin-sidebar__nav a:hover,
