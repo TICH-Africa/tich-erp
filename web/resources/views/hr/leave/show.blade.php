@@ -14,7 +14,7 @@
         <a href="{{ route('hr.leave.index') }}" class="tich-btn tich-btn-ghost">← Back to leave inbox</a>
     </div>
 
-    <article class="tich-card tich-mb-6" style="background:#f8fafc; border-left:4px solid #2563eb;">
+    <article class="tich-card tich-leave-policy-card tich-mb-6">
         <h2 class="tich-h3">Leave policy reference</h2>
         <p class="tich-text tich-mt-2 tich-text--secondary">Use this when reviewing the request below.</p>
         <div class="tich-grid tich-grid--2 tich-mt-4">

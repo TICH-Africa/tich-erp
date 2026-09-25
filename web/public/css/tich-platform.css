@@ -8067,6 +8067,15 @@ a.tich-tabs__btn {
     border-left: 4px solid var(--tich-green);
 }
 
+.tich-leave-policy-card {
+    background: var(--tich-surface-muted);
+    border-left: 4px solid var(--tich-blue);
+}
+
+.tich-leave-policy-card:hover {
+    border-color: var(--tich-blue);
+}
+
 .tich-leave-hero__title {
     margin: 0.35rem 0 0;
     font-size: clamp(1.35rem, 2vw, 1.75rem);
@@ -8707,8 +8716,73 @@ a.tich-tabs__btn {
     border-color: var(--tich-border);
 }
 
+[data-theme="dark"] .tich-leave-hero__title {
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-leave-hero__dates {
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-leave-policy-card {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+    border-left-color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-leave-policy-card .tich-text,
+[data-theme="dark"] .tich-leave-policy-card .tich-text--secondary,
+[data-theme="dark"] .tich-leave-policy-card strong {
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-kv-grid__label {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-kv-grid__value {
+    color: var(--tich-text);
+}
+
 [data-theme="dark"] .tich-leave-balance-card {
-    background: var(--tich-surface);
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-leave-balance-card__name,
+[data-theme="dark"] .tich-leave-balance-card__meta {
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-leave-balance-card__meta {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-leave-actions__tabs {
+    border-bottom-color: var(--tich-border);
+}
+
+[data-theme="dark"] .tich-leave-actions__tab {
+    background: var(--tich-surface-muted);
+    border-color: var(--tich-border);
+    color: var(--tich-text);
+}
+
+[data-theme="dark"] .tich-leave-actions__tab:hover {
+    border-color: var(--tich-blue);
+    color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-leave-actions__tab.is-active {
+    background: var(--tich-green);
+    border-color: var(--tich-green);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .tich-leave-actions__tab.is-danger.is-active {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
 }
 
 [data-theme="dark"] .tich-leave-request-item:hover {
