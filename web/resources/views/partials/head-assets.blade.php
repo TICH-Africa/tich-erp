@@ -31,6 +31,7 @@
 <x-asset.script path="js/tich-form-submit-once.js" />
 <x-asset.script path="js/tich-form-autosave.js" />
 <x-asset.script path="js/tich-live-filters.js" />
+<x-asset.script path="js/tich-live-search.js" />
 <x-asset.script path="js/tich-uf-forms.js" />
 @if (config('security.block_inspect_ui', false))
     <x-asset.script path="js/tich-ui-protection.js" />

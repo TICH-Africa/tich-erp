@@ -5,19 +5,15 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Services\ProgramsService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ProgramsController extends Controller
 {
     public function __construct(protected ProgramsService $programsService) {}
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        $search = $request->query('search');
-        $departmentCode = $request->query('department');
-
-        $data = $this->programsService->getCatalog($search, $departmentCode);
+        $data = $this->programsService->getCatalog(null, null);
 
         return view('programs.index', $data);
     }

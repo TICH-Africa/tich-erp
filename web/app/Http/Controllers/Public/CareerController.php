@@ -18,20 +18,9 @@ class CareerController extends Controller
                 $q->where('is_closed', 0)
                     ->orWhere('closing_date', '>=', now()->toDateString());
             })
-            ->when($request->department_id, fn ($q, $id) => $q->where('department_id', $id))
-            ->when($request->employment_type, fn ($q, $type) => $q->where('employment_type', $type))
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->where('job_title', 'like', "%{$search}%")
-                        ->orWhere('job_description', 'like', "%{$search}%")
-                        ->orWhere('requirements', 'like', "%{$search}%")
-                        ->orWhere('min_qualification', 'like', "%{$search}%");
-                });
-            })
             ->orderByDesc('created_at');
 
-        $perPage = (int) ($request->per_page ?? 20);
-        $vacancies = $query->paginate($perPage)->appends($request->query());
+        $vacancies = $query->get();
 
         $departments = \App\Models\Department::query()
             ->where('is_active', 1)

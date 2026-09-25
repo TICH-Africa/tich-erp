@@ -4,42 +4,44 @@
 @section('meta_description', config('tich-seo.pages.blog.description'))
 
 @section('content')
-    <section class="tich-section" aria-labelledby="blog-heading">
+    <header class="tich-course-page-header">
         <div class="tich-container">
-            <x-animated-card animation="top">
-                <header class="tich-section__intro tich-mb-8">
-                    <h1 id="blog-heading" class="tich-h1">Blog</h1>
-                    <p class="tich-text tich-mt-2">News, student stories, and admissions updates from across TICH campuses.</p>
-                </header>
-            </x-animated-card>
+            <h1 class="tich-course-page-header__title">Blog</h1>
+            <p class="tich-course-page-header__lead">
+                News, student stories, and admissions updates from across TICH campuses.
+            </p>
+        </div>
+    </header>
 
-            <div class="tich-grid tich-grid--3">
+    <section class="tich-section tich-section--programs" aria-labelledby="blog-heading" data-live-search>
+        <div class="tich-container">
+            <div class="tich-course-filters tich-mb-6">
+                <div class="tich-form-group" style="margin: 0; flex: 1; max-width: 24rem;">
+                    <label for="blog-search" class="tich-label">Search posts</label>
+                    <input
+                        type="search"
+                        id="blog-search"
+                        data-live-search-input
+                        placeholder="Title, topic, keyword..."
+                        class="tich-input"
+                        autocomplete="off"
+                    >
+                </div>
+            </div>
+
+            <h2 id="blog-heading" class="tich-sr-only">Latest posts</h2>
+            <div class="tich-course-grid">
                 @forelse ($blogPosts as $post)
-                    <article class="tich-card tich-blog-card">
-                        <div class="tich-blog-card__media">
-                            @if (!empty($post->featured_image_path))
-                                <img src="{{ $post->featured_image_path }}" alt="{{ $post->title }}" class="tich-blog-card__image">
-                            @else
-                                <div class="tich-blog-card__placeholder" aria-hidden="true"></div>
-                            @endif
-                        </div>
-                        <div class="tich-blog-card__body">
-                            <p class="tich-caption">{{ $post->formatted_date ?? '' }}
-                                @if (!empty($post->reading_time_minutes))
-                                    · {{ $post->reading_time_minutes }} min read
-                                @endif
-                            </p>
-                            <h2 class="tich-h3 tich-mt-2">{{ $post->title }}</h2>
-                            @if (!empty($post->excerpt))
-                                <p class="tich-text tich-mt-2">{{ $post->excerpt }}</p>
-                            @endif
-                            <a href="{{ $post->url }}" class="tich-link tich-mt-4" style="display: inline-block;">Read article</a>
-                        </div>
-                    </article>
+                    @include('blog.partials.post-card', [
+                        'post' => $post,
+                        'headingTag' => 'h2',
+                        'excerptLimit' => 160,
+                    ])
                 @empty
                     <p class="tich-text">No blog posts have been published yet.</p>
                 @endforelse
             </div>
+            <p class="tich-text tich-mt-6" data-live-search-empty hidden>No posts match your search.</p>
         </div>
     </section>
 @endsection

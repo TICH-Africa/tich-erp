@@ -52,7 +52,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $program = AcademicProgram::query()
-                ->with(['department:id,dept_name', 'feeStructure'])
+                ->with(['department:id,dept_name,dept_code', 'feeStructure'])
                 ->where('status', 'active')
                 ->whereRaw('LOWER(program_code) = ?', [strtolower($code)])
                 ->first();
@@ -78,7 +78,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $query = AcademicProgram::query()
-                ->with(['department:id,dept_name', 'feeStructure'])
+                ->with(['department:id,dept_name,dept_code', 'feeStructure'])
                 ->where('status', 'active');
 
             if ($search) {
@@ -128,6 +128,7 @@ class ProgramsService
             'program_type' => $program->program_type,
             'regulatory_body' => $program->regulatory_body,
             'department_name' => $program->department?->dept_name,
+            'department_code' => $program->department?->dept_code,
             'duration_months' => $program->duration_months,
             'homepage_tagline' => $program->homepage_tagline,
             'entry_requirements' => $program->entry_requirements ?? 'See admissions guide for entry requirements.',

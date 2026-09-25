@@ -199,45 +199,43 @@
 
                 @if ($projects->isNotEmpty())
                     <x-animated-section animation="bottom">
-                        <div class="tich-mt-10">
-                            <h2 class="tich-h2">Research activities</h2>
-                            <div class="tich-grid tich-grid--3 tich-mt-6">
+                        <div class="tich-mt-10" data-live-search>
+                            <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
+                                <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
+                                <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
+                                    <label for="research-search" class="tich-label">Search activities</label>
+                                    <input
+                                        type="search"
+                                        id="research-search"
+                                        data-live-search-input
+                                        placeholder="Title, status, keyword..."
+                                        class="tich-input"
+                                        autocomplete="off"
+                                    >
+                                </div>
+                            </div>
+                            <div class="tich-course-grid tich-mt-6">
                                 @foreach ($projects as $project)
-                                    <x-animated-card animation="scale" :delay="$loop->iteration * 80">
-                                        <article class="tich-card">
-                                            <a href="{{ route('research.show', $project->slug) }}" class="tich-link" style="text-decoration:none;color:inherit;display:block;">
-                                                @if ($project->coverUrl())
-                                                    <img
-                                                        src="{{ $project->coverUrl() }}"
-                                                        alt="{{ $project->title }}"
-                                                        class="tich-blog-card__image"
-                                                        style="margin-bottom: 1rem;"
-                                                    >
-                                                @endif
-                                                <p class="tich-caption">{{ $project->statusLabel() }}@if ($project->is_featured) · Featured @endif</p>
-                                                <h3 class="tich-h3 tich-mt-2">{{ $project->title }}</h3>
-                                                @if ($project->summary)
-                                                    <p class="tich-text tich-mt-2">{{ \Illuminate\Support\Str::limit($project->summary, 180) }}</p>
-                                                @endif
-                                                <p class="tich-caption tich-mt-4">Read more →</p>
-                                            </a>
-                                        </article>
-                                    </x-animated-card>
+                                    @include('research.partials.project-card', [
+                                        'project' => $project,
+                                        'headingTag' => 'h3',
+                                        'excerptLimit' => 180,
+                                    ])
                                 @endforeach
                             </div>
+                            <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
                         </div>
                     </x-animated-section>
                 @elseif ($featured)
-                    <x-animated-card animation="fade">
-                        <div class="tich-mt-10 tich-card">
-                            <p class="tich-caption">Featured {{ $featured->status ?? 'ongoing' }} project</p>
-                            <h2 class="tich-h3 tich-mt-2">{{ $featured->title }}</h2>
-                            <p class="tich-text tich-mt-4">{{ $featured->summary }}</p>
-                            @if (!empty($featured->url))
-                                <p class="tich-mt-4"><a href="{{ $featured->url }}" class="tich-link">View activity →</a></p>
-                            @endif
-                        </div>
-                    </x-animated-card>
+                    <div class="tich-mt-10">
+                        <p class="tich-course-featured-label">Featured project</p>
+                        @include('research.partials.project-card', [
+                            'project' => $featured,
+                            'extraClass' => 'tich-course-card--featured',
+                            'headingTag' => 'h2',
+                            'excerptLimit' => 220,
+                        ])
+                    </div>
                 @endif
             </div>
         </section>

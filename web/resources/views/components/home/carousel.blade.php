@@ -32,7 +32,6 @@
             </div>
         </div>
         <div class="tich-hero-carousel__overlay"></div>
-        <div class="tich-hero-carousel__grid"></div>
     </div>
 
     <div class="tich-hero-carousel__bracket tich-hero-carousel__bracket--tl" aria-hidden="true"></div>

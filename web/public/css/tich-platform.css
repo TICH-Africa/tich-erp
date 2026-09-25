@@ -2713,7 +2713,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
     --hero-overlay: transparent;
     --hero-overlay-opacity: 0;
     --hero-fallback: #125a8c;
-    --hero-grid: #1669a6;
     --hero-accent: #6cab33;
     --hero-btn-ghost: #e8f3dc;
     --hero-status-bg: #125a8c;
@@ -2802,17 +2801,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
 [data-theme="dark"] .tich-hero-carousel__overlay {
     background: var(--hero-overlay);
     opacity: var(--hero-overlay-opacity);
-}
-
-.tich-hero-carousel__grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(var(--hero-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.28;
-    pointer-events: none;
 }
 
 .tich-hero-carousel__bracket {
@@ -3141,8 +3129,227 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
     }
 }
 
-/* ??? Homepage cards ?????????????????????????????????????????????????? */
+/* --- Course / programme cards (home + /programs) --------------------- */
 
+.tich-section--programs {
+    background: var(--tich-neutral);
+}
+
+.tich-section--programs-toolbar {
+    padding-top: 1.5rem;
+    padding-bottom: 0;
+    background: var(--tich-neutral);
+}
+
+.tich-course-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: end;
+}
+
+.tich-course-page-header {
+    text-align: center;
+    padding: 3rem 1.5rem 2rem;
+    background: var(--tich-blue-dark);
+    color: #ffffff;
+}
+
+.tich-course-page-header__title {
+    font-family: var(--font-body);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    margin: 0;
+    color: #ffffff;
+}
+
+.tich-course-page-header__lead {
+    margin: 0.5rem auto 0;
+    max-width: 42rem;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--tich-blue-light);
+    line-height: 1.55;
+}
+
+.tich-course-page-header__note {
+    margin: 0.75rem auto 0;
+    max-width: 42rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.tich-course-featured-label {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tich-blue);
+    margin: 0 0 1rem;
+}
+
+.tich-course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.tich-course-card {
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tich-course-card--featured {
+    max-width: 36rem;
+}
+
+.tich-course-card__img {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--tich-blue-light);
+}
+
+.tich-course-card__image,
+.tich-course-card__placeholder,
+.tich-program-card__image,
+.tich-program-card__placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    margin: 0;
+    border-radius: 0;
+}
+
+.tich-course-card__placeholder,
+.tich-program-card__placeholder {
+    min-height: 100%;
+    background: linear-gradient(135deg, var(--tich-blue-light), var(--tich-neutral));
+}
+
+.tich-course-card__body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.tich-course-card__meta {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tich-blue);
+    margin: 0 0 0.5rem;
+}
+
+.tich-course-card__meta span {
+    color: var(--tich-neutral-muted);
+    font-weight: 700;
+}
+
+.tich-course-card__title {
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0 0 0.625rem;
+    color: var(--tich-grey);
+}
+
+.tich-course-card__excerpt {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--tich-neutral-muted);
+    line-height: 1.65;
+    margin: 0 0 1rem;
+}
+
+.tich-course-card__details {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.875rem 0;
+    margin: 0 0 1rem;
+    border-top: 1px solid var(--tich-neutral-border);
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-course-card__details > div {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.tich-course-card__details dt {
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--tich-grey);
+}
+
+.tich-course-card__details dd {
+    font-family: var(--font-body);
+    color: var(--tich-neutral-muted);
+    margin: 0;
+}
+
+.tich-course-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: auto;
+}
+
+.tich-course-card__link {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--tich-green-dark);
+    text-decoration: none;
+}
+
+.tich-course-card__link:hover {
+    text-decoration: underline;
+    color: var(--tich-green);
+}
+
+.tich-course-card__apply {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: var(--tich-green);
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tich-course-card__apply:hover {
+    background: var(--tich-green-dark);
+    color: #ffffff;
+}
+
+/* Legacy hooks still referenced by admin thumbs / older markup */
 .tich-program-card__meta {
     list-style: none;
     padding: 0;
@@ -3163,22 +3370,6 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
 
 .tich-program-card__media {
     display: block;
-}
-
-.tich-program-card__image,
-.tich-program-card__placeholder {
-    width: 100%;
-    height: 11rem;
-    object-fit: cover;
-    object-position: center center;
-    display: block;
-    margin: 0;
-    border-radius: 0;
-    background: var(--tich-neutral, #f1f3f4);
-}
-
-.tich-program-card__placeholder {
-    background: linear-gradient(135deg, var(--tich-blue-light), var(--tich-neutral));
 }
 
 .tich-program-card__body {
@@ -6182,7 +6373,9 @@ a.tich-notification-badge:hover {
 }
 
 .tich-featured-program__media .tich-program-card__image,
-.tich-featured-program__media .tich-program-card__placeholder {
+.tich-featured-program__media .tich-program-card__placeholder,
+.tich-featured-program__media .tich-course-card__image,
+.tich-featured-program__media .tich-course-card__placeholder {
     height: 18rem;
     object-fit: cover;
     object-position: center center;
@@ -6197,6 +6390,62 @@ a.tich-notification-badge:hover {
     padding: 1.25rem;
     background: var(--tich-neutral);
     border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] .tich-course-card {
+    background: var(--tich-white);
+    border-color: var(--tich-neutral-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .tich-course-card__title {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-course-card__meta {
+    color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-course-card__meta span,
+[data-theme="dark"] .tich-course-card__excerpt,
+[data-theme="dark"] .tich-course-card__details dd {
+    color: var(--tich-neutral-muted);
+}
+
+[data-theme="dark"] .tich-course-card__details {
+    border-top-color: var(--tich-neutral-border);
+    border-bottom-color: var(--tich-neutral-border);
+}
+
+[data-theme="dark"] .tich-course-card__details dt {
+    color: var(--tich-grey);
+}
+
+[data-theme="dark"] .tich-course-card__link {
+    color: var(--tich-green);
+}
+
+[data-theme="dark"] .tich-course-card__apply {
+    background: var(--tich-green);
+    color: #1a1d21;
+}
+
+[data-theme="dark"] .tich-course-card__apply:hover {
+    background: var(--tich-green-dark);
+    color: #1a1d21;
+}
+
+[data-theme="dark"] .tich-course-page-header {
+    background: #1a1c1e;
+}
+
+[data-theme="dark"] .tich-course-page-header__lead {
+    color: #b8bcc0;
+}
+
+[data-theme="dark"] .tich-section--programs,
+[data-theme="dark"] .tich-section--programs-toolbar {
+    background: var(--tich-neutral);
 }
 
 /* ??? Application portal ??????????????????????????????????????????????? */
@@ -7785,6 +8034,182 @@ a.tich-tabs__btn {
     min-height: 60vh;
 }
 
+.tich-job-card {
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tich-job-card__img {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--tich-blue-light);
+}
+
+.tich-job-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.tich-job-card__body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.tich-job-card__meta {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tich-blue);
+    margin: 0 0 0.5rem;
+}
+
+.tich-job-card__meta span {
+    color: var(--tich-neutral-muted);
+    font-weight: 700;
+}
+
+.tich-job-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 0.625rem;
+}
+
+.tich-job-card__badge {
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    background: var(--tich-blue-light);
+    color: var(--tich-blue);
+}
+
+.tich-job-card__title {
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0 0 0.625rem;
+    color: var(--tich-grey);
+}
+
+.tich-job-card__excerpt {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--tich-neutral-muted);
+    line-height: 1.65;
+    margin: 0 0 1rem;
+}
+
+.tich-job-card__details {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.875rem 0;
+    margin: 0 0 1rem;
+    border-top: 1px solid var(--tich-neutral-border);
+    border-bottom: 1px solid var(--tich-neutral-border);
+}
+
+.tich-job-card__details > div {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.tich-job-card__details dt {
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--tich-grey);
+}
+
+.tich-job-card__details dd {
+    font-family: var(--font-body);
+    color: var(--tich-neutral-muted);
+    margin: 0;
+}
+
+.tich-job-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: auto;
+}
+
+.tich-job-card__link {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--tich-green-dark);
+    text-decoration: none;
+}
+
+.tich-job-card__link:hover {
+    text-decoration: underline;
+    color: var(--tich-green);
+}
+
+.tich-job-card__apply {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: var(--tich-green);
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tich-job-card__apply:hover {
+    background: var(--tich-green-dark);
+    color: #ffffff;
+}
+
+.tich-careers-grid {
+    align-items: stretch;
+}
+
+[data-theme="dark"] .tich-job-card {
+    background: var(--tich-white);
+    border-color: var(--tich-neutral-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .tich-job-card__badge {
+    background: var(--tich-blue-light);
+    color: var(--tich-blue);
+}
+
+[data-theme="dark"] .tich-job-card__apply {
+    color: #1a1d21;
+}
+
+[data-theme="dark"] .tich-job-card__apply:hover {
+    color: #1a1d21;
+}
+
+/* Legacy careers helpers still used on apply/confirm views */
 .tich-careers-card__meta {
     display: flex;
     flex-wrap: wrap;
