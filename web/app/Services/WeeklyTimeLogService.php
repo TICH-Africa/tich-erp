@@ -24,9 +24,9 @@ class WeeklyTimeLogService
     ) {}
 
     /**
-     * Week buckets for a calendar month.
-     * Week 1 = from the 1st through the first Sunday (may start mid-week).
-     * Later weeks = Mon–Sun until the month ends.
+     * Week buckets for a calendar month (weekdays only — Mon–Fri).
+     * Week 1 = first weekday of the month through that week's Friday.
+     * Later weeks = Mon–Fri until the month ends (last week may end mid-week).
      *
      * @return list<array{week_number: int, week_ref: string, period_start: string, period_end: string, label: string, days: list<array{date: string, day_label: string, in_month: bool}>}>
      */
@@ -37,27 +37,32 @@ class WeeklyTimeLogService
         $weeks = [];
         $weekNumber = 1;
 
-        // Week 1: 1st → first Sunday (or month end if sooner)
-        $week1End = $first->copy();
-        while ($week1End->dayOfWeek !== Carbon::SUNDAY && $week1End->lt($last)) {
-            $week1End->addDay();
+        $cursor = $first->copy();
+        if ($cursor->isWeekend()) {
+            $cursor = $cursor->next(Carbon::MONDAY);
         }
-        if ($week1End->gt($last)) {
-            $week1End = $last->copy();
-        }
-        $weeks[] = $this->buildWeekBucket($year, $month, $weekNumber, $first, $week1End);
-        $weekNumber++;
 
-        $cursor = $week1End->copy()->addDay();
         while ($cursor->lte($last)) {
             $weekStart = $cursor->copy();
-            $weekEnd = $cursor->copy()->next(Carbon::SUNDAY);
-            if ($weekEnd->gt($last)) {
-                $weekEnd = $last->copy();
+
+            $friday = $weekStart->copy();
+            if ($friday->dayOfWeek !== Carbon::FRIDAY) {
+                $friday = $friday->copy()->next(Carbon::FRIDAY);
             }
+
+            $weekEnd = $friday->lte($last) ? $friday->copy() : $last->copy();
+            if ($weekEnd->isWeekend()) {
+                $weekEnd = $weekEnd->previous(Carbon::FRIDAY);
+            }
+
+            if ($weekEnd->lt($weekStart)) {
+                break;
+            }
+
             $weeks[] = $this->buildWeekBucket($year, $month, $weekNumber, $weekStart, $weekEnd);
             $weekNumber++;
-            $cursor = $weekEnd->copy()->addDay();
+
+            $cursor = $weekEnd->copy()->next(Carbon::MONDAY);
         }
 
         return $weeks;
@@ -68,19 +73,33 @@ class WeeklyTimeLogService
      */
     private function buildWeekBucket(int $year, int $month, int $weekNumber, Carbon $periodStart, Carbon $periodEnd): array
     {
-        // Align display grid to Mon–Sun covering the period
+        // Align display grid to Mon–Fri covering the period (weekends excluded).
         $gridStart = $periodStart->copy();
-        if ($gridStart->dayOfWeek !== Carbon::MONDAY) {
+        if ($gridStart->isWeekend()) {
+            $gridStart = $gridStart->next(Carbon::MONDAY);
+        } elseif ($gridStart->dayOfWeek !== Carbon::MONDAY) {
             $gridStart = $gridStart->copy()->previous(Carbon::MONDAY);
         }
+
         $gridEnd = $periodEnd->copy();
-        if ($gridEnd->dayOfWeek !== Carbon::SUNDAY) {
-            $gridEnd = $gridEnd->copy()->next(Carbon::SUNDAY);
+        if ($gridEnd->isWeekend()) {
+            $gridEnd = $gridEnd->previous(Carbon::FRIDAY);
+        } elseif ($gridEnd->dayOfWeek !== Carbon::FRIDAY) {
+            $gridEnd = $gridEnd->copy()->next(Carbon::FRIDAY);
+        }
+
+        if ($gridEnd->lt($gridStart)) {
+            $gridEnd = $gridStart->copy();
         }
 
         $days = [];
         $cursor = $gridStart->copy();
         while ($cursor->lte($gridEnd)) {
+            if ($cursor->isWeekend()) {
+                $cursor->addDay();
+                continue;
+            }
+
             $inMonth = ((int) $cursor->month === $month && (int) $cursor->year === $year)
                 && $cursor->gte($periodStart) && $cursor->lte($periodEnd);
             $label = match ((int) $cursor->dayOfWeek) {
@@ -89,8 +108,7 @@ class WeeklyTimeLogService
                 Carbon::WEDNESDAY => 'WED',
                 Carbon::THURSDAY => 'THUR',
                 Carbon::FRIDAY => 'FRI',
-                Carbon::SATURDAY => 'SAT',
-                default => 'SUN',
+                default => 'DAY',
             };
             $days[] = [
                 'date' => $cursor->toDateString(),
@@ -107,7 +125,7 @@ class WeeklyTimeLogService
             'week_ref' => $ref,
             'period_start' => $periodStart->toDateString(),
             'period_end' => $periodEnd->toDateString(),
-            'label' => 'Week '.$weekNumber.' ('.$periodStart->format('d M').' – '.$periodEnd->format('d M').')',
+            'label' => 'Week '.$weekNumber.' ('.$periodStart->format('D d M').' – '.$periodEnd->format('D d M').')',
             'days' => $days,
         ];
     }
@@ -228,7 +246,7 @@ class WeeklyTimeLogService
             ->first();
 
         if ($existing) {
-            return $existing->load('days');
+            return $this->pruneWeekendDays($existing->load('days'));
         }
 
         return DB::transaction(function () use ($staff, $year, $month, $weekNumber, $meta) {
@@ -543,7 +561,6 @@ class WeeklyTimeLogService
     {
         $q = StaffWeeklyTimeLog::query()
             ->with(['staff.department', 'manager'])
-            ->whereHas('staff', fn ($query) => $query->excludePlatformOperators())
             ->whereIn('status', [
                 StaffWeeklyTimeLog::STATUS_PENDING_HR,
                 StaffWeeklyTimeLog::STATUS_APPROVED,
@@ -644,7 +661,7 @@ class WeeklyTimeLogService
         $hours = 0.0;
         $units = 0.0;
         foreach ($log->days as $day) {
-            if (! $day->in_month) {
+            if (! $day->in_month || $this->isWeekendDay($day)) {
                 continue;
             }
             $hours += (float) ($day->total_hours ?? 0);
@@ -654,6 +671,39 @@ class WeeklyTimeLogService
             'total_hours' => round($hours, 2),
             'total_units' => round($units, 2),
         ]);
+    }
+
+    /**
+     * Drop Sat/Sun rows from an existing log (older logs may still have them).
+     */
+    public function pruneWeekendDays(StaffWeeklyTimeLog $log): StaffWeeklyTimeLog
+    {
+        $log->loadMissing('days');
+        $removed = false;
+        foreach ($log->days as $day) {
+            if ($this->isWeekendDay($day)) {
+                $day->delete();
+                $removed = true;
+            }
+        }
+
+        if (! $removed) {
+            return $log;
+        }
+
+        $this->recomputeTotals($log);
+
+        return $log->fresh(['days', 'staff.department', 'manager', 'hrReviewer']) ?? $log;
+    }
+
+    private function isWeekendDay(StaffWeeklyTimeLogDay $day): bool
+    {
+        $label = strtoupper(trim((string) $day->day_label));
+        if (in_array($label, ['SAT', 'SATURDAY', 'SUN', 'SUNDAY'], true)) {
+            return true;
+        }
+
+        return $day->work_date ? $day->work_date->isWeekend() : false;
     }
 
     private function normalizeTime(mixed $value): ?string

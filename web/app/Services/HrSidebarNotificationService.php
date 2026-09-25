@@ -226,7 +226,6 @@ class HrSidebarNotificationService
         }
 
         return StaffWeeklyTimeLog::query()
-            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
             ->count();
     }
