@@ -22,7 +22,6 @@ function initCarousel() {
         return;
     }
 
-    // Clone first slide so last → first can keep sliding left-to-right.
     let cloneSlide = null;
     if (realTotal > 1) {
         cloneSlide = realSlides[0].cloneNode(true);
@@ -32,22 +31,26 @@ function initCarousel() {
         track.appendChild(cloneSlide);
     }
 
-    const trackSlides = [...track.children];
     let index = 0;
-    let isFirst = true;
     let timer = null;
-    let isJumping = false;
+    let animToken = 0;
+    let isAnimating = false;
     const interval = 6000;
     const animMs = 850;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function logicalIndex(i) {
+        if (i >= realTotal) {
+            return 0;
+        }
         return ((i % realTotal) + realTotal) % realTotal;
     }
 
     function setTrackPosition(i, instant) {
         if (instant) {
             track.style.transition = 'none';
+        } else {
+            track.style.transition = '';
         }
         track.style.transform = `translateX(-${i * 100}%)`;
         if (instant) {
@@ -76,48 +79,45 @@ function initCarousel() {
         }
     }
 
-    function updatePanels(fromLogical, toLogical, direction) {
-        const outgoing = panels[fromLogical];
-        const incoming = panels[toLogical];
+    function showPanel(logical, direction) {
+        const token = ++animToken;
 
-        if (isFirst || prefersReducedMotion || !outgoing || !incoming || direction === 0) {
-            panels.forEach((panel, j) => {
-                panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
-                panel.classList.toggle('is-active', j === toLogical);
-                panel.setAttribute('aria-hidden', j === toLogical ? 'false' : 'true');
-            });
-            return;
-        }
+        panels.forEach((panel, j) => {
+            const isTarget = j === logical;
+            panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
 
-        panels.forEach((panel) => {
-            if (panel !== outgoing && panel !== incoming) {
-                panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right', 'is-active');
+            if (!direction || prefersReducedMotion) {
+                panel.classList.toggle('is-active', isTarget);
+                panel.setAttribute('aria-hidden', isTarget ? 'false' : 'true');
+                return;
+            }
+
+            if (isTarget) {
+                panel.classList.remove('is-active');
+                panel.classList.add(direction === 1 ? 'from-right' : 'from-left');
+                void panel.offsetWidth;
+                panel.classList.add('is-active');
+                panel.setAttribute('aria-hidden', 'false');
+            } else if (panel.classList.contains('is-active')) {
+                panel.classList.add(direction === 1 ? 'exit-left' : 'exit-right');
+                panel.classList.remove('is-active');
+                panel.setAttribute('aria-hidden', 'true');
+            } else {
                 panel.setAttribute('aria-hidden', 'true');
             }
         });
 
-        if (outgoing !== incoming) {
-            outgoing.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
-            requestAnimationFrame(() => {
-                outgoing.classList.remove('is-active');
-                outgoing.classList.add(direction === 1 ? 'exit-left' : 'exit-right');
-                outgoing.setAttribute('aria-hidden', 'true');
-            });
-        }
-
-        incoming.classList.remove('exit-left', 'exit-right', 'is-active');
-        incoming.classList.add(direction === 1 ? 'from-right' : 'from-left');
-        void incoming.offsetWidth;
-        incoming.classList.add('is-active');
-        incoming.setAttribute('aria-hidden', 'false');
-
         window.setTimeout(() => {
+            if (token !== animToken) {
+                return;
+            }
             panels.forEach((panel, j) => {
+                const isTarget = j === logical;
                 panel.classList.remove('from-right', 'from-left', 'exit-left', 'exit-right');
-                panel.classList.toggle('is-active', j === toLogical);
-                panel.setAttribute('aria-hidden', j === toLogical ? 'false' : 'true');
+                panel.classList.toggle('is-active', isTarget);
+                panel.setAttribute('aria-hidden', isTarget ? 'false' : 'true');
             });
-        }, animMs);
+        }, prefersReducedMotion ? 0 : animMs);
     }
 
     function updateDots(logical) {
@@ -128,53 +128,63 @@ function initCarousel() {
         });
     }
 
-    function updateSlideAria(trackIndex) {
-        trackSlides.forEach((slide, j) => {
-            const active = j === trackIndex || (trackIndex === realTotal && j === 0);
-            slide.setAttribute('aria-hidden', active && j < realTotal ? 'false' : 'true');
-        });
+    function finishCloneSnap() {
+        if (index !== realTotal) {
+            return;
+        }
+        setTrackPosition(0, true);
+        index = 0;
+        isAnimating = false;
     }
 
     function goTo(targetTrackIndex, direction) {
-        if (isJumping) {
+        if (isAnimating && targetTrackIndex === index) {
             return;
         }
 
-        const nextTrackIndex = targetTrackIndex;
-        if (nextTrackIndex === index && !isFirst) {
+        // Resolve out of the clone position before any new move.
+        if (index === realTotal && targetTrackIndex !== realTotal) {
+            setTrackPosition(0, true);
+            index = 0;
+        }
+
+        let nextTrackIndex = targetTrackIndex;
+        if (nextTrackIndex < 0) {
+            nextTrackIndex = realTotal - 1;
+        }
+
+        if (nextTrackIndex === index) {
+            showPanel(logicalIndex(index), 0);
+            updateDots(logicalIndex(index));
             return;
         }
 
-        const fromLogical = logicalIndex(index);
         const toLogical = logicalIndex(nextTrackIndex);
-        const animDirection = isFirst || prefersReducedMotion ? 0 : direction;
+        const animDirection = prefersReducedMotion ? 0 : direction;
 
+        isAnimating = true;
         setTrackPosition(nextTrackIndex, false);
-        updateSlideAria(nextTrackIndex);
-        updatePanels(fromLogical, toLogical, animDirection);
+        showPanel(toLogical, animDirection);
         updateDots(toLogical);
-
-        index = nextTrackIndex;
-        isFirst = false;
         syncVideo(toLogical);
+        index = nextTrackIndex;
 
-        // After animating onto the clone, snap back to the real first slide.
-        if (cloneSlide && nextTrackIndex === realTotal) {
-            window.setTimeout(() => {
-                isJumping = true;
-                setTrackPosition(0, true);
-                index = 0;
-                updateSlideAria(0);
-                isJumping = false;
-            }, prefersReducedMotion ? 0 : animMs);
-        }
+        window.setTimeout(() => {
+            if (index === realTotal) {
+                finishCloneSnap();
+            } else {
+                isAnimating = false;
+            }
+        }, prefersReducedMotion ? 0 : animMs);
     }
 
     function nextSlide() {
         if (realTotal < 2) {
             return;
         }
-        // Always advance left-to-right, including last → first via the clone.
+        if (isAnimating) {
+            return;
+        }
         if (index >= realTotal - 1) {
             goTo(realTotal, 1);
         } else {
@@ -186,12 +196,12 @@ function initCarousel() {
         if (realTotal < 2) {
             return;
         }
+        if (isAnimating) {
+            return;
+        }
         if (index === 0 && cloneSlide) {
-            // Jump to clone instantly, then slide back to last real slide.
-            isJumping = true;
             setTrackPosition(realTotal, true);
             index = realTotal;
-            isJumping = false;
             goTo(realTotal - 1, -1);
             return;
         }
@@ -203,7 +213,11 @@ function initCarousel() {
         if (realTotal < 2 || prefersReducedMotion) {
             return;
         }
-        timer = window.setInterval(nextSlide, interval);
+        timer = window.setInterval(() => {
+            if (!isAnimating) {
+                nextSlide();
+            }
+        }, interval);
     }
 
     function stopAutoplay() {
@@ -224,40 +238,64 @@ function initCarousel() {
         });
         dots.forEach((dot) => {
             dot.addEventListener('click', () => {
+                if (isAnimating) {
+                    return;
+                }
                 const target = Number(dot.dataset.carouselDot);
                 const currentLogical = logicalIndex(index);
-                const direction = target >= currentLogical || (currentLogical === realTotal - 1 && target === 0)
-                    ? 1
-                    : (target < currentLogical ? -1 : 1);
-                // Prefer forward when wrapping last → first via dot.
                 if (currentLogical === realTotal - 1 && target === 0) {
                     nextSlide();
                 } else {
+                    const direction = target > currentLogical ? 1 : -1;
                     goTo(target, direction);
                 }
                 startAutoplay();
             });
         });
 
-        hero.addEventListener('mouseenter', stopAutoplay);
-        hero.addEventListener('mouseleave', startAutoplay);
+        // Pause only while the pointer is over controls, not the whole hero
+        // (full-hero pause made autoplay feel broken).
+        const controls = [
+            ...dots,
+            prev,
+            next,
+        ].filter(Boolean);
+        controls.forEach((el) => {
+            el.addEventListener('mouseenter', stopAutoplay);
+            el.addEventListener('mouseleave', startAutoplay);
+            el.addEventListener('focus', stopAutoplay);
+            el.addEventListener('blur', startAutoplay);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoplay();
+            } else {
+                if (index === realTotal) {
+                    finishCloneSnap();
+                }
+                isAnimating = false;
+                showPanel(logicalIndex(index), 0);
+                startAutoplay();
+            }
+        });
     }
 
-    goTo(0, 0);
+    showPanel(0, 0);
+    updateDots(0);
+    syncVideo(0);
     startAutoplay();
 }
 
 function initHeaderOverHero() {
     const header = document.getElementById('site-header');
-    const hero = document.getElementById('home-hero');
 
     if (!header || !header.classList.contains('tich-header--over-hero')) {
         return;
     }
 
     const update = () => {
-        const threshold = 8;
-        header.classList.toggle('tich-header--solid', window.scrollY > threshold);
+        header.classList.toggle('tich-header--solid', window.scrollY > 8);
     };
 
     window.addEventListener('scroll', update, { passive: true });

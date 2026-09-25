@@ -2709,9 +2709,9 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
 .tich-hero-carousel {
     /* Literal brand tones — dark theme remaps --tich-white / --tich-green-light */
     --hero-text: #ffffff;
-    --hero-text-muted: #d6e8f5;
-    --hero-overlay: #125a8c;
-    --hero-overlay-opacity: 0.68;
+    --hero-text-muted: #e8eef2;
+    --hero-overlay: transparent;
+    --hero-overlay-opacity: 0;
     --hero-fallback: #125a8c;
     --hero-grid: #1669a6;
     --hero-accent: #6cab33;
@@ -2732,7 +2732,7 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
 
 [data-theme="dark"] .tich-hero-carousel {
     --hero-overlay: #1a1c1e;
-    --hero-overlay-opacity: 0.75;
+    --hero-overlay-opacity: 0.55;
     --hero-fallback: #1a1c1e;
     --hero-text-muted: #b8bcc0;
     --hero-status-bg: #494c50;
@@ -2791,9 +2791,17 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
 .tich-hero-carousel__overlay {
     position: absolute;
     inset: 0;
+    /* Light mode: no blue wash — only a soft bottom scrim for text contrast */
+    background:
+        linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.2) 38%, transparent 62%),
+        var(--hero-overlay);
+    opacity: 1;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .tich-hero-carousel__overlay {
     background: var(--hero-overlay);
     opacity: var(--hero-overlay-opacity);
-    pointer-events: none;
 }
 
 .tich-hero-carousel__grid {
@@ -3014,24 +3022,45 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
     z-index: 10;
     margin-top: auto;
     background: var(--hero-status-bg);
-    padding: 0.5rem clamp(1.25rem, 4vw, 3rem);
+    padding: 0.5rem 0;
     font-family: var(--font-body);
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--hero-status-text);
+    overflow: hidden;
 }
 
 .tich-hero-ticker__inner {
-    overflow: hidden;
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: tich-hero-ticker-scroll 22s linear infinite;
 }
 
 .tich-hero-ticker__item {
-    display: block;
+    display: inline-block;
+    flex-shrink: 0;
+    padding-right: 4rem;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+@keyframes tich-hero-ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tich-hero-ticker__inner {
+        animation: none;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tich-hero-ticker__item:not(:first-child) {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {

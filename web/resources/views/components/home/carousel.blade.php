@@ -87,9 +87,10 @@
     @endif
 
     @if (! empty($tickerMessage))
-        <div class="tich-hero-ticker" aria-live="polite" aria-label="Announcements">
+        <div class="tich-hero-ticker" aria-label="Announcements">
             <div class="tich-hero-ticker__inner">
                 <span class="tich-hero-ticker__item">{{ $tickerMessage }}</span>
+                <span class="tich-hero-ticker__item" aria-hidden="true">{{ $tickerMessage }}</span>
             </div>
         </div>
     @endif
