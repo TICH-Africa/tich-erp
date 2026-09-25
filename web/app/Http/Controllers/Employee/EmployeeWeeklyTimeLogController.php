@@ -72,7 +72,7 @@ class EmployeeWeeklyTimeLogController extends Controller
         $staff = $this->staff($request);
         abort_unless($this->timeLogs->viewerMayAccess($timeLog, $staff, $request->user()), 403);
 
-        $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer']);
+        $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer']));
 
         return view('employee.time-logs.show', [
             'portalTitle' => 'Weekly Time Log',

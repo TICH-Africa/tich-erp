@@ -40,7 +40,9 @@ class WeeklyTimeLogReviewController extends Controller
 
     public function show(StaffWeeklyTimeLog $timeLog): View
     {
-        $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer']);
+        $timeLog = $this->timeLogs->pruneWeekendDays(
+            $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer'])
+        );
 
         return view('hr.time-logs.show', [
             'log' => $timeLog,

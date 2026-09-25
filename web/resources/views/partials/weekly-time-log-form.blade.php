@@ -40,6 +40,7 @@
             </thead>
             <tbody>
                 @foreach ($log->days as $day)
+                    @continue($day->work_date && $day->work_date->isWeekend())
                     @php
                         $dateKey = $day->work_date->toDateString();
                         $disabled = ! $editable || ! $day->in_month;
