@@ -32,18 +32,15 @@ class HomepageService
             'usingFallback' => [
                 'carousel' => $this->carouselUsesFallback,
                 'programs' => $this->programsUseFallback,
-                'research' => $this->researchUsesFallback,
-                'events' => $this->eventsUseFallback,
-                'blogPosts' => $this->blogUsesFallback,
+                'research' => false,
+                'events' => false,
+                'blogPosts' => false,
             ],
         ];
     }
 
     private bool $carouselUsesFallback = false;
     private bool $programsUseFallback = false;
-    private bool $researchUsesFallback = false;
-    private bool $eventsUseFallback = false;
-    private bool $blogUsesFallback = false;
 
     public function getCarouselSlides(): Collection
     {
@@ -67,14 +64,7 @@ class HomepageService
         $this->carouselUsesFallback = true;
 
         return $this->mergeFeaturedEventSlides(
-            $this->mergeFeaturedProgramSlides(
-                collect(config('tich-homepage.carousel', []))
-                    ->map(fn ($slide, $index) => (object) array_merge($slide, [
-                        'image_path' => $this->mediaUrl($slide['image_path'] ?? null),
-                        'cta_url' => isset($slide['cta_url']) ? url($slide['cta_url']) : null,
-                        'display_order' => $index + 1,
-                    ]))
-            )
+            $this->mergeFeaturedProgramSlides(collect())
         );
     }
 
@@ -245,10 +235,7 @@ class HomepageService
 
         $this->programsUseFallback = true;
 
-        return collect(config('tich-homepage.programs', []))
-            ->map(fn ($program) => (object) array_merge($program, [
-                'apply_url' => route('apply.index', ['program' => $program['program_code'] ?? '']),
-            ]));
+        return collect();
     }
 
     public function getFeaturedResearch(): ?object
@@ -274,16 +261,7 @@ class HomepageService
             }
         }
 
-        $this->researchUsesFallback = true;
-        $fallback = config('tich-homepage.research');
-
-        if ($fallback) {
-            $fallback = (object) array_merge($fallback, [
-                'url' => route('research'),
-            ]);
-        }
-
-        return $fallback ?: null;
+        return null;
     }
 
     public function getUpcomingEvents(int $limit = 6): Collection
@@ -301,18 +279,7 @@ class HomepageService
             }
         }
 
-        $this->eventsUseFallback = true;
-
-        return collect(config('tich-homepage.events', []))
-            ->map(fn ($event) => (object) array_merge($event, [
-                'start_datetime' => $event['start_datetime'],
-                'formatted_date' => date('M j, Y', strtotime($event['start_datetime'])),
-                'registration_url_or_form' => isset($event['registration_url_or_form'])
-                    ? url($event['registration_url_or_form'])
-                    : null,
-                'url' => route('events'),
-                'cover_image_path' => $this->mediaUrl($event['cover_image_path'] ?? null),
-            ]));
+        return collect();
     }
 
     /**
@@ -351,15 +318,7 @@ class HomepageService
             }
         }
 
-        $this->blogUsesFallback = true;
-
-        return collect(config('tich-homepage.blog_posts', []))
-            ->take($limit)
-            ->map(fn ($post) => (object) array_merge($post, [
-                'formatted_date' => date('M j, Y', strtotime($post['published_at'])),
-                'url' => route('blog'),
-                'featured_image_path' => $this->mediaUrl($post['featured_image_path'] ?? null),
-            ]));
+        return collect();
     }
 
     /**
@@ -381,7 +340,7 @@ class HomepageService
             }
         }
 
-        return $this->getLatestBlogPosts($limit);
+        return collect();
     }
 
     public function mapBlogPostForPublic(BlogPost $post): object

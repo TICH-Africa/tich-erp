@@ -169,12 +169,19 @@ function initCarousel() {
         syncVideo(toLogical);
         index = nextTrackIndex;
 
+        hero.dispatchEvent(new CustomEvent('tich:hero-slide', {
+            detail: { index: toLogical, trackIndex: nextTrackIndex },
+        }));
+
         window.setTimeout(() => {
             if (index === realTotal) {
                 finishCloneSnap();
             } else {
                 isAnimating = false;
             }
+            hero.dispatchEvent(new CustomEvent('tich:hero-slide', {
+                detail: { index: logicalIndex(index), trackIndex: index },
+            }));
         }, prefersReducedMotion ? 0 : animMs);
     }
 
@@ -284,23 +291,162 @@ function initCarousel() {
     showPanel(0, 0);
     updateDots(0);
     syncVideo(0);
+    hero.dispatchEvent(new CustomEvent('tich:hero-slide', {
+        detail: { index: 0, trackIndex: 0 },
+    }));
     startAutoplay();
 }
 
 function initHeaderOverHero() {
     const header = document.getElementById('site-header');
+    const hero = document.querySelector('[data-carousel]');
 
     if (!header || !header.classList.contains('tich-header--over-hero')) {
         return;
     }
 
-    const update = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const BRIGHT_THRESHOLD = 168;
+    let sampleToken = 0;
+
+    const updateSolid = () => {
         header.classList.toggle('tich-header--solid', window.scrollY > 8);
+        if (header.classList.contains('tich-header--solid')) {
+            header.classList.remove('tich-header--on-bright');
+        } else {
+            sampleHeroBrightness();
+        }
     };
 
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    update();
+    function getActiveMedia() {
+        if (!hero) {
+            return null;
+        }
+        const slides = [...hero.querySelectorAll('[data-carousel-slide]')];
+        const active = slides.find((slide) => slide.getAttribute('aria-hidden') !== 'true') || slides[0];
+        if (!active) {
+            return null;
+        }
+        return active.querySelector('img, video');
+    }
+
+    function averageLuminance(imageData) {
+        const data = imageData.data;
+        let total = 0;
+        let count = 0;
+        // Sample every 4th pixel for speed
+        for (let i = 0; i < data.length; i += 16) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+            if (a < 128) {
+                continue;
+            }
+            // Relative luminance
+            total += (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+            count += 1;
+        }
+        return count ? (total / count) : 0;
+    }
+
+    function sampleFromElement(el) {
+        if (!ctx || !el) {
+            return null;
+        }
+
+        const naturalW = el.videoWidth || el.naturalWidth || el.width || 0;
+        const naturalH = el.videoHeight || el.naturalHeight || el.height || 0;
+        if (naturalW < 8 || naturalH < 8) {
+            return null;
+        }
+
+        // Sample a wide top band where the nav sits.
+        const sampleH = Math.max(24, Math.round(naturalH * 0.18));
+        const sampleW = Math.min(320, naturalW);
+        canvas.width = sampleW;
+        canvas.height = Math.min(64, sampleH);
+
+        try {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+                el,
+                0,
+                0,
+                naturalW,
+                sampleH,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+            return averageLuminance(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        } catch (err) {
+            // Cross-origin media without CORS taints the canvas.
+            return null;
+        }
+    }
+
+    function applyBrightness(luma) {
+        if (header.classList.contains('tich-header--solid')) {
+            header.classList.remove('tich-header--on-bright');
+            return;
+        }
+        if (luma == null) {
+            return;
+        }
+        header.classList.toggle('tich-header--on-bright', luma >= BRIGHT_THRESHOLD);
+    }
+
+    function sampleHeroBrightness() {
+        if (header.classList.contains('tich-header--solid')) {
+            header.classList.remove('tich-header--on-bright');
+            return;
+        }
+
+        const token = ++sampleToken;
+        const media = getActiveMedia();
+        if (!media) {
+            header.classList.remove('tich-header--on-bright');
+            return;
+        }
+
+        const run = () => {
+            if (token !== sampleToken) {
+                return;
+            }
+            applyBrightness(sampleFromElement(media));
+        };
+
+        if (media.tagName === 'IMG') {
+            if (media.complete && media.naturalWidth) {
+                run();
+            } else {
+                media.addEventListener('load', run, { once: true });
+            }
+            return;
+        }
+
+        if (media.tagName === 'VIDEO') {
+            if (media.readyState >= 2) {
+                run();
+            } else {
+                media.addEventListener('loadeddata', run, { once: true });
+            }
+            // Re-check shortly after play in case the first frame was dark.
+            window.setTimeout(run, 400);
+        }
+    }
+
+    window.addEventListener('scroll', updateSolid, { passive: true });
+    window.addEventListener('resize', updateSolid);
+    hero?.addEventListener('tich:hero-slide', () => {
+        window.setTimeout(sampleHeroBrightness, 50);
+    });
+
+    updateSolid();
+    sampleHeroBrightness();
 }
 
 function initHomeReveal() {

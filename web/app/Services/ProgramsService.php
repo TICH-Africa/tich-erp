@@ -107,7 +107,7 @@ class ProgramsService
 
         $usingFallback = true;
 
-        return $this->homepageService->getFeaturedPrograms();
+        return collect();
     }
 
     private function resolveFeatured(Collection $programs): ?object

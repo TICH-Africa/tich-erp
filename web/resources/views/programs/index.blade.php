@@ -11,7 +11,7 @@
                 Explore TICH certificate and diploma programmes in community health practice, development, and health technology. Select a programme and start your online application.
             </p>
             @if ($usingFallback)
-                <p class="tich-course-page-header__note">Showing default programme catalogue until academic records are published in the CMS.</p>
+                <p class="tich-course-page-header__note">Programme catalogue will appear once academic records are published.</p>
             @endif
         </div>
     </header>

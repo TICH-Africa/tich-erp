@@ -1988,6 +1988,64 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle {
     border-radius: 50%;
 }
 
+/* Unscrolled nav on a bright hero image — force dark text for contrast */
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-toggle,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__action-btn--ghost,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-link {
+    color: #125a8c;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand__name {
+    color: #1a1d21;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand__tagline {
+    color: #494c50;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link:hover,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-toggle:hover,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__action-btn--ghost:hover,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-link:hover {
+    color: #0d3a6e;
+    background: rgba(18, 90, 140, 0.08);
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link.is-active {
+    color: #0d3a6e;
+    background: rgba(18, 90, 140, 0.12);
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-toggle {
+    border-color: #125a8c;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-toggle span {
+    background: #1a1d21;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-theme-toggle,
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-notification {
+    border-color: #125a8c;
+    background: rgba(255, 255, 255, 0.55);
+    color: #1a1d21;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__icon {
+    color: inherit;
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__actions {
+    border-left-color: rgba(18, 90, 140, 0.25);
+}
+
+body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-menu {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(18, 90, 140, 0.15);
+}
+
 .tich-header__inner {
     display: flex;
     align-items: center;
@@ -7024,6 +7082,58 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 
 [data-theme="dark"] body.page-home .tich-header--over-hero:not(.tich-header--solid) .tich-theme-toggle {
     border-color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand__name,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand--light .tich-brand__name {
+    color: #1a1d21;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand__tagline,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-brand--light .tich-brand__tagline {
+    color: #494c50;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__action-btn--ghost,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-toggle,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-theme-toggle,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-notification,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__more-link {
+    color: #125a8c;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link:hover,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__action-btn--ghost:hover,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-theme-toggle:hover,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-notification:hover {
+    color: #0d3a6e;
+    background: rgba(18, 90, 140, 0.1);
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__link.is-active {
+    color: #0d3a6e;
+    background: rgba(18, 90, 140, 0.12);
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-toggle {
+    border-color: #125a8c;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-toggle span {
+    background: #1a1d21;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-theme-toggle,
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav-notification {
+    border-color: #125a8c;
+    background: rgba(255, 255, 255, 0.55);
+    color: #1a1d21;
+}
+
+[data-theme="dark"] body.page-home .tich-header--over-hero.tich-header--on-bright:not(.tich-header--solid) .tich-nav__actions {
+    border-left-color: rgba(18, 90, 140, 0.25);
 }
 
 [data-theme="dark"] .tich-nav-drawer {

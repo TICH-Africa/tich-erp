@@ -226,16 +226,8 @@
                             <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
                         </div>
                     </x-animated-section>
-                @elseif ($featured)
-                    <div class="tich-mt-10">
-                        <p class="tich-course-featured-label">Featured project</p>
-                        @include('research.partials.project-card', [
-                            'project' => $featured,
-                            'extraClass' => 'tich-course-card--featured',
-                            'headingTag' => 'h2',
-                            'excerptLimit' => 220,
-                        ])
-                    </div>
+                @else
+                    <p class="tich-text tich-mt-10">Research activities will appear here once published.</p>
                 @endif
             </div>
         </section>
