@@ -17,7 +17,7 @@ class StaffOrganisationEmailController extends Controller
     public function update(Request $request, Staff $staff): RedirectResponse
     {
         $validated = $request->validate([
-            'organisation_email' => ['nullable', 'email', 'max:255', 'regex:/@tich\.africa$/i', 'unique:staff,organisation_email,'.$staff->id],
+            'organisation_email' => ['nullable', 'email', 'max:255', 'unique:staff,organisation_email,'.$staff->id],
         ]);
 
         $organisationEmail = filled($validated['organisation_email'] ?? null)
@@ -35,7 +35,7 @@ class StaffOrganisationEmailController extends Controller
             $staff->id,
             ['organisation_email' => $oldEmail],
             ['organisation_email' => $organisationEmail],
-            $organisationEmail ? 'Organisation email assigned' : 'Organisation email cleared',
+            $organisationEmail ? 'Organisation / secondary email assigned' : 'Organisation / secondary email cleared',
             'success',
             $request->user()->id,
             $request,
@@ -44,8 +44,8 @@ class StaffOrganisationEmailController extends Controller
         return back()->with(
             'success',
             $organisationEmail
-                ? 'Organisation email saved for '.$staff->fullName().'.'
-                : 'Organisation email cleared for '.$staff->fullName().'.',
+                ? 'Organisational / secondary email saved for '.$staff->fullName().'.'
+                : 'Organisational / secondary email cleared for '.$staff->fullName().'.',
         );
     }
 }

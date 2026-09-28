@@ -90,18 +90,13 @@ class PlatformNotificationService
                 return null;
             }
 
-            $staff = $user->staff;
-            $candidates = [
-                $staff?->organisation_email,
-                $staff?->primary_email,
-                $user->email,
-            ];
+            if ($user->staff) {
+                return $user->staff->resolveErpEmail($user->email);
+            }
 
-            foreach ($candidates as $candidate) {
-                $email = is_string($candidate) ? trim($candidate) : '';
-                if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    return $email;
-                }
+            $email = is_string($user->email) ? trim($user->email) : '';
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
             }
         } catch (Throwable $e) {
             Log::warning('Could not resolve notification recipient email', [

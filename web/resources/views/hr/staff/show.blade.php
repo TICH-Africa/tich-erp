@@ -46,7 +46,7 @@
             <dl class="tich-dl">
                 <div class="tich-dl__row"><dt class="tich-dl__label">Employee No.</dt><dd class="tich-dl__value">{{ $staff->employee_number }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Primary email</dt><dd class="tich-dl__value">{{ $staff->primary_email ?: '-' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Organisation email</dt><dd class="tich-dl__value">{{ $staff->organisation_email ?: '-' }}@if (! $staff->organisation_email)<span class="tich-caption"> · Assigned by ICT</span>@endif</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Organisational / Secondary email</dt><dd class="tich-dl__value">{{ $staff->organisation_email ?: '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Phone</dt><dd class="tich-dl__value">{{ $staff->phone_number ?: '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Gender</dt><dd class="tich-dl__value">{{ $staff->gender ?: '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Date of birth</dt><dd class="tich-dl__value">{{ $staff->date_of_birth?->format('d M Y') ?? '-' }}</dd></div>

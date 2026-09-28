@@ -39,6 +39,7 @@ class Staff extends Model
         'home_county',
         'primary_email',
         'organisation_email',
+        'preferred_erp_email',
         'phone_number',
         'alt_phone_number',
         'postal_address',
@@ -278,6 +279,48 @@ class Staff extends Model
             ->exists()) {
             $email = $base.$counter.'@tich.africa';
             $counter++;
+        }
+
+        return $email;
+    }
+
+    public const ERP_EMAIL_PRIMARY = 'primary';
+
+    public const ERP_EMAIL_ORGANISATION = 'organisation';
+
+    /**
+     * Resolve the address for outbound ERP mail based on staff preference.
+     * Default preference is personal (primary). Falls back to the other address, then $fallback.
+     */
+    public function resolveErpEmail(?string $fallback = null): ?string
+    {
+        $preference = strtolower(trim((string) ($this->preferred_erp_email ?: self::ERP_EMAIL_PRIMARY)));
+        if (! in_array($preference, [self::ERP_EMAIL_PRIMARY, self::ERP_EMAIL_ORGANISATION], true)) {
+            $preference = self::ERP_EMAIL_PRIMARY;
+        }
+
+        $primary = $this->normalizedEmail($this->primary_email);
+        $organisation = $this->normalizedEmail($this->organisation_email);
+        $fallbackEmail = $this->normalizedEmail($fallback);
+
+        $ordered = $preference === self::ERP_EMAIL_ORGANISATION
+            ? [$organisation, $primary, $fallbackEmail]
+            : [$primary, $organisation, $fallbackEmail];
+
+        foreach ($ordered as $email) {
+            if ($email !== null) {
+                return $email;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizedEmail(mixed $value): ?string
+    {
+        $email = is_string($value) ? strtolower(trim($value)) : '';
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return null;
         }
 
         return $email;

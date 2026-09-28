@@ -176,6 +176,30 @@
                             <input type="email" id="primary_email" name="primary_email" class="{{ $errors->has('primary_email') ? 'is-invalid' : '' }}" value="{{ old('primary_email', $staff->primary_email) }}" @required($mustCompleteProfile)>
                             @error('primary_email')<span class="uf-error">{{ $message }}</span>@enderror
                         </div>
+                        <div class="uf-field {{ $profileHighlightClass('organisation_email') }}" id="profile-field-organisation_email">
+                            <label for="organisation_email">Organisational / Secondary email</label>
+                            <input type="email" id="organisation_email" name="organisation_email" class="{{ $errors->has('organisation_email') ? 'is-invalid' : '' }}" value="{{ old('organisation_email', $staff->organisation_email) }}" placeholder="Work or secondary email">
+                            <p class="uf-hint" style="margin-top:0.35rem;">Any valid email address is allowed.  (Organisational email preffered)</p>
+                            @error('organisation_email')<span class="uf-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="uf-field" id="profile-field-preferred_erp_email" style="grid-column:1 / -1;">
+                            <label>Preferred email for ERP notifications</label>
+                            @php
+                                $preferredErp = old('preferred_erp_email', $staff->preferred_erp_email ?: 'primary');
+                            @endphp
+                            <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:0.35rem;">
+                                <label style="display:flex; align-items:center; gap:0.4rem; font-weight:normal;">
+                                    <input type="radio" name="preferred_erp_email" value="primary" @checked($preferredErp === 'primary')>
+                                    Personal email
+                                </label>
+                                <label style="display:flex; align-items:center; gap:0.4rem; font-weight:normal;">
+                                    <input type="radio" name="preferred_erp_email" value="organisation" @checked($preferredErp === 'organisation')>
+                                    Organisational / Secondary email
+                                </label>
+                            </div>
+                            <p class="uf-hint" style="margin-top:0.35rem;">Defaults to personal email. If the chosen address is empty, the other one is used automatically.</p>
+                            @error('preferred_erp_email')<span class="uf-error">{{ $message }}</span>@enderror
+                        </div>
                         <div class="uf-field {{ $profileHighlightClass('phone_number') }}" id="profile-field-phone_number">
                             <label for="phone_number">Phone number @if ($mustCompleteProfile){!! $reqMark !!}@endif</label>
                             <input type="text" id="phone_number" name="phone_number" class="{{ $errors->has('phone_number') ? 'is-invalid' : '' }}" value="{{ old('phone_number', in_array($staff->phone_number, ['0700000000', '0000000000'], true) ? '' : $staff->phone_number) }}" @required($mustCompleteProfile) placeholder="e.g. 07XXXXXXXX">

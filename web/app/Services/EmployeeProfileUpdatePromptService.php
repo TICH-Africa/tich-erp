@@ -136,12 +136,6 @@ class EmployeeProfileUpdatePromptService
 
     private function resolveRecipientEmail(Staff $staff): ?string
     {
-        foreach ([$staff->primary_email, $staff->organisation_email, $staff->user?->email] as $candidate) {
-            if (is_string($candidate) && filter_var(trim($candidate), FILTER_VALIDATE_EMAIL)) {
-                return trim($candidate);
-            }
-        }
-
-        return null;
+        return $staff->resolveErpEmail($staff->user?->email);
     }
 }

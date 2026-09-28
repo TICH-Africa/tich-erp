@@ -26,7 +26,7 @@
             ],
         ];
         $selectedFields = old('fields', []);
-        $notifyEmail = $staff->organisation_email ?: $staff->primary_email;
+        $notifyEmail = $staff->resolveErpEmail();
     @endphp
 
     <x-page-toolbar title="Request profile update">

@@ -64,18 +64,17 @@
                     <form method="POST" action="{{ route('ict.staff.organisation-email.update', $staff) }}" class="tich-mt-4" style="padding-top:1rem;border-top:1px solid var(--tich-neutral-border);">
                         @csrf
                         @method('PUT')
-                        <label for="organisation_email" class="tich-label">Assign organisation email</label>
+                        <label for="organisation_email" class="tich-label">Organisational / Secondary email</label>
                         <input
                             type="email"
                             id="organisation_email"
                             name="organisation_email"
                             value="{{ old('organisation_email', $staff->organisation_email) }}"
                             class="tich-input"
-                            pattern=".+@tich\.africa$"
-                            placeholder="name@tich.africa"
+                            placeholder="name@example.com"
                         >
-                        <p class="tich-caption tich-mt-1">Leave blank and save to clear. Must use @tich.africa.</p>
-                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-2">Save organisation email</button>
+                        <p class="tich-caption tich-mt-1">Leave blank and save to clear. Any valid email is allowed (not limited to @tich.africa).</p>
+                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-2">Save organisational / secondary email</button>
                     </form>
                 @endif
             @else

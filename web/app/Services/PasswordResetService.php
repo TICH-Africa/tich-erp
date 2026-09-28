@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\PasswordResetOtpMail;
 use App\Models\PasswordResetEscalation;
+use App\Models\Staff;
 use App\Models\User;
 use App\Support\ModuleMail;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class PasswordResetService
     public function requestReset(string $email, ?Request $request = null): array
     {
         $email = Str::lower(trim($email));
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = $this->findUserByAnyEmail($email);
 
         $attempts = $this->attemptCount($email);
 
@@ -62,10 +63,10 @@ class PasswordResetService
 
         $this->recordAttempt($email, $user->id, 'sent', $request);
 
-        // Deliver via notification@ — ict@ is accepted by SMTP but does not reach external inboxes.
+        // Send to the address the user entered (personal or organisational / secondary).
         $delivery = ModuleMail::trySend(
             ModuleMail::NOTIFICATION,
-            $user->email,
+            $email,
             new PasswordResetOtpMail($otp, self::OTP_TTL_MINUTES),
         );
 
@@ -123,7 +124,7 @@ class PasswordResetService
             return ['ok' => false, 'message' => 'This reset code has expired. Please request a new one.'];
         }
 
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = $this->findUserByAnyEmail($email);
         if (! $user) {
             return ['ok' => false, 'message' => 'Account not found.'];
         }
@@ -229,6 +230,26 @@ class PasswordResetService
     private function generateOtp(): string
     {
         return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    private function findUserByAnyEmail(string $email): ?User
+    {
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($user) {
+            return $user;
+        }
+
+        $staff = Staff::query()
+            ->where(function ($q) use ($email) {
+                $q->whereRaw('LOWER(primary_email) = ?', [$email])
+                    ->orWhereRaw('LOWER(organisation_email) = ?', [$email]);
+            })
+            ->whereNotNull('user_id')
+            ->first();
+
+        return $staff?->user_id
+            ? User::query()->find($staff->user_id)
+            : null;
     }
 
     private function escalate(string $email, ?User $user, int $attempts, ?Request $request): void

@@ -174,15 +174,13 @@ class ApprovalWorkflowController extends Controller
     private function submitterPayload(User $user): array
     {
         $staff = $user->staff;
-        $email = collect([
-            $staff?->organisation_email,
-            $staff?->primary_email,
-            $user->email,
-        ])->first(static fn ($value) => is_string($value) && trim($value) !== '');
+        $email = $staff
+            ? $staff->resolveErpEmail($user->email)
+            : (is_string($user->email) && trim($user->email) !== '' ? trim($user->email) : null);
 
         return [
             'name' => $user->displayName(),
-            'email' => $email ? trim((string) $email) : null,
+            'email' => $email,
         ];
     }
 }

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-24 08:47:57 EAT
+-- Generated: 2026-09-28 16:59:40 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -10243,6 +10243,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `home_county` varchar(100) DEFAULT NULL,
   `primary_email` varchar(255) NOT NULL,
   `organisation_email` varchar(255) DEFAULT NULL,
+  `preferred_erp_email` varchar(20) NOT NULL DEFAULT 'primary',
   `phone_number` varchar(30) NOT NULL,
   `alt_phone_number` varchar(30) DEFAULT NULL,
   `postal_address` varchar(300) DEFAULT NULL,
@@ -10331,6 +10332,7 @@ CALL `tich_ensure_column`('staff', 'nationality', 'varchar(100) NOT NULL DEFAULT
 CALL `tich_ensure_column`('staff', 'home_county', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'primary_email', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('staff', 'organisation_email', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'\\\'primary\\\'\'');
 CALL `tich_ensure_column`('staff', 'phone_number', 'varchar(30) NOT NULL');
 CALL `tich_ensure_column`('staff', 'alt_phone_number', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'postal_address', 'varchar(300) NULL DEFAULT NULL');

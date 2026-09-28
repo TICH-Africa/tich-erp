@@ -33,6 +33,16 @@ class EmployeeProfileChangeService
         'emergency_contact_relationship',
     ];
 
+    /**
+     * Email fields applied immediately (no HR approval) so ERP mail routing stays current.
+     *
+     * @var list<string>
+     */
+    public const IMMEDIATE_EMAIL_FIELDS = [
+        'organisation_email',
+        'preferred_erp_email',
+    ];
+
     /** Fields applied immediately during first profile completion (invitees). */
     public const INITIAL_COMPLETION_FIELDS = self::EDITABLE_FIELDS;
 
@@ -118,6 +128,68 @@ class EmployeeProfileChangeService
     }
 
     /**
+     * Apply organisational/secondary email + ERP mail preference immediately.
+     *
+     * @param  array<string, mixed>  $input
+     * @return bool True when at least one email setting changed
+     */
+    public function applyEmailSettings(Staff $staff, User $user, array $input): bool
+    {
+        $updates = [];
+
+        if (array_key_exists('organisation_email', $input)) {
+            $value = is_string($input['organisation_email'] ?? null)
+                ? strtolower(trim($input['organisation_email']))
+                : null;
+            $value = $value === '' ? null : $value;
+            $current = is_string($staff->organisation_email)
+                ? strtolower(trim($staff->organisation_email))
+                : null;
+            $current = $current === '' ? null : $current;
+            if ($value !== $current) {
+                $updates['organisation_email'] = $value;
+            }
+        }
+
+        if (array_key_exists('preferred_erp_email', $input)) {
+            $preference = strtolower(trim((string) ($input['preferred_erp_email'] ?? Staff::ERP_EMAIL_PRIMARY)));
+            if (! in_array($preference, [Staff::ERP_EMAIL_PRIMARY, Staff::ERP_EMAIL_ORGANISATION], true)) {
+                $preference = Staff::ERP_EMAIL_PRIMARY;
+            }
+            $currentPreference = strtolower(trim((string) ($staff->preferred_erp_email ?: Staff::ERP_EMAIL_PRIMARY)));
+            if ($preference !== $currentPreference) {
+                $updates['preferred_erp_email'] = $preference;
+            }
+        }
+
+        if ($updates === []) {
+            return false;
+        }
+
+        $before = $staff->only(array_keys($updates));
+
+        DB::transaction(function () use ($staff, $updates) {
+            $staff->update($updates);
+            if (array_key_exists('organisation_email', $updates)) {
+                $staff->syncLinkedUserEmail();
+            }
+        });
+
+        $this->auditService->log(
+            'staff.profile.email_settings_updated',
+            'staff',
+            $staff->id,
+            $before,
+            $updates,
+            'Employee updated organisational email / ERP mail preference',
+            'success',
+            $user->id,
+        );
+
+        return true;
+    }
+
+    /**
      * First-time / incomplete profile: apply contact details immediately so the employee
      * is not blocked waiting for HR approval.
      *
@@ -163,6 +235,8 @@ class EmployeeProfileChangeService
             'success',
             $user->id,
         );
+
+        $this->applyEmailSettings($staff->fresh(), $user, $input);
 
         $this->notifyHrSelfServiceCompletion($staff->fresh());
 

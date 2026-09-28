@@ -71,6 +71,13 @@ class EmployeeProfileController extends Controller
             'date_of_birth' => ($mustComplete ? 'required' : 'nullable').'|date|before:today',
             'gender' => ($mustComplete ? 'required' : 'nullable').'|string|in:Male,Female',
             'primary_email' => ($mustComplete ? 'required' : 'nullable').'|email|max:255',
+            'organisation_email' => [
+                'nullable',
+                'email',
+                'max:255',
+                'unique:staff,organisation_email,'.$staff->id,
+            ],
+            'preferred_erp_email' => 'nullable|in:primary,organisation',
             'phone_number' => ($mustComplete ? 'required' : 'nullable').'|string|max:30',
             'alt_phone_number' => 'nullable|string|max:30',
             'marital_status' => ($mustComplete ? 'required' : 'nullable').'|string|in:Single,Married,Divorced,Widowed,Separated',
@@ -95,6 +102,14 @@ class EmployeeProfileController extends Controller
         ];
 
         $validated = $request->validate($rules);
+
+        if (! empty($validated['organisation_email'])) {
+            $validated['organisation_email'] = strtolower(trim($validated['organisation_email']));
+        }
+        if (! empty($validated['primary_email'])) {
+            $validated['primary_email'] = strtolower(trim($validated['primary_email']));
+        }
+        $validated['preferred_erp_email'] = $validated['preferred_erp_email'] ?? \App\Models\Staff::ERP_EMAIL_PRIMARY;
 
         if (! empty($validated['qualification_type']) && empty($validated['qualification_name'])) {
             return back()->withInput()->withErrors(['qualification_name' => 'Qualification name is required when adding a certificate.']);
@@ -144,7 +159,23 @@ class EmployeeProfileController extends Controller
                     ->with('success', $this->mustCompleteSuccessMessage($validated));
             }
 
-            $created = $this->profileChanges->submitUpdates($staff, $request->user(), $validated);
+            $emailSettingsChanged = $this->profileChanges->applyEmailSettings($staff, $request->user(), $validated);
+            $staff = $staff->fresh();
+
+            try {
+                $created = $this->profileChanges->submitUpdates($staff, $request->user(), $validated);
+            } catch (\InvalidArgumentException $exception) {
+                if ($emailSettingsChanged) {
+                    $this->profilePrompts->fulfillForStaff($staff);
+
+                    return redirect()
+                        ->route('employee.profile.edit')
+                        ->with('success', 'Email settings saved. ERP notifications will use your preferred address.');
+                }
+
+                throw $exception;
+            }
+
             $this->profilePrompts->fulfillForStaff($staff);
         } catch (\InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['form' => $exception->getMessage()]);
@@ -156,6 +187,9 @@ class EmployeeProfileController extends Controller
         );
 
         $message = "Submitted {$count} change request(s) for HR review. Your current details remain active until approved.";
+        if ($emailSettingsChanged) {
+            $message = 'Email settings saved immediately. '.$message;
+        }
         if ($hasPhotoRequest) {
             $message .= ' Your new profile photo will appear after HR approves the photo update.';
         }

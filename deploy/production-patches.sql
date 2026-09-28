@@ -1887,9 +1887,10 @@ ALTER TABLE `campuses` DROP COLUMN IF EXISTS `campus_code`;
 -- PRESENT IN PRODUCTION UP TO HERE
 
 
-
-
-
+-- -----------------------------------------------------------------------------
+-- 39. staff.preferred_erp_email — personal vs organisational/secondary for ERP mail
+-- -----------------------------------------------------------------------------
+CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'primary\'');
 
 
 

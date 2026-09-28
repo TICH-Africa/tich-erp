@@ -70,9 +70,9 @@
                     <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', $staff->primary_email) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label class="tich-label">Organisation email</label>
+                    <label class="tich-label">Organisational / Secondary email</label>
                     <p class="tich-input" style="background:var(--tich-surface-muted,#f8fafc);">{{ $staff->organisation_email ?: '-' }}</p>
-                    <p class="tich-caption tich-mt-1">Assigned by ICT. Contact ICT to issue or change an @tich.africa address.</p>
+                    <p class="tich-caption tich-mt-1">Employees can edit this on their profile. ICT can also assign it from Access Management.</p>
                 </div>
                 <div>
                     <label for="phone_number" class="tich-label">Phone Number *</label>

@@ -155,7 +155,7 @@
                 <h2 class="tich-h3">Personal &amp; contact</h2>
                 <div class="tich-kv-grid tich-mt-4">
                     <div><span class="tich-kv-grid__label">Marital status</span><span class="tich-kv-grid__value">{{ $staff->marital_status ?? '-' }}</span></div>
-                    <div><span class="tich-kv-grid__label">Organisation email</span><span class="tich-kv-grid__value">{{ $staff->organisation_email ?? '-' }}</span></div>
+                    <div><span class="tich-kv-grid__label">Organisational / Secondary email</span><span class="tich-kv-grid__value">{{ $staff->organisation_email ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Personal email</span><span class="tich-kv-grid__value">{{ $staff->primary_email ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Phone</span><span class="tich-kv-grid__value">{{ $staff->phone_number ?? '-' }}</span></div>
                     <div><span class="tich-kv-grid__label">Alt. phone</span><span class="tich-kv-grid__value">{{ $staff->alt_phone_number ?? '-' }}</span></div>

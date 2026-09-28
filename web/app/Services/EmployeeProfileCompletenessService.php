@@ -33,6 +33,8 @@ class EmployeeProfileCompletenessService
         'date_of_birth' => 'Date of birth',
         'gender' => 'Gender at birth',
         'primary_email' => 'Personal email',
+        'organisation_email' => 'Organisational / Secondary email',
+        'preferred_erp_email' => 'Preferred ERP email',
         'phone_number' => 'Phone number',
         'marital_status' => 'Marital status',
         'physical_address' => 'Physical address',

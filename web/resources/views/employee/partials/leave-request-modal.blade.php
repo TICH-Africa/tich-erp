@@ -15,7 +15,7 @@
         : [];
 
     $defaultMobile = old('contact_mobile', $editRequest?->contact_mobile ?: ($staff?->phone_number ?? ''));
-    $defaultEmail = old('contact_email', $editRequest?->contact_email ?: ($staff?->primary_email ?? $staff?->organisation_email ?? ''));
+    $defaultEmail = old('contact_email', $editRequest?->contact_email ?: ($staff?->resolveErpEmail() ?? $staff?->primary_email ?? $staff?->organisation_email ?? ''));
     $defaultPostal = old(
         'contact_postal_address',
         $editRequest?->contact_postal_address
