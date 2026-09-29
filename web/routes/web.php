@@ -138,7 +138,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/academics', \App\Http\Controllers\Ceo\AcademicsOverviewController::class)->name('ceo.academics.index');
 
         Route::get('/quality', [\App\Http\Controllers\Ceo\QualityReportController::class, 'index'])->name('ceo.quality.index');
-        Route::get('/quality/{plan}', [\App\Http\Controllers\Ceo\QualityReportController::class, 'show'])->name('ceo.quality.show');
+        Route::get('/quality/{assessment}', [\App\Http\Controllers\Ceo\QualityReportController::class, 'show'])->name('ceo.quality.show');
+        Route::get('/quality/{assessment}/pdf', [\App\Http\Controllers\Ceo\QualityReportController::class, 'pdf'])->name('ceo.quality.pdf');
 
         Route::get('/monitoring-evaluation', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'index'])->name('ceo.me.index');
         Route::get('/monitoring-evaluation/{report}', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'show'])->name('ceo.me.show');

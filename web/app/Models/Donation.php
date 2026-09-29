@@ -46,6 +46,19 @@ class Donation extends Model
 
                 $donation->donation_number = sprintf('%s-%s-%06d', $prefix, $year, $newNumber);
             }
+
+            if ($donation->amount_KES === null && $donation->amount !== null) {
+                $donation->amount_KES = $donation->amount;
+            }
+            if (empty($donation->donation_date)) {
+                $donation->donation_date = now()->toDateString();
+            }
+            if (empty($donation->payment_method)) {
+                $donation->payment_method = 'pending';
+            }
+            if (empty($donation->status)) {
+                $donation->status = 'pending';
+            }
         });
     }
 }

@@ -7,7 +7,7 @@ use App\Models\Administration\BudgetRequest;
 use App\Models\CurriculumVersion;
 use App\Models\Me\MeQuarterlyReport;
 use App\Models\ProcurementRequisition;
-use App\Models\Qa\QaPlan;
+use App\Models\Qa\IqaAssessment;
 use App\Services\CeoDashboardAnalyticsService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
@@ -105,11 +105,11 @@ class CeoSidebarNotificationService
         }
 
         $quality = 0;
-        if (Schema::hasTable('qa_plans')) {
-            $quality += QaPlan::query()
-                ->where('status', 'compiled')
-                ->whereNotNull('compiled_at')
-                ->where('compiled_at', '>=', now()->subDays(30))
+        if (Schema::hasTable('iqa_assessments')) {
+            $quality = IqaAssessment::query()
+                ->where('status', IqaAssessment::STATUS_PUBLISHED)
+                ->whereNotNull('published_at')
+                ->where('published_at', '>=', now()->subDays(30))
                 ->count();
         }
 

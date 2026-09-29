@@ -11,7 +11,7 @@ use App\Models\Me\MePolicy;
 use App\Models\Me\MePolicySignoff;
 use App\Models\Me\MeQuarterlyReport;
 use App\Models\ProcurementRequisition;
-use App\Models\Qa\QaPlan;
+use App\Models\Qa\IqaAssessment;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Services\Finance\FinanceDashboardStatsService;
@@ -72,11 +72,11 @@ class CeoDashboardAnalyticsService
                 ->count();
         }
 
-        if (Schema::hasTable('qa_plans')) {
-            $counts['quality'] = QaPlan::query()
-                ->where('status', 'compiled')
-                ->whereNotNull('compiled_at')
-                ->where('compiled_at', '>=', now()->subDays(30))
+        if (Schema::hasTable('iqa_assessments')) {
+            $counts['quality'] = IqaAssessment::query()
+                ->where('status', IqaAssessment::STATUS_PUBLISHED)
+                ->whereNotNull('published_at')
+                ->where('published_at', '>=', now()->subDays(30))
                 ->count();
         }
 

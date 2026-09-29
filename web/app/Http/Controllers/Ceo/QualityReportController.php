@@ -3,35 +3,46 @@
 namespace App\Http\Controllers\Ceo;
 
 use App\Http\Controllers\Controller;
-use App\Models\Qa\QaComplianceScore;
-use App\Models\Qa\QaPlan;
+use App\Models\Qa\IqaAssessment;
+use App\Services\Qa\IqaAssessmentSchema;
+use App\Services\Qa\IqaAssessmentService;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class QualityReportController extends Controller
 {
+    public function __construct(protected IqaAssessmentService $iqa) {}
+
     public function index(): View
     {
-        $plans = QaPlan::query()
-            ->whereIn('status', ['compiled', 'closed', 'in_progress', 'dispatched'])
-            ->with(['complianceScores.department'])
-            ->orderByDesc('compiled_at')
-            ->orderByDesc('id')
-            ->paginate(15);
+        $assessments = Schema::hasTable('iqa_assessments')
+            ? IqaAssessment::query()
+                ->where('status', IqaAssessment::STATUS_PUBLISHED)
+                ->orderByDesc('published_at')
+                ->orderByDesc('id')
+                ->paginate(15)
+            : collect();
 
-        $failing = QaComplianceScore::query()
-            ->with(['plan', 'department'])
-            ->where('is_below_threshold', 1)
-            ->orderByDesc('calculated_at')
-            ->limit(10)
-            ->get();
-
-        return view('ceo.quality.index', compact('plans', 'failing'));
+        return view('ceo.quality.index', compact('assessments'));
     }
 
-    public function show(QaPlan $plan): View
+    public function show(IqaAssessment $assessment): View
     {
-        $plan->load(['complianceScores.department', 'checklists']);
+        abort_unless($assessment->isPublished(), 404);
 
-        return view('ceo.quality.show', compact('plan'));
+        return view('ceo.quality.show', [
+            'assessment' => $assessment,
+            'meta' => IqaAssessmentSchema::sectionMeta(),
+            'payload' => $this->iqa->payloadFor($assessment),
+        ]);
+    }
+
+    public function pdf(IqaAssessment $assessment): StreamedResponse|Response
+    {
+        abort_unless($assessment->isPublished(), 404);
+
+        return $this->iqa->downloadPdf($assessment);
     }
 }
