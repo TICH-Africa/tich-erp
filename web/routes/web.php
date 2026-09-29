@@ -51,6 +51,12 @@ Route::get('/events/{event}', [HomeController::class, 'eventShow'])->name('event
 Route::get('/blog', [HomeController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}/pdf', [HomeController::class, 'blogPdf'])->name('blog.pdf');
 Route::get('/blog/{slug}', [HomeController::class, 'blogShow'])->name('blog.show');
+
+Route::get('/financial-aid', [\App\Http\Controllers\Public\FinancialAidController::class, 'index'])->name('financial-aid.index');
+Route::get('/financial-aid/{slug}', [\App\Http\Controllers\Public\FinancialAidController::class, 'show'])->name('financial-aid.show');
+Route::get('/financial-aid/{slug}/apply', [\App\Http\Controllers\Public\FinancialAidController::class, 'apply'])->name('financial-aid.apply');
+Route::post('/financial-aid/{slug}/apply', [\App\Http\Controllers\Public\FinancialAidController::class, 'submitApplication'])->name('financial-aid.submit');
+
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
@@ -293,6 +299,22 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
             Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
         });
+    });
+
+    // Financial Aid Admin Routes
+    Route::prefix('admin/financial-aid')->middleware(['permission:financial_aid.manage'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FinancialAidController::class, 'index'])->name('admin.financial-aid.index');
+        Route::get('/create', [\App\Http\Controllers\Admin\FinancialAidController::class, 'create'])->name('admin.financial-aid.create');
+        Route::post('/', [\App\Http\Controllers\Admin\FinancialAidController::class, 'store'])->name('admin.financial-aid.store');
+        Route::get('/{financialAidOpportunity}', [\App\Http\Controllers\Admin\FinancialAidController::class, 'show'])->name('admin.financial-aid.show');
+        Route::get('/{financialAidOpportunity}/edit', [\App\Http\Controllers\Admin\FinancialAidController::class, 'edit'])->name('admin.financial-aid.edit');
+        Route::put('/{financialAidOpportunity}', [\App\Http\Controllers\Admin\FinancialAidController::class, 'update'])->name('admin.financial-aid.update');
+        Route::delete('/{financialAidOpportunity}', [\App\Http\Controllers\Admin\FinancialAidController::class, 'destroy'])->name('admin.financial-aid.destroy');
+
+        Route::get('/{financialAidOpportunity}/applications', [\App\Http\Controllers\Admin\FinancialAidController::class, 'applications'])->name('admin.financial-aid.applications');
+        Route::get('/applications/{application}/review', [\App\Http\Controllers\Admin\FinancialAidController::class, 'reviewApplication'])->name('admin.financial-aid.review');
+        Route::put('/applications/{application}', [\App\Http\Controllers\Admin\FinancialAidController::class, 'updateApplicationStatus'])->name('admin.financial-aid.update-application');
+        Route::post('/applications/{application}/allocate', [\App\Http\Controllers\Admin\FinancialAidController::class, 'allocateFunds'])->name('admin.financial-aid.allocate');
     });
 
     Route::prefix('marketing')->middleware(['permission:site_settings.read'])->group(function () use ($registerModuleBudgeting, $registerModuleMeReports) {
