@@ -92,6 +92,9 @@ class RfqController extends Controller
         $validated['created_by'] = auth()->id();
         $validated['rfq_number'] = $this->generateRfqNumber();
         $validated['status'] = 'draft';
+        $validated['minimum_categories'] = $validated['minimum_categories'] ?? ['goods', 'services', 'works'];
+        $validated['preferred_categories'] = $validated['preferred_categories'] ?? ['goods', 'services', 'works'];
+        $validated['created_at'] = now();
 
         $rfq = Rfq::query()->create($validated);
 
@@ -127,12 +130,6 @@ class RfqController extends Controller
     {
         if (!$rfq->isDraft()) {
             return back()->withErrors(['status' => 'Only draft RFQs can be published.']);
-        }
-
-        $invitedCount = RfqSupplier::query()->where('rfq_id', $rfq->id)->count();
-
-        if ($invitedCount < ($rfq->minimum_suppliers ?? 3)) {
-            return back()->withErrors(['status' => 'Please invite at least ' . ($rfq->minimum_suppliers ?? 3) . ' suppliers before publishing.']);
         }
 
         $rfq->update([

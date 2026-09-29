@@ -52,7 +52,7 @@ class AssetController extends Controller
     {
         return view('procurement.assets.create', [
             'suppliers' => Supplier::query()->orderBy('supplier_name')->get(['id', 'supplier_name']),
-            'purchaseOrders' => PurchaseOrder::query()->with('supplier')->whereIn('status', ['draft', 'approved', 'received'])->orderByDesc('created_at')->get(['id', 'po_number']),
+            'purchaseOrders' => PurchaseOrder::query()->with('supplier')->whereIn('status', ['confirmed', 'partial_delivery', 'delivered'])->orderByDesc('created_at')->get(['id', 'po_number', 'supplier_id']),
             'requisitions' => \App\Models\ProcurementRequisition::query()->whereIn('status', ['draft', 'submitted', 'hod_approved', 'finance_approved', 'ceo_approved'])->orderByDesc('created_at')->get(['id', 'requisition_number']),
             'custodians' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'job_title']),
         ]);
@@ -71,7 +71,7 @@ class AssetController extends Controller
             'acquisition_date' => ['required', 'date_format:d/m/Y'],
             'acquisition_cost' => ['required', 'numeric', 'min:0'],
             'supplier_id' => ['required', 'exists:suppliers,id'],
-            'purchase_order_id' => ['required', 'exists:purchase_orders,id'],
+            'purchase_order_id' => ['nullable', 'exists:purchase_orders,id'],
             'useful_life_years' => ['required', 'integer', 'min:1'],
             'depreciation_method' => ['required', 'in:straight_line,declining_balance'],
             'salvage_value' => ['nullable', 'numeric', 'min:0'],

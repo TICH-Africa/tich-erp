@@ -8,6 +8,7 @@ use App\Models\RfqSupplier;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 
 class SupplierService
@@ -157,12 +158,21 @@ class SupplierService
         $invited = [];
 
         foreach ($supplierIds as $supplierId) {
-            $invited[] = RfqSupplier::query()->create([
+            $invitation = RfqSupplier::query()->create([
                 'rfq_id' => $rfq->id,
                 'supplier_id' => $supplierId,
                 'invitation_status' => 'invited',
                 'invited_at' => now(),
             ]);
+
+            $invited[] = $invitation;
+
+            // Send email invitation
+            $supplier = \App\Models\Supplier::find($supplierId);
+            if ($supplier && $supplier->email) {
+                \Illuminate\Support\Facades\Mail::to($supplier->email)
+                    ->send(new \App\Mail\Procurement\RfqInvitationMail($rfq, $supplier, $invitation));
+            }
         }
 
         return $invited;

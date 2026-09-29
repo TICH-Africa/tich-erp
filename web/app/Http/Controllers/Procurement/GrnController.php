@@ -47,7 +47,10 @@ class GrnController extends Controller
     public function create(): View
     {
         return view('procurement.grns.create', [
-            'purchaseOrders' => PurchaseOrder::query()->with('supplier')->whereIn('status', ['draft', 'approved', 'received'])->orderByDesc('created_at')->get(['id', 'po_number', 'total_amount']),
+            'purchaseOrders' => PurchaseOrder::query()->with('supplier')
+                ->whereIn('status', ['confirmed', 'partial_delivery', 'delivered'])
+                ->orderByDesc('created_at')
+                ->get(['id', 'po_number', 'total_amount', 'supplier_id']),
             'suppliers' => Supplier::query()->where('is_active', 1)->orderBy('supplier_name')->get(['id', 'supplier_name']),
             'staff' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname']),
         ]);

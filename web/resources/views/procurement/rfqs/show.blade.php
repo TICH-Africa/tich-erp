@@ -72,10 +72,8 @@
                 <dd>{{ $rfq->closed_at?->format('d M Y H:i') ?? '-' }}</dd>
                 <dt>Quantity</dt>
                 <dd>{{ $rfq->quantity }}</dd>
-                <dt>Minimum suppliers</dt>
-                <dd>{{ $rfq->minimum_suppliers ?? 3 }}</dd>
-                <dt>Categories (minimum)</dt>
-                <dd>{{ $rfq->minimum_categories ? implode(', ', $rfq->minimum_categories) : '-' }}</dd>
+                <dt>Category</dt>
+                <dd>{{ $rfq->minimum_categories ? ucfirst(str_replace('_', ' ', $rfq->minimum_categories[0] ?? '-')) : '-' }}</dd>
                 <dt>Delivery timeline</dt>
                 <dd>{{ $rfq->delivery_timeline ?? '-' }}</dd>
                 <dt>Delivery location</dt>
@@ -104,19 +102,29 @@
         @endif
     </div>
 
-    @if(($rfq->status ?? 'draft') === 'draft' && $eligibleSuppliers)
+    @if(($rfq->status ?? 'draft') === 'draft')
         <article class="tich-card tich-mt-6" id="invite">
             <h2 class="tich-h3" style="margin-top:0;">Invite suppliers</h2>
-            <p class="tich-caption">Invite at least {{ $rfq->minimum_suppliers ?? 3 }} compliant, non-blacklisted suppliers.</p>
+            <p class="tich-caption">Invite suppliers matching the RFQ category ({{ ucfirst(str_replace('_', ' ', $rfq->minimum_categories[0] ?? '-')) }}).</p>
             <form method="POST" action="{{ route('procurement.rfqs.invite-suppliers', $rfq) }}" class="tich-form-stack tich-mt-4">
                 @csrf
                 <div class="tich-form-group">
                     <label class="tich-label" for="supplier_ids">Select suppliers *</label>
                     <select id="supplier_ids" name="supplier_ids[]" class="tich-input" multiple required>
-                        @forelse($eligibleSuppliers as $supplier)
+                        @php
+                            $category = $rfq->minimum_categories[0] ?? 'goods';
+                            $inviteSuppliers = \App\Models\Supplier::active()
+                                ->where('supplier_category', $category)
+                                ->whereNotIn('id', function ($q) use ($rfq) {
+                                    $q->select('supplier_id')->from('rfq_suppliers')->where('rfq_id', $rfq->id);
+                                })
+                                ->orderBy('supplier_name')
+                                ->get();
+                        @endphp
+                        @forelse($inviteSuppliers as $supplier)
                             <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} — {{ $supplier->supplier_code }} — {{ ucfirst($supplier->supplier_category ?? '-') }}</option>
                         @empty
-                            <option disabled>No eligible suppliers found.</option>
+                            <option disabled>No suppliers available in selected category.</option>
                         @endforelse
                     </select>
                 </div>
@@ -133,6 +141,7 @@
                     <tr>
                         <th>Supplier</th>
                         <th>Code</th>
+                        <th>Category</th>
                         <th>Invited</th>
                         <th>Status</th>
                         <th>Quotation</th>
@@ -143,12 +152,13 @@
                         <tr>
                             <td>{{ $invitation->supplier->supplier_name ?? '-' }}</td>
                             <td>{{ $invitation->supplier->supplier_code ?? '-' }}</td>
+                            <td>{{ ucfirst($invitation->supplier->supplier_category ?? '-') }}</td>
                             <td>{{ $invitation->invited_at?->format('d M Y') ?? '-' }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $invitation->invitation_status)) }}</td>
                             <td>{{ $invitation->supplier_id && ($rfq->quotations ?? collect())->firstWhere('supplier_id', $invitation->supplier_id) ? 'Submitted' : '-' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="tich-table-empty">No suppliers invited yet.</td></tr>
+                        <tr><td colspan="6" class="tich-table-empty">No suppliers invited yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -236,6 +246,8 @@
                         <option value="">Select a supplier…</option>
                         @forelse($rfq->suppliers ?? [] as $invitation)
                             <option value="{{ $invitation->supplier_id }}">{{ $invitation->supplier->supplier_name ?? $invitation->supplier_id }}</option>
+                        @empty
+                            <option disabled>No suppliers available</option>
                         @endforelse
                     </select>
                 </div>
@@ -253,6 +265,8 @@
                         <select id="supplier_id" name="supplier_id" class="tich-input" required>
                             @forelse($rfq->suppliers ?? [] as $invitation)
                                 <option value="{{ $invitation->supplier_id }}">{{ $invitation->supplier->supplier_name ?? $invitation->supplier_id }}</option>
+                            @empty
+                                <option disabled>No suppliers available</option>
                             @endforelse
                         </select>
                     </div>

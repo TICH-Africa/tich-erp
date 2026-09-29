@@ -35,6 +35,7 @@ return new class extends Migration
             $table->dateTime('published_at')->nullable();
             $table->dateTime('closed_at')->nullable();
             $table->dateTime('created_at')->useCurrent();
+            $table->timestamp('updated_at')->nullable();
             $table->foreign('requisition_id')->references('id')->on('procurement_requisitions')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('staff')->restrictOnDelete();
             $table->foreign('awarded_supplier_id')->references('id')->on('suppliers')->nullOnDelete();

@@ -40,7 +40,7 @@
                             <select id="purchase_order_id" name="purchase_order_id" required>
                                 <option value="">Select PO</option>
                                 @foreach($purchaseOrders as $po)
-                                    <option value="{{ $po->id }}">{{ $po->po_number }} — {{ $po->supplier->supplier_name }}</option>
+                                    <option value="{{ $po->id }}">{{ $po->po_number }} — {{ $po->supplier->supplier_name ?? 'Unknown supplier' }}</option>
                                 @endforeach
                             </select>
                         </div>
