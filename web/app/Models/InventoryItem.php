@@ -10,6 +10,8 @@ class InventoryItem extends Model
 {
     protected $table = 'inventory_items';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'item_code',
         'item_name',
@@ -33,7 +35,6 @@ class InventoryItem extends Model
         'unit_cost' => 'decimal:2',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     public function supplier(): BelongsTo

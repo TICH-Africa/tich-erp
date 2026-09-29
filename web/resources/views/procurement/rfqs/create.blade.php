@@ -84,22 +84,6 @@
                             <label for="minimum_suppliers">Minimum suppliers to invite <span class="uf-req">*</span></label>
                             <input type="number" min="3" id="minimum_suppliers" name="minimum_suppliers" value="{{ old('minimum_suppliers', 3) }}" required>
                         </div>
-                        <div class="uf-field">
-                            <label for="minimum_categories">Minimum category <span class="uf-req">*</span></label>
-                            <select id="minimum_categories" name="minimum_categories[]" multiple>
-                                @foreach(['goods' => 'Goods', 'services' => 'Services', 'works' => 'Works'] as $val => $label)
-                                    <option value="{{ $val }}" @selected(in_array($val, old('minimum_categories', [])))>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="uf-field">
-                            <label for="preferred_categories">Preferred category</label>
-                            <select id="preferred_categories" name="preferred_categories[]" multiple>
-                                @foreach(['goods' => 'Goods', 'services' => 'Services', 'works' => 'Works'] as $val => $label)
-                                    <option value="{{ $val }}" @selected(in_array($val, old('preferred_categories', [])))>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
                     </div>
                 </div>
             </div>

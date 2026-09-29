@@ -124,9 +124,9 @@
                             </select>
                         </div>
                         <div class="uf-field">
-                            <label for="purchase_order_id">Purchase order <span class="uf-req">*</span></label>
-                            <select id="purchase_order_id" name="purchase_order_id" required>
-                                <option value="">Select PO</option>
+                            <label for="purchase_order_id">Purchase order</label>
+                            <select id="purchase_order_id" name="purchase_order_id">
+                                <option value="">Select PO (optional)</option>
                                 @foreach($purchaseOrders as $po)
                                     <option value="{{ $po->id }}">{{ $po->po_number }} — KES {{ number_format((float) $po->total_amount, 2) }}</option>
                                 @endforeach

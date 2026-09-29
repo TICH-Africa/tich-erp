@@ -10,6 +10,8 @@ class Rfq extends Model
 {
     protected $table = 'rfqs';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'rfq_number',
         'requisition_id',
