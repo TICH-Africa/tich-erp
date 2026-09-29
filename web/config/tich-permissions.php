@@ -131,6 +131,15 @@ return [
             'manage_campaigns',
             'manage_donations',
         ],
+        'financial_aid' => [
+            'manage',
+        ],
+        'administration_financial_aid' => [
+            'manage',
+        ],
+        'finance_financial_aid' => [
+            'manage',
+        ],
         'newsletter' => [
             'manage_subscribers',
             'manage_campaigns',

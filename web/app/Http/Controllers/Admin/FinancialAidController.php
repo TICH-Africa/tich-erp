@@ -59,7 +59,7 @@ class FinancialAidController extends Controller
 
         FinancialAidOpportunity::create($validated);
 
-        return redirect()->route('admin.financial-aid.index')->with('status', 'Financial aid opportunity created successfully.');
+        return redirect()->route('administration.financial-aid.index')->with('status', 'Financial aid opportunity created successfully.');
     }
 
     public function show(FinancialAidOpportunity $financialAidOpportunity): View
@@ -80,7 +80,7 @@ class FinancialAidController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:300'],
-            'slug' => ['required', 'string', 'max:300', 'unique:financial_aid_opportunities,slug,' . $financialAidOpportunity->id],
+            'slug' => ['required', 'string', 'max:300', 'unique:financial_aid_opportunities,slug,'.$financialAidOpportunity->id],
             'description' => ['required', 'string'],
             'eligibility_criteria' => ['nullable', 'string'],
             'application_process' => ['nullable', 'string'],
@@ -102,16 +102,16 @@ class FinancialAidController extends Controller
 
         $financialAidOpportunity->update($validated);
 
-        return redirect()->route('admin.financial-aid.show', $financialAidOpportunity)->with('status', 'Financial aid opportunity updated successfully.');
+        return redirect()->route('administration.financial-aid.show', $financialAidOpportunity)->with('status', 'Financial aid opportunity updated successfully.');
     }
 
     public function destroy(FinancialAidOpportunity $financialAidOpportunity): RedirectResponse
     {
         $financialAidOpportunity->delete();
-        return redirect()->route('admin.financial-aid.index')->with('status', 'Financial aid opportunity deleted successfully.');
+
+        return redirect()->route('administration.financial-aid.index')->with('status', 'Financial aid opportunity deleted successfully.');
     }
 
-    // Application management
     public function applications(FinancialAidOpportunity $financialAidOpportunity): View
     {
         $applications = $financialAidOpportunity->applications()
@@ -167,9 +167,6 @@ class FinancialAidController extends Controller
             'allocated_at' => now(),
             'status' => 'allocated',
         ]);
-
-        // TODO: Integrate with Finance module to create allocation
-        // This would create a payment/allocation record in the finance module
 
         return back()->with('status', 'Funds allocated successfully. Finance team can now process the payment.');
     }

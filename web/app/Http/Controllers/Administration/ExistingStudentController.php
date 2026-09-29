@@ -72,6 +72,7 @@ class ExistingStudentController extends Controller
             'phone_number' => 'nullable|string|max:20',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
+            'current_year' => 'required|integer|min:1|max:4',
             'program_type' => 'required|in:diploma,certificate',
             'duration_months' => 'required|integer|min:1',
             'semester' => 'required|in:first,second,third',
@@ -143,6 +144,7 @@ class ExistingStudentController extends Controller
             'middle_name' => $validated['middle_name'],
             'surname' => $validated['surname'],
             'cohort_intake' => $yearJoined->format('Y'),
+            'current_year' => $validated['current_year'],
             'enrollment_campus_id' => $validated['campus_id'],
             'enrollment_status' => 'active',
             'entry_pathway' => $validated['program_type'],
@@ -171,5 +173,106 @@ class ExistingStudentController extends Controller
         $academicRecords = $student->academicRecords()->with('program', 'semester')->get();
 
         return view('administration.applications.existing-student-show', compact('student', 'academicRecords'));
+    }
+
+    public function edit(Student $student): View
+    {
+        $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
+        $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
+
+        return view('administration.applications.existing-student', compact('programs', 'campusSelectionOptions', 'student'));
+    }
+
+    public function update(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'registration_number' => 'required|string|max:50|unique:students,registration_number,'.$student->id,
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'surname' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email,'.$student->user_id,
+            'phone_number' => 'nullable|string|max:20',
+            'program_id' => 'required|exists:academic_programs,id',
+            'year_joined' => 'required|date',
+            'current_year' => 'required|integer|min:1|max:4',
+            'program_type' => 'required|in:diploma,certificate',
+            'duration_months' => 'required|integer|min:1',
+            'semester' => 'required|in:first,second,third',
+            'campus_selection_type' => 'required|in:campus,community_college,online',
+            'campus_id' => 'nullable|exists:campuses,id',
+            'community_college_county' => 'nullable|string|max:100',
+            'community_college_site_id' => 'nullable|exists:campuses,id',
+            'notes' => 'nullable|string',
+        ]);
+
+        $selectionType = $validated['campus_selection_type'];
+        $normalCampusId = $validated['campus_id'] ?? null;
+        $siteId = $validated['community_college_site_id'] ?? null;
+
+        if ($selectionType === 'campus') {
+            if (! $normalCampusId) {
+                throw ValidationException::withMessages([
+                    'campus_id' => 'Please select an available campus.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($normalCampusId)
+                ->where('is_active', 1)
+                ->first();
+
+            if (! $campus || $campus->campus_type === 'community_college') {
+                throw ValidationException::withMessages([
+                    'campus_id' => 'Please select a valid campus.',
+                ]);
+            }
+
+            $validated['campus_id'] = (int) $normalCampusId;
+        } elseif ($selectionType === 'community_college') {
+            if (! $siteId || ! $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_site_id' => 'Please select a county and community college site.',
+                ]);
+            }
+
+            $campus = Campus::query()
+                ->whereKey($siteId)
+                ->where('is_active', 1)
+                ->where('campus_type', 'community_college')
+                ->first();
+
+            if (! $campus || $campus->county !== $validated['community_college_county']) {
+                throw ValidationException::withMessages([
+                    'community_college_county' => 'Please select a site from the selected county.',
+                ]);
+            }
+
+            $validated['campus_id'] = (int) $siteId;
+        } elseif ($selectionType === 'online') {
+            $validated['campus_id'] = null;
+        } else {
+            throw ValidationException::withMessages([
+                'campus_selection_type' => 'Please choose a campus or community college site.',
+            ]);
+        }
+
+        $yearJoined = \Carbon\Carbon::parse($validated['year_joined']);
+
+        $student->update([
+            'registration_number' => $validated['registration_number'],
+            'program_id' => $validated['program_id'],
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'],
+            'surname' => $validated['surname'],
+            'cohort_intake' => $yearJoined->format('Y'),
+            'current_year' => $validated['current_year'],
+            'enrollment_campus_id' => $validated['campus_id'],
+            'entry_pathway' => $validated['program_type'],
+            'date_of_admission' => $yearJoined,
+        ]);
+
+        return redirect()
+            ->route('administration.applications.existing-student.show', $student->id)
+            ->with('success', "Student {$student->registration_number} updated successfully.");
     }
 }

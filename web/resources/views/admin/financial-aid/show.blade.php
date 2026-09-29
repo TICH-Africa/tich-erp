@@ -1,22 +1,22 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', $financialAidOpportunity->title)
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="{{ $financialAidOpportunity->title }}" meta="{{ ucfirst($financialAidOpportunity->funding_type) }}">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.applications', $financialAidOpportunity) }}" class="tich-btn tich-btn-primary">
+            <a href="{{ route('administration.financial-aid.applications', $financialAidOpportunity) }}" class="tich-btn tich-btn-primary">
                 Applications ({{ $financialAidOpportunity->applications_count }})
             </a>
-            <a href="{{ route('admin.financial-aid.edit', $financialAidOpportunity) }}" class="tich-btn tich-btn-secondary">Edit</a>
-            <a href="{{ route('admin.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('administration.financial-aid.edit', $financialAidOpportunity) }}" class="tich-btn tich-btn-secondary">Edit</a>
+            <a href="{{ route('administration.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-grid tich-grid--3 tich-mt-6" style="gap: 1.5rem;">
         <article class="tich-card">
             <div class="tich-card__body">
-                <h3 class="tich-h4 tich-mb-4">Overview</h3>
+                <h3 class="tich-h3 tich-mb-4">Overview</h3>
                 <dl class="tich-dl">
                     <dt>Title</dt><dd>{{ $financialAidOpportunity->title }}</dd>
                     <dt>Slug</dt><dd>{{ $financialAidOpportunity->slug }}</dd>
@@ -60,20 +60,20 @@
 
         <article class="tich-card" style="grid-column: span 2;">
             <div class="tich-card__body">
-                <h3 class="tich-h4 tich-mb-4">Description</h3>
+                <h3 class="tich-h3 tich-mb-4">Description</h3>
                 <div class="tich-prose">
                     {!! nl2br(e($financialAidOpportunity->description)) !!}
                 </div>
 
                 @if ($financialAidOpportunity->eligibility_criteria)
-                    <h4 class="tich-h5 tich-mt-6 tich-mb-3">Eligibility Criteria</h4>
+                    <h4 class="tich-h4 tich-mt-6 tich-mb-3">Eligibility Criteria</h4>
                     <div class="tich-prose tich-border-l tich-border-blue-500 tich-pl-4">
                         {!! nl2br(e($financialAidOpportunity->eligibility_criteria)) !!}
                     </div>
                 @endif
 
                 @if ($financialAidOpportunity->application_process)
-                    <h4 class="tich-h5 tich-mt-6 tich-mb-3">Application Process</h4>
+                    <h4 class="tich-h4 tich-mt-6 tich-mb-3">Application Process</h4>
                     <div class="tich-prose tich-border-l tich-border-green-500 tich-pl-4">
                         {!! nl2br(e($financialAidOpportunity->application_process)) !!}
                     </div>

@@ -53,6 +53,15 @@ class FinanceNavigationService
             'items' => $this->financeRecordsItems(),
         ];
 
+        $groups[] = [
+            'label' => 'Financial Aid',
+            'icon' => 'heart-hand',
+            'open' => request()->routeIs('finance.financial-aid.*'),
+            'active' => request()->routeIs('finance.financial-aid.*'),
+            'badgeKey' => 'financial-aid',
+            'items' => $this->financialAidItems(),
+        ];
+
         if ($this->canAccessEmployeeFinance()) {
             $groups[] = [
                 'label' => 'Employee Finance',
@@ -158,5 +167,17 @@ class FinanceNavigationService
 
         return $user->can('finance.read')
             || $user->can('hr.staff.view');
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function financialAidItems(): array
+    {
+        return [
+            $this->item('Approved Applications', 'users', route('finance.financial-aid.applications'), request()->routeIs('finance.financial-aid.applications'), 'financial-aid.applications'),
+            $this->item('Donations', 'heart', route('finance.financial-aid.donations'), request()->routeIs('finance.financial-aid.donations'), 'financial-aid.donations'),
+            $this->item('Sponsorships', 'users', route('finance.financial-aid.sponsorships'), request()->routeIs('finance.financial-aid.sponsorships'), 'financial-aid.sponsorships'),
+        ];
     }
 }

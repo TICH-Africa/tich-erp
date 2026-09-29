@@ -76,6 +76,15 @@ class AdministrationNavigationService
                     $this->item('QuickBooks sync', 'link', route('administration.ledger-sync.index'), request()->routeIs('administration.ledger-sync.*')),
                 ],
             ],
+            [
+                'label' => 'Financial Aid',
+                'icon' => 'heart-hand',
+                'open' => request()->routeIs('administration.financial-aid.*'),
+                'active' => request()->routeIs('administration.financial-aid.*'),
+                'items' => [
+                    $this->item('Opportunities', 'heart-hand', route('administration.financial-aid.index'), request()->routeIs('administration.financial-aid.index')),
+                ],
+            ],
         ];
     }
 

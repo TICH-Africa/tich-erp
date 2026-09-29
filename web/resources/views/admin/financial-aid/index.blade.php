@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', 'Financial Aid Opportunities')
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="Financial Aid Opportunities" meta="Manage scholarships, grants, and financial aid programs">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.create') }}" class="tich-btn tich-btn-primary">Add Opportunity</a>
+            <a href="{{ route('administration.financial-aid.create') }}" class="tich-btn tich-btn-primary">Add Opportunity</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -18,7 +18,7 @@
                 </svg>
                 <h3 class="tich-h3">No financial aid opportunities yet</h3>
                 <p class="tich-text tich-text--muted tich-mt-2">Create your first scholarship, grant, or financial aid program.</p>
-                <a href="{{ route('admin.financial-aid.create') }}" class="tich-btn tich-btn-primary tich-mt-4">Create Opportunity</a>
+                <a href="{{ route('administration.financial-aid.create') }}" class="tich-btn tich-btn-primary tich-mt-4">Create Opportunity</a>
             </div>
         </div>
     @else
@@ -76,9 +76,9 @@
                                 <td>{{ $opportunity->created_at->format('d M Y') }}</td>
                                 <td>
                                     <div class="tich-flex tich-gap-2">
-                                        <a href="{{ route('admin.financial-aid.show', $opportunity) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
-                                        <a href="{{ route('admin.financial-aid.edit', $opportunity) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Edit</a>
-                                        <form method="POST" action="{{ route('admin.financial-aid.destroy', $opportunity) }}" class="tich-inline-form" onsubmit="return confirm('Delete this opportunity?');">
+                                        <a href="{{ route('administration.financial-aid.show', $opportunity) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                                        <a href="{{ route('administration.financial-aid.edit', $opportunity) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Edit</a>
+                                        <form method="POST" action="{{ route('administration.financial-aid.destroy', $opportunity) }}" class="tich-inline-form" onsubmit="return confirm('Delete this opportunity?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="tich-btn tich-btn-ghost tich-btn--sm tich-text--danger">Delete</button>

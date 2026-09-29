@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-29 07:54:29 EAT
+-- Generated: 2026-09-29 10:07:30 EAT
 -- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4386,6 +4386,124 @@ CALL `tich_ensure_index`('financial_adjustments', 'financial_adjustments_request
 CALL `tich_ensure_index`('financial_adjustments', 'financial_adjustments_status_index', '`status`');
 CALL `tich_ensure_index`('financial_adjustments', 'financial_adjustments_student_account_id_foreign', '`student_account_id`');
 CALL `tich_ensure_index`('financial_adjustments', 'financial_adjustments_student_id_foreign', '`student_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `financial_aid_applications`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `financial_aid_applications` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `financial_aid_opportunity_id` bigint unsigned NOT NULL,
+  `student_id` bigint unsigned DEFAULT NULL,
+  `student_name` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `student_number` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `program_applied` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `personal_statement` text COLLATE utf8mb4_unicode_ci,
+  `financial_need_statement` text COLLATE utf8mb4_unicode_ci,
+  `supporting_documents` json DEFAULT NULL,
+  `status` enum('pending','under_review','approved','rejected','allocated') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `admin_notes` text COLLATE utf8mb4_unicode_ci,
+  `reviewed_by` bigint unsigned DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `approved_amount` decimal(12,2) DEFAULT NULL,
+  `allocation_status` enum('pending','allocated','partial') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `allocated_by` bigint unsigned DEFAULT NULL,
+  `allocated_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `financial_aid_applications_financial_aid_opportunity_id_foreign` (`financial_aid_opportunity_id`),
+  KEY `financial_aid_applications_student_id_foreign` (`student_id`),
+  KEY `financial_aid_applications_reviewed_by_foreign` (`reviewed_by`),
+  KEY `financial_aid_applications_allocated_by_foreign` (`allocated_by`),
+  CONSTRAINT `financial_aid_applications_allocated_by_foreign` FOREIGN KEY (`allocated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `financial_aid_applications_financial_aid_opportunity_id_foreign` FOREIGN KEY (`financial_aid_opportunity_id`) REFERENCES `financial_aid_opportunities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `financial_aid_applications_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `financial_aid_applications_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `financial_aid_applications` (add only if missing)
+CALL `tich_ensure_column`('financial_aid_applications', 'id', 'bigint unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('financial_aid_applications', 'financial_aid_opportunity_id', 'bigint unsigned NOT NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'student_id', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'student_name', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'student_email', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'student_phone', 'varchar(30) NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'student_number', 'varchar(50) NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'program_applied', 'varchar(300) NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'personal_statement', 'text NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'financial_need_statement', 'text NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'supporting_documents', 'json NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'status', 'enum(\'pending\',\'under_review\',\'approved\',\'rejected\',\'allocated\') NOT NULL DEFAULT \'pending\'');
+CALL `tich_ensure_column`('financial_aid_applications', 'admin_notes', 'text NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'reviewed_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'reviewed_at', 'datetime NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'approved_amount', 'decimal(12,2) NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'allocation_status', 'enum(\'pending\',\'allocated\',\'partial\') NOT NULL DEFAULT \'pending\'');
+CALL `tich_ensure_column`('financial_aid_applications', 'allocated_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'allocated_at', 'datetime NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'created_at', 'timestamp NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'updated_at', 'timestamp NULL');
+CALL `tich_ensure_column`('financial_aid_applications', 'deleted_at', 'timestamp NULL');
+
+-- Indexes for `financial_aid_applications` (add only if missing)
+CALL `tich_ensure_index`('financial_aid_applications', 'financial_aid_applications_allocated_by_foreign', '`allocated_by`');
+CALL `tich_ensure_index`('financial_aid_applications', 'financial_aid_applications_financial_aid_opportunity_id_foreign', '`financial_aid_opportunity_id`');
+CALL `tich_ensure_index`('financial_aid_applications', 'financial_aid_applications_reviewed_by_foreign', '`reviewed_by`');
+CALL `tich_ensure_index`('financial_aid_applications', 'financial_aid_applications_student_id_foreign', '`student_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `financial_aid_opportunities`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `financial_aid_opportunities` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `eligibility_criteria` text COLLATE utf8mb4_unicode_ci,
+  `application_process` text COLLATE utf8mb4_unicode_ci,
+  `amount` decimal(12,2) DEFAULT NULL,
+  `funding_type` enum('scholarship','grant','loan','work_study') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scholarship',
+  `application_open_date` date DEFAULT NULL,
+  `application_deadline` date DEFAULT NULL,
+  `status` enum('draft','published','closed','archived') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `published_at` datetime DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `updated_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `financial_aid_opportunities_slug_unique` (`slug`),
+  KEY `financial_aid_opportunities_status_published_at_index` (`status`,`published_at`),
+  KEY `financial_aid_opportunities_application_deadline_index` (`application_deadline`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `financial_aid_opportunities` (add only if missing)
+CALL `tich_ensure_column`('financial_aid_opportunities', 'id', 'bigint unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'slug', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'description', 'text NOT NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'eligibility_criteria', 'text NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'application_process', 'text NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'amount', 'decimal(12,2) NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'funding_type', 'enum(\'scholarship\',\'grant\',\'loan\',\'work_study\') NOT NULL DEFAULT \'scholarship\'');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'application_open_date', 'date NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'application_deadline', 'date NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'status', 'enum(\'draft\',\'published\',\'closed\',\'archived\') NOT NULL DEFAULT \'draft\'');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'published_at', 'datetime NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'created_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'updated_by', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'created_at', 'timestamp NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'updated_at', 'timestamp NULL');
+CALL `tich_ensure_column`('financial_aid_opportunities', 'deleted_at', 'timestamp NULL');
+
+-- Indexes for `financial_aid_opportunities` (add only if missing)
+CALL `tich_ensure_index`('financial_aid_opportunities', 'financial_aid_opportunities_application_deadline_index', '`application_deadline`');
+CALL `tich_ensure_unique`('financial_aid_opportunities', 'financial_aid_opportunities_slug_unique', '`slug`');
+CALL `tich_ensure_index`('financial_aid_opportunities', 'financial_aid_opportunities_status_published_at_index', '`status`, `published_at`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `gallery_albums`
@@ -10247,6 +10365,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `home_county` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `primary_email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `organisation_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `preferred_erp_email` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'primary',
   `phone_number` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `alt_phone_number` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `postal_address` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -10335,6 +10454,7 @@ CALL `tich_ensure_column`('staff', 'nationality', 'varchar(100) NOT NULL DEFAULT
 CALL `tich_ensure_column`('staff', 'home_county', 'varchar(100) NULL');
 CALL `tich_ensure_column`('staff', 'primary_email', 'varchar(255) NOT NULL');
 CALL `tich_ensure_column`('staff', 'organisation_email', 'varchar(255) NULL');
+CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'primary\'');
 CALL `tich_ensure_column`('staff', 'phone_number', 'varchar(30) NOT NULL');
 CALL `tich_ensure_column`('staff', 'alt_phone_number', 'varchar(30) NULL');
 CALL `tich_ensure_column`('staff', 'postal_address', 'varchar(300) NULL');
@@ -12201,6 +12321,7 @@ CREATE TABLE IF NOT EXISTS `suppliers` (
   `bank_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `payment_method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'bank',
   `paybill_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `paybill_account_number` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `till_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `mobile_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint NOT NULL DEFAULT '1',
@@ -12252,6 +12373,7 @@ CALL `tich_ensure_column`('suppliers', 'bank_branch', 'varchar(200) NULL');
 CALL `tich_ensure_column`('suppliers', 'bank_code', 'varchar(20) NULL');
 CALL `tich_ensure_column`('suppliers', 'payment_method', 'varchar(20) NOT NULL DEFAULT \'bank\'');
 CALL `tich_ensure_column`('suppliers', 'paybill_number', 'varchar(20) NULL');
+CALL `tich_ensure_column`('suppliers', 'paybill_account_number', 'varchar(50) NULL');
 CALL `tich_ensure_column`('suppliers', 'till_number', 'varchar(20) NULL');
 CALL `tich_ensure_column`('suppliers', 'mobile_number', 'varchar(20) NULL');
 CALL `tich_ensure_column`('suppliers', 'is_active', 'tinyint NOT NULL DEFAULT \'1\'');
@@ -13144,6 +13266,12 @@ CALL `tich_ensure_fk`('financial_adjustments', 'financial_adjustments_invoice_it
 CALL `tich_ensure_fk`('financial_adjustments', 'financial_adjustments_requested_by_foreign', '`requested_by`', 'staff', '`id`', 'NO ACTION', 'RESTRICT');
 CALL `tich_ensure_fk`('financial_adjustments', 'financial_adjustments_student_account_id_foreign', '`student_account_id`', 'student_accounts', '`id`', 'NO ACTION', 'RESTRICT');
 CALL `tich_ensure_fk`('financial_adjustments', 'financial_adjustments_student_id_foreign', '`student_id`', 'students', '`id`', 'NO ACTION', 'RESTRICT');
+
+-- Foreign keys for `financial_aid_applications`
+CALL `tich_ensure_fk`('financial_aid_applications', 'financial_aid_applications_allocated_by_foreign', '`allocated_by`', 'users', '`id`', 'NO ACTION', 'SET NULL');
+CALL `tich_ensure_fk`('financial_aid_applications', 'financial_aid_applications_financial_aid_opportunity_id_foreign', '`financial_aid_opportunity_id`', 'financial_aid_opportunities', '`id`', 'NO ACTION', 'CASCADE');
+CALL `tich_ensure_fk`('financial_aid_applications', 'financial_aid_applications_reviewed_by_foreign', '`reviewed_by`', 'users', '`id`', 'NO ACTION', 'SET NULL');
+CALL `tich_ensure_fk`('financial_aid_applications', 'financial_aid_applications_student_id_foreign', '`student_id`', 'users', '`id`', 'NO ACTION', 'SET NULL');
 
 -- Foreign keys for `gallery_albums`
 CALL `tich_ensure_fk`('gallery_albums', 'gallery_albums_created_by_foreign', '`created_by`', 'staff', '`id`', 'NO ACTION', 'SET NULL');

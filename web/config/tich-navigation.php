@@ -9,6 +9,7 @@ return [
         ['label' => 'Programs & courses', 'url' => '/programs'],
         ['label' => 'Events', 'url' => '/events'],
         ['label' => 'Blog', 'url' => '/blog'],
+        ['label' => 'Financial Aid', 'url' => '/financial-aid'],
         ['label' => 'Careers', 'url' => '/careers'],
     ],
 
@@ -27,6 +28,9 @@ return [
         ['label' => 'Staff ESS', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'SACCO Login', 'url' => 'route:login', 'requires_auth' => false],
         ['label' => 'Careers', 'url' => '/careers'],
+        ['label' => 'Financial Aid', 'url' => '/financial-aid'],
+        ['label' => 'Donate', 'url' => '/donate'],
+        ['label' => 'Sponsor a Student', 'url' => '/sponsor'],
         ['label' => 'Contact', 'url' => '/contact'],
         ['label' => 'Privacy Policy', 'url' => '/privacy'],
         ['label' => 'Terms and Conditions', 'url' => '/terms'],

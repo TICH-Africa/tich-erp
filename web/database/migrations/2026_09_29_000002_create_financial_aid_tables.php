@@ -46,6 +46,7 @@ return new class extends Migration
             $table->text('admin_notes')->nullable();
             $table->unsignedBigInteger('reviewed_by')->nullable();
             $table->dateTime('reviewed_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->decimal('approved_amount', 12, 2)->nullable();
             $table->enum('allocation_status', ['pending', 'allocated', 'partial'])->default('pending');
             $table->unsignedBigInteger('allocated_by')->nullable();

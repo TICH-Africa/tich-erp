@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', 'Applications for ' . $financialAidOpportunity->title)
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="Applications" meta="{{ $financialAidOpportunity->title }} &mdash; {{ $applications->total() }} applications">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('administration.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -56,7 +56,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('admin.financial-aid.review', $application) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Review</a>
+                                    <a href="{{ route('administration.financial-aid.review', $application) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Review</a>
                                 </td>
                             </tr>
                         @endforeach

@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', 'Review Application - ' . $application->student_name)
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="Review Application" meta="{{ $application->student_name }} - {{ $application->opportunity->title }}">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.applications', $application->opportunity) }}" class="tich-btn tich-btn-ghost">Back to Applications</a>
+            <a href="{{ route('administration.financial-aid.applications', $application->opportunity) }}" class="tich-btn tich-btn-ghost">Back to Applications</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -77,7 +77,7 @@
                 <h3 class="tich-h4 tich-mb-4">Review Actions</h3>
 
                 @if ($application->status === 'pending' || $application->status === 'under_review')
-                    <form method="POST" action="{{ route('admin.financial-aid.update-application', $application) }}">
+                    <form method="POST" action="{{ route('administration.financial-aid.update-application', $application) }}">
                         @csrf
                         @method('PUT')
 
@@ -112,7 +112,7 @@
                         });
                     </script>
                 @elseif ($application->status === 'approved' && $application->allocation_status !== 'allocated')
-                    <form method="POST" action="{{ route('admin.financial-aid.allocate', $application) }}">
+                    <form method="POST" action="{{ route('administration.financial-aid.allocate', $application) }}">
                         @csrf
 
                         <div class="uf-form-group tich-mb-4">

@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', 'Create Financial Aid Opportunity')
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="Create Financial Aid Opportunity" meta="Add a new scholarship, grant, or financial aid program">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('administration.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.financial-aid.store') }}" class="tich-card tich-mt-6">
+    <form method="POST" action="{{ route('administration.financial-aid.store') }}" class="tich-card tich-mt-6">
         @csrf
 
         <div class="tich-card__body">
@@ -110,7 +110,7 @@
             </div>
 
             <div class="tich-flex tich-flex--end tich-gap-3 tich-mt-6 tich-pt-4 tich-border-t">
-                <a href="{{ route('admin.financial-aid.index') }}" class="tich-btn tich-btn-secondary">Cancel</a>
+                <a href="{{ route('administration.financial-aid.index') }}" class="tich-btn tich-btn-secondary">Cancel</a>
                 <button type="submit" class="tich-btn tich-btn-primary">Create Opportunity</button>
             </div>
         </div>

@@ -53,6 +53,16 @@
                     <input type="date" name="year_joined" class="tich-input" required>
                 </div>
                 <div>
+                    <label class="tich-label">Current Year *</label>
+                    <select name="current_year" class="tich-input" required>
+                        <option value="">Select current year</option>
+                        <option value="1" @selected(old('current_year') == 1)>Year 1</option>
+                        <option value="2" @selected(old('current_year') == 2)>Year 2</option>
+                        <option value="3" @selected(old('current_year') == 3)>Year 3</option>
+                        <option value="4" @selected(old('current_year') == 4)>Year 4</option>
+                    </select>
+                </div>
+                <div>
                     <label class="tich-label">Program Type *</label>
                     <select name="program_type" class="tich-input" required>
                         <option value="diploma">Diploma</option>

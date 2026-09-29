@@ -141,7 +141,7 @@
 
                         <h3 class="tich-h5 tich-mb-3">Need Help?</h3>
                         <p class="tich-text tich-text--sm tich-text--muted">Contact our Financial Aid Office for assistance with your application.</p>
-                        <a href="mailto:financialaid@tich.ac.ke" class="tich-link tich-text--sm">financialaid@tich.ac.ke</a>
+                        <a href="{{ route('contact') }}" class="tich-link tich-text--sm">Visit Contact Us page</a>
                     </div>
                 </aside>
             </div>

@@ -108,16 +108,6 @@
 
                 <aside class="tich-card" style="position: sticky; top: 2rem;">
                     <div class="tich-card__body">
-                        <h3 class="tich-h4 tich-mb-4">Application Checklist</h3>
-                        <ul class="tich-list tich-mb-6">
-                            <li>Personal statement (200+ characters)</li>
-                            <li>Financial need statement (200+ characters)</li>
-                            <li>Academic transcripts (recommended)</li>
-                            <li>Recommendation letters (optional)</li>
-                            <li>Proof of income/financial status (optional)</li>
-                            <li>National ID / Passport copy (optional)</li>
-                        </ul>
-
                         <div class="tich-alert tich-alert--info">
                             <h4 class="tich-h5 tich-mb-2">Important Notes</h4>
                             <ul class="tich-list tich-mb-0" style="font-size: 0.875rem;">

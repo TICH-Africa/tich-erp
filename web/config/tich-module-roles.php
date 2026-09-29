@@ -312,6 +312,56 @@ return [
                 ],
             ],
         ],
+        'financial_aid' => [
+            'label' => 'Financial Aid',
+            'description' => 'Scholarships, grants, sponsorships, and student financial support.',
+            'roles' => [
+                [
+                    'role_name' => 'Financial Aid Officer',
+                    'display_name' => 'Financial Aid Officer',
+                    'role_category' => 'administrative',
+                    'description' => 'Manage financial aid opportunities, applications, and disbursements.',
+                    'permission_modules' => ['core', 'financial_aid'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+                [
+                    'role_name' => 'Financial Aid Manager',
+                    'display_name' => 'Financial Aid Manager',
+                    'role_category' => 'administrative',
+                    'description' => 'Full financial aid module leadership and approvals.',
+                    'permission_modules' => ['core', 'financial_aid'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+            ],
+        ],
+        'administration_financial_aid' => [
+            'label' => 'Financial Aid',
+            'description' => 'Scholarships, grants, and financial aid administration.',
+            'roles' => [
+                [
+                    'role_name' => 'Administration Financial Aid Officer',
+                    'display_name' => 'Administration Financial Aid Officer',
+                    'role_category' => 'administrative',
+                    'description' => 'Manage financial aid opportunities and applications within Administration module.',
+                    'permission_modules' => ['administration', 'administration_financial_aid'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+            ],
+        ],
+        'finance_financial_aid' => [
+            'label' => 'Financial Aid',
+            'description' => 'Financial aid allocation, donation management, and sponsorship follow-up.',
+            'roles' => [
+                [
+                    'role_name' => 'Finance Financial Aid Officer',
+                    'display_name' => 'Finance Financial Aid Officer',
+                    'role_category' => 'administrative',
+                    'description' => 'Allocate approved financial aid to student fees, manage donations and sponsorships.',
+                    'permission_modules' => ['finance', 'finance_financial_aid'],
+                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
+                ],
+            ],
+        ],
         'monitoring_evaluation' => [
             'label' => 'Monitoring & evaluation',
             'description' => 'Institutional M&E frameworks, indicators, reporting, and follow-up.',
@@ -355,6 +405,7 @@ return [
                     'permission_modules' => [
                         'core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa',
                         'administration', 'procurement', 'research', 'ict', 'monitoring_evaluation',
+                        'financial_aid', 'finance_financial_aid',
                     ],
                     'permission_categories' => ['approve', 'view', 'manage', 'audit', 'export'],
                 ],

@@ -131,6 +131,51 @@
         </div>
     </section>
 
+    <section class="tich-section tich-mt-8">
+        <div class="tich-container">
+            <div class="tich-grid tich-grid--2" style="gap: 2rem;">
+                <article class="tich-card">
+                    <div class="tich-card__body">
+                        <h3 class="tich-h3 tich-mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #16a34a;">
+                                <path d="M12 21V7m0 0l-4 4m4-4l4 4M5 21h14"/>
+                                <path d="M21 15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/>
+                            </svg>
+                            Support Our Students
+                        </h3>
+                        <p class="tich-text tich-text--muted tich-mb-6">
+                            Your donation directly funds scholarships, grants, and emergency financial aid for students in need. 
+                            Every contribution, regardless of size, helps a student complete their education.
+                        </p>
+                        <a href="{{ route('donate') }}" class="tich-btn tich-btn-success tich-btn-block" style="background: #16a34a; border-color: #16a34a;">
+                            Make a Donation
+                        </a>
+                    </div>
+                </article>
+
+                <article class="tich-card">
+                    <div class="tich-card__body">
+                        <h3 class="tich-h3 tich-mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #1e40af;">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            Sponsor a Student
+                        </h3>
+                        <p class="tich-text tich-text--muted tich-mb-6">
+                            Become a sponsor and directly support a student's education journey. 
+                            Our sponsorship team will contact you to discuss options and matching with a student.
+                        </p>
+                        <a href="{{ route('sponsor') }}" class="tich-btn tich-btn-primary tich-btn-block">
+                            Become a Sponsor
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
     <section class="tich-section tich-mt-8" style="background: #f8fafc;">
         <div class="tich-container">
             <h2 class="tich-h2" style="text-align: center; margin-bottom: 2rem;">How to Apply</h2>

@@ -1,12 +1,12 @@
-@extends('layouts.admin')
+@extends('layouts.administration')
 
 @section('title', 'Edit ' . $financialAidOpportunity->title)
 
-@section('content')
+@section('administration-content')
     <x-page-toolbar title="Edit Financial Aid Opportunity" meta="{{ $financialAidOpportunity->title }}">
         <x-slot:actions>
-            <a href="{{ route('admin.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-ghost">View</a>
-            <a href="{{ route('admin.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('administration.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-ghost">View</a>
+            <a href="{{ route('administration.financial-aid.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -20,7 +20,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.financial-aid.update', $financialAidOpportunity) }}" class="tich-card tich-mt-6">
+    <form method="POST" action="{{ route('administration.financial-aid.update', $financialAidOpportunity) }}" class="tich-card tich-mt-6">
         @csrf
         @method('PUT')
 
@@ -108,7 +108,7 @@
             </div>
 
             <div class="tich-flex tich-flex--end tich-gap-3 tich-mt-6 tich-pt-4 tich-border-t">
-                <a href="{{ route('admin.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-secondary">Cancel</a>
+                <a href="{{ route('administration.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-secondary">Cancel</a>
                 <button type="submit" class="tich-btn tich-btn-primary">Update Opportunity</button>
             </div>
         </div>
