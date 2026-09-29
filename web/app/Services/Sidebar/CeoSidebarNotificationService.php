@@ -6,7 +6,9 @@ use App\Events\CeoSidebarCountsUpdated;
 use App\Models\Administration\BudgetRequest;
 use App\Models\CurriculumVersion;
 use App\Models\Me\MeQuarterlyReport;
+use App\Models\ProcurementRequisition;
 use App\Models\Qa\QaPlan;
+use App\Services\CeoDashboardAnalyticsService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
@@ -25,13 +27,25 @@ class CeoSidebarNotificationService
     public const MENU_KEYS = [
         'budgets' => 'Budget authorizations',
         'approvals' => 'Approval workflow',
+        'procurement' => 'Procurement',
         'curriculum' => 'Curriculum sign-off',
         'quality' => 'Quality reports',
         'me' => 'M&E reports',
+        'finance-policy' => 'Financial policy',
+        'me-policy' => 'M&E policy',
     ];
 
     /** @var list<string> */
-    public const DASHBOARD_LEAF_KEYS = ['budgets', 'approvals', 'curriculum', 'quality', 'me'];
+    public const DASHBOARD_LEAF_KEYS = [
+        'budgets',
+        'approvals',
+        'procurement',
+        'curriculum',
+        'quality',
+        'me',
+        'finance-policy',
+        'me-policy',
+    ];
 
     /**
      * @return array<string, int>
@@ -107,12 +121,22 @@ class CeoSidebarNotificationService
                 ->count();
         }
 
+        $procurement = 0;
+        if (Schema::hasTable('procurement_requisitions')) {
+            $procurement = ProcurementRequisition::query()->pendingCeoApproval()->count();
+        }
+
+        $analytics = app(CeoDashboardAnalyticsService::class);
+
         return [
             'budgets' => $budgets,
             'approvals' => $approvals,
+            'procurement' => $procurement,
             'curriculum' => $curriculum,
             'quality' => $quality,
             'me' => $me,
+            'finance-policy' => $analytics->financePolicyAwaitingCeoSign() ? 1 : 0,
+            'me-policy' => $analytics->mePolicyAwaitingCeoSign() ? 1 : 0,
         ];
     }
 }

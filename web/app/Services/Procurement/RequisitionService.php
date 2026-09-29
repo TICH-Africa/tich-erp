@@ -140,6 +140,7 @@ class RequisitionService
 
     public function getApprovalLevel(float $amount): string
     {
+        // Amount informs intermediate routing hints only; CEO is always the final approver.
         if ($amount <= 500000) {
             return 'hod';
         }
@@ -149,6 +150,15 @@ class RequisitionService
         }
 
         return 'ceo';
+    }
+
+    /**
+     * Final approval stage is always CEO (no amount gate).
+     */
+    public function requiresCeoApproval(ProcurementRequisition $requisition): bool
+    {
+        return $requisition->status === 'finance_approved'
+            && ($requisition->ceo_approval_status === null || $requisition->ceo_approval_status === 'pending');
     }
 
     public function approve(
@@ -188,13 +198,17 @@ class RequisitionService
                     $update['finance_approved_by'] = $approver->id;
                     $update['finance_approved_at'] = $now;
                     $update['status'] = 'finance_approved';
+                    $update['ceo_approval_status'] = 'pending';
                     break;
 
                 case 'ceo':
+                    if ($requisition->status !== 'finance_approved') {
+                        throw new InvalidArgumentException('Only finance-approved requisitions can be approved by the CEO.');
+                    }
                     $update['ceo_approval_status'] = 'approved';
                     $update['ceo_approved_by'] = $approver->id;
                     $update['ceo_approved_at'] = $now;
-                    $update['status'] = 'completed';
+                    $update['status'] = 'ceo_approved';
                     break;
             }
 
@@ -230,25 +244,25 @@ class RequisitionService
             'comments' => $comments,
         ];
 
-        return DB::transaction(function () use ($requisition, $level, $now, $auditEntry) {
+        return DB::transaction(function () use ($requisition, $level, $rejector, $now, $auditEntry) {
             $update = [];
 
             switch ($level) {
                 case 'hod':
                     $update['hod_approval_status'] = 'rejected';
-                    $update['hod_approved_by'] = Auth::id();
+                    $update['hod_approved_by'] = $rejector->id;
                     $update['hod_approved_at'] = $now;
                     break;
 
                 case 'finance':
                     $update['finance_approval_status'] = 'rejected';
-                    $update['finance_approved_by'] = Auth::id();
+                    $update['finance_approved_by'] = $rejector->id;
                     $update['finance_approved_at'] = $now;
                     break;
 
                 case 'ceo':
                     $update['ceo_approval_status'] = 'rejected';
-                    $update['ceo_approved_by'] = Auth::id();
+                    $update['ceo_approved_by'] = $rejector->id;
                     $update['ceo_approved_at'] = $now;
                     break;
             }

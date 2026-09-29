@@ -122,6 +122,12 @@ class FinancePolicyService
         }
 
         $department ??= $staff->department;
+        if (! $department && $user->hasAnyRole(['CEO', 'Super Admin'])) {
+            $department = Department::query()
+                ->where('is_active', 1)
+                ->orderBy('id')
+                ->first();
+        }
         if (! $department) {
             throw new \RuntimeException('Your staff profile has no department assignment.');
         }

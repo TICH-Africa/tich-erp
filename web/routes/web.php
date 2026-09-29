@@ -133,6 +133,21 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/monitoring-evaluation/{report}', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'show'])->name('ceo.me.show');
         Route::post('/monitoring-evaluation/{report}/sign', [\App\Http\Controllers\Ceo\MonitoringEvaluationReportController::class, 'sign'])->name('ceo.me.sign');
 
+        Route::get('/procurement', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'index'])->name('ceo.procurement.index');
+        Route::get('/procurement/{requisition}', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'show'])->name('ceo.procurement.show');
+        Route::post('/procurement/{requisition}/approve', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'approve'])->name('ceo.procurement.approve');
+        Route::post('/procurement/{requisition}/reject', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'reject'])->name('ceo.procurement.reject');
+
+        Route::get('/finance-policy', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'index'])->name('ceo.finance-policy.index');
+        Route::post('/finance-policy/sign', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'sign'])->name('ceo.finance-policy.sign');
+        Route::get('/finance-policy/view', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'view'])->name('ceo.finance-policy.view');
+        Route::get('/finance-policy/download', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'download'])->name('ceo.finance-policy.download');
+
+        Route::get('/me-policy', [\App\Http\Controllers\Ceo\MePolicyController::class, 'index'])->name('ceo.me-policy.index');
+        Route::post('/me-policy/sign', [\App\Http\Controllers\Ceo\MePolicyController::class, 'sign'])->name('ceo.me-policy.sign');
+        Route::get('/me-policy/view', [\App\Http\Controllers\Ceo\MePolicyController::class, 'view'])->name('ceo.me-policy.view');
+        Route::get('/me-policy/download', [\App\Http\Controllers\Ceo\MePolicyController::class, 'download'])->name('ceo.me-policy.download');
+
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ceo\SidebarNotificationController::class)->name('ceo.sidebar-notifications');
     });
 

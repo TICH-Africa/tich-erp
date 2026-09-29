@@ -23,6 +23,13 @@
             'badgeKey' => 'approvals',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.procurement.index'),
+            'label' => 'Procurement',
+            'icon' => 'shopping-cart',
+            'active' => request()->routeIs('ceo.procurement.*'),
+            'badgeKey' => 'procurement',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.curriculum.index'),
             'label' => 'Curriculum sign-off',
             'icon' => 'book-open',
@@ -48,6 +55,20 @@
             'icon' => 'bar-chart',
             'active' => request()->routeIs('ceo.me.*'),
             'badgeKey' => 'me',
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.finance-policy.index'),
+            'label' => 'Financial policy',
+            'icon' => 'file-text',
+            'active' => request()->routeIs('ceo.finance-policy.*'),
+            'badgeKey' => 'finance-policy',
+        ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.me-policy.index'),
+            'label' => 'M&E policy',
+            'icon' => 'file-text',
+            'active' => request()->routeIs('ceo.me-policy.*'),
+            'badgeKey' => 'me-policy',
         ])
     </nav>
     <div class="tich-admin-sidebar__footer">

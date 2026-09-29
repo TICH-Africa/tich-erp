@@ -101,7 +101,11 @@ class ProcurementRequisition extends Model
 
     public function scopePendingCeoApproval($query)
     {
-        return $query->where('status', 'finance_approved')->where('ceo_approval_status', 'pending');
+        return $query->where('status', 'finance_approved')
+            ->where(function ($inner) {
+                $inner->where('ceo_approval_status', 'pending')
+                    ->orWhereNull('ceo_approval_status');
+            });
     }
 
     public function scopePendingBoardApproval($query)
