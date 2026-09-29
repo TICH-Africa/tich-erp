@@ -1,8 +1,8 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-28 16:59:40 EAT
--- Source DB: tich_erp
+-- Generated: 2026-09-29 07:54:29 EAT
+-- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
 -- SAFE FOR PRODUCTION DATA:
@@ -10239,30 +10239,29 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `middle_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `surname` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date_of_birth` date NOT NULL,
-  `gender` varchar(20) NOT NULL,
-  `marital_status` varchar(50) DEFAULT NULL,
-  `national_id_number` varchar(50) DEFAULT NULL,
-  `passport_number` varchar(50) DEFAULT NULL,
-  `nationality` varchar(100) NOT NULL DEFAULT 'Kenyan',
-  `home_county` varchar(100) DEFAULT NULL,
-  `primary_email` varchar(255) NOT NULL,
-  `organisation_email` varchar(255) DEFAULT NULL,
-  `preferred_erp_email` varchar(20) NOT NULL DEFAULT 'primary',
-  `phone_number` varchar(30) NOT NULL,
-  `alt_phone_number` varchar(30) DEFAULT NULL,
-  `postal_address` varchar(300) DEFAULT NULL,
-  `postal_code` varchar(20) DEFAULT NULL,
-  `physical_address` varchar(500) DEFAULT NULL,
-  `emergency_contact_name` varchar(300) DEFAULT NULL,
-  `emergency_contact_phone` varchar(30) DEFAULT NULL,
-  `emergency_contact_relationship` varchar(50) DEFAULT NULL,
-  `photo_path` varchar(500) DEFAULT NULL,
-  `department_id` bigint(20) unsigned DEFAULT NULL,
-  `campus_id` bigint(20) unsigned DEFAULT NULL,
-  `line_manager_id` bigint(20) unsigned DEFAULT NULL,
-  `job_title` varchar(200) NOT NULL,
-  `job_grade` varchar(20) DEFAULT NULL,
-  `salary_scale` varchar(50) DEFAULT NULL,
+  `gender` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `marital_status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `national_id_number` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `passport_number` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nationality` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Kenyan',
+  `home_county` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `primary_email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `organisation_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone_number` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alt_phone_number` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postal_address` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postal_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `physical_address` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact_name` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact_relationship` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `photo_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department_id` bigint unsigned DEFAULT NULL,
+  `campus_id` bigint unsigned DEFAULT NULL,
+  `line_manager_id` bigint unsigned DEFAULT NULL,
+  `job_title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `job_grade` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `salary_scale` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `incremental_date` date DEFAULT NULL,
   `employment_category` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `payroll_scheme` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'employee',
@@ -10335,8 +10334,7 @@ CALL `tich_ensure_column`('staff', 'passport_number', 'varchar(50) NULL');
 CALL `tich_ensure_column`('staff', 'nationality', 'varchar(100) NOT NULL DEFAULT \'Kenyan\'');
 CALL `tich_ensure_column`('staff', 'home_county', 'varchar(100) NULL');
 CALL `tich_ensure_column`('staff', 'primary_email', 'varchar(255) NOT NULL');
-CALL `tich_ensure_column`('staff', 'organisation_email', 'varchar(255) NULL DEFAULT NULL');
-CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'\\\'primary\\\'\'');
+CALL `tich_ensure_column`('staff', 'organisation_email', 'varchar(255) NULL');
 CALL `tich_ensure_column`('staff', 'phone_number', 'varchar(30) NOT NULL');
 CALL `tich_ensure_column`('staff', 'alt_phone_number', 'varchar(30) NULL');
 CALL `tich_ensure_column`('staff', 'postal_address', 'varchar(300) NULL');
