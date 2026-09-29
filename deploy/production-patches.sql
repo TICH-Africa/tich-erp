@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-09-24
+-- Last updated: 2026-09-29
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -1884,13 +1884,121 @@ WHERE d.`is_active` = 1
 -- -----------------------------------------------------------------------------
 ALTER TABLE `campuses` DROP INDEX IF EXISTS `campuses_campus_code_unique`;
 ALTER TABLE `campuses` DROP COLUMN IF EXISTS `campus_code`;
--- PRESENT IN PRODUCTION UP TO HERE
+
 
 
 -- -----------------------------------------------------------------------------
 -- 39. staff.preferred_erp_email — personal vs organisational/secondary for ERP mail
 -- -----------------------------------------------------------------------------
 CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'primary\'');
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- 40. Financial aid, sponsorship inquiries, student year, donation pledge fields
+--     (2026_09_29_000002 … 2026_09_29_000005)
+--     Note: `donations` already exists (campaign ledger). Public pledge fields are
+--     added onto that table; sponsorship_inquiries is new.
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `financial_aid_opportunities` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(300) NOT NULL,
+  `slug` varchar(300) NOT NULL,
+  `description` text NOT NULL,
+  `eligibility_criteria` text NULL,
+  `application_process` text NULL,
+  `amount` decimal(12,2) NULL,
+  `funding_type` enum('scholarship','grant','loan','work_study') NOT NULL DEFAULT 'scholarship',
+  `application_open_date` date NULL,
+  `application_deadline` date NULL,
+  `status` enum('draft','published','closed','archived') NOT NULL DEFAULT 'draft',
+  `published_at` datetime NULL,
+  `created_by` bigint unsigned NULL,
+  `updated_by` bigint unsigned NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `fa_opportunities_slug_unique` (`slug`),
+  KEY `fa_opportunities_status_published_idx` (`status`,`published_at`),
+  KEY `fa_opportunities_deadline_idx` (`application_deadline`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `financial_aid_applications` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `financial_aid_opportunity_id` bigint unsigned NOT NULL,
+  `student_id` bigint unsigned NULL,
+  `student_name` varchar(300) NOT NULL,
+  `student_email` varchar(255) NOT NULL,
+  `student_phone` varchar(30) NULL,
+  `student_number` varchar(50) NULL,
+  `program_applied` varchar(300) NULL,
+  `personal_statement` text NULL,
+  `financial_need_statement` text NULL,
+  `supporting_documents` json NULL,
+  `status` enum('pending','under_review','approved','rejected','allocated') NOT NULL DEFAULT 'pending',
+  `admin_notes` text NULL,
+  `reviewed_by` bigint unsigned NULL,
+  `reviewed_at` datetime NULL,
+  `approved_at` datetime NULL,
+  `approved_amount` decimal(12,2) NULL,
+  `allocation_status` enum('pending','allocated','partial') NOT NULL DEFAULT 'pending',
+  `allocated_by` bigint unsigned NULL,
+  `allocated_at` datetime NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fa_apps_opportunity_status_idx` (`financial_aid_opportunity_id`,`status`),
+  KEY `fa_apps_student_idx` (`student_id`),
+  KEY `fa_apps_reviewed_by_idx` (`reviewed_by`),
+  KEY `fa_apps_allocated_by_idx` (`allocated_by`),
+  CONSTRAINT `fa_apps_opportunity_fk` FOREIGN KEY (`financial_aid_opportunity_id`) REFERENCES `financial_aid_opportunities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fa_apps_student_fk` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fa_apps_reviewed_by_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fa_apps_allocated_by_fk` FOREIGN KEY (`allocated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CALL `tich_ensure_column`('financial_aid_applications', 'approved_at', 'datetime NULL');
+
+CALL `tich_ensure_column`('students', 'current_year', 'tinyint NULL COMMENT \'Current academic year: 1, 2, 3, 4\'');
+
+CREATE TABLE IF NOT EXISTS `sponsorship_inquiries` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `sponsor_type` enum('full','partial','co_sponsor','named_scholarship') NOT NULL,
+  `duration` enum('1','2','3','ongoing') NOT NULL,
+  `preferred_field` varchar(50) NULL,
+  `sponsor_name` varchar(300) NOT NULL,
+  `sponsor_email` varchar(255) NOT NULL,
+  `sponsor_phone` varchar(30) NOT NULL,
+  `sponsor_message` text NULL,
+  `status` enum('pending','contacted','in_progress','completed','declined') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sponsorship_inquiries_status_created_idx` (`status`,`created_at`),
+  KEY `sponsorship_inquiries_email_idx` (`sponsor_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Public donation pledge fields on existing campaign `donations` table
+CALL `tich_ensure_column`('donations', 'donation_type', 'varchar(30) NULL');
+CALL `tich_ensure_column`('donations', 'designation', 'varchar(50) NULL');
+CALL `tich_ensure_column`('donations', 'message', 'text NULL');
+CALL `tich_ensure_column`('donations', 'status', 'varchar(30) NOT NULL DEFAULT \'pending\'');
+CALL `tich_ensure_column`('donations', 'updated_at', 'timestamp NULL');
+
+-- Allow pledge rows before payment details are complete (additive ALTER for existing hosts)
+ALTER TABLE `donations` MODIFY COLUMN `payment_method` varchar(50) NULL;
+ALTER TABLE `donations` MODIFY COLUMN `donation_date` date NULL;
+ALTER TABLE `donations` MODIFY COLUMN `amount_KES` decimal(14,2) NULL;
+-- PRESENT IN PRODUCTION UP TO HERE
+
+
+
 
 
 
