@@ -19,7 +19,7 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-hr-profile-header">
+    <div class="tich-hr-profile-header{{ ! empty($onboardingProgress['applicable']) ? ' tich-hr-profile-header--with-progress' : '' }}">
         <div class="tich-hr-profile-header__photo">
             @if ($staff->photoUrl())
                 <img src="{{ $staff->photoUrl() }}" alt="{{ $staff->fullName() }}">
@@ -39,6 +39,90 @@
             </div>
         </div>
     </div>
+
+    @if (! empty($onboardingProgress['applicable']))
+        @php
+            $pendingSteps = collect($onboardingProgress['steps'])->where('done', false)->values();
+        @endphp
+        <section class="tich-onboarding-progress" aria-label="Onboarding progress">
+            <div class="tich-onboarding-progress__top">
+                <h3 class="tich-onboarding-progress__title">Onboarding progress</h3>
+                <span class="tich-onboarding-progress__meta">
+                    {{ $onboardingProgress['completed_count'] }} of {{ $onboardingProgress['total_count'] }} complete · {{ $onboardingProgress['percent'] }}%
+                    @if ($onboardingProgress['onboarding']?->onboarding_number)
+                        · {{ $onboardingProgress['onboarding']->onboarding_number }}
+                    @endif
+                </span>
+            </div>
+
+            <div class="tich-onboarding-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $onboardingProgress['percent'] }}">
+                <div class="tich-onboarding-progress__fill" style="width: {{ $onboardingProgress['percent'] }}%;"></div>
+            </div>
+
+            <ol class="tich-onboarding-progress__steps">
+                @foreach ($onboardingProgress['steps'] as $step)
+                    <li class="tich-onboarding-progress__step {{ $step['done'] ? 'is-done' : 'is-pending' }}">
+                        {{ $step['label'] }}
+                    </li>
+                @endforeach
+            </ol>
+
+            <div class="tich-onboarding-checklist">
+                @foreach ($onboardingProgress['steps'] as $step)
+                    <div class="tich-onboarding-checklist__item {{ $step['done'] ? 'is-done' : '' }}">
+                        <span class="tich-onboarding-checklist__mark" aria-hidden="true">{{ $step['done'] ? '✓' : '!' }}</span>
+                        <div class="tich-onboarding-checklist__body">
+                            <span class="tich-onboarding-checklist__label">{{ $step['label'] }}</span>
+                            <span class="tich-onboarding-checklist__hint">
+                                @if ($step['done'])
+                                    Complete
+                                @else
+                                    Pending — {{ $step['hint'] }}
+                                @endif
+                            </span>
+                        </div>
+                        <div class="tich-onboarding-checklist__actions">
+                            @if (! empty($step['can_mark']))
+                                <form method="POST" action="{{ route('hr.staff.onboarding.step', $staff) }}">
+                                    @csrf
+                                    <input type="hidden" name="step" value="{{ $step['key'] }}">
+                                    <button type="submit" class="tich-btn tich-btn-secondary tich-btn--sm">{{ $step['action_label'] ?? 'Mark complete' }}</button>
+                                </form>
+                            @elseif (! empty($step['can_invite']))
+                                <form method="POST" action="{{ route('hr.staff.invite', $staff) }}">
+                                    @csrf
+                                    <button type="submit" class="tich-btn tich-btn-secondary tich-btn--sm">{{ $step['action_label'] ?? 'Send invite' }}</button>
+                                </form>
+                            @elseif (! empty($step['action_url']))
+                                <a href="{{ $step['action_url'] }}" class="tich-btn tich-btn-secondary tich-btn--sm">{{ $step['action_label'] }}</a>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="tich-onboarding-progress__footer">
+                <p class="tich-caption" style="margin:0;">
+                    @if ($pendingSteps->isEmpty())
+                        All checklist items are done. Activate this employee to leave onboarding.
+                    @else
+                        {{ $pendingSteps->count() }} pending {{ \Illuminate\Support\Str::plural('item', $pendingSteps->count()) }} before status can move to Active.
+                    @endif
+                </p>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    @if ($onboardingProgress['onboarding']?->status === 'pending_hr_review')
+                        <a href="{{ route('hr.onboarding.review', $onboardingProgress['onboarding']) }}" class="tich-btn tich-btn-secondary tich-btn--sm">Review biodata</a>
+                    @endif
+                    @if (! empty($onboardingProgress['can_complete']))
+                        <form method="POST" action="{{ route('hr.staff.onboarding.complete', $staff) }}" onsubmit="return confirm('Mark onboarding complete and set employment status to Active?');">
+                            @csrf
+                            <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">Complete onboarding → Active</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </section>
+    @endif
 
     <div class="tich-detail-grid tich-detail-grid--3 tich-mb-8">
         <section class="tich-detail-card">
@@ -87,24 +171,19 @@
         </section>
     </div>
 
-    @if ($staff->latestOnboarding)
+    @if ($staff->latestOnboarding && empty($onboardingProgress['applicable']))
         <section class="tich-detail-card tich-mb-8">
             <h3 class="tich-detail-card__title">Onboarding</h3>
             <dl class="tich-dl tich-mt-2">
                 <div class="tich-dl__row"><dt class="tich-dl__label">Onboarding No.</dt><dd class="tich-dl__value">{{ $staff->latestOnboarding->onboarding_number }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Current step</dt><dd class="tich-dl__value">{{ ucfirst(str_replace('_', ' ', $staff->latestOnboarding->current_step)) }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Completed</dt><dd class="tich-dl__value">{{ $staff->latestOnboarding->completed_at?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row">
                     <dt class="tich-dl__label">Status</dt>
                     <dd class="tich-dl__value">
-                        <span class="tich-badge tich-badge--{{ $staff->latestOnboarding->status === 'completed' ? 'success' : ($staff->latestOnboarding->status === 'rejected' ? 'danger' : ($staff->latestOnboarding->status === 'approved' ? 'success' : 'warning')) }}">
-                            {{ ucfirst($staff->latestOnboarding->status) }}
-                        </span>
+                        <span class="tich-badge tich-badge--success">{{ ucfirst($staff->latestOnboarding->status) }}</span>
                     </dd>
                 </div>
             </dl>
-            @if ($staff->latestOnboarding->status === 'pending_hr_review')
-                <a href="{{ route('hr.onboarding.review', $staff->latestOnboarding) }}" class="tich-btn tich-btn-primary tich-mt-4">Review biodata</a>
-            @endif
         </section>
     @endif
 

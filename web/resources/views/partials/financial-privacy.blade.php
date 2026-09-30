@@ -61,6 +61,167 @@
         margin-bottom: 1.5rem;
     }
 
+    .tich-hr-profile-header--with-progress {
+        margin-bottom: 0;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .tich-onboarding-progress {
+        margin: 0 0 1.5rem;
+        padding: 1rem 1.5rem 1.25rem;
+        background: var(--tich-white);
+        border: 1px solid var(--tich-neutral-border);
+        border-top: 0;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+    }
+
+    .tich-onboarding-progress__top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .tich-onboarding-progress__title {
+        margin: 0;
+        font-family: var(--font-heading);
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+
+    .tich-onboarding-progress__meta {
+        font-size: 0.8125rem;
+        color: var(--tich-text-muted, #64748b);
+    }
+
+    .tich-onboarding-progress__track {
+        height: 0.55rem;
+        border-radius: 999px;
+        background: var(--tich-surface-muted, #e2e8f0);
+        overflow: hidden;
+    }
+
+    .tich-onboarding-progress__fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--tich-blue), var(--tich-green, #16a34a));
+        transition: width 0.25s ease;
+    }
+
+    .tich-onboarding-progress__steps {
+        display: flex;
+        gap: 0.35rem;
+        margin: 0.85rem 0 0;
+        padding: 0;
+        list-style: none;
+        overflow-x: auto;
+    }
+
+    .tich-onboarding-progress__step {
+        flex: 1;
+        min-width: 4.5rem;
+        text-align: center;
+        padding: 0.45rem 0.35rem;
+        border-radius: var(--radius-sm, 0.35rem);
+        border: 1px solid transparent;
+        font-size: 0.7rem;
+        color: var(--tich-text-muted, #64748b);
+        background: var(--tich-surface-muted, #f8fafc);
+    }
+
+    .tich-onboarding-progress__step.is-done {
+        color: var(--tich-green, #15803d);
+        border-color: color-mix(in srgb, var(--tich-green, #16a34a) 35%, transparent);
+        background: color-mix(in srgb, var(--tich-green, #16a34a) 12%, white);
+    }
+
+    .tich-onboarding-progress__step.is-pending {
+        color: var(--tich-amber, #b45309);
+        border-color: color-mix(in srgb, var(--tich-amber, #f59e0b) 35%, transparent);
+        background: color-mix(in srgb, var(--tich-amber, #f59e0b) 10%, white);
+    }
+
+    .tich-onboarding-checklist {
+        margin-top: 1rem;
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .tich-onboarding-checklist__item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem 1rem;
+        padding: 0.65rem 0.75rem;
+        border: 1px solid var(--tich-neutral-border);
+        border-radius: var(--radius-sm, 0.35rem);
+        background: var(--tich-surface-muted, #f8fafc);
+    }
+
+    .tich-onboarding-checklist__item.is-done {
+        background: color-mix(in srgb, var(--tich-green, #16a34a) 8%, white);
+    }
+
+    .tich-onboarding-checklist__mark {
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        border: 1px solid var(--tich-neutral-border);
+        color: var(--tich-text-muted, #64748b);
+        background: var(--tich-white);
+    }
+
+    .tich-onboarding-checklist__item.is-done .tich-onboarding-checklist__mark {
+        border-color: var(--tich-green, #16a34a);
+        background: var(--tich-green, #16a34a);
+        color: #fff;
+    }
+
+    .tich-onboarding-checklist__body {
+        flex: 1;
+        min-width: 12rem;
+    }
+
+    .tich-onboarding-checklist__label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .tich-onboarding-checklist__hint {
+        display: block;
+        margin-top: 0.15rem;
+        font-size: 0.75rem;
+        color: var(--tich-text-muted, #64748b);
+    }
+
+    .tich-onboarding-checklist__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-left: auto;
+    }
+
+    .tich-onboarding-progress__footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid var(--tich-neutral-border);
+    }
+
     .tich-hr-profile-header__photo {
         width: 6rem;
         height: 6rem;

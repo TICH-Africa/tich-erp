@@ -80,10 +80,228 @@ class StaffLifecycleService
         });
     }
 
+    /**
+     * Ordered steps required before employment_status can move from onboarding → active.
+     *
+     * @return array<string, array{label: string, hint: string}>
+     */
+    public function requiredOnboardingSteps(): array
+    {
+        return [
+            'biodata' => [
+                'label' => 'Biodata',
+                'hint' => 'Personal details submitted and reviewed by HR',
+            ],
+            'employment_terms' => [
+                'label' => 'Employment terms',
+                'hint' => 'Department, job title, category, and start date set',
+            ],
+            'banking' => [
+                'label' => 'Banking',
+                'hint' => 'Payroll bank account on file',
+            ],
+            'documents' => [
+                'label' => 'Documents',
+                'hint' => 'At least one staff document uploaded',
+            ],
+            'contract' => [
+                'label' => 'Contract',
+                'hint' => 'Signed employment contract on file',
+            ],
+            'orientation' => [
+                'label' => 'Orientation',
+                'hint' => 'HR confirms induction / orientation completed',
+            ],
+            'statutory' => [
+                'label' => 'Statutory',
+                'hint' => 'KRA PIN and NSSF number captured',
+            ],
+            'ess_account' => [
+                'label' => 'ESS account',
+                'hint' => 'Staff portal login linked',
+            ],
+        ];
+    }
+
+    /**
+     * Live onboarding checklist for HR staff profile (evidence + recorded steps).
+     *
+     * @return array{
+     *     applicable: bool,
+     *     onboarding: ?StaffOnboarding,
+     *     percent: int,
+     *     completed_count: int,
+     *     total_count: int,
+     *     can_complete: bool,
+     *     steps: list<array{key: string, label: string, hint: string, done: bool, source: string, action_url: ?string, action_label: ?string, can_mark: bool}>
+     * }
+     */
+    public function assessOnboardingProgress(Staff $staff): array
+    {
+        $staff->loadMissing([
+            'latestOnboarding',
+            'bankAccount',
+            'documents',
+            'contracts',
+            'user',
+        ]);
+
+        $onboarding = $staff->latestOnboarding;
+        $applicable = $staff->employment_status === 'onboarding'
+            || ($onboarding && $onboarding->status !== 'completed');
+
+        $definitions = $this->requiredOnboardingSteps();
+        $recorded = collect($onboarding?->completed_steps ?? [])->filter()->values()->all();
+        $inferred = $this->inferCompletedOnboardingSteps($staff, $recorded);
+
+        $steps = [];
+        foreach ($definitions as $key => $meta) {
+            $fromRecord = in_array($key, $recorded, true);
+            $fromEvidence = in_array($key, $inferred, true);
+            $done = $fromRecord || $fromEvidence;
+            $action = $this->onboardingStepAction($staff, $key, $done, $onboarding);
+
+            $steps[] = [
+                'key' => $key,
+                'label' => $meta['label'],
+                'hint' => $meta['hint'],
+                'done' => $done,
+                'source' => $done ? ($fromEvidence ? 'evidence' : 'recorded') : 'pending',
+                'action_url' => $action['url'],
+                'action_label' => $action['label'],
+                'can_mark' => ! $done && in_array($key, ['orientation'], true) && $onboarding && $onboarding->status !== 'completed',
+                'can_invite' => ! $done && $key === 'ess_account',
+            ];
+        }
+
+        $completedCount = count(array_filter($steps, fn (array $step) => $step['done']));
+        $totalCount = count($steps);
+
+        return [
+            'applicable' => (bool) $applicable,
+            'onboarding' => $onboarding,
+            'percent' => $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0,
+            'completed_count' => $completedCount,
+            'total_count' => $totalCount,
+            'can_complete' => $applicable
+                && $onboarding
+                && $onboarding->status !== 'completed'
+                && $completedCount === $totalCount,
+            'steps' => $steps,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $recorded
+     * @return list<string>
+     */
+    public function inferCompletedOnboardingSteps(Staff $staff, array $recorded = []): array
+    {
+        $done = [];
+
+        $biodataComplete = filled($staff->first_name)
+            && filled($staff->surname)
+            && filled($staff->date_of_birth)
+            && filled($staff->gender)
+            && filled($staff->primary_email)
+            && filled($staff->phone_number);
+        if ($biodataComplete || $staff->latestOnboarding?->is_biodata_locked) {
+            $done[] = 'biodata';
+        }
+
+        if (
+            filled($staff->department_id)
+            && filled($staff->job_title)
+            && filled($staff->employment_category)
+            && filled($staff->employment_start_date)
+        ) {
+            $done[] = 'employment_terms';
+        }
+
+        if (filled($staff->bankAccount?->account_number) && filled($staff->bankAccount?->bank_name)) {
+            $done[] = 'banking';
+        }
+
+        if ($staff->documents->isNotEmpty()) {
+            $done[] = 'documents';
+        }
+
+        if ($staff->contracts->contains(fn ($contract) => (bool) $contract->is_signed)) {
+            $done[] = 'contract';
+        }
+
+        if (filled($staff->kra_pin) && filled($staff->nssf_number)) {
+            $done[] = 'statutory';
+        }
+
+        if ($staff->user_id || $staff->user) {
+            $done[] = 'ess_account';
+        }
+
+        // Orientation is HR-confirmed only (no reliable auto evidence).
+        if (in_array('orientation', $recorded, true)) {
+            $done[] = 'orientation';
+        }
+
+        return array_values(array_unique($done));
+    }
+
+    /**
+     * @return array{url: ?string, label: ?string}
+     */
+    protected function onboardingStepAction(Staff $staff, string $step, bool $done, ?StaffOnboarding $onboarding): array
+    {
+        if ($done) {
+            return ['url' => null, 'label' => null];
+        }
+
+        return match ($step) {
+            'biodata' => $onboarding && $onboarding->status === 'pending_hr_review'
+                ? ['url' => route('hr.onboarding.review', $onboarding), 'label' => 'Review biodata']
+                : ['url' => route('hr.staff.edit', $staff), 'label' => 'Edit profile'],
+            'employment_terms', 'statutory', 'banking' => [
+                'url' => route('hr.staff.edit', $staff),
+                'label' => 'Update staff',
+            ],
+            'documents' => [
+                'url' => route('hr.staff.documents.create', $staff),
+                'label' => 'Upload document',
+            ],
+            'contract' => [
+                'url' => route('hr.contracts.create', ['staff_id' => $staff->id]),
+                'label' => 'Create contract',
+            ],
+            'ess_account' => [
+                'url' => null,
+                'label' => 'Send invite',
+            ],
+            'orientation' => [
+                'url' => null,
+                'label' => 'Mark complete',
+            ],
+            default => ['url' => null, 'label' => null],
+        };
+    }
+
+    public function acknowledgeOnboardingStep(int $staffId, string $step, int $updatedBy): StaffOnboarding
+    {
+        $definitions = $this->requiredOnboardingSteps();
+        if (! array_key_exists($step, $definitions)) {
+            throw new \InvalidArgumentException('Unknown onboarding step: '.$step);
+        }
+
+        $onboarding = StaffOnboarding::where('staff_id', $staffId)
+            ->where('status', '!=', 'completed')
+            ->latest()
+            ->firstOrFail();
+
+        return $this->updateOnboardingStep($staffId, $step, [], $updatedBy);
+    }
+
     public function updateOnboardingStep(int $staffId, string $step, array $data, int $updatedBy): StaffOnboarding
     {
         $onboarding = StaffOnboarding::where('staff_id', $staffId)
-            ->where('status', 'in_progress')
+            ->where('status', '!=', 'completed')
             ->latest()
             ->firstOrFail();
 
@@ -94,7 +312,7 @@ class StaffLifecycleService
 
         $onboarding->update([
             'current_step' => $step,
-            'completed_steps' => $completedSteps,
+            'completed_steps' => array_values(array_unique($completedSteps)),
             ...$data,
         ]);
 
@@ -119,18 +337,31 @@ class StaffLifecycleService
             ->latest()
             ->firstOrFail();
 
-        $requiredSteps = ['biodata', 'employment_terms', 'banking', 'documents', 'contract', 'orientation', 'statutory', 'ess_account'];
-        $completedSteps = $onboarding->completed_steps ?? [];
+        $staff = $onboarding->staff()->with([
+            'latestOnboarding',
+            'bankAccount',
+            'documents',
+            'contracts',
+            'user',
+        ])->firstOrFail();
 
-        $missingSteps = array_diff($requiredSteps, $completedSteps);
+        $progress = $this->assessOnboardingProgress($staff);
+        $missingSteps = collect($progress['steps'])
+            ->reject(fn (array $step) => $step['done'])
+            ->pluck('key')
+            ->all();
+
         if (! empty($missingSteps)) {
-            throw new \InvalidArgumentException('Cannot complete onboarding. Missing steps: ' . implode(', ', $missingSteps));
+            throw new \InvalidArgumentException('Cannot complete onboarding. Missing steps: '.implode(', ', $missingSteps));
         }
 
-        DB::transaction(function () use ($onboarding, $completedBy) {
+        $syncedSteps = collect($progress['steps'])->pluck('key')->all();
+
+        DB::transaction(function () use ($onboarding, $completedBy, $syncedSteps) {
             $onboarding->update([
                 'current_step' => 'completed',
                 'status' => 'completed',
+                'completed_steps' => $syncedSteps,
                 'completed_at' => now(),
             ]);
 

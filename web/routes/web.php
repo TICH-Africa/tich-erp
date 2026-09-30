@@ -995,6 +995,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/staff/check-email', [\App\Http\Controllers\HR\StaffViewController::class, 'checkEmail'])->name('hr.staff.check-email');
             Route::post('/staff', [\App\Http\Controllers\HR\StaffViewController::class, 'store'])->name('hr.staff.store');
             Route::get('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'show'])->name('hr.staff.show');
+            Route::post('/staff/{staff}/onboarding/steps', [\App\Http\Controllers\HR\StaffViewController::class, 'markOnboardingStep'])->name('hr.staff.onboarding.step');
+            Route::post('/staff/{staff}/onboarding/complete', [\App\Http\Controllers\HR\StaffViewController::class, 'completeOnboarding'])->name('hr.staff.onboarding.complete');
             Route::post('/staff/{staff}/invite', [\App\Http\Controllers\HR\RegistrationInviteController::class, 'inviteStaff'])->name('hr.staff.invite');
             Route::get('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'create'])->name('hr.staff.profile-update-prompt.create');
             Route::post('/staff/{staff}/profile-update-prompt', [\App\Http\Controllers\HR\StaffProfileUpdatePromptController::class, 'store'])->name('hr.staff.profile-update-prompt.store');

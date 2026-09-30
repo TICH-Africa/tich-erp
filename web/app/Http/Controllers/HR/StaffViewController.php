@@ -267,7 +267,47 @@ class StaffViewController extends Controller
             'latestOnboarding',
         ])->findOrFail($id);
 
-        return view('hr.staff.show', ['staff' => $staff]);
+        $onboardingProgress = $this->staffLifecycle->assessOnboardingProgress($staff);
+
+        return view('hr.staff.show', [
+            'staff' => $staff,
+            'onboardingProgress' => $onboardingProgress,
+        ]);
+    }
+
+    public function markOnboardingStep(Request $request, int $staff)
+    {
+        $member = Staff::excludePlatformOperators()->findOrFail($staff);
+        $validated = $request->validate([
+            'step' => 'required|string|in:biodata,employment_terms,banking,documents,contract,orientation,statutory,ess_account',
+        ]);
+
+        try {
+            $this->staffLifecycle->acknowledgeOnboardingStep(
+                $member->id,
+                $validated['step'],
+                $request->user()->id
+            );
+        } catch (InvalidArgumentException|\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Onboarding step marked complete: '.str_replace('_', ' ', $validated['step']));
+    }
+
+    public function completeOnboarding(Request $request, int $staff)
+    {
+        $member = Staff::excludePlatformOperators()->findOrFail($staff);
+
+        try {
+            $this->staffLifecycle->completeOnboarding($member->id, $request->user()->id);
+        } catch (InvalidArgumentException|\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('hr.staff.show', $member)
+            ->with('success', 'Onboarding completed. Employment status is now active.');
     }
 
     public function edit(int $id): View
