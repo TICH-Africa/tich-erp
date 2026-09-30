@@ -1,4 +1,4 @@
-<div class="ceo-search" data-ceo-search data-search-url="{{ route('ceo.search') }}">
+<div class="ceo-search" data-ceo-search data-search-url="{{ $executiveSearchUrl ?? route('ceo.search') }}">
     <label class="ceo-search__label" for="ceo-global-search">Search</label>
     <div class="ceo-search__shell">
         <svg class="ceo-search__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

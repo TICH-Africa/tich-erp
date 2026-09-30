@@ -53,7 +53,9 @@ class CurriculumController extends Controller
 
         return view('ceo.curriculum.show', [
             'version' => $version,
-            'canApprove' => $version->status === 'pending_ceo' && $this->access->canApproveCeo(auth()->user()),
+            'canApprove' => $version->status === 'pending_ceo'
+                && $this->access->canApproveCeo(auth()->user())
+                && ! \App\Support\ExecutivePortal::isReadOnly(auth()->user()),
         ]);
     }
 

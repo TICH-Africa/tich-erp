@@ -56,6 +56,10 @@
             <article class="tich-card tich-mt-6">
                 <p class="tich-text">You have already digitally signed this financial policy as CEO.</p>
             </article>
+        @elseif ($executiveReadOnly ?? false)
+            <article class="tich-card tich-mt-6">
+                <p class="tich-text">Awaiting CEO signature — read-only observers cannot sign policies.</p>
+            </article>
         @else
             <form method="POST" action="{{ route('ceo.finance-policy.sign') }}" class="tich-card tich-form-stack tich-mt-6">
                 @csrf

@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mfa.setup' => \App\Http\Middleware\EnsureMfaConfigured::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'executive.read-only' => \App\Http\Middleware\EnsureExecutiveReadOnly::class,
             'student.portal' => \App\Http\Middleware\EnsureStudentPortalAccess::class,
             'staff.portal' => \App\Http\Middleware\EnsureStaffPortalAccess::class,
             'employee.portal' => \App\Http\Middleware\EnsureEmployeePortalAccess::class,

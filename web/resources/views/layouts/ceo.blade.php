@@ -8,6 +8,12 @@
 
     <div class="tich-admin__main">
         @include('partials.alerts')
+        @if ($executiveReadOnly ?? false)
+            <div class="tich-alert tich-alert--warning" role="status" style="margin-bottom:1rem;">
+                <strong>Read-only mode.</strong>
+                You are viewing as Chief Institution Administrator — records are visible, but approvals and signatures are disabled.
+            </div>
+        @endif
         @include('ceo.partials.global-search')
 
         @yield('ceo-content')

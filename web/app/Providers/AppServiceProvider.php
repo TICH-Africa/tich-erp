@@ -90,6 +90,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['monitoring-evaluation.partials.sidebar', 'layouts.monitoring-evaluation'], MeSidebarComposer::class);
         View::composer(['qa.partials.sidebar', 'layouts.qa'], QaSidebarComposer::class);
         View::composer(['ceo.partials.sidebar', 'layouts.ceo'], CeoSidebarComposer::class);
+        View::composer(['institution-admin.partials.sidebar', 'layouts.institution-admin'], CeoSidebarComposer::class);
         View::composer(['ict.partials.sidebar', 'layouts.ict'], IctSidebarComposer::class);
         View::composer([
             'academics.dashboard',

@@ -55,12 +55,12 @@
         </div>
     @endif
 
-    @if ($canAuthorize)
+    @if ($canAuthorize && ! ($executiveReadOnly ?? false))
         <div class="tich-alert tich-alert--info tich-mt-6">
             This request is awaiting executive authorization.
             <a href="{{ route('ceo.budgets.show', $budgetRequest) }}" class="tich-link">Open budget authorization</a>
         </div>
-    @elseif ($canAct)
+    @elseif ($canAct && ! ($executiveReadOnly ?? false))
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Administration actions</h2>
             <form method="POST" action="{{ route('ceo.approvals.review', $budgetRequest) }}" class="tich-form-stack tich-mt-4">

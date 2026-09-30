@@ -1,8 +1,6 @@
-@extends('layouts.ceo')
+@extends($executiveLayout ?? 'layouts.ceo')
 
-@section('title', 'CEO Office')
-
-@section('ceo-content')
+@section($executiveContentSection ?? 'ceo-content')
 @php
     $workforce = $workforce ?? [];
     $academics = $academics ?? [];
@@ -10,15 +8,17 @@
     $finance = $finance ?? [];
     $queues = $queues ?? [];
     $procurement = $procurement ?? [];
-
+    $portalEyebrow = $portalEyebrow ?? 'Executive office';
+    $portalTitle = $portalTitle ?? 'Institution dashboard';
+    $portalLede = $portalLede ?? 'Open a domain below to inspect workforce, students, or finance.';
 @endphp
 
 <div class="ceo-dash" data-ceo-dash>
     <header class="ceo-dash__hero">
         <div>
-            <p class="ceo-dash__eyebrow">Executive office</p>
-            <h1 class="ceo-dash__title">Institution dashboard</h1>
-            <p class="ceo-dash__lede">Open a domain below to inspect workforce, students, or finance.</p>
+            <p class="ceo-dash__eyebrow">{{ $portalEyebrow }}</p>
+            <h1 class="ceo-dash__title">{{ $portalTitle }}</h1>
+            <p class="ceo-dash__lede">{{ $portalLede }}</p>
         </div>
     </header>
 

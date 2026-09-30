@@ -89,7 +89,7 @@
         </div>
     @endif
 
-    @if ($canAuthorize)
+    @if ($canAuthorize && ! ($executiveReadOnly ?? false))
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Executive approval</h2>
             <p class="tich-caption tich-mt-2">Confirm the approved amount and authorize disbursement readiness.</p>

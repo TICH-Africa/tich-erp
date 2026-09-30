@@ -35,7 +35,7 @@ class CheckRole
             if (str_starts_with($role, 'min:')) {
                 $minimumRole = substr($role, 4);
             } else {
-                $roleNames[] = $role;
+                $roleNames[] = trim($role);
             }
         }
 

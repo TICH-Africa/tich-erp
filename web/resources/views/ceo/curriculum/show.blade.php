@@ -84,7 +84,7 @@
         </div>
     </div>
 
-    @if ($canApprove)
+    @if ($canApprove && ! ($executiveReadOnly ?? false))
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">CEO publication</h2>
             <p class="tich-text tich-mt-2">Publishing this intake makes it the active curriculum for student enrolment and teaching.</p>

@@ -42,8 +42,10 @@ class ApprovalWorkflowController extends Controller
         return view('ceo.approvals.show', [
             'budgetRequest' => $budgetRequest,
             'submitter' => $this->resolveSubmitter($budgetRequest->submitted_by),
-            'canAct' => in_array($budgetRequest->status, ['submitted', 'draft'], true),
-            'canAuthorize' => $budgetRequest->status === 'executive_review',
+            'canAct' => in_array($budgetRequest->status, ['submitted', 'draft'], true)
+                && ! \App\Support\ExecutivePortal::isReadOnly(auth()->user()),
+            'canAuthorize' => $budgetRequest->status === 'executive_review'
+                && ! \App\Support\ExecutivePortal::isReadOnly(auth()->user()),
         ]);
     }
 

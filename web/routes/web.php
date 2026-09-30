@@ -116,7 +116,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
-    Route::prefix('ceo')->middleware(['role:CEO,Super Admin'])->group(function () {
+    Route::prefix('ceo')->middleware([
+        'role:CEO,Super Admin,Chief Institution Administrator',
+        'executive.read-only',
+    ])->group(function () {
         Route::get('/', \App\Http\Controllers\Ceo\DashboardController::class)->name('ceo.dashboard');
 
         Route::get('/budgets', [\App\Http\Controllers\Ceo\BudgetAuthorizationController::class, 'index'])->name('ceo.budgets.index');
@@ -162,6 +165,15 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ceo\SidebarNotificationController::class)->name('ceo.sidebar-notifications');
         Route::get('/search', \App\Http\Controllers\Ceo\SearchController::class)->name('ceo.search');
+    });
+
+    Route::prefix('institution-admin')->middleware([
+        'role:Chief Institution Administrator,Super Admin',
+        'executive.read-only',
+    ])->group(function () {
+        Route::get('/', \App\Http\Controllers\InstitutionAdmin\DashboardController::class)->name('institution-admin.dashboard');
+        Route::get('/sidebar-notifications', \App\Http\Controllers\Ceo\SidebarNotificationController::class)->name('institution-admin.sidebar-notifications');
+        Route::get('/search', \App\Http\Controllers\Ceo\SearchController::class)->name('institution-admin.search');
     });
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])

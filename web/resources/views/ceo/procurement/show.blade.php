@@ -68,7 +68,7 @@
         </article>
     </div>
 
-    @if ($canDecide)
+    @if ($canDecide && ! ($executiveReadOnly ?? false))
         <div class="tich-grid tich-grid--2 tich-mt-6" style="gap:1.5rem;">
             <form method="POST" action="{{ route('ceo.procurement.approve', $requisition) }}" class="tich-card tich-form-stack">
                 @csrf

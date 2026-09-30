@@ -269,7 +269,7 @@ class RBACService
     public function hasAnyRole(User $user, array $roleNames): bool
     {
         foreach ($roleNames as $roleName) {
-            if ($this->hasRole($user, $roleName)) {
+            if ($this->hasRole($user, trim((string) $roleName))) {
                 return true;
             }
         }

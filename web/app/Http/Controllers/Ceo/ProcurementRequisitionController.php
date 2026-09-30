@@ -59,7 +59,8 @@ class ProcurementRequisitionController extends Controller
         return view('ceo.procurement.show', [
             'requisition' => $requisition,
             'budgetCheck' => $budgetCheck,
-            'canDecide' => $this->requisitions->requiresCeoApproval($requisition),
+            'canDecide' => $this->requisitions->requiresCeoApproval($requisition)
+                && ! \App\Support\ExecutivePortal::isReadOnly(auth()->user()),
         ]);
     }
 

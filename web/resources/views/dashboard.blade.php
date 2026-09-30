@@ -35,6 +35,15 @@
                         </article>
                     @endif
 
+                    @if (auth()->user()->hasAnyRole(['Chief Institution Administrator', 'Super Admin']))
+                        <article class="tich-card tich-card--highlight">
+                            <p class="tich-caption">Executive</p>
+                            <h3 class="tich-h3 tich-mt-2">Chief Institution Administrator</h3>
+                            <p class="tich-text tich-mt-2">Read-only institution oversight — view executive queues, workforce, students, and finance without acting.</p>
+                            <a href="{{ route('institution-admin.dashboard') }}" class="tich-btn tich-btn-primary tich-mt-4">Open oversight office</a>
+                        </article>
+                    @endif
+
                     @if (app(\App\Services\RBACService::class)->canAccessPlatformAdministration(auth()->user()))
                         <article class="tich-card tich-card--highlight">
                             <p class="tich-caption">Core</p>

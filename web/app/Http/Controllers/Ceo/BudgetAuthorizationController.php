@@ -47,7 +47,8 @@ class BudgetAuthorizationController extends Controller
 
         return view('ceo.budgets.show', [
             'budgetRequest' => $budgetRequest,
-            'canAuthorize' => $budgetRequest->status === 'executive_review',
+            'canAuthorize' => $budgetRequest->status === 'executive_review'
+                && ! \App\Support\ExecutivePortal::isReadOnly(auth()->user()),
         ]);
     }
 

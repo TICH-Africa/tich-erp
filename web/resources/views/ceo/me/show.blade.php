@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    @if (! $report->ceo_reviewed_at)
+    @if (! $report->ceo_reviewed_at && ! ($executiveReadOnly ?? false))
         <form method="POST" action="{{ route('ceo.me.sign', $report) }}" class="tich-card tich-form-stack tich-mt-6">
             @csrf
             <h2 class="tich-h3">Executive digital signature</h2>
@@ -72,6 +72,10 @@
             </div>
             <button type="submit" class="tich-btn tich-btn-primary">Sign and close review</button>
         </form>
+    @elseif (! $report->ceo_reviewed_at && ($executiveReadOnly ?? false))
+        <article class="tich-card tich-mt-6">
+            <p class="tich-text">Awaiting CEO signature — read-only observers cannot sign.</p>
+        </article>
     @else
         <article class="tich-card tich-mt-6">
             <p class="tich-text">Signed by CEO {{ $report->ceo_reviewed_at->format('d M Y H:i') }} - {{ $report->ceo_signature }}</p>

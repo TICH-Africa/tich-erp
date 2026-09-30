@@ -410,6 +410,18 @@ return [
                     'permission_categories' => ['approve', 'view', 'manage', 'audit', 'export'],
                 ],
                 [
+                    'role_name' => 'Chief Institution Administrator',
+                    'display_name' => 'Chief Institution Administrator',
+                    'role_category' => 'executive',
+                    'description' => 'Institution-wide read-only oversight of the executive portal — can view everything the CEO sees but cannot approve, reject, or sign.',
+                    'permission_modules' => [
+                        'core', 'admin', 'academics', 'finance', 'hr', 'portal', 'qa',
+                        'administration', 'procurement', 'research', 'ict', 'monitoring_evaluation',
+                        'financial_aid', 'finance_financial_aid',
+                    ],
+                    'permission_categories' => ['view', 'audit', 'export'],
+                ],
+                [
                     'role_name' => 'Staff',
                     'display_name' => 'Staff',
                     'role_category' => 'administrative',

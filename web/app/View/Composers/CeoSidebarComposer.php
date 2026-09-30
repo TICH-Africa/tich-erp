@@ -15,13 +15,16 @@ class CeoSidebarComposer
     {
         $counts = $this->notifications->counts();
         $labels = $this->notifications->labels();
+        $isInstitutionAdmin = request()->routeIs('institution-admin.*');
 
         $view->with([
             'sidebarCounts' => $counts,
             'sidebarLabels' => $labels,
             'sidebarMenuLabels' => CeoSidebarNotificationService::MENU_KEYS,
-            'sidebarId' => 'ceo-admin-sidebar',
-            'sidebarPollUrl' => route('ceo.sidebar-notifications'),
+            'sidebarId' => $isInstitutionAdmin ? 'institution-admin-sidebar' : 'ceo-admin-sidebar',
+            'sidebarPollUrl' => $isInstitutionAdmin
+                ? route('institution-admin.sidebar-notifications')
+                : route('ceo.sidebar-notifications'),
             'sidebarBroadcastEnabled' => true,
             'sidebarBroadcastChannel' => 'ceo.sidebar',
         ]);
