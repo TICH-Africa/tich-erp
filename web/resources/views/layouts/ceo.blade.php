@@ -8,6 +8,7 @@
 
     <div class="tich-admin__main">
         @include('partials.alerts')
+        @include('ceo.partials.global-search')
 
         @yield('ceo-content')
     </div>
@@ -18,4 +19,5 @@
     @parent
     @include('partials.navigation.sidebar-realtime-config')
     <x-asset.script path="js/tich-sidebar.js" />
+    <x-asset.script path="js/tich-ceo-search.js" />
 @endsection

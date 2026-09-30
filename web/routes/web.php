@@ -161,6 +161,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/me-policy/download', [\App\Http\Controllers\Ceo\MePolicyController::class, 'download'])->name('ceo.me-policy.download');
 
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ceo\SidebarNotificationController::class)->name('ceo.sidebar-notifications');
+        Route::get('/search', \App\Http\Controllers\Ceo\SearchController::class)->name('ceo.search');
     });
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])

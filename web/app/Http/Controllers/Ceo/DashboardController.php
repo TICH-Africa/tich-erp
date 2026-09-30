@@ -20,6 +20,7 @@ class DashboardController extends Controller
             'queues' => $overview['queues'],
             'finance' => $overview['finance'],
             'academics' => $overview['academics'],
+            'admissions' => $overview['admissions'],
             'workforce' => $overview['workforce'],
             'procurement' => $overview['procurement'],
             'pendingBudgets' => $overview['queues']['budgets'] ?? 0,

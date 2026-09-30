@@ -64,3 +64,4 @@
         },
     };
 </script>
+@stack('styles')
