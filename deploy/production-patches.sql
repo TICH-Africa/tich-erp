@@ -1995,7 +1995,88 @@ CALL `tich_ensure_column`('donations', 'updated_at', 'timestamp NULL');
 ALTER TABLE `donations` MODIFY COLUMN `payment_method` varchar(50) NULL;
 ALTER TABLE `donations` MODIFY COLUMN `donation_date` date NULL;
 ALTER TABLE `donations` MODIFY COLUMN `amount_KES` decimal(14,2) NULL;
--- PRESENT IN PRODUCTION UP TO HERE
+-- PRESENT IN PRODUCTION UP TO HERE (snapshot: deploy/tichafri_dbmain.sql)
+
+-- -----------------------------------------------------------------------------
+-- 41. Student schema gaps vs local (compared to tichafri_dbmain.sql, 2026-09-30)
+-- Missing tables used by Academics / Administration existing-student flows.
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `academic_records` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `program_id` bigint(20) unsigned NOT NULL,
+  `academic_year_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
+  `enrollment_date` date NOT NULL,
+  `completion_date` date DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'active',
+  `gpa` decimal(4,2) DEFAULT NULL,
+  `units_registered` int(11) NOT NULL DEFAULT 0,
+  `units_completed` int(11) NOT NULL DEFAULT 0,
+  `entry_pathway` varchar(100) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_records_academic_year_id_foreign` (`academic_year_id`),
+  KEY `academic_records_semester_id_foreign` (`semester_id`),
+  KEY `academic_records_created_by_foreign` (`created_by`),
+  KEY `academic_records_student_id_status_index` (`student_id`,`status`),
+  KEY `academic_records_program_id_status_index` (`program_id`,`status`),
+  CONSTRAINT `academic_records_academic_year_id_foreign` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_program_id_foreign` FOREIGN KEY (`program_id`) REFERENCES `academic_programs` (`id`),
+  CONSTRAINT `academic_records_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `academic_records_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `student_financial_records` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `academic_year_id` bigint(20) unsigned DEFAULT NULL,
+  `semester_id` bigint(20) unsigned DEFAULT NULL,
+  `total_chargeable` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_paid` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `outstanding_balance` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_reference` varchar(100) DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `student_financial_records_academic_year_id_foreign` (`academic_year_id`),
+  KEY `student_financial_records_semester_id_foreign` (`semester_id`),
+  KEY `student_financial_records_recorded_by_foreign` (`recorded_by`),
+  KEY `student_financial_records_student_id_payment_date_index` (`student_id`,`payment_date`),
+  CONSTRAINT `student_financial_records_academic_year_id_foreign` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `student_financial_records_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Align student name nullability with local (rejects nameless student rows)
+UPDATE `students` SET `first_name` = COALESCE(NULLIF(TRIM(`first_name`), ''), 'Unknown') WHERE `first_name` IS NULL OR TRIM(`first_name`) = '';
+UPDATE `students` SET `surname` = COALESCE(NULLIF(TRIM(`surname`), ''), 'Unknown') WHERE `surname` IS NULL OR TRIM(`surname`) = '';
+ALTER TABLE `students`
+    MODIFY COLUMN `first_name` varchar(100) NOT NULL,
+    MODIFY COLUMN `surname` varchar(100) NOT NULL;
+
+-- -----------------------------------------------------------------------------
+-- 42. Remaining missing tables vs local (excl. academic_records / student_financial_records from §41)
+-- Assets, procurement/RFQ, marketing, QA training, stock. Safe: CREATE IF NOT EXISTS.
+-- Full copy also in deploy/missing-tables-prod-patch.sql — run that file on production.
+-- -----------------------------------------------------------------------------
+-- See deploy/missing-tables-prod-patch.sql for the 25 CREATE TABLE statements.
+-- (Kept in a dedicated file so production-patches.sql stays smaller; apply that SQL next.)
+
+-- PRESENT IN PRODUCTION UP TO HERE (after applying §42)
+
+
+
 
 
 

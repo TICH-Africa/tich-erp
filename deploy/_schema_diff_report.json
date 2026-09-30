@@ -1,0 +1,62 @@
+{
+    "summary": {
+        "local_tables": 263,
+        "prod_tables": 236,
+        "tables_missing_in_prod": 27,
+        "tables_only_in_prod": 0,
+        "tables_with_column_diffs": 1,
+        "student_related_column_diffs": 0
+    },
+    "tables_missing_in_prod": [
+        "academic_records",
+        "asset_audits",
+        "asset_disposals",
+        "asset_maintenance",
+        "asset_movements",
+        "credit_notes",
+        "discrepancies",
+        "grn_items",
+        "marketing_lead_activities",
+        "marketing_leads",
+        "marketing_report_attachments",
+        "marketing_reports",
+        "payment_audits",
+        "procurement_invoices",
+        "procurement_payments",
+        "qa_certification_reminders",
+        "qa_training_credits",
+        "qa_training_event_enrolments",
+        "qa_training_event_registrations",
+        "rfq_clarifications",
+        "rfq_evaluations",
+        "rfq_quotations",
+        "rfq_suppliers",
+        "rfqs",
+        "stock_alerts",
+        "stock_issues",
+        "student_financial_records"
+    ],
+    "tables_only_in_prod": [],
+    "student_related_diffs": [],
+    "all_column_diffs": [
+        {
+            "table": "suppliers",
+            "missing_in_prod": [
+                "payment_method",
+                "paybill_number",
+                "paybill_account_number",
+                "till_number",
+                "mobile_number"
+            ],
+            "extra_in_prod": [],
+            "local_defs": {
+                "payment_method": "varchar(20) NOT NULL DEFAULT bank",
+                "paybill_number": "varchar(20)",
+                "paybill_account_number": "varchar(50)",
+                "till_number": "varchar(20)",
+                "mobile_number": "varchar(20)"
+            },
+            "prod_defs": []
+        }
+    ]
+}

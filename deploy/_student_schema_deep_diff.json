@@ -1,0 +1,252 @@
+{
+    "missing_tables_in_prod": [
+        "student_financial_records",
+        "academic_records",
+        "qa_training_event_enrolments"
+    ],
+    "missing_tables_in_local": [],
+    "type_or_null_mismatches": [
+        {
+            "table": "students",
+            "column": "first_name",
+            "local": "varchar(100) not null",
+            "prod": "varchar(100)"
+        },
+        {
+            "table": "students",
+            "column": "surname",
+            "local": "varchar(100) not null",
+            "prod": "varchar(100)"
+        },
+        {
+            "table": "students",
+            "column": "current_year",
+            "local": "tinyint",
+            "prod": "tinyint comment 'current academic year: 1, 2, 3, 4'"
+        },
+        {
+            "table": "student_notifications",
+            "column": "read_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_notifications",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_notifications",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_profile_change_requests",
+            "column": "current_snapshot",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(current_snapshot))"
+        },
+        {
+            "table": "student_profile_change_requests",
+            "column": "reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_profile_change_requests",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_profile_change_requests",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_document_requests",
+            "column": "reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_document_requests",
+            "column": "issued_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_document_requests",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_document_requests",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "attachments",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(attachments))"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "registrar_reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "dean_reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_lifecycle_requests",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_clearance_items",
+            "column": "cleared_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_clearance_items",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_clearance_items",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_transcript_requests",
+            "column": "reviewed_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_transcript_requests",
+            "column": "issued_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_transcript_requests",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_transcript_requests",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_suggestions",
+            "column": "resolved_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_suggestions",
+            "column": "metadata",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(metadata))"
+        },
+        {
+            "table": "student_suggestions",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "student_suggestions",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "users",
+            "column": "mfa_backup_codes",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(mfa_backup_codes))"
+        },
+        {
+            "table": "financial_aid_applications",
+            "column": "supporting_documents",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(supporting_documents))"
+        },
+        {
+            "table": "financial_aid_applications",
+            "column": "created_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "financial_aid_applications",
+            "column": "updated_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "financial_aid_applications",
+            "column": "deleted_at",
+            "local": "timestamp",
+            "prod": "timestamp null"
+        },
+        {
+            "table": "recruitment_applications",
+            "column": "certificates_file_paths",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(certificates_file_paths))"
+        },
+        {
+            "table": "recruitment_applications",
+            "column": "interview_panel_ids",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(interview_panel_ids))"
+        },
+        {
+            "table": "rpl_applications",
+            "column": "supporting_documents",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(supporting_documents))"
+        },
+        {
+            "table": "rpl_applications",
+            "column": "credit_exemption_unit_ids",
+            "local": "longtext",
+            "prod": "longtext check (json_valid(credit_exemption_unit_ids))"
+        }
+    ],
+    "missing_columns_in_prod": [],
+    "missing_columns_in_local": []
+}
