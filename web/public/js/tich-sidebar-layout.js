@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STORAGE_WIDTH = 'tich.adminSidebar.width';
     const STORAGE_COLLAPSED = 'tich.adminSidebar.collapsed';
-    const DEFAULT_WIDTH = 240;
+    const DEFAULT_WIDTH = 272;
     const MIN_WIDTH = 200;
     const MAX_WIDTH = 420;
-    const COLLAPSED_WIDTH = 76;
+    const COLLAPSED_WIDTH = 72;
     const COLLAPSE_SNAP = 150;
 
     const desktopMq = window.matchMedia('(min-width: 1024px)');
@@ -83,10 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     'aria-label',
                     collapsed ? 'Expand sidebar' : 'Collapse sidebar to icons'
                 );
-                toggle.title = collapsed ? 'Expand menu' : 'Collapse to icons';
+                toggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
                 const label = toggle.querySelector('[data-sidebar-collapse-label]');
                 if (label) {
                     label.textContent = collapsed ? 'Expand' : 'Collapse';
+                }
+                const icon = toggle.querySelector('.tich-admin-sidebar__collapse-icon');
+                if (icon) {
+                    icon.textContent = collapsed ? '›' : '‹';
                 }
             }
         };
@@ -243,19 +247,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const controls = document.createElement('div');
             controls.className = 'tich-admin-sidebar__controls';
             controls.innerHTML = `
-                <button type="button" class="tich-admin-sidebar__collapse-btn" data-sidebar-collapse-toggle aria-pressed="false">
-                    <span class="tich-admin-sidebar__collapse-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                            <path d="M9 4v16"></path>
-                        </svg>
-                    </span>
+                <button type="button" class="tich-admin-sidebar__collapse-btn" data-sidebar-collapse-toggle aria-pressed="false" title="Collapse sidebar">
+                    <span class="tich-admin-sidebar__collapse-icon" aria-hidden="true">‹</span>
                     <span class="tich-admin-sidebar__label" data-sidebar-collapse-label>Collapse</span>
                 </button>
             `;
             sidebar.appendChild(controls);
 
-            controls.querySelector('[data-sidebar-collapse-toggle]').addEventListener('click', () => {
+            collapseBtn.addEventListener('click', () => {
                 if (!desktopMq.matches) {
                     return;
                 }

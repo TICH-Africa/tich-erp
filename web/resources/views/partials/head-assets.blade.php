@@ -24,6 +24,7 @@
 @include('partials.theme-init')
 <link href="https://fonts.bunny.net/css?family=merriweather:400,700,900" rel="stylesheet" type="text/css" />
 <x-asset.stylesheet path="css/tich-platform.css" />
+<x-asset.stylesheet path="css/tich-unified-sidebar.css" />
 <x-asset.script path="js/tich-theme.js" />
 <x-asset.script path="js/tich-select.js" />
 <x-asset.script path="js/tich-toasts.js" />
