@@ -16,7 +16,7 @@
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
     @enderror
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">Budget pipeline</h2>
         <p class="tich-caption tich-mt-1">Department budgets in Finance / CEO / disbursement stages. Open a request to see the full quarterly income and expenditure layout.</p>
         <div class="tich-table-wrap tich-mt-4">
@@ -90,7 +90,7 @@
         </div>
     </div>
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">Monthly allocations</h2>
         <p class="tich-caption tich-mt-1">Digital releases to departments against approved budgets.</p>
         <div class="tich-table-wrap tich-mt-4">

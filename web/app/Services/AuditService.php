@@ -12,8 +12,15 @@ class AuditService
 {
     public function __construct(
         protected ClientContextResolver $clientContextResolver,
-        protected RBACService $rbac,
     ) {}
+
+    /**
+     * Lazy resolve to avoid a circular DI loop with RBACService (which depends on AuditService).
+     */
+    protected function rbac(): RBACService
+    {
+        return app(RBACService::class);
+    }
 
     public function log(
         string $action,
@@ -316,11 +323,11 @@ class AuditService
      */
     public function applyViewerScope($query, \App\Models\User $viewer)
     {
-        if ($this->rbac->canViewUnrestrictedAuditLogs($viewer)) {
+        if ($this->rbac()->canViewUnrestrictedAuditLogs($viewer)) {
             return $query;
         }
 
-        $departmentIds = $this->rbac->getUserDepartmentIds($viewer);
+        $departmentIds = $this->rbac()->getUserDepartmentIds($viewer);
         $viewerId = (int) $viewer->id;
 
         return $query->where(function ($scope) use ($viewerId, $departmentIds) {
@@ -349,7 +356,7 @@ class AuditService
 
     public function viewerCanSee(AuditLog $log, \App\Models\User $viewer): bool
     {
-        if ($this->rbac->canViewUnrestrictedAuditLogs($viewer)) {
+        if ($this->rbac()->canViewUnrestrictedAuditLogs($viewer)) {
             return true;
         }
 
@@ -357,7 +364,7 @@ class AuditService
             return true;
         }
 
-        $departmentIds = $this->rbac->getUserDepartmentIds($viewer);
+        $departmentIds = $this->rbac()->getUserDepartmentIds($viewer);
         if ($departmentIds === [] || ! $log->user_id) {
             return false;
         }

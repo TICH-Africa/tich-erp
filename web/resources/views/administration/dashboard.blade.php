@@ -41,12 +41,15 @@
     </section>
 
     <div class="tich-mt-8" style="display:grid;gap:1.5rem;">
-        <article class="tich-card">
-            <div style="padding: 1.25rem 1.25rem 0.75rem;">
-                <h2 class="tich-h3">1. Annual institutional plan</h2>
-                <p class="tich-caption tich-mt-2">Record intakes, trimesters, holidays, graduation, and field-placement blocks.</p>
-            </div>
-            <div style="padding: 0 1.25rem 1.25rem;">
+        <section>
+            <article class="tich-mod-dash__panel">
+                <div class="tich-mod-dash__panel-head">
+                    <div>
+                        <p class="tich-mod-dash__panel-eyebrow">Workflow</p>
+                        <h2 class="tich-mod-dash__panel-title">1. Annual institutional plan</h2>
+                        <p class="tich-mod-dash__panel-meta">Record intakes, trimesters, holidays, graduation, and field-placement blocks.</p>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('administration.workflow.calendar.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
                     @csrf
                     <div class="tich-form-group">
@@ -83,8 +86,8 @@
                         <button type="submit" class="tich-btn tich-btn-primary">Save calendar event</button>
                     </div>
                 </form>
-            </div>
-            <div class="tich-table-wrap">
+            </article>
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -112,14 +115,17 @@
                     </tbody>
                 </table>
             </div>
-        </article>
+        </section>
 
-        <article class="tich-card">
-            <div style="padding: 1.25rem 1.25rem 0.75rem;">
-                <h2 class="tich-h3">2-3. Monthly to weekly task board</h2>
-                <p class="tich-caption tich-mt-2">Section Heads add named owners, due dates, milestones, and budget implications.</p>
-            </div>
-            <div style="padding: 0 1.25rem 1.25rem;">
+        <section>
+            <article class="tich-mod-dash__panel">
+                <div class="tich-mod-dash__panel-head">
+                    <div>
+                        <p class="tich-mod-dash__panel-eyebrow">Workflow</p>
+                        <h2 class="tich-mod-dash__panel-title">2-3. Monthly to weekly task board</h2>
+                        <p class="tich-mod-dash__panel-meta">Section Heads add named owners, due dates, milestones, and budget implications.</p>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('administration.workflow.tasks.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
                     @csrf
                     <div class="tich-form-group">
@@ -164,8 +170,8 @@
                         <button type="submit" class="tich-btn tich-btn-primary">Add weekly task</button>
                     </div>
                 </form>
-            </div>
-            <div class="tich-table-wrap">
+            </article>
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -193,49 +199,53 @@
                     </tbody>
                 </table>
             </div>
-        </article>
+        </section>
 
-        <article class="tich-card">
-            <div class="tich-table-panel" style="padding: 0; overflow: visible;">
-                <div style="padding: 1.25rem 1.25rem 0.75rem;">
-                    <h2 class="tich-h3">4. Prior-month deadline control</h2>
-                    <p class="tich-caption tich-mt-2">Planning cycles keep their submission deadline. Budget requests submitted after it are marked late with the deadline timestamp for review.</p>
+        <section>
+            <div class="tich-mod-dash__panel-head" style="margin-bottom:0.75rem;">
+                <div>
+                    <p class="tich-mod-dash__panel-eyebrow">Workflow</p>
+                    <h2 class="tich-mod-dash__panel-title">4. Prior-month deadline control</h2>
+                    <p class="tich-mod-dash__panel-meta">Planning cycles keep their submission deadline. Budget requests submitted after it are marked late with the deadline timestamp for review.</p>
                 </div>
-                <div class="tich-table-wrap">
-                    <table class="tich-admin-table">
-                        <thead>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Cycle</th>
+                            <th>Tier</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($planningCycles as $cycle)
                             <tr>
-                                <th>Cycle</th>
-                                <th>Tier</th>
-                                <th>Deadline</th>
-                                <th>Status</th>
+                                <td><strong>{{ $cycle->title }}</strong></td>
+                                <td>{{ ucfirst($cycle->plan_tier) }}</td>
+                                <td>{{ $cycle->requisition_deadline?->format('d/m/Y H:i') }}</td>
+                                <td><x-status-badge :status="$cycle->status" /></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($planningCycles as $cycle)
-                                <tr>
-                                    <td><strong>{{ $cycle->title }}</strong></td>
-                                    <td>{{ ucfirst($cycle->plan_tier) }}</td>
-                                    <td>{{ $cycle->requisition_deadline?->format('d/m/Y H:i') }}</td>
-                                    <td><x-status-badge :status="$cycle->status" /></td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="tich-table-empty">No planning cycles with deadlines recorded yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="tich-table-empty">No planning cycles with deadlines recorded yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        </article>
+        </section>
 
-        <article class="tich-card">
-            <div style="padding: 1.25rem 1.25rem 0.75rem;">
-                <h2 class="tich-h3">5. Monthly variance and lessons</h2>
-                <p class="tich-caption tich-mt-2">Director of Administration records planned versus executed amounts and carries lessons into the next plan.</p>
-            </div>
-            <div style="padding: 0 1.25rem 1.25rem;">
+        <section>
+            <article class="tich-mod-dash__panel">
+                <div class="tich-mod-dash__panel-head">
+                    <div>
+                        <p class="tich-mod-dash__panel-eyebrow">Workflow</p>
+                        <h2 class="tich-mod-dash__panel-title">5. Monthly variance and lessons</h2>
+                        <p class="tich-mod-dash__panel-meta">Director of Administration records planned versus executed amounts and carries lessons into the next plan.</p>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('administration.workflow.variances.store') }}" class="tich-form-grid" style="display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;">
                     @csrf
                     <div class="tich-form-group">
@@ -284,8 +294,8 @@
                         <button type="submit" class="tich-btn tich-btn-primary">Save variance review</button>
                     </div>
                 </form>
-            </div>
-            <div class="tich-table-wrap">
+            </article>
+            <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
                         <tr>
@@ -317,7 +327,7 @@
                     </tbody>
                 </table>
             </div>
-        </article>
+        </section>
     </div>
 
     <section class="tich-mod-dash__nav" aria-label="Administration hubs">

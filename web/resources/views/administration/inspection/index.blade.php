@@ -3,7 +3,7 @@
 @section('title', 'Inspection readiness')
 
 @section('administration-content')
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <div style="padding: 2rem; text-align: center;">
             <h2 class="tich-h3">Moved to Statutory tracking</h2>
             <p class="tich-caption tich-mt-2">Inspection readiness is now managed under compliance within Statutory tracking.</p>
@@ -12,7 +12,7 @@
     </div>
 @endsection
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>

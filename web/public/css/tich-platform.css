@@ -5755,7 +5755,9 @@ a.tich-notification-badge:hover {
 
 .tich-card.tich-table-panel,
 .tich-card:has(> .tich-admin-table),
-.tich-card:has(> .tich-table-wrap) {
+.tich-card:has(> .tich-table-wrap),
+.tich-card:has(.tich-table-wrap),
+.tich-card:has(.tich-admin-table) {
     padding: 0;
     overflow: visible;
     background: transparent;
@@ -5766,7 +5768,9 @@ a.tich-notification-badge:hover {
 
 .tich-card.tich-table-panel:hover,
 .tich-card:has(> .tich-admin-table):hover,
-.tich-card:has(> .tich-table-wrap):hover {
+.tich-card:has(> .tich-table-wrap):hover,
+.tich-card:has(.tich-table-wrap):hover,
+.tich-card:has(.tich-admin-table):hover {
     border-color: transparent;
 }
 
@@ -5872,7 +5876,9 @@ a.tich-notification-badge:hover {
 [data-theme="dark"] .tich-table-wrap,
 [data-theme="dark"] .tich-card.tich-table-panel,
 [data-theme="dark"] .tich-card:has(> .tich-admin-table),
-[data-theme="dark"] .tich-card:has(> .tich-table-wrap) {
+[data-theme="dark"] .tich-card:has(> .tich-table-wrap),
+[data-theme="dark"] .tich-card:has(.tich-table-wrap),
+[data-theme="dark"] .tich-card:has(.tich-admin-table) {
     background: transparent;
     border: none;
     box-shadow: none;
@@ -11547,7 +11553,7 @@ a.tich-tabs__btn {
     border: 1px solid var(--tich-blue-dark);
     border-radius: 1rem;
     background: var(--tich-blue);
-    color: var(--tich-white);
+    color: #ffffff;
     animation: tich-mod-rise 0.55s ease-out both;
 }
 
@@ -11558,7 +11564,7 @@ a.tich-tabs__btn {
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--tich-green-light);
+    color: #c8e6a0;
 }
 
 .tich-mod-dash__title {
@@ -11566,7 +11572,7 @@ a.tich-tabs__btn {
     font-family: var(--font-heading);
     font-size: clamp(1.75rem, 2.4vw, 2.35rem);
     line-height: 1.15;
-    color: var(--tich-white);
+    color: #ffffff;
     letter-spacing: -0.02em;
 }
 
@@ -11576,7 +11582,7 @@ a.tich-tabs__btn {
     font-family: var(--font-ui);
     font-size: 0.9375rem;
     line-height: 1.5;
-    color: var(--tich-blue-light);
+    color: rgba(255, 255, 255, 0.88);
 }
 
 .tich-mod-dash__hero-actions {
@@ -11613,7 +11619,7 @@ a.tich-tabs__btn {
     border: 1px solid var(--tich-blue);
     border-radius: 0.85rem;
     background: var(--tich-blue);
-    color: var(--tich-white);
+    color: #ffffff;
     transition: transform 0.2s ease, filter 0.2s ease;
 }
 
@@ -11652,7 +11658,7 @@ a.tich-tabs__btn {
     font-family: var(--font-heading);
     font-size: 1.35rem;
     line-height: 1;
-    color: var(--tich-white);
+    color: #ffffff;
     letter-spacing: -0.03em;
 }
 
@@ -11666,12 +11672,12 @@ a.tich-tabs__btn {
 }
 
 .tich-mod-dash__metric-hint--pulse {
-    color: var(--tich-white);
+    color: #ffffff;
     font-weight: 700;
 }
 
 .tich-mod-dash__metric-link {
-    color: var(--tich-white);
+    color: #ffffff;
     font-weight: 700;
     text-decoration: none;
 }
@@ -11951,21 +11957,43 @@ a.tich-tabs__btn {
 
 [data-theme="dark"] .tich-mod-dash__metric-value,
 [data-theme="dark"] .tich-mod-dash__metric-hint,
-[data-theme="dark"] .tich-mod-dash__metric-link {
+[data-theme="dark"] .tich-mod-dash__metric-link,
+[data-theme="dark"] .tich-mod-dash__metric-hint--pulse {
     color: #ffffff;
 }
 
 [data-theme="dark"] .tich-mod-dash__panel,
 [data-theme="dark"] .tich-mod-dash__chart,
 [data-theme="dark"] .tich-mod-dash__nav-card,
-[data-theme="dark"] .tich-mod-dash__invite > .tich-card {
+[data-theme="dark"] .tich-mod-dash__invite > .tich-card,
+[data-theme="dark"] .tich-mod-dash > .tich-card,
+[data-theme="dark"] .tich-mod-dash .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)) {
     background: #0f172a;
     border-color: #334155;
+    color: var(--hr-ink);
 }
 
-[data-theme="dark"] .tich-mod-dash__panel:has(.tich-table-wrap) {
+[data-theme="dark"] .tich-mod-dash .tich-card .tich-h3,
+[data-theme="dark"] .tich-mod-dash .tich-card h2.tich-h3,
+[data-theme="dark"] .tich-mod-dash .tich-card h3.tich-h3 {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-mod-dash .tich-card .tich-caption {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .tich-mod-dash .tich-card .tich-label {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .tich-mod-dash__panel:has(.tich-table-wrap),
+[data-theme="dark"] .tich-mod-dash .tich-card:has(.tich-table-wrap),
+[data-theme="dark"] .tich-mod-dash .tich-card:has(.tich-admin-table),
+[data-theme="dark"] .tich-mod-dash .tich-card.tich-table-panel {
     background: transparent;
-    border-color: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 [data-theme="dark"] .tich-mod-dash__nav-card {
@@ -11975,6 +12003,32 @@ a.tich-tabs__btn {
 [data-theme="dark"] .tich-mod-dash__nav-card:hover {
     background: #14532d;
     border-color: var(--tich-green);
+}
+
+[data-theme="dark"] .tich-mod-dash__nav-card:hover .tich-mod-dash__nav-title,
+[data-theme="dark"] .tich-mod-dash__nav-card:hover .tich-mod-dash__nav-text,
+[data-theme="dark"] .tich-mod-dash__nav-card:hover .tich-mod-dash__nav-index {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tich-admin__main > .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)),
+[data-theme="dark"] .tich-admin__main article.tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)) {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card .tich-h3,
+[data-theme="dark"] .tich-admin__main .tich-card h2.tich-h3,
+[data-theme="dark"] .tich-admin__main .tich-card h3.tich-h3 {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card .tich-text {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card .tich-caption {
+    color: #94a3b8;
 }
 
 /* ??? Unified form (amount bar + section heads) ???????????????????????? */

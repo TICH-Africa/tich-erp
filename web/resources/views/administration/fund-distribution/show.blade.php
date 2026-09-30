@@ -95,7 +95,7 @@
     @include('partials.budget-request-breakdown', ['budgetRequest' => $budgetRequest, 'idPrefix' => 'fund-budrev'])
 
     @if (is_array($budgetRequest->group_allocations) && $budgetRequest->group_allocations !== [])
-        <div class="tich-card tich-table-panel tich-mt-6">
+        <div class="tich-table-panel tich-mt-6">
             <h2 class="tich-h3">Group allocations</h2>
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">

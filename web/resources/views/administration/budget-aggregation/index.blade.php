@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">By department</h2>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
@@ -68,7 +68,7 @@
         </div>
     </div>
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">All requests</h2>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
@@ -161,7 +161,7 @@
                     </div>
                 </div>
 
-                <div class="tich-card tich-table-panel tich-mt-4">
+                <div class="tich-table-panel tich-mt-4">
                     <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem;">
                         <div>
                             <h2 class="tich-h3" style="margin:0;">Line items</h2>

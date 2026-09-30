@@ -24,7 +24,7 @@
         </p>
     </article>
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">Sync log</h2>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">

@@ -25,7 +25,7 @@
         </select>
     </form>
 
-    <div class="tich-card tich-table-panel tich-mt-6">
+    <div class="tich-table-panel tich-mt-6">
         <table class="tich-admin-table">
             <thead>
                 <tr>

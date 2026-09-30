@@ -9,7 +9,7 @@
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
     @enderror
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>

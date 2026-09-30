@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <div class="tich-card tich-table-panel tich-mt-8">
+    <div class="tich-table-panel tich-mt-8">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>
