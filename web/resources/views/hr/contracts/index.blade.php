@@ -20,7 +20,7 @@
                         <th>Type</th>
                         <th>Start Date</th>
                         <th>End Date</th>
-                        <th>Status</th>
+                        <th>Renewal status</th>
                         <th>Signed</th>
                         <th></th>
                     </tr>
@@ -46,8 +46,23 @@
                             <td class="tich-caption">{{ $contract->start_date?->format('Y-m-d') }}</td>
                             <td class="tich-caption">{{ $contract->end_date?->format('Y-m-d') ?? 'Ongoing' }}</td>
                             <td>
-                                <span class="tich-badge tich-badge--{{ $contract->renewal_status === 'pending' ? 'warning' : ($contract->renewal_status === 'renewed' ? 'info' : 'success') }}">
-                                    {{ ucfirst($contract->renewal_status) }}
+                                @php
+                                    $renewalLabel = match ($contract->renewal_status) {
+                                        'pending' => 'Active',
+                                        'renewed' => 'Renewed',
+                                        'terminated' => 'Terminated',
+                                        'expired' => 'Expired',
+                                        default => ucfirst((string) $contract->renewal_status),
+                                    };
+                                    $renewalBadge = match ($contract->renewal_status) {
+                                        'pending' => 'success',
+                                        'renewed' => 'info',
+                                        'terminated', 'expired' => 'danger',
+                                        default => 'warning',
+                                    };
+                                @endphp
+                                <span class="tich-badge tich-badge--{{ $renewalBadge }}">
+                                    {{ $renewalLabel }}
                                 </span>
                             </td>
                             <td>

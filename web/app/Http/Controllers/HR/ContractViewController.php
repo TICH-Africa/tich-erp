@@ -26,7 +26,20 @@ class ContractViewController extends Controller
     {
         $staff = Staff::excludePlatformOperators()
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id', 'campus_id']);
+            ->get([
+                'id',
+                'first_name',
+                'surname',
+                'employee_number',
+                'job_title',
+                'department_id',
+                'campus_id',
+                'employment_category',
+                'gross_monthly_salary',
+                'employment_start_date',
+                'line_manager_id',
+                'payroll_scheme',
+            ]);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
         $selectedStaffId = (int) ($request->old('staff_id') ?: $request->query('staff_id') ?: 0);
@@ -40,7 +53,17 @@ class ContractViewController extends Controller
             'campuses' => $campuses,
             'selectedStaffId' => $selectedStaffId ?: null,
             'selectedStaff' => $selectedStaff,
+            'defaultContractType' => $this->contractTypeFromEmploymentCategory($selectedStaff?->employment_category),
         ]);
+    }
+
+    private function contractTypeFromEmploymentCategory(?string $category): ?string
+    {
+        return match ($category) {
+            'consultant', 'independent_contractor' => 'consultancy',
+            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy' => $category,
+            default => null,
+        };
     }
 
     public function store(Request $request)

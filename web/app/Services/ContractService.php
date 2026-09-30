@@ -239,7 +239,7 @@ class ContractService
 
     public function markContractSigned(int $contractId, ?string $witnessedBy, int $signedBy): StaffContract
     {
-        $contract = StaffContract::findOrFail($contractId);
+        $contract = StaffContract::with('staff.user')->findOrFail($contractId);
 
         $contract->update([
             'is_signed' => 1,
@@ -258,10 +258,31 @@ class ContractService
             $signedBy
         );
 
-        $contract->load('staff');
+        $contract->load('staff.user');
         $this->syncToStaff($contract);
+        $this->notifyStaffContractSigned($contract->fresh(['staff.user', 'department']));
 
-        return $contract->fresh();
+        return $contract->fresh(['staff', 'department']);
+    }
+
+    private function notifyStaffContractSigned(StaffContract $contract): void
+    {
+        $staff = $contract->staff;
+        if (! $staff) {
+            return;
+        }
+
+        $email = $staff->resolveErpEmail($staff->user?->email);
+        if (! $email) {
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($email)
+                ->send(new \App\Mail\ContractSignedEmail($staff, $contract));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function convertToPermanent(int $contractId, int $convertedBy): StaffContract

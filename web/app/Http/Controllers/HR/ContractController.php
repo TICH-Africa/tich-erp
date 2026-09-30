@@ -197,7 +197,7 @@ class ContractController extends Controller
 
         $contract = $this->contractService->markContractSigned($id, $validated['witnessed_by'] ?? null, $request->user()->id);
 
-        return redirect()->route('hr.contracts.show', $contract)->with('success', 'Contract marked as signed successfully.');
+        return redirect()->route('hr.contracts.show', $contract)->with('success', 'Contract marked as signed. The employee has been emailed a confirmation.');
     }
 
     public function convertToPermanent(Request $request, int $id)
