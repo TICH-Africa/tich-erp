@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Schema;
 
 class AuditService
 {
-    public function __construct(protected ClientContextResolver $clientContextResolver) {}
+    public function __construct(
+        protected ClientContextResolver $clientContextResolver,
+        protected RBACService $rbac,
+    ) {}
 
     public function log(
         string $action,
@@ -181,16 +184,21 @@ class AuditService
         ];
     }
 
-    public function query(array $filters = [])
+    public function query(array $filters = [], ?\App\Models\User $viewer = null)
     {
         $query = AuditLog::query()
             ->with([
                 'user:id,email,user_type,staff_id,student_id',
-                'user.staff:id,first_name,surname,employee_number',
+                'user.staff:id,first_name,surname,employee_number,department_id',
                 'user.student:id,registration_number,application_id',
                 'user.student.applicant:id,first_name,surname',
             ])
             ->orderByDesc('created_at');
+
+        $viewer ??= Auth::user();
+        if ($viewer) {
+            $this->applyViewerScope($query, $viewer);
+        }
 
         if (! empty($filters['action'])) {
             $query->where('action', $filters['action']);
@@ -300,6 +308,76 @@ class AuditService
         }
 
         return $query;
+    }
+
+    /**
+     * Restrict to the viewer's own actions and actions by people in their department(s),
+     * unless they have unrestricted audit access (ICT / CEO / CIA / Super Admin).
+     */
+    public function applyViewerScope($query, \App\Models\User $viewer)
+    {
+        if ($this->rbac->canViewUnrestrictedAuditLogs($viewer)) {
+            return $query;
+        }
+
+        $departmentIds = $this->rbac->getUserDepartmentIds($viewer);
+        $viewerId = (int) $viewer->id;
+
+        return $query->where(function ($scope) use ($viewerId, $departmentIds) {
+            $scope->where('user_id', $viewerId);
+
+            if ($departmentIds === []) {
+                return;
+            }
+
+            $scope->orWhereHas('user.staff', function ($staff) use ($departmentIds) {
+                $staff->whereIn('department_id', $departmentIds);
+            });
+
+            $scope->orWhereExists(function ($sub) use ($departmentIds) {
+                $sub->selectRaw('1')
+                    ->from('user_roles as ur')
+                    ->whereColumn('ur.user_id', 'audit_logs.user_id')
+                    ->whereIn('ur.department_id', $departmentIds)
+                    ->where(function ($expires) {
+                        $expires->whereNull('ur.expires_at')
+                            ->orWhere('ur.expires_at', '>', now());
+                    });
+            });
+        });
+    }
+
+    public function viewerCanSee(AuditLog $log, \App\Models\User $viewer): bool
+    {
+        if ($this->rbac->canViewUnrestrictedAuditLogs($viewer)) {
+            return true;
+        }
+
+        if ((int) $log->user_id === (int) $viewer->id) {
+            return true;
+        }
+
+        $departmentIds = $this->rbac->getUserDepartmentIds($viewer);
+        if ($departmentIds === [] || ! $log->user_id) {
+            return false;
+        }
+
+        $actor = $log->relationLoaded('user')
+            ? $log->user
+            : $log->user()->with('staff:id,department_id')->first();
+
+        if ($actor?->staff?->department_id && in_array((int) $actor->staff->department_id, $departmentIds, true)) {
+            return true;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('user_roles')
+            ->where('user_id', $log->user_id)
+            ->whereIn('department_id', $departmentIds)
+            ->where(function ($expires) {
+                $expires->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->exists();
     }
 
     public function moduleOptions(): array

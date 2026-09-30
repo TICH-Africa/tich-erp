@@ -5,10 +5,15 @@
 @section('content')
     <section class="tich-section">
         <div class="tich-container">
-            <x-page-toolbar title="Audit logs" meta="Changes across HR, Finance, Academics, Administration, and all modules">
+            <x-page-toolbar
+                title="Audit logs"
+                meta="{{ !empty($unrestrictedAuditAccess) ? 'All modules across the institution' : 'Your actions and activity in your department(s)' }}"
+            >
                 <x-slot:actions>
                     <a href="{{ route('admin.audit-logs.export', request()->query()) }}" class="tich-btn tich-btn-primary">Export Excel</a>
-                    <a href="{{ route('admin.audit-logs.verify') }}" class="tich-btn tich-btn-blue">Verify chain</a>
+                    @if (!empty($unrestrictedAuditAccess))
+                        <a href="{{ route('admin.audit-logs.verify') }}" class="tich-btn tich-btn-blue">Verify chain</a>
+                    @endif
                 </x-slot:actions>
                 <x-slot:filters>
                     <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="tich-page-toolbar__filters-form" style="flex-wrap:wrap;gap:0.4rem;">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Services\AuditService;
+use App\Services\RBACService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,7 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditController extends Controller
 {
-    public function __construct(protected AuditService $auditService) {}
+    public function __construct(
+        protected AuditService $auditService,
+        protected RBACService $rbac,
+    ) {}
 
     public function index(Request $request): JsonResponse|View
     {
@@ -22,7 +26,9 @@ class AuditController extends Controller
             'from', 'to', 'search', 'account', 'account_type',
         ]);
 
-        $logs = $this->auditService->query($filters)->paginate($request->integer('per_page', 50));
+        $viewer = $request->user();
+        $unrestricted = $viewer && $this->rbac->canViewUnrestrictedAuditLogs($viewer);
+        $logs = $this->auditService->query($filters, $viewer)->paginate($request->integer('per_page', 50));
 
         if ($request->expectsJson()) {
             return response()->json($logs);
@@ -33,6 +39,7 @@ class AuditController extends Controller
             'filters' => $filters,
             'modules' => $this->auditService->moduleOptions(),
             'actions' => array_keys(config('audit.actions', [])),
+            'unrestrictedAuditAccess' => $unrestricted,
         ]);
     }
 
@@ -41,7 +48,7 @@ class AuditController extends Controller
         $log = AuditLog::query()
             ->with([
                 'user:id,email,user_type,staff_id,student_id',
-                'user.staff:id,first_name,surname,employee_number',
+                'user.staff:id,first_name,surname,employee_number,department_id',
                 'user.student:id,registration_number,application_id',
                 'user.student.applicant:id,first_name,surname',
             ])
@@ -55,6 +62,11 @@ class AuditController extends Controller
             abort(404);
         }
 
+        $viewer = $request->user();
+        if (! $viewer || ! $this->auditService->viewerCanSee($log, $viewer)) {
+            abort(403, 'You do not have access to this audit log.');
+        }
+
         if ($request->expectsJson()) {
             return response()->json($log);
         }
@@ -64,6 +76,11 @@ class AuditController extends Controller
 
     public function verifyChain(Request $request): JsonResponse
     {
+        $viewer = $request->user();
+        if (! $viewer || ! $this->rbac->canViewUnrestrictedAuditLogs($viewer)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $result = $this->auditService->verifyChain($request->integer('limit') ?: null);
 
         return response()->json($result, $result['verified'] ? 200 : 422);
@@ -76,7 +93,8 @@ class AuditController extends Controller
             'from', 'to', 'search', 'account', 'account_type',
         ]);
 
-        $logs = $this->auditService->query($filters)->limit(5000)->get();
+        $viewer = $request->user();
+        $logs = $this->auditService->query($filters, $viewer)->limit(5000)->get();
 
         $this->auditService->log(
             'audit.export',

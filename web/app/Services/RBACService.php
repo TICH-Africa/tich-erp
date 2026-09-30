@@ -66,6 +66,23 @@ class RBACService
     }
 
     /**
+     * Full institution audit trail (not department-scoped).
+     * ICT / ICTO staff, CEO, Chief Institution Administrator, and Super Admin.
+     */
+    public function canViewUnrestrictedAuditLogs(User $user): bool
+    {
+        if ($this->isPlatformAdministrator($user)) {
+            return true;
+        }
+
+        if ($this->hasAnyRole($user, ['CEO', 'Chief Institution Administrator', 'Super Admin'])) {
+            return true;
+        }
+
+        return $this->userBelongsToDepartmentsByCodes($user, ['ICT', 'ICTO']);
+    }
+
+    /**
      * Dashboard "Platform administration" + /admin hub.
      * ICT + Administration department members, CEO, Academic Registrar (and Super Admin via hasPermission).
      */
