@@ -70,14 +70,14 @@
                     <input type="date" id="start_date" name="start_date" value="{{ old('start_date', $contract->start_date) }}" required class="tich-input">
                 </div>
                 <div>
-                    <label for="duration" class="tich-label">Duration</label>
-                    <input type="text" id="duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year, 2y">
-                    <p class="tich-caption tich-mt-1">Examples: 6 months, 1 year, 2y, 3m</p>
+                    <label for="duration" class="tich-label">Duration in months</label>
+                    <input type="number" id="duration" name="duration" value="{{ old('duration') }}" class="tich-input" min="1" step="1" placeholder="e.g. 12">
+                    <p class="tich-caption tich-mt-1">Enter the number of months only.</p>
                 </div>
                 <div>
                     <label for="end_date" class="tich-label">End Date</label>
                     <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $contract->end_date) }}" class="tich-input" readonly>
-                    <p class="tich-caption tich-mt-1">Auto-calculated from start date and duration.</p>
+                    <p class="tich-caption tich-mt-1">Auto-calculated from start date and duration (ends the day before the anniversary).</p>
                 </div>
                 <div>
                     <label for="probation_end_date" class="tich-label">Probation End Date</label>
@@ -122,22 +122,16 @@
                     return;
                 }
 
-                var lower = duration.toLowerCase();
-                var months = 0;
-                var yearMatch = lower.match(/(\d+)\s*y/);
-                var monthMatch = lower.match(/(\d+)\s*m/);
-
-                if (yearMatch) months += parseInt(yearMatch[1], 10) * 12;
-                if (monthMatch) months += parseInt(monthMatch[1], 10);
-                if (!yearMatch && !monthMatch && /^\d+$/.test(lower)) months = parseInt(lower, 10);
-
-                if (months <= 0) {
+                var months = parseInt(duration, 10);
+                if (!Number.isFinite(months) || months <= 0) {
                     endInput.value = '';
                     return;
                 }
 
-                var date = new Date(start);
+                var parts = start.split('-');
+                var date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                 date.setMonth(date.getMonth() + months);
+                date.setDate(date.getDate() - 1);
                 var yyyy = date.getFullYear();
                 var mm = String(date.getMonth() + 1).padStart(2, '0');
                 var dd = String(date.getDate()).padStart(2, '0');

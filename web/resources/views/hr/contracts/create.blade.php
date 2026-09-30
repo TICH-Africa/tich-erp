@@ -26,7 +26,13 @@
                             <select id="staff_id" name="staff_id" required class="{{ $errors->has('staff_id') ? 'is-invalid' : '' }}">
                                 <option value="">Select staff</option>
                                 @foreach ($staff as $s)
-                                    <option value="{{ $s->id }}" @selected(old('staff_id') == $s->id)>
+                                    <option
+                                        value="{{ $s->id }}"
+                                        data-job-title="{{ $s->job_title }}"
+                                        data-department-id="{{ $s->department_id }}"
+                                        data-campus-id="{{ $s->campus_id }}"
+                                        @selected(old('staff_id', $selectedStaffId ?? request('staff_id')) == $s->id)
+                                    >
                                         {{ $s->fullName() }} ({{ $s->employee_number }})
                                     </option>
                                 @endforeach
@@ -53,17 +59,25 @@
                         </div>
                         <div class="uf-field">
                             <label for="job_title">Job Title <span class="uf-req">*</span></label>
-                            <input type="text" id="job_title" name="job_title" value="{{ old('job_title') }}" required class="{{ $errors->has('job_title') ? 'is-invalid' : '' }}">
+                            <input
+                                type="text"
+                                id="job_title"
+                                name="job_title"
+                                value="{{ old('job_title', $selectedStaff->job_title ?? '') }}"
+                                required
+                                class="{{ $errors->has('job_title') ? 'is-invalid' : '' }}"
+                            >
                             @error('job_title')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
+                            <span class="uf-hint">Prefills from the staff record; you can edit it.</span>
                         </div>
                         <div class="uf-field">
                             <label for="department_id">Department <span class="uf-req">*</span></label>
                             <select id="department_id" name="department_id" required class="{{ $errors->has('department_id') ? 'is-invalid' : '' }}">
                                 <option value="">Select department</option>
                                 @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>
+                                    <option value="{{ $department->id }}" @selected(old('department_id', $selectedStaff->department_id ?? null) == $department->id)>
                                         {{ $department->dept_name }}
                                     </option>
                                 @endforeach
@@ -77,7 +91,7 @@
                             <select id="campus_id" name="campus_id">
                                 <option value="">Select campus</option>
                                 @foreach ($campuses as $campus)
-                                    <option value="{{ $campus->id }}" @selected(old('campus_id') == $campus->id)>
+                                    <option value="{{ $campus->id }}" @selected(old('campus_id', $selectedStaff->campus_id ?? null) == $campus->id)>
                                         {{ $campus->campus_name }}
                                     </option>
                                 @endforeach
@@ -117,14 +131,14 @@
                             @enderror
                         </div>
                         <div class="uf-field">
-                            <label for="duration">Duration</label>
-                            <input type="text" id="duration" name="duration" value="{{ old('duration') }}" placeholder="e.g. 6 months, 1 year, 2y">
-                            <span class="uf-hint">Examples: 6 months, 1 year, 2y, 3m</span>
+                            <label for="duration">Duration in months</label>
+                            <input type="number" id="duration" name="duration" value="{{ old('duration') }}" min="1" step="1" placeholder="e.g. 12">
+                            <span class="uf-hint">Enter the number of months only.</span>
                         </div>
                         <div class="uf-field">
                             <label for="end_date">End Date</label>
                             <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}" readonly>
-                            <span class="uf-hint">Auto-calculated from start date and duration.</span>
+                            <span class="uf-hint">Auto-calculated from start date and duration (ends the day before the anniversary).</span>
                         </div>
                         <div class="uf-field">
                             <label for="probation_end_date">Probation End Date</label>
@@ -168,22 +182,16 @@
                     return;
                 }
 
-                var lower = duration.toLowerCase();
-                var months = 0;
-                var yearMatch = lower.match(/(\d+)\s*y/);
-                var monthMatch = lower.match(/(\d+)\s*m/);
-
-                if (yearMatch) months += parseInt(yearMatch[1], 10) * 12;
-                if (monthMatch) months += parseInt(monthMatch[1], 10);
-                if (!yearMatch && !monthMatch && /^\d+$/.test(lower)) months = parseInt(lower, 10);
-
-                if (months <= 0) {
+                var months = parseInt(duration, 10);
+                if (!Number.isFinite(months) || months <= 0) {
                     endInput.value = '';
                     return;
                 }
 
-                var date = new Date(start);
+                var parts = start.split('-');
+                var date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                 date.setMonth(date.getMonth() + months);
+                date.setDate(date.getDate() - 1);
                 var yyyy = date.getFullYear();
                 var mm = String(date.getMonth() + 1).padStart(2, '0');
                 var dd = String(date.getDate()).padStart(2, '0');

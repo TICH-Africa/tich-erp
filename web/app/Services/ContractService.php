@@ -20,20 +20,20 @@ class ContractService
 
         $duration = strtolower(trim($duration));
         $start = \Carbon\Carbon::parse($startDate);
-
-        if (preg_match('/(\d+)\s*(y|year|years)/', $duration, $matches)) {
-            return $start->copy()->addYears((int) $matches[1])->toDateString();
-        }
-
-        if (preg_match('/(\d+)\s*(m|month|months)/', $duration, $matches)) {
-            return $start->copy()->addMonths((int) $matches[1])->toDateString();
-        }
+        $months = null;
 
         if (is_numeric($duration)) {
-            return $start->copy()->addMonths((int) $duration)->toDateString();
+            $months = (int) $duration;
+        } elseif (preg_match('/^(\d+)\s*(m|month|months)$/', $duration, $matches)) {
+            $months = (int) $matches[1];
         }
 
-        return null;
+        if ($months === null || $months <= 0) {
+            return null;
+        }
+
+        // Inclusive term: 1 Jan + 12 months ends 31 Dec (day before anniversary).
+        return $start->copy()->addMonths($months)->subDay()->toDateString();
     }
 
     public function createContract(int $staffId, array $data, int $createdBy): StaffContract

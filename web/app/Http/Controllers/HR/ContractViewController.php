@@ -22,18 +22,24 @@ class ContractViewController extends Controller
         return view('hr.contracts.index', ['contracts' => $contracts]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $staff = Staff::excludePlatformOperators()
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id', 'campus_id']);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = Campus::orderBy('campus_name')->get(['id', 'campus_name']);
+        $selectedStaffId = (int) ($request->old('staff_id') ?: $request->query('staff_id') ?: 0);
+        $selectedStaff = $selectedStaffId
+            ? $staff->firstWhere('id', $selectedStaffId)
+            : null;
 
         return view('hr.contracts.create', [
             'staff' => $staff,
             'departments' => $departments,
             'campuses' => $campuses,
+            'selectedStaffId' => $selectedStaffId ?: null,
+            'selectedStaff' => $selectedStaff,
         ]);
     }
 
