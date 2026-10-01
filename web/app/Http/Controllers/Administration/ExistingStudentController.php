@@ -11,6 +11,7 @@ use App\Services\ProgramsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -190,7 +191,11 @@ class ExistingStudentController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'surname' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email,'.$student->user_id,
+            'email' => [
+                'nullable',
+                'email',
+                Rule::unique('users', 'email')->ignore($student->user_id),
+            ],
             'phone_number' => 'nullable|string|max:20',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
@@ -270,6 +275,14 @@ class ExistingStudentController extends Controller
             'entry_pathway' => $validated['program_type'],
             'date_of_admission' => $yearJoined,
         ]);
+
+        // Keep the portal account in step with a corrected email; the students table
+        // has no email column of its own.
+        $email = $validated['email'] ?? null;
+
+        if ($email && $student->user_id) {
+            \App\Models\User::query()->whereKey($student->user_id)->update(['email' => $email]);
+        }
 
         return redirect()
             ->route('administration.applications.existing-student.show', $student->id)

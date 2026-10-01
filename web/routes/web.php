@@ -684,6 +684,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/applications/existing-student/create', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'create'])->name('administration.applications.existing-student.create');
         Route::post('/applications/existing-student', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'store'])->name('administration.applications.existing-student.store');
         Route::get('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'show'])->name('administration.applications.existing-student.show');
+        Route::get('/applications/existing-student/{student}/edit', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'edit'])->name('administration.applications.existing-student.edit');
+        Route::put('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'update'])->name('administration.applications.existing-student.update');
         Route::get('/applications/{id}', [\App\Http\Controllers\Administration\ApplicationController::class, 'show'])->name('administration.applications.show');
         Route::post('/applications/{id}/handoff-to-academics', [\App\Http\Controllers\Administration\ApplicationController::class, 'handoffToAcademics'])
             ->name('administration.applications.handoff-to-academics');

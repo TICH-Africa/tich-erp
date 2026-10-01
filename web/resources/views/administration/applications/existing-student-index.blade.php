@@ -49,6 +49,7 @@
                         <td>{{ ucfirst($student->enrollment_status) }}</td>
                         <td>
                             <a href="{{ route('administration.applications.existing-student.show', $student->id) }}" class="tich-link">View</a>
+                            <a href="{{ route('administration.applications.existing-student.edit', $student->id) }}" class="tich-link" style="display:block; margin-top:0.25rem;">Edit</a>
                         </td>
                     </tr>
                 @empty
