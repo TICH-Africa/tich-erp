@@ -90,6 +90,7 @@
         font-family: var(--font-heading);
         font-size: 0.95rem;
         font-weight: 700;
+        color: var(--tich-text, inherit);
     }
 
     .tich-onboarding-progress__meta {
@@ -107,7 +108,7 @@
     .tich-onboarding-progress__fill {
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(90deg, var(--tich-blue), var(--tich-green, #16a34a));
+        background: var(--tich-green, #6cab33);
         transition: width 0.25s ease;
     }
 
@@ -133,15 +134,15 @@
     }
 
     .tich-onboarding-progress__step.is-done {
-        color: var(--tich-green, #15803d);
-        border-color: color-mix(in srgb, var(--tich-green, #16a34a) 35%, transparent);
-        background: color-mix(in srgb, var(--tich-green, #16a34a) 12%, white);
+        color: var(--tich-status-success-text, #15803d);
+        border-color: var(--tich-status-success-border, rgba(22, 163, 74, 0.35));
+        background: var(--tich-status-success-bg, rgba(22, 163, 74, 0.12));
     }
 
     .tich-onboarding-progress__step.is-pending {
-        color: var(--tich-amber, #b45309);
-        border-color: color-mix(in srgb, var(--tich-amber, #f59e0b) 35%, transparent);
-        background: color-mix(in srgb, var(--tich-amber, #f59e0b) 10%, white);
+        color: var(--tich-status-caution-text, #b45309);
+        border-color: var(--tich-status-caution-border, rgba(245, 158, 11, 0.35));
+        background: var(--tich-status-caution-bg, rgba(245, 158, 11, 0.1));
     }
 
     .tich-onboarding-checklist {
@@ -162,7 +163,8 @@
     }
 
     .tich-onboarding-checklist__item.is-done {
-        background: color-mix(in srgb, var(--tich-green, #16a34a) 8%, white);
+        background: var(--tich-status-success-bg, rgba(22, 163, 74, 0.08));
+        border-color: var(--tich-status-success-border, var(--tich-neutral-border));
     }
 
     .tich-onboarding-checklist__mark {
@@ -195,6 +197,7 @@
         display: block;
         font-weight: 600;
         font-size: 0.875rem;
+        color: var(--tich-text, inherit);
     }
 
     .tich-onboarding-checklist__hint {
@@ -258,6 +261,7 @@
         font-size: 1.35rem;
         font-weight: 700;
         margin: 0;
+        color: var(--tich-text, inherit);
     }
 
     .tich-hr-profile-header__meta {
@@ -333,6 +337,93 @@
         margin: 0;
         font-size: 0.9375rem;
         word-break: break-word;
+        color: var(--tich-text, inherit);
+    }
+
+    [data-theme="dark"] .tich-hr-profile-header,
+    [data-theme="dark"] .tich-onboarding-progress,
+    [data-theme="dark"] .tich-detail-card {
+        background: var(--tich-surface, #1e293b);
+        border-color: var(--tich-neutral-border, #334155);
+    }
+
+    [data-theme="dark"] .tich-hr-profile-header__name,
+    [data-theme="dark"] .tich-onboarding-progress__title,
+    [data-theme="dark"] .tich-onboarding-checklist__label,
+    [data-theme="dark"] .tich-dl__value {
+        color: var(--tich-text, #e2e8f0);
+    }
+
+    [data-theme="dark"] .tich-hr-profile-header__meta,
+    [data-theme="dark"] .tich-onboarding-progress__meta,
+    [data-theme="dark"] .tich-onboarding-checklist__hint,
+    [data-theme="dark"] .tich-detail-card__title,
+    [data-theme="dark"] .tich-dl__label {
+        color: var(--tich-text-muted, #94a3b8);
+    }
+
+    [data-theme="dark"] .tich-hr-profile-header__photo {
+        border-color: var(--tich-neutral-border, #334155);
+        background: var(--tich-surface-muted, #0f172a);
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__track {
+        background: var(--tich-surface-muted, #0f172a);
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__fill {
+        background: var(--tich-green, #6cab33);
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__step {
+        background: var(--tich-surface-muted, #0f172a);
+        color: var(--tich-text-muted, #94a3b8);
+        border-color: var(--tich-neutral-border, #334155);
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__step.is-done {
+        color: #86efac;
+        border-color: rgba(134, 239, 172, 0.35);
+        background: rgba(21, 128, 61, 0.2);
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__step.is-pending {
+        color: #93c5fd;
+        border-color: rgba(147, 197, 253, 0.35);
+        background: rgba(29, 78, 216, 0.18);
+    }
+
+    [data-theme="dark"] .tich-onboarding-checklist__item {
+        background: var(--tich-surface-muted, #0f172a);
+        border-color: var(--tich-neutral-border, #334155);
+    }
+
+    [data-theme="dark"] .tich-onboarding-checklist__item.is-done {
+        background: rgba(21, 128, 61, 0.18);
+        border-color: rgba(134, 239, 172, 0.3);
+    }
+
+    [data-theme="dark"] .tich-onboarding-checklist__mark {
+        background: var(--tich-surface, #1e293b);
+        border-color: var(--tich-neutral-border, #334155);
+        color: var(--tich-text-muted, #94a3b8);
+    }
+
+    [data-theme="dark"] .tich-onboarding-checklist__item.is-done .tich-onboarding-checklist__mark {
+        background: var(--tich-green, #6cab33);
+        border-color: var(--tich-green, #6cab33);
+        color: #fff;
+    }
+
+    [data-theme="dark"] .tich-onboarding-progress__footer,
+    [data-theme="dark"] .tich-dl__row {
+        border-color: var(--tich-neutral-border, #334155);
+    }
+
+    [data-theme="dark"] .tich-doc-card,
+    [data-theme="dark"] .tich-list-item {
+        border-color: var(--tich-neutral-border, #334155);
+        color: var(--tich-text, #e2e8f0);
     }
 </style>
 

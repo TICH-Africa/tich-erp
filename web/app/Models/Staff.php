@@ -52,6 +52,7 @@ class Staff extends Model
         'department_id',
         'campus_id',
         'job_title',
+        'job_description',
         'job_grade',
         'employment_category',
         'payroll_scheme',

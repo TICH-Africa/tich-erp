@@ -5766,11 +5766,32 @@ a.tich-notification-badge:hover {
     box-shadow: none;
 }
 
+.tich-admin__main > .tich-card:has(> form),
+.tich-admin__main article.tich-card:has(form),
+.tich-admin__main section.tich-card:has(form),
+.tich-admin__main div.tich-card:has(> form),
+.tich-admin__main form.tich-card,
+.tich-admin__main .tich-card.tich-form-stack,
+.tich-admin__main form.tich-form-grid.tich-card {
+    overflow: visible;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
 .tich-card.tich-table-panel:hover,
 .tich-card:has(> .tich-admin-table):hover,
 .tich-card:has(> .tich-table-wrap):hover,
 .tich-card:has(.tich-table-wrap):hover,
-.tich-card:has(.tich-admin-table):hover {
+.tich-card:has(.tich-admin-table):hover,
+.tich-admin__main > .tich-card:has(> form):hover,
+.tich-admin__main article.tich-card:has(form):hover,
+.tich-admin__main section.tich-card:has(form):hover,
+.tich-admin__main div.tich-card:has(> form):hover,
+.tich-admin__main form.tich-card:hover,
+.tich-admin__main .tich-card.tich-form-stack:hover,
+.tich-admin__main form.tich-form-grid.tich-card:hover {
     border-color: transparent;
 }
 
@@ -12011,10 +12032,22 @@ a.tich-tabs__btn {
     color: #ffffff;
 }
 
-[data-theme="dark"] .tich-admin__main > .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)),
-[data-theme="dark"] .tich-admin__main article.tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)) {
+[data-theme="dark"] .tich-admin__main > .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)),
+[data-theme="dark"] .tich-admin__main article.tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)) {
     background: #0f172a;
     border-color: #334155;
+}
+
+[data-theme="dark"] .tich-admin__main > .tich-card:has(form),
+[data-theme="dark"] .tich-admin__main article.tich-card:has(form),
+[data-theme="dark"] .tich-admin__main section.tich-card:has(form),
+[data-theme="dark"] .tich-admin__main div.tich-card:has(> form),
+[data-theme="dark"] .tich-admin__main form.tich-card,
+[data-theme="dark"] .tich-admin__main .tich-card.tich-form-stack,
+[data-theme="dark"] .tich-admin__main form.tich-form-grid.tich-card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 [data-theme="dark"] .tich-admin__main .tich-card .tich-h3,
@@ -12089,7 +12122,7 @@ form.uf-form-surface,
     margin: 0;
 }
 
-/* Legacy page forms: card + stack become full-width unified surfaces */
+/* Legacy page forms: full-width surfaces without outer card border */
 form.tich-card,
 .tich-card > form,
 form > .tich-card.tich-form-stack,
@@ -12097,8 +12130,10 @@ form > .tich-card.tich-form-stack,
 form.tich-form-grid.tich-card {
     width: 100%;
     max-width: none;
-    border-radius: 4px;
-    border: 1px solid #c4cad2;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
     padding: 0;
 }
 
@@ -12107,8 +12142,8 @@ form.tich-form-grid.tich-card {
 [data-theme="dark"] form > .tich-card.tich-form-stack,
 [data-theme="dark"] .tich-card.tich-form-stack,
 [data-theme="dark"] form.tich-form-grid.tich-card {
-    border-color: #454b54;
-    background: #2d3239;
+    border: none;
+    background: transparent;
 }
 
 /* Section titles inside form cards become blue bars */

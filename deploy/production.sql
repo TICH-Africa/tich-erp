@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-09-29 22:06:27 EAT
+-- Generated: 2026-10-01 04:44:14 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -10426,6 +10426,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `campus_id` bigint(20) unsigned DEFAULT NULL,
   `line_manager_id` bigint(20) unsigned DEFAULT NULL,
   `job_title` varchar(200) NOT NULL,
+  `job_description` longtext DEFAULT NULL,
   `job_grade` varchar(20) DEFAULT NULL,
   `salary_scale` varchar(50) DEFAULT NULL,
   `incremental_date` date DEFAULT NULL,
@@ -10515,6 +10516,7 @@ CALL `tich_ensure_column`('staff', 'department_id', 'bigint(20) unsigned NULL DE
 CALL `tich_ensure_column`('staff', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'line_manager_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'job_title', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('staff', 'job_description', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'job_grade', 'varchar(20) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'salary_scale', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff', 'incremental_date', 'date NULL DEFAULT NULL');

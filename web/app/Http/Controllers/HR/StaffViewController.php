@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AuditService;
 use App\Services\EmployeeProfileChangeService;
 use App\Services\StaffLifecycleService;
+use App\Support\SafeHtml;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -191,6 +192,7 @@ class StaffViewController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'required|string|max:200',
+            'job_description' => 'nullable|string|max:100000',
             'job_grade' => 'nullable|string|max:20',
             'employment_category' => 'required|string|in:'.implode(',', array_keys(config('tich-payroll.employment_categories', []))),
             'payroll_scheme' => 'required|string|in:'.implode(',', array_keys(config('tich-payroll.payroll_schemes', []))),
@@ -217,6 +219,11 @@ class StaffViewController extends Controller
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
         $validated['employee_number'] = $this->staffLifecycle->generateEmployeeNumber();
         $validated = $this->prepareStaffEmails($validated);
+
+        if (array_key_exists('job_description', $validated)) {
+            $cleaned = SafeHtml::clean($validated['job_description'] ?? '');
+            $validated['job_description'] = $cleaned !== '' ? $cleaned : null;
+        }
 
         DB::transaction(function () use ($validated, $request) {
             $staff = Staff::create($validated);
@@ -367,6 +374,7 @@ class StaffViewController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
             'job_title' => 'sometimes|string|max:200',
+            'job_description' => 'nullable|string|max:100000',
             'job_grade' => 'nullable|string|max:20',
             'employment_category' => 'sometimes|string|in:'.implode(',', array_keys(config('tich-payroll.employment_categories', []))),
             'payroll_scheme' => 'sometimes|string|in:'.implode(',', array_keys(config('tich-payroll.payroll_schemes', []))),
@@ -397,6 +405,11 @@ class StaffViewController extends Controller
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
         $validated = $this->prepareStaffEmails($validated, $staff);
         unset($validated['profile_photo']);
+
+        if (array_key_exists('job_description', $validated)) {
+            $cleaned = SafeHtml::clean($validated['job_description'] ?? '');
+            $validated['job_description'] = $cleaned !== '' ? $cleaned : null;
+        }
 
         $bankInput = [
             'bank_name' => trim((string) ($validated['bank_name'] ?? '')),

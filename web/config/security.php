@@ -73,6 +73,7 @@ return [
         'content',
         'body',
         'html',
+        'job_description',
         'template_body',
         'preview_content',
         'crop_data',

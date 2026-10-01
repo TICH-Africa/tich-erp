@@ -39,6 +39,18 @@
         .tich-employee-profile-header__photo { width:5.5rem; height:5.5rem; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid var(--tich-neutral-border); background:var(--tich-surface-muted, #f1f5f9); display:flex; align-items:center; justify-content:center; }
         .tich-employee-profile-header__photo img { width:100%; height:100%; object-fit:cover; }
         .tich-employee-profile-header__initials { font-family:var(--font-heading); font-size:1.25rem; font-weight:700; color:var(--tich-blue); }
+        .tich-employee-job-description__body { font-size:0.9375rem; line-height:1.55; color:var(--tich-text, inherit); }
+        .tich-employee-job-description__body h1,
+        .tich-employee-job-description__body h2,
+        .tich-employee-job-description__body h3 { margin:0.85rem 0 0.4rem; color:var(--tich-text, inherit); }
+        .tich-employee-job-description__body h1 { font-size:1.25rem; }
+        .tich-employee-job-description__body h2 { font-size:1.1rem; }
+        .tich-employee-job-description__body h3 { font-size:1rem; }
+        .tich-employee-job-description__body p { margin:0.4rem 0; }
+        .tich-employee-job-description__body ul,
+        .tich-employee-job-description__body ol { margin:0.4rem 0 0.4rem 1.25rem; padding:0; }
+        [data-theme="dark"] .tich-employee-profile-header { background:var(--tich-surface, #1e293b); border-color:var(--tich-neutral-border, #334155); }
+        [data-theme="dark"] .tich-employee-job-description__body { color:var(--tich-text, #e2e8f0); }
     </style>
 
     <article class="tich-card tich-mt-6" style="border-left:4px solid #dc2626;">
@@ -105,6 +117,14 @@
                         <div><span class="tich-kv-grid__label">Contract type</span><span class="tich-kv-grid__value">{{ ucfirst(str_replace('_', ' ', $currentContract->contract_type)) }}</span></div>
                     @endif
                 </div>
+                @if (filled($staff->job_description))
+                    <div class="tich-employee-job-description tich-mt-6">
+                        <h3 class="tich-h3">Job description</h3>
+                        <div class="tich-prose tich-mt-3 tich-employee-job-description__body">
+                            {!! \App\Support\SafeHtml::clean($staff->job_description) !!}
+                        </div>
+                    </div>
+                @endif
             </article>
 
             <article class="tich-card">

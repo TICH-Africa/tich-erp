@@ -104,6 +104,21 @@
                     <label for="job_title" class="tich-label">Job Title *</label>
                     <input type="text" id="job_title" name="job_title" value="{{ old('job_title', $staff->job_title) }}" required class="tich-input">
                 </div>
+                <div class="tich-grid--span-2" style="grid-column:1/-1;">
+                    <x-cms-basic-editor
+                        name="job_description"
+                        id="job_description"
+                        label="Job Description"
+                        :value="old('job_description', $staff->job_description)"
+                        :with-headings="true"
+                        min-height="14rem"
+                        max-height="28rem"
+                    />
+                    <p class="tich-caption tich-mt-2">Shown to the employee on their dashboard (read-only). Use headings and lists to structure duties.</p>
+                    @error('job_description')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
                 @include('hr.staff.partials.employment-category-select', ['selected' => old('employment_category', $staff->employment_category)])
                 @include('hr.staff.partials.payroll-scheme-select', ['selected' => old('payroll_scheme', $staff->payroll_scheme ?: $staff->resolvedPayrollScheme())])
                 <div>
@@ -222,4 +237,5 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <x-asset.script path="js/tich-employee-profile-photo.js" />
+    <x-asset.script path="js/tich-cms-editor.js" :defer="false" />
 @endsection

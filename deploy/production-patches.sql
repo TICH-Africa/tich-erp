@@ -2075,6 +2075,14 @@ ALTER TABLE `students`
 
 -- PRESENT IN PRODUCTION UP TO HERE (after applying §42)
 
+-- -----------------------------------------------------------------------------
+-- 43. Staff job description (rich text, visible read-only on employee dashboard)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `staff`
+    ADD COLUMN IF NOT EXISTS `job_description` longtext NULL DEFAULT NULL AFTER `job_title`;
+
+-- PRESENT IN PRODUCTION UP TO HERE (after applying §43)
+
 
 
 
