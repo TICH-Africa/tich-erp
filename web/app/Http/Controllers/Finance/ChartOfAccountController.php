@@ -147,19 +147,42 @@ class ChartOfAccountController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+            // Use extension (filename), not MIME sniffing — Linux fileinfo often
+            // reports .xlsx as application/zip, which fails mimes:xlsx.
+            'file' => ['required', 'file', 'extensions:xlsx,xls,csv', 'max:10240'],
         ]);
+
+        $upload = $request->file('file');
+        $extension = strtolower((string) $upload->getClientOriginalExtension());
+        $sourcePath = $upload->getRealPath();
+
+        // PHP upload temp names have no extension; PhpSpreadsheet needs one to pick a reader.
+        $readablePath = $sourcePath;
+        $temporaryCopy = null;
+        if ($extension !== '' && ! str_ends_with(strtolower($sourcePath), '.'.$extension)) {
+            $temporaryCopy = $sourcePath.'.'.$extension;
+            if (! @copy($sourcePath, $temporaryCopy)) {
+                return back()->withErrors([
+                    'file' => 'The uploaded file could not be prepared for import. Please try again.',
+                ]);
+            }
+            $readablePath = $temporaryCopy;
+        }
 
         $import = new ChartOfAccountsImport(self::DEFAULT_CURRENCY, app(LedgerService::class));
 
         try {
-            $result = $import->import($request->file('file')->getRealPath());
+            $result = $import->import($readablePath, $extension !== '' ? $extension : null);
         } catch (\Throwable $exception) {
             report($exception);
 
             return back()->withErrors([
                 'file' => 'The file could not be read. Save it as .xlsx or .csv and try again.',
             ]);
+        } finally {
+            if ($temporaryCopy && is_file($temporaryCopy)) {
+                @unlink($temporaryCopy);
+            }
         }
 
         if ($result['skipped'] > 0 && $result['imported'] === 0 && $result['updated'] === 0) {

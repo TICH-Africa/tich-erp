@@ -60,7 +60,7 @@ class ChartOfAccountsImport
     /**
      * @return array{imported: int, updated: int, skipped: int, balances: int, errors: list<string>}
      */
-    public function import(string $path): array
+    public function import(string $path, ?string $extension = null): array
     {
         $this->imported = 0;
         $this->updated = 0;
@@ -68,7 +68,13 @@ class ChartOfAccountsImport
         $this->balancesPosted = 0;
         $this->errors = [];
 
-        $reader = IOFactory::createReaderForFile($path);
+        $extension = strtolower((string) ($extension ?: pathinfo($path, PATHINFO_EXTENSION)));
+        $reader = match ($extension) {
+            'xlsx', 'xlsm' => IOFactory::createReader('Xlsx'),
+            'xls' => IOFactory::createReader('Xls'),
+            'csv', 'txt' => IOFactory::createReader('Csv'),
+            default => IOFactory::createReaderForFile($path),
+        };
         $reader->setReadDataOnly(true);
 
         $spreadsheet = $reader->load($path);
