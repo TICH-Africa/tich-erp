@@ -30,9 +30,17 @@ class PhpRuntimeController extends Controller
                 'ok' => class_exists(\DOMDocument::class),
                 'detail' => class_exists(\DOMDocument::class) ? 'Available' : 'Missing — spreadsheet readers need DOM',
             ],
+            [
+                'label' => 'PhpSpreadsheet (for .xls)',
+                'ok' => class_exists(\PhpOffice\PhpSpreadsheet\IOFactory::class),
+                'detail' => class_exists(\PhpOffice\PhpSpreadsheet\IOFactory::class)
+                    ? 'Available'
+                    : 'Missing — .xlsx still works via zip; .xls needs composer install',
+            ],
         ];
 
-        $xlsxReady = collect($checks)->every(fn (array $check) => $check['ok']);
+        // .xlsx only needs zip + xml (native reader). .xls also needs PhpSpreadsheet.
+        $xlsxReady = collect(array_slice($checks, 0, 4))->every(fn (array $check) => $check['ok']);
 
         $major = explode('.', PHP_VERSION)[0] ?? '8';
         $minor = explode('.', PHP_VERSION)[1] ?? '2';

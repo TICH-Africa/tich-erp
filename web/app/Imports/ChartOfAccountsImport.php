@@ -4,8 +4,8 @@ namespace App\Imports;
 
 use App\Models\ChartOfAccount;
 use App\Services\Finance\LedgerService;
+use App\Support\SpreadsheetTabularReader;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ChartOfAccountsImport
 {
@@ -70,43 +70,7 @@ class ChartOfAccountsImport
 
         $extension = strtolower((string) ($extension ?: pathinfo($path, PATHINFO_EXTENSION)));
 
-        if (in_array($extension, ['xlsx', 'xlsm'], true) && ! class_exists(\ZipArchive::class)) {
-            throw new \RuntimeException('ZipArchive is required to read .xlsx files. Enable the PHP zip extension.');
-        }
-
-        if (! is_file($path) || ! is_readable($path)) {
-            throw new \RuntimeException('Uploaded spreadsheet path is not readable.');
-        }
-
-        $reader = match ($extension) {
-            'xlsx', 'xlsm' => IOFactory::createReader('Xlsx'),
-            'xls' => IOFactory::createReader('Xls'),
-            'csv', 'txt' => IOFactory::createReader('Csv'),
-            default => IOFactory::createReaderForFile($path),
-        };
-        $reader->setReadDataOnly(true);
-
-        if ($extension === 'csv' || $extension === 'txt') {
-            /** @var \PhpOffice\PhpSpreadsheet\Reader\Csv $reader */
-            $reader->setInputEncoding('UTF-8');
-            $reader->setDelimiter(',');
-            $reader->setEnclosure('"');
-        }
-
-        try {
-            $spreadsheet = $reader->load($path);
-        } catch (\Throwable $exception) {
-            // Auto-detect as a second chance (some hosts rename or alter uploads).
-            try {
-                $spreadsheet = IOFactory::load($path);
-            } catch (\Throwable) {
-                throw $exception;
-            }
-        }
-
-        $rows = $spreadsheet->getSheet(0)->toArray(null, true, false, false);
-        $spreadsheet->disconnectWorksheets();
-
+        $rows = (new SpreadsheetTabularReader())->rows($path, $extension);
         $rows = array_values(array_filter($rows, static fn ($row) => is_array($row) && $row !== []));
         if ($rows === []) {
             $this->errors[] = 'The uploaded file is empty.';

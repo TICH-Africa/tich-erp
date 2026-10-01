@@ -155,6 +155,9 @@ class ChartOfAccountController extends Controller
 
         $upload = $request->file('file');
         $extension = strtolower((string) $upload->getClientOriginalExtension());
+        if ($extension === '') {
+            $extension = strtolower((string) pathinfo((string) $upload->getClientOriginalName(), PATHINFO_EXTENSION));
+        }
         if (! in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
             return back()->withErrors([
                 'file' => 'Upload a .xlsx, .xls, or .csv file.',
@@ -167,39 +170,35 @@ class ChartOfAccountController extends Controller
             ]);
         }
 
-        $sourcePath = $upload->getRealPath() ?: $upload->getPathname();
-        if (! is_string($sourcePath) || ! is_file($sourcePath)) {
+        // Prefer app storage (always writable on cPanel) with a real extension.
+        // Upload temp names have no extension; some readers and hosts need one.
+        $storedRelative = $upload->storeAs(
+            'imports/chart-of-accounts',
+            'coa_'.now()->format('YmdHis').'_'.bin2hex(random_bytes(4)).'.'.$extension
+        );
+
+        if (! $storedRelative) {
             return back()->withErrors([
-                'file' => 'The uploaded file was not received by the server. Check PHP upload_max_filesize / post_max_size and try again.',
+                'file' => 'The uploaded file could not be stored for import. Check that storage/app/private is writable.',
             ]);
         }
 
-        // cPanel/LiteSpeed: write beside sys temp with a real extension (upload temps have none).
-        $readablePath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+        $readablePath = Storage::disk('local')->path($storedRelative);
+        $storedRelativeForCleanup = $storedRelative;
+
+        // Also keep a /tmp copy when possible — some hosts restrict open_basedir on storage.
+        $tmpPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
             .DIRECTORY_SEPARATOR
             .'coa_'.uniqid('', true).'.'.$extension;
-
-        if (! @copy($sourcePath, $readablePath)) {
-            // Fallback to Laravel private storage if /tmp copy is blocked.
-            $storedRelative = $upload->storeAs(
-                'imports/chart-of-accounts',
-                'coa_'.now()->format('YmdHis').'_'.bin2hex(random_bytes(4)).'.'.$extension
-            );
-
-            if (! $storedRelative) {
-                return back()->withErrors([
-                    'file' => 'The uploaded file could not be stored for import. Check that storage/app/private is writable.',
-                ]);
-            }
-
-            $readablePath = Storage::disk('local')->path($storedRelative);
-            $storedRelativeForCleanup = $storedRelative;
-        } else {
-            $storedRelativeForCleanup = null;
+        if (@copy($readablePath, $tmpPath) && is_file($tmpPath) && filesize($tmpPath) > 0) {
+            $readablePath = $tmpPath;
         }
 
         if (! is_file($readablePath) || filesize($readablePath) < 1) {
-            $this->cleanupImportFile($readablePath, $storedRelativeForCleanup ?? null);
+            if (is_file($tmpPath)) {
+                @unlink($tmpPath);
+            }
+            Storage::disk('local')->delete($storedRelativeForCleanup);
 
             return back()->withErrors([
                 'file' => 'The uploaded file is empty or could not be prepared for import.',
@@ -223,7 +222,10 @@ class ChartOfAccountController extends Controller
                 'file' => $this->importReadFailureMessage($exception, $extension),
             ]);
         } finally {
-            $this->cleanupImportFile($readablePath, $storedRelativeForCleanup ?? null);
+            if (is_file($tmpPath)) {
+                @unlink($tmpPath);
+            }
+            Storage::disk('local')->delete($storedRelativeForCleanup);
         }
 
         if ($result['skipped'] > 0 && $result['imported'] === 0 && $result['updated'] === 0) {
@@ -247,19 +249,6 @@ class ChartOfAccountController extends Controller
             ->route('finance.gl.index')
             ->with('status', $message)
             ->with('import_errors', $result['errors']);
-    }
-
-    private function cleanupImportFile(string $readablePath, ?string $storedRelative): void
-    {
-        if ($storedRelative) {
-            Storage::disk('local')->delete($storedRelative);
-
-            return;
-        }
-
-        if (is_file($readablePath)) {
-            @unlink($readablePath);
-        }
     }
 
     private function importDatabaseFailureMessage(\Illuminate\Database\QueryException $exception): string
@@ -287,18 +276,18 @@ class ChartOfAccountController extends Controller
             || str_contains($detail, 'class ziparchive not found')
             || str_contains($detail, 'ziparchive is required')
         ) {
-            return 'This server cannot read .xlsx files because the PHP zip extension is missing. Ask ICT to enable php-zip, or save the sheet as .csv and upload that instead.';
+            return 'This server cannot read .xlsx files because the PHP zip extension is missing. Ask ICT to enable php-zip.';
         }
 
-        if (str_contains($detail, 'domdocument') || str_contains($detail, 'php xml')) {
-            return 'This server cannot read spreadsheet XML (PHP xml extension missing). Ask ICT to enable php-xml, or upload a .csv file instead.';
+        if (str_contains($detail, 'domdocument') || str_contains($detail, 'php-xml') || str_contains($detail, 'php xml')) {
+            return 'This server cannot read spreadsheet XML (PHP xml extension missing). Ask ICT to enable php-xml.';
         }
 
-        if ($extension === 'xlsx' || $extension === 'xls') {
-            return 'The spreadsheet could not be read ('.$short.'). If this keeps happening, try File → Save As → CSV (.csv) and upload that.';
+        if (str_contains($detail, 'phpspreadsheet is not installed') && in_array($extension, ['xls'], true)) {
+            return 'This server cannot read .xls files because PhpSpreadsheet is missing. Upload .xlsx instead, or run composer install on the web host.';
         }
 
-        return 'The file could not be read ('.$short.'). Save it as .xlsx or .csv and try again.';
+        return 'Could not read the spreadsheet ('.$short.'). Supported formats: .xlsx, .xls, .csv.';
     }
 
     private function shortExceptionMessage(\Throwable $exception): string

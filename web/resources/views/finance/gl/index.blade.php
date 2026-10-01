@@ -208,10 +208,10 @@
                 </div>
                 <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.6rem 0 0;">.xlsx, .xls or .csv &middot; up to 10MB</p>
 
-                @unless (class_exists(\ZipArchive::class))
+                @unless (class_exists(\ZipArchive::class) && class_exists(\DOMDocument::class))
                     <div class="tich-alert tich-alert--warning" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">
-                        <strong>.xlsx cannot be read on this server</strong> (PHP zip missing on the web runtime).
-                        ICT: open <a href="{{ route('ict.php-runtime') }}">PHP runtime check</a>, install php-zip / php-xml, restart PHP-FPM, then retry.
+                        <strong>.xlsx cannot be read on this server</strong>
+                        (need PHP zip + xml). ICT: <a href="{{ route('ict.php-runtime') }}">PHP runtime check</a>.
                     </div>
                 @endunless
 
