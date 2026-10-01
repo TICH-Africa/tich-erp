@@ -943,6 +943,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/', [\App\Http\Controllers\Ict\DashboardController::class, '__invoke'])->name('ict.dashboard');
         Route::get('/platform-performance', [\App\Http\Controllers\Ict\PlatformPerformanceController::class, 'index'])->name('ict.platform-performance.index');
         Route::get('/platform-performance/metrics', [\App\Http\Controllers\Ict\PlatformPerformanceController::class, 'metrics'])->name('ict.platform-performance.metrics');
+        Route::get('/php-runtime', \App\Http\Controllers\Ict\PhpRuntimeController::class)->name('ict.php-runtime');
         Route::get('/sidebar-notifications', \App\Http\Controllers\Ict\SidebarNotificationController::class)->name('ict.sidebar-notifications');
         $registerModuleBudgeting('ict');
         $registerModuleMeReports('ict');
