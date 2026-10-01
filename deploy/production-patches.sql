@@ -2086,8 +2086,9 @@ ALTER TABLE `staff`
 -- -----------------------------------------------------------------------------
 -- 44. Chart of Accounts: `account_category` replaced by `currency`
 --     (2026_09_30_000001_replace_account_category_with_currency_in_chart_of_accounts)
---     production.sql adds `currency` (default 'KES'); the legacy column is
---     dropped here because production.sql is add-only.
+--     Live dump `tichafri_dbmain.sql` still has NOT NULL `account_category` and
+--     NO `currency`. Excel import writes `currency` only → prod inserts fail
+--     until this section runs. production.sql is add-only, so the DROP lives here.
 -- -----------------------------------------------------------------------------
 SET @db := DATABASE();
 SET @sql := (SELECT IF(
@@ -2105,7 +2106,7 @@ SET @sql := (SELECT IF(
   'SELECT 1'
 ));
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
--- PRESENT IN PRODUCTION UP TO HERE (after applying §44)
+-- APPLY ON PRODUCTION: required for chart-of-accounts Excel import (see tichafri_dbmain.sql)
 
 
 
