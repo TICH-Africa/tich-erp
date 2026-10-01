@@ -8,6 +8,7 @@ use App\Models\ChartOfAccount;
 use App\Services\Finance\LedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -154,35 +155,44 @@ class ChartOfAccountController extends Controller
 
         $upload = $request->file('file');
         $extension = strtolower((string) $upload->getClientOriginalExtension());
-        $sourcePath = $upload->getRealPath();
-
-        // PHP upload temp names have no extension; PhpSpreadsheet needs one to pick a reader.
-        $readablePath = $sourcePath;
-        $temporaryCopy = null;
-        if ($extension !== '' && ! str_ends_with(strtolower($sourcePath), '.'.$extension)) {
-            $temporaryCopy = $sourcePath.'.'.$extension;
-            if (! @copy($sourcePath, $temporaryCopy)) {
-                return back()->withErrors([
-                    'file' => 'The uploaded file could not be prepared for import. Please try again.',
-                ]);
-            }
-            $readablePath = $temporaryCopy;
+        if (! in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
+            return back()->withErrors([
+                'file' => 'Upload a .xlsx, .xls, or .csv file.',
+            ]);
         }
 
+        if (in_array($extension, ['xlsx', 'xlsm'], true) && ! class_exists(\ZipArchive::class)) {
+            return back()->withErrors([
+                'file' => 'This server cannot read .xlsx files because the PHP zip extension is missing. Ask ICT to enable php-zip, or save the sheet as .csv and upload that instead.',
+            ]);
+        }
+
+        // Persist with a real extension — PHP upload temp names have none, and
+        // some hosts block writing beside /tmp/phpXXXXXX.
+        $storedRelative = $upload->storeAs(
+            'imports/chart-of-accounts',
+            'coa_'.now()->format('YmdHis').'_'.bin2hex(random_bytes(4)).'.'.$extension
+        );
+
+        if (! $storedRelative) {
+            return back()->withErrors([
+                'file' => 'The uploaded file could not be stored for import. Please try again.',
+            ]);
+        }
+
+        $readablePath = Storage::disk('local')->path($storedRelative);
         $import = new ChartOfAccountsImport(self::DEFAULT_CURRENCY, app(LedgerService::class));
 
         try {
-            $result = $import->import($readablePath, $extension !== '' ? $extension : null);
+            $result = $import->import($readablePath, $extension);
         } catch (\Throwable $exception) {
             report($exception);
 
             return back()->withErrors([
-                'file' => 'The file could not be read. Save it as .xlsx or .csv and try again.',
+                'file' => $this->importReadFailureMessage($exception, $extension),
             ]);
         } finally {
-            if ($temporaryCopy && is_file($temporaryCopy)) {
-                @unlink($temporaryCopy);
-            }
+            Storage::disk('local')->delete($storedRelative);
         }
 
         if ($result['skipped'] > 0 && $result['imported'] === 0 && $result['updated'] === 0) {
@@ -206,6 +216,25 @@ class ChartOfAccountController extends Controller
             ->route('finance.gl.index')
             ->with('status', $message)
             ->with('import_errors', $result['errors']);
+    }
+
+    private function importReadFailureMessage(\Throwable $exception, string $extension): string
+    {
+        $detail = strtolower($exception->getMessage());
+
+        if (str_contains($detail, 'ziparchive') || str_contains($detail, 'zip')) {
+            return 'This server cannot read .xlsx files because the PHP zip extension is missing. Ask ICT to enable php-zip, or save the sheet as .csv and upload that instead.';
+        }
+
+        if (str_contains($detail, 'xml') || str_contains($detail, 'domdocument')) {
+            return 'This server cannot read spreadsheet XML (PHP xml extension missing). Ask ICT to enable php-xml, or upload a .csv file instead.';
+        }
+
+        if ($extension === 'xlsx' || $extension === 'xls') {
+            return 'The spreadsheet could not be read. Try File → Save As → CSV (.csv) and upload that, or ask ICT to confirm php-zip and php-xml are enabled.';
+        }
+
+        return 'The file could not be read. Save it as .xlsx or .csv and try again.';
     }
 
     public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse

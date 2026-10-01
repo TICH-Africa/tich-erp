@@ -69,6 +69,15 @@ class ChartOfAccountsImport
         $this->errors = [];
 
         $extension = strtolower((string) ($extension ?: pathinfo($path, PATHINFO_EXTENSION)));
+
+        if (in_array($extension, ['xlsx', 'xlsm'], true) && ! class_exists(\ZipArchive::class)) {
+            throw new \RuntimeException('ZipArchive is required to read .xlsx files. Enable the PHP zip extension.');
+        }
+
+        if (! is_file($path) || ! is_readable($path)) {
+            throw new \RuntimeException('Uploaded spreadsheet path is not readable.');
+        }
+
         $reader = match ($extension) {
             'xlsx', 'xlsm' => IOFactory::createReader('Xlsx'),
             'xls' => IOFactory::createReader('Xls'),
@@ -76,6 +85,13 @@ class ChartOfAccountsImport
             default => IOFactory::createReaderForFile($path),
         };
         $reader->setReadDataOnly(true);
+
+        if ($extension === 'csv' || $extension === 'txt') {
+            /** @var \PhpOffice\PhpSpreadsheet\Reader\Csv $reader */
+            $reader->setInputEncoding('UTF-8');
+            $reader->setDelimiter(',');
+            $reader->setEnclosure('"');
+        }
 
         $spreadsheet = $reader->load($path);
         $rows = $spreadsheet->getSheet(0)->toArray(null, true, false, false);
