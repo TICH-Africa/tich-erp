@@ -4539,8 +4539,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 }
 
 .tich-admin-sidebar {
-    --sidebar-scale: 0.8;
-    --sidebar-sub-scale: 0.7;
+    --sidebar-scale: calc(0.8 * 0.96);
+    --sidebar-sub-scale: calc(0.7 * 0.96);
     --sidebar-font: calc(0.9375rem * var(--sidebar-scale));
     --sidebar-sub-font: calc(0.9375rem * var(--sidebar-sub-scale));
     --sidebar-icon: calc(2rem * var(--sidebar-scale));
@@ -4555,8 +4555,12 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     --sidebar-sub-pad-y: calc(0.5rem * var(--sidebar-sub-scale));
     --sidebar-sub-pad-x: calc(0.625rem * var(--sidebar-sub-scale));
 
-    background: var(--tich-white);
-    border: 1px solid var(--tich-neutral-border);
+    font-family: var(--font-body);
+    /* Match solid platform navbar (light) */
+    background: rgba(18, 90, 140, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e8f3dc;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-lg);
     padding: calc(1rem * var(--sidebar-scale)) calc(0.75rem * var(--sidebar-scale));
     display: flex;
@@ -4652,12 +4656,12 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         margin-top: calc(0.75rem * var(--sidebar-scale));
         padding-top: calc(0.75rem * var(--sidebar-scale));
         padding-bottom: 0.15rem;
-        border-top: 1px solid var(--tich-neutral-border);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
         flex-shrink: 0;
         position: sticky;
         bottom: 0;
         z-index: 2;
-        background: var(--tich-white);
+        background: rgba(18, 90, 140, 0.97);
     }
 
     .tich-admin-sidebar__collapse-btn {
@@ -4669,8 +4673,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         border: 0;
         border-radius: var(--radius-md);
         background: transparent;
-        color: var(--tich-grey);
-        font-family: var(--font-ui);
+        color: #e8f3dc;
+        font-family: var(--font-body);
         font-size: var(--sidebar-font);
         line-height: 1.35;
         text-align: left;
@@ -4679,8 +4683,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     }
 
     .tich-admin-sidebar__collapse-btn:hover {
-        background: var(--tich-primary-light, rgba(0, 82, 155, 0.08));
-        color: var(--tich-primary);
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
     }
 
     .tich-admin-sidebar__collapse-icon {
@@ -4690,7 +4694,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         width: var(--sidebar-icon);
         height: var(--sidebar-icon);
         border-radius: calc(0.5rem * var(--sidebar-scale));
-        background: var(--tich-surface-muted, #f1f5f9);
+        background: rgba(255, 255, 255, 0.12);
         flex-shrink: 0;
     }
 
@@ -4821,12 +4825,12 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 }
 
 .tich-admin-sidebar__title {
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: calc(0.75rem * var(--sidebar-scale));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--tich-grey);
+    color: rgba(232, 243, 220, 0.72);
     margin: 0 0 calc(0.75rem * var(--sidebar-scale));
     padding: 0 calc(0.625rem * var(--sidebar-scale));
     flex-shrink: 0;
@@ -4838,7 +4842,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     gap: calc(0.75rem * var(--sidebar-scale));
     padding: 0 calc(0.625rem * var(--sidebar-scale)) calc(1rem * var(--sidebar-scale));
     margin-bottom: calc(0.25rem * var(--sidebar-scale));
-    border-bottom: 1px solid var(--tich-neutral-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     flex-shrink: 0;
 }
 
@@ -4850,8 +4854,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    border: 2px solid var(--tich-neutral-border);
-    background: var(--tich-surface-muted, #f1f5f9);
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4868,7 +4872,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     font-family: var(--font-heading);
     font-size: calc(0.875rem * var(--sidebar-scale));
     font-weight: 700;
-    color: var(--tich-blue);
+    color: #ffffff;
     line-height: 1;
 }
 
@@ -4879,10 +4883,10 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
 .tich-admin-sidebar__user-name {
     margin: 0;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: calc(0.875rem * var(--sidebar-scale));
     font-weight: 600;
-    color: var(--tich-text, #1f2937);
+    color: #ffffff;
     line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4892,7 +4896,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 .tich-admin-sidebar__user-email {
     margin: 0.15rem 0 0;
     font-size: calc(0.75rem * var(--sidebar-scale));
-    color: var(--tich-grey);
+    color: rgba(232, 243, 220, 0.72);
     line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4903,7 +4907,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     margin: 0.2rem 0 0;
     font-size: calc(0.6875rem * var(--sidebar-scale));
     font-weight: 600;
-    color: var(--tich-blue);
+    color: #ffffff;
     line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4919,6 +4923,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     margin-top: calc(-0.35rem * var(--sidebar-scale)) !important;
     margin-bottom: calc(0.75rem * var(--sidebar-scale)) !important;
     font-size: calc(0.8125rem * var(--sidebar-scale));
+    color: rgba(232, 243, 220, 0.72);
 }
 
 .tich-admin-sidebar__nav {
@@ -4948,9 +4953,9 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     box-sizing: border-box;
     padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
     border-radius: var(--radius-md);
-    color: var(--tich-grey);
+    color: #e8f3dc;
     text-decoration: none;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: var(--sidebar-font);
     line-height: 1.35;
     transition: background-color 0.15s ease, color 0.15s ease;
@@ -4964,8 +4969,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     height: var(--sidebar-icon);
     flex-shrink: 0;
     border-radius: calc(0.5rem * var(--sidebar-scale));
-    background: var(--tich-surface-muted, rgba(15, 23, 42, 0.05));
-    color: var(--tich-grey);
+    background: rgba(255, 255, 255, 0.12);
+    color: #e8f3dc;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -5004,7 +5009,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
 .tich-admin-sidebar__link.is-muted .tich-admin-sidebar__icon {
     background: transparent;
-    color: var(--tich-grey);
+    color: rgba(232, 243, 220, 0.55);
 }
 
 /* Mobile admin / portal sidebar drawer + compact content */
@@ -5034,11 +5039,11 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         padding: 0.28rem 0.65rem;
         border: 0;
         border-top: 0;
-        border-bottom: 1px solid var(--tich-neutral-border);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 0;
-        background: var(--tich-white);
-        color: var(--tich-grey);
-        font-family: var(--font-ui);
+        background: rgba(18, 90, 140, 0.97);
+        color: #e8f3dc;
+        font-family: var(--font-body);
         font-size: 0.6875rem;
         font-weight: 600;
         line-height: 1.15;
@@ -5054,7 +5059,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         flex: 0 0 auto;
         margin: 0;
         border-top: 0;
-        border-bottom: 1px solid var(--tich-neutral-border);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .tich-admin-sidebar-mobile__toggle-icon {
@@ -5065,7 +5070,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         height: 1.15rem;
         flex-shrink: 0;
         border-radius: var(--radius-sm);
-        background: var(--tich-neutral);
+        background: rgba(255, 255, 255, 0.12);
     }
 
     .tich-admin-sidebar-mobile__toggle-icon svg {
@@ -5120,22 +5125,22 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
-        /* Match right-side nav drawer (--nav-drawer-scale: 0.92) item sizing */
-        --sidebar-scale: 0.80;
-        --sidebar-sub-scale: 0.74;
-        --sidebar-font: calc(0.8125rem * 0.92);
-        --sidebar-sub-font: calc(0.75rem * 0.92);
-        --sidebar-icon: calc(1.45rem * 0.92);
-        --sidebar-sub-icon: calc(1.3rem * 0.92);
-        --sidebar-icon-svg: calc(14px * 0.92);
-        --sidebar-sub-icon-svg: calc(12px * 0.92);
-        --sidebar-chevron-svg: calc(14px * 0.92);
-        --sidebar-gap: calc(0.35rem * 0.92);
-        --sidebar-sub-gap: calc(0.3rem * 0.92);
-        --sidebar-pad-y: calc(0.55rem * 0.92);
-        --sidebar-pad-x: calc(0.4rem * 0.92);
-        --sidebar-sub-pad-y: calc(0.45rem * 0.92);
-        --sidebar-sub-pad-x: calc(0.35rem * 0.92);
+        /* Match right-side nav drawer item sizing, then shrink by 0.96 */
+        --sidebar-scale: calc(0.80 * 0.96);
+        --sidebar-sub-scale: calc(0.74 * 0.96);
+        --sidebar-font: calc(0.8125rem * 0.92 * 0.96);
+        --sidebar-sub-font: calc(0.75rem * 0.92 * 0.96);
+        --sidebar-icon: calc(1.45rem * 0.92 * 0.96);
+        --sidebar-sub-icon: calc(1.3rem * 0.92 * 0.96);
+        --sidebar-icon-svg: calc(14px * 0.92 * 0.96);
+        --sidebar-sub-icon-svg: calc(12px * 0.92 * 0.96);
+        --sidebar-chevron-svg: calc(14px * 0.92 * 0.96);
+        --sidebar-gap: calc(0.35rem * 0.92 * 0.96);
+        --sidebar-sub-gap: calc(0.3rem * 0.92 * 0.96);
+        --sidebar-pad-y: calc(0.55rem * 0.92 * 0.96);
+        --sidebar-pad-x: calc(0.4rem * 0.92 * 0.96);
+        --sidebar-sub-pad-y: calc(0.45rem * 0.92 * 0.96);
+        --sidebar-sub-pad-x: calc(0.35rem * 0.92 * 0.96);
         padding: calc(0.45rem * 0.92) calc(0.55rem * 0.92);
         gap: calc(0.05rem * 0.92);
     }
@@ -5250,7 +5255,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     flex-shrink: 0;
     margin-top: auto;
     padding-top: calc(0.75rem * var(--sidebar-scale));
-    border-top: 1px solid var(--tich-neutral-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     display: grid;
     gap: calc(0.125rem * var(--sidebar-scale));
 }
@@ -5325,14 +5330,14 @@ a.tich-notification-badge:hover {
 .tich-admin-sidebar__nav a.is-active,
 .tich-admin-sidebar__link:hover,
 .tich-admin-sidebar__link.is-active {
-    background: var(--tich-primary-light, rgba(0, 82, 155, 0.08));
-    color: var(--tich-primary);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }
 
 .tich-admin-sidebar__nav a:hover .tich-admin-sidebar__icon,
 .tich-admin-sidebar__link:hover .tich-admin-sidebar__icon {
-    background: rgba(0, 82, 155, 0.12);
-    color: var(--tich-primary);
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
 }
 
 .tich-admin-sidebar__nav a.is-active .tich-admin-sidebar__icon,
@@ -5342,12 +5347,12 @@ a.tich-notification-badge:hover {
 }
 
 .tich-admin-sidebar__section {
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: calc(0.6875rem * var(--sidebar-scale));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--tich-grey);
+    color: rgba(232, 243, 220, 0.72);
     margin: calc(0.875rem * var(--sidebar-scale)) 0 calc(0.375rem * var(--sidebar-scale));
     padding: 0 calc(0.625rem * var(--sidebar-scale));
 }
@@ -5362,8 +5367,8 @@ a.tich-notification-badge:hover {
     gap: var(--sidebar-gap);
     padding: var(--sidebar-pad-y) var(--sidebar-pad-x);
     border-radius: var(--radius-md);
-    color: var(--tich-grey);
-    font-family: var(--font-ui);
+    color: rgba(232, 243, 220, 0.55);
+    font-family: var(--font-body);
     font-size: calc(0.875rem * var(--sidebar-scale));
     opacity: 0.65;
 }
@@ -5388,8 +5393,8 @@ a.tich-notification-badge:hover {
     border: 0;
     border-radius: var(--radius-md);
     background: transparent;
-    color: var(--tich-grey);
-    font-family: var(--font-ui);
+    color: #e8f3dc;
+    font-family: var(--font-body);
     font-size: var(--sidebar-font);
     line-height: 1.35;
     text-align: left;
@@ -5399,14 +5404,14 @@ a.tich-notification-badge:hover {
 
 .tich-admin-sidebar__group-toggle:hover,
 .tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle {
-    background: var(--tich-primary-light, rgba(0, 82, 155, 0.08));
-    color: var(--tich-primary);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }
 
 .tich-admin-sidebar__group-toggle:hover .tich-admin-sidebar__icon,
 .tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-admin-sidebar__icon {
-    background: rgba(0, 82, 155, 0.12);
-    color: var(--tich-primary);
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
 }
 
 .tich-admin-sidebar__group-toggle .tich-admin-sidebar__label {
@@ -5422,7 +5427,7 @@ a.tich-notification-badge:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--tich-grey);
+    color: rgba(232, 243, 220, 0.72);
     transition: transform 0.28s ease;
 }
 
@@ -5436,7 +5441,7 @@ a.tich-notification-badge:hover {
     gap: calc(0.125rem * var(--sidebar-sub-scale));
     margin-left: calc(0.35rem * var(--sidebar-sub-scale));
     padding-left: calc(0.65rem * var(--sidebar-sub-scale));
-    border-left: calc(2px * var(--sidebar-sub-scale)) solid var(--tich-neutral-border);
+    border-left: calc(2px * var(--sidebar-sub-scale)) solid rgba(255, 255, 255, 0.18);
     overflow: hidden;
 }
 
@@ -5448,7 +5453,7 @@ a.tich-notification-badge:hover {
 .tich-admin-sidebar__subnav--nested {
     margin-left: calc(0.5rem * var(--sidebar-sub-scale));
     padding-left: calc(0.75rem * var(--sidebar-sub-scale));
-    border-left-color: var(--tich-neutral-border);
+    border-left-color: rgba(255, 255, 255, 0.14);
 }
 
 .tich-admin-sidebar__subgroup > .tich-admin-sidebar__group-toggle {
@@ -6534,18 +6539,25 @@ a.tich-notification-badge:hover {
 }
 
 [data-theme="dark"] .tich-admin-sidebar {
-    background: var(--tich-white);
-    border-color: var(--tich-neutral-border);
+    background: rgba(26, 28, 30, 0.97);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e8f3dc;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .tich-admin-sidebar__controls {
+    background: rgba(26, 28, 30, 0.97);
+    border-top-color: rgba(255, 255, 255, 0.12);
 }
 
 [data-theme="dark"] .tich-admin-sidebar-mobile__toggle {
-    background: var(--tich-white);
-    border-color: var(--tich-neutral-border);
-    color: var(--tich-grey);
+    background: rgba(26, 28, 30, 0.97);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e8f3dc;
 }
 
 [data-theme="dark"] .tich-admin-sidebar-mobile__toggle-icon {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 [data-theme="dark"] .tich-admin-sidebar-mobile__backdrop {
@@ -7861,12 +7873,13 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 [data-theme="dark"] .tich-admin-sidebar__nav a.is-active,
 [data-theme="dark"] .tich-admin-sidebar__link:hover,
 [data-theme="dark"] .tich-admin-sidebar__link.is-active {
-    background: var(--tich-blue-light);
-    color: var(--tich-blue);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }
 
 [data-theme="dark"] .tich-admin-sidebar__icon {
-    background: rgba(148, 163, 184, 0.12);
+    background: rgba(255, 255, 255, 0.12);
+    color: #e8f3dc;
 }
 
 [data-theme="dark"] .tich-admin-sidebar__nav a.is-active .tich-admin-sidebar__icon,
@@ -10839,9 +10852,9 @@ a.tich-tabs__btn {
 
     .tich-admin--student-portal .tich-admin-sidebar-mobile__shell .tich-admin-sidebar {
         /* Keep left menu sized like the right nav drawer (do not inflate with portal scale) */
-        --sidebar-scale: 0.80;
-        --sidebar-sub-scale: 0.74;
-        padding: calc(0.45rem * 0.92) calc(0.55rem * 0.92);
+        --sidebar-scale: calc(0.80 * 0.96);
+        --sidebar-sub-scale: calc(0.74 * 0.96);
+        padding: calc(0.45rem * 0.92 * 0.96) calc(0.55rem * 0.92 * 0.96);
     }
 }
 
