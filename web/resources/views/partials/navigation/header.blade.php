@@ -1,6 +1,10 @@
-<header id="site-header" class="tich-header{{ request()->routeIs('home') ? ' tich-header--over-hero' : '' }}">
+@php
+    $isHomeRoute = request()->routeIs('home');
+@endphp
+<header id="site-header" class="tich-header{{ $isHomeRoute ? ' tich-header--over-hero' : ' tich-header--solid' }}">
     <div class="tich-container tich-header__inner">
-        @include('partials.brand-logo', ['variant' => request()->routeIs('home') ? 'light' : 'default'])
+        {{-- Light brand matches the home / solid blue navbar chrome on every page --}}
+        @include('partials.brand-logo', ['variant' => 'light'])
 
         <button type="button" class="tich-nav-toggle" aria-label="Open menu" aria-expanded="false" data-nav-toggle>
             <span></span><span></span><span></span>
