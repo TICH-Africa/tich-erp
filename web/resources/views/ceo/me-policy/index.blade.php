@@ -40,9 +40,9 @@
                             @foreach ($signoff['departments'] as $dept)
                                 <tr>
                                     <td>{{ $dept['name'] }}</td>
-                                    <td>{{ $dept['signed'] ? ($dept['signed_name'] ?? '—') : '—' }}</td>
-                                    <td>{{ $dept['signed_role'] ?? '—' }}</td>
-                                    <td>{{ $dept['signed'] ? ($dept['signed_at'] ?? '—') : '—' }}</td>
+                                    <td>{{ $dept['signed'] ? ($dept['signed_name'] ?? '-') : '-' }}</td>
+                                    <td>{{ $dept['signed_role'] ?? '-' }}</td>
+                                    <td>{{ $dept['signed'] ? ($dept['signed_at'] ?? '-') : '-' }}</td>
                                     <td><x-status-badge :status="$dept['signed'] ? 'signed' : 'pending'" :label="$dept['signed'] ? 'Signed' : 'Pending'" /></td>
                                 </tr>
                             @endforeach
@@ -58,7 +58,7 @@
             </article>
         @elseif ($executiveReadOnly ?? false)
             <article class="tich-card tich-mt-6">
-                <p class="tich-text">Awaiting CEO signature — read-only observers cannot sign policies.</p>
+                <p class="tich-text">Awaiting CEO signature - read-only observers cannot sign policies.</p>
             </article>
         @else
             <form method="POST" action="{{ route('ceo.me-policy.sign') }}" class="tich-card tich-form-stack tich-mt-6">

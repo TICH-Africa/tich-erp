@@ -36,7 +36,7 @@
                                 <option value="">Select asset</option>
                                 @foreach($assets as $asset)
                                     <option value="{{ $asset->id }}" @selected(old('asset_id') == $asset->id)>
-                                        {{ $asset->asset_number }} — {{ $asset->asset_name }}
+                                        {{ $asset->asset_number }} - {{ $asset->asset_name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -126,7 +126,7 @@
                         @error('notes')
                             <span class="uf-error">{{ $message }}</span>
                         @enderror
-                        <span class="uf-hint">Optional — location issues, serial mismatches, etc.</span>
+                        <span class="uf-hint">Optional - location issues, serial mismatches, etc.</span>
                     </div>
                     <div class="uf-form-actions">
                         <button type="submit" class="uf-btn uf-btn-primary">Submit verification</button>

@@ -12,7 +12,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">{{ $department->dept_code }} · Academics hub</p>
             <h1 class="tich-mod-dash__title">{{ $department->dept_name }}</h1>
-            <p class="tich-mod-dash__lede">Learning departments, programmes, unit catalog, and curriculum approvals — live overview.</p>
+            <p class="tich-mod-dash__lede">Learning departments, programmes, unit catalog, and curriculum approvals - live overview.</p>
         </div>
     </header>
 

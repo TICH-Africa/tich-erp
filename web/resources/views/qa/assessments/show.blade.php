@@ -9,7 +9,7 @@
 @section('qa-content')
     <x-page-toolbar
         title="{{ $assessment->title }}"
-        :meta="'Year '.($assessment->assessment_year ?: '—').' · '.ucfirst($assessment->status)"
+        :meta="'Year '.($assessment->assessment_year ?: '-').' · '.ucfirst($assessment->status)"
     >
         <x-slot:actions>
             <a href="{{ route('qa.assessments.index') }}" class="tich-btn tich-btn-ghost">All assessments</a>
@@ -28,12 +28,12 @@
             </div>
             <div>
                 <dt class="tich-caption">Assessment year</dt>
-                <dd>{{ $assessment->assessment_year ?: '—' }}</dd>
+                <dd>{{ $assessment->assessment_year ?: '-' }}</dd>
             </div>
             @if ($assessment->isPublished())
                 <div>
                     <dt class="tich-caption">Published by</dt>
-                    <dd>{{ $assessment->publisher_name ?: '—' }}</dd>
+                    <dd>{{ $assessment->publisher_name ?: '-' }}</dd>
                 </div>
                 <div>
                     <dt class="tich-caption">Published at</dt>
@@ -73,9 +73,9 @@
                     @foreach (($payload['auditors'] ?? []) as $i => $auditor)
                         <tr>
                             <td>{{ $i + 1 }}</td>
-                            <td>{{ $auditor['name'] ?: '—' }}</td>
-                            <td>{{ $auditor['signature'] ?: '—' }}</td>
-                            <td>{{ $auditor['date'] ?: '—' }}</td>
+                            <td>{{ $auditor['name'] ?: '-' }}</td>
+                            <td>{{ $auditor['signature'] ?: '-' }}</td>
+                            <td>{{ $auditor['date'] ?: '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

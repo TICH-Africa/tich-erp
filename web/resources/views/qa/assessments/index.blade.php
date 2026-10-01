@@ -3,7 +3,7 @@
 @section('title', 'IQA assessments')
 
 @section('qa-content')
-    <x-page-toolbar title="IQA assessments" meta="NATIONAL POLYTECHNIC QUALITY AUDIT TOOL — multiple drafts allowed; published locked">
+    <x-page-toolbar title="IQA assessments" meta="NATIONAL POLYTECHNIC QUALITY AUDIT TOOL - multiple drafts allowed; published locked">
         <x-slot:actions>
             @if ($canManage)
                 <form method="POST" action="{{ route('qa.assessments.store') }}" class="tich-inline-form">
@@ -35,7 +35,7 @@
                                 <a href="{{ route('qa.assessments.show', $row) }}" class="tich-link">{{ $row->title }}</a>
                                 <p class="tich-caption">#{{ $row->id }}</p>
                             </td>
-                            <td>{{ $row->assessment_year ?: '—' }}</td>
+                            <td>{{ $row->assessment_year ?: '-' }}</td>
                             <td>
                                 <x-status-badge :status="$row->status" />
                             </td>
@@ -47,7 +47,7 @@
                                         <p class="tich-caption">{{ $row->publisher_name }}</p>
                                     @endif
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
                             <td class="tich-table-actions">

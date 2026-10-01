@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Systems &amp; digital services</p>
             <h1 class="tich-mod-dash__title">ICT command center</h1>
-            <p class="tich-mod-dash__lede">ERP access, infrastructure, website content, and platform health — live overview.</p>
+            <p class="tich-mod-dash__lede">ERP access, infrastructure, website content, and platform health - live overview.</p>
         </div>
     </header>
 

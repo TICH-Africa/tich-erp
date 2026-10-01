@@ -4,7 +4,7 @@
 
 @section('procurement-content')
     @php
-        $assetLabel = $record->asset?->asset_name ?? ('Asset #'.($record->asset_id ?: '—'));
+        $assetLabel = $record->asset?->asset_name ?? ('Asset #'.($record->asset_id ?: '-'));
     @endphp
     <x-page-toolbar title="Disposal request" :meta="$assetLabel">
         <x-slot:actions>
@@ -27,7 +27,7 @@
                     @if ($record->asset)
                         <a href="{{ route('procurement.assets.show', $record->asset) }}" class="tich-link">{{ $record->asset->asset_name }}</a>
                     @else
-                        <span class="tich-caption">Asset missing (id {{ $record->asset_id ?? '—' }})</span>
+                        <span class="tich-caption">Asset missing (id {{ $record->asset_id ?? '-' }})</span>
                     @endif
                 </dd>
                 <dt>Type</dt><dd>{{ $record->disposal_type }}</dd>

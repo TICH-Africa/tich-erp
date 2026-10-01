@@ -68,7 +68,7 @@
                             <td>{{ $item->monthLabel() }} · Week {{ $item->week_number }}</td>
                             <td>{{ number_format((float) $item->total_hours, 2) }}</td>
                             <td><x-status-badge :status="$item->status" /></td>
-                            <td class="tich-caption">{{ $item->employee_signed_at?->format('d M Y') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->employee_signed_at?->format('d M Y') ?? '-' }}</td>
                             <td><a href="{{ route('employee.time-logs.show', $item) }}" class="tich-btn tich-btn-secondary" style="padding:0.35rem 0.6rem;font-size:0.85rem;">Open</a></td>
                         </tr>
                     @empty

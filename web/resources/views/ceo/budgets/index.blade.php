@@ -40,7 +40,7 @@
                                 <p class="tich-caption">{{ $item->title }}</p>
                             </td>
                             <td>{{ $item->department?->dept_name }}</td>
-                            <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : '—' }}</td>
+                            <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : '-' }}</td>
                             <td>
                                 KES {{ number_format((float) $item->requested_amount, 0) }}
                                 @if ($annual)

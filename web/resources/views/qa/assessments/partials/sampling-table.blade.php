@@ -29,7 +29,7 @@
                             @endphp
                             <td>
                                 @if ($readonly || $isFixed)
-                                    {{ $value !== '' ? $value : ($isFixed ? ($fixedLabels[$ri] ?? '—') : '—') }}
+                                    {{ $value !== '' ? $value : ($isFixed ? ($fixedLabels[$ri] ?? '-') : '-') }}
                                     @if ($isFixed && ! $readonly)
                                         <input type="hidden" name="tables[{{ $tableKey }}][rows][{{ $ri }}][{{ $col }}]" value="{{ $fixedLabels[$ri] ?? $value }}">
                                     @endif
@@ -51,7 +51,7 @@
     <div style="padding:1rem;">
         <label class="tich-label" for="remarks-{{ $tableKey }}">Remarks</label>
         @if ($readonly)
-            <p class="tich-text tich-mt-2" style="white-space:pre-wrap;">{{ $table['remarks'] ?: '—' }}</p>
+            <p class="tich-text tich-mt-2" style="white-space:pre-wrap;">{{ $table['remarks'] ?: '-' }}</p>
         @else
             <textarea
                 id="remarks-{{ $tableKey }}"

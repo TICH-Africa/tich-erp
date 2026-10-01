@@ -82,7 +82,7 @@
                                 <p class="tich-caption">{{ $item->week_ref }}</p>
                             </td>
                             <td>{{ number_format((float) $item->total_hours, 2) }}</td>
-                            <td class="tich-caption">{{ $item->employee_signed_at?->format('d M Y H:i') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->employee_signed_at?->format('d M Y H:i') ?? '-' }}</td>
                             <td class="tich-caption">
                                 @if ($item->manager_signed_at)
                                     {{ $item->manager_signed_name }}{{ $item->manager_self_endorsed ? ' (self)' : '' }}

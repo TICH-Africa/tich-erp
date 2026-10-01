@@ -56,7 +56,7 @@
                             <td>{{ $item->displayName() }}</td>
                             <td>{{ ucfirst($item->applicant_type) }}</td>
                             <td>{{ $item->email }}</td>
-                            <td>{{ $item->research_area ?: '—' }}</td>
+                            <td>{{ $item->research_area ?: '-' }}</td>
                             <td><x-status-badge :status="$item->status" /></td>
                             <td>{{ $item->created_at?->format('d M Y H:i') }}</td>
                             <td><a href="{{ route('research.partnerships.show', $item) }}" class="tich-link">Open</a></td>

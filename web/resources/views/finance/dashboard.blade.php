@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Treasury &amp; student accounts</p>
             <h1 class="tich-mod-dash__title">Finance command center</h1>
-            <p class="tich-mod-dash__lede">Student fees, accounts receivable, treasury, payroll, and compliance reporting — live overview.</p>
+            <p class="tich-mod-dash__lede">Student fees, accounts receivable, treasury, payroll, and compliance reporting - live overview.</p>
         </div>
     </header>
 

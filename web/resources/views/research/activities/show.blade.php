@@ -29,9 +29,9 @@
         </section>
         <aside>
             <dl class="tich-text" style="display:grid;gap:0.75rem;">
-                <div><dt class="tich-caption">Start</dt><dd>{{ $activity->start_date?->format('d M Y') ?? '—' }}</dd></div>
-                <div><dt class="tich-caption">Duration</dt><dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else — @endif</dd></div>
-                <div><dt class="tich-caption">Expected completion</dt><dd>{{ $activity->end_date?->format('d M Y') ?? '—' }}</dd></div>
+                <div><dt class="tich-caption">Start</dt><dd>{{ $activity->start_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">Duration</dt><dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else - @endif</dd></div>
+                <div><dt class="tich-caption">Expected completion</dt><dd>{{ $activity->end_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div><dt class="tich-caption">Status</dt><dd>{{ $activity->statusLabel() }}@if($activity->status_locked) <span class="tich-caption">(manual)</span>@endif</dd></div>
                 <div><dt class="tich-caption">Visibility</dt><dd>{{ ucfirst($activity->visibility) }}</dd></div>
             </dl>

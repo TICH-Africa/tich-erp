@@ -33,8 +33,8 @@
                                 <p class="tich-caption">{{ \Illuminate\Support\Carbon::parse($plan->planned_date)->format('d M Y') }}</p>
                             </td>
                             <td>{{ $plan->tutor_name }}</td>
-                            <td>{{ $plan->unit_code }} — {{ $plan->unit_name }}</td>
-                            <td>{{ $plan->department_name ?? '—' }}</td>
+                            <td>{{ $plan->unit_code }} - {{ $plan->unit_name }}</td>
+                            <td>{{ $plan->department_name ?? '-' }}</td>
                             <td><x-status-badge :status="$plan->status" /></td>
                             <td>
                                 @if ($plan->qa_acknowledged_at)

@@ -3,7 +3,7 @@
 @section('title', 'Procurement requisitions')
 
 @section('ceo-content')
-    <x-page-toolbar title="Procurement requisitions" meta="All requisitions — approve or reject those awaiting CEO" />
+    <x-page-toolbar title="Procurement requisitions" meta="All requisitions - approve or reject those awaiting CEO" />
 
     @if (session('status'))
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
@@ -43,9 +43,9 @@
                                 <strong>{{ $item->requisition_number }}</strong>
                                 <p class="tich-caption">{{ $item->requested_item ?: \Illuminate\Support\Str::limit($item->justification, 60) }}</p>
                             </td>
-                            <td>{{ $item->department?->dept_name ?? '—' }}</td>
+                            <td>{{ $item->department?->dept_name ?? '-' }}</td>
                             <td>KES {{ number_format((float) $item->estimated_cost, 0) }}</td>
-                            <td class="tich-caption">{{ $item->request_date?->format('d M Y') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->request_date?->format('d M Y') ?? '-' }}</td>
                             <td><x-status-badge :status="$item->status" /></td>
                             <td>
                                 <a href="{{ route('ceo.procurement.show', $item) }}" class="tich-btn tich-btn-primary">Open</a>

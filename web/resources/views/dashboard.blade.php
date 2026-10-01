@@ -43,7 +43,7 @@
                         <article class="tich-portal-card tich-portal-card--exec">
                             <p class="tich-portal-card__eyebrow">Executive</p>
                             <h2 class="tich-portal-card__title">Chief Institution Administrator</h2>
-                            <p class="tich-portal-card__desc">Read-only institution oversight — view executive queues, workforce, students, and finance without acting.</p>
+                            <p class="tich-portal-card__desc">Read-only institution oversight - view executive queues, workforce, students, and finance without acting.</p>
                             <div class="tich-portal-card__actions">
                                 <a href="{{ route('institution-admin.dashboard') }}" class="tich-portal-card__btn tich-portal-card__btn--primary">Open oversight office</a>
                             </div>

@@ -40,7 +40,7 @@
                             <option value="">Select a requisition…</option>
                             @forelse($requisitions as $req)
                                 <option value="{{ $req->id }}" @selected(old('requisition_id') == $req->id || (isset($requisition) && $requisition?->id === $req->id))>
-                                    {{ $req->requisition_number }} — KES {{ number_format((float) $req->estimated_cost, 2) }} — {{ $req->request_date?->format('d M Y') ?? '-' }}
+                                    {{ $req->requisition_number }} - KES {{ number_format((float) $req->estimated_cost, 2) }} - {{ $req->request_date?->format('d M Y') ?? '-' }}
                                 </option>
                             @empty
                                 <option disabled>No approved requisitions available.</option>

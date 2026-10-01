@@ -74,7 +74,7 @@
         </form>
     @elseif (! $report->ceo_reviewed_at && ($executiveReadOnly ?? false))
         <article class="tich-card tich-mt-6">
-            <p class="tich-text">Awaiting CEO signature — read-only observers cannot sign.</p>
+            <p class="tich-text">Awaiting CEO signature - read-only observers cannot sign.</p>
         </article>
     @else
         <article class="tich-card tich-mt-6">

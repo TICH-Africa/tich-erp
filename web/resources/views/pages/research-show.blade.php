@@ -58,15 +58,15 @@
                     <dl class="research-public-show__facts">
                         <div>
                             <dt>Start</dt>
-                            <dd>{{ $activity->start_date?->format('d M Y') ?? '—' }}</dd>
+                            <dd>{{ $activity->start_date?->format('d M Y') ?? '-' }}</dd>
                         </div>
                         <div>
                             <dt>Duration</dt>
-                            <dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else — @endif</dd>
+                            <dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else - @endif</dd>
                         </div>
                         <div>
                             <dt>Expected completion</dt>
-                            <dd>{{ $activity->end_date?->format('d M Y') ?? '—' }}</dd>
+                            <dd>{{ $activity->end_date?->format('d M Y') ?? '-' }}</dd>
                         </div>
                         <div>
                             <dt>Status</dt>
@@ -76,7 +76,7 @@
 
                     @if ($activity->documents->isNotEmpty())
                         <h2 class="research-public-show__aside-title">Documents</h2>
-                        <p class="research-public-show__doc-note">Read online only — downloads are not available.</p>
+                        <p class="research-public-show__doc-note">Read online only - downloads are not available.</p>
                         <ul class="research-public-show__docs">
                             @foreach ($activity->documents as $doc)
                                 <li>

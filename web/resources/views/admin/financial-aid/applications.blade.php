@@ -3,7 +3,7 @@
 @section('title', 'Applications for ' . $financialAidOpportunity->title)
 
 @section('administration-content')
-    <x-page-toolbar title="Applications" meta="{{ $financialAidOpportunity->title }} &mdash; {{ $applications->total() }} applications">
+    <x-page-toolbar title="Applications" meta="{{ $financialAidOpportunity->title }} - {{ $applications->total() }} applications">
         <x-slot:actions>
             <a href="{{ route('administration.financial-aid.show', $financialAidOpportunity) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>

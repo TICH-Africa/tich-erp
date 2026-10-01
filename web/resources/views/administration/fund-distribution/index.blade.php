@@ -45,10 +45,10 @@
                             </td>
                             <td>{{ $approved->department?->dept_name }}</td>
                             <td>
-                                <span class="tich-badge">{{ $approved->budget_type ? ucfirst($approved->budget_type) : '—' }}</span>
+                                <span class="tich-badge">{{ $approved->budget_type ? ucfirst($approved->budget_type) : '-' }}</span>
                             </td>
                             <td class="tich-caption">
-                                {{ $approved->planningCycle?->title ?? ($approved->planningCycle?->fiscal_year ?? '—') }}
+                                {{ $approved->planningCycle?->title ?? ($approved->planningCycle?->fiscal_year ?? '-') }}
                             </td>
                             <td>
                                 <strong>KES {{ number_format($amount, 0) }}</strong>
@@ -122,10 +122,10 @@
                                 @if ($allocation->budgetRequest)
                                     <a href="{{ route('administration.fund-distribution.budget.show', $allocation->budgetRequest->id) }}" class="tich-link">{{ $allocation->budgetRequest->request_code }}</a>
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
-                            <td class="tich-caption">{{ $allocation->released_at?->format('d M Y H:i') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $allocation->released_at?->format('d M Y H:i') ?? '-' }}</td>
                             <td>
                                 @if ($allocation->status === 'released')
                                     <form method="POST" action="{{ route('administration.fund-distribution.disburse', $allocation) }}" onsubmit="return confirm('Mark this allocation as disbursed?')" style="display:inline;">
@@ -164,7 +164,7 @@
                             <option value="">Optional</option>
                             @foreach ($approvedRequests->where('status', 'approved') as $approved)
                                 <option value="{{ $approved->id }}">
-                                    {{ $approved->request_code }} — {{ $approved->title }} · {{ $approved->department?->dept_name }}
+                                    {{ $approved->request_code }} - {{ $approved->title }} · {{ $approved->department?->dept_name }}
                                     (KES {{ number_format((float) ($approved->approved_amount ?? $approved->requested_amount ?? 0), 0) }})
                                 </option>
                             @endforeach

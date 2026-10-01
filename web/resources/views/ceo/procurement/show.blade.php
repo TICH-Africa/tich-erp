@@ -30,7 +30,7 @@
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Department</p>
-            <p class="tich-stat__value" style="font-size:1.1rem;">{{ $requisition->department?->dept_name ?? '—' }}</p>
+            <p class="tich-stat__value" style="font-size:1.1rem;">{{ $requisition->department?->dept_name ?? '-' }}</p>
         </article>
     </div>
 
@@ -39,13 +39,13 @@
             <h2 class="tich-h3" style="margin-top:0;">Details</h2>
             <dl class="tich-dl">
                 <dt>Item / service</dt>
-                <dd>{{ $requisition->requested_item ?? '—' }}</dd>
+                <dd>{{ $requisition->requested_item ?? '-' }}</dd>
                 <dt>Requested by</dt>
-                <dd>{{ $requisition->requester?->fullName() ?? '—' }}</dd>
+                <dd>{{ $requisition->requester?->fullName() ?? '-' }}</dd>
                 <dt>Request date</dt>
-                <dd>{{ $requisition->request_date?->format('d M Y') ?? '—' }}</dd>
+                <dd>{{ $requisition->request_date?->format('d M Y') ?? '-' }}</dd>
                 <dt>Budget code</dt>
-                <dd>{{ $requisition->budget_code ?? '—' }}</dd>
+                <dd>{{ $requisition->budget_code ?? '-' }}</dd>
                 <dt>Justification</dt>
                 <dd>{{ $requisition->justification }}</dd>
             </dl>
@@ -53,13 +53,13 @@
         <article class="tich-card">
             <h2 class="tich-h3" style="margin-top:0;">Approval trail</h2>
             @if ($requisition->hod_approved_at)
-                <p class="tich-caption">HOD: {{ $requisition->hodApprover?->fullName() ?? '—' }} · {{ $requisition->hod_approved_at->format('d M Y H:i') }}</p>
+                <p class="tich-caption">HOD: {{ $requisition->hodApprover?->fullName() ?? '-' }} · {{ $requisition->hod_approved_at->format('d M Y H:i') }}</p>
             @endif
             @if ($requisition->finance_approved_at)
-                <p class="tich-caption">Finance: {{ $requisition->financeApprover?->fullName() ?? '—' }} · {{ $requisition->finance_approved_at->format('d M Y H:i') }}</p>
+                <p class="tich-caption">Finance: {{ $requisition->financeApprover?->fullName() ?? '-' }} · {{ $requisition->finance_approved_at->format('d M Y H:i') }}</p>
             @endif
             @if ($requisition->ceo_approved_at)
-                <p class="tich-caption">CEO: {{ $requisition->ceoApprover?->fullName() ?? '—' }} · {{ $requisition->ceo_approved_at->format('d M Y H:i') }}</p>
+                <p class="tich-caption">CEO: {{ $requisition->ceoApprover?->fullName() ?? '-' }} · {{ $requisition->ceo_approved_at->format('d M Y H:i') }}</p>
             @endif
             <div class="tich-mt-4">
                 <h3 class="tich-h4">Budget verification</h3>

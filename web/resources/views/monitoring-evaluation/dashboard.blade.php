@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Performance intelligence</p>
             <h1 class="tich-mod-dash__title">M&amp;E command center</h1>
-            <p class="tich-mod-dash__lede">Policy alignment, baseline plans, PIME cycle, and executive reporting — live overview.</p>
+            <p class="tich-mod-dash__lede">Policy alignment, baseline plans, PIME cycle, and executive reporting - live overview.</p>
         </div>
     </header>
 

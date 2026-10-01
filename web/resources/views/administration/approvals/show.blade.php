@@ -52,7 +52,7 @@
             <div class="budrev-summary__status">
                 <span class="tich-badge">{{ $statusLabel }}</span>
                 <span class="tich-caption">
-                    Submitted {{ $budgetRequest->submitted_at?->format('d M Y · H:i') ?? '—' }}
+                    Submitted {{ $budgetRequest->submitted_at?->format('d M Y · H:i') ?? '-' }}
                     @if ($submitter)
                         by {{ $submitter['name'] }}
                     @endif

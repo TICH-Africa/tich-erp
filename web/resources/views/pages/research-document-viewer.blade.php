@@ -112,7 +112,7 @@
     data-stream-url="{{ $streamUrl }}"
     data-is-pdf="{{ $document->isPdf() ? '1' : '0' }}"
     data-is-image="{{ $document->isImage() ? '1' : '0' }}"
-    data-watermark="TICH Research Repository — Read Only — {{ $viewerIp }} / {{ $viewerStamp }}"
+    data-watermark="TICH Research Repository - Read Only - {{ $viewerIp }} / {{ $viewerStamp }}"
 >
 <div class="rv-shell">
     <header class="rv-toolbar">
@@ -129,7 +129,7 @@
         @elseif ($document->isImage())
             <div class="rv-page-wrap" style="margin:0 auto;">
                 <img src="{{ $streamUrl }}" alt="{{ $document->title }}" class="rv-image" draggable="false">
-                <div class="rv-watermark">{{ 'TICH Research Repository — Read Only — '.$viewerIp.' / '.$viewerStamp }}</div>
+                <div class="rv-watermark">{{ 'TICH Research Repository - Read Only - '.$viewerIp.' / '.$viewerStamp }}</div>
             </div>
         @else
             <div class="rv-fallback">

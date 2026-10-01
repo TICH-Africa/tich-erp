@@ -1,7 +1,7 @@
 @extends('layouts.employee')
 
 @section('employee-content')
-    <x-page-toolbar title="Leave Carry-Forward" meta="Unused annual leave — line manager then HR (max 10 days)" />
+    <x-page-toolbar title="Leave Carry-Forward" meta="Unused annual leave - line manager then HR (max 10 days)" />
 
     @if (($teamCarryForwardPending ?? collect())->isNotEmpty())
         <div class="tich-card tich-mb-6">

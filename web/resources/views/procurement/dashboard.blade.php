@@ -15,7 +15,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Supply chain &amp; assets</p>
             <h1 class="tich-mod-dash__title">Procurement command center</h1>
-            <p class="tich-mod-dash__lede">Suppliers, purchase orders, tenders, inventory, and fixed assets — live overview.</p>
+            <p class="tich-mod-dash__lede">Suppliers, purchase orders, tenders, inventory, and fixed assets - live overview.</p>
         </div>
     </header>
 

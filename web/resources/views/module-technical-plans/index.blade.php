@@ -34,7 +34,7 @@
                     @forelse ($plans as $item)
                         <tr>
                             <td><strong>{{ $item->title }}</strong></td>
-                            <td class="tich-caption">{{ $item->fiscal_year ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->fiscal_year ?? '-' }}</td>
                             <td class="tich-caption">{{ $item->outputs_count }}</td>
                             <td>
                                 <x-status-badge
@@ -43,12 +43,12 @@
                                         'me_review' => 'M&E review',
                                         'me_approved' => 'M&E approved',
                                         'baseline_locked' => 'Baseline locked',
-                                        'returned' => 'Returned — revise',
+                                        'returned' => 'Returned - revise',
                                         default => str_replace('_', ' ', ucfirst($item->status)),
                                     }"
                                 />
                             </td>
-                            <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '—' }}</td>
+                            <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '-' }}</td>
                             <td class="tich-flex-wrap" style="gap:0.5rem;">
                                 <a href="{{ route($showRoute, $item->id) }}" class="tich-btn tich-btn-ghost">View</a>
                                 @if (in_array($item->status, ['draft', 'returned'], true))

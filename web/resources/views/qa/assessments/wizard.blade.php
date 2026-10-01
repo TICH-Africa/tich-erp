@@ -13,12 +13,12 @@
 
 @extends('layouts.qa')
 
-@section('title', 'IQA — '.$sectionMeta['short'])
+@section('title', 'IQA - '.$sectionMeta['short'])
 
 @section('qa-content')
     <x-page-toolbar
         title="{{ $sectionMeta['number'] }} {{ $sectionMeta['title'] }}"
-        :meta="$isPublishReview ? 'Publish walkthrough — review every section, then confirm' : 'Draft — edit freely; publish locks forever'"
+        :meta="$isPublishReview ? 'Publish walkthrough - review every section, then confirm' : 'Draft - edit freely; publish locks forever'"
     >
         <x-slot:actions>
             <a href="{{ route('qa.assessments.index') }}" class="tich-btn tich-btn-ghost">All assessments</a>
@@ -102,7 +102,7 @@
                             <tr>
                                 <td>{{ $i + 1 }}</td>
                                 <td>{{ $auditor['name'] ?: ($isPublishReview ? auth()->user()->displayName() : '(filled on publish)') }}</td>
-                                <td class="tich-caption">{{ $auditor['signature'] ?: '—' }}</td>
+                                <td class="tich-caption">{{ $auditor['signature'] ?: '-' }}</td>
                                 <td>{{ $auditor['date'] ?: ($isPublishReview ? now()->format('Y-m-d') : '(filled on publish)') }}</td>
                             </tr>
                         @endforeach

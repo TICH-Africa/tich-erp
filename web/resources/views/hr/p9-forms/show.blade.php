@@ -3,7 +3,7 @@
 @section('title', "P9A - {$employee->fullName()} ({$year})")
 
 @section('hr-content')
-    <x-page-toolbar title="P9A Tax Deduction Card" meta="{{ $employee->fullName() }} &mdash; Year {{ $year }}">
+    <x-page-toolbar title="P9A Tax Deduction Card" meta="{{ $employee->fullName() }} - Year {{ $year }}">
         <x-slot:actions>
             <a href="{{ route('hr.p9-forms.download', ['staff' => $employee, 'year' => $year]) }}" class="tich-btn tich-btn-primary">Download Excel</a>
             <a href="{{ route('hr.p9-forms.index', ['year' => $year]) }}" class="tich-btn tich-btn-secondary">Back to list</a>

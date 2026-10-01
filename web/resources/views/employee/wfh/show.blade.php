@@ -33,11 +33,11 @@
         </article>
         <article class="tich-card" style="padding:1.25rem;">
             <p class="tich-caption">Department</p>
-            <p class="tich-text" style="margin:0.25rem 0;"><strong>{{ $wfh->department_name ?? '—' }}</strong></p>
+            <p class="tich-text" style="margin:0.25rem 0;"><strong>{{ $wfh->department_name ?? '-' }}</strong></p>
             <p class="tich-caption">Supervisor</p>
-            <p class="tich-text">{{ $wfh->supervisor_name ?? '—' }}</p>
+            <p class="tich-text">{{ $wfh->supervisor_name ?? '-' }}</p>
             <p class="tich-caption tich-mt-2">Job title</p>
-            <p class="tich-text">{{ $wfh->job_title ?? '—' }}</p>
+            <p class="tich-text">{{ $wfh->job_title ?? '-' }}</p>
         </article>
     </div>
 

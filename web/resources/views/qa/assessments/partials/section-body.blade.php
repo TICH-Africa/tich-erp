@@ -60,8 +60,8 @@
                                 <td style="white-space:normal;">{{ $item['indicator'] }}</td>
                                 @if ($ri === 0)
                                     @if ($readonly)
-                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $obs !== '' ? $obs : '—' }}</td>
-                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $rec !== '' ? $rec : '—' }}</td>
+                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $obs !== '' ? $obs : '-' }}</td>
+                                        <td rowspan="{{ $rowCount }}" style="white-space:normal;vertical-align:top;">{{ $rec !== '' ? $rec : '-' }}</td>
                                     @else
                                         <td rowspan="{{ $rowCount }}" style="vertical-align:top;">
                                             <textarea name="items[{{ $firstIndex }}][observations]" class="tich-input" rows="{{ max(3, $rowCount) }}">{{ old('items.'.$firstIndex.'.observations', $obs) }}</textarea>
@@ -102,7 +102,7 @@
 <div class="tich-card tich-mt-6">
     <label class="tich-label" for="overall_recommendations">Overall Recommendations</label>
     @if ($readonly)
-        <p class="tich-text tich-mt-2" style="white-space:pre-wrap;">{{ $sectionData['overall_recommendations'] ?: '—' }}</p>
+        <p class="tich-text tich-mt-2" style="white-space:pre-wrap;">{{ $sectionData['overall_recommendations'] ?: '-' }}</p>
     @else
         <textarea
             id="overall_recommendations"

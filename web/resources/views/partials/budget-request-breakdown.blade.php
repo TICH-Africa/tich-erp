@@ -76,7 +76,7 @@
                             <tbody>
                                 @forelse ($incomeRows as $row)
                                     <tr>
-                                        <td>{{ $row['source'] ?: '—' }}</td>
+                                        <td>{{ $row['source'] ?: '-' }}</td>
                                         <td class="budrev-num">{{ number_format((float) ($row['amount'] ?? 0), 2) }}</td>
                                     </tr>
                                 @empty
@@ -120,13 +120,13 @@
                                     @endphp
                                     <tr>
                                         <td>
-                                            <strong>{{ $row['item'] ?? '—' }}</strong>
+                                            <strong>{{ $row['item'] ?? '-' }}</strong>
                                             @if (! empty($row['unit_of_measure']))
                                                 <span class="tich-caption"> · {{ $row['unit_of_measure'] }}</span>
                                             @endif
                                         </td>
                                         <td class="budrev-num">{{ rtrim(rtrim(number_format($qty, 4, '.', ','), '0'), '.') }}</td>
-                                        <td class="tich-caption">{{ $row['description'] ?: '—' }}</td>
+                                        <td class="tich-caption">{{ $row['description'] ?: '-' }}</td>
                                         <td class="budrev-num">{{ number_format($price, 2) }}</td>
                                         <td class="budrev-num"><strong>{{ number_format($total, 2) }}</strong></td>
                                     </tr>

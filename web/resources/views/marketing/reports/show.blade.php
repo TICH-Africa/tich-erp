@@ -3,7 +3,7 @@
 @section('title', 'Report: ' . $report->title)
 
 @section('department-content')
-    <x-page-toolbar title="Report Details" meta="{{ ucfirst($report->report_type) }} — {{ $report->report_date->format('d M Y') }}" />
+    <x-page-toolbar title="Report Details" meta="{{ ucfirst($report->report_type) }} - {{ $report->report_date->format('d M Y') }}" />
 
     <div class="tich-card tich-mt-4 tich-mb-4">
         <div class="tich-form-grid tich-form-grid--2">

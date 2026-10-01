@@ -77,7 +77,7 @@
                                 @if ($step['done'])
                                     Complete
                                 @else
-                                    Pending — {{ $step['hint'] }}
+                                    Pending - {{ $step['hint'] }}
                                 @endif
                             </span>
                         </div>

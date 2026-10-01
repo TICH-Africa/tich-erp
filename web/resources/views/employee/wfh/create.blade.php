@@ -33,7 +33,7 @@
                         </div>
                         <div class="uf-field">
                             <label>Job title</label>
-                            <input type="text" value="{{ $staff->job_title ?? '—' }}" readonly>
+                            <input type="text" value="{{ $staff->job_title ?? '-' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                         </div>
                         <div class="uf-field">
                             <label>Department</label>
-                            <input type="text" value="{{ $staff->department?->dept_name ?? '—' }}" readonly>
+                            <input type="text" value="{{ $staff->department?->dept_name ?? '-' }}" readonly>
                         </div>
                     </div>
                 </div>

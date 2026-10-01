@@ -16,10 +16,10 @@
     <div class="tich-grid tich-grid--2 tich-mt-6" style="gap:1.5rem;align-items:start;">
         <section class="research-activity-admin">
             <dl class="tich-text" style="display:grid;gap:0.85rem;">
-                <div><dt class="tich-caption">Contact</dt><dd>{{ trim(($request->first_name ?? '').' '.($request->last_name ?? '')) ?: ($request->contact_person ?: '—') }}</dd></div>
+                <div><dt class="tich-caption">Contact</dt><dd>{{ trim(($request->first_name ?? '').' '.($request->last_name ?? '')) ?: ($request->contact_person ?: '-') }}</dd></div>
                 <div><dt class="tich-caption">Email</dt><dd>{{ $request->email }}@if($request->alternative_email)<br><span class="tich-caption">Alt: {{ $request->alternative_email }}</span>@endif</dd></div>
-                <div><dt class="tich-caption">Phone</dt><dd>{{ $request->phone ?: '—' }}@if($request->alternative_phone)<br><span class="tich-caption">Alt: {{ $request->alternative_phone }}</span>@endif</dd></div>
-                <div><dt class="tich-caption">Research area</dt><dd>{{ $request->research_area ?: '—' }}</dd></div>
+                <div><dt class="tich-caption">Phone</dt><dd>{{ $request->phone ?: '-' }}@if($request->alternative_phone)<br><span class="tich-caption">Alt: {{ $request->alternative_phone }}</span>@endif</dd></div>
+                <div><dt class="tich-caption">Research area</dt><dd>{{ $request->research_area ?: '-' }}</dd></div>
                 @if ($request->applicant_type === 'organisation')
                     <div>
                         <dt class="tich-caption">Organisation</dt>
@@ -31,7 +31,7 @@
                                 'academic_institution' => 'Academic institution',
                                 'corporate' => 'Corporate',
                                 'other' => 'Other',
-                                default => $request->organization_type ?: '—',
+                                default => $request->organization_type ?: '-',
                             } }})
                         </dd>
                     </div>

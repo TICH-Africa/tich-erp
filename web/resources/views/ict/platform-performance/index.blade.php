@@ -41,9 +41,9 @@
         <div class="tich-alert {{ ($summary['highest'] ?? '') === 'critical' ? 'tich-alert--error' : 'tich-alert--warning' }}" id="perf-alerts-banner">
             <strong id="perf-alerts-title">
                 @if (($summary['critical'] ?? 0) > 0)
-                    {{ $summary['critical'] }} critical / {{ $summary['warning'] ?? 0 }} warning — action needed
+                    {{ $summary['critical'] }} critical / {{ $summary['warning'] ?? 0 }} warning - action needed
                 @else
-                    {{ $summary['warning'] ?? 0 }} warning(s) — review recommended
+                    {{ $summary['warning'] ?? 0 }} warning(s) - review recommended
                 @endif
             </strong>
             <ul class="tich-mt-2" id="perf-alerts-list" style="margin:0.5rem 0 0; padding-left:1.25rem;">
@@ -51,7 +51,7 @@
                     <li>
                         <span class="tich-status-badge {{ ($alert['severity'] ?? '') === 'critical' ? 'is-danger' : 'is-warning' }}">{{ strtoupper($alert['severity'] ?? '') }}</span>
                         <strong>{{ $alert['title'] ?? '' }}</strong>
-                        — {{ $alert['message'] ?? '' }}
+                        - {{ $alert['message'] ?? '' }}
                     </li>
                 @endforeach
             </ul>
@@ -119,7 +119,7 @@
                 <dt>PHP limit</dt>
                 <dd data-metric="server.memory.limit">{{ $initialMetrics['server']['memory']['limit'] }}</dd>
                 <dt>Peak vs limit</dt>
-                <dd><span data-metric="server.memory.used_pct">{{ $initialMetrics['server']['memory']['used_pct'] ?? '—' }}</span>%</dd>
+                <dd><span data-metric="server.memory.used_pct">{{ $initialMetrics['server']['memory']['used_pct'] ?? '-' }}</span>%</dd>
             </dl>
         </article>
         <article class="tich-card{{ $flagClass('server.cpu.display') }}" data-flag-metric="server.cpu.display">
@@ -129,7 +129,7 @@
                 @if (!empty($initialMetrics['server']['cpu']['load']))
                     {{ implode(' / ', $initialMetrics['server']['cpu']['load']) }}
                 @else
-                    —
+                    -
                 @endif
             </p>
         </article>
@@ -148,7 +148,7 @@
         <article class="tich-card tich-stat{{ $flagClass('database.connection_latency_ms') }}" data-flag-metric="database.connection_latency_ms">
             <p class="tich-caption">Connection latency</p>
             <p class="tich-stat__value" data-metric="database.connection_latency_ms">
-                {{ $initialMetrics['database']['connection_latency_ms'] !== null ? number_format($initialMetrics['database']['connection_latency_ms'], 2) : '—' }}
+                {{ $initialMetrics['database']['connection_latency_ms'] !== null ? number_format($initialMetrics['database']['connection_latency_ms'], 2) : '-' }}
                 <span class="tich-caption"> ms</span>
             </p>
         </article>
@@ -163,13 +163,13 @@
         <article class="tich-card tich-stat{{ $flagClass('database.cache_hit_rate_pct') }}" data-flag-metric="database.cache_hit_rate_pct">
             <p class="tich-caption">Cache hit rate</p>
             <p class="tich-stat__value" data-metric="database.cache_hit_rate_pct">
-                {{ $initialMetrics['database']['cache_hit_rate_pct'] !== null ? number_format($initialMetrics['database']['cache_hit_rate_pct'], 2).' %' : '—' }}
+                {{ $initialMetrics['database']['cache_hit_rate_pct'] !== null ? number_format($initialMetrics['database']['cache_hit_rate_pct'], 2).' %' : '-' }}
             </p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Cache probe</p>
             <p class="tich-stat__value" data-metric="database.cache_probe_ms">
-                {{ $initialMetrics['database']['cache_probe_ms'] !== null ? number_format($initialMetrics['database']['cache_probe_ms'], 2) : '—' }}
+                {{ $initialMetrics['database']['cache_probe_ms'] !== null ? number_format($initialMetrics['database']['cache_probe_ms'], 2) : '-' }}
                 <span class="tich-caption"> ms</span>
             </p>
         </article>
@@ -211,9 +211,9 @@
                 <dt>Laravel</dt>
                 <dd data-metric-text="host.laravel_version">{{ $host['laravel_version'] ?? '' }}</dd>
                 <dt>SAPI</dt>
-                <dd data-metric-text="host.sapi">{{ $host['sapi'] ?? '—' }}</dd>
+                <dd data-metric-text="host.sapi">{{ $host['sapi'] ?? '-' }}</dd>
                 <dt>Server software</dt>
-                <dd data-metric-text="host.server_software">{{ $host['server_software'] ?? '—' }}</dd>
+                <dd data-metric-text="host.server_software">{{ $host['server_software'] ?? '-' }}</dd>
             </dl>
         </article>
     </div>
@@ -222,19 +222,19 @@
     <div class="tich-grid tich-grid--4 tich-mt-4">
         <article class="tich-card tich-stat{{ $flagClass('host.ram.used_pct') }}" data-flag-metric="host.ram.used_pct">
             <p class="tich-caption">RAM used</p>
-            <p class="tich-stat__value" data-metric="host.ram.used_pct">{{ $host['ram']['used_pct'] ?? '—' }}<span class="tich-caption"> %</span></p>
+            <p class="tich-stat__value" data-metric="host.ram.used_pct">{{ $host['ram']['used_pct'] ?? '-' }}<span class="tich-caption"> %</span></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">RAM total</p>
-            <p class="tich-stat__value"><span data-metric="host.ram.total_mb">{{ $host['ram']['total_mb'] ?? '—' }}</span><span class="tich-caption"> MB</span></p>
+            <p class="tich-stat__value"><span data-metric="host.ram.total_mb">{{ $host['ram']['total_mb'] ?? '-' }}</span><span class="tich-caption"> MB</span></p>
         </article>
         <article class="tich-card tich-stat{{ $flagClass('host.disk_used_pct') }}" data-flag-metric="host.disk_used_pct">
             <p class="tich-caption">Disk used</p>
-            <p class="tich-stat__value" data-metric="host.disk_used_pct">{{ $host['disk_used_pct'] ?? '—' }}<span class="tich-caption"> %</span></p>
+            <p class="tich-stat__value" data-metric="host.disk_used_pct">{{ $host['disk_used_pct'] ?? '-' }}<span class="tich-caption"> %</span></p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Host CPU</p>
-            <p class="tich-stat__value" data-metric="host.cpu.load_pct">{{ $host['cpu']['load_pct'] ?? '—' }}<span class="tich-caption"> %</span></p>
+            <p class="tich-stat__value" data-metric="host.cpu.load_pct">{{ $host['cpu']['load_pct'] ?? '-' }}<span class="tich-caption"> %</span></p>
         </article>
     </div>
 
@@ -243,52 +243,52 @@
             <h3 class="tich-h4" style="margin-top:0;">CPU</h3>
             <dl class="tich-dl">
                 <dt>Model</dt>
-                <dd data-metric-text="host.cpu.model">{{ $host['cpu']['model'] ?? '—' }}</dd>
+                <dd data-metric-text="host.cpu.model">{{ $host['cpu']['model'] ?? '-' }}</dd>
                 <dt>Physical cores</dt>
-                <dd data-metric="host.cpu.cores_physical">{{ $host['cpu']['cores_physical'] ?? '—' }}</dd>
+                <dd data-metric="host.cpu.cores_physical">{{ $host['cpu']['cores_physical'] ?? '-' }}</dd>
                 <dt>Logical processors</dt>
-                <dd data-metric="host.cpu.cores_logical">{{ $host['cpu']['cores_logical'] ?? '—' }}</dd>
+                <dd data-metric="host.cpu.cores_logical">{{ $host['cpu']['cores_logical'] ?? '-' }}</dd>
                 <dt>Load</dt>
-                <dd><span data-metric="host.cpu.load_pct">{{ $host['cpu']['load_pct'] ?? '—' }}</span>%</dd>
+                <dd><span data-metric="host.cpu.load_pct">{{ $host['cpu']['load_pct'] ?? '-' }}</span>%</dd>
             </dl>
         </article>
         <article class="tich-card{{ $flagClass('host.ram.used_pct') }}" data-flag-metric="host.ram.used_pct">
             <h3 class="tich-h4" style="margin-top:0;">Memory (host RAM)</h3>
             <dl class="tich-dl">
                 <dt>Total</dt>
-                <dd><span data-metric="host.ram.total_mb">{{ $host['ram']['total_mb'] ?? '—' }}</span> MB</dd>
+                <dd><span data-metric="host.ram.total_mb">{{ $host['ram']['total_mb'] ?? '-' }}</span> MB</dd>
                 <dt>Used</dt>
-                <dd><span data-metric="host.ram.used_mb">{{ $host['ram']['used_mb'] ?? '—' }}</span> MB</dd>
+                <dd><span data-metric="host.ram.used_mb">{{ $host['ram']['used_mb'] ?? '-' }}</span> MB</dd>
                 <dt>Free</dt>
-                <dd><span data-metric="host.ram.free_mb">{{ $host['ram']['free_mb'] ?? '—' }}</span> MB</dd>
+                <dd><span data-metric="host.ram.free_mb">{{ $host['ram']['free_mb'] ?? '-' }}</span> MB</dd>
                 <dt>Used %</dt>
-                <dd><span data-metric="host.ram.used_pct">{{ $host['ram']['used_pct'] ?? '—' }}</span>%</dd>
+                <dd><span data-metric="host.ram.used_pct">{{ $host['ram']['used_pct'] ?? '-' }}</span>%</dd>
             </dl>
         </article>
         <article class="tich-card{{ $flagClass('host.disk_used_pct') }}" data-flag-metric="host.disk_used_pct">
             <h3 class="tich-h4" style="margin-top:0;">Disk</h3>
             <dl class="tich-dl">
                 <dt>Path</dt>
-                <dd data-metric-text="host.disk_path">{{ $host['disk_path'] ?? '—' }}</dd>
+                <dd data-metric-text="host.disk_path">{{ $host['disk_path'] ?? '-' }}</dd>
                 <dt>Total</dt>
-                <dd><span data-metric="host.disk_total_gb">{{ $host['disk_total_gb'] ?? '—' }}</span> GB</dd>
+                <dd><span data-metric="host.disk_total_gb">{{ $host['disk_total_gb'] ?? '-' }}</span> GB</dd>
                 <dt>Free</dt>
-                <dd><span data-metric="host.disk_free_gb">{{ $host['disk_free_gb'] ?? '—' }}</span> GB</dd>
+                <dd><span data-metric="host.disk_free_gb">{{ $host['disk_free_gb'] ?? '-' }}</span> GB</dd>
                 <dt>Used</dt>
-                <dd><span data-metric="host.disk_used_pct">{{ $host['disk_used_pct'] ?? '—' }}</span>%</dd>
+                <dd><span data-metric="host.disk_used_pct">{{ $host['disk_used_pct'] ?? '-' }}</span>%</dd>
             </dl>
         </article>
         <article class="tich-card">
             <h3 class="tich-h4" style="margin-top:0;">Machine</h3>
             <dl class="tich-dl">
                 <dt>Hostname</dt>
-                <dd data-metric-text="host.hostname">{{ $host['hostname'] ?? '—' }}</dd>
+                <dd data-metric-text="host.hostname">{{ $host['hostname'] ?? '-' }}</dd>
                 <dt>OS</dt>
-                <dd data-metric-text="host.os_version">{{ $host['os_version'] ?? '—' }}</dd>
+                <dd data-metric-text="host.os_version">{{ $host['os_version'] ?? '-' }}</dd>
                 <dt>Architecture</dt>
-                <dd data-metric-text="host.architecture">{{ $host['architecture'] ?? '—' }}</dd>
+                <dd data-metric-text="host.architecture">{{ $host['architecture'] ?? '-' }}</dd>
                 <dt>Uptime</dt>
-                <dd data-metric-text="host.uptime_human">{{ $host['uptime_human'] ?? '—' }}</dd>
+                <dd data-metric-text="host.uptime_human">{{ $host['uptime_human'] ?? '-' }}</dd>
             </dl>
         </article>
     </div>
@@ -342,7 +342,7 @@
         }
 
         function formatNumber(value, digits) {
-            if (value == null || value === '') return '—';
+            if (value == null || value === '') return '-';
             var n = Number(value);
             if (!isFinite(n)) return String(value);
             return n.toLocaleString(undefined, {
@@ -388,9 +388,9 @@
                 }
                 if (alertsTitle) {
                     if ((summary.critical || 0) > 0) {
-                        alertsTitle.textContent = summary.critical + ' critical / ' + (summary.warning || 0) + ' warning — action needed';
+                        alertsTitle.textContent = summary.critical + ' critical / ' + (summary.warning || 0) + ' warning - action needed';
                     } else {
-                        alertsTitle.textContent = (summary.warning || 0) + ' warning(s) — review recommended';
+                        alertsTitle.textContent = (summary.warning || 0) + ' warning(s) - review recommended';
                     }
                 }
                 if (alertsList) {
@@ -398,7 +398,7 @@
                         var sev = alert.severity || 'warning';
                         var badgeClass = sev === 'critical' ? 'is-danger' : 'is-warning';
                         return '<li><span class="tich-status-badge ' + badgeClass + '">' + String(sev).toUpperCase() +
-                            '</span> <strong>' + (alert.title || '') + '</strong> — ' + (alert.message || '') + '</li>';
+                            '</span> <strong>' + (alert.title || '') + '</strong> - ' + (alert.message || '') + '</li>';
                     }).join('');
                 }
             } else {
@@ -414,15 +414,15 @@
                 var path = el.getAttribute('data-metric');
                 var value = getPath(data, path);
                 if (path === 'database.cache_hit_rate_pct') {
-                    el.textContent = value == null ? '—' : (formatNumber(value, 2) + ' %');
+                    el.textContent = value == null ? '-' : (formatNumber(value, 2) + ' %');
                     return;
                 }
                 if (path === 'database.connection_latency_ms' || path === 'database.cache_probe_ms') {
-                    el.innerHTML = (value == null ? '—' : formatNumber(value, 2)) + ' <span class="tich-caption"> ms</span>';
+                    el.innerHTML = (value == null ? '-' : formatNumber(value, 2)) + ' <span class="tich-caption"> ms</span>';
                     return;
                 }
                 if (path === 'host.cpu.load_pct' || path === 'host.ram.used_pct' || path === 'host.disk_used_pct' || path === 'server.memory.used_pct') {
-                    el.innerHTML = (value == null ? '—' : formatNumber(value, path.indexOf('disk') !== -1 || path.indexOf('memory') !== -1 ? 1 : 1)) +
+                    el.innerHTML = (value == null ? '-' : formatNumber(value, path.indexOf('disk') !== -1 || path.indexOf('memory') !== -1 ? 1 : 1)) +
                         (el.querySelector('.tich-caption') || path.indexOf('pct') !== -1 ? '<span class="tich-caption"> %</span>' : '');
                     if (path === 'host.cpu.load_pct' || path === 'host.ram.used_pct' || path === 'host.disk_used_pct') {
                         if (el.classList.contains('tich-stat__value') || el.parentElement && el.parentElement.classList.contains('tich-stat__value')) {
@@ -430,9 +430,9 @@
                         }
                     }
                     if (el.classList.contains('tich-stat__value')) {
-                        el.innerHTML = (value == null ? '—' : formatNumber(value, 1)) + ' <span class="tich-caption"> %</span>';
+                        el.innerHTML = (value == null ? '-' : formatNumber(value, 1)) + ' <span class="tich-caption"> %</span>';
                     } else {
-                        el.textContent = value == null ? '—' : formatNumber(value, 1);
+                        el.textContent = value == null ? '-' : formatNumber(value, 1);
                     }
                     return;
                 }
@@ -450,14 +450,14 @@
                 }
                 if (path === 'server.cpu.display') {
                     var load = getPath(data, 'server.cpu.load');
-                    el.textContent = (load && load.length) ? load.join(' / ') : '—';
+                    el.textContent = (load && load.length) ? load.join(' / ') : '-';
                     return;
                 }
                 if (typeof value === 'number') {
                     el.textContent = formatNumber(value, Number.isInteger(value) ? 0 : 1);
                     return;
                 }
-                el.textContent = value == null ? '—' : String(value);
+                el.textContent = value == null ? '-' : String(value);
             });
 
             document.querySelectorAll('[data-metric-text]').forEach(function (el) {
@@ -486,7 +486,7 @@
                     return;
                 }
                 var value = getPath(data, path);
-                el.textContent = value == null || value === '' ? '—' : String(value);
+                el.textContent = value == null || value === '' ? '-' : String(value);
             });
 
             renderAlerts(data);

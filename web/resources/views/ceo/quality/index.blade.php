@@ -25,10 +25,10 @@
                                 {{ $row->title }}
                                 <p class="tich-caption">#{{ $row->id }}</p>
                             </td>
-                            <td>{{ $row->assessment_year ?: '—' }}</td>
+                            <td>{{ $row->assessment_year ?: '-' }}</td>
                             <td><x-status-badge :status="$row->status" /></td>
                             <td>
-                                {{ $row->published_at?->format('d M Y H:i') ?? '—' }}
+                                {{ $row->published_at?->format('d M Y H:i') ?? '-' }}
                                 @if ($row->publisher_name)
                                     <p class="tich-caption">{{ $row->publisher_name }}</p>
                                 @endif

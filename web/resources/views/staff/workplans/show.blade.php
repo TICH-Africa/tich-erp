@@ -35,9 +35,9 @@
                 <dt>Department</dt><dd>{{ $workplan->department?->dept_name }}</dd>
                 <dt>Semester</dt><dd>{{ $workplan->semester?->displayLabel() }}</dd>
                 <dt>Prepared by</dt><dd>{{ $workplan->preparedByStaff?->fullName() }}</dd>
-                <dt>Objectives</dt><dd>{!! nl2br(e($workplan->objectives ?: '—')) !!}</dd>
-                <dt>Resources</dt><dd>{!! nl2br(e($workplan->resources ?: '—')) !!}</dd>
-                <dt>KPIs</dt><dd>{!! nl2br(e($workplan->kpis ?: '—')) !!}</dd>
+                <dt>Objectives</dt><dd>{!! nl2br(e($workplan->objectives ?: '-')) !!}</dd>
+                <dt>Resources</dt><dd>{!! nl2br(e($workplan->resources ?: '-')) !!}</dd>
+                <dt>KPIs</dt><dd>{!! nl2br(e($workplan->kpis ?: '-')) !!}</dd>
             </dl>
         </article>
 
@@ -58,12 +58,12 @@
                             <tr>
                                 <td>{{ $activity->activity }}</td>
                                 <td>
-                                    {{ $activity->timeline_start?->format('d M Y') ?? '—' }}
+                                    {{ $activity->timeline_start?->format('d M Y') ?? '-' }}
                                     –
-                                    {{ $activity->timeline_end?->format('d M Y') ?? '—' }}
+                                    {{ $activity->timeline_end?->format('d M Y') ?? '-' }}
                                 </td>
-                                <td>{{ $activity->kpi ?: '—' }}</td>
-                                <td>{{ $activity->resources ?: '—' }}</td>
+                                <td>{{ $activity->kpi ?: '-' }}</td>
+                                <td>{{ $activity->resources ?: '-' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="tich-text">No activities recorded.</td></tr>

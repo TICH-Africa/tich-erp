@@ -9,7 +9,7 @@
     <meta charset="utf-8">
     <title>{{ $assessment->title }}</title>
     <style>
-        /* Single type system for the whole document — matches §2 sampling tables */
+        /* Single type system for the whole document - matches §2 sampling tables */
         body, table, th, td, h1, h2, h3, p, span, strong, em {
             font-family: tichbody, georgia, 'Times New Roman', Times, serif;
             color: #111111;
@@ -88,7 +88,7 @@
 <body>
     <h1>{{ $assessment->title }}</h1>
     <p class="meta">
-        Assessment year: {{ $assessment->assessment_year ?: '—' }}
+        Assessment year: {{ $assessment->assessment_year ?: '-' }}
         @if ($assessment->isPublished())
             &nbsp;|&nbsp; Published: {{ $assessment->published_at?->format('d M Y') }}
             &nbsp;|&nbsp; Publisher: {{ $assessment->publisher_name }}

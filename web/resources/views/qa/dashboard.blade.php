@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Quality assurance</p>
             <h1 class="tich-mod-dash__title">QA command center</h1>
-            <p class="tich-mod-dash__lede">IQA assessments and compliance oversight — live overview.</p>
+            <p class="tich-mod-dash__lede">IQA assessments and compliance oversight - live overview.</p>
         </div>
     </header>
 

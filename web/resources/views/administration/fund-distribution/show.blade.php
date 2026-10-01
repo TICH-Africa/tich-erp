@@ -13,7 +13,7 @@
             'submitted' => 'Awaiting Administration review',
             'finance_review' => 'In Finance review',
             'executive_review' => 'Awaiting Executive/CEO',
-            'approved' => 'Approved — waiting disbursement',
+            'approved' => 'Approved - waiting disbursement',
             'disbursed' => 'Disbursed',
             'rejected' => 'Rejected',
             default => str_replace('_', ' ', ucfirst($budgetRequest->status)),
@@ -51,7 +51,7 @@
             <div class="budrev-summary__status">
                 <span class="tich-badge">{{ $statusLabel }}</span>
                 <span class="tich-caption">
-                    Submitted {{ $budgetRequest->submitted_at?->format('d M Y · H:i') ?? '—' }}
+                    Submitted {{ $budgetRequest->submitted_at?->format('d M Y · H:i') ?? '-' }}
                 </span>
             </div>
         </div>
@@ -109,8 +109,8 @@
                     <tbody>
                         @foreach ($budgetRequest->group_allocations as $group)
                             <tr>
-                                <td>{{ ucfirst($group['type'] ?? '—') }}</td>
-                                <td>{{ $group['label'] ?? '—' }}</td>
+                                <td>{{ ucfirst($group['type'] ?? '-') }}</td>
+                                <td>{{ $group['label'] ?? '-' }}</td>
                                 <td>KES {{ number_format((float) ($group['amount'] ?? 0), 2) }}</td>
                             </tr>
                         @endforeach

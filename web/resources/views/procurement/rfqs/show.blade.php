@@ -122,7 +122,7 @@
                                 ->get();
                         @endphp
                         @forelse($inviteSuppliers as $supplier)
-                            <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} — {{ $supplier->supplier_code }} — {{ ucfirst($supplier->supplier_category ?? '-') }}</option>
+                            <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} - {{ $supplier->supplier_code }} - {{ ucfirst($supplier->supplier_category ?? '-') }}</option>
                         @empty
                             <option disabled>No suppliers available in selected category.</option>
                         @endforelse
@@ -298,7 +298,7 @@
     @if($rfq->award_decision === 'award_recommended' && $rfq->awarded_supplier_id)
         <article class="tich-card tich-mt-6">
             <h2 class="tich-h3" style="margin-top:0;">Approve award recommendation</h2>
-            <p class="tich-caption">Recommended supplier: {{ $rfq->awardedSupplier->supplier_name ?? '-' }} — KES {{ number_format((float) $rfq->awarded_amount, 2) }}</p>
+            <p class="tich-caption">Recommended supplier: {{ $rfq->awardedSupplier->supplier_name ?? '-' }} - KES {{ number_format((float) $rfq->awarded_amount, 2) }}</p>
             <form method="POST" action="{{ route('procurement.rfqs.approve-award', $rfq) }}" class="tich-form-stack">
                 @csrf
                 <button type="submit" class="tich-btn tich-btn-success">Approve award</button>

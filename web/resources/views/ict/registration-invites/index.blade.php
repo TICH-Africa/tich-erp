@@ -3,7 +3,7 @@
 @section('title', 'ERP Registration Invites')
 
 @section('ict-content')
-    <x-page-toolbar title="ERP registration invites" meta="Signup invitations for employees — delivered via the platform notification mailbox" />
+    <x-page-toolbar title="ERP registration invites" meta="Signup invitations for employees - delivered via the platform notification mailbox" />
 
     @include('partials.staff-registration-invite-form', [
         'action' => route('ict.registration-invites.store'),

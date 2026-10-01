@@ -24,10 +24,10 @@
             <dl class="tich-dl tich-mt-4">
                 <dt>Semester</dt><dd>{{ $workplan->semester?->displayLabel() }}</dd>
                 <dt>Prepared by</dt><dd>{{ $workplan->preparedByStaff?->fullName() }}</dd>
-                <dt>Submitted</dt><dd>{{ $workplan->submitted_at?->format('d M Y H:i') ?? '—' }}</dd>
-                <dt>Objectives</dt><dd>{!! nl2br(e($workplan->objectives ?: '—')) !!}</dd>
-                <dt>Resources</dt><dd>{!! nl2br(e($workplan->resources ?: '—')) !!}</dd>
-                <dt>KPIs</dt><dd>{!! nl2br(e($workplan->kpis ?: '—')) !!}</dd>
+                <dt>Submitted</dt><dd>{{ $workplan->submitted_at?->format('d M Y H:i') ?? '-' }}</dd>
+                <dt>Objectives</dt><dd>{!! nl2br(e($workplan->objectives ?: '-')) !!}</dd>
+                <dt>Resources</dt><dd>{!! nl2br(e($workplan->resources ?: '-')) !!}</dd>
+                <dt>KPIs</dt><dd>{!! nl2br(e($workplan->kpis ?: '-')) !!}</dd>
             </dl>
 
             <h3 class="tich-h3 tich-mt-6">Activities</h3>
@@ -40,9 +40,9 @@
                         @forelse ($workplan->activities as $activity)
                             <tr>
                                 <td>{{ $activity->activity }}</td>
-                                <td>{{ $activity->timeline_start?->format('d M Y') ?? '—' }} – {{ $activity->timeline_end?->format('d M Y') ?? '—' }}</td>
-                                <td>{{ $activity->kpi ?: '—' }}</td>
-                                <td>{{ $activity->resources ?: '—' }}</td>
+                                <td>{{ $activity->timeline_start?->format('d M Y') ?? '-' }} – {{ $activity->timeline_end?->format('d M Y') ?? '-' }}</td>
+                                <td>{{ $activity->kpi ?: '-' }}</td>
+                                <td>{{ $activity->resources ?: '-' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="tich-text">No activities recorded.</td></tr>

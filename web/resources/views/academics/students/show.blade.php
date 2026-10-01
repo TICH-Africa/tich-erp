@@ -45,7 +45,7 @@
 
     <div class="tich-card tich-mt-6">
         <h3 class="tich-h3">Academic Journey</h3>
-        <p class="tich-caption tich-mt-2">Milestones since enrollment — each record shows the programme, semester, and performance.</p>
+        <p class="tich-caption tich-mt-2">Milestones since enrollment - each record shows the programme, semester, and performance.</p>
 
         @if($groupedHistory->isNotEmpty())
             <div class="tich-mt-4" style="display:flex; flex-direction:column; gap:1rem;">

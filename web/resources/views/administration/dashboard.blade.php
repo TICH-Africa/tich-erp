@@ -8,7 +8,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">Institutional operations</p>
             <h1 class="tich-mod-dash__title">Administration command center</h1>
-            <p class="tich-mod-dash__lede">Planning, admissions ops, compliance, budget routing, and fund distribution — live overview.</p>
+            <p class="tich-mod-dash__lede">Planning, admissions ops, compliance, budget routing, and fund distribution - live overview.</p>
         </div>
     </header>
 

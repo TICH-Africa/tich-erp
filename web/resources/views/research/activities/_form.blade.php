@@ -146,7 +146,7 @@
                 <textarea id="research_body" name="body" class="tich-cms-hidden-input">{{ $bodyValue }}</textarea>
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-cms-image-input hidden>
             </div>
-            <span class="uf-hint">Same editor as blog posts — headings, lists, images, and tables.</span>
+            <span class="uf-hint">Same editor as blog posts - headings, lists, images, and tables.</span>
         </div>
         <div class="uf-field tich-mt-4">
             <label for="abstract">Abstract (plain)</label>
@@ -187,6 +187,6 @@
             </div>
         </div>
         <button type="button" class="uf-btn uf-btn-secondary tich-mt-4" data-add-doc-row>Add another document</button>
-        <span class="uf-hint tich-mt-2" style="display:block;">Public visitors can open documents in a read-only viewer — downloads are blocked.</span>
+        <span class="uf-hint tich-mt-2" style="display:block;">Public visitors can open documents in a read-only viewer - downloads are blocked.</span>
     </div>
 </div>

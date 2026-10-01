@@ -12,7 +12,7 @@
         <div class="tich-mod-dash__hero-copy">
             <p class="tich-mod-dash__eyebrow">People operations</p>
             <h1 class="tich-mod-dash__title">HR command center</h1>
-            <p class="tich-mod-dash__lede">Staff lifecycle, onboarding, contracts, leave, and recruitment — live overview.</p>
+            <p class="tich-mod-dash__lede">Staff lifecycle, onboarding, contracts, leave, and recruitment - live overview.</p>
         </div>
     </header>
 

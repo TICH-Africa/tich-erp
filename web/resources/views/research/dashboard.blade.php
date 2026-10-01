@@ -62,7 +62,7 @@
                             <td>{{ $item->title }}</td>
                             <td><x-status-badge :status="$item->status" :label="$item->statusLabel()" /></td>
                             <td>{{ ucfirst($item->visibility) }}</td>
-                            <td>{{ $item->end_date?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $item->end_date?->format('d M Y') ?? '-' }}</td>
                             <td><a href="{{ route('research.activities.show', $item) }}" class="tich-link">Open</a></td>
                         </tr>
                     @empty

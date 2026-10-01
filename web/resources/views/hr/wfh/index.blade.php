@@ -67,8 +67,8 @@
                                 <p class="tich-caption">{{ $item->staff?->employee_number }} · {{ $item->request_code }}</p>
                             </td>
                             <td>{{ $item->work_date?->format('D, d M Y') }}</td>
-                            <td>{{ $item->supervisor_name ?? '—' }}</td>
-                            <td>{{ $item->submitted_at?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $item->supervisor_name ?? '-' }}</td>
+                            <td>{{ $item->submitted_at?->format('d M Y') ?? '-' }}</td>
                             <td><span class="uf-badge">{{ $item->statusLabel() }}</span></td>
                             <td><a href="{{ route('hr.wfh.show', $item) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Review</a></td>
                         </tr>

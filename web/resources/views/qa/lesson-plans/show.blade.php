@@ -26,8 +26,8 @@
         <article class="tich-card">
             <h2 class="tich-h3">Plan summary</h2>
             <dl class="tich-dl tich-mt-4">
-                <dt>Department</dt><dd>{{ $unit?->department?->dept_name ?: '—' }}</dd>
-                <dt>Semester</dt><dd>{{ $allocation?->semester?->semester_label ?? '—' }}</dd>
+                <dt>Department</dt><dd>{{ $unit?->department?->dept_name ?: '-' }}</dd>
+                <dt>Semester</dt><dd>{{ $allocation?->semester?->semester_label ?? '-' }}</dd>
                 <dt>Planned date</dt><dd>{{ $plan->planned_date?->format('d M Y') }}</dd>
                 <dt>Week / hours</dt><dd>{{ $plan->week_number }} · {{ $plan->contact_hours }} hrs</dd>
                 <dt>HOD status</dt><dd><x-status-badge :status="$plan->status" /></dd>
@@ -35,24 +35,24 @@
                     <dt>HOD comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
                 @endif
                 <dt>Lesson objectives</dt><dd style="white-space:pre-wrap;">{{ $plan->lesson_objectives }}</dd>
-                <dt>Topics</dt><dd style="white-space:pre-wrap;">{{ $plan->topics_covered ?: '—' }}</dd>
-                <dt>Teaching methods</dt><dd>{{ $plan->teaching_methods ?: '—' }}</dd>
-                <dt>Resources</dt><dd>{{ $plan->resources_required ?: '—' }}</dd>
+                <dt>Topics</dt><dd style="white-space:pre-wrap;">{{ $plan->topics_covered ?: '-' }}</dd>
+                <dt>Teaching methods</dt><dd>{{ $plan->teaching_methods ?: '-' }}</dd>
+                <dt>Resources</dt><dd>{{ $plan->resources_required ?: '-' }}</dd>
             </dl>
         </article>
 
         <article class="tich-card">
             <h2 class="tich-h3">QA acknowledgement</h2>
-            <p class="tich-caption tich-mt-2">Runs in parallel with HOD approval — does not block or replace the HOD decision.</p>
+            <p class="tich-caption tich-mt-2">Runs in parallel with HOD approval - does not block or replace the HOD decision.</p>
 
             @if ($plan->isQaAcknowledged())
                 <dl class="tich-dl tich-mt-4">
                     <dt>Acknowledged by</dt>
-                    <dd>{{ $plan->qaAcknowledgedByStaff?->fullName() ?? '—' }}</dd>
+                    <dd>{{ $plan->qaAcknowledgedByStaff?->fullName() ?? '-' }}</dd>
                     <dt>Acknowledged at</dt>
                     <dd>{{ $plan->qa_acknowledged_at?->format('d M Y H:i') }}</dd>
                     <dt>Comments</dt>
-                    <dd style="white-space:pre-wrap;">{{ $plan->qa_comments ?: '—' }}</dd>
+                    <dd style="white-space:pre-wrap;">{{ $plan->qa_comments ?: '-' }}</dd>
                 </dl>
             @elseif ($canAcknowledge)
                 <form method="POST" action="{{ route('qa.lesson-plans.acknowledge', $plan) }}" class="tich-mt-4">
@@ -74,7 +74,7 @@
                         <li class="tich-text tich-mt-2">
                             <strong>{{ strtoupper($decision->approval_level) }}</strong>
                             · {{ str_replace('_', ' ', $decision->decision) }}
-                            · {{ $decision->approver?->fullName() ?? '—' }}
+                            · {{ $decision->approver?->fullName() ?? '-' }}
                             · {{ $decision->decided_at?->format('d M Y H:i') }}
                             @if ($decision->comments)
                                 <p class="tich-caption">{{ $decision->comments }}</p>

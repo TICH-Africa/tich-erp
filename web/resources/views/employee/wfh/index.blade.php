@@ -53,7 +53,7 @@
                                         <span class="tich-caption">({{ $item->total_hours }}h)</span>
                                     @endif
                                 @else
-                                    —
+                                    -
                                 @endif
                             </td>
                             <td><span class="uf-badge">{{ $item->statusLabel() }}</span></td>

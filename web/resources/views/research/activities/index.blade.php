@@ -62,8 +62,8 @@
                                     <span class="tich-caption"> · Featured</span>
                                 @endif
                             </td>
-                            <td>{{ $item->start_date?->format('d M Y') ?? '—' }}</td>
-                            <td>{{ $item->end_date?->format('d M Y') ?? '—' }}</td>
+                            <td>{{ $item->start_date?->format('d M Y') ?? '-' }}</td>
+                            <td>{{ $item->end_date?->format('d M Y') ?? '-' }}</td>
                             <td><x-status-badge :status="$item->status" :label="$item->statusLabel()" /></td>
                             <td><x-status-badge :status="$item->visibility" /></td>
                             <td>{{ $item->documents_count }}</td>

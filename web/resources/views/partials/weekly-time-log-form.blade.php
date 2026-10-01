@@ -56,28 +56,28 @@
                         </td>
                         <td>
                             @if ($disabled)
-                                {{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '—' }}
+                                {{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '-' }}
                             @else
                                 <input type="time" class="tich-input js-wtl-in" name="days[{{ $dateKey }}][time_in]" value="{{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '' }}">
                             @endif
                         </td>
                         <td>
                             @if ($disabled)
-                                {{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '—' }}
+                                {{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '-' }}
                             @else
                                 <input type="time" class="tich-input js-wtl-out" name="days[{{ $dateKey }}][time_out]" value="{{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '' }}">
                             @endif
                         </td>
                         <td>
                             @if ($disabled)
-                                <span class="tich-caption" style="white-space:pre-wrap;">{{ $day->tasks_accomplished ?: '—' }}</span>
+                                <span class="tich-caption" style="white-space:pre-wrap;">{{ $day->tasks_accomplished ?: '-' }}</span>
                             @else
                                 <textarea class="tich-input" name="days[{{ $dateKey }}][tasks_accomplished]" rows="2" maxlength="5000">{{ $day->tasks_accomplished }}</textarea>
                             @endif
                         </td>
                         <td>
                             @if ($disabled)
-                                {{ $day->initials ?: '—' }}
+                                {{ $day->initials ?: '-' }}
                             @else
                                 <input type="text" class="tich-input" name="days[{{ $dateKey }}][initials]" value="{{ $day->initials }}" maxlength="20">
                             @endif
@@ -87,26 +87,26 @@
                                 @php
                                     $labels = collect($selectedDepts)->map(fn ($id) => $deptMap->get($id)?->dept_code ?? $deptMap->get($id)?->dept_name)->filter()->implode(', ');
                                 @endphp
-                                {{ $labels !== '' ? $labels : '—' }}
+                                {{ $labels !== '' ? $labels : '-' }}
                             @else
                                 <select class="tich-input" name="days[{{ $dateKey }}][department_ids][]" multiple size="{{ min(4, max(2, $departments->count())) }}">
                                     @foreach ($departments as $dept)
-                                        <option value="{{ $dept->id }}" @selected(in_array($dept->id, $selectedDepts, false))>{{ $dept->dept_code }} — {{ $dept->dept_name }}</option>
+                                        <option value="{{ $dept->id }}" @selected(in_array($dept->id, $selectedDepts, false))>{{ $dept->dept_code }} - {{ $dept->dept_name }}</option>
                                     @endforeach
                                 </select>
                             @endif
                         </td>
-                        <td>{{ $day->approval_sign ?: '—' }}</td>
+                        <td>{{ $day->approval_sign ?: '-' }}</td>
                         <td>
                             @if ($disabled)
-                                {{ $day->total_hours !== null ? number_format((float) $day->total_hours, 2) : '—' }}
+                                {{ $day->total_hours !== null ? number_format((float) $day->total_hours, 2) : '-' }}
                             @else
                                 <input type="number" step="0.01" min="0" max="24" class="tich-input js-wtl-hours" name="days[{{ $dateKey }}][total_hours]" value="{{ $day->total_hours }}">
                             @endif
                         </td>
                         <td>
                             @if ($disabled)
-                                {{ $day->total_units !== null ? number_format((float) $day->total_units, 2) : '—' }}
+                                {{ $day->total_units !== null ? number_format((float) $day->total_units, 2) : '-' }}
                             @else
                                 <input type="number" step="0.01" min="0" class="tich-input" name="days[{{ $dateKey }}][total_units]" value="{{ $day->total_units }}">
                             @endif
@@ -130,18 +130,18 @@
     <div class="tich-grid tich-grid--2" style="gap:1.25rem;">
         <div>
             <p class="tich-caption">Signed (Employee)</p>
-            <p><strong>{{ $log->employee_signed_name ?: '—' }}</strong></p>
-            <p class="tich-caption">Date: {{ $log->employee_signed_at?->format('d M Y H:i') ?? '—' }}</p>
+            <p><strong>{{ $log->employee_signed_name ?: '-' }}</strong></p>
+            <p class="tich-caption">Date: {{ $log->employee_signed_at?->format('d M Y H:i') ?? '-' }}</p>
         </div>
         <div>
             <p class="tich-caption">Endorsed by (Line manager / HOD)</p>
-            <p><strong>{{ $log->manager_signed_name ?: '—' }}</strong>
+            <p><strong>{{ $log->manager_signed_name ?: '-' }}</strong>
                 @if ($log->manager_self_endorsed)
                     <span class="tich-caption">(self-endorsed)</span>
                 @endif
             </p>
-            <p class="tich-caption">Sign: {{ $log->manager_signature ?: '—' }}</p>
-            <p class="tich-caption">Date: {{ $log->manager_signed_at?->format('d M Y H:i') ?? '—' }}</p>
+            <p class="tich-caption">Sign: {{ $log->manager_signature ?: '-' }}</p>
+            <p class="tich-caption">Date: {{ $log->manager_signed_at?->format('d M Y H:i') ?? '-' }}</p>
         </div>
     </div>
 </div>

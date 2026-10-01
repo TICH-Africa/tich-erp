@@ -27,7 +27,7 @@
         @if ($log->manager_signed_at)
             · Locked after line-manager endorsement
         @elseif ($log->status === 'pending_hr' && $isOwner)
-            · Submitted to HR — you can still edit until your line manager endorses
+            · Submitted to HR - you can still edit until your line manager endorses
         @endif
         @if ($canSelfEndorse && $canSubmit)
             · On submit you will also self-endorse as HOD (locks the form)

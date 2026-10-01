@@ -116,7 +116,7 @@
                                         value="{{ $cycle->id }}"
                                         data-fy="{{ $cycle->fiscal_year ?? $cycle->cycle_code }}"
                                         @selected((string) $selectedCycleId === (string) $cycle->id)
-                                    >{{ $cycle->cycle_code }} — {{ $cycle->title }}</option>
+                                    >{{ $cycle->cycle_code }} - {{ $cycle->title }}</option>
                                 @endforeach
                             </select>
                             @error('planning_cycle_id')
@@ -133,7 +133,7 @@
                                 tabindex="-1"
                                 placeholder="From planning cycle"
                             >
-                            <p class="uf-hint">Read-only — taken from the selected planning cycle.</p>
+                            <p class="uf-hint">Read-only - taken from the selected planning cycle.</p>
                         </div>
                     </div>
                     <div class="uf-field">

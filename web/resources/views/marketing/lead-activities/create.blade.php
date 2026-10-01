@@ -15,7 +15,7 @@
                     @forelse ($leads as $lead)
                         <option value="{{ $lead->id }}">{{ $lead->name }}</option>
                     @empty
-                        <option value="" disabled>No leads available — create one first</option>
+                        <option value="" disabled>No leads available - create one first</option>
                     @endforelse
                 </select>
             </div>

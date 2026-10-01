@@ -18,8 +18,8 @@
             <p class="tich-caption">Employee</p>
             <p class="tich-h3" style="margin:0.25rem 0;">{{ $wfh->staff?->fullName() }}</p>
             <p class="tich-caption">{{ $wfh->staff?->employee_number }} · {{ $wfh->job_title ?? $wfh->staff?->job_title }}</p>
-            <p class="tich-text tich-mt-3"><strong>Department:</strong> {{ $wfh->department_name ?? $wfh->staff?->department?->dept_name ?? '—' }}</p>
-            <p class="tich-text"><strong>Supervisor:</strong> {{ $wfh->supervisor_name ?? '—' }}</p>
+            <p class="tich-text tich-mt-3"><strong>Department:</strong> {{ $wfh->department_name ?? $wfh->staff?->department?->dept_name ?? '-' }}</p>
+            <p class="tich-text"><strong>Supervisor:</strong> {{ $wfh->supervisor_name ?? '-' }}</p>
         </article>
         <article class="tich-card" style="padding:1.25rem;">
             <p class="tich-caption">Requested WFH day</p>
@@ -30,9 +30,9 @@
             </p>
             <p class="tich-caption tich-mt-3">Arrangement window</p>
             <p class="tich-text">
-                {{ $wfh->period_start?->format('d M Y') ?? '—' }}
+                {{ $wfh->period_start?->format('d M Y') ?? '-' }}
                 →
-                {{ $wfh->period_end?->format('d M Y') ?? '—' }}
+                {{ $wfh->period_end?->format('d M Y') ?? '-' }}
             </p>
             @if ($entitlement)
                 <p class="tich-caption tich-mt-3">Month bank (through this week)</p>
@@ -122,7 +122,7 @@
             @if ($wfh->considerations)
                 <ul class="tich-mt-3">
                     @foreach ($considerationLabels as $key => $label)
-                        <li class="tich-text">{{ $label }} —
+                        <li class="tich-text">{{ $label }} -
                             <strong>{{ ! empty($wfh->considerations[$key]) ? 'Yes' : 'No' }}</strong>
                         </li>
                     @endforeach

@@ -61,7 +61,7 @@
 
             <div class="tich-leave-app-form__letterhead">
                 <strong>Tropical Institute of Community Health and Development</strong>
-                <p>Leave application form — submitted to Human Resource for recording of leave days available.</p>
+                <p>Leave application form - submitted to Human Resource for recording of leave days available.</p>
             </div>
 
             <section class="tich-leave-app-form__section">
@@ -69,19 +69,19 @@
                 <div class="tich-leave-app-form__readonly-grid">
                     <div>
                         <span class="tich-kv-grid__label">Applicant name</span>
-                        <span class="tich-kv-grid__value">{{ $staff?->fullName() ?? '—' }}</span>
+                        <span class="tich-kv-grid__value">{{ $staff?->fullName() ?? '-' }}</span>
                     </div>
                     <div>
                         <span class="tich-kv-grid__label">Employee no.</span>
-                        <span class="tich-kv-grid__value">{{ $staff?->employee_number ?? '—' }}</span>
+                        <span class="tich-kv-grid__value">{{ $staff?->employee_number ?? '-' }}</span>
                     </div>
                     <div>
                         <span class="tich-kv-grid__label">Position</span>
-                        <span class="tich-kv-grid__value">{{ $staff?->job_title ?? '—' }}</span>
+                        <span class="tich-kv-grid__value">{{ $staff?->job_title ?? '-' }}</span>
                     </div>
                     <div>
                         <span class="tich-kv-grid__label">Department</span>
-                        <span class="tich-kv-grid__value">{{ $staff?->department?->dept_name ?? '—' }}</span>
+                        <span class="tich-kv-grid__value">{{ $staff?->department?->dept_name ?? '-' }}</span>
                     </div>
                     <div>
                         <span class="tich-kv-grid__label">Application date</span>
@@ -154,18 +154,18 @@
                     </div>
                     <div class="uf-field">
                         <label>Days applied for</label>
-                        <p class="tich-leave-app-form__metric" id="days-preview">—</p>
+                        <p class="tich-leave-app-form__metric" id="days-preview">-</p>
                     </div>
                 </div>
 
                 <div class="tich-leave-app-form__remarks">
                     <div>
                         <span class="tich-kv-grid__label">Number of days available</span>
-                        <p class="tich-leave-app-form__metric" id="days-available">—</p>
+                        <p class="tich-leave-app-form__metric" id="days-available">-</p>
                     </div>
                     <div>
                         <span class="tich-kv-grid__label">Number of days applied for</span>
-                        <p class="tich-leave-app-form__metric" id="days-applied">—</p>
+                        <p class="tich-leave-app-form__metric" id="days-applied">-</p>
                     </div>
                 </div>
 
@@ -233,7 +233,7 @@
                                         @selected((string) old("cover_staff_id.{$dept->id}", $existingCovers[$dept->id] ?? '') === (string) $cover->id)
                                     >
                                         {{ $cover->fullName() }}
-                                        @if ($cover->job_title) — {{ $cover->job_title }} @endif
+                                        @if ($cover->job_title) - {{ $cover->job_title }} @endif
                                         @if ($cover->employee_number) ({{ $cover->employee_number }}) @endif
                                     </option>
                                 @endforeach
@@ -279,7 +279,7 @@
                         const option = selectedOption();
                         if (!option || !option.value) {
                             hintEl.textContent = '';
-                            daysAvailable.textContent = '—';
+                            daysAvailable.textContent = '-';
                             certificateField.style.display = 'none';
                             familyField.style.display = 'none';
                             familySelect.required = false;
@@ -295,7 +295,7 @@
                         hintEl.textContent = description;
                         daysAvailable.textContent = (balance !== undefined && balance !== '')
                             ? (parseFloat(balance).toFixed(1).replace(/\.0$/, '') + ' day(s)')
-                            : '—';
+                            : '-';
                         certificateField.style.display = requiresDocument ? 'block' : 'none';
                         certificateLabel.textContent = documentLabel;
                         familyField.style.display = requiresFamily ? 'block' : 'none';
@@ -350,8 +350,8 @@
                         syncReturnDate();
                         const days = calcDays();
                         if (days === null) {
-                            daysPreview.textContent = '—';
-                            daysApplied.textContent = '—';
+                            daysPreview.textContent = '-';
+                            daysApplied.textContent = '-';
                             return;
                         }
                         const label = days + ' day(s)';

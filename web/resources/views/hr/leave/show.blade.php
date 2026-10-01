@@ -191,7 +191,7 @@
                         @foreach ($leaveRequest->coverages as $coverage)
                             <li>
                                 {{ $coverage->department?->dept_name ?? 'Department' }}:
-                                {{ $coverage->coverStaff?->fullName() ?? '—' }}
+                                {{ $coverage->coverStaff?->fullName() ?? '-' }}
                                 <span class="tich-caption">({{ $coverage->status }})</span>
                             </li>
                         @endforeach

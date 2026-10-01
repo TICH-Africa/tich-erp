@@ -5,7 +5,7 @@
 @section($moduleContext['content_section'])
     <x-page-toolbar
         :title="$plan->title"
-        :meta="'Technical plan · '.($plan->fiscal_year ?? '—')"
+        :meta="'Technical plan · '.($plan->fiscal_year ?? '-')"
     >
         <x-slot:actions>
             <a href="{{ route($indexRoute) }}" class="tich-btn tich-btn-ghost">Back</a>
@@ -23,11 +23,11 @@
             </div>
             <div>
                 <p class="tich-caption">Submitted</p>
-                <p>{{ $plan->submitted_at?->format('d M Y H:i') ?? '—' }}</p>
+                <p>{{ $plan->submitted_at?->format('d M Y H:i') ?? '-' }}</p>
             </div>
             <div>
                 <p class="tich-caption">Fiscal year</p>
-                <p>{{ $plan->fiscal_year ?? '—' }}</p>
+                <p>{{ $plan->fiscal_year ?? '-' }}</p>
             </div>
         </div>
         @if ($plan->summary)
@@ -75,9 +75,9 @@
                             <tr>
                                 <td>{{ $row->output }}</td>
                                 <td>{{ $row->activity }}</td>
-                                <td class="tich-caption">{{ $row->costable_item ?? '—' }}</td>
+                                <td class="tich-caption">{{ $row->costable_item ?? '-' }}</td>
                                 <td>{{ number_format((float) $row->planned, 2) }}</td>
-                                <td class="tich-caption">{{ $row->planned_unit ?? '—' }}</td>
+                                <td class="tich-caption">{{ $row->planned_unit ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="5" class="tich-caption">No outputs for this quarter.</td></tr>
