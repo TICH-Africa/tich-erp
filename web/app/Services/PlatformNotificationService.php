@@ -42,13 +42,14 @@ class PlatformNotificationService
 
         DB::table('notifications')->insert($row);
 
-        // Email is deferred so unreachable SMTP cannot block form submissions (e.g. budgeting).
+        // Email is deferred on HTTP so unreachable SMTP cannot block form submissions.
+        // In console/schedule there is no response cycle — send immediately.
         $email = $this->resolveRecipientEmail($userId);
         if (! $email) {
             return;
         }
 
-        dispatch(function () use ($userId, $email, $title, $body, $priority, $actionUrl) {
+        $sendMail = function () use ($userId, $email, $title, $body, $priority, $actionUrl) {
             $result = ModuleMail::trySend(
                 ModuleMail::NOTIFICATION,
                 $email,
@@ -62,7 +63,15 @@ class PlatformNotificationService
                     'error' => $result['error'],
                 ]);
             }
-        })->afterResponse();
+        };
+
+        if (app()->runningInConsole()) {
+            $sendMail();
+
+            return;
+        }
+
+        dispatch($sendMail)->afterResponse();
     }
 
     /**

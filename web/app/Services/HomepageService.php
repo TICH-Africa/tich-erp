@@ -209,24 +209,39 @@ class HomepageService
 
     public function getFeaturedPrograms(): Collection
     {
+        $limit = 6;
+
         if ($this->tableExists('academic_programs')) {
             $query = AcademicProgram::query()
                 ->with('feeStructure')
                 ->where('status', 'active');
 
+            $programs = collect();
+
             if ($this->columnExists('academic_programs', 'is_featured_on_homepage')) {
-                $featured = (clone $query)
+                $programs = (clone $query)
                     ->where('is_featured_on_homepage', 1)
                     ->orderBy('homepage_display_order')
-                    ->limit(6)
+                    ->orderBy('id')
+                    ->limit($limit)
                     ->get();
-
-                if ($featured->isNotEmpty()) {
-                    return $featured->map(fn ($program) => $this->mapProgram($program));
-                }
             }
 
-            $programs = $query->orderBy('program_name')->limit(6)->get();
+            if ($programs->count() < $limit) {
+                $excludeIds = $programs->pluck('id')->all();
+                $recentQuery = (clone $query)->whereNotIn('id', $excludeIds ?: [0]);
+
+                if ($this->columnExists('academic_programs', 'created_at')) {
+                    $recentQuery->orderByDesc('created_at');
+                }
+
+                $fillers = $recentQuery
+                    ->orderByDesc('id')
+                    ->limit($limit - $programs->count())
+                    ->get();
+
+                $programs = $programs->concat($fillers)->values();
+            }
 
             if ($programs->isNotEmpty()) {
                 return $programs->map(fn ($program) => $this->mapProgram($program));

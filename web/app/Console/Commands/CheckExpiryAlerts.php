@@ -8,10 +8,12 @@ use App\Models\StaffProfessionalLicense;
 use App\Services\PlatformNotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CheckExpiryAlerts extends Command
 {
     protected $signature = 'app:check-expiry-alerts';
+
     protected $description = 'Check for expiring contracts, probation, and licenses and send alerts';
 
     public function handle(PlatformNotificationService $notifications): void
@@ -27,35 +29,91 @@ class CheckExpiryAlerts extends Command
 
     private function checkContractExpiry(PlatformNotificationService $notifications): void
     {
-        $thresholds = [30, 15, 7];
+        // One month and two weeks before end date — notify the employee and HR once per threshold.
+        $thresholds = [30, 14];
+        $hrUserIds = $this->hrNotifierUserIds();
 
         foreach ($thresholds as $days) {
+            $targetDate = now()->startOfDay()->addDays($days)->toDateString();
+
             $expiringContracts = StaffContract::query()
                 ->with(['staff', 'staff.user'])
                 ->whereNotNull('end_date')
-                ->where('end_date', '<=', now()->addDays($days))
-                ->where('end_date', '>=', now())
-                ->where('renewal_status', '!=', 'renewed')
+                ->whereDate('end_date', $targetDate)
+                ->where(function ($query) {
+                    $query->whereNull('renewal_status')
+                        ->orWhereNotIn('renewal_status', ['renewed', 'terminated', 'expired']);
+                })
                 ->get();
 
             foreach ($expiringContracts as $contract) {
                 $staff = $contract->staff;
-                if (! $staff || ! $staff->user_id) {
+                if (! $staff) {
                     continue;
                 }
 
-                $userId = $staff->user_id;
-                $lineManagerId = $staff->line_manager_id ? Staff::where('id', $staff->line_manager_id)->value('user_id') : null;
+                $label = $days === 30 ? '1 month' : "{$days} days";
+                $titleEmployee = "Contract expires in {$label}";
+                $titleHr = "Staff contract expires in {$label}";
+                $endDate = $contract->end_date->format('d M Y');
+                $contractRef = $contract->contract_number ?: '#'.$contract->id;
 
-                $message = "Contract for {$staff->fullName()} ({$contract->contract_number}) expires on {$contract->end_date->format('Y-m-d')} ({$days} days remaining).";
+                $employeeBody = sprintf(
+                    'Your employment contract %s ends on %s (%s remaining). Please contact HR if you have questions about renewal or next steps.',
+                    $contractRef,
+                    $endDate,
+                    $label
+                );
 
-                $notifications->notifyUser($userId, 'Contract Expiry Alert', $message, 'staff_contract', $contract->id, 'high');
+                $hrBody = sprintf(
+                    'Contract %s for %s (%s) ends on %s (%s remaining). Review renewal or offboarding in the HR contracts module.',
+                    $contractRef,
+                    $staff->fullName(),
+                    $staff->employee_number ?: 'no employee number',
+                    $endDate,
+                    $label
+                );
 
-                if ($lineManagerId) {
-                    $notifications->notifyUser($lineManagerId, 'Contract Expiry Alert - Team Member', $message, 'staff_contract', $contract->id, 'high');
+                $hrUrl = route('hr.contracts.show', $contract);
+                $employeeUrl = route('employee.dashboard');
+
+                if ($staff->user_id && ! $this->alreadyNotified((int) $staff->user_id, 'staff_contract', (string) $contract->id, $titleEmployee)) {
+                    $notifications->notifyUser(
+                        (int) $staff->user_id,
+                        $titleEmployee,
+                        $employeeBody,
+                        'staff_contract',
+                        (string) $contract->id,
+                        'high',
+                        $employeeUrl
+                    );
+                    $this->line("Employee contract alert ({$label}) → {$staff->fullName()}");
                 }
 
-                $this->line("Contract expiry alert sent for {$staff->fullName()} ({$days} days)");
+                $hrRecipients = array_values(array_filter(
+                    $hrUserIds,
+                    fn (int $userId) => $userId !== (int) $staff->user_id
+                ));
+
+                foreach ($hrRecipients as $hrUserId) {
+                    if ($this->alreadyNotified($hrUserId, 'staff_contract', (string) $contract->id, $titleHr)) {
+                        continue;
+                    }
+
+                    $notifications->notifyUser(
+                        $hrUserId,
+                        $titleHr,
+                        $hrBody,
+                        'staff_contract',
+                        (string) $contract->id,
+                        'high',
+                        $hrUrl
+                    );
+                }
+
+                if ($hrRecipients !== []) {
+                    $this->line('HR contract alert ('.$label.') → '.$staff->fullName().' ('.count($hrRecipients).' recipient(s))');
+                }
             }
         }
     }
@@ -119,5 +177,44 @@ class CheckExpiryAlerts extends Command
                 $this->line("License expiry alert sent for {$staff->fullName()} - {$license->license_name} ({$days} days)");
             }
         }
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function hrNotifierUserIds(): array
+    {
+        if (! Schema::hasTable('user_roles') || ! Schema::hasTable('roles')) {
+            return [];
+        }
+
+        $roleNames = ['HR Manager', 'Assistant HR Manager', 'Super Admin', 'CEO'];
+
+        return DB::table('user_roles as ur')
+            ->join('roles as r', 'r.id', '=', 'ur.role_id')
+            ->whereIn('r.role_name', $roleNames)
+            ->where(function ($query) {
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
+            })
+            ->distinct()
+            ->pluck('ur.user_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    private function alreadyNotified(int $userId, string $entityType, string $entityId, string $title): bool
+    {
+        if (! Schema::hasTable('notifications')) {
+            return false;
+        }
+
+        return DB::table('notifications')
+            ->where('user_id', $userId)
+            ->where('related_entity_type', $entityType)
+            ->where('related_entity_id', $entityId)
+            ->where('title', $title)
+            ->exists();
     }
 }

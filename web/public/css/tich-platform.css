@@ -3505,6 +3505,13 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     gap: 2rem;
 }
 
+/* Home programmes: keep 6 on desktop, show only the first 3 on mobile */
+@media (max-width: 767px) {
+    #programs .tich-course-grid > .tich-course-card:nth-child(n + 4) {
+        display: none;
+    }
+}
+
 .tich-course-card {
     background: var(--tich-white);
     border: 1px solid var(--tich-neutral-border);
@@ -6019,6 +6026,8 @@ a.tich-notification-badge:hover {
 .tich-admin__main section.tich-card:has(form),
 .tich-admin__main div.tich-card:has(> form),
 .tich-admin__main form.tich-card,
+.tich-admin__main form > .tich-card,
+.tich-admin__main form > article.tich-card,
 .tich-admin__main .tich-card.tich-form-stack,
 .tich-admin__main form.tich-form-grid.tich-card {
     overflow: visible;
@@ -6038,6 +6047,8 @@ a.tich-notification-badge:hover {
 .tich-admin__main section.tich-card:has(form):hover,
 .tich-admin__main div.tich-card:has(> form):hover,
 .tich-admin__main form.tich-card:hover,
+.tich-admin__main form > .tich-card:hover,
+.tich-admin__main form > article.tich-card:hover,
 .tich-admin__main .tich-card.tich-form-stack:hover,
 .tich-admin__main form.tich-form-grid.tich-card:hover {
     border-color: transparent;
@@ -6997,6 +7008,284 @@ a.tich-notification-badge:hover {
 
 .tich-notification-card--unread {
     border-left: 4px solid var(--tich-blue);
+}
+
+/* ??? Notifications page ??????????????????????????????????????????????? */
+
+.tich-notif-page {
+    --notif-page-bg: #f5f8fb;
+    --notif-card-bg: #ffffff;
+    --notif-card-border: #d8e4ef;
+    --notif-text-primary: #1a1d21;
+    --notif-text-muted: #5c6370;
+    --notif-text-meta: #1669a6;
+    --notif-blue: #1669a6;
+    --notif-blue-deep: #0d3a6e;
+    --notif-green: #6cab33;
+    --notif-ghost-bg: #ffffff;
+    --notif-ghost-border: #c5d9ea;
+    --notif-ghost-hover-bg: #e3f2fd;
+    --notif-ghost-hover-border: #1669a6;
+    --notif-open-fg: #ffffff;
+    --notif-card-shadow: 0 1px 2px rgba(10, 37, 64, 0.04);
+    --notif-mark-all-hover: rgba(22, 105, 166, 0.08);
+    background: var(--notif-page-bg);
+    color: var(--notif-text-primary);
+    padding: 2rem 0 3rem;
+}
+
+[data-theme="dark"] .tich-notif-page {
+    --notif-page-bg: #0c1219;
+    --notif-card-bg: #141c28;
+    --notif-card-border: #243044;
+    --notif-text-primary: #eef2f7;
+    --notif-text-muted: #8b9cb0;
+    --notif-text-meta: #6d8fad;
+    --notif-blue: #4a9fd4;
+    --notif-blue-deep: #1669a6;
+    --notif-green: #6cab33;
+    --notif-ghost-bg: rgba(255, 255, 255, 0.04);
+    --notif-ghost-border: #3d4d63;
+    --notif-ghost-hover-bg: rgba(255, 255, 255, 0.08);
+    --notif-ghost-hover-border: #5a6d85;
+    --notif-open-fg: #0c1219;
+    --notif-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --notif-mark-all-hover: rgba(22, 105, 166, 0.15);
+}
+
+.tich-notif-page__wrap {
+    max-width: 960px;
+}
+
+.tich-notif-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+}
+
+.tich-notif-header__title {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.625rem 0.75rem;
+}
+
+.tich-notif-header__title h1 {
+    font-family: var(--font-heading, Merriweather, Georgia, serif);
+    font-size: clamp(1.75rem, 4vw, 2.125rem);
+    font-weight: 900;
+    color: var(--notif-green);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.tich-notif-header__count {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    color: var(--notif-text-muted);
+}
+
+.tich-notif-mark-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--notif-blue);
+    background: transparent;
+    border: 1px solid var(--notif-blue-deep);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tich-notif-mark-all:hover {
+    background: var(--notif-mark-all-hover);
+    border-color: var(--notif-blue);
+}
+
+.tich-notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tich-notif-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem 1.25rem;
+    align-items: start;
+    padding: 1.25rem 1.375rem 1.25rem 1.125rem;
+    background: var(--notif-card-bg);
+    border: 1px solid var(--notif-card-border);
+    border-radius: 10px;
+    box-shadow: var(--notif-card-shadow);
+}
+
+.tich-notif-card:hover {
+    border-color: #c5d9ea;
+    box-shadow: 0 4px 14px rgba(10, 37, 64, 0.07);
+}
+
+[data-theme="dark"] .tich-notif-card:hover {
+    border-color: #3d4d63;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.tich-notif-card.is-read {
+    opacity: 0.72;
+}
+
+.tich-notif-card__body {
+    min-width: 0;
+}
+
+.tich-notif-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--notif-text-meta);
+    margin: 0 0 0.5rem;
+}
+
+.tich-notif-meta__sep {
+    color: var(--notif-text-muted);
+    font-weight: 400;
+}
+
+.tich-notif-meta a {
+    color: var(--notif-blue);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.tich-notif-meta a:hover {
+    text-decoration: underline;
+}
+
+.tich-notif-card__title {
+    font-family: var(--font-heading, Merriweather, Georgia, serif);
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--notif-blue);
+    line-height: 1.35;
+    margin: 0 0 0.5rem;
+}
+
+.tich-notif-card__desc {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--notif-text-primary);
+    opacity: 0.92;
+    margin: 0;
+    line-height: 1.55;
+}
+
+.tich-notif-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    align-items: stretch;
+}
+
+.tich-notif-actions form {
+    margin: 0;
+}
+
+.tich-notif-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 6.5rem;
+    padding: 0.45rem 1rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.tich-notif-btn--open {
+    background: var(--notif-green);
+    color: var(--notif-open-fg);
+    border-color: var(--notif-green);
+}
+
+.tich-notif-btn--open:hover {
+    background: #5a9430;
+    border-color: #5a9430;
+    color: var(--notif-open-fg);
+}
+
+.tich-notif-btn--ghost {
+    background: var(--notif-ghost-bg);
+    color: var(--notif-text-primary);
+    border-color: var(--notif-ghost-border);
+}
+
+.tich-notif-btn--ghost:hover {
+    background: var(--notif-ghost-hover-bg);
+    border-color: var(--notif-ghost-hover-border);
+}
+
+.tich-notif-read-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6.5rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--notif-text-muted);
+}
+
+.tich-notif-page .tich-state {
+    margin-top: 0.5rem;
+    color: var(--notif-text-primary);
+}
+
+.tich-notif-page .tich-state__title {
+    color: var(--notif-text-primary);
+}
+
+.tich-notif-page .tich-state__description,
+.tich-notif-page .tich-state__icon {
+    color: var(--notif-text-muted);
+}
+
+@media (max-width: 640px) {
+    .tich-notif-page {
+        padding: 1.25rem 0 2rem;
+    }
+
+    .tich-notif-card {
+        grid-template-columns: 1fr;
+    }
+
+    .tich-notif-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .tich-notif-btn,
+    .tich-notif-actions form {
+        width: auto;
+    }
 }
 
 body.page-home .tich-header--over-hero .tich-nav-notification {
@@ -12432,8 +12721,8 @@ a.tich-tabs__btn {
     color: #ffffff;
 }
 
-[data-theme="dark"] .tich-admin__main > .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)),
-[data-theme="dark"] .tich-admin__main article.tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)) {
+[data-theme="dark"] .tich-admin__main > .tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)):not(form *),
+[data-theme="dark"] .tich-admin__main article.tich-card:not(.tich-table-panel):not(:has(.tich-table-wrap)):not(:has(.tich-admin-table)):not(:has(form)):not(form *) {
     background: #0f172a;
     border-color: #334155;
 }
@@ -12443,6 +12732,8 @@ a.tich-tabs__btn {
 [data-theme="dark"] .tich-admin__main section.tich-card:has(form),
 [data-theme="dark"] .tich-admin__main div.tich-card:has(> form),
 [data-theme="dark"] .tich-admin__main form.tich-card,
+[data-theme="dark"] .tich-admin__main form > .tich-card,
+[data-theme="dark"] .tich-admin__main form > article.tich-card,
 [data-theme="dark"] .tich-admin__main .tich-card.tich-form-stack,
 [data-theme="dark"] .tich-admin__main form.tich-form-grid.tich-card {
     background: transparent;
@@ -12525,6 +12816,8 @@ form.uf-form-surface,
 /* Legacy page forms: full-width surfaces without outer card border */
 form.tich-card,
 .tich-card > form,
+form > .tich-card,
+form > article.tich-card,
 form > .tich-card.tich-form-stack,
 .tich-card.tich-form-stack,
 form.tich-form-grid.tich-card {
@@ -12537,8 +12830,15 @@ form.tich-form-grid.tich-card {
     padding: 0;
 }
 
+form > .tich-card:hover,
+form > article.tich-card:hover {
+    border-color: transparent;
+}
+
 [data-theme="dark"] form.tich-card,
 [data-theme="dark"] .tich-card > form,
+[data-theme="dark"] form > .tich-card,
+[data-theme="dark"] form > article.tich-card,
 [data-theme="dark"] form > .tich-card.tich-form-stack,
 [data-theme="dark"] .tich-card.tich-form-stack,
 [data-theme="dark"] form.tich-form-grid.tich-card {
@@ -12555,6 +12855,8 @@ form.tich-card > h3.tich-h3,
 .tich-form-stack > .tich-h3:first-child,
 form.tich-form-grid.tich-card > .tich-h3,
 form .tich-card > .tich-h3:first-child,
+form > .tich-card > .tich-h3,
+form > article.tich-card > .tich-h3,
 .uf-legacy-section-head {
     background: #1565c0;
     color: #ffffff;
@@ -12570,6 +12872,8 @@ form .tich-card > .tich-h3:first-child,
 [data-theme="dark"] form.tich-card > .tich-h3,
 [data-theme="dark"] form.tich-card > h2.tich-h3,
 [data-theme="dark"] .tich-card.tich-form-stack > .tich-h3,
+[data-theme="dark"] form > .tich-card > .tich-h3,
+[data-theme="dark"] form > article.tich-card > .tich-h3,
 [data-theme="dark"] .uf-legacy-section-head {
     background: #0d3a6e;
     color: #e3f2fd;
@@ -12584,14 +12888,28 @@ form.tich-form-grid.tich-card > .tich-form-row,
 form.tich-card > .tich-mt-4,
 form.tich-card > .tich-mt-6,
 .tich-card.tich-form-stack > .tich-mt-4,
-.tich-card.tich-form-stack > .tich-mt-6 {
+.tich-card.tich-form-stack > .tich-mt-6,
+form > .tich-card > .tich-grid,
+form > article.tich-card > .tich-grid,
+form > .tich-card > .tich-caption,
+form > article.tich-card > .tich-caption,
+form > .tich-card > .tich-employee-profile-photo,
+form > article.tich-card > .tich-employee-profile-photo,
+form > .tich-card > .tich-mt-4,
+form > article.tich-card > .tich-mt-4,
+form > .tich-card > .tich-mt-6,
+form > article.tich-card > .tich-mt-6 {
     padding: 1rem;
     margin: 0 !important;
 }
 
 form.tich-card > .tich-mt-6:last-child,
 .tich-card.tich-form-stack > .tich-mt-6:last-child,
-form.tich-form-grid.tich-card > .tich-form-row:last-child {
+form.tich-form-grid.tich-card > .tich-form-row:last-child,
+form > .tich-card > .tich-grid:last-child,
+form > article.tich-card > .tich-grid:last-child,
+form > .tich-card > .tich-mt-6:last-child,
+form > article.tich-card > .tich-mt-6:last-child {
     padding-bottom: 1rem;
 }
 
