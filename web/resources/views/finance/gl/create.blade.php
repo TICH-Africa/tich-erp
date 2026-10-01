@@ -31,6 +31,7 @@
                                 type="date"
                                 id="date"
                                 name="date"
+                                value="{{ old('date', now()->toDateString()) }}"
                                 required
                                 class="{{ $errors->has('date') ? 'is-invalid' : '' }}"
                             >
@@ -46,6 +47,7 @@
                                 min="0"
                                 id="amount"
                                 name="amount"
+                                value="{{ old('amount') }}"
                                 placeholder="0.00"
                                 required
                                 class="{{ $errors->has('amount') ? 'is-invalid' : '' }}"
@@ -63,6 +65,11 @@
                                 class="{{ $errors->has('debit_account_id') ? 'is-invalid' : '' }}"
                             >
                                 <option value="">Select account</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->account_code }}" @selected(old('debit_account_id') === $account->account_code)>
+                                        {{ $account->account_code }} - {{ $account->account_name }}
+                                    </option>
+                                @endforeach
                             </select>
                             @error('debit_account_id')
                                 <span class="uf-error">{{ $message }}</span>
@@ -77,6 +84,11 @@
                                 class="{{ $errors->has('credit_account_id') ? 'is-invalid' : '' }}"
                             >
                                 <option value="">Select account</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->account_code }}" @selected(old('credit_account_id') === $account->account_code)>
+                                        {{ $account->account_code }} - {{ $account->account_name }}
+                                    </option>
+                                @endforeach
                             </select>
                             @error('credit_account_id')
                                 <span class="uf-error">{{ $message }}</span>
@@ -85,14 +97,14 @@
                     </div>
                     <div class="uf-field">
                         <label for="description">Description <span class="uf-req">*</span></label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            rows="4"
-                            placeholder="Journal entry description..."
-                            required
-                            class="{{ $errors->has('description') ? 'is-invalid' : '' }}"
-                        ></textarea>
+<textarea
+                                id="description"
+                                name="description"
+                                rows="4"
+                                placeholder="Journal entry description..."
+                                required
+                                class="{{ $errors->has('description') ? 'is-invalid' : '' }}"
+                            >{{ old('description') }}</textarea>
                         @error('description')
                             <span class="uf-error">{{ $message }}</span>
                         @enderror

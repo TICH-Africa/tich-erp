@@ -19,9 +19,17 @@ class RBACService
     private const PLATFORM_ADMIN_ROLES = ['CEO', 'Academic Registrar'];
 
     public function __construct(
-        protected AuditService $auditService,
         protected PlatformNotificationService $notificationService,
     ) {}
+
+    /**
+     * AuditService depends on this service, so it is resolved lazily to avoid a circular constructor graph.
+     */
+    private function audit(): AuditService
+    {
+        return app(AuditService::class);
+    }
+
     public function resolvePermissionSlug(string $permission): string
     {
         $aliases = config('tich.permission_aliases', []);
@@ -520,7 +528,7 @@ class RBACService
 
         $roleName = DB::table('roles')->where('id', $roleId)->value('role_name');
 
-        $this->auditService->log(
+        $this->audit()->log(
             'rbac.role.assigned',
             'user_roles',
             "{$user->id}:{$roleId}",
@@ -560,7 +568,7 @@ class RBACService
             ->where('role_id', $roleId)
             ->delete();
 
-        $this->auditService->log(
+        $this->audit()->log(
             'rbac.role.revoked',
             'user_roles',
             "{$user->id}:{$roleId}",
@@ -610,7 +618,7 @@ class RBACService
             );
         }
 
-        $this->auditService->log(
+        $this->audit()->log(
             'rbac.user.access_synced',
             'users',
             $user->id,

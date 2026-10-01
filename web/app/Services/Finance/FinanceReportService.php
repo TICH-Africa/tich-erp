@@ -120,9 +120,12 @@ class FinanceReportService
     {
         $cashCodes = ChartOfAccount::query()
             ->where('is_active', 1)
+            ->where('account_type', 'asset')
             ->where(function ($query) {
-                $query->where('account_category', 'Cash')
-                    ->orWhere('account_code', config('finance.main_treasury_account'));
+                $query->whereIn('account_code', config('finance.cash_accounts', []))
+                    ->orWhere('account_name', 'like', '%cash%')
+                    ->orWhere('account_name', 'like', '%mpesa%')
+                    ->orWhere('account_name', 'like', '%bank%');
             })
             ->pluck('account_code')
             ->all();

@@ -3,12 +3,39 @@
 @section('title', 'General Ledger')
 
 @section('finance-content')
-    <x-page-toolbar title="General Ledger (GL)" meta="Chart of Accounts, journal entries, debits, credits, account balances, Trial Balance, P&amp;L, Balance Sheet and Cash Flow">
+    <x-page-toolbar title="Chart of Accounts / GL" meta="Accounts, journal entries, debits, credits, balances, Trial Balance, P&amp;L, Balance Sheet and Cash Flow">
         <x-slot:actions>
             <a href="{{ route('finance.reports.index', ['report' => 'trial_balance']) }}" class="tich-btn tich-btn-secondary">Financial reports</a>
-            <a href="{{ route('finance.gl.journal.create') }}" class="tich-btn tich-btn-primary">+ New journal entry</a>
+            @can('finance.chart_of_accounts.manage')
+                <a href="{{ route('finance.chart-of-accounts.template') }}" class="tich-btn tich-btn-ghost">Template</a>
+                <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary">+ Add Account</a>
+            @endcan
+            <a href="{{ route('finance.gl.journal.create') }}" class="tich-btn tich-btn-secondary">+ New journal entry</a>
         </x-slot:actions>
     </x-page-toolbar>
+
+    @if (session('status'))
+        <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
+    @endif
+    @if (session('import_errors'))
+        <div class="tich-alert tich-alert--warning tich-mt-4">
+            <strong>Rows that were not imported:</strong>
+            <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem;">
+                @foreach (array_slice(session('import_errors'), 0, 50) as $importError)
+                    <li>{{ $importError }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+    @if ($errors->any())
+        <div class="tich-alert tich-alert--error tich-mt-4">
+            <ul style="margin:0; padding-left:1.25rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="tich-grid tich-grid--3 tich-mt-6">
         <article class="tich-card tich-stat">
@@ -28,35 +55,99 @@
         </article>
     </div>
 
-    <section class="tich-mt-8">
-        <h2 class="tich-h3 tich-mb-4">Chart of accounts</h2>
-        <div class="tich-card tich-table-panel">
-            <table class="tich-admin-table">
-                <thead>
-                    <tr>
-                        <th>Code</th>
-                        <th>Account name</th>
-                        <th>Type</th>
-                        <th>Category</th>
-                        <th>Balance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($accounts as $account)
-                        <tr>
-                            <td><strong>{{ $account->account_code }}</strong></td>
-                            <td>{{ $account->account_name }}</td>
-                            <td>{{ ucfirst($account->account_type) }}</td>
-                            <td>{{ $account->account_category }}</td>
-                            <td>KES {{ number_format($balances[$account->account_code] ?? 0, 2) }}</td>
-                        </tr>
+    <!-- Accounts: search -->
+    <div class="tich-card tich-mt-4">
+        <div class="tich-card__body" style="padding: 0.75rem 1rem;">
+            <form method="GET" action="{{ route('finance.gl.index') }}" class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle">
+                <input type="text" id="search" name="search" class="uf-input" value="{{ request('search') }}" placeholder="Search code or name..." style="width: 220px; height: 34px; padding: 0.25rem 0.5rem; font-size: 0.8125rem;">
+                <select id="filter_account_type" name="account_type" class="uf-input" style="width: 150px; height: 34px; padding: 0.25rem 0.5rem; font-size: 0.8125rem;">
+                    <option value="">All Types</option>
+                    @foreach($chartTypes as $type)
+                        <option value="{{ $type }}" @selected(request('account_type') === $type)>{{ ucfirst($type) }}</option>
                     @endforeach
-                </tbody>
-            </table>
+                </select>
+                <select id="filter_is_active" name="is_active" class="uf-input" style="width: 130px; height: 34px; padding: 0.25rem 0.5rem; font-size: 0.8125rem;">
+                    <option value="">All Status</option>
+                    <option value="1" @selected(request('is_active') === '1')>Active</option>
+                    <option value="0" @selected(request('is_active') === '0')>Inactive</option>
+                </select>
+                <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Search
+                </button>
+                <a href="{{ route('finance.gl.index') }}" class="tich-btn tich-btn-ghost tich-btn--sm">Clear</a>
+                <div style="flex: 1;"></div>
+                @can('finance.chart_of_accounts.manage')
+                    <button type="button" class="tich-btn tich-btn-secondary tich-btn--sm" data-open-modal="import-modal">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Import
+                    </button>
+                @endcan
+            </form>
+        </div>
+    </div>
+
+    <!-- Accounts -->
+    <section class="tich-mt-4">
+        <div class="tich-card tich-table-panel">
+            @if ($chartAccounts->isNotEmpty())
+                <div class="tich-table-wrap">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Account name</th>
+                                <th>Type</th>
+                                <th>Currency</th>
+                                <th>Balance</th>
+                                <th>View</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($chartAccounts as $account)
+                                @php $balance = $chartBalances[$account->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0]; @endphp
+                                <tr>
+                                    <td><code>{{ $account->account_code }}</code></td>
+                                    <td>{{ $account->account_name }}</td>
+                                    <td>{{ ucfirst($account->account_type) }}</td>
+                                    <td>{{ $account->currency ?? 'KES' }}</td>
+                                    <td>
+                                        <span class="tich-text--sm">Dr {{ number_format($balance['debit'], 2) }} / Cr {{ number_format($balance['credit'], 2) }}</span>
+                                        <br><strong>{{ number_format(abs($balance['net']), 2) }} {{ $balance['net'] >= 0 ? 'Dr' : 'Cr' }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('finance.chart-of-accounts.show', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                {{ $chartAccounts->links() }}
+            @else
+                <div class="tich-card__body" style="text-align: center; padding: 3rem;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; color: #9ca3af;">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <h3 class="tich-h3">No accounts found</h3>
+                    <p class="tich-text tich-text--muted tich-mt-2">Create your first account or import from Excel.</p>
+                    @can('finance.chart_of_accounts.manage')
+                        <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary tich-mt-4">Add First Account</a>
+                    @endcan
+                </div>
+            @endif
         </div>
     </section>
 
-    <section class="tich-mt-8">
+    <!-- Recent journal entries -->
+    <section class="tich-mt-6">
         <h2 class="tich-h3 tich-mb-4">Recent journal entries</h2>
         <div class="tich-card tich-table-panel">
             <table class="tich-admin-table">
@@ -93,4 +184,78 @@
             </table>
         </div>
     </section>
+
+    <!-- Import Modal -->
+    @can('finance.chart_of_accounts.manage')
+    <div id="import-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="tich-modal__backdrop" data-close-modal="import-modal"></div>
+        <div class="tich-modal__dialog" style="max-width: 420px;">
+            <header class="tich-modal__header">
+                <h2 class="tich-h3" style="margin: 0;">Import Accounts</h2>
+                <button type="button" class="tich-modal__close" data-close-modal="import-modal" aria-label="Close">&times;</button>
+            </header>
+            <form method="POST" action="{{ route('finance.chart-of-accounts.import') }}" enctype="multipart/form-data" id="import-form" class="tich-modal__body">
+                @csrf
+                <div style="border: 1.5px dashed #d1d5db; border-radius: 10px; background: #f9fafb; padding: 1.5rem 1rem; text-align: center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin: 0 auto 0.5rem;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="tich-text tich-text--sm" style="margin: 0 0 0.75rem; color: #4b5563;">Select a spreadsheet to import</p>
+                    <input type="file" id="file" name="file" class="uf-input" accept=".xlsx,.xls,.csv" required
+                           style="font-size: 0.8125rem; padding: 0.4rem; background: #fff;">
+                </div>
+                <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.6rem 0 0;">.xlsx, .xls or .csv &middot; up to 10MB</p>
+
+                @error('file')
+                    <div class="tich-alert tich-alert--error" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">{{ $message }}</div>
+                @enderror
+
+                <footer class="tich-modal__footer" style="margin-top: 1rem;">
+                    <a href="{{ route('finance.chart-of-accounts.template') }}" class="tich-btn tich-btn-ghost tich-btn--sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Template
+                    </a>
+                    <div style="flex: 1;"></div>
+                    <button type="button" class="tich-btn tich-btn-secondary tich-btn--sm" data-close-modal="import-modal">Cancel</button>
+                    <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Import
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </div>
+    @endcan
+@endsection
+
+@section('scripts')
+    @parent
+    @include('admin.partials.tich-modal-assets')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('import-form');
+
+            if (!form) {
+                return;
+            }
+
+            form.addEventListener('submit', function (e) {
+                const fileInput = form.querySelector('input[name="file"]');
+                if (!fileInput.files.length) {
+                    e.preventDefault();
+                    alert('Please select a file to upload.');
+                }
+            });
+        });
+    </script>
 @endsection

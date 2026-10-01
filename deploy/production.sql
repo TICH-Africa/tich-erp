@@ -2233,7 +2233,7 @@ CREATE TABLE IF NOT EXISTS `chart_of_accounts` (
   `account_code` varchar(30) NOT NULL,
   `account_name` varchar(200) NOT NULL,
   `account_type` varchar(50) NOT NULL,
-  `account_category` varchar(100) NOT NULL,
+  `currency` varchar(10) NOT NULL DEFAULT 'KES',
   `parent_account_code` varchar(30) DEFAULT NULL,
   `is_active` tinyint(4) NOT NULL DEFAULT 1,
   `is_system_account` tinyint(4) NOT NULL DEFAULT 0,
@@ -2247,7 +2247,7 @@ CALL `tich_ensure_column`('chart_of_accounts', 'id', 'bigint(20) unsigned NOT NU
 CALL `tich_ensure_column`('chart_of_accounts', 'account_code', 'varchar(30) NOT NULL');
 CALL `tich_ensure_column`('chart_of_accounts', 'account_name', 'varchar(200) NOT NULL');
 CALL `tich_ensure_column`('chart_of_accounts', 'account_type', 'varchar(50) NOT NULL');
-CALL `tich_ensure_column`('chart_of_accounts', 'account_category', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('chart_of_accounts', 'currency', 'varchar(10) NOT NULL DEFAULT \'KES\'');
 CALL `tich_ensure_column`('chart_of_accounts', 'parent_account_code', 'varchar(30) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('chart_of_accounts', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('chart_of_accounts', 'is_system_account', 'tinyint(4) NOT NULL DEFAULT \'0\'');

@@ -108,9 +108,12 @@ class FinanceController extends Controller
 
     public function apCreate(Request $request, Department $department): View
     {
+        $selectedSupplierId = $request->integer('supplier_id') ?: null;
+
         return $this->departmentView($request, 'finance.ap.create', $department, [
+            'selectedSupplierId' => $selectedSupplierId,
             'suppliers' => Supplier::query()
-                ->where('is_active', 1)
+                ->selectable()
                 ->orderBy('supplier_name')
                 ->get(['id', 'supplier_name', 'supplier_code']),
         ]);
@@ -126,6 +129,14 @@ class FinanceController extends Controller
             'due_date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $supplier = Supplier::query()->selectable()->find($validated['supplier_id']);
+
+        if (! $supplier) {
+            return back()
+                ->withInput()
+                ->withErrors(['supplier_id' => 'The selected supplier is inactive or blacklisted.']);
+        }
 
         $invoiceAmount = (float) $validated['invoice_amount'];
         $taxAmount = (float) ($validated['tax_amount'] ?? 0);
@@ -165,7 +176,63 @@ class FinanceController extends Controller
 
     public function suppliersWorkflow(Request $request, Department $department): View
     {
-        return $this->departmentView($request, 'finance.suppliers.index', $department);
+        $search = $request->string('search')->toString();
+        $complianceStatus = $request->string('compliance_status')->toString();
+        $category = $request->string('supplier_category')->toString();
+        $riskRating = $request->string('risk_rating')->toString();
+        $status = $request->string('status')->toString();
+
+        $complianceStatuses = ['pending', 'approved', 'rejected', 'under_review'];
+        $categories = ['goods', 'services', 'works'];
+        $riskRatings = ['low', 'medium', 'high'];
+
+        $suppliers = Supplier::query()
+            ->withSum('payables as outstanding_balance', 'balance')
+            ->withCount('payables as payable_count')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($builder) use ($search) {
+                    $builder->where('supplier_name', 'like', "%{$search}%")
+                        ->orWhere('supplier_code', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('kra_pin', 'like', "%{$search}%")
+                        ->orWhere('registration_number', 'like', "%{$search}%");
+                });
+            })
+            ->when(in_array($complianceStatus, $complianceStatuses, true), fn ($query) => $query->where('compliance_status', $complianceStatus))
+            ->when(in_array($category, $categories, true), fn ($query) => $query->where('supplier_category', $category))
+            ->when(in_array($riskRating, $riskRatings, true), fn ($query) => $query->where('risk_rating', $riskRating))
+            ->when($status === 'active', fn ($query) => $query->selectable())
+            ->when($status === 'blacklisted', fn ($query) => $query->blacklisted())
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', 0))
+            ->orderBy('supplier_name')
+            ->paginate(25)
+            ->withQueryString();
+
+        $stats = [
+            'total' => (int) Supplier::query()->count(),
+            'selectable' => (int) Supplier::query()->selectable()->count(),
+            'pending' => (int) Supplier::query()->whereIn('compliance_status', ['pending', 'under_review'])->count(),
+            'blacklisted' => (int) Supplier::query()->blacklisted()->count(),
+            'outstanding' => (float) AccountsPayable::query()
+                ->whereHas('supplier', fn ($query) => $query->selectable())
+                ->sum('balance'),
+            'invoices' => (int) AccountsPayable::query()->count(),
+        ];
+
+        return $this->departmentView($request, 'finance.suppliers.index', $department, compact(
+            'suppliers',
+            'stats',
+            'search',
+            'complianceStatus',
+            'category',
+            'riskRating',
+            'status',
+        ) + [
+            'complianceStatuses' => $complianceStatuses,
+            'categories' => $categories,
+            'riskRatings' => $riskRatings,
+        ]);
     }
 
     public function glIndex(Request $request, Department $department): View
@@ -178,12 +245,36 @@ class FinanceController extends Controller
         $balances = $this->ledger->accountBalances();
         $entries = $this->ledger->recentEntries(100);
 
+        $chartQuery = ChartOfAccount::query()->orderBy('account_code');
+
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+
+            $chartQuery->where(function ($q) use ($search) {
+                $q->where('account_code', 'like', "%{$search}%")
+                    ->orWhere('account_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('account_type')) {
+            $chartQuery->where('account_type', (string) $request->input('account_type'));
+        }
+
+        if ($request->filled('is_active')) {
+            $chartQuery->where('is_active', $request->boolean('is_active'));
+        }
+
+        $chartAccounts = $chartQuery->paginate(25)->withQueryString();
+
         return $this->departmentView($request, 'finance.gl.index', $department, [
             'accounts' => $accounts,
             'balances' => $balances,
             'entries' => $entries,
             'mainAccount' => config('finance.main_treasury_account'),
             'trialBalance' => $this->ledger->trialBalance(),
+            'chartAccounts' => $chartAccounts,
+            'chartBalances' => $this->ledger->accountBalanceMap($chartAccounts->items()),
+            'chartTypes' => ['asset', 'liability', 'equity', 'revenue', 'expense'],
         ]);
     }
 
@@ -196,7 +287,30 @@ class FinanceController extends Controller
 
     public function glJournalStore(Request $request, Department $department)
     {
-        //
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'debit_account_id' => ['required', 'string', 'exists:chart_of_accounts,account_code'],
+            'credit_account_id' => ['required', 'string', 'different:debit_account_id', 'exists:chart_of_accounts,account_code'],
+            'description' => ['required', 'string', 'max:500'],
+        ]);
+
+        $this->ledger->postEntry(
+            'journal_entry',
+            $validated['debit_account_id'],
+            $validated['credit_account_id'],
+            round((float) $validated['amount'], 2),
+            $validated['description'],
+            'other',
+            null,
+            null,
+            null,
+            $validated['date'],
+        );
+
+        return redirect()
+            ->route('finance.gl.index')
+            ->with('status', 'Journal entry posted.');
     }
 
     public function glShow(Request $request, AccountLedger $gl, Department $department): View
@@ -585,8 +699,11 @@ class FinanceController extends Controller
         $search = $request->string('search')->toString();
 
         $suppliers = Supplier::query()
-            ->where('is_active', 1)
-            ->when($search !== '', fn ($query) => $query->where('supplier_name', 'like', "%{$search}%"))
+            ->selectable()
+            ->when($search !== '', fn ($query) => $query->where(function ($builder) use ($search) {
+                $builder->where('supplier_name', 'like', "%{$search}%")
+                    ->orWhere('supplier_code', 'like', "%{$search}%");
+            }))
             ->orderBy('supplier_name')
             ->get(['id', 'supplier_name', 'supplier_code']);
 

@@ -47,8 +47,8 @@ class FinanceNavigationService
         $groups[] = [
             'label' => 'Finance Records',
             'icon' => 'book-open',
-            'open' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.suppliers.*', 'finance.gl.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
-            'active' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.suppliers.*', 'finance.gl.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
+            'open' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.suppliers.*', 'finance.gl.*', 'finance.chart-of-accounts.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
+            'active' => request()->routeIs('finance.records.*', 'finance.ledger.*', 'finance.reports.*', 'finance.ar.*', 'finance.ap.*', 'finance.suppliers.*', 'finance.gl.*', 'finance.chart-of-accounts.*', 'finance.budgeting.*', 'finance.projects-donors.*', 'finance.mpesa.*'),
             'badgeKey' => 'finance-records',
             'items' => $this->financeRecordsItems(),
         ];
@@ -107,7 +107,7 @@ class FinanceNavigationService
             $this->item('Credit memos', 'file-minus', route('finance.ar.credit-memos.index'), request()->routeIs('finance.ar.credit-memos.*')),
             $this->item('Accounts payable', 'trending-down', route('finance.ap.index'), request()->routeIs('finance.ap.*'), 'ap.pending'),
             $this->item('Suppliers', 'truck', route('finance.suppliers.index'), request()->routeIs('finance.suppliers.*')),
-            $this->item('Chart of accounts / GL', 'grid', route('finance.gl.index'), request()->routeIs('finance.gl.*')),
+            $this->item('Chart of accounts / GL', 'grid', route('finance.gl.index'), request()->routeIs('finance.gl.*', 'finance.chart-of-accounts.*')),
             $this->item('Budgeting', 'pie-chart', route('finance.budgeting.index'), request()->routeIs('finance.budgeting.*'), 'budgeting.pending'),
             $this->item('Projects & donors', 'globe', route('finance.projects-donors.index'), request()->routeIs('finance.projects-donors.*')),
         ];
