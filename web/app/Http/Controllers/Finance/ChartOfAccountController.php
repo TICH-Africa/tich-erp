@@ -167,24 +167,55 @@ class ChartOfAccountController extends Controller
             ]);
         }
 
-        // Persist with a real extension — PHP upload temp names have none, and
-        // some hosts block writing beside /tmp/phpXXXXXX.
-        $storedRelative = $upload->storeAs(
-            'imports/chart-of-accounts',
-            'coa_'.now()->format('YmdHis').'_'.bin2hex(random_bytes(4)).'.'.$extension
-        );
-
-        if (! $storedRelative) {
+        $sourcePath = $upload->getRealPath() ?: $upload->getPathname();
+        if (! is_string($sourcePath) || ! is_file($sourcePath)) {
             return back()->withErrors([
-                'file' => 'The uploaded file could not be stored for import. Please try again.',
+                'file' => 'The uploaded file was not received by the server. Check PHP upload_max_filesize / post_max_size and try again.',
             ]);
         }
 
-        $readablePath = Storage::disk('local')->path($storedRelative);
+        // cPanel/LiteSpeed: write beside sys temp with a real extension (upload temps have none).
+        $readablePath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            .DIRECTORY_SEPARATOR
+            .'coa_'.uniqid('', true).'.'.$extension;
+
+        if (! @copy($sourcePath, $readablePath)) {
+            // Fallback to Laravel private storage if /tmp copy is blocked.
+            $storedRelative = $upload->storeAs(
+                'imports/chart-of-accounts',
+                'coa_'.now()->format('YmdHis').'_'.bin2hex(random_bytes(4)).'.'.$extension
+            );
+
+            if (! $storedRelative) {
+                return back()->withErrors([
+                    'file' => 'The uploaded file could not be stored for import. Check that storage/app/private is writable.',
+                ]);
+            }
+
+            $readablePath = Storage::disk('local')->path($storedRelative);
+            $storedRelativeForCleanup = $storedRelative;
+        } else {
+            $storedRelativeForCleanup = null;
+        }
+
+        if (! is_file($readablePath) || filesize($readablePath) < 1) {
+            $this->cleanupImportFile($readablePath, $storedRelativeForCleanup ?? null);
+
+            return back()->withErrors([
+                'file' => 'The uploaded file is empty or could not be prepared for import.',
+            ]);
+        }
+
         $import = new ChartOfAccountsImport(self::DEFAULT_CURRENCY, app(LedgerService::class));
 
         try {
             $result = $import->import($readablePath, $extension);
+        } catch (\Illuminate\Database\QueryException $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'file' => $this->importDatabaseFailureMessage($exception),
+            ]);
         } catch (\Throwable $exception) {
             report($exception);
 
@@ -192,7 +223,7 @@ class ChartOfAccountController extends Controller
                 'file' => $this->importReadFailureMessage($exception, $extension),
             ]);
         } finally {
-            Storage::disk('local')->delete($storedRelative);
+            $this->cleanupImportFile($readablePath, $storedRelativeForCleanup ?? null);
         }
 
         if ($result['skipped'] > 0 && $result['imported'] === 0 && $result['updated'] === 0) {
@@ -218,23 +249,68 @@ class ChartOfAccountController extends Controller
             ->with('import_errors', $result['errors']);
     }
 
-    private function importReadFailureMessage(\Throwable $exception, string $extension): string
+    private function cleanupImportFile(string $readablePath, ?string $storedRelative): void
+    {
+        if ($storedRelative) {
+            Storage::disk('local')->delete($storedRelative);
+
+            return;
+        }
+
+        if (is_file($readablePath)) {
+            @unlink($readablePath);
+        }
+    }
+
+    private function importDatabaseFailureMessage(\Illuminate\Database\QueryException $exception): string
     {
         $detail = strtolower($exception->getMessage());
 
-        if (str_contains($detail, 'ziparchive') || str_contains($detail, 'zip')) {
+        if (str_contains($detail, 'unknown column') && str_contains($detail, 'currency')) {
+            return 'The spreadsheet was read, but the database is missing chart_of_accounts.currency. Run deploy/production-patches.sql section 44 (replace account_category with currency), then retry the upload.';
+        }
+
+        if (str_contains($detail, 'unknown column') && str_contains($detail, 'account_category')) {
+            return 'The spreadsheet was read, but chart_of_accounts still expects account_category. Run deploy/production-patches.sql section 44 to switch to currency, then retry.';
+        }
+
+        return 'The spreadsheet was read, but saving accounts failed: '.$this->shortExceptionMessage($exception);
+    }
+
+    private function importReadFailureMessage(\Throwable $exception, string $extension): string
+    {
+        $detail = strtolower($exception->getMessage());
+        $short = $this->shortExceptionMessage($exception);
+
+        if (
+            str_contains($detail, 'class "ziparchive" not found')
+            || str_contains($detail, 'class ziparchive not found')
+            || str_contains($detail, 'ziparchive is required')
+        ) {
             return 'This server cannot read .xlsx files because the PHP zip extension is missing. Ask ICT to enable php-zip, or save the sheet as .csv and upload that instead.';
         }
 
-        if (str_contains($detail, 'xml') || str_contains($detail, 'domdocument')) {
+        if (str_contains($detail, 'domdocument') || str_contains($detail, 'php xml')) {
             return 'This server cannot read spreadsheet XML (PHP xml extension missing). Ask ICT to enable php-xml, or upload a .csv file instead.';
         }
 
         if ($extension === 'xlsx' || $extension === 'xls') {
-            return 'The spreadsheet could not be read. Try File → Save As → CSV (.csv) and upload that, or ask ICT to confirm php-zip and php-xml are enabled.';
+            return 'The spreadsheet could not be read ('.$short.'). If this keeps happening, try File → Save As → CSV (.csv) and upload that.';
         }
 
-        return 'The file could not be read. Save it as .xlsx or .csv and try again.';
+        return 'The file could not be read ('.$short.'). Save it as .xlsx or .csv and try again.';
+    }
+
+    private function shortExceptionMessage(\Throwable $exception): string
+    {
+        $message = trim(preg_replace('/\s+/', ' ', $exception->getMessage()) ?? '');
+        $message = preg_replace('#(/[^\s:]{8,})#', '[path]', $message) ?? $message;
+
+        if (strlen($message) > 180) {
+            $message = substr($message, 0, 177).'...';
+        }
+
+        return $message !== '' ? $message : $exception::class;
     }
 
     public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse

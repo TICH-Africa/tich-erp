@@ -93,7 +93,17 @@ class ChartOfAccountsImport
             $reader->setEnclosure('"');
         }
 
-        $spreadsheet = $reader->load($path);
+        try {
+            $spreadsheet = $reader->load($path);
+        } catch (\Throwable $exception) {
+            // Auto-detect as a second chance (some hosts rename or alter uploads).
+            try {
+                $spreadsheet = IOFactory::load($path);
+            } catch (\Throwable) {
+                throw $exception;
+            }
+        }
+
         $rows = $spreadsheet->getSheet(0)->toArray(null, true, false, false);
         $spreadsheet->disconnectWorksheets();
 
