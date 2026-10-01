@@ -620,7 +620,26 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/mpesa/stk/{stkRequest}/reconcile', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'reconcile'])->name('finance.mpesa.stk.reconcile');
         });
 
-        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
+        Route::middleware('permission:finance.ledger.view')->group(function () {
+            $chartOfAccounts = \App\Http\Controllers\Finance\ChartOfAccountController::class;
+
+            Route::get('/chart-of-accounts', [$chartOfAccounts, 'index'])->name('finance.chart-of-accounts.index');
+            Route::get('/chart-of-accounts/create', [$chartOfAccounts, 'create'])->name('finance.chart-of-accounts.create');
+            Route::get('/chart-of-accounts/import-template', [$chartOfAccounts, 'template'])->name('finance.chart-of-accounts.template');
+            Route::get('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'show'])->name('finance.chart-of-accounts.show');
+            Route::get('/chart-of-accounts/{chartOfAccount}/edit', [$chartOfAccounts, 'edit'])->name('finance.chart-of-accounts.edit');
+        });
+
+        Route::middleware('permission:finance.chart_of_accounts.manage')->group(function () {
+            $chartOfAccounts = \App\Http\Controllers\Finance\ChartOfAccountController::class;
+
+            Route::post('/chart-of-accounts', [$chartOfAccounts, 'store'])->name('finance.chart-of-accounts.store');
+            Route::post('/chart-of-accounts/import', [$chartOfAccounts, 'import'])->name('finance.chart-of-accounts.import');
+            Route::put('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'update'])->name('finance.chart-of-accounts.update');
+            Route::delete('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'destroy'])->name('finance.chart-of-accounts.destroy');
+        });
+
+        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
         Route::get('/reports', [\App\Http\Controllers\Finance\LedgerController::class, 'reports'])->name('finance.reports.index');
         Route::get('/reports/view/pdf', [\App\Http\Controllers\Finance\LedgerController::class, 'viewPdf'])->name('finance.reports.view.pdf');
         Route::get('/reports/view/excel', [\App\Http\Controllers\Finance\LedgerController::class, 'viewExcel'])->name('finance.reports.view.excel');

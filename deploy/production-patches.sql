@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-09-29
+-- Last updated: 2026-10-01
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2083,8 +2083,29 @@ ALTER TABLE `staff`
 
 -- PRESENT IN PRODUCTION UP TO HERE (after applying §43)
 
+-- -----------------------------------------------------------------------------
+-- 44. Chart of Accounts: `account_category` replaced by `currency`
+--     (2026_09_30_000001_replace_account_category_with_currency_in_chart_of_accounts)
+--     production.sql adds `currency` (default 'KES'); the legacy column is
+--     dropped here because production.sql is add-only.
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='chart_of_accounts' AND COLUMN_NAME='currency'),
+  'SELECT 1',
+  'ALTER TABLE `chart_of_accounts` ADD COLUMN `currency` varchar(10) NOT NULL DEFAULT ''KES'' AFTER `account_type`'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+UPDATE `chart_of_accounts` SET `currency` = 'KES' WHERE `currency` IS NULL OR `currency` = '';
 
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='chart_of_accounts' AND COLUMN_NAME='account_category'),
+  'ALTER TABLE `chart_of_accounts` DROP COLUMN `account_category`',
+  'SELECT 1'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- PRESENT IN PRODUCTION UP TO HERE (after applying §44)
 
 
 

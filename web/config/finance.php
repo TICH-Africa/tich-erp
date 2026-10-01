@@ -4,6 +4,15 @@ return [
 
     'main_treasury_account' => env('FINANCE_MAIN_ACCOUNT', '1000'),
 
+    /**
+     * Account codes treated as cash for cashflow reporting.
+     */
+    'cash_accounts' => [
+        env('FINANCE_MAIN_ACCOUNT', '1000'),
+        env('FINANCE_MPESA_CASH_ACCOUNT', '1010'),
+        env('FINANCE_BANK_CASH_ACCOUNT', '1020'),
+    ],
+
     'accounts' => [
         'accounts_receivable' => '1100',
         'tuition_revenue' => '4000',
@@ -20,6 +29,7 @@ return [
         'nssf_payable' => env('FINANCE_NSSF_PAYABLE_ACCOUNT', '2110'),
         'sha_payable' => env('FINANCE_SHA_PAYABLE_ACCOUNT', '2120'),
         'ahl_payable' => env('FINANCE_AHL_PAYABLE_ACCOUNT', '2130'),
+        'opening_balance_equity' => env('FINANCE_OPENING_BALANCE_ACCOUNT', '3000'),
     ],
 
     'invoice_types' => [

@@ -122,6 +122,15 @@ class Supplier extends Model
         return $query->where('blacklist_status', 'active')->where('is_active', 1);
     }
 
+    public function scopeSelectable($query)
+    {
+        return $query->where('is_active', 1)
+            ->where(function ($builder) {
+                $builder->whereNull('blacklist_status')
+                    ->orWhere('blacklist_status', 'active');
+            });
+    }
+
     public function scopeBlacklisted($query)
     {
         return $query->where('blacklist_status', 'blacklisted');

@@ -42,7 +42,7 @@
                         >
                             <option value="">Select supplier</option>
                             @foreach ($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
+                                <option value="{{ $supplier->id }}" @selected((int) old('supplier_id', $selectedSupplierId) === $supplier->id)>{{ $supplier->supplier_name }} ({{ $supplier->supplier_code }})</option>
                             @endforeach
                         </select>
                         @error('supplier_id')
@@ -141,11 +141,17 @@
         </form>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('supplier-search');
-            const select = document.getElementById('supplier-select');
-            if (!searchInput || !select) return;
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const searchInput = document.getElementById('supplier-search');
+                const select = document.getElementById('supplier-select');
+                if (!searchInput || !select) return;
+
+                const preselected = select.querySelector('option:checked');
+                if (preselected && preselected.value) {
+                    searchInput.value = preselected.textContent.replace(/\s*\([^)]*\)/, '').trim();
+                }
+
 
             searchInput.addEventListener('input', function () {
                 const query = this.value.trim();

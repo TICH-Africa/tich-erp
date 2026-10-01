@@ -70,27 +70,27 @@ class FinanceAccountsDemoSeeder extends Seeder
     private function seedChartOfAccounts(): void
     {
         $accounts = [
-            ['1000', 'Main Treasury Account', 'asset', 'Treasury', null, 1],
-            ['1010', 'M-Pesa Collections', 'asset', 'Cash', '1000', 1],
-            ['1020', 'Bank Collections', 'asset', 'Cash', '1000', 1],
-            ['1100', 'Accounts Receivable - Students', 'asset', 'Receivables', null, 1],
-            ['2000', 'Accounts Payable', 'liability', 'Payables', null, 1],
-            ['3000', 'Institutional Equity', 'equity', 'Equity', null, 1],
-            ['4000', 'Tuition Revenue', 'revenue', 'Student Fees', null, 1],
-            ['4010', 'Application Fee Revenue', 'revenue', 'Student Fees', null, 1],
-            ['4020', 'Examination Fee Revenue', 'revenue', 'Student Fees', null, 1],
-            ['4030', 'Graduation Fee Revenue', 'revenue', 'Student Fees', null, 1],
-            ['4090', 'Other Fee Revenue', 'revenue', 'Student Fees', null, 1],
-            ['5000', 'Operating Expenses', 'expense', 'Operations', null, 1],
+            ['1000', 'Main Treasury Account', 'asset', null, 1],
+            ['1010', 'M-Pesa Collections', 'asset', '1000', 1],
+            ['1020', 'Bank Collections', 'asset', '1000', 1],
+            ['1100', 'Accounts Receivable - Students', 'asset', null, 1],
+            ['2000', 'Accounts Payable', 'liability', null, 1],
+            ['3000', 'Institutional Equity', 'equity', null, 1],
+            ['4000', 'Tuition Revenue', 'revenue', null, 1],
+            ['4010', 'Application Fee Revenue', 'revenue', null, 1],
+            ['4020', 'Examination Fee Revenue', 'revenue', null, 1],
+            ['4030', 'Graduation Fee Revenue', 'revenue', null, 1],
+            ['4090', 'Other Fee Revenue', 'revenue', null, 1],
+            ['5000', 'Operating Expenses', 'expense', null, 1],
         ];
 
-        foreach ($accounts as [$code, $name, $type, $category, $parent, $system]) {
+        foreach ($accounts as [$code, $name, $type, $parent, $system]) {
             ChartOfAccount::query()->firstOrCreate(
                 ['account_code' => $code],
                 [
                     'account_name' => $name,
                     'account_type' => $type,
-                    'account_category' => $category,
+                    'currency' => 'KES',
                     'parent_account_code' => $parent,
                     'is_active' => 1,
                     'is_system_account' => $system,

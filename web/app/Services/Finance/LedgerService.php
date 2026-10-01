@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class LedgerService
 {
@@ -18,9 +19,10 @@ class LedgerService
         ?string $referenceTable = null,
         ?string $referenceId = null,
         ?int $recordedByStaffId = null,
+        ?string $ledgerDate = null,
     ): AccountLedger {
         return AccountLedger::query()->create([
-            'ledger_date' => now()->toDateString(),
+            'ledger_date' => $ledgerDate ?? now()->toDateString(),
             'transaction_type' => $transactionType,
             'debit_account_code' => $debitAccountCode,
             'credit_account_code' => $creditAccountCode,
@@ -173,6 +175,57 @@ class LedgerService
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Debit, credit and signed net balance per account, for the given accounts.
+     *
+     * @param  iterable<ChartOfAccount>  $accounts
+     * @return array<string, array{debit: float, credit: float, net: float}>
+     */
+    public function accountBalanceMap(iterable $accounts): array
+    {
+        $types = [];
+        $codes = [];
+
+        foreach ($accounts as $account) {
+            $codes[] = $account->account_code;
+            $types[$account->account_code] = $account->account_type;
+        }
+
+        if ($codes === []) {
+            return [];
+        }
+
+        $debits = AccountLedger::query()
+            ->select('debit_account_code', DB::raw('SUM(debit_amount) as total'))
+            ->whereIn('debit_account_code', $codes)
+            ->where('is_reversed', 0)
+            ->groupBy('debit_account_code')
+            ->pluck('total', 'debit_account_code');
+
+        $credits = AccountLedger::query()
+            ->select('credit_account_code', DB::raw('SUM(credit_amount) as total'))
+            ->whereIn('credit_account_code', $codes)
+            ->where('is_reversed', 0)
+            ->groupBy('credit_account_code')
+            ->pluck('total', 'credit_account_code');
+
+        $balances = [];
+
+        foreach ($codes as $code) {
+            $debit = round((float) ($debits[$code] ?? 0), 2);
+            $credit = round((float) ($credits[$code] ?? 0), 2);
+            $debitNormal = in_array($types[$code] ?? null, ['asset', 'expense'], true);
+
+            $balances[$code] = [
+                'debit' => $debit,
+                'credit' => $credit,
+                'net' => $debitNormal ? round($debit - $credit, 2) : round($credit - $debit, 2),
+            ];
+        }
+
+        return $balances;
     }
 
     /**
