@@ -204,5 +204,6 @@ Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
 Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');
 Schedule::command('finance:send-invoice-reminders')->dailyAt('09:00');
 Schedule::command('app:check-expiry-alerts')->dailyAt('07:30');
+Schedule::command('app:send-birthday-wishes')->dailyAt('08:00');
 Schedule::command('leave:accrual')->monthlyOn(1, '00:05');
 Schedule::command('leave:carry-forward')->yearlyOn(1, 1, '00:30');
