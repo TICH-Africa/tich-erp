@@ -184,7 +184,7 @@ class UserAccessController extends Controller
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $this->passwordReset->ictReset($user, $validated['password'], $request->user(), $request);

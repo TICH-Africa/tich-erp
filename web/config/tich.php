@@ -8,6 +8,9 @@ return [
         'mfa_session_minutes' => 30,
         'mfa_enabled' => (bool) env('MFA_ENABLED', true),
         'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external', 'super_admin'],
+        'login_throttle_per_minute' => (int) env('AUTH_LOGIN_THROTTLE', 5),
+        'otp_throttle_per_minute' => (int) env('AUTH_OTP_THROTTLE', 3),
+        'password_reset_throttle_per_minute' => (int) env('AUTH_PASSWORD_RESET_THROTTLE', 3),
     ],
 
     'erp_registration' => [

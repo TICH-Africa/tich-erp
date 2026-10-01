@@ -22,15 +22,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Needed so ForceHttps / secure cookies see the real scheme behind Apache/XAMPP proxies.
-        $middleware->trustProxies(at: '*');
+        $trustedProxies = env('TRUSTED_PROXIES', '');
+        if ($trustedProxies === '*') {
+            $middleware->trustProxies(at: '*');
+        } elseif (is_string($trustedProxies) && trim($trustedProxies) !== '') {
+            $middleware->trustProxies(at: array_values(array_filter(array_map('trim', explode(',', $trustedProxies)))));
+        }
 
         $middleware->web(prepend: [
             \App\Http\Middleware\ForceHttps::class,
+            \App\Http\Middleware\RestrictAdminIp::class,
         ]);
 
         $middleware->api(prepend: [
             \App\Http\Middleware\ForceHttps::class,
+            \App\Http\Middleware\RestrictAdminIp::class,
         ]);
 
         $middleware->web(append: [
@@ -61,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'employee.unassigned.restrict' => \App\Http\Middleware\RestrictUnassignedEmployeeAccess::class,
             'resolve.academics.hub' => \App\Http\Middleware\ResolveAcademicsHub::class,
             'redirect.legacy.academics' => \App\Http\Middleware\RedirectLegacyAcademicsUrls::class,
+            'admin.ip' => \App\Http\Middleware\RestrictAdminIp::class,
         ]);
 
         $middleware->redirectGuestsTo(fn (Request $request) => route('login'));

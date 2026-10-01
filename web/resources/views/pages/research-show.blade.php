@@ -44,7 +44,7 @@
 
                     @if ($activity->body)
                         <div class="research-public-show__body tich-prose-article research-public-show__body--locked-font">
-                            {!! $activity->body !!}
+                            {!! \App\Support\SafeHtml::clean($activity->body) !!}
                         </div>
                     @elseif ($activity->abstract)
                         <div class="research-public-show__body">

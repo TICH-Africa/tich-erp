@@ -164,7 +164,7 @@
                     aria-multiline="true"
                     aria-label="Article body editor"
                     data-cms-surface
-                >{!! $bodyValue !!}</div>
+                >{!! \App\Support\SafeHtml::clean($bodyValue) !!}</div>
 
                 <textarea id="blog_body" name="body" class="tich-cms-hidden-input" required>{{ $bodyValue }}</textarea>
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-cms-image-input hidden>

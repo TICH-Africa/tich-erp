@@ -37,7 +37,7 @@
         <img class="cover" src="{{ $post->featured_image_path }}" alt="">
     @endif
     <div class="body">
-        {!! $post->body !!}
+        {!! \App\Support\SafeHtml::clean($post->body) !!}
     </div>
     <p class="footer">
         {{ $institution['institution_name'] ?? 'TICH in Africa' }}

@@ -14,6 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffDocumentController extends Controller
 {
+    private const ALLOWED_EXTENSIONS = 'pdf,jpg,jpeg,png,webp,doc,docx';
+
+    private const DOCUMENT_TYPES = 'cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other';
+
     public function __construct(
         protected StaffLifecycleService $lifecycleService,
         protected \App\Services\PlatformNotificationService $notifications,
@@ -48,18 +52,10 @@ class StaffDocumentController extends Controller
     public function store(Request $request, int $staffId)
     {
         $staff = Staff::excludePlatformOperators()->findOrFail($staffId);
-
-        $validated = $request->validate([
-            'document_type' => 'required|string|in:cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other',
-            'document_name' => 'required|string|max:300',
-            'file' => 'required|file|max:10240',
-            'issue_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date',
-            'notes' => 'nullable|string|max:2000',
-        ]);
+        $validated = $this->validateDocumentUpload($request);
 
         $file = $validated['file'];
-        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
+        $path = $this->storePrivateDocument($file, $staff);
 
         $this->lifecycleService->addDocument($staffId, [
             'document_type' => $validated['document_type'],
@@ -68,9 +64,9 @@ class StaffDocumentController extends Controller
             'original_filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'issue_date' => $validated['issue_date'],
-            'expiry_date' => $validated['expiry_date'],
-            'notes' => $validated['notes'],
+            'issue_date' => $validated['issue_date'] ?? null,
+            'expiry_date' => $validated['expiry_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
         ], $request->user()->id);
 
         return redirect()->route('hr.staff.show', $staff)->with('success', 'Document uploaded successfully.');
@@ -93,17 +89,9 @@ class StaffDocumentController extends Controller
             abort(403, 'No staff profile linked to your account.');
         }
 
-$validated = $request->validate([
-            'document_type' => 'required|string|in:cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other',
-            'document_name' => 'required|string|max:300',
-            'file' => 'required|file|max:10240',
-            'issue_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date',
-            'notes' => 'nullable|string|max:2000',
-        ]);
-
-        $file = $request->file('file');
-        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
+        $validated = $this->validateDocumentUpload($request);
+        $file = $validated['file'];
+        $path = $this->storePrivateDocument($file, $staff);
 
         $this->lifecycleService->addDocument($staff->id, [
             'document_type' => $validated['document_type'],
@@ -112,9 +100,9 @@ $validated = $request->validate([
             'original_filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'issue_date' => $validated['issue_date'],
-            'expiry_date' => $validated['expiry_date'],
-            'notes' => $validated['notes'],
+            'issue_date' => $validated['issue_date'] ?? null,
+            'expiry_date' => $validated['expiry_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
         ], $request->user()->staff_id ?? $staff->id);
 
         return back()->with('success', 'Document uploaded successfully.');
@@ -123,7 +111,7 @@ $validated = $request->validate([
     public function destroy(Request $request, int $staffId, int $documentId)
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
-
+        $this->deleteDocumentFile($document);
         $document->delete();
 
         return redirect()->route('hr.staff.show', $staffId)->with('success', 'Document deleted successfully.');
@@ -139,11 +127,7 @@ $validated = $request->validate([
 
         $document = StaffDocument::where('staff_id', $staff->id)->findOrFail($documentId);
 
-        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
-            abort(404);
-        }
-
-        return Storage::disk('public')->download($document->file_path, $document->original_filename);
+        return $this->streamDocument($document);
     }
 
     public function employeeIndex(): View
@@ -174,17 +158,9 @@ $validated = $request->validate([
             abort(403, 'No staff profile linked to your account.');
         }
 
-        $validated = $request->validate([
-            'document_type' => 'required|string|in:cv,academic_certificate,professional_license,kra_pin,nssf,sha,national_id,good_conduct,passport_photo,bank_confirmation,training_certification,other',
-            'document_name' => 'required|string|max:300',
-            'file' => 'required|file|max:10240',
-            'issue_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date',
-            'notes' => 'nullable|string|max:2000',
-        ]);
-
-        $file = $request->file('file');
-        $path = $this->files->store($file, "staff/{$staff->employee_number}/documents", 'public', time().'_'.$file->getClientOriginalName());
+        $validated = $this->validateDocumentUpload($request);
+        $file = $validated['file'];
+        $path = $this->storePrivateDocument($file, $staff);
 
         $this->lifecycleService->addDocument($staff->id, [
             'document_type' => $validated['document_type'],
@@ -193,9 +169,9 @@ $validated = $request->validate([
             'original_filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'issue_date' => $validated['issue_date'],
-            'expiry_date' => $validated['expiry_date'],
-            'notes' => $validated['notes'],
+            'issue_date' => $validated['issue_date'] ?? null,
+            'expiry_date' => $validated['expiry_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
         ], $request->user()->staff_id ?? $staff->id);
 
         return back()->with('success', 'Document uploaded successfully.');
@@ -211,33 +187,27 @@ $validated = $request->validate([
 
         $document = StaffDocument::where('staff_id', $staff->id)->findOrFail($documentId);
 
-        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
-            abort(404);
-        }
-
-        return Storage::disk('public')->download($document->file_path, $document->original_filename);
+        return $this->streamDocument($document);
     }
 
     public function download(int $staffId, int $documentId): StreamedResponse
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
 
-        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
-            abort(404);
-        }
-
-        return Storage::disk('public')->download($document->file_path, $document->original_filename);
+        return $this->streamDocument($document);
     }
 
     public function read(int $staffId, int $documentId): View
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
+        [$disk] = $this->resolveDocumentDisk($document);
 
-        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+        if (! $disk) {
             abort(404);
         }
 
-        $fileUrl = Storage::disk('public')->url($document->file_path);
+        // Authenticated stream URL — never expose a public storage path.
+        $fileUrl = route('hr.staff.documents.download', [$staffId, $documentId]);
 
         return view('hr.documents.read', [
             'document' => $document,
@@ -300,5 +270,74 @@ $validated = $request->validate([
         }
 
         return back()->with('success', 'Document rejected successfully.');
+    }
+
+    /**
+     * @return array{document_type: string, document_name: string, file: \Illuminate\Http\UploadedFile, issue_date?: string, expiry_date?: string, notes?: string}
+     */
+    private function validateDocumentUpload(Request $request): array
+    {
+        return $request->validate([
+            'document_type' => 'required|string|in:'.self::DOCUMENT_TYPES,
+            'document_name' => 'required|string|max:300',
+            // Extension-based (not MIME sniff) — consistent with Linux fileinfo quirks.
+            'file' => 'required|file|extensions:'.self::ALLOWED_EXTENSIONS.'|max:10240',
+            'issue_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:2000',
+        ]);
+    }
+
+    private function storePrivateDocument(\Illuminate\Http\UploadedFile $file, Staff $staff): string
+    {
+        $safeName = time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+
+        return $this->files->store($file, "staff/{$staff->employee_number}/documents", 'local', $safeName);
+    }
+
+    private function streamDocument(StaffDocument $document): StreamedResponse
+    {
+        [$disk, $path] = $this->resolveDocumentDisk($document);
+
+        if (! $disk || ! $path) {
+            abort(404);
+        }
+
+        return Storage::disk($disk)->download($path, $document->original_filename ?: basename($path));
+    }
+
+    /**
+     * Prefer private local disk; fall back to legacy public uploads.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function resolveDocumentDisk(StaffDocument $document): array
+    {
+        $path = $document->file_path ? ltrim(str_replace('\\', '/', $document->file_path), '/') : null;
+
+        if (! $path) {
+            return [null, null];
+        }
+
+        if (Storage::disk('local')->exists($path)) {
+            return ['local', $path];
+        }
+
+        $publicPath = str_starts_with($path, 'storage/') ? substr($path, 8) : $path;
+
+        if (Storage::disk('public')->exists($publicPath)) {
+            return ['public', $publicPath];
+        }
+
+        return [null, null];
+    }
+
+    private function deleteDocumentFile(StaffDocument $document): void
+    {
+        [$disk, $path] = $this->resolveDocumentDisk($document);
+
+        if ($disk && $path) {
+            Storage::disk($disk)->delete($path);
+        }
     }
 }

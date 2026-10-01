@@ -50,7 +50,7 @@
                 @endif
 
                 <div class="tich-prose-article tich-mt-8" itemprop="articleBody">
-                    {!! $post->body !!}
+                    {!! \App\Support\SafeHtml::clean($post->body) !!}
                 </div>
             </div>
         </article>

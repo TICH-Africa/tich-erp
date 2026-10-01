@@ -62,6 +62,8 @@ return [
         'consumer_key' => env('MPESA_CONSUMER_KEY'),
         'consumer_secret' => env('MPESA_CONSUMER_SECRET'),
         'callback_url' => env('MPESA_CALLBACK_URL'),
+        // Optional shared secret appended as ?token=... or X-Mpesa-Callback-Token header.
+        'callback_secret' => env('MPESA_CALLBACK_SECRET'),
         'transaction_type' => env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
         'account_reference_prefix' => env('MPESA_ACCOUNT_REFERENCE_PREFIX', 'TICH'),
         'allow_local_simulate' => (bool) env('MPESA_ALLOW_LOCAL_SIMULATE', false),

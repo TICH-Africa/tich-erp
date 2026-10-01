@@ -24,7 +24,7 @@
             @endif
             <p class="tich-text tich-mt-4">{{ $activity->summary }}</p>
             @if ($activity->body)
-                <div class="tich-prose-article tich-mt-6">{!! $activity->body !!}</div>
+                <div class="tich-prose-article tich-mt-6">{!! \App\Support\SafeHtml::clean($activity->body) !!}</div>
             @endif
         </section>
         <aside>

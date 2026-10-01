@@ -248,10 +248,7 @@ class ResearchActivityService
 
     public function sanitizeBody(string $html): string
     {
-        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta|style)[^>]*>.*?</\1>#is', '', $html) ?? $html;
-        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta)\b[^>]*/?>#is', '', $html) ?? $html;
-        $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? $html;
-        $html = preg_replace('/javascript:/i', '', $html) ?? $html;
+        $html = \App\Support\SafeHtml::clean($html);
         // Keep research descriptions on the form body font (strip pasted Word/Google fonts).
         $html = preg_replace('#</?font\b[^>]*>#i', '', $html) ?? $html;
         $html = preg_replace('/\sface=("([^"]*)"|\'([^\']*)\'|[^\s>]+)/i', '', $html) ?? $html;

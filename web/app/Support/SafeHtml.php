@@ -26,7 +26,9 @@ class SafeHtml
         // Remove dangerous attributes / event handlers while keeping safe markup.
         $cleaned = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $cleaned) ?? $cleaned;
         $cleaned = preg_replace('/\s+(href|src)\s*=\s*([\'"])\s*javascript:[^\'"]*\2/i', ' $1="#"', $cleaned) ?? $cleaned;
-        $cleaned = preg_replace('/<(script|iframe|object|embed|link|meta|style)\b[^>]*>.*?<\/\1>/is', '', $cleaned) ?? $cleaned;
+        $cleaned = preg_replace('/\s+(href|src)\s*=\s*([\'"])\s*data:[^\'"]*\2/i', ' $1="#"', $cleaned) ?? $cleaned;
+        $cleaned = preg_replace('/<(script|iframe|object|embed|link|meta|style|form)\b[^>]*>.*?<\/\1>/is', '', $cleaned) ?? $cleaned;
+        $cleaned = preg_replace('/<(script|iframe|object|embed|link|meta|style|form)\b[^>]*\/?>/is', '', $cleaned) ?? $cleaned;
 
         return $cleaned;
     }

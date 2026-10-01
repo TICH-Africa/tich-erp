@@ -101,11 +101,6 @@ class PageController extends Controller
 
     private function sanitizeBody(string $html): string
     {
-        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta|style)[^>]*>.*?</\1>#is', '', $html) ?? $html;
-        $html = preg_replace('#<(script|iframe|object|embed|form|link|meta)\b[^>]*/?>#is', '', $html) ?? $html;
-        $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? $html;
-        $html = preg_replace('/javascript:/i', '', $html) ?? $html;
-
-        return $html;
+        return \App\Support\SafeHtml::clean($html);
     }
 }

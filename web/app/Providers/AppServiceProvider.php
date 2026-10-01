@@ -19,14 +19,18 @@ use App\View\Composers\QaAssignedTasksComposer;
 use App\View\Composers\QaSidebarComposer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configurePublicUrls();
+        $this->configurePasswordDefaults();
+        $this->configureRateLimiting();
 
         // Prefer HttpOnly + SameSite session cookies (secure when HTTPS / FORCE_HTTPS).
         if (config('security.force_https') && config('session.secure') === null) {
@@ -142,5 +148,49 @@ class AppServiceProvider extends ServiceProvider
         if ($assetRoot !== '') {
             config(['filesystems.disks.public.url' => $assetRoot.'/storage']);
         }
+    }
+
+    private function configurePasswordDefaults(): void
+    {
+        Password::defaults(function () {
+            $rule = Password::min((int) config('security.password.min', 10));
+
+            if (config('security.password.require_mixed_case', true)) {
+                $rule = $rule->mixedCase();
+            }
+
+            if (config('security.password.require_numbers', true)) {
+                $rule = $rule->numbers();
+            }
+
+            if (config('security.password.require_symbols', true)) {
+                $rule = $rule->symbols();
+            }
+
+            if (config('security.password.uncompromised', false)) {
+                $rule = $rule->uncompromised();
+            }
+
+            return $rule;
+        });
+    }
+
+    private function configureRateLimiting(): void
+    {
+        RateLimiter::for('login', function (Request $request) {
+            $key = strtolower((string) $request->input('login', $request->input('email', ''))).'|'.$request->ip();
+
+            return Limit::perMinute((int) config('tich.auth.login_throttle_per_minute', 5))->by($key);
+        });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            return Limit::perMinute((int) config('tich.auth.password_reset_throttle_per_minute', 3))
+                ->by(strtolower((string) $request->input('email', '')).'|'.$request->ip());
+        });
+
+        RateLimiter::for('mfa', function (Request $request) {
+            return Limit::perMinute((int) config('tich.auth.otp_throttle_per_minute', 3))
+                ->by(($request->user()?->id ?: 'guest').'|'.$request->ip());
+        });
     }
 }

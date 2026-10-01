@@ -56,7 +56,7 @@ class ErpRegistrationController extends Controller
         }
 
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
         ]);
 

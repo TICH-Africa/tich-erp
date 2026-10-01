@@ -93,7 +93,7 @@ class EssOnboardingController extends Controller
             ->value('id');
 
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', PasswordRule::min(8)],
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
             'first_name' => ['required', 'string', 'max:150'],
             'surname' => ['required', 'string', 'max:150'],
             'middle_name' => ['nullable', 'string', 'max:150'],

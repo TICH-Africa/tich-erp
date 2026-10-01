@@ -279,11 +279,10 @@ class MFAService
             return false;
         }
 
-        if ($user->mfa_verified) {
-            return false;
-        }
-
-        $mandatoryTypes = config('tich.auth.mandatory_mfa_user_types', ['staff', 'student', 'admin', 'external']);
+        // mfa_verified only marks that MFA was completed at least once; it must
+        // never skip per-session MFA. Session/token validity is enforced by
+        // AuthService::isMfaSessionValid() via RequireMFA middleware.
+        $mandatoryTypes = config('tich.auth.mandatory_mfa_user_types', ['staff', 'student', 'admin', 'external', 'super_admin']);
 
         return in_array($user->user_type, $mandatoryTypes, true);
     }

@@ -75,32 +75,42 @@ Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('progr
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [WebAuthController::class, 'login']);
+    Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', fn () => redirect()
         ->route('login')
         ->with('status', 'ERP registration is by invitation only. Contact ICT or HR if you need staff access.'));
     Route::get('/register/invite/{token}', [ErpRegistrationController::class, 'showInvite'])->name('register.invite');
-    Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])->name('register.invite.store');
+    Route::post('/register/invite/{token}', [ErpRegistrationController::class, 'storeInvite'])
+        ->middleware('throttle:login')
+        ->name('register.invite.store');
     Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])->name('password.request');
-    Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])->name('password.email');
+    Route::post('/forgot-password', [WebAuthController::class, 'sendResetLink'])
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
     Route::get('/reset-password', [WebAuthController::class, 'showResetPassword'])->name('password.reset');
     Route::get('/reset-password/{token}', [WebAuthController::class, 'showResetPassword'])->name('password.reset.legacy');
-    Route::post('/reset-password', [WebAuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password', [WebAuthController::class, 'resetPassword'])
+        ->middleware('throttle:password-reset')
+        ->name('password.update');
 
     Route::get('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'show'])->name('portal.activate');
-    Route::post('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'store'])->name('portal.activate.store');
+    Route::post('/portal/activate/{token}', [\App\Http\Controllers\Portal\PortalActivationController::class, 'store'])
+        ->middleware('throttle:login')
+        ->name('portal.activate.store');
 
     Route::get('/onboarding/activate/{token}', [EssOnboardingController::class, 'show'])->name('ess.onboarding.activate');
     Route::post('/onboarding/activate/{token}/draft', [EssOnboardingController::class, 'saveDraft'])->name('ess.onboarding.draft');
-    Route::post('/onboarding/activate/{token}', [EssOnboardingController::class, 'store'])->name('ess.onboarding.activate.store');
+    Route::post('/onboarding/activate/{token}', [EssOnboardingController::class, 'store'])
+        ->middleware('throttle:login')
+        ->name('ess.onboarding.activate.store');
 });
 
 Route::middleware('auth')->group(function () {
     Route::get('/mfa/setup', [WebAuthController::class, 'showMfaSetup'])->name('mfa.setup');
-    Route::post('/mfa/setup', [WebAuthController::class, 'setupMfa']);
+    Route::post('/mfa/setup', [WebAuthController::class, 'setupMfa'])->middleware('throttle:mfa');
     Route::get('/mfa/verify', [WebAuthController::class, 'showMfaVerify'])->name('mfa.verify');
-    Route::post('/mfa/verify', [WebAuthController::class, 'verifyMfa']);
-    Route::post('/mfa/resend', [WebAuthController::class, 'resendMfaCode'])->name('mfa.resend');
+    Route::post('/mfa/verify', [WebAuthController::class, 'verifyMfa'])->middleware('throttle:mfa');
+    Route::post('/mfa/resend', [WebAuthController::class, 'resendMfaCode'])->middleware('throttle:mfa')->name('mfa.resend');
     Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 });
 
@@ -113,8 +123,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'employee.unassigned.restrict'])->group(function () {
     Route::get('/start', \App\Http\Controllers\AccountStartController::class)->name('account.start');
 
-    Route::get('/dashboard', DashboardController::class)
-        ->name('dashboard');
+        Route::get('/dashboard', DashboardController::class)
+            ->name('dashboard');
 
     Route::prefix('ceo')->middleware([
         'role:CEO,Super Admin,Chief Institution Administrator',

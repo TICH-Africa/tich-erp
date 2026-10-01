@@ -12,6 +12,17 @@ class MpesaStkCallbackController extends Controller
 {
     public function __invoke(Request $request, MpesaStkCallbackService $callbackService): JsonResponse
     {
+        if (! $this->callbackSecretIsValid($request)) {
+            Log::warning('M-Pesa STK callback rejected: invalid or missing shared secret', [
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'ResultCode' => 1,
+                'ResultDesc' => 'Unauthorized',
+            ], 401);
+        }
+
         $payload = $request->all();
 
         Log::info('M-Pesa STK callback received', [
@@ -31,5 +42,22 @@ class MpesaStkCallbackController extends Controller
             'ResultCode' => 0,
             'ResultDesc' => 'Accepted',
         ]);
+    }
+
+    private function callbackSecretIsValid(Request $request): bool
+    {
+        $expected = (string) config('finance.mpesa.callback_secret', '');
+
+        // When no secret is configured (local/sandbox), accept callbacks.
+        if ($expected === '') {
+            return true;
+        }
+
+        $provided = (string) (
+            $request->header('X-Mpesa-Callback-Token')
+            ?: $request->query('token', '')
+        );
+
+        return $provided !== '' && hash_equals($expected, $provided);
     }
 }

@@ -94,4 +94,49 @@ return [
 
     'block_inspect_ui' => (bool) env('SECURITY_BLOCK_INSPECT_UI', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted proxies
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated proxy IPs/CIDRs, or "*" to trust all (only behind a known
+    | reverse proxy). Empty = trust none (direct connections only).
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin IP allowlist
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, /admin and /ict routes accept only listed client IPs.
+    | Leave empty + enabled=false for local development.
+    |
+    */
+
+    'admin_ip_allowlist' => [
+        'enabled' => (bool) env('ADMIN_IP_ALLOWLIST_ENABLED', false),
+        'ips' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('ADMIN_IP_ALLOWLIST', '127.0.0.1,::1'))
+        ))),
+        'prefixes' => ['admin', 'ict'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password policy
+    |--------------------------------------------------------------------------
+    */
+
+    'password' => [
+        'min' => (int) env('PASSWORD_MIN_LENGTH', 10),
+        'require_mixed_case' => (bool) env('PASSWORD_REQUIRE_MIXED_CASE', true),
+        'require_numbers' => (bool) env('PASSWORD_REQUIRE_NUMBERS', true),
+        'require_symbols' => (bool) env('PASSWORD_REQUIRE_SYMBOLS', true),
+        'uncompromised' => (bool) env('PASSWORD_CHECK_UNCOMPROMISED', false),
+    ],
+
 ];

@@ -82,7 +82,7 @@ class WebAuthController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email'],
             'otp' => ['required', 'string', 'size:6'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $result = $this->passwordReset->resetWithOtp(

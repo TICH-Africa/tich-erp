@@ -14,17 +14,17 @@ use App\Http\Controllers\RBACController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/mfa/challenge', [AuthController::class, 'mfaChallenge']);
-        Route::post('/mfa/setup', [AuthController::class, 'mfaSetup']);
-        Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify']);
+        Route::post('/mfa/challenge', [AuthController::class, 'mfaChallenge'])->middleware('throttle:mfa');
+        Route::post('/mfa/setup', [AuthController::class, 'mfaSetup'])->middleware('throttle:mfa');
+        Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify'])->middleware('throttle:mfa');
         Route::post('/mfa/disable', [AuthController::class, 'mfaDisable']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
-        Route::prefix('mfa')->group(function () {
+        Route::prefix('mfa')->middleware('throttle:mfa')->group(function () {
             Route::get('/status', [MFAController::class, 'getMFAStatus']);
             Route::post('/email/send', [MFAController::class, 'sendEmailOTP']);
             Route::post('/email/verify', [MFAController::class, 'verifyEmailOTP']);

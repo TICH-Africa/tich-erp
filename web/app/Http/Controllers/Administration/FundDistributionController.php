@@ -59,6 +59,15 @@ class FundDistributionController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        if (! empty($data['budget_request_id'])) {
+            $budgetRequest = BudgetRequest::query()->find($data['budget_request_id']);
+            if (! $budgetRequest || $budgetRequest->status !== 'approved') {
+                return back()->withInput()->withErrors([
+                    'budget_request_id' => 'Funds can only be allocated against an approved budget request.',
+                ]);
+            }
+        }
+
         try {
             $this->admin->releaseFundAllocation($data, $request->user()->id);
         } catch (\RuntimeException $exception) {
@@ -71,6 +80,12 @@ class FundDistributionController extends Controller
     public function markAsDisbursed(Request $request, $id): RedirectResponse
     {
         $budgetRequest = BudgetRequest::query()->findOrFail($id);
+
+        if (! in_array($budgetRequest->status, ['approved'], true)) {
+            return back()->withErrors([
+                'disburse' => 'Only approved budget requests can be marked as disbursed.',
+            ]);
+        }
 
         $request->validate([
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -88,6 +103,12 @@ class FundDistributionController extends Controller
 
     public function markAllocationAsDisbursed(Request $request, FundAllocation $allocation): RedirectResponse
     {
+        if (in_array((string) $allocation->status, ['disbursed', 'cancelled', 'void'], true)) {
+            return back()->withErrors([
+                'disburse' => 'This allocation cannot be disbursed in its current status.',
+            ]);
+        }
+
         $request->validate([
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
