@@ -15,6 +15,7 @@ use App\Models\StaffOnboarding;
 use App\Models\StaffAttendance;
 use App\Models\StaffProfileChangeRequest;
 use App\Models\StaffWeeklyTimeLog;
+use App\Models\WorkFromHomeRequest;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -38,6 +39,7 @@ class HrSidebarNotificationService
         'profile-changes' => 'Profile changes',
         'attendance' => 'Attendance reviews',
         'time-logs' => 'Time logs',
+        'wfh' => 'Work from home',
         'policies' => 'HR Policies',
         'grievances' => 'Grievances',
         'feedback' => 'Feedback',
@@ -108,6 +110,7 @@ class HrSidebarNotificationService
             'profile-changes' => $this->pendingProfileChangesCount(),
             'attendance' => $this->pendingAttendanceCount(),
             'time-logs' => $this->pendingTimeLogsCount(),
+            'wfh' => $this->pendingWfhCount(),
             'policies' => $this->pendingPolicyAcknowledgementsCount(),
             'grievances' => $grievances,
             'feedback' => $feedback,
@@ -227,6 +230,17 @@ class HrSidebarNotificationService
 
         return StaffWeeklyTimeLog::query()
             ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
+            ->count();
+    }
+
+    private function pendingWfhCount(): int
+    {
+        if (! Schema::hasTable('work_from_home_requests')) {
+            return 0;
+        }
+
+        return WorkFromHomeRequest::query()
+            ->where('status', WorkFromHomeRequest::STATUS_PENDING_HR)
             ->count();
     }
 }

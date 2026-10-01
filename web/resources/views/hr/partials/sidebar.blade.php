@@ -27,6 +27,13 @@
             'badgeKey' => 'time-logs',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('hr.wfh.index'),
+            'label' => 'Work from home',
+            'icon' => 'home',
+            'active' => request()->routeIs('hr.wfh.*'),
+            'badgeKey' => 'wfh',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('hr.onboarding.index'),
             'label' => 'Onboarding',
             'icon' => 'user-plus',

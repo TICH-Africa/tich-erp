@@ -2108,6 +2108,48 @@ SET @sql := (SELECT IF(
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- APPLY ON PRODUCTION: required for chart-of-accounts Excel import (see tichafri_dbmain.sql)
 
+-- -----------------------------------------------------------------------------
+-- 45. Work from home requests (independent of leave)
+--     (2026_10_01_180000_create_work_from_home_requests_table)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `work_from_home_requests` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `request_code` varchar(40) NOT NULL,
+  `staff_id` bigint unsigned NOT NULL,
+  `supervisor_staff_id` bigint unsigned DEFAULT NULL,
+  `supervisor_name` varchar(200) DEFAULT NULL,
+  `department_name` varchar(200) DEFAULT NULL,
+  `job_title` varchar(200) DEFAULT NULL,
+  `arrangement_type` varchar(40) NOT NULL DEFAULT 'work_from_home',
+  `work_date` date NOT NULL,
+  `work_year` smallint unsigned NOT NULL,
+  `work_month` tinyint unsigned NOT NULL,
+  `week_of_month` tinyint unsigned NOT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
+  `total_hours` decimal(5,2) DEFAULT NULL,
+  `period_start` date DEFAULT NULL,
+  `period_end` date DEFAULT NULL,
+  `remote_tasks` json DEFAULT NULL,
+  `considerations` json DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending_hr',
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `hr_reviewed_by_staff_id` bigint unsigned DEFAULT NULL,
+  `hr_reviewed_at` timestamp NULL DEFAULT NULL,
+  `hr_notes` text,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `work_from_home_requests_request_code_unique` (`request_code`),
+  UNIQUE KEY `wfh_staff_date_unique` (`staff_id`,`work_date`),
+  KEY `wfh_staff_month_idx` (`staff_id`,`work_year`,`work_month`),
+  KEY `wfh_status_submitted_idx` (`status`,`submitted_at`),
+  KEY `work_from_home_requests_supervisor_staff_id_foreign` (`supervisor_staff_id`),
+  KEY `work_from_home_requests_hr_reviewed_by_staff_id_foreign` (`hr_reviewed_by_staff_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: employee portal WFH apply + HR review menu
+
+
 
 
 

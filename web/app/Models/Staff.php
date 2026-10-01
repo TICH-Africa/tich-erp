@@ -244,6 +244,11 @@ class Staff extends Model
         return $this->hasMany(StaffAttendance::class);
     }
 
+    public function workFromHomeRequests(): HasMany
+    {
+        return $this->hasMany(WorkFromHomeRequest::class);
+    }
+
     public function performanceReviews(): HasMany
     {
         return $this->hasMany(PerformanceReview::class);

@@ -1163,6 +1163,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/time-logs/{timeLog}/reject', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'reject'])->name('hr.time-logs.reject');
             Route::post('/time-logs/{timeLog}/return', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'returnLog'])->name('hr.time-logs.return');
 
+            Route::get('/wfh', [\App\Http\Controllers\HR\WfhRequestController::class, 'index'])->name('hr.wfh.index');
+            Route::get('/wfh/{wfh}', [\App\Http\Controllers\HR\WfhRequestController::class, 'show'])->name('hr.wfh.show');
+            Route::post('/wfh/{wfh}/approve', [\App\Http\Controllers\HR\WfhRequestController::class, 'approve'])->name('hr.wfh.approve');
+            Route::post('/wfh/{wfh}/reject', [\App\Http\Controllers\HR\WfhRequestController::class, 'reject'])->name('hr.wfh.reject');
+            Route::post('/wfh/{wfh}/return', [\App\Http\Controllers\HR\WfhRequestController::class, 'returnRequest'])->name('hr.wfh.return');
+
             Route::prefix('employee-relations')->name('hr.employee-relations.')->group(function () {
                 Route::get('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'index'])->name('disciplinary.index');
                 Route::get('/disciplinary/create', [\App\Http\Controllers\HR\DisciplinaryController::class, 'create'])->name('disciplinary.create');
@@ -1342,6 +1348,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'update'])->name('employee.time-logs.update');
         Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'submit'])->name('employee.time-logs.submit');
         Route::post('/time-logs/{timeLog}/endorse', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'endorse'])->name('employee.time-logs.endorse');
+
+        Route::get('/wfh', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'index'])->name('employee.wfh.index');
+        Route::get('/wfh/create', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'create'])->name('employee.wfh.create');
+        Route::post('/wfh', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'store'])->name('employee.wfh.store');
+        Route::get('/wfh/{wfh}', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'show'])->name('employee.wfh.show');
+        Route::post('/wfh/{wfh}/cancel', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'cancel'])->name('employee.wfh.cancel');
 
         Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('policies.assigned');
         Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('policies.acknowledge');

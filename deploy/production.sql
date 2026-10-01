@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-01 09:59:03 EAT
+-- Generated: 2026-10-01 18:36:45 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -12904,6 +12904,84 @@ CALL `tich_ensure_index`('waitlist_entries', 'waitlist_entries_applicant_id_fore
 CALL `tich_ensure_index`('waitlist_entries', 'waitlist_entries_program_id_foreign', '`program_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `work_from_home_requests`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `work_from_home_requests` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `request_code` varchar(40) NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `supervisor_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `supervisor_name` varchar(200) DEFAULT NULL,
+  `department_name` varchar(200) DEFAULT NULL,
+  `job_title` varchar(200) DEFAULT NULL,
+  `arrangement_type` varchar(40) NOT NULL DEFAULT 'work_from_home',
+  `work_date` date NOT NULL,
+  `work_year` smallint(5) unsigned NOT NULL,
+  `work_month` tinyint(3) unsigned NOT NULL,
+  `week_of_month` tinyint(3) unsigned NOT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
+  `total_hours` decimal(5,2) DEFAULT NULL,
+  `period_start` date DEFAULT NULL,
+  `period_end` date DEFAULT NULL,
+  `remote_tasks` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`remote_tasks`)),
+  `considerations` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`considerations`)),
+  `status` varchar(30) NOT NULL DEFAULT 'pending_hr',
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `hr_reviewed_by_staff_id` bigint(20) unsigned DEFAULT NULL,
+  `hr_reviewed_at` timestamp NULL DEFAULT NULL,
+  `hr_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `wfh_staff_date_unique` (`staff_id`,`work_date`),
+  UNIQUE KEY `work_from_home_requests_request_code_unique` (`request_code`),
+  KEY `wfh_staff_month_idx` (`staff_id`,`work_year`,`work_month`),
+  KEY `wfh_status_submitted_idx` (`status`,`submitted_at`),
+  KEY `work_from_home_requests_supervisor_staff_id_foreign` (`supervisor_staff_id`),
+  KEY `work_from_home_requests_hr_reviewed_by_staff_id_foreign` (`hr_reviewed_by_staff_id`),
+  CONSTRAINT `work_from_home_requests_hr_reviewed_by_staff_id_foreign` FOREIGN KEY (`hr_reviewed_by_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `work_from_home_requests_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `work_from_home_requests_supervisor_staff_id_foreign` FOREIGN KEY (`supervisor_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `work_from_home_requests` (add only if missing)
+CALL `tich_ensure_column`('work_from_home_requests', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('work_from_home_requests', 'request_code', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'supervisor_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'supervisor_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'department_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'job_title', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'arrangement_type', 'varchar(40) NOT NULL DEFAULT \'\\\'work_from_home\\\'\'');
+CALL `tich_ensure_column`('work_from_home_requests', 'work_date', 'date NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'work_year', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'work_month', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'week_of_month', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'start_time', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'end_time', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'total_hours', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'period_start', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'period_end', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'remote_tasks', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'considerations', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending_hr\\\'\'');
+CALL `tich_ensure_column`('work_from_home_requests', 'submitted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'hr_reviewed_by_staff_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'hr_reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'hr_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('work_from_home_requests', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `work_from_home_requests` (add only if missing)
+CALL `tich_ensure_unique`('work_from_home_requests', 'wfh_staff_date_unique', '`staff_id`, `work_date`');
+CALL `tich_ensure_index`('work_from_home_requests', 'wfh_staff_month_idx', '`staff_id`, `work_year`, `work_month`');
+CALL `tich_ensure_index`('work_from_home_requests', 'wfh_status_submitted_idx', '`status`, `submitted_at`');
+CALL `tich_ensure_index`('work_from_home_requests', 'work_from_home_requests_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`');
+CALL `tich_ensure_unique`('work_from_home_requests', 'work_from_home_requests_request_code_unique', '`request_code`');
+CALL `tich_ensure_index`('work_from_home_requests', 'work_from_home_requests_supervisor_staff_id_foreign', '`supervisor_staff_id`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `work_study_ledger`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `work_study_ledger` (
@@ -14023,6 +14101,11 @@ CALL `tich_ensure_fk`('user_roles', 'user_roles_user_id_foreign', '`user_id`', '
 -- Foreign keys for `waitlist_entries`
 CALL `tich_ensure_fk`('waitlist_entries', 'waitlist_entries_applicant_id_foreign', '`applicant_id`', 'applicants', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('waitlist_entries', 'waitlist_entries_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `work_from_home_requests`
+CALL `tich_ensure_fk`('work_from_home_requests', 'work_from_home_requests_hr_reviewed_by_staff_id_foreign', '`hr_reviewed_by_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('work_from_home_requests', 'work_from_home_requests_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('work_from_home_requests', 'work_from_home_requests_supervisor_staff_id_foreign', '`supervisor_staff_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `work_study_ledger`
 CALL `tich_ensure_fk`('work_study_ledger', 'work_study_ledger_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
