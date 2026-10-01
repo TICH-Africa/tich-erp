@@ -8,6 +8,7 @@ use App\Models\Me\MeQuarterlyReportLine;
 use App\Models\Me\MeTechnicalPlan;
 use App\Models\User;
 use App\Services\PlatformNotificationService;
+use App\Services\RBACService;
 use App\Services\StaffPortalService;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +18,7 @@ class MeQuarterlyReportService
         protected StaffPortalService $staffPortal,
         protected PlatformNotificationService $notifications,
         protected MeHealthScoreService $healthScores,
+        protected RBACService $rbac,
     ) {}
 
     public function userCanEditDepartmentReport(User $user, Department $department): bool
@@ -39,15 +41,24 @@ class MeQuarterlyReportService
     public function userIsDepartmentRespondent(User $user, Department $department): bool
     {
         $staff = $this->staffPortal->staffForUser($user);
-        if (! $staff) {
-            return false;
+
+        if ($staff) {
+            if ($department->hod_id !== null && (int) $department->hod_id === (int) $staff->id) {
+                return true;
+            }
+
+            if ($staff->department_id !== null && (int) $staff->department_id === (int) $department->id) {
+                return true;
+            }
         }
 
-        if ((int) $department->hod_id === (int) $staff->id) {
-            return true;
-        }
-
-        return (int) $staff->department_id === (int) $department->id;
+        // Fallback for staff records that are unlinked or stale: a role scoped to
+        // the department still makes the holder its M&E respondent.
+        return in_array(
+            (int) $department->id,
+            array_map('intval', $this->rbac->getUserDepartmentIds($user)),
+            true
+        );
     }
 
     public function userIsMeReviewer(User $user): bool

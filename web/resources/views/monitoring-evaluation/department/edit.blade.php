@@ -4,7 +4,7 @@
     $canEdit = (bool) ($canEdit ?? false);
     $canSubmit = (bool) ($canSubmit ?? false);
     $viewOnly = (bool) ($viewOnly ?? false);
-    $isEditable = $canEdit && in_array($report->status, ['draft', 'returned'], true);
+    $isEditable = $canSubmit && in_array($report->status, ['draft', 'returned'], true);
 @endphp
 
 @extends($moduleContext['layout'])

@@ -101,7 +101,8 @@ class DepartmentReportController extends Controller
 
         abort_unless(
             $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
-            403
+            403,
+            'Only '.($report->department?->dept_name ?? 'this department')."'s HOD or staff can save this quarterly report."
         );
 
         $data = $request->validate([
@@ -127,7 +128,8 @@ class DepartmentReportController extends Controller
 
         abort_unless(
             $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
-            403
+            403,
+            'Only '.($report->department?->dept_name ?? 'this department')."'s HOD or staff can submit this quarterly report to M&E."
         );
 
         try {
