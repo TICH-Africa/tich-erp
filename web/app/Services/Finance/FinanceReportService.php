@@ -39,7 +39,7 @@ class FinanceReportService
         return match ($report) {
             'trial_balance' => $this->trialBalance(),
             'balance_sheet' => $this->balanceSheet(),
-            'income_statement' => $this->incomeStatement(),
+            'income_statement' => $this->incomeStatement($filters),
             'cashflow' => $this->cashflow(),
             'general_ledger' => $this->generalLedger(),
             'ar_aging' => $this->arAging(),
@@ -49,6 +49,107 @@ class FinanceReportService
             'reconciliation' => $this->reconciliation($filters),
             default => $this->trialBalance(),
         };
+    }
+
+    /**
+     * Resolve P&L date window. Default: month-to-date.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{preset: string, from: string, to: string, label: string}
+     */
+    public function resolveIncomeStatementPeriod(array $filters = []): array
+    {
+        $preset = (string) ($filters['period'] ?? 'mtd');
+        $today = now()->startOfDay();
+
+        return match ($preset) {
+            'fy' => $this->financialYearWindow($today),
+            'custom' => [
+                'preset' => 'custom',
+                'from' => $this->validDate($filters['from'] ?? null) ?? $today->copy()->startOfMonth()->toDateString(),
+                'to' => $this->validDate($filters['to'] ?? null) ?? $today->toDateString(),
+                'label' => 'Custom period',
+            ],
+            default => [
+                'preset' => 'mtd',
+                'from' => $today->copy()->startOfMonth()->toDateString(),
+                'to' => $today->toDateString(),
+                'label' => 'Month to date',
+            ],
+        };
+    }
+
+    /**
+     * @return array{preset: string, from: string, to: string, label: string}
+     */
+    private function financialYearWindow(\Carbon\CarbonInterface $today): array
+    {
+        // Kenya institutional FY: 1 July – 30 June (configurable).
+        $startMonth = (int) config('finance.financial_year_start_month', 7);
+        $year = (int) $today->year;
+        $fyStart = $today->copy()->month($startMonth)->day(1)->startOfDay();
+
+        if ($today->lt($fyStart)) {
+            $fyStart->subYear();
+        }
+
+        $fyEnd = $fyStart->copy()->addYear()->subDay();
+
+        return [
+            'preset' => 'fy',
+            'from' => $fyStart->toDateString(),
+            'to' => min($today->toDateString(), $fyEnd->toDateString()),
+            'label' => 'Financial year (from '.$fyStart->format('d M Y').')',
+        ];
+    }
+
+    private function validDate(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function incomeStatement(array $filters = []): array
+    {
+        $period = $this->resolveIncomeStatementPeriod($filters);
+        $viewMode = (($filters['view'] ?? 'standard') === 'full') ? 'full' : 'standard';
+
+        $revenue = $this->accountSection('Revenue', 'revenue', $period['from'], $period['to']);
+        $expenses = $this->accountSection('Expenses', 'expense', $period['from'], $period['to']);
+        $netIncome = round($revenue['total'] - $expenses['total'], 2);
+
+        $payload = [
+            'report' => 'income_statement',
+            'title' => $this->title('income_statement'),
+            'period' => $period,
+            'period_label' => $period['label'].': '.$period['from'].' to '.$period['to'],
+            'view_mode' => $viewMode,
+            'revenue' => $revenue,
+            'expenses' => $expenses,
+            'net_income' => $netIncome,
+            'sections' => [],
+        ];
+
+        if ($viewMode === 'full') {
+            $payload['sections'] = [
+                $this->accountSection('Assets', 'asset', $period['from'], $period['to']),
+                $this->accountSection('Liabilities', 'liability', $period['from'], $period['to']),
+                $this->accountSection('Equity', 'equity', $period['from'], $period['to']),
+            ];
+        }
+
+        return $payload;
     }
 
     /**
@@ -91,25 +192,6 @@ class FinanceReportService
             'total_assets' => $totalAssets,
             'total_liabilities_equity' => $totalLiabilitiesEquity,
             'is_balanced' => abs($totalAssets - $totalLiabilitiesEquity) < 0.01,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function incomeStatement(): array
-    {
-        $revenue = $this->accountSection('Revenue', 'revenue');
-        $expenses = $this->accountSection('Expenses', 'expense');
-        $netIncome = round($revenue['total'] - $expenses['total'], 2);
-
-        return [
-            'report' => 'income_statement',
-            'title' => $this->title('income_statement'),
-            'period_label' => 'For the period ended '.now()->format('d M Y'),
-            'revenue' => $revenue,
-            'expenses' => $expenses,
-            'net_income' => $netIncome,
         ];
     }
 
@@ -235,9 +317,9 @@ class FinanceReportService
     /**
      * @return array{title: string, rows: list<array{account_code: string, account_name: string, amount: float}>, total: float}
      */
-    private function accountSection(string $title, string $type): array
+    private function accountSection(string $title, string $type, ?string $from = null, ?string $to = null): array
     {
-        $balances = $this->ledger->accountBalances();
+        $balances = $this->ledger->accountBalances($from, $to);
         $rows = ChartOfAccount::query()
             ->where('account_type', $type)
             ->where('is_active', 1)

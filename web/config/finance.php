@@ -71,6 +71,9 @@ return [
 
     'invoice_due_days' => (int) env('FINANCE_INVOICE_DUE_DAYS', 30),
 
+    /** Month number when the institutional financial year starts (7 = July). */
+    'financial_year_start_month' => (int) env('FINANCE_FY_START_MONTH', 7),
+
     'ar' => [
         'reminder_interval_days' => (int) env('FINANCE_AR_REMINDER_INTERVAL_DAYS', 7),
         'reminder_days_before_due' => (int) env('FINANCE_AR_REMINDER_BEFORE_DUE_DAYS', 3),

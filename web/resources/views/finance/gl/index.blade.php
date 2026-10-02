@@ -246,14 +246,24 @@
                 </p>
                 <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.35rem 0 0;">
                     Accepted account types: {{ implode(', ', $acceptedAccountTypes) }}.
-                    Use <code>balance</code> for the money value, <code>balance_side</code> for
-                    <code>Dr</code>/<code>Cr</code>, and <code>currency</code> for the ISO code.
+                    Columns: <code>account_code</code>, <code>account_name</code>, <code>account_type</code>,
+                    <code>currency</code>, <code>parent_account_code</code>, <code>debit</code>, <code>credit</code>,
+                    <code>balance</code>, <code>balance_side</code> (Dr/Cr), <code>is_active</code>.
                 </p>
                 <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.35rem 0 0;">
-                    Download the current chart, add balances in Excel, then upload it back: existing
-                    account codes are updated and only new balances are posted.
+                    Export the current chart, edit in Excel, then import: existing codes are updated,
+                    new codes are created, and balance differences post as ledger adjustments.
                 </p>
 
+                @unless (\App\Support\PhpSpreadsheetAvailability::isAvailable())
+                    <div class="tich-alert tich-alert--warning" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">
+                        <strong>Excel (.xlsx/.xls) export is unavailable</strong>
+                        <p class="tich-text tich-text--sm" style="margin:0.35rem 0 0;">
+                            {{ \App\Support\PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel') }}
+                            CSV import may still work.
+                        </p>
+                    </div>
+                @endunless
                 @unless (class_exists(\ZipArchive::class) && class_exists(\DOMDocument::class))
                     <div class="tich-alert tich-alert--warning" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">
                         <strong>.xlsx cannot be read on this server</strong>

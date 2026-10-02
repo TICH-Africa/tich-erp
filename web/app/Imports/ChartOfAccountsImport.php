@@ -16,6 +16,8 @@ class ChartOfAccountsImport
         'account_type',
         'currency',
         'parent_account_code',
+        'debit',
+        'credit',
         'balance',
         'balance_side',
         'is_active',
@@ -40,6 +42,8 @@ class ChartOfAccountsImport
         'parent_account_code' => ['parent_account_code', 'parent', 'parent_code', 'parent_account'],
         'is_active' => ['is_active', 'active', 'is_enabled'],
         'is_system_account' => ['is_system_account', 'system', 'is_system', 'protected'],
+        'debit' => ['debit', 'dr', 'debit_amount', 'debits'],
+        'credit' => ['credit', 'cr', 'credit_amount', 'credits'],
         'balance' => ['balance', 'opening_balance', 'opening balance', 'amount', 'closing_balance'],
         'balance_side' => ['balance_side', 'side', 'dr_cr', 'debit_credit', 'dc'],
     ];
@@ -138,9 +142,12 @@ class ChartOfAccountsImport
             if ($saved) {
                 $touched[$record['account_code']] = $rowNumber;
 
-                if (isset($columns['balance']) && $record['balance'] !== '') {
+                $hasBalanceColumn = isset($columns['balance']) || isset($columns['debit']) || isset($columns['credit']);
+                if ($hasBalanceColumn) {
                     $balances[$record['account_code']] = [
-                        'value' => $record['balance'],
+                        'value' => $record['balance'] ?? '',
+                        'debit' => $record['debit'] ?? '',
+                        'credit' => $record['credit'] ?? '',
                         'row' => $rowNumber,
                         'side' => $this->normaliseSide($record['balance_side'] ?? '') ?? '',
                     ];
@@ -156,7 +163,7 @@ class ChartOfAccountsImport
 
         $this->inferParentsFromCodes(array_keys($touched));
         $this->validateParents($touched);
-        $this->postOpeningBalances($balances);
+        $this->syncAccountBalances($balances);
 
         return $this->summary();
     }
@@ -195,11 +202,12 @@ class ChartOfAccountsImport
     }
 
     /**
-     * Post supplied opening balances as ledger entries against the opening balance account.
+     * Bring each account's own ledger net into line with the sheet.
+     * New accounts get an opening balance entry; existing posted accounts get an adjustment entry.
      *
-     * @param  array<string, array{value: string, row: int, side: string}>  $balances
+     * @param  array<string, array{value: string, debit?: string, credit?: string, row: int, side: string}>  $balances
      */
-    private function postOpeningBalances(array $balances): void
+    private function syncAccountBalances(array $balances): void
     {
         if ($balances === []) {
             return;
@@ -207,30 +215,38 @@ class ChartOfAccountsImport
 
         $counterpartCode = (string) config('finance.accounts.opening_balance_equity', '3000');
         $counterpart = ChartOfAccount::query()->where('account_code', $counterpartCode)->first();
-
         $ledger = $this->ledger ?? app(LedgerService::class);
+        $accounts = ChartOfAccount::query()->whereIn('account_code', array_keys($balances))->get();
+        $map = $ledger->accountBalanceMap($accounts);
+        $current = [];
+        foreach ($accounts as $account) {
+            $current[$account->account_code] = (float) ($map[$account->account_code]['net'] ?? 0.0);
+        }
 
         foreach ($balances as $code => $entry) {
-            $amount = $this->parseAmount($entry['value']);
+            $desired = $this->desiredSignedBalance($entry, $code);
 
-            if ($amount === null) {
-                $this->errors[] = "Row {$entry['row']}: Balance '{$entry['value']}' for account '{$code}' is not a valid number.";
+            if ($desired === null) {
+                // Empty balance cells = leave ledger alone (metadata-only update).
+                if (($entry['value'] ?? '') === '' && ($entry['debit'] ?? '') === '' && ($entry['credit'] ?? '') === '') {
+                    continue;
+                }
 
-                continue;
-            }
+                $this->errors[] = "Row {$entry['row']}: Balance for account '{$code}' could not be read.";
 
-            if ($amount == 0.0) {
                 continue;
             }
 
             if ($code === $counterpartCode) {
-                $this->errors[] = "Row {$entry['row']}: Account '{$code}' is the opening balance account, its balance must be left at 0.";
+                if (abs($desired) >= 0.01) {
+                    $this->errors[] = "Row {$entry['row']}: Account '{$code}' is the opening balance equity account; leave its balance at 0.";
+                }
 
                 continue;
             }
 
             if ($counterpart === null) {
-                $this->errors[] = "Opening balances cannot be posted: account '{$counterpartCode}' does not exist.";
+                $this->errors[] = "Balances cannot be posted: account '{$counterpartCode}' does not exist.";
 
                 return;
             }
@@ -241,40 +257,87 @@ class ChartOfAccountsImport
                 continue;
             }
 
-            if ($account->ledgerEntries()->exists()) {
-                $this->errors[] = "Row {$entry['row']}: Account '{$code}' already has ledger entries, its opening balance was not posted.";
+            $currentNet = (float) ($current[$code] ?? 0.0);
+            $delta = round($desired - $currentNet, 2);
 
+            if (abs($delta) < 0.01) {
                 continue;
             }
 
             $debitNormal = in_array($account->account_type, ['asset', 'expense'], true);
-            $side = $this->normaliseSide($entry['side'] ?? '');
 
-            // A supplied Dr/Cr side wins; otherwise a negative amount means the
-            // opposite side of the account normal balance.
-            if ($side === 'dr') {
-                $debitCode = $code;
-            } elseif ($side === 'cr') {
-                $debitCode = $counterpartCode;
+            if ($debitNormal) {
+                $debitCode = $delta > 0 ? $code : $counterpartCode;
+                $creditCode = $delta > 0 ? $counterpartCode : $code;
             } else {
-                $debitCode = $amount > 0 ? ($debitNormal ? $code : $counterpartCode) : ($debitNormal ? $counterpartCode : $code);
+                $debitCode = $delta > 0 ? $counterpartCode : $code;
+                $creditCode = $delta > 0 ? $code : $counterpartCode;
             }
 
-            $creditCode = $debitCode === $code ? $counterpartCode : $code;
+            $hasEntries = $account->ledgerEntries()->exists();
+            $txnType = $hasEntries ? 'balance_adjustment' : 'opening_balance';
+            $label = $hasEntries ? 'Balance adjustment' : 'Opening balance';
 
             $ledger->postEntry(
-                'opening_balance',
+                $txnType,
                 $debitCode,
                 $creditCode,
-                abs($amount),
-                "Opening balance for {$account->account_code} {$account->account_name}",
+                abs($delta),
+                "{$label} for {$account->account_code} {$account->account_name} (import)",
                 'chart_of_accounts_import',
                 'chart_of_accounts',
                 (string) $account->id,
             );
 
+            $current[$code] = $desired;
             $this->balancesPosted++;
         }
+    }
+
+    /**
+     * @param  array{value: string, debit?: string, credit?: string, side: string}  $entry
+     */
+    private function desiredSignedBalance(array $entry, string $code): ?float
+    {
+        $account = ChartOfAccount::query()->where('account_code', $code)->first();
+        if ($account === null) {
+            return null;
+        }
+
+        $debitNormal = in_array($account->account_type, ['asset', 'expense'], true);
+
+        $debit = $this->parseAmount($entry['debit'] ?? '');
+        $credit = $this->parseAmount($entry['credit'] ?? '');
+
+        // Prefer explicit debit/credit columns when either is present.
+        if ($debit !== null || $credit !== null) {
+            $dr = $debit ?? 0.0;
+            $cr = $credit ?? 0.0;
+
+            return $debitNormal ? round($dr - $cr, 2) : round($cr - $dr, 2);
+        }
+
+        $amount = $this->parseAmount($entry['value'] ?? '');
+        if ($amount === null) {
+            return null;
+        }
+
+        $side = $this->normaliseSide($entry['side'] ?? '');
+
+        if ($side === 'dr') {
+            return $debitNormal ? abs($amount) : -abs($amount);
+        }
+        if ($side === 'cr') {
+            return $debitNormal ? -abs($amount) : abs($amount);
+        }
+
+        // No side: positive amount = normal balance side.
+        return $amount;
+    }
+
+    private function postOpeningBalances(array $balances): void
+    {
+        $this->syncAccountBalances($balances);
     }
 
     private function parseAmount(string $value): ?float

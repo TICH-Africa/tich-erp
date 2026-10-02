@@ -77,6 +77,21 @@ if [[ ! -f vendor/autoload.php ]]; then
   log "ERROR: vendor/autoload.php still missing after composer install"
   exit 1
 fi
+
+# PhpSpreadsheet is required for Chart of Accounts Excel export/import.
+SPREADSHEET_FILE="vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php"
+if [[ ! -f "$SPREADSHEET_FILE" ]]; then
+  log "WARN: PhpSpreadsheet missing after install - forcing require…"
+  "$PHP_BIN" "$COMPOSER_BIN" require phpoffice/phpspreadsheet:^5.9 --no-interaction --update-with-dependencies 2>&1 | tee -a "$LOG" || true
+  "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG" || true
+fi
+if [[ ! -f "$SPREADSHEET_FILE" ]]; then
+  log "ERROR: PhpSpreadsheet still missing at ${SPREADSHEET_FILE}"
+  log "Chart of Accounts Excel export will fail until this package is present."
+  exit 1
+fi
+log "PhpSpreadsheet OK"
+
 if [[ -d vendor/mockery ]]; then
   log "WARN: vendor/mockery present - production should not include require-dev packages"
 fi

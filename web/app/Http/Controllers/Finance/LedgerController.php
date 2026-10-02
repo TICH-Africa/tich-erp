@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProfitLossSnapshot;
 use App\Services\Finance\FinanceReportExportService;
 use App\Services\Finance\FinanceReportService;
 use App\Services\Finance\LedgerService;
 use App\Services\PrintDocumentService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -48,13 +50,73 @@ class LedgerController extends Controller
     {
         $report = $this->resolveReport($request);
         $filters = $this->reportFilters($request);
+        $reportData = $this->reports->build($report, $filters);
+
+        $snapshots = collect();
+        $snapshot = null;
+        if ($report === 'income_statement') {
+            $snapshots = ProfitLossSnapshot::query()->latest()->limit(25)->get();
+            if ($request->filled('snapshot')) {
+                $snapshot = ProfitLossSnapshot::query()->find($request->integer('snapshot'));
+                if ($snapshot) {
+                    $reportData = $snapshot->payload;
+                    $reportData['snapshot_id'] = $snapshot->id;
+                    $reportData['snapshot_label'] = $snapshot->label;
+                    $reportData['period_label'] = ($snapshot->label).' · '.$snapshot->period_from->toDateString().' to '.$snapshot->period_to->toDateString();
+                }
+            }
+        }
 
         return view('finance.ledger.reports', [
             'report' => $report,
-            'reportData' => $this->reports->build($report, $filters),
+            'reportData' => $reportData,
             'reportTitle' => $this->reports->title($report),
             'filters' => $filters,
+            'snapshots' => $snapshots,
+            'activeSnapshot' => $snapshot,
         ]);
+    }
+
+    public function saveProfitLossSnapshot(Request $request): RedirectResponse
+    {
+        $filters = $this->reportFilters($request);
+        $data = $this->reports->build('income_statement', $filters);
+        $period = $data['period'] ?? $this->reports->resolveIncomeStatementPeriod($filters);
+
+        $validated = $request->validate([
+            'label' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $label = trim((string) ($validated['label'] ?? ''));
+        if ($label === '') {
+            $label = ($period['label'] ?? 'P&L').' '.$period['from'].' → '.$period['to'];
+        }
+
+        $snapshot = ProfitLossSnapshot::query()->create([
+            'label' => $label,
+            'period_preset' => $period['preset'] ?? 'custom',
+            'period_from' => $period['from'],
+            'period_to' => $period['to'],
+            'view_mode' => $data['view_mode'] ?? 'standard',
+            'total_revenue' => $data['revenue']['total'] ?? 0,
+            'total_expenses' => $data['expenses']['total'] ?? 0,
+            'net_income' => $data['net_income'] ?? 0,
+            'payload' => $data,
+            'saved_by' => $request->user()?->id,
+        ]);
+
+        $this->financeAudit->log('finance.report.snapshot_saved', 'profit_loss_snapshots', $snapshot->id, null, [
+            'label' => $snapshot->label,
+            'period_from' => $snapshot->period_from->toDateString(),
+            'period_to' => $snapshot->period_to->toDateString(),
+        ]);
+
+        return redirect()
+            ->route('finance.reports.index', [
+                'report' => 'income_statement',
+                'snapshot' => $snapshot->id,
+            ])
+            ->with('status', 'Profit & loss snapshot saved.');
     }
 
     public function viewPdf(Request $request): Response
@@ -162,11 +224,23 @@ class LedgerController extends Controller
      */
     private function reportFilters(Request $request): array
     {
+        $period = $request->string('period')->toString() ?: 'mtd';
+        if (! in_array($period, ['mtd', 'fy', 'custom'], true)) {
+            $period = 'mtd';
+        }
+
+        $view = $request->string('view')->toString() ?: 'standard';
+        if (! in_array($view, ['standard', 'full'], true)) {
+            $view = 'standard';
+        }
+
         return array_filter([
             'search' => $request->string('search')->toString() ?: null,
             'action' => $request->string('action')->toString() ?: null,
             'from' => $request->string('from')->toString() ?: null,
             'to' => $request->string('to')->toString() ?: null,
-        ]);
+            'period' => $period,
+            'view' => $view,
+        ], static fn ($value) => $value !== null && $value !== '');
     }
 }

@@ -229,17 +229,29 @@ class LedgerService
     }
 
     /**
-     * @return array<string, float>
+     * @return array<string, float>  Signed balances (debit-normal positive for asset/expense).
      */
-    public function accountBalances(): array
+    public function accountBalances(?string $from = null, ?string $to = null): array
     {
         $accounts = ChartOfAccount::query()->where('is_active', 1)->orderBy('account_code')->get();
         $balances = [];
 
         foreach ($accounts as $account) {
             $code = $account->account_code;
-            $debits = (float) AccountLedger::query()->where('debit_account_code', $code)->sum('debit_amount');
-            $credits = (float) AccountLedger::query()->where('credit_account_code', $code)->sum('credit_amount');
+            $debitQuery = AccountLedger::query()->where('debit_account_code', $code);
+            $creditQuery = AccountLedger::query()->where('credit_account_code', $code);
+
+            if ($from) {
+                $debitQuery->whereDate('ledger_date', '>=', $from);
+                $creditQuery->whereDate('ledger_date', '>=', $from);
+            }
+            if ($to) {
+                $debitQuery->whereDate('ledger_date', '<=', $to);
+                $creditQuery->whereDate('ledger_date', '<=', $to);
+            }
+
+            $debits = (float) $debitQuery->sum('debit_amount');
+            $credits = (float) $creditQuery->sum('credit_amount');
 
             $balances[$code] = match ($account->account_type) {
                 'asset', 'expense' => round($debits - $credits, 2),
