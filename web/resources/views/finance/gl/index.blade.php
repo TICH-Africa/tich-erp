@@ -123,7 +123,21 @@
                                         <br><strong>{{ number_format(abs($balance['net']), 2) }} {{ $balance['net'] >= 0 ? 'Dr' : 'Cr' }}</strong>
                                     </td>
                                     <td>
-                                        <a href="{{ route('finance.chart-of-accounts.show', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                                        <div class="tich-flex" style="gap:0.35rem; align-items:center;">
+                                            <a href="{{ route('finance.chart-of-accounts.show', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                                            @can('finance.chart_of_accounts.manage')
+                                                @php $blockReason = $deleteBlockReasons[$account->account_code] ?? null; @endphp
+                                                @if ($blockReason === null)
+                                                    <form method="POST" action="{{ route('finance.chart-of-accounts.destroy', $account) }}" class="tich-inline-form" style="display:inline;" onsubmit="return confirm('Delete account {{ $account->account_code }} - {{ $account->account_name }}?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="tich-btn tich-btn-ghost tich-btn--sm tich-text--danger">Delete</button>
+                                                    </form>
+                                                @else
+                                                    <button type="button" class="tich-btn tich-btn-ghost tich-btn--sm" disabled title="{{ $blockReason }}">Delete</button>
+                                                @endif
+                                            @endcan
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

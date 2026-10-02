@@ -275,7 +275,57 @@ class FinanceController extends Controller
             'chartAccounts' => $chartAccounts,
             'chartBalances' => $this->ledger->accountBalanceMap($chartAccounts->items()),
             'chartTypes' => ['asset', 'liability', 'equity', 'revenue', 'expense'],
+            'deleteBlockReasons' => $this->deleteBlockReasons($chartAccounts->items()),
         ]);
+    }
+
+    /**
+     * Why each account on the current page cannot be deleted, keyed by account code.
+     * Accounts absent from the result are deletable. Mirrors the guards in
+     * ChartOfAccountController::destroy() so the table can disable Delete only where
+     * that method would refuse: system accounts, accounts with child accounts, and
+     * accounts carrying ledger entries.
+     *
+     * @param  iterable<ChartOfAccount>  $accounts
+     * @return array<string, string>
+     */
+    private function deleteBlockReasons(iterable $accounts): array
+    {
+        $reasons = [];
+        $candidates = [];
+
+        foreach ($accounts as $account) {
+            if ($account->is_system_account) {
+                $reasons[$account->account_code] = 'System accounts cannot be deleted.';
+            } else {
+                $candidates[$account->account_code] = $account->account_code;
+            }
+        }
+
+        if ($candidates === []) {
+            return $reasons;
+        }
+
+        foreach (ChartOfAccount::query()
+            ->whereIn('parent_account_code', array_keys($candidates))
+            ->pluck('parent_account_code')
+            ->all() as $parentCode) {
+            $reasons[$parentCode] = 'Accounts with child accounts cannot be deleted.';
+        }
+
+        foreach (AccountLedger::query()
+            ->whereIn('debit_account_code', array_keys($candidates))
+            ->orWhereIn('credit_account_code', array_keys($candidates))
+            ->select('debit_account_code', 'credit_account_code')
+            ->get() as $entry) {
+            foreach ([$entry->debit_account_code, $entry->credit_account_code] as $code) {
+                if ($code !== null && isset($candidates[$code])) {
+                    $reasons[$code] = 'Accounts with ledger entries cannot be deleted.';
+                }
+            }
+        }
+
+        return $reasons;
     }
 
     public function glJournalCreate(Request $request, Department $department): View
