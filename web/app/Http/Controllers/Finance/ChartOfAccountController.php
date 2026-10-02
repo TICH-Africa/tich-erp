@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Imports\ChartOfAccountsImport;
-use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use App\Services\Finance\ChartOfAccountService;
 use App\Services\Finance\LedgerService;
+use App\Support\PhpSpreadsheetAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +22,7 @@ class ChartOfAccountController extends Controller
     private const DEFAULT_CURRENCY = ChartOfAccountService::DEFAULT_CURRENCY;
 
     /**
-     * Column order used by the downloadable template and the chart of accounts export.
+     * Column order matching the GL / CoA on-screen table (plus parent / active for re-import).
      */
     private const HEADERS = [
         'account_code',
@@ -30,6 +30,8 @@ class ChartOfAccountController extends Controller
         'account_type',
         'currency',
         'parent_account_code',
+        'debit',
+        'credit',
         'balance',
         'balance_side',
         'is_active',
@@ -84,6 +86,26 @@ class ChartOfAccountController extends Controller
         }
 
         $parentCode = $validated['parent_account_code'] ?? null;
+        $inferredParent = null;
+
+        // No parent was picked, so the code itself decides, e.g. 612000 filed under the
+        // 61000 summary account. The choice is only applied when it agrees with the
+        // account type, and it is reported back to the user.
+        if ($parentCode === null || $parentCode === '') {
+            $resolution = $service->resolveParentCode(
+                (string) $validated['account_code'],
+                ChartOfAccount::query()->pluck('account_code')->all()
+            );
+
+            $candidate = $resolution['parent'] === null
+                ? null
+                : ChartOfAccount::query()->where('account_code', $resolution['parent'])->first();
+
+            if ($candidate !== null && $candidate->account_type === $type) {
+                $parentCode = $candidate->account_code;
+                $inferredParent = $parentCode;
+            }
+        }
 
         if ($error = $this->parentTypeError($parentCode, $type)) {
             return back()->withErrors($error)->withInput();
@@ -122,9 +144,11 @@ class ChartOfAccountController extends Controller
 
         $account = ChartOfAccount::query()->create($validated);
 
-        $message = $parentCode !== null
-            ? "Child account {$account->account_code} added under {$parentCode}."
-            : 'Account created successfully.';
+        $message = $inferredParent !== null
+            ? "Child account {$account->account_code} added under {$inferredParent}, taken from the account code."
+            : ($parentCode !== null
+                ? "Child account {$account->account_code} added under {$parentCode}."
+                : 'Account created successfully.');
 
         if ($balance > 0.0) {
             try {
@@ -357,7 +381,7 @@ class ChartOfAccountController extends Controller
         }
 
         if ($result['balances'] > 0) {
-            $message .= ' ' . $result['balances'] . ' opening balance(s) posted.';
+            $message .= ' '.$result['balances'].' balance adjustment(s) posted.';
         }
 
         return redirect()
@@ -418,36 +442,27 @@ class ChartOfAccountController extends Controller
     }
 
     /**
-     * Download the live chart of accounts as a sheet that can be edited and uploaded
-     * back. Balance and balance_side are left blank so finance can fill in the money
-     * values without having to rebuild the file.
+     * Download the live chart matching the on-screen CoA/GL table.
+     * Edit locally and re-upload to update fields and post balance adjustments.
      */
-    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
     {
+        if (! PhpSpreadsheetAvailability::isAvailable()) {
+            return redirect()
+                ->route('finance.gl.index')
+                ->withErrors(['file' => PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel export')]);
+        }
+
         $service = $this->service();
-        $balances = $service->balanceMap();
         $accounts = $service->tree(ChartOfAccount::query()->orderBy('account_code')->get());
-        $codes = $accounts->pluck('account.account_code')->filter()->unique()->values()->all();
+        $direct = app(LedgerService::class)->accountBalanceMap(
+            $accounts->map(fn (array $row) => $row['account'])
+        );
 
-        // Accounts that already carry postings are exported with a blank balance so
-        // uploading the sheet back never tries to post the same money twice.
-        $withEntries = array_flip(array_merge(
-            AccountLedger::query()->whereIn('debit_account_code', $codes)->distinct()->pluck('debit_account_code')->all(),
-            AccountLedger::query()->whereIn('credit_account_code', $codes)->distinct()->pluck('credit_account_code')->all(),
-        ));
-
-        $rows = $accounts->map(function (array $row) use ($balances, $withEntries): array {
+        $rows = $accounts->map(function (array $row) use ($direct): array {
             $account = $row['account'];
-            $posted = isset($withEntries[$account->account_code]);
-
-            if ($posted) {
-                $balance = '';
-                $side = '';
-            } else {
-                $net = $balances[$account->account_code]['net'] ?? 0.0;
-                $balance = number_format(abs($net), 2, '.', '');
-                $side = $net >= 0 ? 'Dr' : 'Cr';
-            }
+            $own = $direct[$account->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0];
+            $ownNet = (float) $own['net'];
 
             return [
                 $account->account_code,
@@ -455,71 +470,76 @@ class ChartOfAccountController extends Controller
                 ucfirst((string) $account->account_type),
                 $account->currency ?: self::DEFAULT_CURRENCY,
                 $account->isTopLevel() ? '' : $account->parent_account_code,
-                $balance,
-                $side,
+                number_format((float) $own['debit'], 2, '.', ''),
+                number_format((float) $own['credit'], 2, '.', ''),
+                number_format(abs($ownNet), 2, '.', ''),
+                $ownNet >= 0 ? 'Dr' : 'Cr',
                 (int) $account->is_active,
             ];
-        })
-            ->values()
-            ->all();
+        })->values()->all();
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray(self::HEADERS, null, 'A1');
+        try {
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->fromArray(self::HEADERS, null, 'A1');
+            if ($rows !== []) {
+                $sheet->fromArray($rows, null, 'A2');
+            }
+            foreach (range('A', 'J') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+            $name = 'chart_of_accounts_'.now()->format('Ymd_His').'.xlsx';
+            $path = tempnam(sys_get_temp_dir(), 'coa_');
+            (new Xlsx($spreadsheet))->save($path);
+            $spreadsheet->disconnectWorksheets();
+        } catch (\Throwable $exception) {
+            report($exception);
 
-        if ($rows !== []) {
-            $sheet->fromArray($rows, null, 'A2');
+            return redirect()
+                ->route('finance.gl.index')
+                ->withErrors([
+                    'file' => 'Excel export failed: '.$exception->getMessage()
+                        .'. If this mentions a missing PhpOffice file, redeploy so composer install restores vendor/phpoffice/phpspreadsheet.',
+                ]);
         }
-
-        foreach (range('A', 'H') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-
-        $name = 'chart_of_accounts_'.now()->format('Ymd_His').'.xlsx';
-        $path = tempnam(sys_get_temp_dir(), 'coa_');
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($path);
-        $spreadsheet->disconnectWorksheets();
 
         return response()->download($path, $name, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
 
-    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
     {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray(self::HEADERS, null, 'A1');
-
-        // Child rows carry the parent code in parent_account_code. A dotted account
-        // code such as 1114.01 is also matched to 1114 automatically on import, and
-        // balance_side sets whether the amount is a debit or a credit.
-        $sample = [
-            ['1114', 'Bank Accounts', 'Fixed Assets', 'KES', '', '0', 'Dr', '1'],
-            ['1114.01', 'Bank - Savings Account', 'Other Current Assets', 'KES', '1114', '2500000', 'Dr', '1'],
-            ['1114.02', 'Bank - Project Account (USD)', 'Other Current Assets', 'USD', '1114', '750000', 'Dr', '1'],
-            ['1100', 'Accounts Receivable', 'Accounts Receivable', 'KES', '', '0', 'Dr', '1'],
-            ['1100.01', 'Accounts Receivable - Students', 'Accounts Receivable', 'KES', '1100', '1500000', 'Dr', '1'],
-            ['1200', 'Prepaid Expenses', 'Other Current Assets', 'KES', '', '0', 'Dr', '1'],
-            ['1300', 'Motor Vehicles', 'Fixed Assets', 'KES', '', '0', 'Dr', '1'],
-            ['2100', 'Accounts Payable', 'Current Liabilities', 'KES', '', '0', 'Cr', '1'],
-            ['2100.01', 'Accounts Payable - Suppliers', 'Current Liabilities', 'KES', '2100', '300000', 'Cr', '1'],
-            ['2200', 'Accrued Expenses', 'Other Current Liabilities', 'KES', '', '0', 'Cr', '1'],
-            ['4000', 'Tuition Revenue', 'Fee Income', 'KES', '', '0', 'Cr', '1'],
-            ['5100', 'Staff Training', 'Staff Costs', 'KES', '', '0', 'Dr', '1'],
-        ];
-        $sheet->fromArray($sample, null, 'A2');
-
-        foreach (range('A', 'H') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
+        if (! PhpSpreadsheetAvailability::isAvailable()) {
+            return redirect()
+                ->route('finance.gl.index')
+                ->withErrors(['file' => PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel template')]);
         }
 
-        $name = 'chart_of_accounts_template.xlsx';
-        $path = tempnam(sys_get_temp_dir(), 'coa_');
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($path);
-        $spreadsheet->disconnectWorksheets();
+        try {
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->fromArray(self::HEADERS, null, 'A1');
+            $sheet->fromArray([
+                ['1114', 'Bank Accounts', 'Asset', 'KES', '', '0.00', '0.00', '0.00', 'Dr', '1'],
+                ['1114.01', 'Bank - Savings Account', 'Asset', 'KES', '1114', '0.00', '0.00', '0.00', 'Dr', '1'],
+                ['4000', 'Tuition Revenue', 'Revenue', 'KES', '', '0.00', '0.00', '0.00', 'Cr', '1'],
+                ['5100', 'Staff Training', 'Expense', 'KES', '', '0.00', '0.00', '0.00', 'Dr', '1'],
+            ], null, 'A2');
+            foreach (range('A', 'J') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+            $name = 'chart_of_accounts_template.xlsx';
+            $path = tempnam(sys_get_temp_dir(), 'coa_');
+            (new Xlsx($spreadsheet))->save($path);
+            $spreadsheet->disconnectWorksheets();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('finance.gl.index')
+                ->withErrors(['file' => 'Could not build the Excel template: '.$exception->getMessage()]);
+        }
 
         return response()->download($path, $name, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -577,9 +597,14 @@ class ChartOfAccountController extends Controller
     }
 
     /**
-     * A child account code must start with its parent code plus a dot, e.g. 1114.01
-     * under 1114. Accounts with no parent are free form. Existing legacy children that
-     * do not follow the convention keep working until their parent is changed.
+     * A child account code has to belong to the parent it is filed under. The shape of
+     * a child code is worked out by the chart of accounts service, so every numbering
+     * style an import accepts is accepted here too: parent plus a separator, e.g.
+     * 1114.01 or 1114-01, a longer code that starts with the parent, e.g. 111400, and a
+     * code in the parent's own digit block, e.g. 61000 over 612000.
+     *
+     * Accounts with no parent are free form. Existing legacy children keep working
+     * until their parent is changed.
      *
      * @return array<string, string>
      */
@@ -589,12 +614,27 @@ class ChartOfAccountController extends Controller
             return [];
         }
 
-        if (str_starts_with($code, $parentCode.'.')) {
+        $known = ChartOfAccount::query()->pluck('account_code')->all();
+        $resolved = $this->service()->resolveParentCode($code, $known);
+
+        if ($resolved['parent'] === $parentCode) {
             return [];
         }
 
+        if ($resolved['parent'] !== null) {
+            return [
+                'account_code' => "Account code {$code} belongs under {$resolved['parent']} by its numbering, not under {$parentCode}.",
+            ];
+        }
+
+        $separators = (array) config('finance.hierarchy.separators', ['.', '-', '/', '_', ':', ' ']);
+        $examples = implode(', ', array_map(
+            static fn ($separator) => $parentCode.$separator.'01',
+            array_slice($separators, 0, 3)
+        ));
+
         return [
-            'account_code' => "A child account code must start with its parent code, e.g. {$parentCode}.01.",
+            'account_code' => "A child account code must follow its parent's numbering, for example {$examples}, or sit in the parent's own digit block such as {$parentCode}00.",
         ];
     }
 

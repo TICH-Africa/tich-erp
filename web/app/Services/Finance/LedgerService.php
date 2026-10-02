@@ -225,6 +225,7 @@ class LedgerService
     }
 
     /**
+    /**
      * Signed net balance per active account, honouring reversals and an optional period.
      *
      * Assets and expenses are debit normal (positive when debited); liabilities, equity
@@ -262,25 +263,27 @@ class LedgerService
             ->groupBy('credit_account_code')
             ->pluck('total', 'credit_account_code');
 
-    $balances = [];
+        $balances = [];
 
-    foreach ($codes as $code) {
-        $debit = round((float) ($debits[$code] ?? 0), 2);
-        $credit = round((float) ($credits[$code] ?? 0), 2);
-        $debitNormal = in_array($types[$code] ?? null, ['asset', 'expense'], true);
+        foreach ($codes as $code) {
+            $debit = round((float) ($debits[$code] ?? 0), 2);
+            $credit = round((float) ($credits[$code] ?? 0), 2);
+            $debitNormal = in_array($types[$code] ?? null, ['asset', 'expense'], true);
 
-        $balances[$code] = $debitNormal ? round($debit - $credit, 2) : round($credit - $debit, 2);
-    }
+            $balances[$code] = $debitNormal ? round($debit - $credit, 2) : round($credit - $debit, 2);
+        }
 
-    return $balances;
+        return $balances;
     }
 
     /**
+     * Signed balances (debit-normal positive for asset and expense accounts).
+     *
      * @return array<string, float>
      */
-    public function accountBalances(): array
+    public function accountBalances(?string $from = null, ?string $to = null): array
     {
-        return $this->signedBalances();
+        return $this->signedBalances($from, $to);
     }
 
     /**

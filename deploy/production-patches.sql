@@ -1,4 +1,4 @@
--- =============================================================================
+﻿-- =============================================================================
 -- TICH ERP - production schema PATCHES (intentional alters / drops)
 -- =============================================================================
 -- Run AFTER deploy/production.sql on production when localhost migrations included
@@ -17,7 +17,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- -----------------------------------------------------------------------------
 -- 1. Drop legacy permission catalog (runtime RBAC is config-only now)
---    Removes 3 tables → production count should match localhost (~197).
+--    Removes 3 tables â†’ production count should match localhost (~197).
 -- -----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `user_permissions`;
 DROP TABLE IF EXISTS `role_permissions`;
@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `permissions`;
 
 -- -----------------------------------------------------------------------------
 -- 2. Invited staff: department not auto-assigned until HR links them
---    production.sql only ADD COLUMN; cannot change NOT NULL → NULL on existing column.
+--    production.sql only ADD COLUMN; cannot change NOT NULL â†’ NULL on existing column.
 -- -----------------------------------------------------------------------------
 ALTER TABLE `staff` MODIFY COLUMN `department_id` bigint(20) unsigned NULL DEFAULT NULL;
 
@@ -81,7 +81,7 @@ SET u.user_type = 'super_admin'
 WHERE r.role_name = 'Super Admin' AND u.user_type = 'admin';
 
 -- -----------------------------------------------------------------------------
--- 5. Retire legacy "Dean" role → academics "Dean of Students"
+-- 5. Retire legacy "Dean" role â†’ academics "Dean of Students"
 -- -----------------------------------------------------------------------------
 UPDATE `roles`
 SET
@@ -110,7 +110,7 @@ INNER JOIN `roles` dean ON dean.`id` = ur.`role_id` AND dean.`role_name` = 'Dean
 DELETE FROM `roles` WHERE `role_name` = 'Dean';
 
 -- -----------------------------------------------------------------------------
--- 6. Campus type: sub_county_hub → campus (UI labels: Main, Campus, Community College)
+-- 6. Campus type: sub_county_hub â†’ campus (UI labels: Main, Campus, Community College)
 -- -----------------------------------------------------------------------------
 UPDATE `campuses` SET `campus_type` = 'campus' WHERE `campus_type` = 'sub_county_hub';
 
@@ -1548,7 +1548,7 @@ CREATE TABLE IF NOT EXISTS `partnership_request_documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
--- 29. Technical plan outputs — quarter segmentation (independent module plans)
+-- 29. Technical plan outputs â€” quarter segmentation (independent module plans)
 -- -----------------------------------------------------------------------------
 SET @db := DATABASE();
 
@@ -1815,7 +1815,7 @@ INSERT INTO `leave_types` (`leave_code`, `leave_name`, `days_allowed_per_year`, 
 SELECT 'BEREAVEMENT', 'Bereavement Leave', 5, 'none', 'working_days', 1, 0, 0, 0, 1, 'any', 0, 0, 0, 1, '5 working days when mother, father, child, or spouse passes away.'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `leave_types` WHERE `leave_code`='BEREAVEMENT');
 INSERT INTO `leave_types` (`leave_code`, `leave_name`, `days_allowed_per_year`, `accrual_type`, `calculation_type`, `is_paid`, `requires_medical_certificate`, `requires_certificate`, `requires_hod_approval`, `requires_hr_approval`, `gender_restriction`, `min_service_months`, `carry_forward_days`, `notice_period_days`, `is_active`, `description`)
-SELECT 'COMPOFF', 'Compensatory Leave', 0, 'none', 'working_days', 1, 0, 0, 0, 1, 'any', 0, 0, 0, 0, 'Unavailable — on hold.'
+SELECT 'COMPOFF', 'Compensatory Leave', 0, 'none', 'working_days', 1, 0, 0, 0, 1, 'any', 0, 0, 0, 0, 'Unavailable â€” on hold.'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `leave_types` WHERE `leave_code`='COMPOFF');
 UPDATE `leave_types` SET `is_active`=0 WHERE `leave_code`='COMPOFF';
 
@@ -1888,7 +1888,7 @@ ALTER TABLE `campuses` DROP COLUMN IF EXISTS `campus_code`;
 
 
 -- -----------------------------------------------------------------------------
--- 39. staff.preferred_erp_email — personal vs organisational/secondary for ERP mail
+-- 39. staff.preferred_erp_email â€” personal vs organisational/secondary for ERP mail
 -- -----------------------------------------------------------------------------
 CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL DEFAULT \'primary\'');
 
@@ -1899,7 +1899,7 @@ CALL `tich_ensure_column`('staff', 'preferred_erp_email', 'varchar(20) NOT NULL 
 
 -- -----------------------------------------------------------------------------
 -- 40. Financial aid, sponsorship inquiries, student year, donation pledge fields
---     (2026_09_29_000002 … 2026_09_29_000005)
+--     (2026_09_29_000002 â€¦ 2026_09_29_000005)
 --     Note: `donations` already exists (campaign ledger). Public pledge fields are
 --     added onto that table; sponsorship_inquiries is new.
 -- -----------------------------------------------------------------------------
@@ -2066,14 +2066,14 @@ ALTER TABLE `students`
     MODIFY COLUMN `surname` varchar(100) NOT NULL;
 
 -- -----------------------------------------------------------------------------
--- 42. Remaining missing tables vs local (excl. academic_records / student_financial_records from §41)
+-- 42. Remaining missing tables vs local (excl. academic_records / student_financial_records from Â§41)
 -- Assets, procurement/RFQ, marketing, QA training, stock. Safe: CREATE IF NOT EXISTS.
--- Full copy also in deploy/missing-tables-prod-patch.sql — run that file on production.
+-- Full copy also in deploy/missing-tables-prod-patch.sql â€” run that file on production.
 -- -----------------------------------------------------------------------------
 -- See deploy/missing-tables-prod-patch.sql for the 25 CREATE TABLE statements.
 -- (Kept in a dedicated file so production-patches.sql stays smaller; apply that SQL next.)
 
--- PRESENT IN PRODUCTION UP TO HERE (after applying §42)
+-- PRESENT IN PRODUCTION UP TO HERE (after applying Â§42)
 
 -- -----------------------------------------------------------------------------
 -- 43. Staff job description (rich text, visible read-only on employee dashboard)
@@ -2081,13 +2081,13 @@ ALTER TABLE `students`
 ALTER TABLE `staff`
     ADD COLUMN IF NOT EXISTS `job_description` longtext NULL DEFAULT NULL AFTER `job_title`;
 
--- PRESENT IN PRODUCTION UP TO HERE (after applying §43)
+-- PRESENT IN PRODUCTION UP TO HERE (after applying Â§43)
 
 -- -----------------------------------------------------------------------------
 -- 44. Chart of Accounts: `account_category` replaced by `currency`
 --     (2026_09_30_000001_replace_account_category_with_currency_in_chart_of_accounts)
 --     Live dump `tichafri_dbmain.sql` still has NOT NULL `account_category` and
---     NO `currency`. Excel import writes `currency` only → prod inserts fail
+--     NO `currency`. Excel import writes `currency` only â†’ prod inserts fail
 --     until this section runs. production.sql is add-only, so the DROP lives here.
 -- -----------------------------------------------------------------------------
 SET @db := DATABASE();
@@ -2165,6 +2165,31 @@ SET @sql := (SELECT IF(
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- APPLY ON PRODUCTION: optional, speeds up the chart of accounts tree and balance roll-up
 
+-- -----------------------------------------------------------------------------
+-- 47. Profit & loss period snapshots (Financial reports → Profit & loss)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `profit_loss_snapshots` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `label` varchar(200) NOT NULL,
+  `period_preset` varchar(40) NOT NULL DEFAULT 'custom',
+  `period_from` date NOT NULL,
+  `period_to` date NOT NULL,
+  `view_mode` varchar(20) NOT NULL DEFAULT 'standard',
+  `total_revenue` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `total_expenses` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `net_income` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `saved_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `profit_loss_snapshots_period_from_period_to_index` (`period_from`,`period_to`),
+  KEY `profit_loss_snapshots_created_at_index` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: P&L historical snapshots under Financial reports
+
+
+
 
 
 
@@ -2181,3 +2206,4 @@ SET time_zone = '+03:00';
 
 -- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
 -- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';
+

@@ -304,7 +304,7 @@ class SpreadsheetTabularReader
     {
         if (! class_exists(IOFactory::class)) {
             throw new \RuntimeException(
-                'PhpSpreadsheet is not installed on this server (run composer install in /web). .xlsx can still use the zip reader; .xls requires PhpSpreadsheet.'
+                PhpSpreadsheetAvailability::missingMessage('Spreadsheet reading')
             );
         }
 

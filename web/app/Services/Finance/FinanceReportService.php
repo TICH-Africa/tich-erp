@@ -56,7 +56,78 @@ class FinanceReportService
     }
 
     /**
+     * Resolve the profit and loss window. Presets are month to date, financial year,
+     * custom dates and all time.
+     *
      * @param  array<string, mixed>  $filters
+     * @return array{preset: string, from: string, to: string, label: string}
+     */
+    public function resolveIncomeStatementPeriod(array $filters = []): array
+    {
+        $preset = (string) ($filters['period'] ?? 'all');
+        $today = now()->startOfDay();
+
+        return match ($preset) {
+            'fy' => $this->financialYearWindow($today),
+            'custom' => [
+                'preset' => 'custom',
+                'from' => $this->validDate($filters['from'] ?? null) ?? $today->copy()->startOfMonth()->toDateString(),
+                'to' => $this->validDate($filters['to'] ?? null) ?? $today->toDateString(),
+                'label' => 'Custom period',
+            ],
+            'all' => [
+                'preset' => 'all',
+                'from' => '',
+                'to' => '',
+                'label' => 'All posted activity',
+            ],
+            default => [
+                'preset' => 'mtd',
+                'from' => $today->copy()->startOfMonth()->toDateString(),
+                'to' => $today->toDateString(),
+                'label' => 'Month to date',
+            ],
+        };
+    }
+
+    /**
+     * @return array{preset: string, from: string, to: string, label: string}
+     */
+    private function financialYearWindow(\Carbon\CarbonInterface $today): array
+    {
+        // Kenya institutional FY: 1 July to 30 June (configurable).
+        $startMonth = (int) config('finance.financial_year_start_month', 7);
+        $year = (int) $today->year;
+        $fyStart = $today->copy()->month($startMonth)->day(1)->startOfDay();
+
+        if ($today->lt($fyStart)) {
+            $fyStart->subYear();
+        }
+
+        $fyEnd = $fyStart->copy()->addYear()->subDay();
+
+        return [
+            'preset' => 'fy',
+            'from' => $fyStart->toDateString(),
+            'to' => min($today->toDateString(), $fyEnd->toDateString()),
+            'label' => 'Financial year (from '.$fyStart->format('d M Y').')',
+        ];
+    }
+
+    private function validDate(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function trialBalance(array $filters = []): array
@@ -131,19 +202,23 @@ class FinanceReportService
     }
 
     /**
-     * Profit and loss. Every revenue and expense account is listed with its own and
-     * its children's movement, so nothing posted to a child account is missed.
+     * Profit and loss. Every revenue and expense account is listed with its own amount
+     * and its children's movement, so nothing posted to a child account is missed, and
+     * the statement is tied back to the general ledger for the same window.
      *
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
     public function incomeStatement(array $filters = []): array
     {
-        $from = $this->periodStart($filters);
-        $to = $this->periodEnd($filters);
+        $period = $this->resolveIncomeStatementPeriod($filters);
+        $viewMode = (($filters['view'] ?? 'standard') === 'full') ? 'full' : 'standard';
+        $window = ['from' => $period['from'] !== '' ? $period['from'] : null, 'to' => $period['to'] !== '' ? $period['to'] : null];
+        $from = $window['from'];
+        $to = $window['to'];
 
-        $revenue = $this->accountSection('Revenue', 'revenue', $filters);
-        $expenses = $this->accountSection('Expenses', 'expense', $filters);
+        $revenue = $this->accountSection('Revenue', 'revenue', $window);
+        $expenses = $this->accountSection('Expenses', 'expense', $window);
 
         $totalRevenue = $this->netOf($revenue);
         $totalExpenses = $this->netOf($expenses);
@@ -151,14 +226,25 @@ class FinanceReportService
 
         $check = $this->ledgerCrossCheck($from, $to, $totalRevenue, $totalExpenses);
 
-        return [
+        $payload = [
             'report' => 'income_statement',
             'title' => $this->title('income_statement'),
-            'period_label' => $this->periodLabel($from, $to),
+            'period' => $period,
+            'period_label' => $period['preset'] === 'all'
+                ? 'All posted activity'
+                : $this->periodLabel($from, $to),
             'from' => $from,
             'to' => $to,
+            'view_mode' => $viewMode,
             'revenue' => $revenue,
             'expenses' => $expenses,
+            'sections' => $viewMode === 'full'
+                ? [
+                    $this->accountSection('Assets', 'asset', $window),
+                    $this->accountSection('Liabilities', 'liability', $window),
+                    $this->accountSection('Equity', 'equity', $window),
+                ]
+                : [],
             'total_revenue' => $totalRevenue,
             'total_expenses' => $totalExpenses,
             'net_income' => $netIncome,
@@ -168,6 +254,8 @@ class FinanceReportService
             'revenue_difference' => $check['revenue_difference'],
             'expense_difference' => $check['expense_difference'],
         ];
+
+        return $payload;
     }
 
     /**
@@ -443,7 +531,6 @@ class FinanceReportService
     {
         $from = $this->periodStart($filters);
         $to = $this->periodEnd($filters);
-
         $all = ChartOfAccount::query()->orderBy('account_code')->get()->keyBy('account_code');
 
         $subjects = $all->filter(

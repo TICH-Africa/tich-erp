@@ -139,7 +139,7 @@ class FinanceReportExportService
     private function incomeStatementRows(array $data): array
     {
         $rows = [
-            ['Statement of Comprehensive Income', $data['period_label']],
+            ['Statement of Comprehensive Income', $data['period_label'] ?? ''],
             [],
             ['Section', 'Account Code', 'Account Name', 'Account Only', 'Amount (KES)'],
         ];
@@ -155,6 +155,16 @@ class FinanceReportExportService
         }
         $rows[] = ['', '', 'Total Expenses', '', $data['expenses']['total']];
         $rows[] = [];
+        if (($data['view_mode'] ?? 'standard') === 'full') {
+            foreach (($data['sections'] ?? []) as $section) {
+                foreach ($section['rows'] as $row) {
+                    $rows[] = [$section['title'], $row['account_code'], str_repeat('    ', (int) ($row['level'] ?? 0)).$row['account_name'], $this->ownAmount($row), $row['amount']];
+                }
+                $rows[] = ['', '', 'Total '.$section['title'], '', $section['total']];
+                $rows[] = [];
+            }
+        }
+
         $rows[] = ['', '', 'Net Income', '', $data['net_income']];
 
         return $rows;
