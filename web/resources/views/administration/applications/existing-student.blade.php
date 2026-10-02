@@ -1,11 +1,11 @@
 @extends('layouts.administration')
 
-@section('title', $student ? 'Edit Student' : 'Existing Student Registration')
+@section('title', ($student ?? null) ? 'Edit Student' : 'Existing Student Registration')
 
 @section('administration-content')
     @php
         $editing = isset($student) && $student;
-        $currentCampusId = $student?->enrollment_campus_id;
+        $currentCampusId = ($student ?? null)?->enrollment_campus_id;
         $currentCampus = $currentCampusId ? \App\Models\Campus::find($currentCampusId) : null;
         $editingSelectionType = old(
             'campus_selection_type',
@@ -63,7 +63,7 @@
                 </div>
                 <div>
                     <label class="tich-label">Email *</label>
-                    <input type="email" name="email" class="tich-input" required value="{{ old('email', $student?->user?->email ?? $student?->applicant?->email ?? '') }}">
+                    <input type="email" name="email" class="tich-input" required value="{{ old('email', ($student ?? null)?->user?->email ?? ($student ?? null)?->applicant?->email ?? '') }}">
                     @error('email')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>

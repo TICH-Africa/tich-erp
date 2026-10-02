@@ -28,7 +28,12 @@ class ExistingStudentController extends Controller
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
         $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
 
-        return view('administration.applications.existing-student', compact('programs', 'campusSelectionOptions'));
+        // The form is shared with edit(), so the student must always be defined.
+        return view('administration.applications.existing-student', [
+            'programs' => $programs,
+            'campusSelectionOptions' => $campusSelectionOptions,
+            'student' => null,
+        ]);
     }
 
     public function index(Request $request): View
