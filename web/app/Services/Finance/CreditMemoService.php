@@ -56,7 +56,7 @@ class CreditMemoService
                 'status' => $newBalance <= 0 ? 'paid' : ($invoice->status === 'overdue' ? 'overdue' : 'partial'),
             ]);
 
-            $this->ledger->postCreditMemo($creditAmount, $memo->credit_memo_number, $issuedByStaffId);
+            $this->ledger->postCreditMemo($creditAmount, $memo->credit_memo_number, $issuedByStaffId, $invoice->invoice_type);
             $this->accounts->recalculate($invoice->studentAccount);
 
             $this->audit->log('finance.credit_memo.issued', 'credit_memos', $memo->id, null, [

@@ -6,45 +6,47 @@
                 <th>Section</th>
                 <th>Account code</th>
                 <th>Account name</th>
+                <th class="num">Account only</th>
                 <th class="num">Amount (KES)</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($data['sections'] as $section)
                 <tr class="tich-fin-report-table__section">
-                    <td colspan="4"><strong>{{ $section['title'] }}</strong></td>
+                    <td colspan="5"><strong>{{ $section['title'] }}</strong></td>
                 </tr>
                 @forelse ($section['rows'] as $row)
-                    <tr>
+                    <tr class="{{ ($row['level'] ?? 0) > 0 ? 'tich-fin-report-table__child' : '' }}">
                         <td></td>
                         <td>{{ $row['account_code'] }}</td>
-                        <td>{{ $row['account_name'] }}</td>
+                        <td style="padding-left: {{ 8 + 18 * (int) ($row['level'] ?? 0) }}px">{{ $row['account_name'] }}</td>
+                        <td class="num">{{ ($row['level'] ?? 0) > 0 || ($row['is_group'] ?? false) ? number_format($row['own_amount'], 2) : '' }}</td>
                         <td class="num">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
                 @empty
                     <tr>
                         <td></td>
-                        <td colspan="3" class="tich-caption">No balances in this section.</td>
+                        <td colspan="4" class="tich-caption">No balances in this section.</td>
                     </tr>
                 @endforelse
                 <tr class="tich-fin-report-table__subtotal">
-                    <td colspan="3"><strong>Total {{ strtolower($section['title']) }}</strong></td>
+                    <td colspan="4"><strong>Total {{ strtolower($section['title']) }}</strong></td>
                     <td class="num"><strong>{{ number_format($section['total'], 2) }}</strong></td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr class="tich-fin-report-table__total">
-                <th colspan="3">Total assets</th>
+                <th colspan="4">Total assets</th>
                 <th class="num">{{ number_format($data['total_assets'], 2) }}</th>
             </tr>
             <tr class="tich-fin-report-table__total">
-                <th colspan="3">Total liabilities + equity</th>
+                <th colspan="4">Total liabilities + equity</th>
                 <th class="num">{{ number_format($data['total_liabilities_equity'], 2) }}</th>
             </tr>
             @if (isset($data['is_balanced']))
                 <tr>
-                    <td colspan="4" class="tich-caption">
+                    <td colspan="5" class="tich-caption">
                         {{ $data['is_balanced'] ? 'Balance sheet balances correctly.' : 'Warning: assets do not equal liabilities plus equity.' }}
                     </td>
                 </tr>

@@ -36,12 +36,12 @@ class LedgerService
         ]);
     }
 
-    public function postInvoiceRaised(float $amount, string $invoiceNumber, ?int $recordedByStaffId = null): AccountLedger
+    public function postInvoiceRaised(float $amount, string $invoiceNumber, ?int $recordedByStaffId = null, ?string $invoiceType = null): AccountLedger
     {
         return $this->postEntry(
             'invoice_raised',
             config('finance.accounts.accounts_receivable'),
-            $this->revenueAccountForInvoice($invoiceNumber),
+            $this->revenueAccountForInvoiceType($invoiceType),
             $amount,
             "Invoice raised: {$invoiceNumber}",
             'student_fees',
@@ -51,16 +51,11 @@ class LedgerService
         );
     }
 
-    public function postStudentPayment(float $amount, string $paymentNumber, string $paymentMethod, ?int $recordedByStaffId = null): AccountLedger
+    public function postStudentPayment(float $amount, string $paymentNumber, string $paymentMethod, ?int $recordedByStaffId = null, ?string $paymentDate = null): AccountLedger
     {
-        $cashAccount = match ($paymentMethod) {
-            'mpesa', 'mobile_money' => config('finance.accounts.cash_mpesa'),
-            default => config('finance.accounts.cash_bank'),
-        };
-
         return $this->postEntry(
             'student_payment',
-            $cashAccount,
+            $this->cashAccountFor($paymentMethod),
             config('finance.accounts.accounts_receivable'),
             $amount,
             "Student payment: {$paymentNumber}",
@@ -68,14 +63,15 @@ class LedgerService
             'payments',
             $paymentNumber,
             $recordedByStaffId,
+            $paymentDate,
         );
     }
 
-    public function postCreditMemo(float $amount, string $creditMemoNumber, ?int $recordedByStaffId = null): AccountLedger
+    public function postCreditMemo(float $amount, string $creditMemoNumber, ?int $recordedByStaffId = null, ?string $invoiceType = null): AccountLedger
     {
         return $this->postEntry(
             'credit_memo',
-            $this->revenueAccountForInvoice($creditMemoNumber),
+            $this->revenueAccountForInvoiceType($invoiceType),
             config('finance.accounts.accounts_receivable'),
             $amount,
             "Credit memo: {$creditMemoNumber}",
@@ -229,25 +225,62 @@ class LedgerService
     }
 
     /**
+     * Signed net balance per active account, honouring reversals and an optional period.
+     *
+     * Assets and expenses are debit normal (positive when debited); liabilities, equity
+     * and revenue are credit normal (positive when credited). This is the figure the
+     * financial statements are built from, so a credit to a revenue account shows as
+     * income instead of a negative.
+     *
+     * @return array<string, float>
+     */
+    public function signedBalances(?string $from = null, ?string $to = null): array
+    {
+        $accounts = ChartOfAccount::query()->where('is_active', 1)->orderBy('account_code')->get();
+        $types = $accounts->pluck('account_type', 'account_code')->all();
+        $codes = array_keys($types);
+
+        if ($codes === []) {
+            return [];
+        }
+
+        $debits = AccountLedger::query()
+            ->select('debit_account_code', DB::raw('SUM(debit_amount) as total'))
+            ->whereIn('debit_account_code', $codes)
+            ->where('is_reversed', 0)
+            ->when($from, fn ($q) => $q->where('ledger_date', '>=', $from))
+            ->when($to, fn ($q) => $q->where('ledger_date', '<=', $to))
+            ->groupBy('debit_account_code')
+            ->pluck('total', 'debit_account_code');
+
+        $credits = AccountLedger::query()
+            ->select('credit_account_code', DB::raw('SUM(credit_amount) as total'))
+            ->whereIn('credit_account_code', $codes)
+            ->where('is_reversed', 0)
+            ->when($from, fn ($q) => $q->where('ledger_date', '>=', $from))
+            ->when($to, fn ($q) => $q->where('ledger_date', '<=', $to))
+            ->groupBy('credit_account_code')
+            ->pluck('total', 'credit_account_code');
+
+    $balances = [];
+
+    foreach ($codes as $code) {
+        $debit = round((float) ($debits[$code] ?? 0), 2);
+        $credit = round((float) ($credits[$code] ?? 0), 2);
+        $debitNormal = in_array($types[$code] ?? null, ['asset', 'expense'], true);
+
+        $balances[$code] = $debitNormal ? round($debit - $credit, 2) : round($credit - $debit, 2);
+    }
+
+    return $balances;
+    }
+
+    /**
      * @return array<string, float>
      */
     public function accountBalances(): array
     {
-        $accounts = ChartOfAccount::query()->where('is_active', 1)->orderBy('account_code')->get();
-        $balances = [];
-
-        foreach ($accounts as $account) {
-            $code = $account->account_code;
-            $debits = (float) AccountLedger::query()->where('debit_account_code', $code)->sum('debit_amount');
-            $credits = (float) AccountLedger::query()->where('credit_account_code', $code)->sum('credit_amount');
-
-            $balances[$code] = match ($account->account_type) {
-                'asset', 'expense' => round($debits - $credits, 2),
-                default => round($credits - $debits, 2),
-            };
-        }
-
-        return $balances;
+        return $this->signedBalances();
     }
 
     /**
@@ -297,9 +330,27 @@ class LedgerService
         ];
     }
 
-    private function revenueAccountForInvoice(string $invoiceNumber): string
+    public function cashAccountFor(?string $paymentMethod): string
     {
-        return config('finance.accounts.tuition_revenue');
+        return match (strtolower((string) $paymentMethod)) {
+            'mpesa', 'mobile_money' => (string) config('finance.accounts.cash_mpesa'),
+            default => (string) config('finance.accounts.cash_bank'),
+        };
+    }
+
+    /**
+     * Revenue account for an invoice type, so each kind of fee posts to its own line
+     * on the income statement instead of everything landing on tuition.
+     */
+    private function revenueAccountForInvoiceType(?string $invoiceType): string
+    {
+        return match (strtolower((string) $invoiceType)) {
+            'application' => (string) config('finance.accounts.application_fee_revenue'),
+            'examination', 'exam', 'supplementary' => (string) config('finance.accounts.examination_fee_revenue'),
+            'graduation' => (string) config('finance.accounts.graduation_fee_revenue'),
+            'tuition', 'semester', 'semester_charges', 'hostel' => (string) config('finance.accounts.tuition_revenue'),
+            default => (string) config('finance.accounts.other_fee_revenue', config('finance.accounts.tuition_revenue')),
+        };
     }
 
     private function systemStaffId(): int

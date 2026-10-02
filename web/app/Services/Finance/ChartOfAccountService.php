@@ -414,7 +414,6 @@ class ChartOfAccountService
         $accounts = ChartOfAccount::query()->orderBy('account_code')->get();
         $children = $this->groupChildren($accounts);
         $direct = $this->ledger->accountBalanceMap($accounts);
-
         $balances = [];
 
         foreach ($accounts as $account) {
@@ -441,6 +440,42 @@ class ChartOfAccountService
         }
 
         return $balances;
+    }
+/**
+     * Add every descendant's balance to its parent, so a statement can report a parent
+     * line that includes everything posted to its children.
+     *
+     * Only descendants of the same account type are added. Child accounts are required
+     * to match their parent's type, so this changes nothing for a well formed chart; it
+     * stops a legacy mismatched child from being counted in two statements at once.
+     *
+     * @param  array<string, float>  $direct  Signed balance per account code
+     * @return array<string, float>
+     */
+    public function rollUpBalances(array $direct): array
+    {
+        $accounts = ChartOfAccount::query()->get(['account_code', 'parent_account_code', 'account_type']);
+        $children = $this->groupChildren($accounts);
+        $types = $accounts->pluck('account_type', 'account_code')->all();
+
+        $rolled = [];
+
+        foreach ($accounts as $account) {
+            $code = $account->account_code;
+            $total = (float) ($direct[$code] ?? 0.0);
+
+            foreach ($this->descendantsOf($code, $children) as $childCode) {
+                if (($types[$childCode] ?? null) !== $account->account_type) {
+                    continue;
+                }
+
+                $total += (float) ($direct[$childCode] ?? 0.0);
+            }
+
+            $rolled[$code] = round($total, 2);
+        }
+
+        return $rolled;
     }
 
     /**

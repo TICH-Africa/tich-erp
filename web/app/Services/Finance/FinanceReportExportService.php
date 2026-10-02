@@ -108,7 +108,7 @@ class FinanceReportExportService
         $rows = [
             ['Balance Sheet', 'As at '.$data['as_at']],
             [],
-            ['Section', 'Account Code', 'Account Name', 'Amount (KES)'],
+            ['Section', 'Account Code', 'Account Name', 'Account Only', 'Amount (KES)'],
         ];
 
         foreach ($data['sections'] as $section) {
@@ -116,17 +116,18 @@ class FinanceReportExportService
                 $rows[] = [
                     $section['title'],
                     $row['account_code'],
-                    $row['account_name'],
+                    str_repeat('    ', (int) ($row['level'] ?? 0)).$row['account_name'],
+                    ($row['level'] ?? 0) > 0 || ($row['is_group'] ?? false) ? $row['own_amount'] : '',
                     $row['amount'],
                 ];
             }
 
-            $rows[] = ['', '', 'Total '.$section['title'], $section['total']];
+            $rows[] = ['', '', 'Total '.$section['title'], '', $section['total']];
             $rows[] = [];
         }
 
-        $rows[] = ['', '', 'Total Assets', $data['total_assets']];
-        $rows[] = ['', '', 'Total Liabilities + Equity', $data['total_liabilities_equity']];
+        $rows[] = ['', '', 'Total Assets', '', $data['total_assets']];
+        $rows[] = ['', '', 'Total Liabilities + Equity', '', $data['total_liabilities_equity']];
 
         return $rows;
     }
@@ -140,23 +141,36 @@ class FinanceReportExportService
         $rows = [
             ['Statement of Comprehensive Income', $data['period_label']],
             [],
-            ['Section', 'Account Code', 'Account Name', 'Amount (KES)'],
+            ['Section', 'Account Code', 'Account Name', 'Account Only', 'Amount (KES)'],
         ];
 
         foreach ($data['revenue']['rows'] as $row) {
-            $rows[] = ['Revenue', $row['account_code'], $row['account_name'], $row['amount']];
+            $rows[] = ['Revenue', $row['account_code'], str_repeat('    ', (int) ($row['level'] ?? 0)).$row['account_name'], $this->ownAmount($row), $row['amount']];
         }
-        $rows[] = ['', '', 'Total Revenue', $data['revenue']['total']];
+        $rows[] = ['', '', 'Total Revenue', '', $data['revenue']['total']];
         $rows[] = [];
 
         foreach ($data['expenses']['rows'] as $row) {
-            $rows[] = ['Expenses', $row['account_code'], $row['account_name'], $row['amount']];
+            $rows[] = ['Expenses', $row['account_code'], str_repeat('    ', (int) ($row['level'] ?? 0)).$row['account_name'], $this->ownAmount($row), $row['amount']];
         }
-        $rows[] = ['', '', 'Total Expenses', $data['expenses']['total']];
+        $rows[] = ['', '', 'Total Expenses', '', $data['expenses']['total']];
         $rows[] = [];
-        $rows[] = ['', '', 'Net Income', $data['net_income']];
+        $rows[] = ['', '', 'Net Income', '', $data['net_income']];
 
         return $rows;
+    }
+
+    /**
+     * A child account shows its own movement; a parent shows what sits directly on it.
+     *
+     * @param  array<string, mixed>  $row
+     * @return string|float
+     */
+    private function ownAmount(array $row): string|float
+    {
+        return ($row['level'] ?? 0) > 0 || ($row['is_group'] ?? false)
+            ? round((float) ($row['own_amount'] ?? 0.0), 2)
+            : '';
     }
 
     /**
@@ -255,11 +269,36 @@ class FinanceReportExportService
      */
     private function apAgingRows(array $data): array
     {
-        return [
+        $rows = [
             ['Accounts Payable Ageing', 'As at '.$data['as_at']],
+            ['Total outstanding', $data['total_outstanding'], 'Vendor invoices', $data['invoice_count'] ?? 0, 'Suppliers', $data['vendor_count']],
             [],
-            [$data['empty_message'] ?? 'No AP data available.'],
+            ['Bucket', 'Invoices', 'Outstanding (KES)'],
         ];
+
+        foreach ($data['buckets'] as $bucket) {
+            $rows[] = [$bucket['label'], $bucket['count'], $bucket['total']];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Invoice', 'Supplier', 'Invoiced', 'Due', 'Days', 'Bucket', 'Total (KES)', 'Balance (KES)', 'Payment', '3-way match'];
+
+        foreach ($data['rows'] as $row) {
+            $rows[] = [
+                $row['invoice_number'],
+                $row['supplier_name'],
+                $row['invoice_date'],
+                $row['due_date'],
+                $row['days_past_due'],
+                $row['bucket_label'],
+                $row['total_amount'],
+                $row['balance'],
+                $row['payment_status'],
+                $row['three_way_match_status'],
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -351,17 +390,18 @@ class FinanceReportExportService
 
         $rows[] = ['DETAILED TRANSACTIONS'];
         $rows[] = [];
-        $rows[] = ['Date', 'Category', 'Type', 'Narration', 'Reference', 'Income (KES)', 'Expense (KES)'];
+        $rows[] = ['Date', 'Account Code', 'Category', 'Type', 'Narration', 'Reference', 'Income (KES)', 'Expense (KES)'];
 
         foreach ($data['rows'] as $row) {
             $rows[] = [
                 $row['date_display'],
+                $row['account_code'] ?? '',
                 $row['category'],
                 $row['type'],
                 $row['narration'],
                 $row['reference'],
-                $row['income'] > 0 ? number_format($row['income'], 2) : '',
-                $row['expense'] > 0 ? number_format($row['expense'], 2) : '',
+                $row['income'] != 0 ? number_format($row['income'], 2) : '',
+                $row['expense'] != 0 ? number_format($row['expense'], 2) : '',
             ];
         }
 

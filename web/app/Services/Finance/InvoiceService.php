@@ -65,7 +65,7 @@ class InvoiceService
                 'status' => 'issued',
             ]);
 
-            $this->ledger->postInvoiceRaised($amount, $invoice->invoice_number, $recordedByStaffId);
+            $this->ledger->postInvoiceRaised($amount, $invoice->invoice_number, $recordedByStaffId, $invoice->invoice_type);
             $this->accounts->recalculate($account);
 
             if ($dispatch) {

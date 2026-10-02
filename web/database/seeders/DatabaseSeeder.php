@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
             $this->call(CeoDemoSeeder::class);
             $this->call(FinanceAccountsDemoSeeder::class);
             $this->call(FinanceBulkDemoSeeder::class);
+            $this->call(FinancialReportsDemoSeeder::class);
             $this->call(ExamResultsDemoSeeder::class);
             $this->call(JamesOchiengAcademicCycleSeeder::class);
             $this->call(FinanceDemoSeeder::class);

@@ -34,6 +34,30 @@
     </div>
 
     @php
+        $periodReports = ['income_statement', 'cashflow', 'reconciliation', 'general_ledger'];
+    @endphp
+
+    @if (in_array($report, $periodReports, true))
+        <form method="GET" action="{{ route('finance.reports.index') }}" class="tich-card tich-mb-4">
+            <input type="hidden" name="report" value="{{ $report }}">
+            <div class="tich-flex" style="gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label" for="report-from">From</label>
+                    <input type="date" id="report-from" name="from" value="{{ $filters['from'] ?? '' }}" class="tich-input">
+                </div>
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label" for="report-to">To</label>
+                    <input type="date" id="report-to" name="to" value="{{ $filters['to'] ?? '' }}" class="tich-input">
+                </div>
+                <button type="submit" class="tich-btn tich-btn-primary">Apply period</button>
+                @if (! empty($filters['from']) || ! empty($filters['to']))
+                    <a href="{{ route('finance.reports.index', ['report' => $report]) }}" class="tich-btn tich-btn-ghost">Clear</a>
+                @endif
+            </div>
+        </form>
+    @endif
+
+    @php
         $reportPeriodLabel = $reportData['period_label']
             ?? ('As at '.\Illuminate\Support\Carbon::parse($reportData['as_at'] ?? now())->format('d M Y'));
     @endphp

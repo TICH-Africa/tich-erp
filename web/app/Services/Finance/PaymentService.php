@@ -92,7 +92,7 @@ class PaymentService
                 'payment_gateway_ref' => $data['transaction_channel_ref'] ?? $invoice->payment_gateway_ref,
             ]);
 
-            $this->ledger->postStudentPayment($amount, $payment->payment_number, $payment->payment_method, $recordedByStaffId);
+            $this->ledger->postStudentPayment($amount, $payment->payment_number, $payment->payment_method, $recordedByStaffId, $payment->payment_date);
             $this->accounts->recalculate($invoice->studentAccount);
 
             if (! Receipt::where('payment_id', $payment->id)->exists()) {
