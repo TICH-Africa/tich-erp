@@ -87,7 +87,7 @@
                 </div>
                 <div>
                     <label class="tich-label">Year Joined *</label>
-                    <input type="date" name="year_joined" class="tich-input" required value="{{ old('year_joined', optional($student->date_of_admission)->format('Y-m-d')) }}">
+                    <input type="date" name="year_joined" class="tich-input" required value="{{ old('year_joined', optional(($student ?? null)?->date_of_admission)->format('Y-m-d')) }}">
                     @error('year_joined')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
