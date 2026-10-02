@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Mail\WorkFromHomeStatusMail;
 use App\Models\Staff;
 use App\Models\User;
 use App\Models\WorkFromHomeRequest;
+use App\Support\ModuleMail;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class WorkFromHomeRequestService
@@ -161,16 +164,19 @@ class WorkFromHomeRequestService
 
         $this->notifyHr($staff, $request);
         $this->hrSidebar->broadcastCounts();
+        $this->emailEmployeeStatus($request->fresh(['staff']), 'submitted');
 
         if ($staff->user_id) {
+            $summary = $this->employeeSummaryText($request);
             $this->notifications->notifyUser(
                 $staff->user_id,
                 'Work from home request submitted',
-                "Your request {$request->request_code} for {$workDate->toFormattedDateString()} was sent to HR.",
+                $summary,
                 'work_from_home_request',
                 (string) $request->id,
                 'normal',
                 route('employee.wfh.show', $request),
+                false, // dedicated WorkFromHomeStatusMail already sent
             );
         }
 
@@ -191,10 +197,17 @@ class WorkFromHomeRequestService
             'hr_notes' => $notes,
         ])->save();
 
-        $this->notifyEmployee($request, 'Work from home approved', "Your request {$request->request_code} was approved.");
+        $fresh = $request->fresh(['staff']);
+        $this->notifyEmployee(
+            $fresh,
+            'Work from home approved',
+            $this->employeeSummaryText($fresh, 'approved'),
+            false,
+        );
+        $this->emailEmployeeStatus($fresh, 'approved');
         $this->hrSidebar->broadcastCounts();
 
-        return $request->fresh();
+        return $fresh;
     }
 
     public function reject(WorkFromHomeRequest $request, Staff $hr, string $notes): WorkFromHomeRequest
@@ -210,10 +223,17 @@ class WorkFromHomeRequestService
             'hr_notes' => $notes,
         ])->save();
 
-        $this->notifyEmployee($request, 'Work from home rejected', "Your request {$request->request_code} was rejected. {$notes}");
+        $fresh = $request->fresh(['staff']);
+        $this->notifyEmployee(
+            $fresh,
+            'Work from home rejected',
+            $this->employeeSummaryText($fresh, 'rejected'),
+            false,
+        );
+        $this->emailEmployeeStatus($fresh, 'rejected');
         $this->hrSidebar->broadcastCounts();
 
-        return $request->fresh();
+        return $fresh;
     }
 
     public function returnToEmployee(WorkFromHomeRequest $request, Staff $hr, string $notes): WorkFromHomeRequest
@@ -229,10 +249,17 @@ class WorkFromHomeRequestService
             'hr_notes' => $notes,
         ])->save();
 
-        $this->notifyEmployee($request, 'Work from home returned', "Your request {$request->request_code} was returned for changes. {$notes}");
+        $fresh = $request->fresh(['staff']);
+        $this->notifyEmployee(
+            $fresh,
+            'Work from home returned',
+            $this->employeeSummaryText($fresh, 'returned'),
+            false,
+        );
+        $this->emailEmployeeStatus($fresh, 'returned');
         $this->hrSidebar->broadcastCounts();
 
-        return $request->fresh();
+        return $fresh;
     }
 
     public function cancel(WorkFromHomeRequest $request, Staff $staff, User $user): WorkFromHomeRequest
@@ -447,31 +474,37 @@ class WorkFromHomeRequestService
     private function notifyHr(Staff $staff, WorkFromHomeRequest $request): void
     {
         $rbac = app(RBACService::class);
-        $userIds = User::query()
-            ->where('is_active', 1)
-            ->get()
-            ->filter(fn (User $user) => $rbac->hasPermission($user, 'hr.staff.view'))
-            ->pluck('id')
-            ->unique()
-            ->values()
-            ->all();
+        // Role-backed only — never fan out via hasPermission (dept membership / no-role users).
+        $userIds = $rbac->hrNotifierUserIds(includeExecutives: false);
+        $emailUserIds = $rbac->activeUserIdsWithRoles(['HR Manager', 'Assistant HR Manager']);
 
         if ($userIds === []) {
             return;
         }
 
-        $this->notifications->notifyUsers(
-            $userIds,
-            'Work from home request',
-            $staff->fullName().' requested WFH on '.$request->work_date?->toFormattedDateString()." ({$request->request_code}).",
-            'work_from_home_request',
-            (string) $request->id,
-            'normal',
-            route('hr.wfh.show', $request),
-        );
+        $summary = $staff->fullName().' requested WFH on '
+            .$request->work_date?->toFormattedDateString()
+            .' ('.$this->daysRequested($request).' day'
+            .($this->daysRequested($request) === 1 ? '' : 's')
+            .", {$request->request_code}).";
+
+        $emailLookup = array_fill_keys($emailUserIds, true);
+
+        foreach ($userIds as $userId) {
+            $this->notifications->notifyUser(
+                (int) $userId,
+                'Work from home request',
+                $summary,
+                'work_from_home_request',
+                (string) $request->id,
+                'normal',
+                route('hr.wfh.show', $request),
+                isset($emailLookup[(int) $userId]),
+            );
+        }
     }
 
-    private function notifyEmployee(WorkFromHomeRequest $request, string $title, string $body): void
+    private function notifyEmployee(WorkFromHomeRequest $request, string $title, string $body, bool $sendEmail = true): void
     {
         $userId = $request->staff?->user_id;
         if (! $userId) {
@@ -486,6 +519,72 @@ class WorkFromHomeRequestService
             (string) $request->id,
             'normal',
             route('employee.wfh.show', $request),
+            $sendEmail,
         );
+    }
+
+    private function emailEmployeeStatus(WorkFromHomeRequest $request, string $event): void
+    {
+        $staff = $request->staff;
+        if (! $staff) {
+            return;
+        }
+
+        $email = $staff->resolveErpEmail($staff->primary_email);
+        if (! $email) {
+            return;
+        }
+
+        $result = ModuleMail::trySend(
+            ModuleMail::HR,
+            $email,
+            new WorkFromHomeStatusMail($request, $event, $staff->fullName() ?: 'Colleague'),
+        );
+
+        if (! $result['sent'] && $result['error']) {
+            Log::warning('WFH status email failed', [
+                'request_id' => $request->id,
+                'event' => $event,
+                'email' => $email,
+                'error' => $result['error'],
+            ]);
+        }
+    }
+
+    private function daysRequested(WorkFromHomeRequest $request): int
+    {
+        $start = $request->period_start ?? $request->work_date;
+        $end = $request->period_end ?? $request->work_date;
+
+        if (! $start || ! $end) {
+            return 1;
+        }
+
+        return max(1, $start->diffInDays($end) + 1);
+    }
+
+    private function employeeSummaryText(WorkFromHomeRequest $request, ?string $event = null): string
+    {
+        $days = $this->daysRequested($request);
+        $date = $request->work_date?->toFormattedDateString() ?? 'the selected date';
+        $periodStart = $request->period_start ?? $request->work_date;
+        $periodEnd = $request->period_end ?? $request->work_date;
+        $period = ($periodStart && $periodEnd && ! $periodStart->equalTo($periodEnd))
+            ? $periodStart->toFormattedDateString().' to '.$periodEnd->toFormattedDateString()
+            : $date;
+
+        $prefix = match ($event) {
+            'approved' => "Your request {$request->request_code} was approved.",
+            'rejected' => "Your request {$request->request_code} was rejected.",
+            'returned' => "Your request {$request->request_code} was returned for changes.",
+            default => "Your request {$request->request_code} was sent to HR.",
+        };
+
+        $notes = '';
+        if (in_array($event, ['rejected', 'returned', 'approved'], true) && filled($request->hr_notes)) {
+            $notes = ' HR notes: '.$request->hr_notes;
+        }
+
+        return "{$prefix} Work date: {$date}. Period: {$period}. Days: {$days}.{$notes}";
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\ErpRegistrationCompletedMail;
 use App\Mail\ErpRegistrationInvitationEmail;
 use App\Models\ErpRegistrationInvitation;
 use App\Models\Staff;
@@ -285,28 +286,64 @@ class ErpRegistrationInviteService
             $request,
         );
 
-        $this->notifyInviterOfSignup($invitation->fresh(), $staff->fresh(), $user);
+        $this->notifyRegistrationParties($invitation->fresh(), $staff->fresh(), $user);
 
         return $user->fresh(['staff']);
     }
 
     /**
-     * Only the user who sent the invite (typically HR) gets signup confirmation.
+     * Email only the new registrant and the person who invited them.
+     * In-app notification goes to the inviter only (no email fan-out via org mailboxes).
      */
-    private function notifyInviterOfSignup(ErpRegistrationInvitation $invitation, Staff $staff, User $newUser): void
+    private function notifyRegistrationParties(ErpRegistrationInvitation $invitation, Staff $staff, User $newUser): void
     {
         $inviterId = (int) ($invitation->invited_by ?? 0);
-        if ($inviterId <= 0) {
-            return;
+        $inviter = $inviterId > 0
+            ? User::query()->where('id', $inviterId)->where('is_active', 1)->first()
+            : null;
+
+        $registrantEmail = strtolower(trim((string) $newUser->email));
+        if ($registrantEmail !== '' && filter_var($registrantEmail, FILTER_VALIDATE_EMAIL)) {
+            $delivery = ModuleMail::trySend(
+                ModuleMail::NOTIFICATION,
+                $registrantEmail,
+                new ErpRegistrationCompletedMail('registrant', $newUser, $invitation, $staff, $inviter),
+            );
+
+            if (! $delivery['sent']) {
+                \Illuminate\Support\Facades\Log::warning('Failed to email registrant after signup', [
+                    'invitation_id' => $invitation->id,
+                    'email' => $registrantEmail,
+                    'error' => $delivery['error'],
+                ]);
+            }
         }
 
-        $inviter = User::query()->where('id', $inviterId)->where('is_active', 1)->first();
         if (! $inviter) {
             return;
         }
 
-        $name = $staff->fullName() ?: $newUser->email;
+        // Always use the inviter's login email — never a shared organisation mailbox —
+        // so only the person who sent the invite receives this confirmation.
+        $inviterEmail = strtolower(trim((string) $inviter->email));
+        if ($inviterEmail !== '' && filter_var($inviterEmail, FILTER_VALIDATE_EMAIL)) {
+            $delivery = ModuleMail::trySend(
+                ModuleMail::NOTIFICATION,
+                $inviterEmail,
+                new ErpRegistrationCompletedMail('inviter', $newUser, $invitation, $staff, $inviter),
+            );
 
+            if (! $delivery['sent']) {
+                \Illuminate\Support\Facades\Log::warning('Failed to email inviter after signup', [
+                    'invitation_id' => $invitation->id,
+                    'inviter_id' => $inviter->id,
+                    'email' => $inviterEmail,
+                    'error' => $delivery['error'],
+                ]);
+            }
+        }
+
+        $name = $staff->fullName() ?: $newUser->email;
         $actionUrl = $invitation->sent_via_module === 'ict'
             ? route('ict.registration-invites.index')
             : route('hr.staff.show', $staff);
@@ -320,14 +357,23 @@ class ErpRegistrationInviteService
                 (string) $invitation->id,
                 'normal',
                 $actionUrl,
+                false, // email already sent above to the inviter login address only
             );
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to notify inviter of signup', [
+            \Illuminate\Support\Facades\Log::warning('Failed to create inviter in-app signup notice', [
                 'invitation_id' => $invitation->id,
-                'inviter_id' => $inviterId,
+                'inviter_id' => $inviter->id,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * @deprecated Use notifyRegistrationParties()
+     */
+    private function notifyInviterOfSignup(ErpRegistrationInvitation $invitation, Staff $staff, User $newUser): void
+    {
+        $this->notifyRegistrationParties($invitation, $staff, $newUser);
     }
 
     /**

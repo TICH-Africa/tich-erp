@@ -311,19 +311,7 @@ class LeaveCarryForwardService
 
     private function notifyHrOfLmApproval(LeaveCarryForwardRequest $request): void
     {
-        $roleNames = ['HR Manager', 'Assistant HR Manager', 'Super Admin', 'CEO'];
-        $userIds = \Illuminate\Support\Facades\DB::table('user_roles as ur')
-            ->join('roles as r', 'r.id', '=', 'ur.role_id')
-            ->whereIn('r.role_name', $roleNames)
-            ->where(function ($query) {
-                $query->whereNull('ur.expires_at')
-                    ->orWhere('ur.expires_at', '>', now());
-            })
-            ->distinct()
-            ->pluck('ur.user_id')
-            ->map(fn ($id) => (int) $id)
-            ->values()
-            ->all();
+        $userIds = app(RBACService::class)->hrNotifierUserIds(includeExecutives: true);
 
         if ($userIds === []) {
             return;

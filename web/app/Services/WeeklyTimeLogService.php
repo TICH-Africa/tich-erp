@@ -727,14 +727,7 @@ class WeeklyTimeLogService
     private function notifyHr(StaffWeeklyTimeLog $log): void
     {
         try {
-            $userIds = DB::table('user_roles as ur')
-                ->join('roles as r', 'r.id', '=', 'ur.role_id')
-                ->whereIn('r.role_name', ['HR Manager', 'Assistant HR Manager', 'Super Admin'])
-                ->pluck('ur.user_id')
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
+            $userIds = app(RBACService::class)->hrNotifierUserIds(includeExecutives: true);
 
             if ($userIds === []) {
                 return;

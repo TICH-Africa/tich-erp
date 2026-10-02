@@ -718,6 +718,56 @@ class RBACService
         }
     }
 
+    /**
+     * Active users who hold at least one of the given role names in user_roles.
+     * Users with no role assignments are never included (department membership alone is not enough).
+     *
+     * @param  list<string>  $roleNames
+     * @return list<int>
+     */
+    public function activeUserIdsWithRoles(array $roleNames): array
+    {
+        $roleNames = array_values(array_unique(array_filter(array_map(
+            static fn ($name) => trim((string) $name),
+            $roleNames,
+        ))));
+
+        if ($roleNames === []) {
+            return [];
+        }
+
+        return DB::table('user_roles as ur')
+            ->join('roles as r', 'r.id', '=', 'ur.role_id')
+            ->join('users as u', 'u.id', '=', 'ur.user_id')
+            ->whereIn('r.role_name', $roleNames)
+            ->where('u.is_active', 1)
+            ->where(function ($query) {
+                $query->whereNull('ur.expires_at')
+                    ->orWhere('ur.expires_at', '>', now());
+            })
+            ->distinct()
+            ->pluck('ur.user_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Recipients for operational HR alerts (emails / in-app). Role-backed only.
+     *
+     * @return list<int>
+     */
+    public function hrNotifierUserIds(bool $includeExecutives = true): array
+    {
+        $roles = ['HR Manager', 'Assistant HR Manager'];
+
+        if ($includeExecutives) {
+            $roles = array_merge($roles, ['Super Admin', 'CEO']);
+        }
+
+        return $this->activeUserIdsWithRoles($roles);
+    }
+
     private function userHasPermissionSlug(User $user, string $slug): bool
     {
         $roleRows = DB::table('user_roles as ur')

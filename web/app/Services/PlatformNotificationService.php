@@ -20,6 +20,7 @@ class PlatformNotificationService
         ?string $entityId = null,
         string $priority = 'normal',
         ?string $actionUrl = null,
+        bool $sendEmail = true,
     ): void {
         $channels = ['in_app'];
 
@@ -41,6 +42,10 @@ class PlatformNotificationService
         }
 
         DB::table('notifications')->insert($row);
+
+        if (! $sendEmail) {
+            return;
+        }
 
         // Email is deferred on HTTP so unreachable SMTP cannot block form submissions.
         // In console/schedule there is no response cycle — send immediately.
@@ -94,16 +99,14 @@ class PlatformNotificationService
     private function resolveRecipientEmail(int $userId): ?string
     {
         try {
-            $user = User::query()->with('staff')->find($userId);
+            $user = User::query()->find($userId);
             if (! $user) {
                 return null;
             }
 
-            if ($user->staff) {
-                return $user->staff->resolveErpEmail($user->email);
-            }
-
-            $email = is_string($user->email) ? trim($user->email) : '';
+            // Operational alerts always use the account login email — never a shared
+            // organisation mailbox that many staff may prefer for ERP delivery.
+            $email = is_string($user->email) ? strtolower(trim($user->email)) : '';
             if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 return $email;
             }

@@ -541,15 +541,7 @@ class EmployeeProfileChangeService
 
     private function notifyHrPending(Staff $staff, int $count): void
     {
-        $rbac = app(RBACService::class);
-        $userIds = User::query()
-            ->where('is_active', 1)
-            ->get()
-            ->filter(fn (User $user) => $rbac->hasPermission($user, 'hr.staff.view'))
-            ->pluck('id')
-            ->unique()
-            ->values()
-            ->all();
+        $userIds = app(RBACService::class)->hrNotifierUserIds(includeExecutives: false);
 
         if ($userIds === []) {
             return;
@@ -578,15 +570,7 @@ class EmployeeProfileChangeService
             return;
         }
 
-        $rbac = app(RBACService::class);
-        $userIds = User::query()
-            ->where('is_active', 1)
-            ->get()
-            ->filter(fn (User $user) => $rbac->hasPermission($user, 'hr.staff.view'))
-            ->pluck('id')
-            ->unique()
-            ->values()
-            ->all();
+        $userIds = app(RBACService::class)->hrNotifierUserIds(includeExecutives: false);
 
         if ($userIds === []) {
             return;
