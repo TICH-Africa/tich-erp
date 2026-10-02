@@ -60,13 +60,42 @@
                             @enderror
                         </div>
                         <div class="uf-field">
-                            <label for="currency">Currency <span class="uf-req">*</span></label>
-                            <select id="currency" name="currency" class="uf-input" required>
-                                @foreach($currencies as $currency)
-                                    <option value="{{ $currency }}" @selected(old('currency', $chartOfAccount->currency) === $currency)>{{ $currency }}</option>
+                            <label for="account_type">Account Type <span class="uf-req">*</span></label>
+                            <select id="account_type" name="account_type" class="uf-input" required>
+                                @foreach($typeGroups as $group => $options)
+                                    <optgroup label="{{ $group }}">
+                                        @foreach($options as $option)
+                                            <option value="{{ $option['label'] }}" @selected(old('account_type', $selectedTypeLabel) === $option['label'])>{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </select>
-                            @error('currency')
+                            <p class="uf-hint tich-mt-1">
+                                Grouped by assets, liabilities, equity, revenue and expenses. The type cannot change once the
+                                account has child accounts or ledger entries.
+                            </p>
+                            @error('account_type')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
+                            <label for="parent_account_code">Parent Account</label>
+                            <select id="parent_account_code" name="parent_account_code" class="uf-input">
+                                <option value="">None - this is a main account</option>
+                                @foreach($parentAccounts as $option)
+                                    <option value="{{ $option->account_code }}" @selected(old('parent_account_code', $chartOfAccount->parent_account_code) === $option->account_code)>
+                                        {{ $option->account_code }} - {{ $option->account_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="uf-hint tich-mt-1">
+                                @if ($chartOfAccount->isTopLevel())
+                                    No parent: this account is a main account.
+                                @else
+                                    Currently a child of <code>{{ $chartOfAccount->parent_account_code }}</code>. A child code must start with its parent code.
+                                @endif
+                            </p>
+                            @error('parent_account_code')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
                         </div>

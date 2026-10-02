@@ -2239,7 +2239,8 @@ CREATE TABLE IF NOT EXISTS `chart_of_accounts` (
   `is_system_account` tinyint(4) NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `chart_of_accounts_account_code_unique` (`account_code`)
+  UNIQUE KEY `chart_of_accounts_account_code_unique` (`account_code`),
+  KEY `chart_of_accounts_parent_account_code_index` (`parent_account_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Columns for `chart_of_accounts` (add only if missing)
@@ -2255,6 +2256,9 @@ CALL `tich_ensure_column`('chart_of_accounts', 'created_at', 'datetime NOT NULL 
 
 -- Indexes for `chart_of_accounts` (add only if missing)
 CALL `tich_ensure_unique`('chart_of_accounts', 'chart_of_accounts_account_code_unique', '`account_code`');
+-- Child accounts are looked up by parent code when the chart is drawn as a tree
+-- and when parent balances are rolled up.
+CALL `tich_ensure_index`('chart_of_accounts', 'chart_of_accounts_parent_account_code_index', '`parent_account_code`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `chatbot_conversations`

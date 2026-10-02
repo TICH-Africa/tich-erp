@@ -2149,6 +2149,22 @@ CREATE TABLE IF NOT EXISTS `work_from_home_requests` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- APPLY ON PRODUCTION: employee portal WFH apply + HR review menu
 
+-- -----------------------------------------------------------------------------
+-- 46. Chart of Accounts: parent/child index for the account tree
+--     The chart is drawn as a tree (children under their parent account) and
+--     parent balances are rolled up from their descendants, both of which look up
+--     children by parent code. Production may predate the index, so add it only
+--     when it is missing.
+-- -----------------------------------------------------------------------------
+SET @db := DATABASE();
+SET @sql := (SELECT IF(
+  EXISTS(SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='chart_of_accounts' AND INDEX_NAME='chart_of_accounts_parent_account_code_index'),
+  'SELECT 1',
+  'ALTER TABLE `chart_of_accounts` ADD INDEX `chart_of_accounts_parent_account_code_index` (`parent_account_code`)'
+));
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- APPLY ON PRODUCTION: optional, speeds up the chart of accounts tree and balance roll-up
+
 
 
 

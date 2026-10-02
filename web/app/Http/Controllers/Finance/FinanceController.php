@@ -15,6 +15,7 @@ use App\Models\Administration\BudgetRequest;
 use App\Models\Supplier;
 use App\Services\Administration\AdministrationService;
 use App\Services\DepartmentDashboardService;
+use App\Services\Finance\ChartOfAccountService;
 use App\Services\Finance\LedgerService;
 use App\Services\RBACService;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class FinanceController extends Controller
     public function __construct(
         protected DepartmentDashboardService $departmentDashboard,
         protected LedgerService $ledger,
+        protected ChartOfAccountService $chartOfAccounts,
         protected RBACService $rbac,
     ) {}
 
@@ -245,87 +247,27 @@ class FinanceController extends Controller
         $balances = $this->ledger->accountBalances();
         $entries = $this->ledger->recentEntries(100);
 
-        $chartQuery = ChartOfAccount::query()->orderBy('account_code');
+        $chartTree = $this->chartOfAccounts;
+        $chartBalances = $chartTree->balanceMap();
+        $chartRows = $chartTree->tree(ChartOfAccount::query()->orderBy('account_code')->get());
 
-        if ($request->filled('search')) {
-            $search = (string) $request->input('search');
-
-            $chartQuery->where(function ($q) use ($search) {
-                $q->where('account_code', 'like', "%{$search}%")
-                    ->orWhere('account_name', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('account_type')) {
-            $chartQuery->where('account_type', (string) $request->input('account_type'));
-        }
-
-        if ($request->filled('is_active')) {
-            $chartQuery->where('is_active', $request->boolean('is_active'));
-        }
-
-        $chartAccounts = $chartQuery->paginate(25)->withQueryString();
+        $chartAccounts = $chartTree->paginateRows($chartRows, $chartBalances, [
+            'search' => $request->input('search'),
+            'account_type' => $request->input('account_type'),
+            'is_active' => $request->input('is_active'),
+        ], 25, $request->query());
 
         return $this->departmentView($request, 'finance.gl.index', $department, [
             'accounts' => $accounts,
             'balances' => $balances,
             'entries' => $entries,
             'mainAccount' => config('finance.main_treasury_account'),
+            'mainAccountBalance' => $chartBalances[config('finance.main_treasury_account')]['net'] ?? ($balances[config('finance.main_treasury_account')] ?? 0.0),
             'trialBalance' => $this->ledger->trialBalance(),
             'chartAccounts' => $chartAccounts,
-            'chartBalances' => $this->ledger->accountBalanceMap($chartAccounts->items()),
             'chartTypes' => ['asset', 'liability', 'equity', 'revenue', 'expense'],
-            'deleteBlockReasons' => $this->deleteBlockReasons($chartAccounts->items()),
+            'acceptedAccountTypes' => $chartTree->acceptedTypeLabels(),
         ]);
-    }
-
-    /**
-     * Why each account on the current page cannot be deleted, keyed by account code.
-     * Accounts absent from the result are deletable. Mirrors the guards in
-     * ChartOfAccountController::destroy() so the table can disable Delete only where
-     * that method would refuse: system accounts, accounts with child accounts, and
-     * accounts carrying ledger entries.
-     *
-     * @param  iterable<ChartOfAccount>  $accounts
-     * @return array<string, string>
-     */
-    private function deleteBlockReasons(iterable $accounts): array
-    {
-        $reasons = [];
-        $candidates = [];
-
-        foreach ($accounts as $account) {
-            if ($account->is_system_account) {
-                $reasons[$account->account_code] = 'System accounts cannot be deleted.';
-            } else {
-                $candidates[$account->account_code] = $account->account_code;
-            }
-        }
-
-        if ($candidates === []) {
-            return $reasons;
-        }
-
-        foreach (ChartOfAccount::query()
-            ->whereIn('parent_account_code', array_keys($candidates))
-            ->pluck('parent_account_code')
-            ->all() as $parentCode) {
-            $reasons[$parentCode] = 'Accounts with child accounts cannot be deleted.';
-        }
-
-        foreach (AccountLedger::query()
-            ->whereIn('debit_account_code', array_keys($candidates))
-            ->orWhereIn('credit_account_code', array_keys($candidates))
-            ->select('debit_account_code', 'credit_account_code')
-            ->get() as $entry) {
-            foreach ([$entry->debit_account_code, $entry->credit_account_code] as $code) {
-                if ($code !== null && isset($candidates[$code])) {
-                    $reasons[$code] = 'Accounts with ledger entries cannot be deleted.';
-                }
-            }
-        }
-
-        return $reasons;
     }
 
     public function glJournalCreate(Request $request, Department $department): View

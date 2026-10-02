@@ -7,8 +7,9 @@
         <x-slot:actions>
             <a href="{{ route('finance.reports.index', ['report' => 'trial_balance']) }}" class="tich-btn tich-btn-secondary">Financial reports</a>
             @can('finance.chart_of_accounts.manage')
+                <a href="{{ route('finance.chart-of-accounts.export') }}" class="tich-btn tich-btn-ghost">Export current chart</a>
                 <a href="{{ route('finance.chart-of-accounts.template') }}" class="tich-btn tich-btn-ghost">Template</a>
-                <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary">+ Add Account</a>
+                <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary">+ Add Main Account</a>
             @endcan
             <a href="{{ route('finance.gl.journal.create') }}" class="tich-btn tich-btn-secondary">+ New journal entry</a>
         </x-slot:actions>
@@ -40,7 +41,8 @@
     <div class="tich-grid tich-grid--3 tich-mt-6">
         <article class="tich-card tich-stat">
             <p class="tich-caption">Treasury account ({{ $mainAccount }})</p>
-            <p class="tich-stat__value">KES {{ number_format($balances[$mainAccount] ?? 0, 2) }}</p>
+            <p class="tich-stat__value">KES {{ number_format($mainAccountBalance, 2) }}</p>
+            <p class="tich-caption" style="margin-top: 0.35rem;">Including child accounts</p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Active accounts</p>
@@ -107,35 +109,51 @@
                                 <th>Type</th>
                                 <th>Currency</th>
                                 <th>Balance</th>
-                                <th>View</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($chartAccounts as $account)
-                                @php $balance = $chartBalances[$account->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0]; @endphp
+                            @foreach($chartAccounts as $row)
+                                @php
+                                    $account = $row['account'];
+                                    $balance = $row['balance'];
+                                    $depth = (int) $row['depth'];
+                                    $childCount = (int) $row['childCount'];
+                                @endphp
                                 <tr>
-                                    <td><code>{{ $account->account_code }}</code></td>
-                                    <td>{{ $account->account_name }}</td>
+                                    <td>
+                                        <span style="display:inline-flex; align-items:center; gap:0.35rem; padding-left: {{ $depth * 1.25 }}rem;">
+                                            @if ($depth > 0)
+                                                <span class="tich-text--muted" aria-hidden="true">&#8627;</span>
+                                            @elseif ($childCount > 0)
+                                                <span class="tich-text--muted" aria-hidden="true">&#9662;</span>
+                                            @endif
+                                            <code>{{ $account->account_code }}</code>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{ $account->account_name }}
+                                        @if ($childCount > 0)
+                                            <span class="tich-badge bg-blue-100 text-blue-800">{{ $childCount }} child account{{ $childCount === 1 ? '' : 's' }}</span>
+                                        @endif
+                                    </td>
                                     <td>{{ ucfirst($account->account_type) }}</td>
                                     <td>{{ $account->currency ?? 'KES' }}</td>
                                     <td>
                                         <span class="tich-text--sm">Dr {{ number_format($balance['debit'], 2) }} / Cr {{ number_format($balance['credit'], 2) }}</span>
                                         <br><strong>{{ number_format(abs($balance['net']), 2) }} {{ $balance['net'] >= 0 ? 'Dr' : 'Cr' }}</strong>
+                                        @if ($childCount > 0)
+                                            <br><span class="tich-text--sm tich-text--muted">
+                                                Own {{ number_format(abs($balance['ownNet']), 2) }} + children {{ number_format(abs($balance['childNet']), 2) }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td>
-                                        <div class="tich-flex" style="gap:0.35rem; align-items:center;">
+                                        <div class="tich-flex" style="gap:0.35rem; align-items:center; flex-wrap:wrap;">
                                             <a href="{{ route('finance.chart-of-accounts.show', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
                                             @can('finance.chart_of_accounts.manage')
-                                                @php $blockReason = $deleteBlockReasons[$account->account_code] ?? null; @endphp
-                                                @if ($blockReason === null)
-                                                    <form method="POST" action="{{ route('finance.chart-of-accounts.destroy', $account) }}" class="tich-inline-form" style="display:inline;" onsubmit="return confirm('Delete account {{ $account->account_code }} - {{ $account->account_name }}?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="tich-btn tich-btn-ghost tich-btn--sm tich-text--danger">Delete</button>
-                                                    </form>
-                                                @else
-                                                    <button type="button" class="tich-btn tich-btn-ghost tich-btn--sm" disabled title="{{ $blockReason }}">Delete</button>
-                                                @endif
+                                                <a href="{{ route('finance.chart-of-accounts.create', ['parent' => $account->account_code]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">+ Child</a>
+                                                <a href="{{ route('finance.chart-of-accounts.edit', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Edit</a>
                                             @endcan
                                         </div>
                                     </td>
@@ -151,7 +169,7 @@
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
                     <h3 class="tich-h3">No accounts found</h3>
-                    <p class="tich-text tich-text--muted tich-mt-2">Create your first account or import from Excel.</p>
+                    <p class="tich-text tich-text--muted tich-mt-2">Create your first main account, then add child accounts under it. You can also import from Excel.</p>
                     @can('finance.chart_of_accounts.manage')
                         <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary tich-mt-4">Add First Account</a>
                     @endcan
@@ -221,6 +239,20 @@
                            style="font-size: 0.8125rem; padding: 0.4rem; background: #fff;">
                 </div>
                 <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.6rem 0 0;">.xlsx, .xls or .csv &middot; up to 10MB</p>
+                <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.35rem 0 0;">
+                    Main and child accounts can be imported together. Put the parent code in
+                    <code>parent_account_code</code>, or use a decimal child code such as
+                    <code>1114.01</code> and it is matched to <code>1114</code> automatically.
+                </p>
+                <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.35rem 0 0;">
+                    Accepted account types: {{ implode(', ', $acceptedAccountTypes) }}.
+                    Use <code>balance</code> for the money value, <code>balance_side</code> for
+                    <code>Dr</code>/<code>Cr</code>, and <code>currency</code> for the ISO code.
+                </p>
+                <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.35rem 0 0;">
+                    Download the current chart, add balances in Excel, then upload it back: existing
+                    account codes are updated and only new balances are posted.
+                </p>
 
                 @unless (class_exists(\ZipArchive::class) && class_exists(\DOMDocument::class))
                     <div class="tich-alert tich-alert--warning" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">
@@ -234,6 +266,9 @@
                 @enderror
 
                 <footer class="tich-modal__footer" style="margin-top: 1rem;">
+                    <a href="{{ route('finance.chart-of-accounts.export') }}" class="tich-btn tich-btn-ghost tich-btn--sm">
+                        Export current chart
+                    </a>
                     <a href="{{ route('finance.chart-of-accounts.template') }}" class="tich-btn tich-btn-ghost tich-btn--sm">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>

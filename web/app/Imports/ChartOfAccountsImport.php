@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\ChartOfAccount;
+use App\Services\Finance\ChartOfAccountService;
 use App\Services\Finance\LedgerService;
 use App\Support\SpreadsheetTabularReader;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,13 @@ class ChartOfAccountsImport
         'account_type',
         'currency',
         'parent_account_code',
+        'balance',
+        'balance_side',
         'is_active',
         'is_system_account',
     ];
 
-    public const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense'];
+    public const ACCOUNT_TYPES = ChartOfAccountService::TYPES;
 
     /** Columns that must be present; everything else falls back to a default. */
     public const REQUIRED_FIELDS = ['account_code', 'account_name', 'account_type'];
@@ -38,6 +41,7 @@ class ChartOfAccountsImport
         'is_active' => ['is_active', 'active', 'is_enabled'],
         'is_system_account' => ['is_system_account', 'system', 'is_system', 'protected'],
         'balance' => ['balance', 'opening_balance', 'opening balance', 'amount', 'closing_balance'],
+        'balance_side' => ['balance_side', 'side', 'dr_cr', 'debit_credit', 'dc'],
     ];
 
     private int $balancesPosted = 0;
@@ -101,6 +105,7 @@ class ChartOfAccountsImport
 
         $touched = [];
         $balances = [];
+        $seenInFile = [];
 
         foreach (array_values($dataRows) as $index => $row) {
             $record = [];
@@ -115,11 +120,30 @@ class ChartOfAccountsImport
 
             $rowNumber = $headerIndex + $index + 2;
 
-            if ($this->persist($record, $rowNumber)) {
+            // A sheet edited by hand can repeat a code; the later row wins instead of
+            // failing the whole upload on the unique index.
+            if (isset($seenInFile[$record['account_code']])) {
+                unset($touched[$record['account_code']], $balances[$record['account_code']]);
+            }
+
+            $seenInFile[$record['account_code']] = true;
+
+            try {
+                $saved = $this->persist($record, $rowNumber, isset($columns['parent_account_code']));
+            } catch (\Throwable $exception) {
+                $this->fail($rowNumber, 'could not be saved: '.$this->shortMessage($exception));
+                $saved = false;
+            }
+
+            if ($saved) {
                 $touched[$record['account_code']] = $rowNumber;
 
                 if (isset($columns['balance']) && $record['balance'] !== '') {
-                    $balances[$record['account_code']] = ['value' => $record['balance'], 'row' => $rowNumber];
+                    $balances[$record['account_code']] = [
+                        'value' => $record['balance'],
+                        'row' => $rowNumber,
+                        'side' => $this->normaliseSide($record['balance_side'] ?? '') ?? '',
+                    ];
                 }
             }
         }
@@ -130,6 +154,7 @@ class ChartOfAccountsImport
             return $this->summary();
         }
 
+        $this->inferParentsFromCodes(array_keys($touched));
         $this->validateParents($touched);
         $this->postOpeningBalances($balances);
 
@@ -137,9 +162,42 @@ class ChartOfAccountsImport
     }
 
     /**
+     * Child account codes are the parent code plus decimal segments, so 1114.01 belongs
+     * to 1114. When the sheet has no parent_account_code column the parent is worked out
+     * from the code, so a sheet that mixes main and child accounts imports correctly.
+     *
+     * @param  array<int, string>  $codes
+     */
+    private function inferParentsFromCodes(array $codes): void
+    {
+        $accounts = ChartOfAccount::query()
+            ->whereIn('account_code', $codes)
+            ->get(['account_code', 'parent_account_code']);
+
+        $parents = ChartOfAccount::query()->pluck('account_code')->all();
+
+        $service = app(ChartOfAccountService::class);
+
+        foreach ($accounts as $account) {
+            if ($account->parent_account_code !== null && $account->parent_account_code !== '') {
+                continue;
+            }
+
+            $parentCode = $service->parentCodeFor($account->account_code, $parents);
+
+            if ($parentCode === null) {
+                continue;
+            }
+
+            $account->parent_account_code = $parentCode;
+            $account->save();
+        }
+    }
+
+    /**
      * Post supplied opening balances as ledger entries against the opening balance account.
      *
-     * @param  array<string, array{value: string, row: int}>  $balances
+     * @param  array<string, array{value: string, row: int, side: string}>  $balances
      */
     private function postOpeningBalances(array $balances): void
     {
@@ -190,8 +248,18 @@ class ChartOfAccountsImport
             }
 
             $debitNormal = in_array($account->account_type, ['asset', 'expense'], true);
+            $side = $this->normaliseSide($entry['side'] ?? '');
 
-            $debitCode = $amount > 0 ? ($debitNormal ? $code : $counterpartCode) : ($debitNormal ? $counterpartCode : $code);
+            // A supplied Dr/Cr side wins; otherwise a negative amount means the
+            // opposite side of the account normal balance.
+            if ($side === 'dr') {
+                $debitCode = $code;
+            } elseif ($side === 'cr') {
+                $debitCode = $counterpartCode;
+            } else {
+                $debitCode = $amount > 0 ? ($debitNormal ? $code : $counterpartCode) : ($debitNormal ? $counterpartCode : $code);
+            }
+
             $creditCode = $debitCode === $code ? $counterpartCode : $code;
 
             $ledger->postEntry(
@@ -222,6 +290,24 @@ class ChartOfAccountsImport
         }
 
         return round((float) $value, 2);
+    }
+
+    /**
+     * Read a Dr/Cr balance side from a sheet cell.
+     */
+    private function normaliseSide(string $value): ?string
+    {
+        $value = strtolower(trim($value));
+
+        if ($value === '') {
+            return null;
+        }
+
+        return match ($value) {
+            'dr', 'debit', 'd' => 'dr',
+            'cr', 'credit', 'c' => 'cr',
+            default => null,
+        };
     }
 
     /**
@@ -291,13 +377,17 @@ class ChartOfAccountsImport
         ];
     }
 
-    private function persist(array $record, int $row): bool
+    /**
+     * Save one sheet row. Existing accounts are updated, so a sheet downloaded, edited
+     * and uploaded again keeps the same account codes.
+     */
+    private function persist(array $record, int $row, bool $hasParentColumn = true): bool
     {
         $code = $record['account_code'];
         $name = $record['account_name'];
-        $type = strtolower($record['account_type']);
+        $rawType = strtolower($record['account_type']);
 
-        if ($code === '' || $name === '' || $type === '') {
+        if ($code === '' || $name === '' || $rawType === '') {
             $this->fail($row, 'account_code, account_name and account_type are required.');
 
             return false;
@@ -309,8 +399,14 @@ class ChartOfAccountsImport
             return false;
         }
 
-        if (! in_array($type, self::ACCOUNT_TYPES, true)) {
-            $this->fail($row, "Account type '{$type}' is invalid. Allowed types: " . implode(', ', self::ACCOUNT_TYPES) . '.');
+        // Sheets carry labels such as "Accounts Receivable" or "Other Current
+        // Liabilities"; these are mapped onto the five ledger account types.
+        $service = app(ChartOfAccountService::class);
+        $type = $service->normaliseType($rawType);
+
+        if ($type === null) {
+            $this->fail($row, "Account type '{$record['account_type']}' is not recognised. Use one of: "
+                .implode(', ', $service->acceptedTypeLabels()).'.');
 
             return false;
         }
@@ -335,6 +431,16 @@ class ChartOfAccountsImport
 
         $existing = ChartOfAccount::query()->where('account_code', $code)->first();
         $systemFlag = $this->parseBooleanOrNull($record['is_system_account'] ?? '');
+
+        // A sheet edited in Excel may leave the parent cell empty for an account that is
+        // already a child, so keep the stored parent instead of orphaning it.
+        if ($parentCode === ''
+            && ! $hasParentColumn
+            && $existing !== null
+            && $existing->parent_account_code !== null
+            && $existing->parent_account_code !== '') {
+            $parentCode = $existing->parent_account_code;
+        }
 
         if ($existing !== null && $existing->is_system_account && $systemFlag === false) {
             $this->fail($row, "Account '{$code}' is a system account and cannot be imported as a user account.");
@@ -468,5 +574,20 @@ class ChartOfAccountsImport
     private function parseBoolean(string $value, bool $default): bool
     {
         return $this->parseBooleanOrNull($value) ?? $default;
+    }
+
+    /**
+     * A short, path free reason for a row that could not be saved.
+     */
+    private function shortMessage(\Throwable $exception): string
+    {
+        $message = trim(preg_replace('/\s+/', ' ', $exception->getMessage()) ?? '');
+        $message = preg_replace('#(/[^\s:]{8,})#', '[path]', $message) ?? $message;
+
+        if ($message === '') {
+            return 'unknown error.';
+        }
+
+        return strlen($message) > 160 ? substr($message, 0, 157).'...' : $message;
     }
 }

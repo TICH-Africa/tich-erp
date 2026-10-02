@@ -636,6 +636,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/chart-of-accounts', [$chartOfAccounts, 'index'])->name('finance.chart-of-accounts.index');
             Route::get('/chart-of-accounts/create', [$chartOfAccounts, 'create'])->name('finance.chart-of-accounts.create');
             Route::get('/chart-of-accounts/import-template', [$chartOfAccounts, 'template'])->name('finance.chart-of-accounts.template');
+            Route::get('/chart-of-accounts/export', [$chartOfAccounts, 'export'])->name('finance.chart-of-accounts.export');
             Route::get('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'show'])->name('finance.chart-of-accounts.show');
             Route::get('/chart-of-accounts/{chartOfAccount}/edit', [$chartOfAccounts, 'edit'])->name('finance.chart-of-accounts.edit');
         });
@@ -646,7 +647,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/chart-of-accounts', [$chartOfAccounts, 'store'])->name('finance.chart-of-accounts.store');
             Route::post('/chart-of-accounts/import', [$chartOfAccounts, 'import'])->name('finance.chart-of-accounts.import');
             Route::put('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'update'])->name('finance.chart-of-accounts.update');
-            Route::delete('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'destroy'])->name('finance.chart-of-accounts.destroy');
         });
 
         Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');

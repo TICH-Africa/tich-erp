@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Imports\ChartOfAccountsImport;
+use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
+use App\Services\Finance\ChartOfAccountService;
 use App\Services\Finance\LedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,22 +17,56 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ChartOfAccountController extends Controller
 {
-    private const TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense'];
+    private const TYPES = ChartOfAccountService::TYPES;
 
-    private const DEFAULT_CURRENCY = 'KES';
+    private const DEFAULT_CURRENCY = ChartOfAccountService::DEFAULT_CURRENCY;
+
+    /**
+     * Column order used by the downloadable template and the chart of accounts export.
+     */
+    private const HEADERS = [
+        'account_code',
+        'account_name',
+        'account_type',
+        'currency',
+        'parent_account_code',
+        'balance',
+        'balance_side',
+        'is_active',
+    ];
 
     public function index(Request $request): RedirectResponse
     {
         return redirect()->route('finance.gl.index');
     }
 
-    public function create(): View
+    /**
+     * Create a main account, or a child of the account given by ?parent=CODE.
+     */
+    public function create(Request $request): View
     {
+        $parent = null;
+        $code = trim((string) $request->query('parent'));
+
+        if ($code !== '') {
+            $parent = ChartOfAccount::query()->where('account_code', $code)->first();
+
+            if ($parent === null) {
+                return redirect()
+                    ->route('finance.chart-of-accounts.create')
+                    ->withErrors(['parent_account_code' => "Parent account '{$code}' does not exist."]);
+            }
+        }
+
         return view('finance.chart-of-accounts.create', [
-            'parentAccounts' => $this->parentOptions(),
-            'types' => self::TYPES,
-            'currencies' => $this->currencies(),
-            'defaultCurrency' => self::DEFAULT_CURRENCY,
+            'parentAccounts' => $this->service()->parentOptions(),
+            'parentAccount' => $parent,
+            'suggestedCode' => $parent ? $this->service()->suggestChildCode($parent) : null,
+            'typeGroups' => $this->service()->typeGroups(),
+            'selectedTypeLabel' => $this->service()->typeLabelFor($parent?->account_type ?? 'asset'),
+            'currencies' => $this->service()->currencies(),
+            'defaultCurrency' => ($parent->currency ?? null) ?: self::DEFAULT_CURRENCY,
+            'openingBalanceAccount' => $this->service()->openingBalanceAccountCode(),
         ]);
     }
 
@@ -38,32 +74,107 @@ class ChartOfAccountController extends Controller
     {
         $validated = $request->validate($this->rules());
 
-        if ($error = $this->parentTypeError($validated['parent_account_code'] ?? null, $validated['account_type'])) {
+        $service = $this->service();
+        $type = $service->normaliseType((string) $validated['account_type']);
+
+        if ($type === null) {
+            return back()->withErrors([
+                'account_type' => 'Select an account type from the list.',
+            ])->withInput();
+        }
+
+        $parentCode = $validated['parent_account_code'] ?? null;
+
+        if ($error = $this->parentTypeError($parentCode, $type)) {
             return back()->withErrors($error)->withInput();
         }
 
+        if ($error = $this->childCodeError($validated['account_code'], $parentCode)) {
+            return back()->withErrors($error)->withInput();
+        }
+
+        $balance = round((float) ($validated['opening_balance'] ?? 0), 2);
+        $side = strtolower((string) ($validated['balance_side'] ?? 'dr')) === 'cr' ? 'cr' : 'dr';
+
+        if ($balance > 0.0) {
+            $counterpartCode = $service->openingBalanceAccountCode();
+
+            if ($validated['account_code'] === $counterpartCode) {
+                return back()->withErrors([
+                    'opening_balance' => "Account {$counterpartCode} is the opening balance account, its balance must be left at 0.",
+                ])->withInput();
+            }
+
+            if (! ChartOfAccount::query()->where('account_code', $counterpartCode)->exists()) {
+                return back()->withErrors([
+                    'opening_balance' => 'The balance cannot be posted yet: opening balance account '
+                        .$counterpartCode.' is missing. Create it first or leave the balance at 0.',
+                ])->withInput();
+            }
+        }
+
+        $validated['account_type'] = $type;
         $validated['currency'] = strtoupper((string) ($validated['currency'] ?? '')) ?: self::DEFAULT_CURRENCY;
         $validated['is_active'] = true;
         $validated['is_system_account'] = false;
 
-        ChartOfAccount::query()->create($validated);
+        unset($validated['opening_balance'], $validated['balance_side']);
+
+        $account = ChartOfAccount::query()->create($validated);
+
+        $message = $parentCode !== null
+            ? "Child account {$account->account_code} added under {$parentCode}."
+            : 'Account created successfully.';
+
+        if ($balance > 0.0) {
+            try {
+                $service->postOpeningBalance(
+                    $account,
+                    $balance,
+                    $side,
+                    (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1),
+                );
+
+                $message .= sprintf(
+                    ' Opening balance of %s %s posted on the %s side.',
+                    number_format($balance, 2),
+                    $account->currency,
+                    strtoupper($side)
+                );
+            } catch (\RuntimeException $exception) {
+                return redirect()
+                    ->route('finance.chart-of-accounts.show', $account)
+                    ->with('status', $account->account_code.' was created, but the balance was not posted.')
+                    ->withErrors(['opening_balance' => $exception->getMessage()]);
+            }
+        }
 
         return redirect()
-            ->route('finance.gl.index')
-            ->with('status', 'Account created successfully.');
+            ->route('finance.chart-of-accounts.show', $account)
+            ->with('status', $message);
     }
 
     public function show(ChartOfAccount $chartOfAccount): View
     {
-        $chartOfAccount->load(['parent', 'children']);
-        $balances = app(LedgerService::class)->accountBalanceMap([$chartOfAccount]);
-        $balance = $balances[$chartOfAccount->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0];
+        $chartOfAccount->load(['parent']);
+        $service = $this->service();
+        $balances = $service->balanceMap();
+        $balance = $balances[$chartOfAccount->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0, 'ownNet' => 0.0, 'childNet' => 0.0];
+
+        $descendants = $service->descendants($chartOfAccount);
 
         return view('finance.chart-of-accounts.show', [
             'chartOfAccount' => $chartOfAccount,
+            'ancestors' => $chartOfAccount->ancestors(),
+            'descendants' => $descendants,
+            'descendantBalances' => collect($descendants->pluck('account.account_code')->all())
+                ->mapWithKeys(fn (string $code) => [$code => $balances[$code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0, 'ownNet' => 0.0, 'childNet' => 0.0]])
+                ->all(),
             'debitTotal' => $balance['debit'],
             'creditTotal' => $balance['credit'],
             'balance' => $balance['net'],
+            'ownBalance' => $balance['ownNet'],
+            'childBalance' => $balance['childNet'],
             'entryCount' => $chartOfAccount->ledgerEntries()->count(),
         ]);
     }
@@ -72,9 +183,10 @@ class ChartOfAccountController extends Controller
     {
         return view('finance.chart-of-accounts.edit', [
             'chartOfAccount' => $chartOfAccount,
-            'parentAccounts' => $this->parentOptions($chartOfAccount),
-            'types' => self::TYPES,
-            'currencies' => $this->currencies(),
+            'parentAccounts' => $this->service()->parentOptions($chartOfAccount),
+            'typeGroups' => $this->service()->typeGroups(),
+            'selectedTypeLabel' => $this->service()->typeLabelFor($chartOfAccount->account_type),
+            'currencies' => $this->service()->currencies(),
         ]);
     }
 
@@ -82,7 +194,16 @@ class ChartOfAccountController extends Controller
     {
         $validated = $request->validate($this->rules($chartOfAccount));
 
-        if ($chartOfAccount->account_type !== $validated['account_type']) {
+        $service = $this->service();
+        $type = $service->normaliseType((string) $validated['account_type']);
+
+        if ($type === null) {
+            return back()->withErrors([
+                'account_type' => 'Select an account type from the list.',
+            ])->withInput();
+        }
+
+        if ($chartOfAccount->account_type !== $type) {
             $hasChildren = $chartOfAccount->children()->exists();
             $hasEntries = $chartOfAccount->hasLedgerEntries();
 
@@ -102,47 +223,34 @@ class ChartOfAccountController extends Controller
                 ])->withInput();
             }
 
-            if ($this->descendantCodes($chartOfAccount)->contains($parentCode)) {
+            if ($chartOfAccount->descendantCodes()->contains($parentCode)) {
                 return back()->withErrors([
                     'parent_account_code' => 'An account cannot be moved under one of its own child accounts.',
                 ])->withInput();
             }
         }
 
-        if ($error = $this->parentTypeError($parentCode, $validated['account_type'], $chartOfAccount)) {
+        if ($error = $this->parentTypeError($parentCode, $type, $chartOfAccount)) {
             return back()->withErrors($error)->withInput();
         }
 
+        if ($parentCode !== $chartOfAccount->parent_account_code
+            && ($error = $this->childCodeError($validated['account_code'], $parentCode))) {
+            return back()->withErrors($error)->withInput();
+        }
+
+        $validated['account_type'] = $type;
         $validated['is_system_account'] = $chartOfAccount->is_system_account;
         $validated['currency'] = strtoupper((string) ($validated['currency'] ?? '')) ?: $chartOfAccount->currency;
         $validated['is_active'] = $chartOfAccount->is_active;
 
+        unset($validated['opening_balance'], $validated['balance_side']);
+
         $chartOfAccount->update($validated);
 
         return redirect()
-            ->route('finance.gl.index')
+            ->route('finance.chart-of-accounts.show', $chartOfAccount)
             ->with('status', 'Account updated successfully.');
-    }
-
-    public function destroy(ChartOfAccount $chartOfAccount): RedirectResponse
-    {
-        if ($chartOfAccount->is_system_account) {
-            return back()->withErrors(['account' => 'System accounts cannot be deleted.']);
-        }
-
-        if ($chartOfAccount->children()->exists()) {
-            return back()->withErrors(['account' => 'Accounts with child accounts cannot be deleted.']);
-        }
-
-        if ($chartOfAccount->hasLedgerEntries()) {
-            return back()->withErrors(['account' => 'Accounts with ledger entries cannot be deleted.']);
-        }
-
-        $chartOfAccount->delete();
-
-        return redirect()
-            ->route('finance.gl.index')
-            ->with('status', 'Account deleted successfully.');
     }
 
     public function import(Request $request): RedirectResponse
@@ -228,7 +336,10 @@ class ChartOfAccountController extends Controller
             Storage::disk('local')->delete($storedRelativeForCleanup);
         }
 
-        if ($result['skipped'] > 0 && $result['imported'] === 0 && $result['updated'] === 0) {
+        if ($result['skipped'] > 0
+            && $result['imported'] === 0
+            && $result['updated'] === 0
+            && $result['balances'] === 0) {
             return back()
                 ->withErrors(['file' => 'No accounts were imported. ' . implode(' ', array_slice($result['errors'], 0, 5))])
                 ->withInput();
@@ -240,6 +351,10 @@ class ChartOfAccountController extends Controller
             $result['updated'],
             $result['skipped']
         );
+
+        if ($result['imported'] === 0 && $result['updated'] === 0 && $result['skipped'] === 0) {
+            $message = 'Chart of accounts is already up to date. No changes were needed.';
+        }
 
         if ($result['balances'] > 0) {
             $message .= ' ' . $result['balances'] . ' opening balance(s) posted.';
@@ -302,25 +417,101 @@ class ChartOfAccountController extends Controller
         return $message !== '' ? $message : $exception::class;
     }
 
-    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    /**
+     * Download the live chart of accounts as a sheet that can be edited and uploaded
+     * back. Balance and balance_side are left blank so finance can fill in the money
+     * values without having to rebuild the file.
+     */
+    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $headers = ['account_code', 'account_name', 'account_type', 'currency', 'balance', 'is_active'];
+        $service = $this->service();
+        $balances = $service->balanceMap();
+        $accounts = $service->tree(ChartOfAccount::query()->orderBy('account_code')->get());
+        $codes = $accounts->pluck('account.account_code')->filter()->unique()->values()->all();
+
+        // Accounts that already carry postings are exported with a blank balance so
+        // uploading the sheet back never tries to post the same money twice.
+        $withEntries = array_flip(array_merge(
+            AccountLedger::query()->whereIn('debit_account_code', $codes)->distinct()->pluck('debit_account_code')->all(),
+            AccountLedger::query()->whereIn('credit_account_code', $codes)->distinct()->pluck('credit_account_code')->all(),
+        ));
+
+        $rows = $accounts->map(function (array $row) use ($balances, $withEntries): array {
+            $account = $row['account'];
+            $posted = isset($withEntries[$account->account_code]);
+
+            if ($posted) {
+                $balance = '';
+                $side = '';
+            } else {
+                $net = $balances[$account->account_code]['net'] ?? 0.0;
+                $balance = number_format(abs($net), 2, '.', '');
+                $side = $net >= 0 ? 'Dr' : 'Cr';
+            }
+
+            return [
+                $account->account_code,
+                $account->account_name,
+                ucfirst((string) $account->account_type),
+                $account->currency ?: self::DEFAULT_CURRENCY,
+                $account->isTopLevel() ? '' : $account->parent_account_code,
+                $balance,
+                $side,
+                (int) $account->is_active,
+            ];
+        })
+            ->values()
+            ->all();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray($headers, null, 'A1');
+        $sheet->fromArray(self::HEADERS, null, 'A1');
 
+        if ($rows !== []) {
+            $sheet->fromArray($rows, null, 'A2');
+        }
+
+        foreach (range('A', 'H') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $name = 'chart_of_accounts_'.now()->format('Ymd_His').'.xlsx';
+        $path = tempnam(sys_get_temp_dir(), 'coa_');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($path);
+        $spreadsheet->disconnectWorksheets();
+
+        return response()->download($path, $name, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray(self::HEADERS, null, 'A1');
+
+        // Child rows carry the parent code in parent_account_code. A dotted account
+        // code such as 1114.01 is also matched to 1114 automatically on import, and
+        // balance_side sets whether the amount is a debit or a credit.
         $sample = [
-            ['1114', 'Bank - Savings Account', 'asset', 'KES', '2500000', '1'],
-            ['1115', 'Bank - Project Account', 'asset', 'KES', '750000', '1'],
-            ['1100', 'Accounts Receivable - Students', 'asset', 'KES', '0', '1'],
-            ['2010', 'Accrued Expenses', 'liability', 'KES', '0', '1'],
-            ['4100', 'Hostel Revenue', 'revenue', 'KES', '0', '1'],
-            ['5100', 'Staff Training', 'expense', 'KES', '0', '1'],
+            ['1114', 'Bank Accounts', 'Fixed Assets', 'KES', '', '0', 'Dr', '1'],
+            ['1114.01', 'Bank - Savings Account', 'Other Current Assets', 'KES', '1114', '2500000', 'Dr', '1'],
+            ['1114.02', 'Bank - Project Account (USD)', 'Other Current Assets', 'USD', '1114', '750000', 'Dr', '1'],
+            ['1100', 'Accounts Receivable', 'Accounts Receivable', 'KES', '', '0', 'Dr', '1'],
+            ['1100.01', 'Accounts Receivable - Students', 'Accounts Receivable', 'KES', '1100', '1500000', 'Dr', '1'],
+            ['1200', 'Prepaid Expenses', 'Other Current Assets', 'KES', '', '0', 'Dr', '1'],
+            ['1300', 'Motor Vehicles', 'Fixed Assets', 'KES', '', '0', 'Dr', '1'],
+            ['2100', 'Accounts Payable', 'Current Liabilities', 'KES', '', '0', 'Cr', '1'],
+            ['2100.01', 'Accounts Payable - Suppliers', 'Current Liabilities', 'KES', '2100', '300000', 'Cr', '1'],
+            ['2200', 'Accrued Expenses', 'Other Current Liabilities', 'KES', '', '0', 'Cr', '1'],
+            ['4000', 'Tuition Revenue', 'Fee Income', 'KES', '', '0', 'Cr', '1'],
+            ['5100', 'Staff Training', 'Staff Costs', 'KES', '', '0', 'Dr', '1'],
         ];
         $sheet->fromArray($sample, null, 'A2');
 
-        foreach (range('A', 'F') as $column) {
+        foreach (range('A', 'H') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
@@ -349,9 +540,11 @@ class ChartOfAccountController extends Controller
                 'unique:chart_of_accounts,account_code' . ($account ? ',' . $account->id : ''),
             ],
             'account_name' => ['required', 'string', 'max:200'],
-            'account_type' => ['required', 'in:' . implode(',', self::TYPES)],
+            'account_type' => ['required', 'string', 'max:50'],
             'currency' => ['nullable', 'string', 'size:3'],
             'parent_account_code' => ['nullable', 'string', 'max:30', 'exists:chart_of_accounts,account_code'],
+            'opening_balance' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
+            'balance_side' => ['nullable', 'in:dr,cr'],
             'is_system_account' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ];
@@ -384,57 +577,29 @@ class ChartOfAccountController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, string>
+     * A child account code must start with its parent code plus a dot, e.g. 1114.01
+     * under 1114. Accounts with no parent are free form. Existing legacy children that
+     * do not follow the convention keep working until their parent is changed.
+     *
+     * @return array<string, string>
      */
-    private function descendantCodes(ChartOfAccount $account)
+    private function childCodeError(string $code, ?string $parentCode): array
     {
-        $codes = collect();
-        $queue = $account->children()->pluck('account_code');
-        $seen = [];
-
-        while ($queue->isNotEmpty()) {
-            $code = $queue->shift();
-            if (isset($seen[$code])) {
-                continue;
-            }
-
-            $seen[$code] = true;
-            $codes->push($code);
-            $queue = $queue->merge(ChartOfAccount::query()->where('parent_account_code', $code)->pluck('account_code'));
+        if ($parentCode === null || $parentCode === '') {
+            return [];
         }
 
-        return $codes;
+        if (str_starts_with($code, $parentCode.'.')) {
+            return [];
+        }
+
+        return [
+            'account_code' => "A child account code must start with its parent code, e.g. {$parentCode}.01.",
+        ];
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, ChartOfAccount>
-     */
-    private function parentOptions(?ChartOfAccount $account = null)
+    private function service(): ChartOfAccountService
     {
-        $excluded = $account ? $this->descendantCodes($account)->push($account->account_code)->all() : [];
-
-        return ChartOfAccount::query()
-            ->where('is_active', 1)
-            ->when($excluded !== [], fn ($q) => $q->whereNotIn('account_code', $excluded))
-            ->orderBy('account_code')
-            ->get(['id', 'account_code', 'account_name', 'account_type']);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function currencies(): array
-    {
-        $stored = ChartOfAccount::query()
-            ->whereNotNull('currency')
-            ->distinct()
-            ->orderBy('currency')
-            ->pluck('currency')
-            ->filter()
-            ->map(static fn ($currency) => strtoupper((string) $currency))
-            ->values()
-            ->all();
-
-        return array_values(array_unique(array_merge([self::DEFAULT_CURRENCY, 'UGX', 'USD', 'EUR', 'GBP'], $stored)));
+        return app(ChartOfAccountService::class);
     }
 }

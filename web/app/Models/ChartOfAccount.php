@@ -67,6 +67,63 @@ class ChartOfAccount extends Model
         return $this->ledgerEntries()->exists();
     }
 
+    public function isTopLevel(): bool
+    {
+        return $this->parent_account_code === null || $this->parent_account_code === '';
+    }
+
+    /**
+     * Every descendant account code, breadth first, cycle safe.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function descendantCodes()
+    {
+        $codes = collect();
+        $queue = $this->children()->pluck('account_code');
+        $seen = [];
+
+        while ($queue->isNotEmpty()) {
+            $code = $queue->shift();
+
+            if (isset($seen[$code])) {
+                continue;
+            }
+
+            $seen[$code] = true;
+            $codes->push($code);
+            $queue = $queue->merge(self::query()->where('parent_account_code', $code)->pluck('account_code'));
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Ancestor accounts ordered from the top level account down to the direct parent.
+     *
+     * @return \Illuminate\Support\Collection<int, self>
+     */
+    public function ancestors()
+    {
+        $chain = collect();
+        $code = $this->parent_account_code;
+        $seen = [$this->account_code => true];
+
+        while ($code !== null && $code !== '' && ! isset($seen[$code])) {
+            $seen[$code] = true;
+            $parent = self::query()->where('account_code', $code)->first();
+
+            if ($parent === null) {
+                break;
+            }
+
+            $chain->push($parent);
+            $code = $parent->parent_account_code;
+        }
+
+        return $chain->reverse()->values();
+    }
+
     public function isDebitNormal(): bool
     {
         return in_array($this->account_type, ['asset', 'expense'], true);
