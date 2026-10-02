@@ -180,65 +180,14 @@ class CheckExpiryAlerts extends Command
     }
 
     /**
-     * HR contract alerts go to HR roles and users in the HR module department only —
-     * not Super Admin / CEO / other executives.
+     * HR contract alerts go to HR Manager / Assistant HR Manager only —
+     * not every staff member in the HR department (many have no HR roles).
      *
      * @return list<int>
      */
     private function hrNotifierUserIds(): array
     {
-        $ids = [];
-
-        if (Schema::hasTable('user_roles') && Schema::hasTable('roles')) {
-            $roleIds = DB::table('user_roles as ur')
-                ->join('roles as r', 'r.id', '=', 'ur.role_id')
-                ->whereIn('r.role_name', ['HR Manager', 'Assistant HR Manager'])
-                ->where(function ($query) {
-                    $query->whereNull('ur.expires_at')
-                        ->orWhere('ur.expires_at', '>', now());
-                })
-                ->distinct()
-                ->pluck('ur.user_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            $ids = array_merge($ids, $roleIds);
-        }
-
-        if (Schema::hasTable('staff') && Schema::hasTable('departments')) {
-            $hrDepartmentIds = DB::table('departments')
-                ->where(function ($query) {
-                    $query->where('dept_code', 'HR')
-                        ->orWhere('dept_name', 'like', 'Human Resource%');
-                })
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            if (Schema::hasTable('department_modules')) {
-                $moduleDeptIds = DB::table('department_modules')
-                    ->where('module_key', 'hr')
-                    ->pluck('department_id')
-                    ->map(fn ($id) => (int) $id)
-                    ->all();
-
-                $hrDepartmentIds = array_values(array_unique(array_merge($hrDepartmentIds, $moduleDeptIds)));
-            }
-
-            if ($hrDepartmentIds !== []) {
-                $deptUserIds = DB::table('staff')
-                    ->whereIn('department_id', $hrDepartmentIds)
-                    ->whereNotNull('user_id')
-                    ->distinct()
-                    ->pluck('user_id')
-                    ->map(fn ($id) => (int) $id)
-                    ->all();
-
-                $ids = array_merge($ids, $deptUserIds);
-            }
-        }
-
-        return array_values(array_unique(array_filter($ids)));
+        return app(\App\Services\RBACService::class)->hrNotifierUserIds(includeExecutives: false);
     }
 
     private function alreadyNotified(int $userId, string $entityType, string $entityId, string $title): bool

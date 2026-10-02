@@ -578,20 +578,7 @@ class LeaveRequestService
      */
     private function hrNotifierUserIds(): array
     {
-        $roleNames = ['HR Manager', 'Assistant HR Manager', 'Super Admin', 'CEO'];
-
-        return DB::table('user_roles as ur')
-            ->join('roles as r', 'r.id', '=', 'ur.role_id')
-            ->whereIn('r.role_name', $roleNames)
-            ->where(function ($query) {
-                $query->whereNull('ur.expires_at')
-                    ->orWhere('ur.expires_at', '>', now());
-            })
-            ->distinct()
-            ->pluck('ur.user_id')
-            ->map(fn ($id) => (int) $id)
-            ->values()
-            ->all();
+        return app(RBACService::class)->hrNotifierUserIds(includeExecutives: true);
     }
 
     /**
