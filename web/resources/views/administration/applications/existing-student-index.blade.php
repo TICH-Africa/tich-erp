@@ -29,6 +29,7 @@
         <table class="tich-admin-table">
             <thead>
                 <tr>
+                    <th></th>
                     <th>Reg. Number</th>
                     <th>Student</th>
                     <th>Programme</th>
@@ -41,6 +42,17 @@
             <tbody>
                 @forelse ($students as $student)
                     <tr>
+                        <td style="text-align:center; vertical-align:top; padding-top:0.5rem;">
+                            @if ($student->photo_path)
+                                @php($photoUrl = $student->photoUrl())
+                                @if ($photoUrl)
+                                    <a href="{{ $photoUrl }}" target="_blank" rel="noopener">
+                                        <img src="{{ $photoUrl }}" alt="{{ $student->fullName() }}"
+                                             style="width:32px; height:32px; object-fit:cover; border-radius:50%; border:1px solid #e2e8f0;">
+                                    </a>
+                                @endif
+                            @endif
+                        </td>
                         <td>{{ $student->registration_number }}</td>
                         <td>{{ $student->fullName() }}</td>
                         <td>{{ $student->program?->program_name ?? '-' }}</td>
@@ -53,7 +65,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="tich-caption">No students found.</td></tr>
+                    <tr><td colspan="8" class="tich-caption">No students found.</td></tr>
                 @endforelse
             </tbody>
         </table>
