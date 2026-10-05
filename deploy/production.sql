@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-05 10:10:56 EAT
+-- Generated: 2026-10-05 15:31:27 EAT
 -- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
