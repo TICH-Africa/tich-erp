@@ -76,6 +76,9 @@ class ExistingStudentController extends Controller
             'surname' => 'required|string|max:100',
             'email' => 'required|email|unique:users,email',
             'phone_number' => 'nullable|string|max:20',
+            'emergency_contact_name' => 'nullable|string|max:200',
+            'emergency_contact_phone' => 'nullable|string|max:30',
+            'emergency_contact_relationship' => 'nullable|string|max:100',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
             'current_year' => 'required|integer|min:1|max:4',
@@ -86,6 +89,7 @@ class ExistingStudentController extends Controller
             'campus_id' => 'nullable|exists:campuses,id',
             'community_college_county' => 'nullable|string|max:100',
             'community_college_site_id' => 'nullable|exists:campuses,id',
+            'photo' => 'nullable|image|max:2048',
             'notes' => 'nullable|string',
         ]);
 
@@ -157,7 +161,15 @@ class ExistingStudentController extends Controller
             'date_of_admission' => $yearJoined,
             'is_active' => 1,
             'created_by' => auth()->id(),
+            'emergency_contact_name' => $validated['emergency_contact_name'],
+            'emergency_contact_phone' => $validated['emergency_contact_phone'],
+            'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
         ]);
+
+        if ($request->hasFile('photo')) {
+            $student->photo_path = $this->storeStudentPhoto($student, $request->file('photo'));
+            $student->save();
+        }
 
         $this->academicService->create($student, [
             'program_id' => $validated['program_id'],
@@ -202,6 +214,9 @@ class ExistingStudentController extends Controller
                 Rule::unique('users', 'email')->ignore($student->user_id),
             ],
             'phone_number' => 'nullable|string|max:20',
+            'emergency_contact_name' => 'nullable|string|max:200',
+            'emergency_contact_phone' => 'nullable|string|max:30',
+            'emergency_contact_relationship' => 'nullable|string|max:100',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
             'current_year' => 'required|integer|min:1|max:4',
@@ -211,7 +226,9 @@ class ExistingStudentController extends Controller
             'campus_selection_type' => 'required|in:campus,community_college,online',
             'campus_id' => 'nullable|exists:campuses,id',
             'community_college_county' => 'nullable|string|max:100',
-            'community_college_site_id' => 'nullable|exists:campuses,id',
+             'community_college_site_id' => 'nullable|exists:campuses,id',
+            'photo' => 'nullable|image|max:2048',
+            'photo_remove' => 'boolean',
             'notes' => 'nullable|string',
         ]);
 
@@ -279,7 +296,24 @@ class ExistingStudentController extends Controller
             'enrollment_campus_id' => $validated['campus_id'],
             'entry_pathway' => $validated['program_type'],
             'date_of_admission' => $yearJoined,
+            'emergency_contact_name' => $validated['emergency_contact_name'],
+            'emergency_contact_phone' => $validated['emergency_contact_phone'],
+            'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
         ]);
+
+        // A photo can be replaced or removed independently of the rest of the profile.
+        if (! empty($validated['photo_remove']) && $student->photo_path !== null) {
+            // Setting the attribute triggers PrunesStoredFiles to delete the old file.
+            $student->photo_path = null;
+        }
+
+        if ($request->hasFile('photo')) {
+            $student->photo_path = $this->storeStudentPhoto($student, $request->file('photo'));
+        }
+
+        if ($student->isDirty()) {
+            $student->save();
+        }
 
         // Keep the portal account in step with a corrected email; the students table
         // has no email column of its own.
@@ -292,5 +326,17 @@ class ExistingStudentController extends Controller
         return redirect()
             ->route('administration.applications.existing-student.show', $student->id)
             ->with('success', "Student {$student->registration_number} updated successfully.");
+    }
+
+    /**
+     * Persist a profile photo on the public disk and return its relative path.
+     * The path is stored against the student model, and PrunesStoredFiles removes the
+     * previous photo when the attribute is overwritten.
+     */
+    private function storeStudentPhoto(Student $student, $file): string
+    {
+        $directory = "students/{$student->id}";
+
+        return $file->store($directory, 'public');
     }
 }

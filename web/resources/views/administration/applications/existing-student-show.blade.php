@@ -20,9 +20,17 @@
                 <dd>{{ $student->program?->program_name ?? '-' }}</dd>
                 <dt class="tich-caption">Campus</dt>
                 <dd>{{ $student->campus?->campus_name ?? '-' }}</dd>
-                <dt class="tich-caption">Status</dt>
-                <dd>{{ ucfirst($student->enrollment_status) }}</dd>
-            </dl>
+            <dt class="tich-caption">Status</dt>
+            <dd>{{ ucfirst($student->enrollment_status) }}</dd>
+
+            @if ($student->photo_path)
+                <dt class="tich-caption">Photo</dt>
+                <dd>
+                    <img src="{{ $student->photoUrl() }}" alt="{{ $student->fullName() }}"
+                         style="width:80px; height:80px; object-fit:cover; border-radius:50%; border:1px solid #e2e8f0;">
+                </dd>
+            @endif
+        </dl>
         </article>
         <article class="tich-card">
             <h3 class="tich-h4">Academic Summary</h3>
@@ -79,6 +87,26 @@
                     <tr>
                         <td class="tich-caption">Date of Admission</td>
                         <td>{{ $student->date_of_admission }}</td>
+                    </tr>
+                    <tr>
+                        <td class="tich-caption">Phone Number</td>
+                        <td>{{ $student->user->phone_number ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="tich-caption">Emergency Contact</td>
+                        <td>
+                            @if ($student->emergency_contact_name)
+                                {{ $student->emergency_contact_name }}
+                                @if ($student->emergency_contact_phone)
+                                    · {{ $student->emergency_contact_phone }}
+                                @endif
+                                @if ($student->emergency_contact_relationship)
+                                    ({{ $student->emergency_contact_relationship }})
+                                @endif
+                            @else
+                                -
+                            @endif
+                        </td>
                     </tr>
                     <tr>
                         <td class="tich-caption">Overall Balance</td>

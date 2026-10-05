@@ -33,7 +33,7 @@
     @endif
 
     <div class="tich-card tich-mt-6">
-        <form method="POST" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
+            <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
             @csrf
             @if ($editing)
                 @method('PUT')
@@ -68,8 +68,54 @@
                 </div>
                 <div>
                     <label class="tich-label">Phone Number</label>
-                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number') }}">
+                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number', $student->user->phone_number ?? '') }}">
                     @error('phone_number')<p class="tich-field-error">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <h3 class="tich-h3 tich-mt-6">Emergency Contact</h3>
+            <div class="tich-grid tich-grid--3 tich-mt-3">
+                <div>
+                    <label class="tich-label">Contact Name</label>
+                    <input type="text" name="emergency_contact_name" class="tich-input" value="{{ old('emergency_contact_name', $student->emergency_contact_name ?? '') }}">
+                    @error('emergency_contact_name')
+                        <p class="tich-field-error">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="tich-label">Phone</label>
+                    <input type="text" name="emergency_contact_phone" class="tich-input" value="{{ old('emergency_contact_phone', $student->emergency_contact_phone ?? '') }}">
+                    @error('emergency_contact_phone')
+                        <p class="tich-field-error">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="tich-label">Relationship</label>
+                    <input type="text" name="emergency_contact_relationship" class="tich-input" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship ?? '') }}">
+                    @error('emergency_contact_relationship')
+                        <p class="tich-field-error">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <h3 class="tich-h3 tich-mt-6">Profile Photo</h3>
+            <div class="tich-grid tich-grid--3 tich-mt-3">
+                <div style="grid-column: 1 / -1;">
+                    @if ($editing && ($student->photo_path ?? null))
+                        <div class="tich-flex tich-flex--middle tich-gap-4 tich-mb-2">
+                            <img src="{{ $student->photoUrl() }}" alt="{{ $student->fullName() }}"
+                                 style="width:72px; height:72px; object-fit:cover; border-radius:50%; border:1px solid #e2e8f0;">
+                            <label class="tich-caption" style="display:flex; align-items:center; gap:0.5rem;">
+                                <input type="checkbox" name="photo_remove" value="1"
+                                       {{ old('photo_remove') ? 'checked' : '' }}>
+                                Remove current photo
+                            </label>
+                        </div>
+                    @endif
+
+                    <label class="tich-label">Photo (jpg, png, webp, max 2 MB)</label>
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="tich-input">
+                    @error('photo')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
