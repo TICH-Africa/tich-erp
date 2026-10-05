@@ -3,7 +3,7 @@
 @section('title', 'Contracts')
 
 @section('hr-content')
-    <x-page-toolbar title="Contracts" meta="Employment contracts, renewals, and expiry alerts">
+    <x-page-toolbar title="Contracts" meta="Current contract per employee. Open a staff profile to see full renewal history.">
         <x-slot:actions>
             <a href="{{ route('hr.contracts.create') }}" class="tich-btn tich-btn-primary">+ New Contract</a>
         </x-slot:actions>
@@ -47,22 +47,15 @@
                             <td class="tich-caption">{{ $contract->end_date?->format('Y-m-d') ?? 'Ongoing' }}</td>
                             <td>
                                 @php
-                                    $renewalLabel = match ($contract->renewal_status) {
-                                        'pending' => 'Active',
-                                        'renewed' => 'Renewed',
-                                        'terminated' => 'Terminated',
-                                        'expired' => 'Expired',
-                                        default => ucfirst((string) $contract->renewal_status),
-                                    };
                                     $renewalBadge = match ($contract->renewal_status) {
-                                        'pending' => 'success',
+                                        'pending', null, '' => 'success',
                                         'renewed' => 'info',
                                         'terminated', 'expired' => 'danger',
                                         default => 'warning',
                                     };
                                 @endphp
                                 <span class="tich-badge tich-badge--{{ $renewalBadge }}">
-                                    {{ $renewalLabel }}
+                                    {{ $contract->renewalStatusLabel() }}
                                 </span>
                             </td>
                             <td>

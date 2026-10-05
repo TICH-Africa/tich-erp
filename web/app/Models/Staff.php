@@ -194,7 +194,9 @@ class Staff extends Model
 
     public function contracts(): HasMany
     {
-        return $this->hasMany(StaffContract::class);
+        return $this->hasMany(StaffContract::class)
+            ->orderByDesc('start_date')
+            ->orderByDesc('id');
     }
 
     public function qualifications(): HasMany

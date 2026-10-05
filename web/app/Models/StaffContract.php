@@ -128,4 +128,50 @@ class StaffContract extends Model
         return $query->whereNotNull('end_date')
             ->where('end_date', '<', now());
     }
+
+    /**
+     * One "current" contract id per staff: Active/pending first, then expired,
+     * terminated, and renewed last. Historical renewals stay in the DB for the
+     * staff profile; the contracts index should use these ids only.
+     *
+     * @param  (callable(\Illuminate\Database\Eloquent\Builder<\App\Models\Staff>): mixed)|null  $staffConstraint
+     * @return list<int>
+     */
+    public static function currentIdsPerStaff(?callable $staffConstraint = null): array
+    {
+        $query = static::query()
+            ->select(['id', 'staff_id', 'renewal_status', 'start_date']);
+
+        if ($staffConstraint) {
+            $query->whereHas('staff', $staffConstraint);
+        }
+
+        return $query
+            ->orderByRaw("CASE
+                WHEN renewal_status IS NULL OR renewal_status = 'pending' THEN 0
+                WHEN renewal_status = 'expired' THEN 1
+                WHEN renewal_status = 'terminated' THEN 2
+                WHEN renewal_status = 'renewed' THEN 3
+                ELSE 1
+            END")
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('staff_id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function renewalStatusLabel(): string
+    {
+        return match ($this->renewal_status) {
+            'pending' => 'Active',
+            'renewed' => 'Renewed',
+            'terminated' => 'Terminated',
+            'expired' => 'Expired',
+            default => $this->renewal_status ? ucfirst((string) $this->renewal_status) : 'Active',
+        };
+    }
 }

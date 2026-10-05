@@ -14,9 +14,15 @@ class ContractViewController extends Controller
 {
     public function index(): View
     {
+        // One row per employee (current contract). Full renewal history stays on the staff profile.
+        $currentIds = StaffContract::currentIdsPerStaff(
+            fn ($q) => $q->excludePlatformOperators()
+        );
+
         $contracts = StaffContract::with(['staff', 'staff.department', 'department'])
-            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
+            ->whereIn('id', $currentIds ?: [0])
             ->orderByDesc('start_date')
+            ->orderByDesc('id')
             ->paginate(25);
 
         return view('hr.contracts.index', ['contracts' => $contracts]);
