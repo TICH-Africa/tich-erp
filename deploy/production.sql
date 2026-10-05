@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-02 18:22:42 EAT
+-- Generated: 2026-10-05 10:10:56 EAT
 -- Source DB: tich-erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -12238,6 +12238,8 @@ CREATE TABLE IF NOT EXISTS `students` (
   `emergency_contact_name` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `emergency_contact_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `emergency_contact_relationship` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Contact email held on the student record (existing-student flow does not always link a User).',
+  `phone_number` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Contact phone number held on the student record.',
   `is_active` tinyint NOT NULL DEFAULT '1',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -12298,6 +12300,8 @@ CALL `tich_ensure_column`('students', 'hostel_allocation_id', 'bigint unsigned N
 CALL `tich_ensure_column`('students', 'emergency_contact_name', 'varchar(300) NULL');
 CALL `tich_ensure_column`('students', 'emergency_contact_phone', 'varchar(30) NULL');
 CALL `tich_ensure_column`('students', 'emergency_contact_relationship', 'varchar(50) NULL');
+CALL `tich_ensure_column`('students', 'email', 'varchar(255) NULL COMMENT \'Contact email held on the student record (existing-student flow does not always link a User).\'');
+CALL `tich_ensure_column`('students', 'phone_number', 'varchar(30) NULL COMMENT \'Contact phone number held on the student record.\'');
 CALL `tich_ensure_column`('students', 'is_active', 'tinyint NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('students', 'created_at', 'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP');
 CALL `tich_ensure_column`('students', 'updated_at', 'datetime NULL');

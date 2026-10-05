@@ -7,8 +7,8 @@
         .tich-lightbox { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999; }
         .tich-lightbox--open { display:flex; }
         .tich-lightbox__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.6); }
-        .tich-lightbox__window { position:relative; max-width:90vw; max-height:90vh; z-index:1; }
-        .tich-lightbox__img { max-width:100%; max-height:90vh; border-radius:8px; border:1px solid #fff; box-shadow:0 8px 32px rgba(0,0,0,.4); }
+        .tich-lightbox__window { position:relative; max-width:60vw; max-height:70vh; z-index:1; }
+        .tich-lightbox__img { max-width:100%; max-height:70vh; border-radius:8px; border:1px solid #fff; box-shadow:0 8px 32px rgba(0,0,0,.4); }
         .tich-lightbox__close { position:absolute; top:-10px; right:-10px; width:28px; height:28px; border:none; border-radius:50%; background:#fff; color:#000; font-size:20px; line-height:1; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.3); }
     </style>
 

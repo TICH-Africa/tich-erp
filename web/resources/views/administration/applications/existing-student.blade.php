@@ -63,17 +63,17 @@
                 </div>
                 <div>
                     <label class="tich-label">Email *</label>
-                    <input type="email" name="email" class="tich-input" required value="{{ old('email', ($student ?? null)?->user?->email ?? ($student ?? null)?->applicant?->email ?? '') }}">
+                    <input type="email" name="email" class="tich-input" required value="{{ old('email', $student->email ?? ($student ?? null)?->user?->email ?? ($student ?? null)?->applicant?->email ?? '') }}">
                     @error('email')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="tich-label">Phone Number</label>
-                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number', $student->user->phone_number ?? '') }}">
+                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number', $student->phone_number ?? ($student ?? null)?->user?->phone_number ?? '') }}">
                     @error('phone_number')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
-            <h3 class="tich-h3 tich-mt-6">Emergency Contact</h3>
+            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Emergency Contact</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
                 <div>
                     <label class="tich-label">Contact Name</label>
@@ -98,7 +98,7 @@
                 </div>
             </div>
 
-            <h3 class="tich-h3 tich-mt-6">Profile Photo</h3>
+            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Profile Photo</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
                 <div style="grid-column: 1 / -1;">
                     @if ($editing && ($student->photo_path ?? null))
@@ -119,7 +119,7 @@
                 </div>
             </div>
 
-            <h3 class="tich-h3 tich-mt-6">Program Details</h3>
+            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Program Details</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
                 <div>
                     <label class="tich-label">Programme *</label>

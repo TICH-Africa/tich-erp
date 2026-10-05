@@ -66,7 +66,7 @@
                     </tr>
                     <tr>
                         <td class="tich-caption">Email</td>
-                        <td>{{ $student->applicant?->email ?? 'N/A' }}</td>
+                        <td>{{ $student->email ?? $student->user?->email ?? $student->applicant?->email ?? 'N/A' }}</td>
                     </tr>
                     <tr>
                         <td class="tich-caption">Programme</td>
@@ -90,7 +90,7 @@
                     </tr>
                     <tr>
                         <td class="tich-caption">Phone Number</td>
-                        <td>{{ $student->user->phone_number ?? '-' }}</td>
+                        <td>{{ $student->phone_number ?? $student->user?->phone_number ?? '-' }}</td>
                     </tr>
                     <tr>
                         <td class="tich-caption">Emergency Contact</td>

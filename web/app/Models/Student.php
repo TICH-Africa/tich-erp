@@ -55,6 +55,8 @@ class Student extends Model
         'emergency_contact_name',
         'emergency_contact_phone',
         'emergency_contact_relationship',
+        'email',
+        'phone_number',
         'is_active',
         'created_at',
         'updated_at',

@@ -164,6 +164,8 @@ class ExistingStudentController extends Controller
             'emergency_contact_name' => $validated['emergency_contact_name'],
             'emergency_contact_phone' => $validated['emergency_contact_phone'],
             'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
+            'email' => $validated['email'] ?? null,
+            'phone_number' => $validated['phone_number'] ?? null,
         ]);
 
         if ($request->hasFile('photo')) {
@@ -285,6 +287,11 @@ class ExistingStudentController extends Controller
 
         $yearJoined = \Carbon\Carbon::parse($validated['year_joined']);
 
+        // The student record itself stores email/phone_number so the edit form can
+        // prefill values that were entered without a linked User. If a User is later
+        // linked to this student, keep its email in step as well.
+        $email = $validated['email'] ?? null;
+
         $student->update([
             'registration_number' => $validated['registration_number'],
             'program_id' => $validated['program_id'],
@@ -299,6 +306,8 @@ class ExistingStudentController extends Controller
             'emergency_contact_name' => $validated['emergency_contact_name'],
             'emergency_contact_phone' => $validated['emergency_contact_phone'],
             'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
+            'email' => $email,
+            'phone_number' => $validated['phone_number'] ?? null,
         ]);
 
         // A photo can be replaced or removed independently of the rest of the profile.
@@ -314,10 +323,6 @@ class ExistingStudentController extends Controller
         if ($student->isDirty()) {
             $student->save();
         }
-
-        // Keep the portal account in step with a corrected email; the students table
-        // has no email column of its own.
-        $email = $validated['email'] ?? null;
 
         if ($email && $student->user_id) {
             \App\Models\User::query()->whereKey($student->user_id)->update(['email' => $email]);
