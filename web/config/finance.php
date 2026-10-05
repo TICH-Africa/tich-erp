@@ -13,6 +13,29 @@ return [
         env('FINANCE_BANK_CASH_ACCOUNT', '1020'),
     ],
 
+    /**
+     * How a parent account is worked out from a child account code when a chart of
+     * accounts is imported without an explicit parent column.
+     *
+     * Charts are laid out in several ways, so the rules are applied in order and the
+     * first one that matches wins:
+     *
+     *   1. separator   the child is the parent plus a separator and a segment,
+     *                  e.g. 1100.01 under 1100, 1100-01 under 1100, 1100/01 under 1100
+     *   2. prefix      the parent code is the start of the child code, with the child
+     *                  being longer, e.g. 1100 under 11000, 1100A under 1100
+     *   3. block       the parent is a shorter code in the same leading digit block,
+     *                  e.g. 61000 over 612000 and 613000
+     */
+    'hierarchy' => [
+        'separators' => ['.', '-', '/', '_', ':', ' '],
+        'infer_separator_parent' => (bool) env('FINANCE_INFER_SEPARATOR_PARENT', true),
+        'infer_prefix_parent' => (bool) env('FINANCE_INFER_PREFIX_PARENT', true),
+        'infer_block_parent' => (bool) env('FINANCE_INFER_BLOCK_PARENT', true),
+        // How many leading digits a parent and child must share for the block rule.
+        'block_min_shared_digits' => (int) env('FINANCE_BLOCK_MIN_SHARED_DIGITS', 2),
+    ],
+
     'accounts' => [
         'accounts_receivable' => '1100',
         'tuition_revenue' => '4000',

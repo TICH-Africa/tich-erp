@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLedger;
 use App\Models\ProfitLossSnapshot;
 use App\Services\Finance\FinanceReportExportService;
 use App\Services\Finance\FinanceReportService;
@@ -83,20 +84,27 @@ class LedgerController extends Controller
         $data = $this->reports->build('income_statement', $filters);
         $period = $data['period'] ?? $this->reports->resolveIncomeStatementPeriod($filters);
 
+        // The all time preset carries no dates, so a snapshot is stored against the
+        // real span of posted activity.
+        $periodFrom = trim((string) ($period['from'] ?? ''));
+        $periodTo = trim((string) ($period['to'] ?? ''));
+        $periodFrom = $periodFrom !== '' ? $periodFrom : (AccountLedger::query()->min('ledger_date') ?? now()->subYears(5)->toDateString());
+        $periodTo = $periodTo !== '' ? $periodTo : now()->toDateString();
+
         $validated = $request->validate([
             'label' => ['nullable', 'string', 'max:200'],
         ]);
 
         $label = trim((string) ($validated['label'] ?? ''));
         if ($label === '') {
-            $label = ($period['label'] ?? 'P&L').' '.$period['from'].' → '.$period['to'];
+            $label = ($period['label'] ?? 'P&L').' '.$periodFrom.' → '.$periodTo;
         }
 
         $snapshot = ProfitLossSnapshot::query()->create([
             'label' => $label,
             'period_preset' => $period['preset'] ?? 'custom',
-            'period_from' => $period['from'],
-            'period_to' => $period['to'],
+            'period_from' => $periodFrom,
+            'period_to' => $periodTo,
             'view_mode' => $data['view_mode'] ?? 'standard',
             'total_revenue' => $data['revenue']['total'] ?? 0,
             'total_expenses' => $data['expenses']['total'] ?? 0,

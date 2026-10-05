@@ -91,6 +91,7 @@
         <thead>
             <tr>
                 <th>Date</th>
+                <th>Account code</th>
                 <th>Category</th>
                 <th>Type</th>
                 <th>Narration</th>
@@ -103,16 +104,17 @@
             @foreach ($data['rows'] as $row)
                 <tr>
                     <td>{{ $row['date_display'] }}</td>
+                    <td>{{ $row['account_code'] }}</td>
                     <td>{{ $row['category'] }}</td>
                     <td>{{ $row['type'] }}</td>
                     <td>{{ $row['narration'] }}</td>
                     <td>{{ $row['reference'] }}</td>
-                    <td class="num">{{ $row['income'] > 0 ? number_format($row['income'], 2) : '-' }}</td>
-                    <td class="num">{{ $row['expense'] > 0 ? number_format($row['expense'], 2) : '-' }}</td>
+                    <td class="num">{{ $row['income'] != 0 ? number_format($row['income'], 2) : '-' }}</td>
+                    <td class="num">{{ $row['expense'] != 0 ? number_format($row['expense'], 2) : '-' }}</td>
                 </tr>
             @endforeach
             @if (empty($data['rows']))
-                <tr><td colspan="7" class="tich-caption">No transactions recorded in this period.</td></tr>
+                <tr><td colspan="8" class="tich-caption">No transactions recorded in this period.</td></tr>
             @endif
         </tbody>
     </table>

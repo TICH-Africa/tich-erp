@@ -86,6 +86,26 @@ class ChartOfAccountController extends Controller
         }
 
         $parentCode = $validated['parent_account_code'] ?? null;
+        $inferredParent = null;
+
+        // No parent was picked, so the code itself decides, e.g. 612000 filed under the
+        // 61000 summary account. The choice is only applied when it agrees with the
+        // account type, and it is reported back to the user.
+        if ($parentCode === null || $parentCode === '') {
+            $resolution = $service->resolveParentCode(
+                (string) $validated['account_code'],
+                ChartOfAccount::query()->pluck('account_code')->all()
+            );
+
+            $candidate = $resolution['parent'] === null
+                ? null
+                : ChartOfAccount::query()->where('account_code', $resolution['parent'])->first();
+
+            if ($candidate !== null && $candidate->account_type === $type) {
+                $parentCode = $candidate->account_code;
+                $inferredParent = $parentCode;
+            }
+        }
 
         if ($error = $this->parentTypeError($parentCode, $type)) {
             return back()->withErrors($error)->withInput();
@@ -124,9 +144,11 @@ class ChartOfAccountController extends Controller
 
         $account = ChartOfAccount::query()->create($validated);
 
-        $message = $parentCode !== null
-            ? "Child account {$account->account_code} added under {$parentCode}."
-            : 'Account created successfully.';
+        $message = $inferredParent !== null
+            ? "Child account {$account->account_code} added under {$inferredParent}, taken from the account code."
+            : ($parentCode !== null
+                ? "Child account {$account->account_code} added under {$parentCode}."
+                : 'Account created successfully.');
 
         if ($balance > 0.0) {
             try {
@@ -575,9 +597,14 @@ class ChartOfAccountController extends Controller
     }
 
     /**
-     * A child account code must start with its parent code plus a dot, e.g. 1114.01
-     * under 1114. Accounts with no parent are free form. Existing legacy children that
-     * do not follow the convention keep working until their parent is changed.
+     * A child account code has to belong to the parent it is filed under. The shape of
+     * a child code is worked out by the chart of accounts service, so every numbering
+     * style an import accepts is accepted here too: parent plus a separator, e.g.
+     * 1114.01 or 1114-01, a longer code that starts with the parent, e.g. 111400, and a
+     * code in the parent's own digit block, e.g. 61000 over 612000.
+     *
+     * Accounts with no parent are free form. Existing legacy children keep working
+     * until their parent is changed.
      *
      * @return array<string, string>
      */
@@ -587,12 +614,27 @@ class ChartOfAccountController extends Controller
             return [];
         }
 
-        if (str_starts_with($code, $parentCode.'.')) {
+        $known = ChartOfAccount::query()->pluck('account_code')->all();
+        $resolved = $this->service()->resolveParentCode($code, $known);
+
+        if ($resolved['parent'] === $parentCode) {
             return [];
         }
 
+        if ($resolved['parent'] !== null) {
+            return [
+                'account_code' => "Account code {$code} belongs under {$resolved['parent']} by its numbering, not under {$parentCode}.",
+            ];
+        }
+
+        $separators = (array) config('finance.hierarchy.separators', ['.', '-', '/', '_', ':', ' ']);
+        $examples = implode(', ', array_map(
+            static fn ($separator) => $parentCode.$separator.'01',
+            array_slice($separators, 0, 3)
+        ));
+
         return [
-            'account_code' => "A child account code must start with its parent code, e.g. {$parentCode}.01.",
+            'account_code' => "A child account code must follow its parent's numbering, for example {$examples}, or sit in the parent's own digit block such as {$parentCode}00.",
         ];
     }
 

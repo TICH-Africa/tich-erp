@@ -414,7 +414,6 @@ class ChartOfAccountService
         $accounts = ChartOfAccount::query()->orderBy('account_code')->get();
         $children = $this->groupChildren($accounts);
         $direct = $this->ledger->accountBalanceMap($accounts);
-
         $balances = [];
 
         foreach ($accounts as $account) {
@@ -441,6 +440,42 @@ class ChartOfAccountService
         }
 
         return $balances;
+    }
+/**
+     * Add every descendant's balance to its parent, so a statement can report a parent
+     * line that includes everything posted to its children.
+     *
+     * Only descendants of the same account type are added. Child accounts are required
+     * to match their parent's type, so this changes nothing for a well formed chart; it
+     * stops a legacy mismatched child from being counted in two statements at once.
+     *
+     * @param  array<string, float>  $direct  Signed balance per account code
+     * @return array<string, float>
+     */
+    public function rollUpBalances(array $direct): array
+    {
+        $accounts = ChartOfAccount::query()->get(['account_code', 'parent_account_code', 'account_type']);
+        $children = $this->groupChildren($accounts);
+        $types = $accounts->pluck('account_type', 'account_code')->all();
+
+        $rolled = [];
+
+        foreach ($accounts as $account) {
+            $code = $account->account_code;
+            $total = (float) ($direct[$code] ?? 0.0);
+
+            foreach ($this->descendantsOf($code, $children) as $childCode) {
+                if (($types[$childCode] ?? null) !== $account->account_type) {
+                    continue;
+                }
+
+                $total += (float) ($direct[$childCode] ?? 0.0);
+            }
+
+            $rolled[$code] = round($total, 2);
+        }
+
+        return $rolled;
     }
 
     /**
@@ -509,18 +544,107 @@ class ChartOfAccountService
     }
 
     /**
-     * The next free child code for a parent, e.g. 1114 becomes 1114.03 when
-     * 1114.01 and 1114.02 already exist.
+     * The next free child code for a parent.
+     *
+     * The suggestion follows the numbering the parent already uses, so 1114 becomes
+     * 1114.03 while 1114.01 and 1114.02 exist, and a parent numbered in blocks such
+     * as 61000 with children 612000 and 613000 is given 614000.
      */
     public function suggestChildCode(ChartOfAccount $parent): string
     {
-        $prefix = $parent->account_code.'.';
+        $parentCode = (string) $parent->account_code;
+        $childCodes = array_map(
+            static fn ($code) => trim((string) $code),
+            $parent->children()->pluck('account_code')->all()
+        );
+
+        return $this->suggestBlockChildCode($parentCode, $childCodes)
+            ?? $this->suggestSeparatorChildCode($parentCode, $childCodes);
+    }
+
+    /**
+     * Continue a block style family, e.g. 612000 and 613000 under 61000 give 614000.
+     * Only used when the parent already has children numbered that way.
+     *
+     * @param  list<string>  $childCodes
+     */
+    private function suggestBlockChildCode(string $parentCode, array $childCodes): ?string
+    {
+        $minimum = max(2, (int) config('finance.hierarchy.block_min_shared_digits', 2));
+        $family = [];
+
+        if (! is_numeric($parentCode)) {
+            return null;
+        }
+
+        foreach ($childCodes as $code) {
+            if (! is_numeric($code) || strlen($code) <= strlen($parentCode)) {
+                continue;
+            }
+
+            if ($this->sharedLeadingDigits($parentCode, $code) < $minimum) {
+                continue;
+            }
+
+            $family[] = (int) $code;
+        }
+
+        if ($family === []) {
+            return null;
+        }
+
+        sort($family);
+        $step = $family[0] - (int) $parentCode;
+
+        for ($index = 1; $index < count($family); $index++) {
+            $step = min($step, $family[$index] - $family[$index - 1]);
+        }
+
+        $step = $step > 0 ? $step : 1;
+        $longest = max(array_map('strlen', $childCodes));
+
+        for ($next = end($family) + $step; strlen((string) $next) <= $longest; $next += $step) {
+            if (! $this->codeExists((string) $next)) {
+                return (string) $next;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Continue a parent plus separator family, e.g. 1114.01 and 1114.02 give 1114.03.
+     *
+     * @param  list<string>  $childCodes
+     */
+    private function suggestSeparatorChildCode(string $parentCode, array $childCodes): string
+    {
+        $separators = (array) config('finance.hierarchy.separators', ['.', '-', '/', '_', ':', ' ']);
+        $separator = '.';
+        $counts = [];
+
+        foreach ($childCodes as $code) {
+            foreach ($separators as $candidate) {
+                $candidate = (string) $candidate;
+
+                if ($candidate === '' || ! str_starts_with($code, $parentCode.$candidate)) {
+                    continue;
+                }
+
+                $counts[$candidate] = ($counts[$candidate] ?? 0) + 1;
+            }
+        }
+
+        if ($counts !== []) {
+            arsort($counts);
+            $separator = (string) array_key_first($counts);
+        }
+
+        $prefix = $parentCode.$separator;
         $used = [];
         $highest = 0;
 
-        foreach ($parent->children()->pluck('account_code')->all() as $code) {
-            $code = (string) $code;
-
+        foreach ($childCodes as $code) {
             if (! str_starts_with($code, $prefix)) {
                 continue;
             }
@@ -542,6 +666,11 @@ class ChartOfAccountService
         }
 
         return $prefix.str_pad((string) ($highest + 1), 2, '0', STR_PAD_LEFT);
+    }
+
+    private function codeExists(string $code): bool
+    {
+        return ChartOfAccount::query()->where('account_code', $code)->exists();
     }
 
     /**
@@ -609,27 +738,120 @@ class ChartOfAccountService
     }
 
     /**
-     * Work out the parent code implied by a dotted child code.
+     * Work out the parent code implied by a child code.
      *
-     * Child codes are the parent code plus decimal segments, so 1100.01 sits under
-     * 1100 and 1100.01.02 sits under 1100.01. Returns null when no prefix matches a
-     * known account, in which case the account stays top level.
+     * Charts of accounts are numbered in several ways, so three rules are applied in
+     * order and the first match wins:
+     *
+     *   1. separator  the code is a parent plus a separator and a segment, so 1100.01
+     *                  sits under 1100, 1100.01.02 under 1100.01, and 1100-01, 1100/01
+     *                  or 1100_01 under 1100 as well
+     *   2. prefix     a known code is the start of this code and this code is longer,
+     *                  so 11000 sits under 1100 and 1100A under 1100
+     *   3. block      a shorter known code shares this code's leading digit block, so
+     *                  612000 and 613000 sit under the 61000 summary account
+     *
+     * Returns null when no known account matches, in which case the account stays top
+     * level. An account that is its own match is never returned.
      *
      * @param  array<int, string>  $knownCodes
      */
     public function parentCodeFor(string $code, array $knownCodes): ?string
     {
-        $segments = explode('.', $code);
+        return $this->resolveParentCode($code, $knownCodes)['parent'];
+    }
 
-        if (count($segments) < 2) {
+    /**
+     * The same resolution as parentCodeFor(), but it also reports which rule matched,
+     * so imports and the account form can explain the choice.
+     *
+     * @param  array<int, string>  $knownCodes
+     * @return array{parent: ?string, rule: string, detail: ?string}
+     */
+    public function resolveParentCode(string $code, array $knownCodes): array
+    {
+        $code = trim($code);
+
+        if ($code === '') {
+            return ['parent' => null, 'rule' => 'none', 'detail' => null];
+        }
+
+        $known = [];
+
+        foreach ($knownCodes as $knownCode) {
+            $knownCode = trim((string) $knownCode);
+
+            if ($knownCode !== '' && $knownCode !== $code) {
+                $known[$knownCode] = true;
+            }
+        }
+
+        if ($known === []) {
+            return ['parent' => null, 'rule' => 'none', 'detail' => null];
+        }
+
+        $rules = [
+            'separator' => (bool) config('finance.hierarchy.infer_separator_parent', true),
+            'prefix' => (bool) config('finance.hierarchy.infer_prefix_parent', true),
+            'block' => (bool) config('finance.hierarchy.infer_block_parent', true),
+        ];
+
+        foreach (['separator' => 1, 'prefix' => 2, 'block' => 3] as $rule => $order) {
+            if (! $rules[$rule]) {
+                continue;
+            }
+
+            $parent = $order === 1
+                ? $this->separatorParent($code, $known)
+                : ($order === 2 ? $this->prefixParent($code, $known) : $this->blockParent($code, $known));
+
+            if ($parent !== null) {
+                return ['parent' => $parent, 'rule' => $rule, 'detail' => null];
+            }
+        }
+
+        return ['parent' => null, 'rule' => 'none', 'detail' => null];
+    }
+
+    /**
+     * Rule 1: the code is a known parent plus a separator and a trailing segment.
+     * The deepest known prefix wins, so 1100.01.02 stays under 1100.01 when that
+     * account exists and falls back to 1100 when it does not.
+     *
+     * @param  array<string, true>  $known
+     */
+    private function separatorParent(string $code, array $known): ?string
+    {
+        $separators = (array) config('finance.hierarchy.separators', ['.', '-', '/', '_', ':', ' ']);
+        $position = null;
+        $separator = '';
+
+        foreach ($separators as $candidate) {
+            $candidate = (string) $candidate;
+
+            if ($candidate === '') {
+                continue;
+            }
+
+            $found = strpos($code, $candidate);
+
+            if ($found !== false && ($position === null || $found < $position)) {
+                $position = $found;
+                $separator = $candidate;
+            }
+        }
+
+        if ($position === null || $position === 0) {
             return null;
         }
 
+        $segments = explode($separator, $code);
+
+        // The segment after the last separator is the child part of the code.
         array_pop($segments);
-        $known = array_flip($knownCodes);
 
         while ($segments !== []) {
-            $candidate = implode('.', $segments);
+            $candidate = implode($separator, $segments);
 
             if (isset($known[$candidate])) {
                 return $candidate;
@@ -639,6 +861,88 @@ class ChartOfAccountService
         }
 
         return null;
+    }
+
+    /**
+     * Rule 2: a known code is the start of this code. The longest known code that
+     * still matches wins, so 1100 is preferred over a shorter 11 when both exist.
+     *
+     * @param  array<string, true>  $known
+     */
+    private function prefixParent(string $code, array $known): ?string
+    {
+        $best = null;
+
+        foreach (array_keys($known) as $candidate) {
+            if ($candidate === $code || ! str_starts_with($code, $candidate)) {
+                continue;
+            }
+
+            if ($best === null || strlen($candidate) > strlen($best)) {
+                $best = $candidate;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Rule 3: the parent is a shorter code in the same leading digit block. This is
+     * the numbering style where a summary account such as 61000 owns the more
+     * granular 612000 and 613000 accounts.
+     *
+     * Candidates must share at least the configured number of leading digits, so 61000
+     * can take 612000 and 613000 but not 62000. The closest match wins: most shared
+     * digits first, then the most specific candidate.
+     *
+     * @param  array<string, true>  $known
+     */
+    private function blockParent(string $code, array $known): ?string
+    {
+        $minimum = max(2, (int) config('finance.hierarchy.block_min_shared_digits', 2));
+        $best = null;
+        $bestShared = 0;
+        $bestLength = 0;
+
+        foreach (array_keys($known) as $candidate) {
+            if (strlen($candidate) >= strlen($code)) {
+                continue;
+            }
+
+            $shared = $this->sharedLeadingDigits($candidate, $code);
+
+            if ($shared < $minimum) {
+                continue;
+            }
+
+            if ($shared > $bestShared || ($shared === $bestShared && strlen($candidate) > $bestLength)) {
+                $best = $candidate;
+                $bestShared = $shared;
+                $bestLength = strlen($candidate);
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * How many leading characters two codes have in common, compared as plain text so
+     * that codes carrying a separator or a letter still line up.
+     */
+    private function sharedLeadingDigits(string $a, string $b): int
+    {
+        $length = min(strlen($a), strlen($b));
+        $shared = 0;
+
+        for ($index = 0; $index < $length; $index++) {
+            if ($a[$index] !== $b[$index]) {
+                break;
+            }
+
+            $shared++;
+        }
+
+        return $shared;
     }
 
     /**

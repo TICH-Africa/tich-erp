@@ -17,7 +17,7 @@
             'reconciliation' => 'Reconciliation',
         ];
         $filters = $filters ?? [];
-        $period = $filters['period'] ?? ($reportData['period']['preset'] ?? 'mtd');
+        $period = $filters['period'] ?? ($reportData['period']['preset'] ?? 'all');
         $viewMode = $filters['view'] ?? ($reportData['view_mode'] ?? 'standard');
         $from = $filters['from'] ?? ($reportData['period']['from'] ?? now()->startOfMonth()->toDateString());
         $to = $filters['to'] ?? ($reportData['period']['to'] ?? now()->toDateString());
@@ -51,10 +51,11 @@
 
     @if ($report === 'income_statement')
         <div class="tich-card tich-mb-4">
-            <form method="GET" action="{{ route('finance.reports.index') }}" class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle" style="padding:0.75rem 1rem;">
+            <form method="GET" action="{{ route('finance.reports.index') }}" style="padding:0.75rem 1rem; display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
                 <input type="hidden" name="report" value="income_statement">
                 <label class="tich-caption" for="period">Period</label>
                 <select id="period" name="period" class="uf-input" style="width:160px; height:34px;" onchange="this.form.submit()">
+                    <option value="all" @selected($period === 'all')>All time</option>
                     <option value="mtd" @selected($period === 'mtd')>Month to date</option>
                     <option value="fy" @selected($period === 'fy')>Financial year</option>
                     <option value="custom" @selected($period === 'custom')>Custom From/To</option>
@@ -64,16 +65,17 @@
                     <input type="date" name="to" value="{{ $to }}" class="uf-input" style="height:34px;">
                     <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">Apply</button>
                 @endif
-                <div style="flex:1;"></div>
-                <span class="tich-caption">View</span>
-                <a href="{{ route('finance.reports.index', array_merge($queryBase, ['view' => 'standard', 'snapshot' => null])) }}"
-                   class="tich-btn tich-btn--sm {{ $viewMode === 'standard' ? 'tich-btn-primary' : 'tich-btn-ghost' }}">Standard (P&amp;L)</a>
-                <a href="{{ route('finance.reports.index', array_merge($queryBase, ['view' => 'full', 'snapshot' => null])) }}"
-                   class="tich-btn tich-btn--sm {{ $viewMode === 'full' ? 'tich-btn-primary' : 'tich-btn-ghost' }}">Full (incl. BS accounts)</a>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <span class="tich-caption">View</span>
+                    <a href="{{ route('finance.reports.index', array_merge($queryBase, ['view' => 'standard', 'snapshot' => null])) }}"
+                       class="tich-btn tich-btn--sm {{ $viewMode === 'standard' ? 'tich-btn-primary' : 'tich-btn-ghost' }}">Standard (P&amp;L)</a>
+                    <a href="{{ route('finance.reports.index', array_merge($queryBase, ['view' => 'full', 'snapshot' => null])) }}"
+                       class="tich-btn tich-btn--sm {{ $viewMode === 'full' ? 'tich-btn-primary' : 'tich-btn-ghost' }}">Full (incl. BS accounts)</a>
+                </div>
             </form>
 
-            <div class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle" style="padding:0 1rem 0.75rem;">
-                <form method="POST" action="{{ route('finance.reports.profit-loss.snapshots.store') }}" class="tich-flex tich-gap-2 tich-flex--middle">
+            <div style="padding:0 1rem 0.75rem; display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
+                <form method="POST" action="{{ route('finance.reports.profit-loss.snapshots.store') }}" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                     @csrf
                     <input type="hidden" name="period" value="{{ $period }}">
                     <input type="hidden" name="view" value="{{ $viewMode }}">
@@ -83,7 +85,7 @@
                     <button type="submit" class="tich-btn tich-btn-secondary tich-btn--sm">Save period snapshot</button>
                 </form>
                 @if (($snapshots ?? collect())->isNotEmpty())
-                    <form method="GET" action="{{ route('finance.reports.index') }}" class="tich-flex tich-gap-2 tich-flex--middle">
+                    <form method="GET" action="{{ route('finance.reports.index') }}" style="display:flex; align-items:center; gap:0.5rem;">
                         <input type="hidden" name="report" value="income_statement">
                         <select name="snapshot" class="uf-input" style="width:260px; height:34px;" onchange="this.form.submit()">
                             <option value="">Live report</option>
@@ -97,6 +99,30 @@
                 @endif
             </div>
         </div>
+    @endif
+
+    @php
+        $periodReports = ['income_statement', 'cashflow', 'reconciliation', 'general_ledger'];
+    @endphp
+
+    @if (in_array($report, $periodReports, true))
+        <form method="GET" action="{{ route('finance.reports.index') }}" class="tich-card tich-mb-4">
+            <input type="hidden" name="report" value="{{ $report }}">
+            <div class="tich-flex" style="gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label" for="report-from">From</label>
+                    <input type="date" id="report-from" name="from" value="{{ $filters['from'] ?? '' }}" class="tich-input">
+                </div>
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label" for="report-to">To</label>
+                    <input type="date" id="report-to" name="to" value="{{ $filters['to'] ?? '' }}" class="tich-input">
+                </div>
+                <button type="submit" class="tich-btn tich-btn-primary">Apply period</button>
+                @if (! empty($filters['from']) || ! empty($filters['to']))
+                    <a href="{{ route('finance.reports.index', ['report' => $report]) }}" class="tich-btn tich-btn-ghost">Clear</a>
+                @endif
+            </div>
+        </form>
     @endif
 
     @php
