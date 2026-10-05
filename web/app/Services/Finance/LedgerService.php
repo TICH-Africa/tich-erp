@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\DB;
 
 class LedgerService
 {
+    /**
+     * The chart of accounts for the current request, loaded once and reused so bulk
+     * invoice and payment runs do not re-query it for every posting.
+     *
+     * @var Collection<int, ChartOfAccount>|null
+     */
+    private ?Collection $chartAccounts = null;
+
     public function postEntry(
         string $transactionType,
         string $debitAccountCode,
@@ -40,7 +48,7 @@ class LedgerService
     {
         return $this->postEntry(
             'invoice_raised',
-            config('finance.accounts.accounts_receivable'),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
             $this->revenueAccountForInvoiceType($invoiceType),
             $amount,
             "Invoice raised: {$invoiceNumber}",
@@ -56,7 +64,7 @@ class LedgerService
         return $this->postEntry(
             'student_payment',
             $this->cashAccountFor($paymentMethod),
-            config('finance.accounts.accounts_receivable'),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
             $amount,
             "Student payment: {$paymentNumber}",
             'student_fees',
@@ -72,7 +80,7 @@ class LedgerService
         return $this->postEntry(
             'credit_memo',
             $this->revenueAccountForInvoiceType($invoiceType),
-            config('finance.accounts.accounts_receivable'),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
             $amount,
             "Credit memo: {$creditMemoNumber}",
             'student_fees',
@@ -90,8 +98,8 @@ class LedgerService
         if ((float) $run->total_gross > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                config('finance.accounts.salaries_expense'),
-                config('finance.accounts.salaries_payable'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_expense'), 'expense', ['salary', 'payroll', 'staff cost']),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
                 (float) $run->total_gross,
                 "Payroll gross - {$period}",
                 'payroll',
@@ -106,8 +114,8 @@ class LedgerService
         if ($employerStatutory > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                config('finance.accounts.employer_statutory_expense'),
-                config('finance.accounts.salaries_payable'),
+                $this->resolveChartCode((string) config('finance.accounts.employer_statutory_expense'), 'expense', ['statutory']),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
                 $employerStatutory,
                 "Employer statutory - {$period}",
                 'payroll',
@@ -123,17 +131,27 @@ class LedgerService
             'sha' => (float) $run->total_sha,
             'ahl' => (float) $run->total_ahl,
         ];
+        $statutoryHints = [
+            'paye' => ['paye', 'pay as you earn'],
+            'nssf' => ['nssf'],
+            'sha' => ['sha'],
+            'ahl' => ['housing levy', 'ahl'],
+        ];
 
         foreach ($statutoryCredits as $type => $amount) {
             if ($amount <= 0) {
                 continue;
             }
 
-            $payableAccount = config('finance.accounts.'.$type.'_payable');
+            $payableAccount = $this->resolveChartCode(
+                (string) config('finance.accounts.'.$type.'_payable'),
+                'liability',
+                $statutoryHints[$type],
+            );
 
             $this->postEntry(
                 'statutory_remittance',
-                config('finance.accounts.salaries_payable'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
                 $payableAccount,
                 $amount,
                 strtoupper($type)." remittance - {$period}",
@@ -149,8 +167,8 @@ class LedgerService
         if ($netPay > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                config('finance.accounts.salaries_payable'),
-                config('finance.accounts.cash_bank'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
+                $this->cashAccountFor('bank'),
                 $netPay,
                 "Net salaries disbursed - {$period}",
                 'payroll',
@@ -224,7 +242,6 @@ class LedgerService
         return $balances;
     }
 
-    /**
     /**
      * Signed net balance per active account, honouring reversals and an optional period.
      *
@@ -335,10 +352,12 @@ class LedgerService
 
     public function cashAccountFor(?string $paymentMethod): string
     {
-        return match (strtolower((string) $paymentMethod)) {
-            'mpesa', 'mobile_money' => (string) config('finance.accounts.cash_mpesa'),
-            default => (string) config('finance.accounts.cash_bank'),
+        [$configKey, $hints] = match (strtolower((string) $paymentMethod)) {
+            'mpesa', 'mobile_money' => ['cash_mpesa', ['mpesa', 'mobile money']],
+            default => ['cash_bank', ['bank', 'cash']],
         };
+
+        return $this->resolveChartCode((string) config('finance.accounts.'.$configKey), 'asset', $hints);
     }
 
     /**
@@ -347,13 +366,82 @@ class LedgerService
      */
     private function revenueAccountForInvoiceType(?string $invoiceType): string
     {
-        return match (strtolower((string) $invoiceType)) {
-            'application' => (string) config('finance.accounts.application_fee_revenue'),
-            'examination', 'exam', 'supplementary' => (string) config('finance.accounts.examination_fee_revenue'),
-            'graduation' => (string) config('finance.accounts.graduation_fee_revenue'),
-            'tuition', 'semester', 'semester_charges', 'hostel' => (string) config('finance.accounts.tuition_revenue'),
-            default => (string) config('finance.accounts.other_fee_revenue', config('finance.accounts.tuition_revenue')),
+        [$configKey, $hints] = match (strtolower((string) $invoiceType)) {
+            'application' => ['application_fee_revenue', ['application']],
+            'examination', 'exam', 'supplementary' => ['examination_fee_revenue', ['examination', 'exam']],
+            'graduation' => ['graduation_fee_revenue', ['graduation']],
+            'tuition', 'semester', 'semester_charges', 'hostel' => ['tuition_revenue', ['tuition', 'fee income', 'school fee']],
+            default => ['other_fee_revenue', ['other income', 'other fee', 'miscellaneous']],
         };
+
+        return $this->resolveChartCode(
+            (string) config('finance.accounts.'.$configKey, config('finance.accounts.tuition_revenue')),
+            'revenue',
+            $hints,
+        );
+    }
+
+    /**
+     * Resolve a configured posting account against the live chart of accounts.
+     *
+     * Invoices, payments and payroll post to account codes from config, but a live
+     * school may number those accounts differently in its own imported chart. A
+     * posting to a code the chart does not know is invisible on every statement, so
+     * the chart is asked first: the configured code wins when it exists, otherwise
+     * the first active account of the right type whose name matches a hint is used,
+     * preferring child accounts since they carry the real postings. A matched child
+     * keeps its parent_account_code, so the amount still rolls up under its parent
+     * on the chart of accounts, trial balance and P&L.
+     *
+     * @param  list<string>  $nameHints
+     */
+    public function resolveChartCode(string $configured, string $type, array $nameHints = []): string
+    {
+        $accounts = $this->chartAccounts();
+        $configured = trim($configured);
+
+        $exact = $accounts->firstWhere('account_code', $configured);
+
+        if ($exact !== null) {
+            return (string) $exact->account_code;
+        }
+
+        if ($nameHints === []) {
+            return $configured;
+        }
+
+        $match = $accounts
+            ->filter(fn (ChartOfAccount $account) => $account->account_type === $type
+                && (int) $account->is_active === 1
+                && $this->nameMatches($account, $nameHints))
+            ->sortBy(fn (ChartOfAccount $account) => [$account->isTopLevel() ? 1 : 0, (string) $account->account_code])
+            ->first();
+
+        return $match !== null ? (string) $match->account_code : $configured;
+    }
+
+    /**
+     * @param  list<string>  $nameHints
+     */
+    private function nameMatches(ChartOfAccount $account, array $nameHints): bool
+    {
+        $name = mb_strtolower((string) $account->account_name);
+
+        foreach ($nameHints as $hint) {
+            if ($hint !== '' && str_contains($name, mb_strtolower($hint))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Collection<int, ChartOfAccount>
+     */
+    private function chartAccounts(): Collection
+    {
+        return $this->chartAccounts ??= ChartOfAccount::query()->orderBy('account_code')->get();
     }
 
     private function systemStaffId(): int

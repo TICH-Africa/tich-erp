@@ -647,9 +647,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/chart-of-accounts', [$chartOfAccounts, 'store'])->name('finance.chart-of-accounts.store');
             Route::post('/chart-of-accounts/import', [$chartOfAccounts, 'import'])->name('finance.chart-of-accounts.import');
             Route::put('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'update'])->name('finance.chart-of-accounts.update');
+            // The literal delete-all path must stay above the {chartOfAccount} wildcard.
+            Route::delete('/chart-of-accounts/delete-all', [$chartOfAccounts, 'destroyAll'])->name('finance.chart-of-accounts.destroy-all');
+            Route::delete('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'destroy'])->name('finance.chart-of-accounts.destroy');
         });
 
-        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
+        Route::get('/ledger', [\App\Http\Controllers\Finance\LedgerController::class, 'index'])->name('finance.ledger.index');
         Route::get('/reports', [\App\Http\Controllers\Finance\LedgerController::class, 'reports'])->name('finance.reports.index');
         Route::post('/reports/profit-loss/snapshots', [\App\Http\Controllers\Finance\LedgerController::class, 'saveProfitLossSnapshot'])
             ->middleware('permission:finance.ledger.view')

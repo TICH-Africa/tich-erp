@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Imports\ChartOfAccountsImport;
+use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use App\Services\Finance\ChartOfAccountService;
 use App\Services\Finance\LedgerService;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChartOfAccountController extends Controller
 {
@@ -277,6 +279,101 @@ class ChartOfAccountController extends Controller
             ->with('status', 'Account updated successfully.');
     }
 
+    public function destroy(ChartOfAccount $chartOfAccount): RedirectResponse
+    {
+        if ($chartOfAccount->is_system_account) {
+            return back()->withErrors([
+                'delete' => "Account {$chartOfAccount->account_code} is a system account and cannot be deleted.",
+            ]);
+        }
+
+        if ($chartOfAccount->children()->exists()) {
+            return back()->withErrors([
+                'delete' => "Account {$chartOfAccount->account_code} still has child accounts. Delete or move the children first.",
+            ]);
+        }
+
+        if ($chartOfAccount->hasLedgerEntries()) {
+            return back()->withErrors([
+                'delete' => "Account {$chartOfAccount->account_code} has journal entries and cannot be deleted.",
+            ]);
+        }
+
+        $code = $chartOfAccount->account_code;
+        $chartOfAccount->delete();
+
+        return redirect()
+            ->route('finance.gl.index')
+            ->with('status', "Account {$code} deleted.");
+    }
+
+    /**
+     * Wipe the chart so it can be rebuilt from a fresh import. Accounts that already
+     * carry journal entries are kept, otherwise the ledger would keep referencing
+     * codes the chart no longer knows and every statement would drift.
+     */
+    public function destroyAll(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'confirmation' => ['required', 'in:DELETE ALL'],
+        ]);
+
+        $codesWithEntries = AccountLedger::query()
+            ->select(['debit_account_code', 'credit_account_code'])
+            ->get()
+            ->flatMap(fn (AccountLedger $entry) => [(string) $entry->debit_account_code, (string) $entry->credit_account_code])
+            ->flip();
+
+        $remaining = ChartOfAccount::query()->orderBy('account_code')->get()->keyBy('account_code');
+        $deleted = 0;
+        $skipped = [];
+
+        // Leaf-first so a parent is never removed while a child still points at it.
+        // Array keys of numeric codes come back as ints, so both sides are cast.
+        while ($remaining->isNotEmpty()) {
+            $progress = false;
+
+            foreach ($remaining as $code => $account) {
+                $hasChildrenRemaining = $remaining->contains(
+                    fn (ChartOfAccount $candidate) => (string) $candidate->parent_account_code === (string) $code
+                );
+
+                if ($hasChildrenRemaining) {
+                    continue;
+                }
+
+                if ($codesWithEntries->has((string) $code)) {
+                    $skipped[] = $account->account_code.' '.$account->account_name;
+                } else {
+                    $account->delete();
+                    $deleted++;
+                }
+
+                $remaining->forget($code);
+                $progress = true;
+            }
+
+            if (! $progress) {
+                break;
+            }
+        }
+
+        $message = $deleted.' account(s) deleted.';
+
+        if ($skipped !== []) {
+            $message .= ' Kept '.count($skipped).' account(s) with journal entries: '.implode('; ', array_slice($skipped, 0, 10))
+                .(count($skipped) > 10 ? '…' : '');
+        }
+
+        if ($remaining->isNotEmpty()) {
+            $message .= ' '.$remaining->count().' account(s) could not be removed (circular parent links).';
+        }
+
+        return redirect()
+            ->route('finance.gl.index')
+            ->with('status', $message);
+    }
+
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
@@ -445,38 +542,17 @@ class ChartOfAccountController extends Controller
      * Download the live chart matching the on-screen CoA/GL table.
      * Edit locally and re-upload to update fields and post balance adjustments.
      */
-    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
+    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse|StreamedResponse
     {
+        $rows = $this->chartRows();
+
         if (! PhpSpreadsheetAvailability::isAvailable()) {
-            return redirect()
-                ->route('finance.gl.index')
-                ->withErrors(['file' => PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel export')]);
+            return $this->csvResponse(
+                $rows,
+                'chart_of_accounts_'.now()->format('Ymd_His').'.csv',
+                self::HEADERS
+            );
         }
-
-        $service = $this->service();
-        $accounts = $service->tree(ChartOfAccount::query()->orderBy('account_code')->get());
-        $direct = app(LedgerService::class)->accountBalanceMap(
-            $accounts->map(fn (array $row) => $row['account'])
-        );
-
-        $rows = $accounts->map(function (array $row) use ($direct): array {
-            $account = $row['account'];
-            $own = $direct[$account->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0];
-            $ownNet = (float) $own['net'];
-
-            return [
-                $account->account_code,
-                $account->account_name,
-                ucfirst((string) $account->account_type),
-                $account->currency ?: self::DEFAULT_CURRENCY,
-                $account->isTopLevel() ? '' : $account->parent_account_code,
-                number_format((float) $own['debit'], 2, '.', ''),
-                number_format((float) $own['credit'], 2, '.', ''),
-                number_format(abs($ownNet), 2, '.', ''),
-                $ownNet >= 0 ? 'Dr' : 'Cr',
-                (int) $account->is_active,
-            ];
-        })->values()->all();
 
         try {
             $spreadsheet = new Spreadsheet();
@@ -508,12 +584,73 @@ class ChartOfAccountController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
+    /**
+     * Live CoA rows matching the on-screen table (parent/active included).
+     * Shared by the Excel export and the CSV fallback so they never disagree.
+     */
+    private function chartRows(): array
     {
+        $service = $this->service();
+        $accounts = $service->tree(ChartOfAccount::query()->orderBy('account_code')->get());
+        $direct = app(LedgerService::class)->accountBalanceMap(
+            $accounts->map(fn (array $row) => $row['account'])
+        );
+
+        return $accounts->map(function (array $row) use ($direct): array {
+            $account = $row['account'];
+            $own = $direct[$account->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0];
+            $ownNet = (float) $own['net'];
+
+            return [
+                $account->account_code,
+                $account->account_name,
+                ucfirst((string) $account->account_type),
+                $account->currency ?: self::DEFAULT_CURRENCY,
+                $account->isTopLevel() ? '' : $account->parent_account_code,
+                number_format((float) $own['debit'], 2, '.', ''),
+                number_format((float) $own['credit'], 2, '.', ''),
+                number_format(abs($ownNet), 2, '.', ''),
+                $ownNet >= 0 ? 'Dr' : 'Cr',
+                (int) $account->is_active,
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * CSV download fallback used when PhpSpreadsheet is not installed on the host,
+     * so Chart of Accounts export/template still work on minimal (cPanel) deployments.
+     */
+    private function csvResponse(array $rows, string $filename, array $headers): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows, $headers) {
+            // UTF-8 BOM so Excel renders accented account names correctly.
+            echo "\xEF\xBB\xBF";
+
+            $fh = fopen('php://output', 'w');
+
+            if ($headers !== []) {
+                fputcsv($fh, $headers);
+            }
+
+            foreach ($rows as $row) {
+                fputcsv($fh, array_map('strval', $row));
+            }
+
+            fclose($fh);
+        }, $filename, ['Content-Type' => 'text/csv; charset=utf-8']);
+    }
+
+    public function template(): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse|StreamedResponse
+    {
+        $rows = [
+            ['1114', 'Bank Accounts', 'Asset', 'KES', '', '0.00', '0.00', '0.00', 'Dr', '1'],
+            ['1114.01', 'Bank - Savings Account', 'Asset', 'KES', '1114', '0.00', '0.00', '0.00', 'Dr', '1'],
+            ['4000', 'Tuition Revenue', 'Revenue', 'KES', '', '0.00', '0.00', '0.00', 'Cr', '1'],
+            ['5100', 'Staff Training', 'Expense', 'KES', '', '0.00', '0.00', '0.00', 'Dr', '1'],
+        ];
+
         if (! PhpSpreadsheetAvailability::isAvailable()) {
-            return redirect()
-                ->route('finance.gl.index')
-                ->withErrors(['file' => PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel template')]);
+            return $this->csvResponse($rows, 'chart_of_accounts_template.csv', self::HEADERS);
         }
 
         try {

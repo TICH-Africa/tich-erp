@@ -12,6 +12,7 @@ use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -55,7 +56,9 @@ class LedgerController extends Controller
 
         $snapshots = collect();
         $snapshot = null;
-        if ($report === 'income_statement') {
+        // Older production databases predate the snapshots table; the report itself
+        // must still render so the statements stay reachable everywhere.
+        if ($report === 'income_statement' && Schema::hasTable('profit_loss_snapshots')) {
             $snapshots = ProfitLossSnapshot::query()->latest()->limit(25)->get();
             if ($request->filled('snapshot')) {
                 $snapshot = ProfitLossSnapshot::query()->find($request->integer('snapshot'));
@@ -80,6 +83,12 @@ class LedgerController extends Controller
 
     public function saveProfitLossSnapshot(Request $request): RedirectResponse
     {
+        if (! Schema::hasTable('profit_loss_snapshots')) {
+            return back()->withErrors([
+                'snapshot' => 'The profit & loss snapshot table is not installed on this server yet. Run the latest migrations (or the profit_loss_snapshots section of deploy/production-patches.sql), then try again.',
+            ]);
+        }
+
         $filters = $this->reportFilters($request);
         $data = $this->reports->build('income_statement', $filters);
         $period = $data['period'] ?? $this->reports->resolveIncomeStatementPeriod($filters);
