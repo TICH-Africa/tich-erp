@@ -3,6 +3,10 @@
 # Invoked from .cpanel.yml. Writes deploy/cpanel/last-deploy.log
 
 set -u
+# Without pipefail, "composer install | tee" reports tee's exit status, so a
+# failed/OOM'd install looks successful and the site ships a partial vendor
+# (this is how PhpSpreadsheet went missing on production).
+set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WEB="${REPO_ROOT}/web"
@@ -67,7 +71,7 @@ fi
 log "composer install --no-dev (fresh autoload, no mockery)…"
 # Broken autoload referencing mockery/phpunit is a common HostPinnacle 500.
 rm -f bootstrap/cache/packages.php bootstrap/cache/services.php 2>/dev/null || true
-if ! "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"; then
+if ! COMPOSER_MEMORY_LIMIT=-1 "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"; then
   log "ERROR: composer install failed"
   exit 1
 fi
@@ -82,7 +86,7 @@ fi
 SPREADSHEET_FILE="vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php"
 if [[ ! -f "$SPREADSHEET_FILE" ]]; then
   log "WARN: PhpSpreadsheet missing after install - forcing require…"
-  "$PHP_BIN" "$COMPOSER_BIN" require phpoffice/phpspreadsheet:^5.9 --no-interaction --update-with-dependencies 2>&1 | tee -a "$LOG" || true
+  COMPOSER_MEMORY_LIMIT=-1 "$PHP_BIN" "$COMPOSER_BIN" require phpoffice/phpspreadsheet:^5.9 --no-interaction --update-with-dependencies 2>&1 | tee -a "$LOG" || true
   "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG" || true
 fi
 if [[ ! -f "$SPREADSHEET_FILE" ]]; then
