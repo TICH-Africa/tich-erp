@@ -27,6 +27,7 @@ return [
         'ICT Manager',
         'Assistant ICT Manager',
         'Dean',
+        'Finance Financial Aid Officer',
     ],
 
     /** When retiring a role, move existing user_roles to this replacement when present. */
@@ -36,6 +37,7 @@ return [
         'ICT Manager' => 'Head of ICT',
         'Assistant ICT Manager' => 'Technician',
         'Dean' => 'Dean of Students',
+        'Finance Financial Aid Officer' => 'Finance Manager',
     ],
 
     /**
@@ -104,7 +106,7 @@ return [
                     'display_name' => 'Finance Manager',
                     'role_category' => 'administrative',
                     'description' => 'Full finance module leadership and approvals.',
-                    'permission_modules' => ['core', 'finance'],
+                    'permission_modules' => ['core', 'finance', 'finance_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
                 [
@@ -112,7 +114,7 @@ return [
                     'display_name' => 'Assistant Finance Manager',
                     'role_category' => 'administrative',
                     'description' => 'Full finance module access (same privileges as Finance Manager).',
-                    'permission_modules' => ['core', 'finance'],
+                    'permission_modules' => ['core', 'finance', 'finance_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
             ],
@@ -344,20 +346,6 @@ return [
                     'role_category' => 'administrative',
                     'description' => 'Manage financial aid opportunities and applications within Administration module.',
                     'permission_modules' => ['administration', 'administration_financial_aid'],
-                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
-                ],
-            ],
-        ],
-        'finance_financial_aid' => [
-            'label' => 'Financial Aid',
-            'description' => 'Financial aid allocation, donation management, and sponsorship follow-up.',
-            'roles' => [
-                [
-                    'role_name' => 'Finance Financial Aid Officer',
-                    'display_name' => 'Finance Financial Aid Officer',
-                    'role_category' => 'administrative',
-                    'description' => 'Allocate approved financial aid to student fees, manage donations and sponsorships.',
-                    'permission_modules' => ['finance', 'finance_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
             ],
