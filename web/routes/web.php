@@ -816,11 +816,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('rfqs/{rfq}/approve-award', [\App\Http\Controllers\Procurement\RfqController::class, 'approveAward'])->name('procurement.rfqs.approve-award');
         Route::post('rfqs/{rfq}/reject-award', [\App\Http\Controllers\Procurement\RfqController::class, 'rejectAward'])->name('procurement.rfqs.reject-award');
 
-        Route::resource('assets', \App\Http\Controllers\Procurement\AssetController::class)->only(['index', 'create', 'store', 'show'])->names([
+        Route::resource('assets', \App\Http\Controllers\Procurement\AssetController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update'])->names([
             'index' => 'procurement.assets.index',
             'create' => 'procurement.assets.create',
             'store' => 'procurement.assets.store',
             'show' => 'procurement.assets.show',
+            'edit' => 'procurement.assets.edit',
+            'update' => 'procurement.assets.update',
         ]);
         Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Procurement\AssetController::class, 'transfer'])->name('procurement.assets.transfer');
         Route::resource('grns', \App\Http\Controllers\Procurement\GrnController::class)->only(['index', 'create', 'store', 'show'])->names([

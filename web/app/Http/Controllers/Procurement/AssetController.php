@@ -54,15 +54,52 @@ class AssetController extends Controller
 
     public function create(): View
     {
-        return view('procurement.assets.create', [
+        return view('procurement.assets.create', $this->assetFormOptions());
+    }
+
+    public function edit(Asset $asset): View
+    {
+        return view('procurement.assets.create', array_merge(
+            $this->assetFormOptions(),
+            ['asset' => $asset],
+        ));
+    }
+
+    private function assetFormOptions(): array
+    {
+        return [
             'suppliers' => Supplier::query()->orderBy('supplier_name')->get(['id', 'supplier_name']),
             'purchaseOrders' => PurchaseOrder::query()->with('supplier')->whereIn('status', ['confirmed', 'partial_delivery', 'delivered'])->orderByDesc('created_at')->get(['id', 'po_number', 'supplier_id']),
             'requisitions' => \App\Models\ProcurementRequisition::query()->whereIn('status', ['draft', 'submitted', 'hod_approved', 'finance_approved', 'ceo_approved'])->orderByDesc('created_at')->get(['id', 'requisition_number']),
             'custodians' => Staff::query()->orderBy('first_name')->get(['id', 'first_name', 'surname', 'job_title']),
-        ]);
+        ];
     }
 
     public function store(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $asset = $this->assets->registerAsset($this->validatedAssetData($request));
+
+        return redirect()
+            ->route('procurement.assets.show', $asset)
+            ->with('status', 'Asset registered successfully.');
+    }
+
+    public function update(Request $request, Asset $asset): RedirectResponse
+    {
+        $asset->fill($this->validatedAssetData($request));
+        $asset->depreciation_per_year = $asset->calculateDepreciation();
+        $asset->current_value = round(max(
+            $asset->acquisition_cost - $asset->accumulated_depreciation,
+            $asset->salvage_value,
+        ), 2);
+        $asset->save();
+
+        return redirect()
+            ->route('procurement.assets.show', $asset)
+            ->with('status', 'Asset updated successfully.');
+    }
+
+    private function validatedAssetData(Request $request): array
     {
         $presetCategories = ['furniture', 'ict_hardware', 'equipment', 'vehicle', 'building', 'other'];
 
@@ -95,12 +132,9 @@ class AssetController extends Controller
 
         $validated['acquisition_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['acquisition_date'])->format('Y-m-d');
         $validated['warranty_expiry_date'] = $validated['warranty_expiry_date'] ?? null;
+        $validated['salvage_value'] = $validated['salvage_value'] ?? 0.0;
 
-        $asset = $this->assets->registerAsset($validated);
-
-        return redirect()
-            ->route('procurement.assets.show', $asset)
-            ->with('status', 'Asset registered successfully.');
+        return $validated;
     }
 
     public function show(Asset $asset): View

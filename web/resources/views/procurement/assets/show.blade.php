@@ -10,6 +10,7 @@
     <x-page-toolbar title="{{ $asset->asset_name }}" meta="{{ $asset->asset_number }}">
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="asset-transfer-modal">Transfer asset</button>
+            <a href="{{ route('procurement.assets.edit', $asset) }}" class="tich-btn tich-btn-secondary">Edit asset</a>
             <a href="{{ route('procurement.assets.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>

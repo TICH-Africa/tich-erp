@@ -1,11 +1,15 @@
 @extends('layouts.procurement')
 
-@section('title', 'Register asset')
+@php
+    $isEditing = isset($asset);
+@endphp
+
+@section('title', $isEditing ? 'Edit asset' : 'Register asset')
 
 @section('procurement-content')
-    <x-page-toolbar title="Register asset" meta="Add a fixed asset from a GRN or requisition">
+    <x-page-toolbar :title="$isEditing ? 'Edit asset' : 'Register asset'" :meta="$isEditing ? $asset->asset_number : 'Add a fixed asset from a GRN or requisition'">
         <x-slot:actions>
-            <a href="{{ route('procurement.assets.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ $isEditing ? route('procurement.assets.show', $asset) : route('procurement.assets.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -20,15 +24,18 @@
     @endif
 
     <div class="uf-form">
-        <form method="POST" action="{{ route('procurement.assets.store') }}" enctype="multipart/form-data" data-uf="ready">
+        <form method="POST" action="{{ $isEditing ? route('procurement.assets.update', $asset) : route('procurement.assets.store') }}" enctype="multipart/form-data" data-uf="ready">
             @csrf
+            @if($isEditing)
+                @method('PUT')
+            @endif
 
             <div class="uf-amount-bar">
                 <div>
                     <div class="uf-amount-bar__ref">AST · Fixed asset</div>
-                    <div class="uf-amount-bar__sum">Register from GRN or requisition</div>
+                    <div class="uf-amount-bar__sum">{{ $isEditing ? 'Update registered asset details' : 'Register from GRN or requisition' }}</div>
                 </div>
-                <span class="uf-badge">New</span>
+                <span class="uf-badge">{{ $isEditing ? 'Edit' : 'New' }}</span>
             </div>
 
             <div class="uf-form-section">
@@ -37,13 +44,13 @@
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
                             <label for="asset_name">Asset name <span class="uf-req">*</span></label>
-                            <input type="text" id="asset_name" name="asset_name" required>
+                            <input type="text" id="asset_name" name="asset_name" value="{{ old('asset_name', $asset->asset_name ?? '') }}" required>
                         </div>
                         <div class="uf-field">
                             <label for="asset_category">Category <span class="uf-req">*</span></label>
                             @php
                                 $presetCategories = ['furniture', 'ict_hardware', 'equipment', 'vehicle', 'building'];
-                                $oldCategory = old('asset_category', '');
+                                $oldCategory = old('asset_category', $asset->asset_category ?? '');
                                 $isOtherCategory = $oldCategory !== '' && ! in_array($oldCategory, $presetCategories, true);
                                 $selectedCategory = $isOtherCategory ? 'other' : $oldCategory;
                             @endphp
@@ -69,16 +76,16 @@
                         </div>
                         <div class="uf-field">
                             <label for="serial_number">Serial number</label>
-                            <input type="text" id="serial_number" name="serial_number">
+                            <input type="text" id="serial_number" name="serial_number" value="{{ old('serial_number', $asset->serial_number ?? '') }}">
                         </div>
                         <div class="uf-field">
                             <label for="tag_number">Tag / QR code</label>
-                            <input type="text" id="tag_number" name="tag_number">
+                            <input type="text" id="tag_number" name="tag_number" value="{{ old('tag_number', $asset->tag_number ?? '') }}">
                         </div>
                     </div>
                     <div class="uf-field">
                         <label for="description">Description</label>
-                        <textarea id="description" name="description" rows="2"></textarea>
+                        <textarea id="description" name="description" rows="2">{{ old('description', $asset->description ?? '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -89,29 +96,29 @@
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
                             <label for="acquisition_date">Acquisition date <span class="uf-req">*</span></label>
-                            <input type="text" id="acquisition_date" name="acquisition_date" placeholder="dd/mm/yyyy" required>
+                            <input type="text" id="acquisition_date" name="acquisition_date" value="{{ old('acquisition_date', isset($asset) ? $asset->acquisition_date?->format('d/m/Y') : '') }}" placeholder="dd/mm/yyyy" required>
                         </div>
                         <div class="uf-field">
                             <label for="acquisition_cost">Acquisition cost (KES) <span class="uf-req">*</span></label>
-                            <input type="number" id="acquisition_cost" name="acquisition_cost" step="0.01" min="0" required>
+                            <input type="number" id="acquisition_cost" name="acquisition_cost" value="{{ old('acquisition_cost', $asset->acquisition_cost ?? '') }}" step="0.01" min="0" required>
                         </div>
                         <div class="uf-field">
                             <label for="useful_life_years">Useful life (years) <span class="uf-req">*</span></label>
-                            <input type="number" id="useful_life_years" name="useful_life_years" min="1" value="5" required>
+                            <input type="number" id="useful_life_years" name="useful_life_years" value="{{ old('useful_life_years', $asset->useful_life_years ?? 5) }}" min="1" required>
                         </div>
                         <div class="uf-field">
                             <label for="salvage_value">Salvage value</label>
-                            <input type="number" id="salvage_value" name="salvage_value" step="0.01" min="0">
+                            <input type="number" id="salvage_value" name="salvage_value" value="{{ old('salvage_value', $asset->salvage_value ?? '') }}" step="0.01" min="0">
                         </div>
                         <div class="uf-field">
                             <label for="warranty_expiry_date">Warranty expiry</label>
-                            <input type="date" id="warranty_expiry_date" name="warranty_expiry_date">
+                            <input type="date" id="warranty_expiry_date" name="warranty_expiry_date" value="{{ old('warranty_expiry_date', isset($asset) ? $asset->warranty_expiry_date?->format('Y-m-d') : '') }}">
                         </div>
                         <div class="uf-field">
                             <label for="depreciation_method">Depreciation method</label>
                             <select id="depreciation_method" name="depreciation_method">
-                                <option value="straight_line">Straight line</option>
-                                <option value="declining_balance">Declining balance</option>
+                                <option value="straight_line" @selected(old('depreciation_method', $asset->depreciation_method ?? 'straight_line') === 'straight_line')>Straight line</option>
+                                <option value="declining_balance" @selected(old('depreciation_method', $asset->depreciation_method ?? 'straight_line') === 'declining_balance')>Declining balance</option>
                             </select>
                         </div>
                         <div class="uf-field">
@@ -119,7 +126,7 @@
                             <select id="supplier_id" name="supplier_id" required>
                                 <option value="">Select supplier</option>
                                 @foreach($suppliers as $supplier)
-                                    <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }}</option>
+                                    <option value="{{ $supplier->id }}" @selected((string) old('supplier_id', $asset->supplier_id ?? '') === (string) $supplier->id)>{{ $supplier->supplier_name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -128,7 +135,7 @@
                             <select id="purchase_order_id" name="purchase_order_id">
                                 <option value="">Select PO (optional)</option>
                                 @foreach($purchaseOrders as $po)
-                                    <option value="{{ $po->id }}">{{ $po->po_number }} - KES {{ number_format((float) $po->total_amount, 2) }}</option>
+                                    <option value="{{ $po->id }}" @selected((string) old('purchase_order_id', $asset->purchase_order_id ?? '') === (string) $po->id)>{{ $po->po_number }} - KES {{ number_format((float) $po->total_amount, 2) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -137,7 +144,7 @@
                             <select id="custodian_id" name="custodian_id" required>
                                 <option value="">Select staff</option>
                                 @foreach($custodians as $staff)
-                                    <option value="{{ $staff->id }}">{{ $staff->first_name }} {{ $staff->surname }}</option>
+                                    <option value="{{ $staff->id }}" @selected((string) old('custodian_id', $asset->custodian_id ?? '') === (string) $staff->id)>{{ $staff->first_name }} {{ $staff->surname }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -146,7 +153,7 @@
                             <select id="procurement_requisition_id" name="procurement_requisition_id">
                                 <option value="">None</option>
                                 @foreach($requisitions as $req)
-                                    <option value="{{ $req->id }}">{{ $req->requisition_number }}</option>
+                                    <option value="{{ $req->id }}" @selected((string) old('procurement_requisition_id', $asset->procurement_requisition_id ?? '') === (string) $req->id)>{{ $req->requisition_number }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -160,20 +167,20 @@
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
                             <label for="location_name">Location</label>
-                            <input type="text" id="location_name" name="location_name">
+                            <input type="text" id="location_name" name="location_name" value="{{ old('location_name', $asset->location_name ?? '') }}">
                         </div>
                         <div class="uf-field">
                             <label for="building">Building</label>
-                            <input type="text" id="building" name="building">
+                            <input type="text" id="building" name="building" value="{{ old('building', $asset->building ?? '') }}">
                         </div>
                         <div class="uf-field">
                             <label for="room">Room</label>
-                            <input type="text" id="room" name="room">
+                            <input type="text" id="room" name="room" value="{{ old('room', $asset->room ?? '') }}">
                         </div>
                     </div>
                     <div class="uf-form-actions">
-                        <button type="submit" class="uf-btn uf-btn-primary">Register asset</button>
-                        <a href="{{ route('procurement.assets.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
+                        <button type="submit" class="uf-btn uf-btn-primary">{{ $isEditing ? 'Save changes' : 'Register asset' }}</button>
+                        <a href="{{ $isEditing ? route('procurement.assets.show', $asset) : route('procurement.assets.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
                     </div>
                 </div>
             </div>

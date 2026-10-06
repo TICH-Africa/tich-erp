@@ -46,7 +46,9 @@
                             <td>{{ $asset->location_name ?? '-' }}</td>
                             <td>KES {{ number_format((float) $asset->acquisition_cost, 2) }}</td>
                             <td>{{ ucfirst($asset->asset_status) }}</td>
-                            <td><a href="{{ route('procurement.assets.show', $asset) }}" class="tich-link">View</a></td>
+                            <td>
+                                <a href="{{ route('procurement.assets.show', $asset) }}" class="tich-link">View</a>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="9" class="tich-table-empty">No assets found.</td></tr>

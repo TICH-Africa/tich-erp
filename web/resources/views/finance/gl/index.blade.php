@@ -10,7 +10,6 @@
                 <a href="{{ route('finance.chart-of-accounts.export') }}" class="tich-btn tich-btn-ghost">Export current chart</a>
                 <a href="{{ route('finance.chart-of-accounts.template') }}" class="tich-btn tich-btn-ghost">Template</a>
                 <a href="{{ route('finance.chart-of-accounts.create') }}" class="tich-btn tich-btn-primary">+ Add Main Account</a>
-                <button type="button" class="tich-btn tich-btn--danger" data-open-modal="delete-all-modal">Delete all</button>
             @endcan
             <a href="{{ route('finance.gl.journal.create') }}" class="tich-btn tich-btn-secondary">+ New journal entry</a>
         </x-slot:actions>
@@ -155,12 +154,6 @@
                                             @can('finance.chart_of_accounts.manage')
                                                 <a href="{{ route('finance.chart-of-accounts.create', ['parent' => $account->account_code]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">+ Child</a>
                                                 <a href="{{ route('finance.chart-of-accounts.edit', $account) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Edit</a>
-                                                <form method="POST" action="{{ route('finance.chart-of-accounts.destroy', $account) }}" style="display:inline;"
-                                                      onsubmit="return confirm('Delete account {{ $account->account_code }} - {{ $account->account_name }}? This cannot be undone.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="tich-btn tich-btn--danger tich-btn--sm">Delete</button>
-                                                </form>
                                             @endcan
                                         </div>
                                     </td>
@@ -309,37 +302,6 @@
         </div>
     </div>
 
-    <!-- Delete All Modal -->
-    <div id="delete-all-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
-        <div class="tich-modal__backdrop" data-close-modal="delete-all-modal"></div>
-        <div class="tich-modal__dialog" style="max-width: 440px;">
-            <header class="tich-modal__header">
-                <h2 class="tich-h3" style="margin: 0;">Delete All Accounts</h2>
-                <button type="button" class="tich-modal__close" data-close-modal="delete-all-modal" aria-label="Close">&times;</button>
-            </header>
-            <form method="POST" action="{{ route('finance.chart-of-accounts.destroy-all') }}" id="delete-all-form" class="tich-modal__body">
-                @csrf
-                @method('DELETE')
-                <p class="tich-text" style="margin: 0;">
-                    This removes every chart of accounts entry so you can import a fresh chart.
-                    Accounts that already have journal entries are kept, so the ledger stays intact.
-                </p>
-                <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0.6rem 0 0;">
-                    Type <strong>DELETE ALL</strong> below to confirm.
-                </p>
-                <input type="text" id="delete-all-confirmation" name="confirmation" class="uf-input" placeholder="DELETE ALL" required
-                       style="width: 100%; margin-top: 0.5rem;" autocomplete="off">
-                @error('confirmation')
-                    <div class="tich-alert tich-alert--error" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem;">{{ $message }}</div>
-                @enderror
-                <footer class="tich-modal__footer" style="margin-top: 1rem;">
-                    <div style="flex: 1;"></div>
-                    <button type="button" class="tich-btn tich-btn-secondary tich-btn--sm" data-close-modal="delete-all-modal">Cancel</button>
-                    <button type="submit" class="tich-btn tich-btn--danger tich-btn--sm">Delete all accounts</button>
-                </footer>
-            </form>
-        </div>
-    </div>
     @endcan
 @endsection
 
@@ -360,27 +322,6 @@
                 });
             }
 
-            const deleteAllForm = document.getElementById('delete-all-form');
-
-            if (deleteAllForm) {
-                deleteAllForm.addEventListener('submit', function (e) {
-                    const input = document.getElementById('delete-all-confirmation');
-                    if (input.value !== 'DELETE ALL') {
-                        e.preventDefault();
-                        alert('Type DELETE ALL exactly to confirm.');
-                        input.focus();
-                    }
-                });
-            }
         });
     </script>
-    @if ($errors->has('confirmation'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                if (window.tichOpenModal) {
-                    window.tichOpenModal('delete-all-modal');
-                }
-            });
-        </script>
-    @endif
 @endsection
