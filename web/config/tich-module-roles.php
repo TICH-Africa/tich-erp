@@ -28,6 +28,7 @@ return [
         'Assistant ICT Manager',
         'Dean',
         'Finance Financial Aid Officer',
+        'Administration Financial Aid Officer',
     ],
 
     /** When retiring a role, move existing user_roles to this replacement when present. */
@@ -38,6 +39,7 @@ return [
         'Assistant ICT Manager' => 'Technician',
         'Dean' => 'Dean of Students',
         'Finance Financial Aid Officer' => 'Finance Manager',
+        'Administration Financial Aid Officer' => 'Administration Manager',
     ],
 
     /**
@@ -202,7 +204,7 @@ return [
                     'display_name' => 'Chief Administrator',
                     'role_category' => 'administrative',
                     'description' => 'Administration module leadership.',
-                    'permission_modules' => ['core', 'administration'],
+                    'permission_modules' => ['core', 'administration', 'administration_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
                 [
@@ -210,7 +212,7 @@ return [
                     'display_name' => 'Assistant Administrator',
                     'role_category' => 'administrative',
                     'description' => 'Full administration access (same privileges as Administration Manager).',
-                    'permission_modules' => ['core', 'administration'],
+                    'permission_modules' => ['core', 'administration', 'administration_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
             ],
@@ -332,20 +334,6 @@ return [
                     'role_category' => 'administrative',
                     'description' => 'Full financial aid module leadership and approvals.',
                     'permission_modules' => ['core', 'financial_aid'],
-                    'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
-                ],
-            ],
-        ],
-        'administration_financial_aid' => [
-            'label' => 'Financial Aid',
-            'description' => 'Scholarships, grants, and financial aid administration.',
-            'roles' => [
-                [
-                    'role_name' => 'Administration Financial Aid Officer',
-                    'display_name' => 'Administration Financial Aid Officer',
-                    'role_category' => 'administrative',
-                    'description' => 'Manage financial aid opportunities and applications within Administration module.',
-                    'permission_modules' => ['administration', 'administration_financial_aid'],
                     'permission_categories' => ['view', 'create', 'edit', 'approve', 'manage', 'export', 'audit'],
                 ],
             ],
