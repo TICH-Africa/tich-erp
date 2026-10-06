@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\PurchaseOrder;
 use App\Models\Staff;
 use App\Models\Supplier;
+use App\Services\Procurement\AssetService;
 use App\Services\Procurement\AssetMovementService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
@@ -15,7 +16,10 @@ use Illuminate\View\View;
 
 class AssetController extends Controller
 {
-    public function __construct(protected AssetMovementService $movements) {}
+    public function __construct(
+        protected AssetMovementService $movements,
+        protected AssetService $assets,
+    ) {}
     public function index(Request $request): View
     {
         $query = Asset::query()->with(['supplier', 'purchaseOrder', 'custodian']);
@@ -92,7 +96,7 @@ class AssetController extends Controller
         $validated['acquisition_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['acquisition_date'])->format('Y-m-d');
         $validated['warranty_expiry_date'] = $validated['warranty_expiry_date'] ?? null;
 
-        $asset = \App\Services\Procurement\AssetService::registerAsset($validated);
+        $asset = $this->assets->registerAsset($validated);
 
         return redirect()
             ->route('procurement.assets.show', $asset)
