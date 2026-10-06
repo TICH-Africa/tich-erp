@@ -13,6 +13,7 @@ class AssetService
         $data['asset_status'] = $data['asset_status'] ?? 'new';
         $data['condition'] = $data['condition'] ?? 'new';
         $data['depreciation_method'] = $data['depreciation_method'] ?? 'straight_line';
+        $data['salvage_value'] = $data['salvage_value'] ?? 0.0;
 
         if (isset($data['acquisition_cost']) && isset($data['useful_life_years']) && $data['useful_life_years'] > 0) {
             $data['depreciation_per_year'] = round(($data['acquisition_cost'] - ($data['salvage_value'] ?? 0)) / $data['useful_life_years'], 2);
