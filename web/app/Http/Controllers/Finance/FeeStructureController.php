@@ -124,7 +124,7 @@ class FeeStructureController extends Controller
         $validated['accommodation_optional'] = true;
 
         if (! $validated['requires_indexing_nck']) {
-            $validated['indexing_nck_fee'] = null;
+            $validated['indexing_nck_fee'] = 0;
         }
 
         return $validated;
