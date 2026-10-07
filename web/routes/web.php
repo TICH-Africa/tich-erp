@@ -608,6 +608,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::put('/fee-structures/{feeStructure}', [\App\Http\Controllers\Finance\FeeStructureController::class, 'update'])->name('finance.fee-structures.update');
             Route::post('/fee-structures/{feeStructure}/approve', [\App\Http\Controllers\Finance\FeeStructureController::class, 'approve'])->name('finance.fee-structures.approve');
         });
+        Route::get('/fee-structures/{feeStructure}/pdf', [\App\Http\Controllers\Finance\FeeStructureController::class, 'downloadPdf'])->name('finance.fee-structures.pdf');
         Route::get('/fee-structures/{feeStructure}', [\App\Http\Controllers\Finance\FeeStructureController::class, 'show'])->name('finance.fee-structures.show');
 
         Route::get('/student-accounts', [\App\Http\Controllers\Finance\StudentAccountController::class, 'index'])->name('finance.student-accounts.index');

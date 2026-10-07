@@ -7,14 +7,18 @@ use App\Models\AcademicProgram;
 use App\Models\AcademicYear;
 use App\Models\FeeStructure;
 use App\Services\Finance\FeeStructureService;
+use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeeStructureController extends Controller
 {
     public function __construct(
         protected FeeStructureService $feeStructures,
+        protected PrintDocumentService $printDocuments,
     ) {}
 
     public function index(Request $request): View
@@ -46,6 +50,21 @@ class FeeStructureController extends Controller
         $feeStructure->load(['program.department', 'academicYear', 'approver']);
 
         return view('finance.fee-structures.show', compact('feeStructure'));
+    }
+
+    public function downloadPdf(FeeStructure $feeStructure): StreamedResponse
+    {
+        $feeStructure->load(['program', 'academicYear', 'approver']);
+        $filename = 'fee-structure-'.Str::slug(
+            ($feeStructure->program?->program_name ?? 'programme').'-'.
+            ($feeStructure->academicYear?->year_label ?? 'academic-year')
+        ).'-'.$feeStructure->id.'.pdf';
+
+        return $this->printDocuments->downloadPdf(
+            'finance.fee-structures.pdf',
+            ['feeStructure' => $feeStructure],
+            $filename,
+        );
     }
 
     public function edit(FeeStructure $feeStructure): View

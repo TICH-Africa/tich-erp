@@ -11,6 +11,7 @@
                     <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
                 </form>
             @endunless
+            <a href="{{ route('finance.fee-structures.pdf', $feeStructure) }}" class="tich-btn tich-btn-primary">Download PDF</a>
             <a href="{{ route('finance.fee-structures.edit', $feeStructure) }}" class="tich-btn tich-btn-ghost">Edit</a>
         </x-slot:actions>
     </x-page-toolbar>

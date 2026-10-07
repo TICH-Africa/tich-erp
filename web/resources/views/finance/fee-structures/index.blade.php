@@ -18,7 +18,7 @@
                     <th>QA (annual)</th>
                     <th>Graduation</th>
                     <th>Approved</th>
-                    <th></th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -31,10 +31,12 @@
                         <td>KES {{ number_format((float) $feeStructure->qa_annual_fee, 0) }}</td>
                         <td>KES {{ number_format((float) $feeStructure->graduation_fee, 0) }}</td>
                         <td>{{ $feeStructure->is_approved ? 'Yes' : 'Pending' }}</td>
-                        <td><a href="{{ route('finance.fee-structures.show', $feeStructure) }}">View</a></td>
+                        <td>
+                            <a href="{{ route('finance.fee-structures.show', $feeStructure) }}" class="tich-btn tich-btn-ghost">View</a>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="tich-caption">No fee structures configured yet.</td></tr>
+                    <tr><td colspan="8" class="tich-caption">No fee structures configured yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
