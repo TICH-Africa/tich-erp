@@ -5,13 +5,13 @@
     <title>Fee structure - {{ $feeStructure->program?->program_name }}</title>
     <style>
         body {
-            color: #263443;
+            color: #494c50;
             font-family: dejavusans, sans-serif;
             font-size: 9pt;
             line-height: 1.4;
         }
         .header {
-            border-bottom: 2pt solid #176b67;
+            border-bottom: 2pt solid #6cab33;
             margin-bottom: 18pt;
             padding-bottom: 12pt;
         }
@@ -23,49 +23,55 @@
             height: 52pt;
             width: auto;
         }
+        .brand-logo-cell {
+            padding-bottom: 5pt;
+            text-align: center;
+        }
         .institution {
-            color: #176b67;
+            color: #6cab33;
             font-size: 15pt;
             font-weight: bold;
+            text-align: center;
         }
         .institution-details {
-            color: #657383;
+            color: #494c50;
             font-size: 8pt;
+            text-align: center;
         }
         .document-heading {
-            color: #183447;
+            color: #1669a6;
             font-size: 19pt;
             font-weight: bold;
             letter-spacing: 1pt;
-            text-align: right;
+            text-align: center;
         }
         .document-subheading {
-            color: #657383;
+            color: #494c50;
             font-size: 8pt;
-            text-align: right;
+            text-align: center;
         }
         .summary-table {
             margin-bottom: 16pt;
         }
         .summary-table td {
-            background-color: #f2f7f6;
-            border: 0.5pt solid #d9e5e3;
+            background-color: #f3f8ec;
+            border: 0.5pt solid #dce8d0;
             padding: 8pt;
             width: 50%;
         }
         .summary-label {
-            color: #657383;
+            color: #494c50;
             font-size: 7pt;
             font-weight: bold;
             text-transform: uppercase;
         }
         .summary-value {
-            color: #183447;
+            color: #1669a6;
             font-size: 10pt;
             font-weight: bold;
         }
         .section-heading {
-            background-color: #176b67;
+            background-color: #6cab33;
             color: #ffffff;
             font-size: 9pt;
             font-weight: bold;
@@ -73,7 +79,7 @@
             padding: 6pt 8pt;
         }
         .section-note {
-            color: #657383;
+            color: #494c50;
             font-size: 8pt;
             margin: 4pt 0 6pt;
         }
@@ -81,14 +87,14 @@
             margin-bottom: 8pt;
         }
         .charges-table th {
-            background-color: #e8f0ef;
-            color: #183447;
+            background-color: #eaf2df;
+            color: #1669a6;
             font-size: 8pt;
             font-weight: bold;
             text-align: left;
         }
         .charges-table th, .charges-table td {
-            border-bottom: 0.5pt solid #d9e1e5;
+            border-bottom: 0.5pt solid #dce8d0;
             padding: 6pt 8pt;
         }
         .charges-table td.amount, .charges-table th.amount {
@@ -97,18 +103,18 @@
             width: 29%;
         }
         .charges-table tr.total td {
-            background-color: #f2f7f6;
-            border-top: 1pt solid #176b67;
-            color: #183447;
+            background-color: #f3f8ec;
+            border-top: 1pt solid #6cab33;
+            color: #1669a6;
             font-weight: bold;
         }
         .muted {
-            color: #7a8793;
+            color: #494c50;
             font-size: 8pt;
         }
         .footer {
-            border-top: 0.7pt solid #d9e1e5;
-            color: #657383;
+            border-top: 0.7pt solid #dce8d0;
+            color: #494c50;
             font-size: 7pt;
             margin-top: 18pt;
             padding-top: 7pt;
@@ -122,10 +128,14 @@
     <div class="header">
         <table class="brand-table">
             <tr>
-                <td style="width: 58%;">
+                <td colspan="2" class="brand-logo-cell">
                     @if (! empty($institution['logo_src']))
                         <img src="{{ $institution['logo_src'] }}" class="brand-logo" alt="">
                     @endif
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
                     <div class="institution">{{ $institution['name'] ?? 'TICH ERP' }}</div>
                     @if (! empty($institution['address']))
                         <div class="institution-details">{{ $institution['address'] }}</div>
@@ -133,8 +143,6 @@
                     @if (! empty($institution['website']))
                         <div class="institution-details">{{ $institution['website'] }}</div>
                     @endif
-                </td>
-                <td style="width: 42%; vertical-align: middle;">
                     <div class="document-heading">FEES STRUCTURE</div>
                     <div class="document-subheading">Official programme fee schedule</div>
                 </td>

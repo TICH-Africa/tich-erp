@@ -220,7 +220,11 @@ class SiteSettingsService
     {
         $absolute = $this->logoAbsolutePath();
 
-        if (! $absolute) {
+        if (! $absolute && $forPdf) {
+            $absolute = public_path('images/logo.png');
+        }
+
+        if (! $absolute || ! is_file($absolute) || filesize($absolute) === 0) {
             return null;
         }
 
