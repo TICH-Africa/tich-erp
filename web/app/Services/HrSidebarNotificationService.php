@@ -15,6 +15,7 @@ use App\Models\StaffOnboarding;
 use App\Models\StaffAttendance;
 use App\Models\StaffProfileChangeRequest;
 use App\Models\StaffWeeklyTimeLog;
+use App\Models\HrAppraisal;
 use App\Models\WorkFromHomeRequest;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
@@ -40,6 +41,7 @@ class HrSidebarNotificationService
         'attendance' => 'Attendance reviews',
         'time-logs' => 'Time logs',
         'wfh' => 'Work from home',
+        'appraisals' => 'Performance',
         'policies' => 'HR Policies',
         'grievances' => 'Grievances',
         'feedback' => 'Feedback',
@@ -111,6 +113,7 @@ class HrSidebarNotificationService
             'attendance' => $this->pendingAttendanceCount(),
             'time-logs' => $this->pendingTimeLogsCount(),
             'wfh' => $this->pendingWfhCount(),
+            'appraisals' => $this->pendingAppraisalsCount(),
             'policies' => $this->pendingPolicyAcknowledgementsCount(),
             'grievances' => $grievances,
             'feedback' => $feedback,
@@ -241,6 +244,17 @@ class HrSidebarNotificationService
 
         return WorkFromHomeRequest::query()
             ->where('status', WorkFromHomeRequest::STATUS_PENDING_HR)
+            ->count();
+    }
+
+    private function pendingAppraisalsCount(): int
+    {
+        if (! Schema::hasTable('hr_appraisals')) {
+            return 0;
+        }
+
+        return HrAppraisal::query()
+            ->whereIn('status', ['pending_hr', 'pending_calibration'])
             ->count();
     }
 }

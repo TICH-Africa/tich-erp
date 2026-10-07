@@ -4,6 +4,7 @@ namespace App\Services\Sidebar;
 
 use App\Models\Feedback;
 use App\Models\Grievance;
+use App\Models\HrAppraisal;
 use App\Models\LeaveRequest;
 use App\Models\PolicyAcknowledgement;
 use App\Models\Staff;
@@ -27,6 +28,7 @@ class EmployeeSidebarNotificationService
     public const MENU_KEYS = [
         'profile-changes' => 'Update profile',
         'leave.returned' => 'Apply for leave',
+        'appraisals' => 'Performance appraisals',
         'concerns' => 'Concerns & issues',
         'feedback' => 'My feedback',
         'policies' => 'HR Policies',
@@ -67,10 +69,30 @@ class EmployeeSidebarNotificationService
         return [
             'profile-changes' => $this->pendingProfileChanges($staff),
             'leave.returned' => $this->returnedLeaveRequests($staff),
+            'appraisals' => $this->pendingAppraisals($staff),
             'concerns' => $this->openConcerns($staff),
             'feedback' => $this->openFeedback($staff),
             'policies' => $this->unacknowledgedPolicies($staff),
         ];
+    }
+
+    private function pendingAppraisals(Staff $staff): int
+    {
+        if (! Schema::hasTable('hr_appraisals')) {
+            return 0;
+        }
+
+        $own = HrAppraisal::query()
+            ->where('staff_id', $staff->id)
+            ->whereIn('status', ['draft_goals', 'goals_pending_approval', 'self_assessment'])
+            ->count();
+
+        $team = HrAppraisal::query()
+            ->where('line_manager_id', $staff->id)
+            ->whereIn('status', ['goals_pending_approval', 'manager_review'])
+            ->count();
+
+        return $own + $team;
     }
 
     private function pendingProfileChanges(Staff $staff): int

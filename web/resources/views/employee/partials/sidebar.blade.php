@@ -28,6 +28,13 @@
                 'icon' => 'home',
                 'active' => request()->routeIs('employee.wfh.*'),
             ])
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('employee.appraisals.index'),
+                'label' => 'Performance appraisals',
+                'icon' => 'clipboard-check',
+                'active' => request()->routeIs('employee.appraisals.*'),
+                'badgeKey' => 'appraisals',
+            ])
             @include('partials.navigation.sidebar-link', ['href' => route('employee.documents.index'), 'label' => 'My Documents', 'icon' => 'folder', 'active' => request()->routeIs('employee.documents.*')])
             @include('partials.navigation.sidebar-link', ['href' => route('employee.attendance.index'), 'label' => 'Clock in / out', 'icon' => 'clock', 'active' => request()->routeIs('employee.attendance.*')])
             @include('partials.navigation.sidebar-link', [

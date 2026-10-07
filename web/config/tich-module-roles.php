@@ -123,7 +123,7 @@ return [
         ],
         'hr' => [
             'label' => 'Human resources',
-            'description' => 'Staff lifecycle, contracts, leave, payroll inputs, and policies.',
+            'description' => 'Staff lifecycle, contracts, leave, performance appraisals, payroll inputs, and policies.',
             'roles' => [
                 [
                     'role_name' => 'HR Manager',

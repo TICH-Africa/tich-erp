@@ -1188,6 +1188,21 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/wfh/{wfh}/reject', [\App\Http\Controllers\HR\WfhRequestController::class, 'reject'])->name('hr.wfh.reject');
             Route::post('/wfh/{wfh}/return', [\App\Http\Controllers\HR\WfhRequestController::class, 'returnRequest'])->name('hr.wfh.return');
 
+            Route::middleware('permission:hr.manage_performance')->prefix('appraisals')->name('hr.appraisals.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'index'])->name('index');
+                Route::get('/cycles', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'cycles'])->name('cycles');
+                Route::post('/cycles', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'storeCycle'])->name('cycles.store');
+                Route::post('/cycles/{cycle}/open', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'openCycle'])->name('cycles.open');
+                Route::post('/cycles/{cycle}/calibration', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'startCalibration'])->name('cycles.calibration');
+                Route::post('/cycles/{cycle}/close', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'closeCycle'])->name('cycles.close');
+                Route::get('/corporate-goals', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'corporateGoals'])->name('corporate-goals');
+                Route::post('/corporate-goals', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'storeCorporateGoal'])->name('corporate-goals.store');
+                Route::put('/corporate-goals/{goal}', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'updateCorporateGoal'])->name('corporate-goals.update');
+                Route::get('/{appraisal}', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'show'])->name('show');
+                Route::post('/{appraisal}/calibrate', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'calibrate'])->name('calibrate');
+                Route::post('/{appraisal}/sign-off', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'signOff'])->name('sign-off');
+            });
+
             Route::prefix('employee-relations')->name('hr.employee-relations.')->group(function () {
                 Route::get('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'index'])->name('disciplinary.index');
                 Route::get('/disciplinary/create', [\App\Http\Controllers\HR\DisciplinaryController::class, 'create'])->name('disciplinary.create');
@@ -1373,6 +1388,22 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/wfh', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'store'])->name('employee.wfh.store');
         Route::get('/wfh/{wfh}', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'show'])->name('employee.wfh.show');
         Route::post('/wfh/{wfh}/cancel', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'cancel'])->name('employee.wfh.cancel');
+
+        Route::prefix('appraisals')->name('employee.appraisals.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'index'])->name('index');
+            Route::get('/team/{appraisal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'teamShow'])->name('team.show');
+            Route::post('/team/{appraisal}/goals/approve', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'approveGoals'])->name('team.goals.approve');
+            Route::post('/team/{appraisal}/goals/return', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'returnGoals'])->name('team.goals.return');
+            Route::post('/team/{appraisal}/review', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'saveManagerReview'])->name('team.review.save');
+            Route::post('/team/{appraisal}/review/submit', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'submitManagerReview'])->name('team.review.submit');
+            Route::get('/{appraisal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'show'])->name('show');
+            Route::post('/{appraisal}/goals', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'storeGoal'])->name('goals.store');
+            Route::put('/{appraisal}/goals/{goal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'updateGoal'])->name('goals.update');
+            Route::delete('/{appraisal}/goals/{goal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'destroyGoal'])->name('goals.destroy');
+            Route::post('/{appraisal}/goals/submit', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'submitGoals'])->name('goals.submit');
+            Route::post('/{appraisal}/self', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'saveSelfAssessment'])->name('self.save');
+            Route::post('/{appraisal}/self/submit', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'submitSelfAssessment'])->name('self.submit');
+        });
 
         Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('policies.assigned');
         Route::get('/policies/{policy}/acknowledge', [\App\Http\Controllers\HR\HrPolicyController::class, 'acknowledgeForm'])->name('policies.acknowledge');

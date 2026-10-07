@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-01
+-- Last updated: 2026-10-08
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2188,6 +2188,163 @@ CREATE TABLE IF NOT EXISTS `profit_loss_snapshots` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- APPLY ON PRODUCTION: P&L historical snapshots under Financial reports
 
+-- -----------------------------------------------------------------------------
+-- 48. HR staff performance appraisals
+--     (2026_10_08_000001_create_hr_performance_appraisal_tables)
+--     Quarterly cycle: employee goals → supervisor → calibration → HR sign-off.
+--     Safe to re-run: CREATE TABLE IF NOT EXISTS.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_appraisal_cycles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL,
+  `fiscal_year` smallint(5) unsigned NOT NULL,
+  `quarter` tinyint(3) unsigned NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `initiated_by` bigint(20) unsigned DEFAULT NULL,
+  `instructions` text DEFAULT NULL,
+  `calibration_notes` text DEFAULT NULL,
+  `opened_at` datetime DEFAULT NULL,
+  `calibration_started_at` datetime DEFAULT NULL,
+  `closed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisal_cycles_fiscal_year_quarter_unique` (`fiscal_year`,`quarter`),
+  KEY `hr_appraisal_cycles_initiated_by_foreign` (`initiated_by`),
+  KEY `hr_appraisal_cycles_status_index` (`status`),
+  CONSTRAINT `hr_appraisal_cycles_initiated_by_foreign` FOREIGN KEY (`initiated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hr_corporate_goals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `parent_id` bigint(20) unsigned DEFAULT NULL,
+  `code` varchar(50) DEFAULT NULL,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `role_scope` varchar(40) NOT NULL DEFAULT 'all',
+  `scope_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`scope_values`)),
+  `weight_hint` decimal(5,2) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `hr_corporate_goals_cycle_id_foreign` (`cycle_id`),
+  KEY `hr_corporate_goals_parent_id_foreign` (`parent_id`),
+  KEY `hr_corporate_goals_created_by_foreign` (`created_by`),
+  KEY `hr_corporate_goals_is_active_role_scope_index` (`is_active`,`role_scope`),
+  CONSTRAINT `hr_corporate_goals_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_corporate_goals_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `hr_appraisal_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_corporate_goals_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `hr_corporate_goals` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hr_appraisals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_number` varchar(50) NOT NULL,
+  `cycle_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `line_manager_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
+  `job_title_snapshot` varchar(200) DEFAULT NULL,
+  `job_description_snapshot` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft_goals',
+  `objectives_score` decimal(4,2) DEFAULT NULL,
+  `competencies_score` decimal(4,2) DEFAULT NULL,
+  `overall_score` decimal(4,2) DEFAULT NULL,
+  `calibrated_score` decimal(4,2) DEFAULT NULL,
+  `overall_rating` varchar(50) DEFAULT NULL,
+  `strengths` text DEFAULT NULL,
+  `development_areas` text DEFAULT NULL,
+  `training_recommendations` text DEFAULT NULL,
+  `employee_self_comments` text DEFAULT NULL,
+  `manager_objectives_comments` text DEFAULT NULL,
+  `manager_competencies_comments` text DEFAULT NULL,
+  `hr_comments` text DEFAULT NULL,
+  `calibration_reason` text DEFAULT NULL,
+  `staff_agrees` tinyint(1) NOT NULL DEFAULT 0,
+  `goals_submitted_at` datetime DEFAULT NULL,
+  `goals_approved_at` datetime DEFAULT NULL,
+  `goals_approved_by` bigint(20) unsigned DEFAULT NULL,
+  `self_submitted_at` datetime DEFAULT NULL,
+  `manager_submitted_at` datetime DEFAULT NULL,
+  `manager_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `calibrated_at` datetime DEFAULT NULL,
+  `calibrated_by` bigint(20) unsigned DEFAULT NULL,
+  `hr_signed_at` datetime DEFAULT NULL,
+  `hr_signed_by` bigint(20) unsigned DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisals_cycle_id_staff_id_unique` (`cycle_id`,`staff_id`),
+  UNIQUE KEY `hr_appraisals_appraisal_number_unique` (`appraisal_number`),
+  KEY `hr_appraisals_line_manager_id_foreign` (`line_manager_id`),
+  KEY `hr_appraisals_department_id_foreign` (`department_id`),
+  KEY `hr_appraisals_goals_approved_by_foreign` (`goals_approved_by`),
+  KEY `hr_appraisals_manager_reviewed_by_foreign` (`manager_reviewed_by`),
+  KEY `hr_appraisals_calibrated_by_foreign` (`calibrated_by`),
+  KEY `hr_appraisals_hr_signed_by_foreign` (`hr_signed_by`),
+  KEY `hr_appraisals_status_line_manager_id_index` (`status`,`line_manager_id`),
+  KEY `hr_appraisals_staff_id_index` (`staff_id`),
+  CONSTRAINT `hr_appraisals_calibrated_by_foreign` FOREIGN KEY (`calibrated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `hr_appraisal_cycles` (`id`),
+  CONSTRAINT `hr_appraisals_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_goals_approved_by_foreign` FOREIGN KEY (`goals_approved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_hr_signed_by_foreign` FOREIGN KEY (`hr_signed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_line_manager_id_foreign` FOREIGN KEY (`line_manager_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_manager_reviewed_by_foreign` FOREIGN KEY (`manager_reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hr_appraisal_goals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_id` bigint(20) unsigned NOT NULL,
+  `sort_order` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `goal_type` varchar(40) NOT NULL DEFAULT 'personal',
+  `corporate_goal_id` bigint(20) unsigned DEFAULT NULL,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `smart_specific` text DEFAULT NULL,
+  `smart_measurable` text DEFAULT NULL,
+  `smart_achievable` text DEFAULT NULL,
+  `smart_relevant` text DEFAULT NULL,
+  `smart_timebound` text DEFAULT NULL,
+  `target_date` date DEFAULT NULL,
+  `weight` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `employee_achievement` text DEFAULT NULL,
+  `self_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_comments` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `hr_appraisal_goals_corporate_goal_id_foreign` (`corporate_goal_id`),
+  KEY `hr_appraisal_goals_appraisal_id_sort_order_index` (`appraisal_id`,`sort_order`),
+  CONSTRAINT `hr_appraisal_goals_appraisal_id_foreign` FOREIGN KEY (`appraisal_id`) REFERENCES `hr_appraisals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hr_appraisal_goals_corporate_goal_id_foreign` FOREIGN KEY (`corporate_goal_id`) REFERENCES `hr_corporate_goals` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hr_appraisal_competencies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_id` bigint(20) unsigned NOT NULL,
+  `category` varchar(40) NOT NULL,
+  `competency_key` varchar(80) NOT NULL,
+  `competency_label` varchar(200) NOT NULL,
+  `is_applicable` tinyint(1) NOT NULL DEFAULT 1,
+  `self_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_rating` tinyint(3) unsigned DEFAULT NULL,
+  `comments` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisal_competencies_appraisal_id_competency_key_unique` (`appraisal_id`,`competency_key`),
+  CONSTRAINT `hr_appraisal_competencies_appraisal_id_foreign` FOREIGN KEY (`appraisal_id`) REFERENCES `hr_appraisals` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: HR quarterly performance appraisals (self → manager → HR)
 
 
 
@@ -2196,14 +2353,13 @@ CREATE TABLE IF NOT EXISTS `profit_loss_snapshots` (
 
 
 
+SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
 
--- Research activities, financial policy, partnership inquiry columns, weekly
--- time logs, IQA assessments, academic workplans, staff archive columns, and
--- leave catalog/coverages/sick-pay/carry-forward/contact columns are also covered by
--- deploy/production.sql / Laravel migrations. Run production.sql first on
--- fresh hosts.
+-- Fresh hosts: prefer deploy/production.sql (includes these tables via tich_ensure_*).
+-- This patch file is for incremental production upgrades after production.sql.
 
--- Done. Verify: SELECT COUNT(*) FROM information_schema.tables
--- WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';
+-- Done. Verify appraisal tables:
+-- SELECT table_name FROM information_schema.tables
+-- WHERE table_schema = DATABASE() AND table_name LIKE 'hr_appraisal%';
 

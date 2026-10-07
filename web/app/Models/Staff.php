@@ -253,7 +253,12 @@ class Staff extends Model
 
     public function performanceReviews(): HasMany
     {
-        return $this->hasMany(PerformanceReview::class);
+        return $this->hasMany(HrAppraisal::class, 'staff_id');
+    }
+
+    public function hrAppraisals(): HasMany
+    {
+        return $this->hasMany(HrAppraisal::class, 'staff_id');
     }
 
     public function fullName(): string

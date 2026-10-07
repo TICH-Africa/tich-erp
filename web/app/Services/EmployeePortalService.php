@@ -70,7 +70,7 @@ class EmployeePortalService
             'documents' => fn ($query) => $query->orderByDesc('created_at'),
             'qualifications' => fn ($query) => $query->orderByDesc('year_completed'),
             'professionalLicenses' => fn ($query) => $query->orderByDesc('expiry_date'),
-            'performanceReviews' => fn ($query) => $query->orderByDesc('review_date')->limit(3),
+            'performanceReviews' => fn ($query) => $query->with('cycle')->orderByDesc('id')->limit(3),
         ]);
 
         $currentContract = $staff->contracts->first(fn ($contract) => ! $contract->isExpired());

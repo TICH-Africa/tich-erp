@@ -139,6 +139,37 @@
         ])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.training.index'), 'label' => 'Training', 'icon' => 'presentation', 'active' => request()->routeIs('hr.training.*')])
 
+        @can('hr.manage_performance')
+            @include('partials.navigation.sidebar-group', [
+                'label' => 'Performance',
+                'icon' => 'clipboard-check',
+                'open' => request()->routeIs('hr.appraisals.*'),
+                'active' => request()->routeIs('hr.appraisals.*'),
+                'badgeKey' => 'appraisals',
+                'items' => [
+                    [
+                        'href' => route('hr.appraisals.index'),
+                        'label' => 'Appraisals',
+                        'icon' => 'clipboard-list',
+                        'active' => request()->routeIs('hr.appraisals.index') || request()->routeIs('hr.appraisals.show'),
+                        'badgeKey' => 'appraisals',
+                    ],
+                    [
+                        'href' => route('hr.appraisals.cycles'),
+                        'label' => 'Cycles',
+                        'icon' => 'calendar',
+                        'active' => request()->routeIs('hr.appraisals.cycles*'),
+                    ],
+                    [
+                        'href' => route('hr.appraisals.corporate-goals'),
+                        'label' => 'Corporate goals',
+                        'icon' => 'flag',
+                        'active' => request()->routeIs('hr.appraisals.corporate-goals*'),
+                    ],
+                ],
+            ])
+        @endcan
+
         @php
             $erRoutesActive = request()->routeIs('hr.employee-relations.*');
         @endphp

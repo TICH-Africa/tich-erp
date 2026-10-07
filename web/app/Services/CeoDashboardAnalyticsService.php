@@ -13,7 +13,7 @@ use App\Models\LeaveRequest;
 use App\Models\Me\MePolicy;
 use App\Models\Me\MePolicySignoff;
 use App\Models\Me\MeQuarterlyReport;
-use App\Models\PerformanceReview;
+use App\Models\HrAppraisal;
 use App\Models\ProcurementRequisition;
 use App\Models\Qa\IqaAssessment;
 use App\Models\RecruitmentApplication;
@@ -507,29 +507,28 @@ class CeoDashboardAnalyticsService
             'performance_by_rating' => collect(),
         ];
 
-        if (! Schema::hasTable('performance_reviews')) {
+        if (! Schema::hasTable('hr_appraisals')) {
             return $result;
         }
 
-        $result['performance_total'] = PerformanceReview::query()->count();
-
-        if (Schema::hasColumn('performance_reviews', 'hr_approved_at')) {
-            $result['performance_awaiting_hr'] = PerformanceReview::query()->whereNull('hr_approved_at')->count();
-            $result['performance_completed'] = PerformanceReview::query()->whereNotNull('hr_approved_at')->count();
-        }
-
-        if (Schema::hasColumn('performance_reviews', 'overall_rating')) {
-            $result['performance_by_rating'] = PerformanceReview::query()
-                ->whereNotNull('overall_rating')
-                ->selectRaw('overall_rating, COUNT(*) as review_count')
-                ->groupBy('overall_rating')
-                ->orderByDesc('review_count')
-                ->get()
-                ->map(fn ($row) => [
-                    'rating' => str_replace('_', ' ', (string) $row->overall_rating),
-                    'count' => (int) $row->review_count,
-                ]);
-        }
+        $result['performance_total'] = HrAppraisal::query()->count();
+        $result['performance_awaiting_hr'] = HrAppraisal::query()
+            ->whereIn('status', ['pending_hr', 'pending_calibration'])
+            ->count();
+        $result['performance_completed'] = HrAppraisal::query()
+            ->where('status', 'completed')
+            ->count();
+        $result['performance_by_rating'] = HrAppraisal::query()
+            ->whereNotNull('overall_rating')
+            ->where('status', 'completed')
+            ->selectRaw('overall_rating, COUNT(*) as review_count')
+            ->groupBy('overall_rating')
+            ->orderByDesc('review_count')
+            ->get()
+            ->map(fn ($row) => [
+                'rating' => str_replace('_', ' ', (string) $row->overall_rating),
+                'count' => (int) $row->review_count,
+            ]);
 
         return $result;
     }

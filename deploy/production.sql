@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-05 20:29:31 EAT
+-- Generated: 2026-10-08 00:49:18 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4836,6 +4836,308 @@ CALL `tich_ensure_column`('homepage_carousel_slides', 'updated_at', 'datetime NU
 -- Indexes for `homepage_carousel_slides` (add only if missing)
 CALL `tich_ensure_unique`('homepage_carousel_slides', 'homepage_carousel_slides_event_id_unique', '`event_id`');
 CALL `tich_ensure_unique`('homepage_carousel_slides', 'homepage_carousel_slides_program_id_unique', '`program_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `hr_appraisals`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_appraisals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_number` varchar(50) NOT NULL,
+  `cycle_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `line_manager_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
+  `job_title_snapshot` varchar(200) DEFAULT NULL,
+  `job_description_snapshot` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft_goals',
+  `objectives_score` decimal(4,2) DEFAULT NULL,
+  `competencies_score` decimal(4,2) DEFAULT NULL,
+  `overall_score` decimal(4,2) DEFAULT NULL,
+  `calibrated_score` decimal(4,2) DEFAULT NULL,
+  `overall_rating` varchar(50) DEFAULT NULL,
+  `strengths` text DEFAULT NULL,
+  `development_areas` text DEFAULT NULL,
+  `training_recommendations` text DEFAULT NULL,
+  `employee_self_comments` text DEFAULT NULL,
+  `manager_objectives_comments` text DEFAULT NULL,
+  `manager_competencies_comments` text DEFAULT NULL,
+  `hr_comments` text DEFAULT NULL,
+  `calibration_reason` text DEFAULT NULL,
+  `staff_agrees` tinyint(1) NOT NULL DEFAULT 0,
+  `goals_submitted_at` datetime DEFAULT NULL,
+  `goals_approved_at` datetime DEFAULT NULL,
+  `goals_approved_by` bigint(20) unsigned DEFAULT NULL,
+  `self_submitted_at` datetime DEFAULT NULL,
+  `manager_submitted_at` datetime DEFAULT NULL,
+  `manager_reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `calibrated_at` datetime DEFAULT NULL,
+  `calibrated_by` bigint(20) unsigned DEFAULT NULL,
+  `hr_signed_at` datetime DEFAULT NULL,
+  `hr_signed_by` bigint(20) unsigned DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisals_cycle_id_staff_id_unique` (`cycle_id`,`staff_id`),
+  UNIQUE KEY `hr_appraisals_appraisal_number_unique` (`appraisal_number`),
+  KEY `hr_appraisals_line_manager_id_foreign` (`line_manager_id`),
+  KEY `hr_appraisals_department_id_foreign` (`department_id`),
+  KEY `hr_appraisals_goals_approved_by_foreign` (`goals_approved_by`),
+  KEY `hr_appraisals_manager_reviewed_by_foreign` (`manager_reviewed_by`),
+  KEY `hr_appraisals_calibrated_by_foreign` (`calibrated_by`),
+  KEY `hr_appraisals_hr_signed_by_foreign` (`hr_signed_by`),
+  KEY `hr_appraisals_status_line_manager_id_index` (`status`,`line_manager_id`),
+  KEY `hr_appraisals_staff_id_index` (`staff_id`),
+  CONSTRAINT `hr_appraisals_calibrated_by_foreign` FOREIGN KEY (`calibrated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `hr_appraisal_cycles` (`id`),
+  CONSTRAINT `hr_appraisals_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_goals_approved_by_foreign` FOREIGN KEY (`goals_approved_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_hr_signed_by_foreign` FOREIGN KEY (`hr_signed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_line_manager_id_foreign` FOREIGN KEY (`line_manager_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_manager_reviewed_by_foreign` FOREIGN KEY (`manager_reviewed_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_appraisals_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `hr_appraisals` (add only if missing)
+CALL `tich_ensure_column`('hr_appraisals', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('hr_appraisals', 'appraisal_number', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'cycle_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'line_manager_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'department_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'job_title_snapshot', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'job_description_snapshot', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'status', 'varchar(40) NOT NULL DEFAULT \'\\\'draft_goals\\\'\'');
+CALL `tich_ensure_column`('hr_appraisals', 'objectives_score', 'decimal(4,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'competencies_score', 'decimal(4,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'overall_score', 'decimal(4,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'calibrated_score', 'decimal(4,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'overall_rating', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'strengths', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'development_areas', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'training_recommendations', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'employee_self_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'manager_objectives_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'manager_competencies_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'hr_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'calibration_reason', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'staff_agrees', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('hr_appraisals', 'goals_submitted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'goals_approved_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'goals_approved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'self_submitted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'manager_submitted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'manager_reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'calibrated_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'calibrated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'hr_signed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'hr_signed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'completed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisals', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `hr_appraisals` (add only if missing)
+CALL `tich_ensure_unique`('hr_appraisals', 'hr_appraisals_appraisal_number_unique', '`appraisal_number`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_calibrated_by_foreign', '`calibrated_by`');
+CALL `tich_ensure_unique`('hr_appraisals', 'hr_appraisals_cycle_id_staff_id_unique', '`cycle_id`, `staff_id`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_department_id_foreign', '`department_id`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_goals_approved_by_foreign', '`goals_approved_by`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_hr_signed_by_foreign', '`hr_signed_by`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_line_manager_id_foreign', '`line_manager_id`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_manager_reviewed_by_foreign', '`manager_reviewed_by`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_staff_id_index', '`staff_id`');
+CALL `tich_ensure_index`('hr_appraisals', 'hr_appraisals_status_line_manager_id_index', '`status`, `line_manager_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `hr_appraisal_competencies`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_appraisal_competencies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_id` bigint(20) unsigned NOT NULL,
+  `category` varchar(40) NOT NULL,
+  `competency_key` varchar(80) NOT NULL,
+  `competency_label` varchar(200) NOT NULL,
+  `is_applicable` tinyint(1) NOT NULL DEFAULT 1,
+  `self_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_rating` tinyint(3) unsigned DEFAULT NULL,
+  `comments` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisal_competencies_appraisal_id_competency_key_unique` (`appraisal_id`,`competency_key`),
+  CONSTRAINT `hr_appraisal_competencies_appraisal_id_foreign` FOREIGN KEY (`appraisal_id`) REFERENCES `hr_appraisals` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `hr_appraisal_competencies` (add only if missing)
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'appraisal_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'category', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'competency_key', 'varchar(80) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'competency_label', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'is_applicable', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'self_rating', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'manager_rating', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_competencies', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `hr_appraisal_competencies` (add only if missing)
+CALL `tich_ensure_unique`('hr_appraisal_competencies', 'hr_appraisal_competencies_appraisal_id_competency_key_unique', '`appraisal_id`, `competency_key`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `hr_appraisal_cycles`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_appraisal_cycles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL,
+  `fiscal_year` smallint(5) unsigned NOT NULL,
+  `quarter` tinyint(3) unsigned NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NOT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `initiated_by` bigint(20) unsigned DEFAULT NULL,
+  `instructions` text DEFAULT NULL,
+  `calibration_notes` text DEFAULT NULL,
+  `opened_at` datetime DEFAULT NULL,
+  `calibration_started_at` datetime DEFAULT NULL,
+  `closed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hr_appraisal_cycles_fiscal_year_quarter_unique` (`fiscal_year`,`quarter`),
+  KEY `hr_appraisal_cycles_initiated_by_foreign` (`initiated_by`),
+  KEY `hr_appraisal_cycles_status_index` (`status`),
+  CONSTRAINT `hr_appraisal_cycles_initiated_by_foreign` FOREIGN KEY (`initiated_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `hr_appraisal_cycles` (add only if missing)
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'name', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'fiscal_year', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'quarter', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'period_start', 'date NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'period_end', 'date NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'status', 'varchar(40) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'initiated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'instructions', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'calibration_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'opened_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'calibration_started_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'closed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_cycles', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `hr_appraisal_cycles` (add only if missing)
+CALL `tich_ensure_unique`('hr_appraisal_cycles', 'hr_appraisal_cycles_fiscal_year_quarter_unique', '`fiscal_year`, `quarter`');
+CALL `tich_ensure_index`('hr_appraisal_cycles', 'hr_appraisal_cycles_initiated_by_foreign', '`initiated_by`');
+CALL `tich_ensure_index`('hr_appraisal_cycles', 'hr_appraisal_cycles_status_index', '`status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `hr_appraisal_goals`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_appraisal_goals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `appraisal_id` bigint(20) unsigned NOT NULL,
+  `sort_order` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `goal_type` varchar(40) NOT NULL DEFAULT 'personal',
+  `corporate_goal_id` bigint(20) unsigned DEFAULT NULL,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `smart_specific` text DEFAULT NULL,
+  `smart_measurable` text DEFAULT NULL,
+  `smart_achievable` text DEFAULT NULL,
+  `smart_relevant` text DEFAULT NULL,
+  `smart_timebound` text DEFAULT NULL,
+  `target_date` date DEFAULT NULL,
+  `weight` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `employee_achievement` text DEFAULT NULL,
+  `self_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_rating` tinyint(3) unsigned DEFAULT NULL,
+  `manager_comments` text DEFAULT NULL,
+  `status` varchar(40) NOT NULL DEFAULT 'draft',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `hr_appraisal_goals_corporate_goal_id_foreign` (`corporate_goal_id`),
+  KEY `hr_appraisal_goals_appraisal_id_sort_order_index` (`appraisal_id`,`sort_order`),
+  CONSTRAINT `hr_appraisal_goals_appraisal_id_foreign` FOREIGN KEY (`appraisal_id`) REFERENCES `hr_appraisals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hr_appraisal_goals_corporate_goal_id_foreign` FOREIGN KEY (`corporate_goal_id`) REFERENCES `hr_corporate_goals` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `hr_appraisal_goals` (add only if missing)
+CALL `tich_ensure_column`('hr_appraisal_goals', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'appraisal_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'sort_order', 'tinyint(3) unsigned NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'goal_type', 'varchar(40) NOT NULL DEFAULT \'\\\'personal\\\'\'');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'corporate_goal_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'smart_specific', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'smart_measurable', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'smart_achievable', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'smart_relevant', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'smart_timebound', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'target_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'weight', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'employee_achievement', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'self_rating', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'manager_rating', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'manager_comments', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'status', 'varchar(40) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_appraisal_goals', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `hr_appraisal_goals` (add only if missing)
+CALL `tich_ensure_index`('hr_appraisal_goals', 'hr_appraisal_goals_appraisal_id_sort_order_index', '`appraisal_id`, `sort_order`');
+CALL `tich_ensure_index`('hr_appraisal_goals', 'hr_appraisal_goals_corporate_goal_id_foreign', '`corporate_goal_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `hr_corporate_goals`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hr_corporate_goals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `cycle_id` bigint(20) unsigned DEFAULT NULL,
+  `parent_id` bigint(20) unsigned DEFAULT NULL,
+  `code` varchar(50) DEFAULT NULL,
+  `title` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `role_scope` varchar(40) NOT NULL DEFAULT 'all',
+  `scope_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`scope_values`)),
+  `weight_hint` decimal(5,2) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `hr_corporate_goals_cycle_id_foreign` (`cycle_id`),
+  KEY `hr_corporate_goals_parent_id_foreign` (`parent_id`),
+  KEY `hr_corporate_goals_created_by_foreign` (`created_by`),
+  KEY `hr_corporate_goals_is_active_role_scope_index` (`is_active`,`role_scope`),
+  CONSTRAINT `hr_corporate_goals_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_corporate_goals_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `hr_appraisal_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hr_corporate_goals_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `hr_corporate_goals` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `hr_corporate_goals` (add only if missing)
+CALL `tich_ensure_column`('hr_corporate_goals', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('hr_corporate_goals', 'cycle_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'parent_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'code', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'role_scope', 'varchar(40) NOT NULL DEFAULT \'\\\'all\\\'\'');
+CALL `tich_ensure_column`('hr_corporate_goals', 'scope_values', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'weight_hint', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'is_active', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('hr_corporate_goals', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_corporate_goals', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `hr_corporate_goals` (add only if missing)
+CALL `tich_ensure_index`('hr_corporate_goals', 'hr_corporate_goals_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('hr_corporate_goals', 'hr_corporate_goals_cycle_id_foreign', '`cycle_id`');
+CALL `tich_ensure_index`('hr_corporate_goals', 'hr_corporate_goals_is_active_role_scope_index', '`is_active`, `role_scope`');
+CALL `tich_ensure_index`('hr_corporate_goals', 'hr_corporate_goals_parent_id_foreign', '`parent_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `hr_policies`
@@ -13454,6 +13756,31 @@ CALL `tich_ensure_fk`('grn_items', 'grn_items_supplier_id_foreign', '`supplier_i
 -- Foreign keys for `homepage_carousel_slides`
 CALL `tich_ensure_fk`('homepage_carousel_slides', 'homepage_carousel_slides_event_id_foreign', '`event_id`', 'events', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('homepage_carousel_slides', 'homepage_carousel_slides_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `hr_appraisals`
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_calibrated_by_foreign', '`calibrated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_cycle_id_foreign', '`cycle_id`', 'hr_appraisal_cycles', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_goals_approved_by_foreign', '`goals_approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_hr_signed_by_foreign', '`hr_signed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_line_manager_id_foreign', '`line_manager_id`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_manager_reviewed_by_foreign', '`manager_reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_appraisals', 'hr_appraisals_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `hr_appraisal_competencies`
+CALL `tich_ensure_fk`('hr_appraisal_competencies', 'hr_appraisal_competencies_appraisal_id_foreign', '`appraisal_id`', 'hr_appraisals', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `hr_appraisal_cycles`
+CALL `tich_ensure_fk`('hr_appraisal_cycles', 'hr_appraisal_cycles_initiated_by_foreign', '`initiated_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `hr_appraisal_goals`
+CALL `tich_ensure_fk`('hr_appraisal_goals', 'hr_appraisal_goals_appraisal_id_foreign', '`appraisal_id`', 'hr_appraisals', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('hr_appraisal_goals', 'hr_appraisal_goals_corporate_goal_id_foreign', '`corporate_goal_id`', 'hr_corporate_goals', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `hr_corporate_goals`
+CALL `tich_ensure_fk`('hr_corporate_goals', 'hr_corporate_goals_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_corporate_goals', 'hr_corporate_goals_cycle_id_foreign', '`cycle_id`', 'hr_appraisal_cycles', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('hr_corporate_goals', 'hr_corporate_goals_parent_id_foreign', '`parent_id`', 'hr_corporate_goals', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `hr_policies`
 CALL `tich_ensure_fk`('hr_policies', 'hr_policies_uploaded_by_foreign', '`uploaded_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
