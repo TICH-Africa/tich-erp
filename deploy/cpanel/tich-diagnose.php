@@ -1,22 +1,22 @@
 <?php
 
 /**
- * Temporary production diagnostic. Copied to public_html/tich-diagnose.php on deploy.
- * Delete from public_html (or re-deploy after removing this copy step) once the site is healthy.
+ * Upload to public_html/tich-diagnose.php (File Manager) or copy on deploy.
  */
 
-declare(strict_types=1);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 header('Content-Type: text/html; charset=UTF-8');
 header('X-Robots-Tag: noindex, nofollow');
 
 echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>TICH diagnose</title>';
 echo '<style>body{font-family:system-ui,sans-serif;max-width:52rem;margin:2rem auto;padding:0 1rem;line-height:1.45}';
-echo '.ok{color:#166534}.bad{color:#b91c1c}pre{background:#f5f6f6;padding:.75rem;overflow:auto;white-space:pre-wrap}';
-echo 'h1{font-size:1.25rem}li{margin:.35rem 0}</style></head><body>';
-echo '<h1>TICH production diagnose</h1><ul>';
+echo '.ok{color:#166534}.bad{color:#b91c1c}pre{background:#f5f6f6;padding:.75rem;overflow:auto;white-space:pre-wrap}</style></head><body>';
+echo '<h1>TICH diagnose</h1><ul>';
 
-function tich_diag_row(string $label, bool $ok, string $detail = ''): void
+function row($label, $ok, $detail = '')
 {
     $class = $ok ? 'ok' : 'bad';
     $mark = $ok ? 'OK' : 'FAIL';
@@ -27,112 +27,77 @@ function tich_diag_row(string $label, bool $ok, string $detail = ''): void
     echo '</li>';
 }
 
-tich_diag_row('PHP version (>= 8.2)', version_compare(PHP_VERSION, '8.2.0', '>='), PHP_VERSION);
+row('PHP version (>= 8.2)', version_compare(PHP_VERSION, '8.2.0', '>='), PHP_VERSION);
 
-$candidates = [
+$appPath = '/home3/tichafri/tich-erp/web';
+$candidates = array(
+    $appPath,
     dirname(__DIR__).'/tich-erp/web',
-    '/home3/tichafri/tich-erp/web',
-    '/home2/tichafri/tich-erp/web',
-    '/home/tichafri/tich-erp/web',
-];
-$overrideFile = dirname(__DIR__).'/tich-erp/deploy/cpanel/app-path.txt';
-if (is_file($overrideFile)) {
-    $override = trim((string) file_get_contents($overrideFile));
-    if ($override !== '') {
-        array_unshift($candidates, $override);
-    }
-}
-
-$appPath = null;
+);
 foreach ($candidates as $candidate) {
     $candidate = rtrim(str_replace('\\', '/', $candidate), '/');
-    if (is_file($candidate.'/artisan') && is_file($candidate.'/bootstrap/app.php')) {
+    if (is_file($candidate.'/artisan')) {
         $appPath = $candidate;
         break;
     }
 }
 
-tich_diag_row('Laravel path resolved', $appPath !== null, $appPath ?? 'not found');
-if ($appPath === null) {
-    echo '</ul><p>Cannot continue.</p></body></html>';
-    exit;
-}
+row('Laravel path', is_file($appPath.'/artisan'), $appPath);
+row('.env', is_file($appPath.'/.env'));
+row('vendor/autoload.php', is_file($appPath.'/vendor/autoload.php'));
+row('storage writable', is_writable($appPath.'/storage'));
+row('bootstrap/cache writable', is_writable($appPath.'/bootstrap/cache'));
 
-tich_diag_row('.env exists', is_file($appPath.'/.env'), $appPath.'/.env');
-tich_diag_row('vendor/autoload.php', is_file($appPath.'/vendor/autoload.php'));
-tich_diag_row('storage writable', is_writable($appPath.'/storage'), $appPath.'/storage');
-tich_diag_row('bootstrap/cache writable', is_writable($appPath.'/bootstrap/cache'), $appPath.'/bootstrap/cache');
-tich_diag_row('public/css/tich-platform.css', is_file($appPath.'/public/css/tich-platform.css'));
-
+$envDebug = '(no .env)';
 $envKey = false;
-$envUrl = false;
-$envDebug = null;
 if (is_file($appPath.'/.env')) {
-    $env = file_get_contents($appPath.'/.env') ?: '';
+    $env = file_get_contents($appPath.'/.env');
     $envKey = (bool) preg_match('/^APP_KEY=base64:.+/m', $env);
-    $envUrl = (bool) preg_match('/^APP_URL=https?:\/\/\S+/m', $env);
     if (preg_match('/^APP_DEBUG=(.*)$/m', $env, $m)) {
         $envDebug = trim($m[1]);
     }
 }
-tich_diag_row('APP_KEY set in .env', $envKey, $envKey ? 'base64:…' : 'missing/empty - run php artisan key:generate');
-tich_diag_row('APP_URL set in .env', $envUrl);
-tich_diag_row('APP_DEBUG value', true, (string) $envDebug);
+row('APP_KEY', $envKey, $envKey ? 'set' : 'MISSING');
+row('APP_DEBUG in .env', true, $envDebug);
 
-$cachedConfig = $appPath.'/bootstrap/cache/config.php';
-tich_diag_row(
-    'config.php cache present',
-    ! is_file($cachedConfig),
-    is_file($cachedConfig) ? 'YES - can ignore APP_DEBUG in .env until config:clear' : 'no'
-);
+$configCache = $appPath.'/bootstrap/cache/config.php';
+row('config cache absent', ! is_file($configCache), is_file($configCache) ? 'EXISTS - delete it (ignores .env APP_DEBUG)' : 'ok');
 
 $logFile = $appPath.'/storage/logs/laravel.log';
-tich_diag_row('laravel.log exists', is_file($logFile), $logFile);
+row('laravel.log', is_file($logFile), $logFile);
 
-echo '</ul>';
+echo '</ul><h2>Boot test</h2>';
 
-echo '<h2>Boot test</h2><ul>';
 try {
     if (! is_file($appPath.'/vendor/autoload.php')) {
         throw new RuntimeException('vendor/autoload.php missing');
     }
-
     require $appPath.'/vendor/autoload.php';
     $app = require $appPath.'/bootstrap/app.php';
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
     $request = Illuminate\Http\Request::create('/', 'GET');
     $response = $kernel->handle($request);
     $status = $response->getStatusCode();
-    tich_diag_row('Kernel handle / status', $status < 500, (string) $status);
+    row('GET / status', $status < 500, (string) $status);
     if ($status >= 500) {
-        $content = substr(strip_tags($response->getContent() ?: ''), 0, 1200);
-        echo '</ul><pre>'.htmlspecialchars($content, ENT_QUOTES, 'UTF-8').'</pre><ul>';
+        echo '<pre>'.htmlspecialchars(substr(strip_tags($response->getContent()), 0, 2000), ENT_QUOTES, 'UTF-8').'</pre>';
     }
     $kernel->terminate($request, $response);
 } catch (Throwable $e) {
-    tich_diag_row('Boot exception', false, $e::class);
-    echo '</ul><pre>'.htmlspecialchars(
-        $e->getMessage()."\n".$e->getFile().':'.$e->getLine()."\n".$e->getTraceAsString(),
-        ENT_QUOTES,
-        'UTF-8'
-    ).'</pre><ul>';
+    echo '<p class="bad"><strong>Boot exception: '.htmlspecialchars(get_class($e), ENT_QUOTES, 'UTF-8').'</strong></p>';
+    echo '<pre>'.htmlspecialchars($e->getMessage()."\n".$e->getFile().':'.$e->getLine()."\n\n".$e->getTraceAsString(), ENT_QUOTES, 'UTF-8').'</pre>';
 }
-echo '</ul>';
 
 if (is_file($logFile) && is_readable($logFile)) {
     $lines = @file($logFile);
-    if (is_array($lines) && $lines !== []) {
-        $tail = array_slice($lines, -50);
-        echo '<h2>laravel.log (last lines)</h2><pre>'.htmlspecialchars(implode('', $tail), ENT_QUOTES, 'UTF-8').'</pre>';
+    if (is_array($lines) && count($lines) > 0) {
+        echo '<h2>laravel.log (tail)</h2><pre>'.htmlspecialchars(implode('', array_slice($lines, -60)), ENT_QUOTES, 'UTF-8').'</pre>';
     }
 }
 
 $deployLog = dirname($appPath).'/deploy/cpanel/last-deploy.log';
 if (is_file($deployLog)) {
-    echo '<h2>last-deploy.log</h2><pre>'.htmlspecialchars((string) file_get_contents($deployLog), ENT_QUOTES, 'UTF-8').'</pre>';
-} else {
-    echo '<p>No last-deploy.log at <code>'.htmlspecialchars($deployLog, ENT_QUOTES, 'UTF-8').'</code></p>';
+    echo '<h2>last-deploy.log</h2><pre>'.htmlspecialchars(file_get_contents($deployLog), ENT_QUOTES, 'UTF-8').'</pre>';
 }
 
-echo '<p><strong>Note:</strong> APP_DEBUG=true in .env does nothing if <code>bootstrap/cache/config.php</code> exists. Delete that file or run <code>php artisan config:clear</code>.</p>';
 echo '</body></html>';
