@@ -57,6 +57,15 @@ class AdministrationNavigationService
                 ],
             ],
             [
+                'label' => 'Minutes',
+                'icon' => 'clipboard-list',
+                'open' => request()->routeIs('administration.minutes.*'),
+                'active' => request()->routeIs('administration.minutes.*'),
+                'items' => [
+                    $this->item('Meeting minutes', 'scroll', route('administration.minutes.index'), request()->routeIs('administration.minutes.*')),
+                ],
+            ],
+            [
                 'label' => 'Compliance',
                 'icon' => 'shield-check',
                 'badgeKey' => 'compliance',

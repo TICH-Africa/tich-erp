@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-08 00:49:18 EAT
+-- Generated: 2026-10-08 11:24:11 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -760,6 +760,52 @@ CALL `tich_ensure_column`('admin_inspection_checks', 'updated_at', 'timestamp NU
 -- Indexes for `admin_inspection_checks` (add only if missing)
 CALL `tich_ensure_unique`('admin_inspection_checks', 'admin_inspection_checks_check_code_unique', '`check_code`');
 CALL `tich_ensure_index`('admin_inspection_checks', 'admin_inspection_checks_status_regulator_index', '`status`, `regulator`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `admin_meeting_minutes`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `admin_meeting_minutes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `minute_code` varchar(40) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `meeting_date` date NOT NULL,
+  `meeting_time` time DEFAULT NULL,
+  `venue` varchar(255) DEFAULT NULL,
+  `document_path` varchar(500) NOT NULL,
+  `original_filename` varchar(255) DEFAULT NULL,
+  `mime_type` varchar(120) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `admin_meeting_minutes_minute_code_unique` (`minute_code`),
+  KEY `admin_meeting_minutes_uploaded_by_foreign` (`uploaded_by`),
+  KEY `admin_meeting_minutes_meeting_date_index` (`meeting_date`),
+  CONSTRAINT `admin_meeting_minutes_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `admin_meeting_minutes` (add only if missing)
+CALL `tich_ensure_column`('admin_meeting_minutes', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'minute_code', 'varchar(40) NOT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'meeting_date', 'date NOT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'meeting_time', 'time NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'venue', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'document_path', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'original_filename', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'mime_type', 'varchar(120) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'file_size', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'uploaded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('admin_meeting_minutes', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `admin_meeting_minutes` (add only if missing)
+CALL `tich_ensure_index`('admin_meeting_minutes', 'admin_meeting_minutes_meeting_date_index', '`meeting_date`');
+CALL `tich_ensure_unique`('admin_meeting_minutes', 'admin_meeting_minutes_minute_code_unique', '`minute_code`');
+CALL `tich_ensure_index`('admin_meeting_minutes', 'admin_meeting_minutes_uploaded_by_foreign', '`uploaded_by`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `admin_planning_cycles`
@@ -13418,6 +13464,9 @@ CALL `tich_ensure_fk`('admin_budget_requests', 'admin_budget_requests_planning_c
 -- Foreign keys for `admin_fund_allocations`
 CALL `tich_ensure_fk`('admin_fund_allocations', 'admin_fund_allocations_budget_request_id_foreign', '`budget_request_id`', 'admin_budget_requests', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('admin_fund_allocations', 'admin_fund_allocations_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `admin_meeting_minutes`
+CALL `tich_ensure_fk`('admin_meeting_minutes', 'admin_meeting_minutes_uploaded_by_foreign', '`uploaded_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `admin_tasks`
 CALL `tich_ensure_fk`('admin_tasks', 'admin_tasks_department_id_foreign', '`department_id`', 'departments', '`id`', 'RESTRICT', 'CASCADE');

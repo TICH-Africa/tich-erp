@@ -727,6 +727,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/inspection', fn () => redirect()->route('administration.statutory.index'))->name('administration.inspection.store');
         Route::post('/inspection/{check}/status', fn () => redirect()->route('administration.statutory.index'))->name('administration.inspection.status');
 
+        Route::get('/minutes', [\App\Http\Controllers\Administration\MinutesController::class, 'index'])->name('administration.minutes.index');
+        Route::post('/minutes', [\App\Http\Controllers\Administration\MinutesController::class, 'store'])->name('administration.minutes.store');
+        Route::delete('/minutes/{minute}', [\App\Http\Controllers\Administration\MinutesController::class, 'destroy'])->name('administration.minutes.destroy');
+        Route::get('/minutes/{minute}/view', [\App\Http\Controllers\Administration\MinutesController::class, 'view'])->name('administration.minutes.view');
+        Route::get('/minutes/{minute}/download', [\App\Http\Controllers\Administration\MinutesController::class, 'download'])->name('administration.minutes.download');
+
         Route::get('/procurement-pay', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'procurementPay'])->name('administration.procurement-pay.index');
         Route::get('/ledger-sync', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'ledgerSync'])->name('administration.ledger-sync.index');
         Route::post('/ledger-sync/run', [\App\Http\Controllers\Administration\ProcurementLedgerController::class, 'runSync'])->name('administration.ledger-sync.run');

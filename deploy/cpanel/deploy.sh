@@ -44,6 +44,12 @@ fi
 
 cd "$WEB"
 
+# Composer refuses to run under LiteSpeed/cPanel PHP without HOME.
+export HOME="${HOME:-/home3/tichafri}"
+export COMPOSER_HOME="${COMPOSER_HOME:-${HOME}/.composer}"
+mkdir -p "$COMPOSER_HOME" 2>/dev/null || true
+log "HOME=${HOME} COMPOSER_HOME=${COMPOSER_HOME}"
+
 mkdir -p \
   storage/framework/cache \
   storage/framework/sessions \

@@ -528,6 +528,15 @@ return [
                     'group' => 'administration',
                 ],
                 [
+                    'key' => 'administration.minutes',
+                    'label' => 'Minutes',
+                    'description' => 'Upload and archive meeting minutes with date, time, and venue.',
+                    'permission' => 'administration.read',
+                    'route' => 'administration.minutes.index',
+                    'context' => 'operational',
+                    'group' => 'administration',
+                ],
+                [
                     'key' => 'administration.statutory',
                     'label' => 'Statutory tracking',
                     'description' => 'KRA, TVETA, and MoE certification repository.',

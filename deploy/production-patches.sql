@@ -40,6 +40,34 @@ WHERE s.employment_status = 'onboarding'
       WHERE ur.user_id = u.id AND ur.department_id IS NOT NULL
   );
 
+
+-- =============================================================================
+-- Section 49 Meeting minutes (Administration)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS `admin_meeting_minutes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `minute_code` varchar(40) NOT NULL,
+  `title` varchar(300) NOT NULL,
+  `meeting_date` date NOT NULL,
+  `meeting_time` time DEFAULT NULL,
+  `venue` varchar(255) DEFAULT NULL,
+  `document_path` varchar(500) NOT NULL,
+  `original_filename` varchar(255) DEFAULT NULL,
+  `mime_type` varchar(120) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `admin_meeting_minutes_minute_code_unique` (`minute_code`),
+  KEY `admin_meeting_minutes_meeting_date_index` (`meeting_date`),
+  KEY `admin_meeting_minutes_uploaded_by_foreign` (`uploaded_by`),
+  CONSTRAINT `admin_meeting_minutes_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: Administration meeting minutes uploads
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
 
