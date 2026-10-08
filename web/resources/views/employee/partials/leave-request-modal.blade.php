@@ -212,7 +212,7 @@
                 <h3 class="tich-leave-app-form__section-title">While I am away (stand-in / designee)</h3>
                 @if ($coverageDepartments->isNotEmpty())
                     <span class="uf-hint" style="display:block;margin-bottom:0.75rem;">
-                        Appoint who will stand in for you. Appointment is auto-accepted; department access is granted when HR approves.
+                        Appoint who will stand in for you. They will receive an email and in-app notification to accept or decline. Department access is granted only after they accept and HR approves the leave.
                     </span>
                     @foreach ($coverageDepartments as $dept)
                         <div class="uf-field">

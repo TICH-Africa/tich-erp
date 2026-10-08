@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveCarryForwardRequest;
 use App\Models\LeaveRequest;
+use App\Models\LeaveRequestCoverage;
 use App\Services\EmployeePortalService;
 use App\Services\Leave\LeaveCatalogService;
 use App\Services\Leave\LeaveCoverageService;
@@ -68,11 +69,14 @@ class EmployeeLeaveController extends Controller
             ];
         })->all();
 
+        $leaveRequests = $this->leaveRequests->requestsForStaff($staff);
+        $leaveRequests->loadMissing(['coverages.coverStaff', 'coverages.department']);
+
         return view('employee.leave.index', [
             'portalTitle' => 'Leave requests',
             'staff' => $staff,
             'leaveTypes' => $leaveTypes,
-            'leaveRequests' => $this->leaveRequests->requestsForStaff($staff),
+            'leaveRequests' => $leaveRequests,
             'leaveBalances' => $staffBalances,
             'editRequest' => $editRequest,
             'leaveTypeMap' => array_values($leaveTypeMeta),
@@ -80,7 +84,44 @@ class EmployeeLeaveController extends Controller
             'familyRelations' => $familyRelations,
             'coverageDepartments' => $coverageDepartments,
             'eligibleCoverStaff' => $eligibleCoverStaff,
+            'pendingCoverages' => $this->coverages->pendingForCoverStaff($staff),
         ]);
+    }
+
+    public function acceptCoverage(Request $request, LeaveRequestCoverage $coverage): RedirectResponse
+    {
+        $staff = $this->staff($request);
+        $validated = $request->validate([
+            'response_notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $this->coverages->acceptCoverage($coverage, $staff, $validated['response_notes'] ?? null);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('employee.leave.index')
+            ->with('success', 'You accepted the leave stand-in request. Both you and the applicant have been notified.');
+    }
+
+    public function declineCoverage(Request $request, LeaveRequestCoverage $coverage): RedirectResponse
+    {
+        $staff = $this->staff($request);
+        $validated = $request->validate([
+            'response_notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $this->coverages->declineCoverage($coverage, $staff, $validated['response_notes'] ?? null);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('employee.leave.index')
+            ->with('success', 'You declined the leave stand-in request. The applicant has been notified.');
     }
 
     public function store(Request $request): RedirectResponse

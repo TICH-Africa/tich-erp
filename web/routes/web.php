@@ -1372,6 +1372,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'store'])->name('employee.leave.store');
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
         Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'cancel'])->name('employee.leave.cancel');
+        Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'acceptCoverage'])->name('employee.leave.coverages.accept');
+        Route::post('/leave/coverages/{coverage}/decline', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'declineCoverage'])->name('employee.leave.coverages.decline');
         Route::get('/leave/carry-forward', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardForm'])->name('employee.leave.carry-forward');
         Route::post('/leave/carry-forward', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardStore'])->name('employee.leave.carry-forward.store');
         Route::post('/leave/carry-forward/{carryForwardRequest}/manager-approve', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardApproveAsManager'])->name('employee.leave.carry-forward.manager-approve');

@@ -15,6 +15,57 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if (($pendingCoverages ?? collect())->isNotEmpty())
+        <article id="leave-coverage-inbox" class="tich-card tich-mt-6">
+            <h2 class="tich-h3 tich-mb-4">Stand-in requests awaiting your response</h2>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Colleague</th>
+                            <th>Leave</th>
+                            <th>Department</th>
+                            <th>Dates</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($pendingCoverages as $coverage)
+                            <tr>
+                                <td>
+                                    <strong>{{ $coverage->leaveRequest?->staff?->fullName() ?? '-' }}</strong>
+                                    <p class="tich-caption">{{ $coverage->leaveRequest?->staff?->employee_number }}</p>
+                                </td>
+                                <td>
+                                    {{ $coverage->leaveRequest?->leaveType?->leave_name ?? 'Leave' }}
+                                    <p class="tich-caption">{{ $coverage->leaveRequest?->leave_number }}</p>
+                                </td>
+                                <td>{{ $coverage->department?->dept_name ?? '-' }}</td>
+                                <td class="tich-caption">
+                                    {{ $coverage->leaveRequest?->start_date?->format('d M Y') }}
+                                    -
+                                    {{ $coverage->leaveRequest?->end_date?->format('d M Y') }}
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:0.35rem;flex-wrap:wrap;justify-content:flex-end;">
+                                        <form method="POST" action="{{ route('employee.leave.coverages.accept', $coverage) }}">
+                                            @csrf
+                                            <button type="submit" class="tich-btn tich-btn-primary">Accept</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('employee.leave.coverages.decline', $coverage) }}" onsubmit="return confirm('Decline this stand-in request? The applicant will be notified to appoint someone else.');">
+                                            @csrf
+                                            <button type="submit" class="tich-btn tich-btn-ghost">Decline</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    @endif
+
     @if ($leaveBalances->isNotEmpty())
         <section class="tich-mt-6">
             <h2 class="tich-h3 tich-mb-4">Leave balances ({{ now()->year }})</h2>
@@ -79,6 +130,15 @@
                                 · {{ $request->start_date->format('d M Y') }} - {{ $request->end_date->format('d M Y') }}
                                 · {{ (int) $request->days_requested }} day(s)
                             </p>
+                            @if ($request->coverages->isNotEmpty())
+                                <p class="tich-caption tich-mt-2">
+                                    Stand-in:
+                                    @foreach ($request->coverages as $coverage)
+                                        {{ $coverage->coverStaff?->fullName() ?? '—' }}
+                                        ({{ $coverage->department?->dept_name ?? 'Dept' }} - {{ $coverage->statusLabel() }})@if (! $loop->last); @endif
+                                    @endforeach
+                                </p>
+                            @endif
                             @if ($request->hr_review_notes && $request->overall_status === 'returned')
                                 <div class="tich-leave-request-item__note">
                                     <strong>HR feedback:</strong> {{ $request->hr_review_notes }}

@@ -38,7 +38,7 @@ class LeaveRequestService
     public function requestsForStaff(Staff $staff): Collection
     {
         return LeaveRequest::query()
-            ->with('leaveType')
+            ->with(['leaveType', 'coverages.coverStaff', 'coverages.department'])
             ->where('staff_id', $staff->id)
             ->orderByDesc('created_at')
             ->get();
@@ -276,6 +276,8 @@ class LeaveRequestService
     public function approve(LeaveRequest $leaveRequest, Staff $hrStaff, array $data = []): LeaveRequest
     {
         return DB::transaction(function () use ($leaveRequest, $hrStaff, $data) {
+            $this->coverages->assertAllCoveragesAccepted($leaveRequest);
+
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
             $previousDays = (int) $leaveRequest->days_requested;
             $previousTypeId = (int) $leaveRequest->leave_type_id;

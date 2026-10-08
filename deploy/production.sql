@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-08 11:24:11 EAT
+-- Generated: 2026-10-08 18:28:03 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5926,6 +5926,8 @@ CREATE TABLE IF NOT EXISTS `leave_request_coverages` (
   `cover_staff_id` bigint(20) unsigned NOT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'accepted',
   `notified_at` timestamp NULL DEFAULT NULL,
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `response_notes` varchar(1000) DEFAULT NULL,
   `access_granted_at` timestamp NULL DEFAULT NULL,
   `access_revoked_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -5946,6 +5948,8 @@ CALL `tich_ensure_column`('leave_request_coverages', 'department_id', 'bigint(20
 CALL `tich_ensure_column`('leave_request_coverages', 'cover_staff_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('leave_request_coverages', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'accepted\\\'\'');
 CALL `tich_ensure_column`('leave_request_coverages', 'notified_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'responded_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('leave_request_coverages', 'response_notes', 'varchar(1000) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_request_coverages', 'access_granted_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_request_coverages', 'access_revoked_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('leave_request_coverages', 'created_at', 'timestamp NULL DEFAULT NULL');

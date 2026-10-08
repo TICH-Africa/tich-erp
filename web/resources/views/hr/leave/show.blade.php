@@ -192,7 +192,7 @@
                             <li>
                                 {{ $coverage->department?->dept_name ?? 'Department' }}:
                                 {{ $coverage->coverStaff?->fullName() ?? '-' }}
-                                <span class="tich-caption">({{ $coverage->status }})</span>
+                                <span class="tich-caption">({{ $coverage->statusLabel() }})</span>
                             </li>
                         @endforeach
                     </ul>

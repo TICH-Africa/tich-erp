@@ -91,7 +91,11 @@ class LeaveRequestController extends Controller
             return back()->withErrors(['leave' => 'This request is no longer pending review.']);
         }
 
-        $this->leaveRequests->approve($leaveRequest, $hrStaff, $data);
+        try {
+            $this->leaveRequests->approve($leaveRequest, $hrStaff, $data);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withErrors(['leave' => $exception->getMessage()]);
+        }
 
         return redirect()
             ->route('hr.leave.show', $leaveRequest)

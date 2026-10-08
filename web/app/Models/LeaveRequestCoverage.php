@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LeaveRequestCoverage extends Model
 {
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_ACCEPTED = 'accepted';
+
+    public const STATUS_DECLINED = 'declined';
+
     protected $table = 'leave_request_coverages';
 
     protected $fillable = [
@@ -16,12 +22,15 @@ class LeaveRequestCoverage extends Model
         'cover_staff_id',
         'status',
         'notified_at',
+        'responded_at',
+        'response_notes',
         'access_granted_at',
         'access_revoked_at',
     ];
 
     protected $casts = [
         'notified_at' => 'datetime',
+        'responded_at' => 'datetime',
         'access_granted_at' => 'datetime',
         'access_revoked_at' => 'datetime',
     ];
@@ -44,5 +53,30 @@ class LeaveRequestCoverage extends Model
     public function accessGrants(): HasMany
     {
         return $this->hasMany(LeaveCoverageAccessGrant::class, 'leave_request_coverage_id');
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === self::STATUS_ACCEPTED;
+    }
+
+    public function isDeclined(): bool
+    {
+        return $this->status === self::STATUS_DECLINED;
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_PENDING => 'Awaiting response',
+            self::STATUS_ACCEPTED => 'Accepted',
+            self::STATUS_DECLINED => 'Declined',
+            default => ucfirst((string) $this->status),
+        };
     }
 }

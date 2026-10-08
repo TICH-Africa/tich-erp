@@ -7,7 +7,6 @@ use App\Models\LeaveCoverageAccessGrant;
 use App\Models\LeaveRequest;
 use App\Models\LeaveRequestCoverage;
 use App\Models\Staff;
-use App\Models\User;
 use App\Services\PlatformNotificationService;
 use App\Services\RBACService;
 use Illuminate\Support\Collection;
@@ -55,6 +54,25 @@ class LeaveCoverageService
     }
 
     /**
+     * Pending stand-in requests for this staff member to accept or decline.
+     *
+     * @return Collection<int, LeaveRequestCoverage>
+     */
+    public function pendingForCoverStaff(Staff $coverStaff): Collection
+    {
+        return LeaveRequestCoverage::query()
+            ->with(['leaveRequest.staff', 'leaveRequest.leaveType', 'department', 'coverStaff'])
+            ->where('cover_staff_id', $coverStaff->id)
+            ->where('status', LeaveRequestCoverage::STATUS_PENDING)
+            ->whereHas('leaveRequest', function ($q) {
+                $q->whereIn('overall_status', ['pending_hr', 'returned', 'approved'])
+                    ->where('end_date', '>=', now()->toDateString());
+            })
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
      * Staff already covering an approved/pending leave (for warning).
      *
      * @return Collection<int, LeaveRequestCoverage>
@@ -64,6 +82,7 @@ class LeaveCoverageService
         return LeaveRequestCoverage::query()
             ->with(['leaveRequest.staff', 'department'])
             ->where('cover_staff_id', $coverStaffId)
+            ->where('status', LeaveRequestCoverage::STATUS_ACCEPTED)
             ->whereNull('access_revoked_at')
             ->whereHas('leaveRequest', function ($q) {
                 $q->whereIn('overall_status', ['pending_hr', 'approved'])
@@ -95,6 +114,15 @@ class LeaveCoverageService
                 throw new \InvalidArgumentException('Invalid takeover person for '.$department->dept_name.'.');
             }
 
+            $existing = LeaveRequestCoverage::query()
+                ->where('leave_request_id', $leaveRequest->id)
+                ->where('department_id', $department->id)
+                ->first();
+
+            $samePersonAlreadyAccepted = $existing
+                && (int) $existing->cover_staff_id === $coverStaffId
+                && $existing->status === LeaveRequestCoverage::STATUS_ACCEPTED;
+
             $coverage = LeaveRequestCoverage::query()->updateOrCreate(
                 [
                     'leave_request_id' => $leaveRequest->id,
@@ -102,16 +130,132 @@ class LeaveCoverageService
                 ],
                 [
                     'cover_staff_id' => $coverStaffId,
-                    'status' => 'accepted',
+                    'status' => $samePersonAlreadyAccepted
+                        ? LeaveRequestCoverage::STATUS_ACCEPTED
+                        : LeaveRequestCoverage::STATUS_PENDING,
                     'notified_at' => now(),
+                    'responded_at' => $samePersonAlreadyAccepted ? ($existing->responded_at ?? now()) : null,
+                    'response_notes' => $samePersonAlreadyAccepted ? $existing->response_notes : null,
                 ]
             );
 
-            $this->notifyCoverPerson($coverage->load('department'), $leaveRequest, $applicant, $coverStaff);
+            if (! $samePersonAlreadyAccepted) {
+                $this->notifyCoverPerson($coverage->load('department'), $leaveRequest, $applicant, $coverStaff);
+            }
+
             $created[] = $coverage;
         }
 
         return $created;
+    }
+
+    public function acceptCoverage(LeaveRequestCoverage $coverage, Staff $actingStaff, ?string $notes = null): LeaveRequestCoverage
+    {
+        $this->assertCanRespond($coverage, $actingStaff);
+
+        if ($coverage->isAccepted()) {
+            return $coverage;
+        }
+
+        if ($coverage->isDeclined()) {
+            throw new \InvalidArgumentException('This stand-in request was already declined.');
+        }
+
+        $coverage->update([
+            'status' => LeaveRequestCoverage::STATUS_ACCEPTED,
+            'responded_at' => now(),
+            'response_notes' => filled($notes) ? trim($notes) : null,
+        ]);
+
+        $coverage->loadMissing(['leaveRequest.staff', 'leaveRequest.leaveType', 'department', 'coverStaff']);
+        $this->notifyApplicantOfResponse($coverage, accepted: true);
+        $this->notifyCoverPersonOfOwnResponse($coverage, accepted: true);
+
+        $leave = $coverage->leaveRequest;
+        if ($leave && $leave->overall_status === 'approved') {
+            $this->grantAccessForApprovedLeave($leave->fresh(['coverages.coverStaff', 'staff']));
+        }
+
+        return $coverage->fresh(['leaveRequest.staff', 'department', 'coverStaff']);
+    }
+
+    public function declineCoverage(LeaveRequestCoverage $coverage, Staff $actingStaff, ?string $notes = null): LeaveRequestCoverage
+    {
+        $this->assertCanRespond($coverage, $actingStaff);
+
+        if ($coverage->isDeclined()) {
+            return $coverage;
+        }
+
+        if ($coverage->isAccepted() && $coverage->access_granted_at && ! $coverage->access_revoked_at) {
+            throw new \InvalidArgumentException('You already have leave cover access for this request and cannot decline it.');
+        }
+
+        $coverage->update([
+            'status' => LeaveRequestCoverage::STATUS_DECLINED,
+            'responded_at' => now(),
+            'response_notes' => filled($notes) ? trim($notes) : null,
+        ]);
+
+        $coverage->loadMissing(['leaveRequest.staff', 'leaveRequest.leaveType', 'department', 'coverStaff']);
+        $this->notifyApplicantOfResponse($coverage, accepted: false);
+        $this->notifyCoverPersonOfOwnResponse($coverage, accepted: false);
+
+        return $coverage->fresh(['leaveRequest.staff', 'department', 'coverStaff']);
+    }
+
+    public function assertAllCoveragesAccepted(LeaveRequest $leaveRequest): void
+    {
+        $leaveRequest->loadMissing(['coverages.department', 'coverages.coverStaff']);
+
+        $blocking = $leaveRequest->coverages->filter(
+            fn (LeaveRequestCoverage $c) => ! $c->isAccepted()
+        );
+
+        if ($blocking->isEmpty()) {
+            return;
+        }
+
+        $parts = $blocking->map(function (LeaveRequestCoverage $c) {
+            $who = $c->coverStaff?->fullName() ?? 'stand-in';
+            $dept = $c->department?->dept_name ?? 'department';
+
+            return $who.' ('.$dept.' - '.$c->statusLabel().')';
+        })->implode('; ');
+
+        throw new \InvalidArgumentException(
+            'Cannot approve leave until every stand-in has accepted. Still outstanding: '.$parts.'.'
+        );
+    }
+
+    /**
+     * Re-notify cover staff for pending rows (e.g. after migration reopened auto-accepts).
+     */
+    public function renotifyPendingCoverages(): int
+    {
+        $pending = LeaveRequestCoverage::query()
+            ->with(['leaveRequest.staff', 'department', 'coverStaff'])
+            ->where('status', LeaveRequestCoverage::STATUS_PENDING)
+            ->whereHas('leaveRequest', function ($q) {
+                $q->whereIn('overall_status', ['pending_hr', 'returned'])
+                    ->where('end_date', '>=', now()->toDateString());
+            })
+            ->get();
+
+        $count = 0;
+        foreach ($pending as $coverage) {
+            $leave = $coverage->leaveRequest;
+            $applicant = $leave?->staff;
+            $coverStaff = $coverage->coverStaff;
+            if (! $leave || ! $applicant || ! $coverStaff) {
+                continue;
+            }
+            $this->notifyCoverPerson($coverage, $leave, $applicant, $coverStaff);
+            $coverage->update(['notified_at' => now()]);
+            $count++;
+        }
+
+        return $count;
     }
 
     public function grantAccessForApprovedLeave(LeaveRequest $leaveRequest): void
@@ -119,6 +263,9 @@ class LeaveCoverageService
         $leaveRequest->loadMissing(['coverages.coverStaff', 'staff']);
 
         foreach ($leaveRequest->coverages as $coverage) {
+            if (! $coverage->isAccepted()) {
+                continue;
+            }
             if ($coverage->access_granted_at && ! $coverage->access_revoked_at) {
                 continue;
             }
@@ -140,6 +287,18 @@ class LeaveCoverageService
         }
     }
 
+    private function assertCanRespond(LeaveRequestCoverage $coverage, Staff $actingStaff): void
+    {
+        if ((int) $coverage->cover_staff_id !== (int) $actingStaff->id) {
+            throw new \InvalidArgumentException('You are not the appointed stand-in for this leave request.');
+        }
+
+        $leave = $coverage->leaveRequest()->first();
+        if (! $leave || in_array($leave->overall_status, ['cancelled', 'rejected'], true)) {
+            throw new \InvalidArgumentException('This leave request is no longer active.');
+        }
+    }
+
     private function grantDepartmentAccess(LeaveRequestCoverage $coverage, LeaveRequest $leaveRequest): void
     {
         $applicant = $leaveRequest->staff;
@@ -156,7 +315,6 @@ class LeaveCoverageService
             })
             ->get();
 
-        // If applicant has no role scoped to this dept, grant a generic Staff role for the dept.
         if ($applicantRoles->isEmpty()) {
             $staffRoleId = DB::table('roles')->where('role_name', 'Staff')->value('id');
             if ($staffRoleId) {
@@ -253,14 +411,78 @@ class LeaveCoverageService
         $dept = $coverage->department?->dept_name ?? 'department';
         $this->notifications->notifyUser(
             (int) $coverStaff->user_id,
-            'Leave coverage appointment',
-            $applicant->fullName().' appointed you to cover '.$dept.' from '
+            'Leave stand-in request - please respond',
+            $applicant->fullName().' asked you to cover '.$dept.' from '
                 .$leaveRequest->start_date?->format('d M Y').' to '.$leaveRequest->end_date?->format('d M Y')
-                .'. This is automatically accepted. You will receive department access when HR approves the leave.',
+                .'. Please accept or decline on My leave. Department access is granted only after you accept and HR approves the leave.',
             'leave_request',
             (string) $leaveRequest->id,
+            'high',
+            route('employee.leave.index').'#leave-coverage-inbox',
+        );
+    }
+
+    private function notifyApplicantOfResponse(LeaveRequestCoverage $coverage, bool $accepted): void
+    {
+        $leave = $coverage->leaveRequest;
+        $applicant = $leave?->staff;
+        $coverStaff = $coverage->coverStaff;
+        if (! $applicant?->user_id || ! $coverStaff) {
+            return;
+        }
+
+        $dept = $coverage->department?->dept_name ?? 'department';
+        $title = $accepted
+            ? 'Stand-in accepted your leave cover request'
+            : 'Stand-in declined your leave cover request';
+        $body = $accepted
+            ? $coverStaff->fullName().' accepted covering '.$dept.' for your leave '
+                .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y').'.'
+            : $coverStaff->fullName().' declined covering '.$dept.' for your leave '
+                .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y')
+                .'. Please edit the leave request and appoint someone else.';
+
+        if ($coverage->response_notes) {
+            $body .= ' Note: '.$coverage->response_notes;
+        }
+
+        $this->notifications->notifyUser(
+            (int) $applicant->user_id,
+            $title,
+            $body,
+            'leave_request',
+            (string) $leave->id,
+            $accepted ? 'normal' : 'high',
+            route('employee.leave.index'),
+        );
+    }
+
+    private function notifyCoverPersonOfOwnResponse(LeaveRequestCoverage $coverage, bool $accepted): void
+    {
+        $leave = $coverage->leaveRequest;
+        $applicant = $leave?->staff;
+        $coverStaff = $coverage->coverStaff;
+        if (! $coverStaff?->user_id || ! $applicant) {
+            return;
+        }
+
+        $dept = $coverage->department?->dept_name ?? 'department';
+        $title = $accepted ? 'You accepted a leave stand-in request' : 'You declined a leave stand-in request';
+        $body = $accepted
+            ? 'You accepted covering '.$dept.' for '.$applicant->fullName().' ('
+                .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y')
+                .'). You will receive department access when HR approves the leave.'
+            : 'You declined covering '.$dept.' for '.$applicant->fullName().' ('
+                .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y').').';
+
+        $this->notifications->notifyUser(
+            (int) $coverStaff->user_id,
+            $title,
+            $body,
+            'leave_request',
+            (string) $leave->id,
             'normal',
-            route('employee.dashboard'),
+            route('employee.leave.index'),
         );
     }
 
