@@ -96,8 +96,24 @@ if (is_file($logFile) && is_readable($logFile)) {
 }
 
 $deployLog = dirname($appPath).'/deploy/cpanel/last-deploy.log';
-if (is_file($deployLog)) {
-    echo '<h2>last-deploy.log</h2><pre>'.htmlspecialchars(file_get_contents($deployLog), ENT_QUOTES, 'UTF-8').'</pre>';
+if (is_file($deployLog) && is_readable($deployLog)) {
+    $size = filesize($deployLog);
+    $max = 80000;
+    $fh = fopen($deployLog, 'rb');
+    if ($fh !== false) {
+        if ($size > $max) {
+            fseek($fh, -$max, SEEK_END);
+            fread($fh, 256);
+        }
+        $tail = stream_get_contents($fh) ?: '';
+        fclose($fh);
+        echo '<h2>last-deploy.log (tail)</h2><pre>'.htmlspecialchars($tail, ENT_QUOTES, 'UTF-8').'</pre>';
+    }
+}
+
+$autoloadFiles = $appPath.'/vendor/composer/autoload_files.php';
+if (is_file($autoloadFiles) && str_contains((string) file_get_contents($autoloadFiles), 'mockery/mockery')) {
+    echo '<p class="bad"><strong>Broken autoload:</strong> references mockery. Open <a href="/tich-fix-autoload.php">/tich-fix-autoload.php</a> once to repair.</p>';
 }
 
 echo '</body></html>';

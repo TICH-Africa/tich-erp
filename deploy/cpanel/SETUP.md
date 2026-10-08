@@ -64,6 +64,7 @@ If the site shows a **TICH deploy error** page, follow the hint on that page (us
 | Composer / vendor missing | Re-deploy; check `last-deploy.log` |
 | Wrong PHP version | Need PHP 8.2+ (`ea-php82`) |
 | Blank 500 / APP_DEBUG ignored | Open https://tich.africa/tich-diagnose.php ; delete `web/bootstrap/cache/config.php` |
+| `mockery/mockery/library/helpers.php` missing | Autoload poisoned with require-dev. Open https://tich.africa/tich-fix-autoload.php once, or in Terminal: `cd ~/tich-erp/web && ea-php82 /opt/cpanel/composer/bin/composer dump-autoload --no-dev --optimize` |
 | Blank 500 after ChatGPT edits | Re-deploy so `public_html/index.php` is replaced from git |
 | CSS 404 | Re-deploy (symlinks) - bridge also serves assets as fallback |
 

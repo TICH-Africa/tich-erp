@@ -96,15 +96,35 @@ if [[ ! -f "$SPREADSHEET_FILE" ]]; then
 fi
 log "PhpSpreadsheet OK"
 
-if [[ -d vendor/mockery ]]; then
-  log "WARN: vendor/mockery present - production should not include require-dev packages"
-fi
-if grep -R "mockery/mockery" vendor/composer/autoload_files.php >/dev/null 2>&1; then
-  log "ERROR: autoload still references mockery - removing vendor and reinstalling"
+# Always regenerate production autoload so require-dev (mockery/phpunit) cannot linger.
+log "composer dump-autoload --no-dev (strip mockery/phpunit from autoload)…"
+COMPOSER_MEMORY_LIMIT=-1 "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG" || true
+
+autoload_has_dev() {
+  local f
+  for f in vendor/composer/autoload_files.php vendor/composer/autoload_psr4.php vendor/composer/autoload_classmap.php vendor/composer/autoload_static.php; do
+    if [[ -f "$f" ]] && grep -E "mockery/mockery|phpunit/phpunit|nunomaduro/collision" "$f" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ -d vendor/mockery ]] || autoload_has_dev; then
+  log "ERROR: autoload/vendor still references require-dev (mockery/phpunit) - wiping vendor and reinstalling"
   rm -rf vendor
-  "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"
-  "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG"
+  if ! COMPOSER_MEMORY_LIMIT=-1 "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG"; then
+    log "ERROR: composer reinstall failed"
+    exit 1
+  fi
+  COMPOSER_MEMORY_LIMIT=-1 "$PHP_BIN" "$COMPOSER_BIN" dump-autoload --no-dev --optimize --no-interaction 2>&1 | tee -a "$LOG" || true
 fi
+
+if autoload_has_dev; then
+  log "ERROR: autoload STILL references mockery/phpunit after reinstall - refusing to finish deploy"
+  exit 1
+fi
+log "Autoload OK (no mockery/phpunit)"
 
 log "artisan down / migrate / storage:link…"
 "$PHP_BIN" artisan down --retry=120 2>&1 | tee -a "$LOG" || true
@@ -126,7 +146,8 @@ log "Docroot: ${DOCROOT}"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/public_html.htaccess" "${DOCROOT}/.htaccess"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-mpesa-stk-callback.php" "${DOCROOT}/tich-mpesa-stk-callback.php"
 /bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-diagnose.php" "${DOCROOT}/tich-diagnose.php"
-log "Copied index.php, .htaccess, tich-mpesa-stk-callback.php, and tich-diagnose.php into docroot"
+/bin/cp -f "${REPO_ROOT}/deploy/cpanel/tich-fix-autoload.php" "${DOCROOT}/tich-fix-autoload.php"
+log "Copied index.php, .htaccess, diagnose, and fix-autoload into docroot"
 
 # Prefer fresh config from .env over a stale config.php cache after ChatGPT/manual edits.
 rm -f "${WEB}/bootstrap/cache/config.php" "${WEB}/bootstrap/cache/routes-v7.php" "${WEB}/bootstrap/cache/routes.php" "${WEB}/bootstrap/cache/events.php" 2>/dev/null || true
