@@ -356,7 +356,7 @@
 
 .tich-admin-sidebar__link--sub {
     padding: var(--sidebar-sub-pad-y) var(--sidebar-sub-pad-x);
-    padding-left: calc(2.75rem * var(--sb-scale));
+    padding-left: calc(3.75rem * var(--sb-scale));
     font-size: var(--sidebar-sub-font);
     font-weight: 700;
     color: var(--sb-sub-link);
@@ -379,7 +379,7 @@
 }
 
 .tich-admin-sidebar__subgroup > .tich-admin-sidebar__group-toggle {
-    padding-left: calc((1.5rem * var(--sb-scale)) - 3px);
+    padding-left: calc(3.75rem * var(--sb-scale));
     font-size: var(--sidebar-sub-font);
 }
 
@@ -403,15 +403,17 @@
 /* Count badges */
 .tich-admin-sidebar__link .tich-notification-badge--sidebar,
 .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
-    --sidebar-badge-bg: var(--sb-count-muted-bg);
-    --sidebar-badge-color: var(--sb-count-muted-text);
-    --sidebar-badge-bg-hover: var(--sb-count-bg);
-    --sidebar-badge-color-hover: var(--sb-count-text);
+    --sidebar-badge-bg: var(--sb-count-alert-bg, #dc2626);
+    --sidebar-badge-color: #fff;
+    --sidebar-badge-bg-hover: #ef4444;
+    --sidebar-badge-color-hover: #fff;
     min-width: calc(1.25rem * var(--sb-scale));
     height: calc(1.25rem * var(--sb-scale));
     padding: 0 calc(0.35rem * var(--sb-scale));
+    font-family: var(--font-body);
     font-size: calc(0.625rem * var(--sb-scale));
-    font-weight: 900;
+    font-weight: 700;
+    border: 0;
     border-radius: 999px;
     background: var(--sidebar-badge-bg);
     color: var(--sidebar-badge-color);
@@ -421,8 +423,8 @@
 .tich-admin-sidebar__nav a.is-active .tich-notification-badge--sidebar,
 .tich-admin-sidebar__link.is-active .tich-notification-badge--sidebar,
 .tich-admin-sidebar__group.is-active > .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
-    background: var(--sb-count-bg);
-    color: var(--sb-count-text);
+    background: var(--sidebar-badge-bg-hover);
+    color: var(--sidebar-badge-color-hover);
 }
 
 .tich-admin.is-sidebar-collapsed .tich-notification-badge--sidebar {
@@ -462,10 +464,11 @@
 
 [data-theme="dark"] .tich-admin-sidebar__link .tich-notification-badge--sidebar,
 [data-theme="dark"] .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
-    --sidebar-badge-bg: var(--sb-count-muted-bg);
-    --sidebar-badge-color: var(--sb-count-muted-text);
-    --sidebar-badge-bg-hover: var(--sb-count-bg);
-    --sidebar-badge-color-hover: var(--sb-count-text);
+    --sidebar-badge-bg: var(--sb-count-alert-bg, #ef4444);
+    --sidebar-badge-color: #fff;
+    --sidebar-badge-bg-hover: #f87171;
+    --sidebar-badge-color-hover: #fff;
+    border: 0;
     box-shadow: none;
 }
 

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STORAGE_WIDTH = 'tich.adminSidebar.width';
     const STORAGE_COLLAPSED = 'tich.adminSidebar.collapsed';
+    const STORAGE_SCROLL = 'tich.adminSidebar.scroll.';
     const DEFAULT_WIDTH = 272;
     const MIN_WIDTH = 200;
     const MAX_WIDTH = 420;
@@ -17,6 +18,45 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const readStoredCollapsed = () => window.localStorage.getItem(STORAGE_COLLAPSED) === '1';
+
+    const scrollStorageKey = (sidebar) => {
+        const id = (sidebar.id || '').trim();
+        if (id) {
+            return STORAGE_SCROLL + id;
+        }
+        const title = (sidebar.querySelector('.tich-admin-sidebar__title')?.textContent || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+        return STORAGE_SCROLL + (title || 'default');
+    };
+
+    const persistSidebarScroll = (sidebar) => {
+        try {
+            window.sessionStorage.setItem(scrollStorageKey(sidebar), String(Math.round(sidebar.scrollTop)));
+        } catch (e) {
+            // ignore quota / private mode
+        }
+    };
+
+    const restoreSidebarScroll = (sidebar) => {
+        let raw = '';
+        try {
+            raw = window.sessionStorage.getItem(scrollStorageKey(sidebar)) || '';
+        } catch (e) {
+            return;
+        }
+        const top = Number.parseInt(raw, 10);
+        if (!Number.isFinite(top) || top <= 0) {
+            return;
+        }
+        const applyScroll = () => {
+            const max = Math.max(0, sidebar.scrollHeight - sidebar.clientHeight);
+            sidebar.scrollTop = Math.min(top, max);
+        };
+        applyScroll();
+        window.requestAnimationFrame(applyScroll);
+    };
 
     const ensureTooltips = (sidebar) => {
         sidebar.querySelectorAll('.tich-admin-sidebar__link, .tich-admin-sidebar__group-toggle').forEach((el) => {
@@ -123,10 +163,38 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         ensureTooltips(sidebar);
+        restoreSidebarScroll(sidebar);
 
         // Isolate sidebar wheel scrolling from the main content pane.
         if (sidebar.dataset.sidebarScrollBound !== 'true') {
             sidebar.dataset.sidebarScrollBound = 'true';
+            let scrollPersistTimer = 0;
+            const scheduleScrollPersist = () => {
+                if (scrollPersistTimer) {
+                    window.clearTimeout(scrollPersistTimer);
+                }
+                scrollPersistTimer = window.setTimeout(() => {
+                    scrollPersistTimer = 0;
+                    persistSidebarScroll(sidebar);
+                }, 80);
+            };
+
+            sidebar.addEventListener('scroll', scheduleScrollPersist, { passive: true });
+
+            sidebar.addEventListener(
+                'click',
+                (event) => {
+                    const link = event.target.closest('a.tich-admin-sidebar__link, a[href]');
+                    if (!link || !sidebar.contains(link)) {
+                        return;
+                    }
+                    persistSidebarScroll(sidebar);
+                },
+                true
+            );
+
+            window.addEventListener('pagehide', () => persistSidebarScroll(sidebar));
+
             sidebar.addEventListener(
                 'wheel',
                 (event) => {
@@ -254,7 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             sidebar.appendChild(controls);
 
-            collapseBtn.addEventListener('click', () => {
+            const collapseBtn = controls.querySelector('[data-sidebar-collapse-toggle]');
+            collapseBtn?.addEventListener('click', () => {
                 if (!desktopMq.matches) {
                     return;
                 }

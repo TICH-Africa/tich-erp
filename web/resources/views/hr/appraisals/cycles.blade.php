@@ -20,7 +20,7 @@
         <p class="tich-caption tich-mt-1">HR opens the cycle to generate appraisal shells for active staff. Resignations later do not remove historical appraisals.</p>
         <form method="POST" action="{{ route('hr.appraisals.cycles.store') }}" class="tich-mt-4">
             @csrf
-            <div class="tich-grid tich-grid--3" style="gap:0.75rem;">
+            <div class="tich-grid tich-grid--5" style="gap:0.75rem;">
                 <div class="tich-form-group">
                     <label class="tich-label">Name</label>
                     <input type="text" name="name" class="tich-input" value="{{ old('name') }}" required placeholder="Q1 2026 Performance Appraisal">
@@ -45,10 +45,10 @@
                     <label class="tich-label">Period end</label>
                     <input type="date" name="period_end" class="tich-input" value="{{ old('period_end') }}" required>
                 </div>
-                <div class="tich-form-group" style="grid-column:1/-1;">
-                    <label class="tich-label">Instructions (optional)</label>
-                    <textarea name="instructions" class="tich-input" rows="2">{{ old('instructions') }}</textarea>
-                </div>
+            </div>
+            <div class="tich-form-group tich-mt-3">
+                <label class="tich-label">Instructions (optional)</label>
+                <textarea name="instructions" class="tich-input" rows="2">{{ old('instructions') }}</textarea>
             </div>
             <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Create draft cycle</button>
         </form>

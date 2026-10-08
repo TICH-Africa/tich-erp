@@ -2586,6 +2586,10 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     grid-template-columns: 1fr;
 }
 
+.tich-grid--5 {
+    grid-template-columns: 1fr;
+}
+
 @media (min-width: 640px) {
     .tich-grid--2 {
         grid-template-columns: repeat(2, 1fr);
@@ -2598,6 +2602,10 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     .tich-grid--4 {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .tich-grid--5 {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (min-width: 1024px) {
@@ -2607,6 +2615,10 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
     .tich-grid--4 {
         grid-template-columns: repeat(4, 1fr);
+    }
+
+    .tich-grid--5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 }
 
@@ -5262,13 +5274,14 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
 .tich-admin-sidebar__link .tich-notification-badge--sidebar,
 .tich-admin-sidebar__group-toggle .tich-notification-badge--sidebar {
-    --sidebar-badge-bg: rgba(220, 38, 38, 0.16);
-    --sidebar-badge-color: #b91c1c;
-    --sidebar-badge-bg-hover: rgba(220, 38, 38, 0.26);
-    --sidebar-badge-color-hover: #991b1b;
+    --sidebar-badge-bg: #dc2626;
+    --sidebar-badge-color: #fff;
+    --sidebar-badge-bg-hover: #ef4444;
+    --sidebar-badge-color-hover: #fff;
     min-width: calc(1.5rem * var(--sidebar-scale));
     height: calc(1.5rem * var(--sidebar-scale));
     padding: 0 calc(0.5rem * var(--sidebar-scale));
+    font-family: var(--font-body);
     font-size: calc(0.75rem * var(--sidebar-scale));
     font-variant-numeric: tabular-nums;
     font-weight: 700;
@@ -5276,6 +5289,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     text-transform: none;
     background: var(--sidebar-badge-bg);
     color: var(--sidebar-badge-color);
+    border: 0;
     box-shadow: none;
 }
 
@@ -5289,12 +5303,14 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     border-radius: 999px;
     background: #dc2626;
     color: #fff;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: 0.6875rem;
     font-weight: 700;
     line-height: 1;
     flex-shrink: 0;
     text-decoration: none;
+    border: 0;
+    box-shadow: none;
 }
 
 .tich-notification-badge--sidebar.is-updated {
@@ -6962,16 +6978,13 @@ a.tich-notification-badge:hover {
     border-radius: 999px;
     background: #dc2626;
     color: #fff;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: 0.625rem;
     font-weight: 700;
     line-height: 1;
-    border: 2px solid var(--tich-white);
+    border: 0;
+    box-shadow: none;
     pointer-events: none;
-}
-
-[data-theme="dark"] .tich-nav-notification__badge {
-    border-color: var(--tich-surface, #0f172a);
 }
 
 .tich-nav-drawer__notifications {
@@ -7894,13 +7907,14 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     --sidebar-badge-color: #fff;
     --sidebar-badge-bg-hover: #ef4444;
     --sidebar-badge-color-hover: #fff;
-    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.45);
+    border: 0;
+    box-shadow: none;
 }
 
 [data-theme="dark"] .tich-admin-sidebar__link--sub .tich-notification-badge--sidebar {
-    --sidebar-badge-bg: #b91c1c;
+    --sidebar-badge-bg: #dc2626;
     --sidebar-badge-color: #fff;
-    --sidebar-badge-bg-hover: #dc2626;
+    --sidebar-badge-bg-hover: #ef4444;
     --sidebar-badge-color-hover: #fff;
 }
 
@@ -13543,3 +13557,71 @@ input[type="time"]::-moz-calendar-picker-indicator {
     opacity: 0.45;
     background: color-mix(in srgb, var(--tich-border, #e5e7eb) 35%, transparent);
 }
+
+/* Employee performance appraisal form */
+.tich-appraisal-form .uf-form-surface {
+    overflow: hidden;
+}
+
+/* Forms sit inside the shared surface — do not nest another card border */
+.tich-appraisal-form .uf-form-surface form {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    color: inherit;
+}
+
+.tich-appraisal-form .tich-appraisal-goal + .tich-appraisal-goal {
+    padding-top: 1rem;
+    border-top: 1px solid var(--uf-border, #c4cad2);
+}
+
+.tich-appraisal-form .tich-appraisal-add-goal {
+    color: var(--uf-text, #1a1d21);
+}
+
+.tich-appraisal-form .tich-appraisal-add-goal > summary {
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--uf-focus, #1565c0);
+    list-style: none;
+}
+
+.tich-appraisal-form .tich-appraisal-add-goal > summary::-webkit-details-marker {
+    display: none;
+}
+
+.tich-appraisal-form .tich-appraisal-add-goal[open] > summary {
+    margin-bottom: 0.75rem;
+}
+
+.tich-appraisal-form .tich-appraisal-return {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+    flex: 1;
+}
+
+.tich-appraisal-form .tich-appraisal-return .uf-field {
+    flex: 1;
+    min-width: 12rem;
+}
+
+.tich-appraisal-form .uf-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.tich-appraisal-form .uf-hint strong {
+    color: var(--uf-text, #1a1d21);
+}
+
+[data-theme="dark"] .tich-appraisal-form .tich-appraisal-add-goal > summary {
+    color: var(--uf-focus, #42a5f5);
+}
+

@@ -16,7 +16,7 @@
         <h2 class="tich-h3">Add cascading goal</h2>
         <form method="POST" action="{{ route('hr.appraisals.corporate-goals.store') }}" class="tich-mt-3">
             @csrf
-            <div class="tich-grid tich-grid--2" style="gap:0.75rem;">
+            <div class="tich-grid tich-grid--5" style="gap:0.75rem;">
                 <div class="tich-form-group">
                     <label class="tich-label">Title</label>
                     <input type="text" name="title" class="tich-input" required value="{{ old('title') }}">
@@ -24,10 +24,6 @@
                 <div class="tich-form-group">
                     <label class="tich-label">Code</label>
                     <input type="text" name="code" class="tich-input" value="{{ old('code') }}" placeholder="KPI-HR-01">
-                </div>
-                <div class="tich-form-group" style="grid-column:1/-1;">
-                    <label class="tich-label">Description / KPI link</label>
-                    <textarea name="description" class="tich-input" rows="2">{{ old('description') }}</textarea>
                 </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Cycle (optional)</label>
@@ -46,26 +42,30 @@
                         <option value="job_title">Specific job titles</option>
                     </select>
                 </div>
-                <div class="tich-form-group" id="corp-goal-depts" hidden>
-                    <label class="tich-label">Departments</label>
-                    <select name="scope_values[]" class="tich-input" multiple size="4">
-                        @foreach ($departments as $dept)
-                            <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="tich-form-group" id="corp-goal-titles" hidden>
-                    <label class="tich-label">Job titles (one per line)</label>
-                    <textarea name="scope_values_text" class="tich-input" rows="3" placeholder="Lecturer&#10;Finance Officer"></textarea>
-                </div>
                 <div class="tich-form-group">
                     <label class="tich-label">Weight hint %</label>
                     <input type="number" step="0.01" name="weight_hint" class="tich-input" value="{{ old('weight_hint') }}">
                 </div>
-                <label class="tich-caption" style="display:flex; gap:0.5rem; align-items:center;">
-                    <input type="checkbox" name="is_active" value="1" checked> Active
-                </label>
             </div>
+            <div class="tich-form-group tich-mt-3">
+                <label class="tich-label">Description / KPI link</label>
+                <textarea name="description" class="tich-input" rows="2">{{ old('description') }}</textarea>
+            </div>
+            <div class="tich-form-group tich-mt-3" id="corp-goal-depts" hidden>
+                <label class="tich-label">Departments</label>
+                <select name="scope_values[]" class="tich-input" multiple size="4">
+                    @foreach ($departments as $dept)
+                        <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="tich-form-group tich-mt-3" id="corp-goal-titles" hidden>
+                <label class="tich-label">Job titles (one per line)</label>
+                <textarea name="scope_values_text" class="tich-input" rows="3" placeholder="Lecturer&#10;Finance Officer"></textarea>
+            </div>
+            <label class="tich-caption tich-mt-3" style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="checkbox" name="is_active" value="1" checked> Active
+            </label>
             <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save goal</button>
         </form>
     </div>
