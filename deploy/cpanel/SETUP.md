@@ -55,12 +55,15 @@ If the site shows a **TICH deploy error** page, follow the hint on that page (us
 
 ## Troubleshooting HTTP 500
 
+**Blank / empty 500 (no Laravel debug page):** LiteSpeed often returns `Content-Length: 0` when PHP fatals *before* Laravel can render `APP_DEBUG`. Setting `APP_DEBUG=true` in `.env` also does nothing if `web/bootstrap/cache/config.php` exists — delete that file or run `ea-php82 artisan config:clear`.
+
 | Cause | Fix |
 |-------|-----|
 | Deploy never ran / old HEAD | Update from Remote → Deploy HEAD |
 | Missing `web/.env` or `APP_KEY` | Create `.env`, `key:generate` |
 | Composer / vendor missing | Re-deploy; check `last-deploy.log` |
 | Wrong PHP version | Need PHP 8.2+ (`ea-php82`) |
+| Blank 500 / APP_DEBUG ignored | Open https://tich.africa/tich-diagnose.php ; delete `web/bootstrap/cache/config.php` |
 | Blank 500 after ChatGPT edits | Re-deploy so `public_html/index.php` is replaced from git |
 | CSS 404 | Re-deploy (symlinks) - bridge also serves assets as fallback |
 
