@@ -5,11 +5,14 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Models\StaffDocument;
+use App\Models\StaffDocumentTemplate;
+use App\Services\DocumentGenerationService;
 use App\Services\StaffLifecycleService;
 use App\Services\StoredFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffDocumentController extends Controller
@@ -20,6 +23,7 @@ class StaffDocumentController extends Controller
 
     public function __construct(
         protected StaffLifecycleService $lifecycleService,
+        protected DocumentGenerationService $documentService,
         protected \App\Services\PlatformNotificationService $notifications,
         protected StoredFileService $files,
     ) {}
@@ -42,6 +46,80 @@ class StaffDocumentController extends Controller
         return view('hr.documents.show', ['staff' => $staff]);
     }
 
+    public function sendForm(int $staffId): View
+    {
+        $staff = Staff::excludePlatformOperators()->with('department')->findOrFail($staffId);
+        $templates = StaffDocumentTemplate::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'content']);
+
+        return view('hr.documents.send', ['staff' => $staff, 'templates' => $templates]);
+    }
+
+    public function sendToStaff(Request $request, int $staffId)
+    {
+        $staff = Staff::excludePlatformOperators()->findOrFail($staffId);
+
+        $validated = $request->validate([
+            'template_id' => 'required|integer|exists:staff_document_templates,id',
+            'document_name' => 'required|string|max:300',
+        ]);
+
+        $template = StaffDocumentTemplate::query()
+            ->where('is_active', 1)
+            ->findOrFail($validated['template_id']);
+
+        $content = $this->documentService->populateTemplate($template, $staff);
+        $html = $this->documentService->renderDocument($content, $template->name, strtoupper($template->name), true);
+
+        $filename = $validated['document_name'].'.pdf';
+        $safeName = time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+        $path = "staff/{$staff->employee_number}/documents/{$safeName}";
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 15,
+            'margin_bottom' => 15,
+        ]);
+
+        $mpdf->WriteHTML($html);
+        $pdfContent = $mpdf->Output('', 'S');
+
+        $this->files->put($pdfContent, $path, 'local');
+
+        $document = $this->lifecycleService->addDocument($staffId, [
+            'document_type' => 'other',
+            'document_name' => $validated['document_name'],
+            'file_path' => $path,
+            'original_filename' => $filename,
+            'mime_type' => 'application/pdf',
+            'file_size' => strlen($pdfContent),
+            'status' => 'approved',
+            'approved_by' => $request->user()->staff_id,
+            'approved_at' => now(),
+            'is_verified' => true,
+            'notes' => 'Generated from template: '.$template->name,
+        ], $request->user()->staff_id ?? $request->user()->id);
+
+        if ($staff->user_id) {
+            $this->notifications->notifyUser(
+                $staff->user_id,
+                'New Document from HR',
+                "HR has sent you a document: '{$document->document_name}'.",
+                'staff_document',
+                $document->id,
+                'normal',
+                route('employee.documents.index'),
+            );
+        }
+
+        return redirect()->route('hr.documents.show', $staff)->with('success', 'Document sent to staff successfully.');
+    }
+
     public function create(int $staffId): View
     {
         $staff = Staff::excludePlatformOperators()->findOrFail($staffId);
@@ -62,14 +140,15 @@ class StaffDocumentController extends Controller
             'document_name' => $validated['document_name'],
             'file_path' => $path,
             'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             'file_size' => $file->getSize(),
+            'status' => 'pending',
             'issue_date' => $validated['issue_date'] ?? null,
             'expiry_date' => $validated['expiry_date'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ], $request->user()->id);
 
-        return redirect()->route('hr.staff.show', $staff)->with('success', 'Document uploaded successfully.');
+        return redirect()->route('hr.documents.show', $staff)->with('success', 'Document uploaded successfully.');
     }
 
     public function staffCreate(): View
@@ -98,12 +177,13 @@ class StaffDocumentController extends Controller
             'document_name' => $validated['document_name'],
             'file_path' => $path,
             'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             'file_size' => $file->getSize(),
+            'status' => 'pending',
             'issue_date' => $validated['issue_date'] ?? null,
             'expiry_date' => $validated['expiry_date'] ?? null,
             'notes' => $validated['notes'] ?? null,
-        ], $request->user()->staff_id ?? $staff->id);
+        ], $request->user()->id);
 
         return back()->with('success', 'Document uploaded successfully.');
     }
@@ -167,14 +247,17 @@ class StaffDocumentController extends Controller
             'document_name' => $validated['document_name'],
             'file_path' => $path,
             'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             'file_size' => $file->getSize(),
+            'status' => 'pending',
             'issue_date' => $validated['issue_date'] ?? null,
             'expiry_date' => $validated['expiry_date'] ?? null,
             'notes' => $validated['notes'] ?? null,
-        ], $request->user()->staff_id ?? $staff->id);
+        ], $request->user()->id);
 
-        return back()->with('success', 'Document uploaded successfully.');
+        return redirect()
+            ->route('employee.documents.index')
+            ->with('success', 'Document uploaded successfully.');
     }
 
     public function employeeDownload(int $documentId): StreamedResponse
@@ -290,9 +373,22 @@ class StaffDocumentController extends Controller
 
     private function storePrivateDocument(\Illuminate\Http\UploadedFile $file, Staff $staff): string
     {
+        if (! $file->isValid()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'file' => 'The uploaded file is invalid or incomplete. Check the file size and try again.',
+            ]);
+        }
+
+        $employeeNumber = trim((string) $staff->employee_number);
+        if ($employeeNumber === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'file' => 'This staff record has no employee number, so documents cannot be stored.',
+            ]);
+        }
+
         $safeName = time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
 
-        return $this->files->store($file, "staff/{$staff->employee_number}/documents", 'local', $safeName);
+        return $this->files->store($file, "staff/{$employeeNumber}/documents", 'local', $safeName);
     }
 
     private function streamDocument(StaffDocument $document): StreamedResponse

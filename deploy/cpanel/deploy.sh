@@ -56,6 +56,7 @@ mkdir -p \
   storage/framework/views \
   storage/logs \
   storage/app/public \
+  storage/app/private \
   bootstrap/cache
 chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
 

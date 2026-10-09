@@ -15,7 +15,8 @@ class StaffDocument extends Model
 
     /** @var array<string, string> */
     protected array $storedFiles = [
-        'file_path' => 'public',
+        // New uploads use the private local disk; legacy rows may still live on public.
+        'file_path' => 'local',
     ];
 
     protected $fillable = [

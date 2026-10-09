@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Support\ImageWebpEncoder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -69,16 +70,22 @@ class StoredFileService
     public function store(UploadedFile $file, string $directory, string $disk = 'public', ?string $filename = null): string
     {
         $directory = trim($directory, '/');
+        $this->ensureDiskRoot($disk);
 
         if ($this->webp->isRasterImageUpload($file)) {
-            return $this->storeImageAsWebp($file, $directory, $disk, $filename);
+            $path = $this->storeImageAsWebp($file, $directory, $disk, $filename);
+            $this->assertStored($path, $disk);
+
+            return $path;
         }
 
-        if ($filename) {
-            return $file->storeAs($directory, $filename, $disk);
-        }
+        $path = $filename
+            ? $file->storeAs($directory, $filename, $disk)
+            : $file->store($directory, $disk);
 
-        return $file->store($directory, $disk);
+        $this->assertStored(is_string($path) ? $path : null, $disk);
+
+        return $path;
     }
 
     public function replace(
@@ -100,6 +107,7 @@ class StoredFileService
 
     public function put(string $contents, string $path, string $disk = 'public', ?string $replacePath = null): string
     {
+        $this->ensureDiskRoot($disk);
         $relative = $this->relativePath($path) ?? ltrim($path, '/');
 
         if ($this->webp->shouldConvertBinary($contents)) {
@@ -117,13 +125,49 @@ class StoredFileService
             Storage::disk($disk)->makeDirectory($directory);
         }
 
-        Storage::disk($disk)->put($relative, $contents);
+        $wrote = Storage::disk($disk)->put($relative, $contents);
+        if ($wrote === false) {
+            $this->assertStored(null, $disk);
+        }
+        $this->assertStored($relative, $disk);
 
         if ($replacePath && ! $this->pathsMatch($replacePath, $relative, $disk)) {
             $this->delete($replacePath, $disk);
         }
 
         return $relative;
+    }
+
+    private function ensureDiskRoot(string $disk): void
+    {
+        $root = config("filesystems.disks.{$disk}.root");
+        if (! is_string($root) || $root === '') {
+            return;
+        }
+
+        if (! is_dir($root) && ! @mkdir($root, 0775, true) && ! is_dir($root)) {
+            Log::error('Storage disk root missing and could not be created', ['disk' => $disk, 'root' => $root]);
+            throw ValidationException::withMessages([
+                'file' => 'Document storage is not available on the server. Please contact ICT.',
+            ]);
+        }
+
+        if (! is_writable($root)) {
+            Log::error('Storage disk root is not writable', ['disk' => $disk, 'root' => $root]);
+            throw ValidationException::withMessages([
+                'file' => 'Document storage is not writable on the server. Please contact ICT.',
+            ]);
+        }
+    }
+
+    private function assertStored(?string $path, string $disk): void
+    {
+        if (! is_string($path) || $path === '' || ! Storage::disk($disk)->exists($path)) {
+            Log::error('Stored file write failed', ['disk' => $disk, 'path' => $path]);
+            throw ValidationException::withMessages([
+                'file' => 'The file could not be saved. Try again or contact ICT if this persists.',
+            ]);
+        }
     }
 
     public function move(string $fromPath, string $toPath, string $disk = 'public', ?string $replacePath = null): string

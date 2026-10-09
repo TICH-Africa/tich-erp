@@ -1155,6 +1155,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/policies/assigned', [\App\Http\Controllers\HR\HrPolicyController::class, 'assigned'])->name('hr.policies.assigned');
             Route::get('/staff/{staff}/documents/create', [\App\Http\Controllers\HR\StaffDocumentController::class, 'create'])->name('hr.staff.documents.create');
             Route::post('/staff/{staff}/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'store'])->name('hr.staff.documents.store');
+            Route::get('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendForm'])->name('hr.staff.documents.send');
+            Route::post('/staff/{staff}/documents/send', [\App\Http\Controllers\HR\StaffDocumentController::class, 'sendToStaff'])->name('hr.staff.documents.send.store');
             Route::delete('/staff/{staff}/documents/{document}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'destroy'])->name('hr.staff.documents.destroy');
             Route::get('/staff/{staff}/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'download'])->name('hr.staff.documents.download');
             Route::get('/staff/{staff}/documents/{document}/read', [\App\Http\Controllers\HR\StaffDocumentController::class, 'read'])->name('hr.staff.documents.read');
@@ -1162,6 +1164,16 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/staff/{staff}/documents/{document}/reject', [\App\Http\Controllers\HR\StaffDocumentController::class, 'reject'])->name('hr.staff.documents.reject');
             Route::get('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'index'])->name('hr.documents.index');
             Route::get('/documents/staff/{staff}', [\App\Http\Controllers\HR\StaffDocumentController::class, 'show'])->name('hr.documents.show');
+            Route::get('/documents/templates', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'index'])->name('hr.documents.templates.index');
+            Route::get('/documents/templates/create', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'create'])->name('hr.documents.templates.create');
+            Route::post('/documents/templates', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'store'])->name('hr.documents.templates.store');
+            Route::get('/documents/templates/{template}/edit', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'edit'])->name('hr.documents.templates.edit');
+            Route::put('/documents/templates/{template}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'update'])->name('hr.documents.templates.update');
+            Route::delete('/documents/templates/{template}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'destroy'])->name('hr.documents.templates.destroy');
+            Route::get('/documents/templates/{template}/preview', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'preview'])->name('hr.documents.templates.preview');
+            Route::get('/documents/templates/{template}/generate', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'generate'])->name('hr.documents.templates.generate');
+            Route::get('/documents/templates/{template}/download', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'download'])->name('hr.documents.templates.download');
+            Route::get('/documents/quick/{type}', [\App\Http\Controllers\HR\DocumentGenerationController::class, 'quickDownload'])->name('hr.documents.quick.download');
             Route::get('/training', [\App\Http\Controllers\HR\TrainingController::class, 'index'])->name('hr.training.index');
             Route::get('/training/create', [\App\Http\Controllers\HR\TrainingController::class, 'create'])->name('hr.training.create');
             Route::post('/training', [\App\Http\Controllers\HR\TrainingController::class, 'store'])->name('hr.training.store');

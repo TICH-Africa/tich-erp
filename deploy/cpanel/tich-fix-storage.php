@@ -25,6 +25,7 @@ if (($_GET['key'] ?? '') !== 'tich-storage-2026') {
 $appPath = '/home3/tichafri/tich-erp/web';
 $docroot = '/home3/tichafri/public_html';
 $storageReal = $appPath.'/storage/app/public';
+$storagePrivate = $appPath.'/storage/app/private';
 $publicStorage = $appPath.'/public/storage';
 $docrootStorage = $docroot.'/storage';
 
@@ -64,6 +65,15 @@ if (! is_dir($storageReal)) {
     @mkdir($storageReal, 0755, true);
     echo "Created {$storageReal}\n";
 }
+
+echo 'storage/app/private exists: '.(is_dir($storagePrivate) ? 'YES' : 'NO')."\n";
+echo 'storage/app/private writable: '.(is_dir($storagePrivate) && is_writable($storagePrivate) ? 'YES' : 'NO')."\n";
+if (! is_dir($storagePrivate)) {
+    @mkdir($storagePrivate, 0755, true);
+    echo "Created {$storagePrivate}\n";
+}
+@chmod($storagePrivate, 0775);
+echo 'storage/app/private writable after fix: '.(is_dir($storagePrivate) && is_writable($storagePrivate) ? 'YES' : 'NO')."\n\n";
 
 $uploadCount = 0;
 $iterator = new RecursiveIteratorIterator(

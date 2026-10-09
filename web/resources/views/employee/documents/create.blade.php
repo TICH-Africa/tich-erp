@@ -50,7 +50,8 @@
                         </div>
                         <div class="uf-field">
                             <label for="file">File <span class="uf-req">*</span></label>
-                            <input type="file" id="file" name="file" required class="{{ $errors->has('file') ? 'is-invalid' : '' }}">
+                            <input type="file" id="file" name="file" required class="{{ $errors->has('file') ? 'is-invalid' : '' }}" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,application/pdf,image/*">
+                            <p class="uf-help">PDF, Word, or image — max 10 MB.</p>
                             @error('file')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
