@@ -141,7 +141,7 @@ class RecruitmentController extends Controller
         }
 
         DB::transaction(function () use ($application, $request) {
-            $employeeNumber = $this->staffLifecycle->generateEmployeeNumber();
+            $employeeNumber = $this->staffLifecycle->allocateEmployeeNumber();
 
             $nameParts = $this->splitFullName($application->full_name);
 

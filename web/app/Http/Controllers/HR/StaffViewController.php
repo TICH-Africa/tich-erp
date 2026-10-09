@@ -217,7 +217,6 @@ class StaffViewController extends Controller
 
         $validated['employment_status'] = 'onboarding';
         $validated['is_on_probation'] = $request->boolean('is_on_probation');
-        $validated['employee_number'] = $this->staffLifecycle->generateEmployeeNumber();
         $validated = $this->prepareStaffEmails($validated);
 
         if (array_key_exists('job_description', $validated)) {
@@ -225,7 +224,9 @@ class StaffViewController extends Controller
             $validated['job_description'] = $cleaned !== '' ? $cleaned : null;
         }
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use (&$validated, $request) {
+            $validated['employee_number'] = $this->staffLifecycle->allocateEmployeeNumber();
+
             $staff = Staff::create($validated);
             $staff->syncLinkedUserEmail();
 

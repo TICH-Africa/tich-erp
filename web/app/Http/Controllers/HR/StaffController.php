@@ -140,7 +140,7 @@ class StaffController extends Controller
 
         $staff = DB::transaction(function () use ($validated, $request) {
             if (empty($validated['employee_number'])) {
-                $validated['employee_number'] = $this->lifecycleService->generateEmployeeNumber();
+                $validated['employee_number'] = $this->lifecycleService->allocateEmployeeNumber();
             }
 
             if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {

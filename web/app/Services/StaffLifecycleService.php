@@ -36,7 +36,7 @@ class StaffLifecycleService
         }
 
         return DB::transaction(function () use ($application, $employmentDetails, $convertedBy) {
-            $employeeNumber = $this->generateEmployeeNumber();
+            $employeeNumber = $this->allocateEmployeeNumber();
             $employmentDetails = $this->normalizeEmploymentEmails($employmentDetails, $application);
 
             $staff = Staff::create(array_merge($employmentDetails, [
@@ -591,23 +591,51 @@ class StaffLifecycleService
         return $employmentDetails;
     }
 
-    public function generateEmployeeNumber(): string
+    /**
+     * Next EMP/{year}/{nnnnn} value.
+     *
+     * Soft-deleted staff still hold unique employee_number values, so this
+     * must scan withTrashed() and take the numeric max — not string order
+     * among live rows only.
+     */
+    public function generateEmployeeNumber(?int $year = null): string
     {
-        $year = now()->year;
+        $year ??= (int) now()->year;
         $prefix = "EMP/{$year}/";
+        $pattern = '/^'.preg_quote($prefix, '/').'(\d+)$/';
 
-        $last = Staff::where('employee_number', 'like', $prefix . '%')
-            ->orderByDesc('employee_number')
-            ->value('employee_number');
+        $max = 0;
+        Staff::withTrashed()
+            ->where('employee_number', 'like', $prefix.'%')
+            ->orderBy('id')
+            ->pluck('employee_number')
+            ->each(function (string $employeeNumber) use ($pattern, &$max) {
+                if (preg_match($pattern, $employeeNumber, $matches)) {
+                    $max = max($max, (int) $matches[1]);
+                }
+            });
 
-        if ($last) {
-            $num = (int) str_replace($prefix, '', $last);
-            $num++;
-        } else {
-            $num = 1;
+        return $prefix.str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate a unique employee number under a MySQL named lock (race-safe).
+     */
+    public function allocateEmployeeNumber(?int $year = null): string
+    {
+        $year ??= (int) now()->year;
+        $lockName = 'staff_employee_number_'.$year;
+        $gotLock = DB::selectOne('SELECT GET_LOCK(?, 10) AS l', [$lockName]);
+
+        if (! $gotLock || (int) ($gotLock->l ?? 0) !== 1) {
+            throw new \RuntimeException('Could not allocate employee number — please try again.');
         }
 
-        return $prefix . str_pad((string) $num, 5, '0', STR_PAD_LEFT);
+        try {
+            return $this->generateEmployeeNumber($year);
+        } finally {
+            DB::select('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
     }
 
     /**
@@ -618,7 +646,7 @@ class StaffLifecycleService
     {
         return DB::transaction(function () use ($personalEmail, $createdBy, $linkUser) {
             $staff = Staff::query()->create([
-                'employee_number' => $this->generateEmployeeNumber(),
+                'employee_number' => $this->allocateEmployeeNumber(),
                 // Placeholders only - completeness treats these as incomplete.
                 'first_name' => 'Pending',
                 'surname' => 'Invitee',
