@@ -1424,6 +1424,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/documents', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeStore'])->name('employee.documents.store');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\HR\StaffDocumentController::class, 'employeeDownload'])->name('employee.documents.download');
 
+        Route::get('/finances', [\App\Http\Controllers\Employee\EmployeePayslipController::class, 'index'])->name('employee.finances.index');
+        Route::get('/finances/payslips/{payrollItem}', [\App\Http\Controllers\Employee\EmployeePayslipController::class, 'show'])->name('employee.finances.payslips.show');
+        Route::get('/finances/payslips/{payrollItem}/pdf', [\App\Http\Controllers\Employee\EmployeePayslipController::class, 'pdf'])->name('employee.finances.payslips.pdf');
+
         Route::get('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'index'])->name('employee.concerns.index');
         Route::get('/concerns/create', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'create'])->name('employee.concerns.create');
         Route::post('/concerns', [\App\Http\Controllers\Employee\EmployeeConcernController::class, 'store'])->name('employee.concerns.store');

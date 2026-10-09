@@ -36,6 +36,12 @@
                 'badgeKey' => 'appraisals',
             ])
             @include('partials.navigation.sidebar-link', ['href' => route('employee.documents.index'), 'label' => 'My Documents', 'icon' => 'folder', 'active' => request()->routeIs('employee.documents.*')])
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('employee.finances.index'),
+                'label' => 'Finances',
+                'icon' => 'wallet',
+                'active' => request()->routeIs('employee.finances.*'),
+            ])
             @include('partials.navigation.sidebar-link', ['href' => route('employee.attendance.index'), 'label' => 'Clock in / out', 'icon' => 'clock', 'active' => request()->routeIs('employee.attendance.*')])
             @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.time-logs.index'),
