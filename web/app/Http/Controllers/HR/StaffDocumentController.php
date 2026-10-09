@@ -277,20 +277,32 @@ class StaffDocumentController extends Controller
     {
         $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
 
-        return $this->streamDocument($document);
+        return $this->streamDocument($document, asDownload: true);
+    }
+
+    /**
+     * Inline file stream for the document viewer (iframe / img).
+     */
+    public function preview(int $staffId, int $documentId): StreamedResponse
+    {
+        $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
+
+        return $this->streamDocument($document, asDownload: false);
     }
 
     public function read(int $staffId, int $documentId): View
     {
-        $document = StaffDocument::where('staff_id', $staffId)->findOrFail($documentId);
+        $document = StaffDocument::where('staff_id', $staffId)
+            ->with('staff')
+            ->findOrFail($documentId);
         [$disk] = $this->resolveDocumentDisk($document);
 
         if (! $disk) {
-            abort(404);
+            abort(404, 'Document file is missing from storage.');
         }
 
-        // Authenticated stream URL — never expose a public storage path.
-        $fileUrl = route('hr.staff.documents.download', [$staffId, $documentId]);
+        // Inline preview URL — download route forces attachment and triggers auto-download.
+        $fileUrl = route('hr.staff.documents.preview', [$staffId, $documentId]);
 
         return view('hr.documents.read', [
             'document' => $document,
@@ -391,15 +403,30 @@ class StaffDocumentController extends Controller
         return $this->files->store($file, "staff/{$employeeNumber}/documents", 'local', $safeName);
     }
 
-    private function streamDocument(StaffDocument $document): StreamedResponse
+    private function streamDocument(StaffDocument $document, bool $asDownload = true): StreamedResponse
     {
         [$disk, $path] = $this->resolveDocumentDisk($document);
 
         if (! $disk || ! $path) {
-            abort(404);
+            abort(404, 'Document file is missing from storage.');
         }
 
-        return Storage::disk($disk)->download($path, $document->original_filename ?: basename($path));
+        $filename = preg_replace('/[^\w.\-() ]+/u', '_', (string) ($document->original_filename ?: basename($path))) ?: 'document';
+        $mime = $document->mime_type
+            ?: (Storage::disk($disk)->mimeType($path) ?: 'application/octet-stream');
+
+        if ($asDownload) {
+            return Storage::disk($disk)->download($path, $filename, ['Content-Type' => $mime]);
+        }
+
+        return Storage::disk($disk)->response($path, $filename, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, private',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
     }
 
     /**

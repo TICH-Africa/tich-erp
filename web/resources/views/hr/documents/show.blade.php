@@ -46,8 +46,8 @@
                     @endif
                 </div>
                 <div class="tich-doc-card__actions">
-                    <a href="{{ route('hr.staff.documents.read', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
-                    <a href="{{ route('hr.staff.documents.download', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Download</a>
+                    <a href="{{ route('hr.staff.documents.read', [$staff->id, $doc->id]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                    <a href="{{ route('hr.staff.documents.download', [$staff->id, $doc->id]) }}" class="tich-btn tich-btn-ghost tich-btn--sm" download>Download</a>
                     <form method="POST" action="{{ route('hr.staff.documents.destroy', [$staff, $doc]) }}" onsubmit="return confirm('Delete this document? This cannot be undone.')">
                         @csrf
                         @method('DELETE')
