@@ -1,9 +1,13 @@
 @extends('layouts.employee')
 
 @section('employee-content')
+    @php
+        $openUploadModal = $errors->any();
+    @endphp
+
     <x-page-toolbar title="My Documents" meta="View and manage your submitted documents">
         <x-slot:actions>
-            <button onclick="document.getElementById('upload-modal').style.display='block'" class="tich-btn tich-btn-primary">+ Upload Document</button>
+            <button type="button" class="tich-btn tich-btn-primary" data-open-modal="upload-document-modal">+ Upload Document</button>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -55,26 +59,35 @@
         </div>
     </div>
 
-    <div id="upload-modal" style="display: {{ $errors->any() ? 'flex' : 'none' }}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 2rem; border-radius: var(--radius-md); max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <div class="tich-flex tich-flex--between tich-flex--start" style="margin-bottom: 1.5rem;">
-                <h2 class="tich-h2">Upload Document</h2>
-                <button onclick="document.getElementById('upload-modal').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-            </div>
+    <div
+        id="upload-document-modal"
+        class="tich-modal{{ $openUploadModal ? ' is-open' : '' }}"
+        aria-hidden="{{ $openUploadModal ? 'false' : 'true' }}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-document-modal-title"
+    >
+        <div class="tich-modal__backdrop" data-close-modal="upload-document-modal"></div>
+        <div class="tich-modal__dialog">
+            <header class="tich-modal__header">
+                <h2 class="tich-h3" id="upload-document-modal-title">Upload Document</h2>
+                <button type="button" class="tich-modal__close" data-close-modal="upload-document-modal" aria-label="Close">&times;</button>
+            </header>
 
-            @if ($errors->any())
-                <div class="tich-alert tich-alert--danger tich-mb-4">
-                    <ul class="tich-list">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('employee.documents.store') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('employee.documents.store') }}" enctype="multipart/form-data" class="tich-modal__body" data-uf="skip">
                 @csrf
-                <div class="tich-grid tich-grid--2 tich-mb-6">
+
+                @if ($errors->any())
+                    <div class="tich-modal__errors">
+                        <ul class="tich-list">
+                            @foreach ($errors->all() as $error)
+                                <li class="tich-text">{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <div class="tich-grid tich-grid--2">
                     <div>
                         <label for="document_type" class="tich-label">Document Type *</label>
                         <select id="document_type" name="document_type" required class="tich-input">
@@ -104,23 +117,25 @@
                     </div>
                     <div>
                         <label for="issue_date" class="tich-label">Issue Date</label>
-                        <input type="date" id="issue_date" name="issue_date" class="tich-input">
+                        <input type="date" id="issue_date" name="issue_date" value="{{ old('issue_date') }}" class="tich-input">
                     </div>
                     <div>
                         <label for="expiry_date" class="tich-label">Expiry Date</label>
-                        <input type="date" id="expiry_date" name="expiry_date" class="tich-input">
+                        <input type="date" id="expiry_date" name="expiry_date" value="{{ old('expiry_date') }}" class="tich-input">
                     </div>
                     <div class="tich-grid--span-2">
                         <label for="notes" class="tich-label">Notes</label>
-                        <textarea id="notes" name="notes" rows="2" class="tich-input"></textarea>
+                        <textarea id="notes" name="notes" rows="2" class="tich-input">{{ old('notes') }}</textarea>
                     </div>
                 </div>
 
-                <div class="tich-mt-6">
+                <footer class="tich-modal__footer">
                     <button type="submit" class="tich-btn tich-btn-primary">Upload Document</button>
-                    <button type="button" onclick="document.getElementById('upload-modal').style.display='none'" class="tich-btn tich-btn-ghost">Cancel</button>
-                </div>
+                    <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="upload-document-modal">Cancel</button>
+                </footer>
             </form>
         </div>
     </div>
+
+    @include('admin.partials.tich-modal-assets')
 @endsection

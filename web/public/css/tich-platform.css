@@ -7972,16 +7972,16 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
     color: var(--tich-text);
     border-radius: 4px;
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18);
-    border: 1px solid #c4cad2;
-    border-top: none;
+    border: none;
     padding: 0;
     font-family: var(--font-body);
 }
 
 [data-theme="dark"] .tich-modal__dialog {
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
-    border-color: #454b54;
+    border: none;
     background: #2d3239;
+    color: #f1f3f5;
 }
 
 .tich-modal__dialog--wide {
@@ -13193,10 +13193,30 @@ form > article.tich-card > .tich-mt-6:last-child {
 
 [data-theme="dark"] .tich-modal .tich-input,
 [data-theme="dark"] .tich-modal .tich-select,
-[data-theme="dark"] .tich-modal textarea.tich-input {
+[data-theme="dark"] .tich-modal textarea.tich-input,
+[data-theme="dark"] .tich-modal input[type="file"].tich-input {
     background-color: #454b54;
     border-color: transparent;
     color: #f8f9fa;
+}
+
+[data-theme="dark"] .tich-modal input[type="file"].tich-input::file-selector-button {
+    background: #3a4048;
+    color: #f1f3f5;
+    border: 1px solid #5c6370;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+[data-theme="dark"] .tich-modal .tich-modal__body {
+    background: #2d3239;
+    color: #f1f3f5;
+}
+
+[data-theme="dark"] .tich-modal .tich-modal__footer {
+    background: #2d3239;
 }
 
 
