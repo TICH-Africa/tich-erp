@@ -8,6 +8,7 @@ use App\Models\HrAppraisal;
 use App\Models\HrAppraisalCycle;
 use App\Models\HrCorporateGoal;
 use App\Models\Staff;
+use App\Models\User;
 use App\Services\HrPerformanceAppraisalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -190,15 +191,64 @@ class PerformanceAppraisalController extends Controller
 
         $goals = HrCorporateGoal::query()
             ->with(['cycle', 'parent'])
-            ->when($cycleId, fn ($q) => $q->where('cycle_id', $cycleId)->orWhereNull('cycle_id'))
+            ->when($cycleId, function ($q) use ($cycleId) {
+                $q->where(function ($inner) use ($cycleId) {
+                    $inner->where('cycle_id', $cycleId)->orWhereNull('cycle_id');
+                });
+            })
             ->orderByDesc('is_active')
-            ->orderBy('title')
+            ->orderByDesc('id')
             ->get();
 
         return view('hr.appraisals.corporate-goals', [
             'goals' => $goals,
             'cycles' => HrAppraisalCycle::query()->orderByDesc('fiscal_year')->orderByDesc('quarter')->get(),
+            'cycleId' => $cycleId,
+        ]);
+    }
+
+    public function createCorporateGoal(Request $request): View
+    {
+        $cycleId = $request->integer('cycle_id') ?: null;
+
+        $staffOptions = Staff::query()
+            ->excludePlatformOperators()
+            ->with(['user.roles:id,role_name'])
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get(['id', 'employee_number', 'first_name', 'surname', 'job_title', 'department_id', 'user_id']);
+
+        $linkedUsers = User::query()
+            ->where(function ($q) use ($staffOptions) {
+                $q->whereIn('staff_id', $staffOptions->pluck('id'))
+                    ->orWhereIn('id', $staffOptions->pluck('user_id')->filter());
+            })
+            ->with(['roles:id,role_name'])
+            ->get(['id', 'staff_id']);
+
+        $rolesByStaffId = [];
+        foreach ($linkedUsers as $user) {
+            $roleNames = $user->roles->pluck('role_name')->filter()->unique()->values()->all();
+            if ($user->staff_id) {
+                $rolesByStaffId[(int) $user->staff_id] = array_values(array_unique(array_merge(
+                    $rolesByStaffId[(int) $user->staff_id] ?? [],
+                    $roleNames
+                )));
+            }
+            $viaUserId = $staffOptions->firstWhere('user_id', $user->id);
+            if ($viaUserId) {
+                $rolesByStaffId[(int) $viaUserId->id] = array_values(array_unique(array_merge(
+                    $rolesByStaffId[(int) $viaUserId->id] ?? [],
+                    $roleNames
+                )));
+            }
+        }
+
+        return view('hr.appraisals.corporate-goals-create', [
+            'cycles' => HrAppraisalCycle::query()->orderByDesc('fiscal_year')->orderByDesc('quarter')->get(),
             'departments' => Department::query()->orderBy('dept_name')->get(['id', 'dept_name']),
+            'staffOptions' => $staffOptions,
+            'rolesByStaffId' => $rolesByStaffId,
             'cycleId' => $cycleId,
         ]);
     }
@@ -206,47 +256,96 @@ class PerformanceAppraisalController extends Controller
     public function storeCorporateGoal(Request $request): RedirectResponse
     {
         $hr = $this->hrStaff($request);
-        $data = $this->validatedCorporateGoal($request);
+        [$shared, $goalRows] = $this->validatedCorporateGoalBatch($request);
 
-        $this->appraisals->saveCorporateGoal($hr, $data);
+        $created = $this->appraisals->saveCorporateGoalBatch($hr, $shared, $goalRows);
+        $count = $created->count();
 
-        return back()->with('status', 'Corporate / cascading goal saved.');
+        return redirect()
+            ->route('hr.appraisals.corporate-goals', array_filter([
+                'cycle_id' => $shared['cycle_id'] ?? null,
+            ]))
+            ->with(
+                'status',
+                $count === 1
+                    ? 'Corporate / cascading goal saved. Assigned employees can accept it on their appraisal.'
+                    : "{$count} corporate / cascading goals saved. Assigned employees can accept them on their appraisal."
+            );
     }
 
     public function updateCorporateGoal(Request $request, HrCorporateGoal $goal): RedirectResponse
     {
         $hr = $this->hrStaff($request);
-        $data = $this->validatedCorporateGoal($request);
+        [$shared, $goalRows] = $this->validatedCorporateGoalBatch($request, single: true);
 
-        $this->appraisals->saveCorporateGoal($hr, $data, $goal);
+        $this->appraisals->saveCorporateGoal($hr, array_merge($shared, $goalRows[0]), $goal);
 
         return back()->with('status', 'Corporate goal updated.');
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{0: array<string, mixed>, 1: list<array{title: string, description: ?string, weight_hint: mixed}>}
      */
-    private function validatedCorporateGoal(Request $request): array
+    private function validatedCorporateGoalBatch(Request $request, bool $single = false): array
     {
-        $data = $request->validate([
-            'cycle_id' => ['nullable', 'integer', 'exists:hr_appraisal_cycles,id'],
-            'parent_id' => ['nullable', 'integer', 'exists:hr_corporate_goals,id'],
-            'code' => ['nullable', 'string', 'max:50'],
-            'title' => ['required', 'string', 'max:300'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'role_scope' => ['required', 'in:all,department,job_title'],
-            'scope_values' => ['nullable', 'array'],
-            'scope_values.*' => ['nullable', 'string', 'max:200'],
-            'weight_hint' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $scope = (string) $request->input('role_scope', 'all');
 
-        $data['is_active'] = $request->boolean('is_active', true);
-        if (($data['role_scope'] ?? 'all') === 'all') {
-            $data['scope_values'] = null;
+        $scopeValuesRules = ['nullable', 'array'];
+        $scopeValueItemRules = ['nullable', 'integer'];
+
+        if ($scope === 'department') {
+            $scopeValuesRules = ['required', 'array', 'min:1'];
+            $scopeValueItemRules = ['required', 'integer', 'exists:departments,id'];
+        } elseif ($scope === 'staff') {
+            $scopeValuesRules = ['required', 'array', 'min:1'];
+            $scopeValueItemRules = ['required', 'integer', 'exists:staff,id'];
         }
 
-        return $data;
+        $goalMin = $single ? 1 : 1;
+
+        $data = $request->validate([
+            'cycle_id' => ['required', 'integer', 'exists:hr_appraisal_cycles,id'],
+            'parent_id' => ['nullable', 'integer', 'exists:hr_corporate_goals,id'],
+            'role_scope' => ['required', 'in:all,department,staff'],
+            'scope_values' => $scopeValuesRules,
+            'scope_values.*' => $scopeValueItemRules,
+            'is_active' => ['nullable', 'boolean'],
+            'goals' => ['required', 'array', 'min:'.$goalMin],
+            'goals.*.title' => ['required', 'string', 'max:300'],
+            'goals.*.description' => ['nullable', 'string', 'max:5000'],
+            'goals.*.weight_hint' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $shared = [
+            'cycle_id' => (int) $data['cycle_id'],
+            'parent_id' => $data['parent_id'] ?? null,
+            'role_scope' => $data['role_scope'],
+            'is_active' => $request->boolean('is_active', true),
+            'scope_values' => ($data['role_scope'] ?? 'all') === 'all'
+                ? null
+                : array_values(array_unique(array_map('intval', $data['scope_values'] ?? []))),
+        ];
+
+        $goalRows = [];
+        foreach ($data['goals'] as $row) {
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($title === '') {
+                continue;
+            }
+            $goalRows[] = [
+                'title' => $title,
+                'description' => $row['description'] ?? null,
+                'weight_hint' => $row['weight_hint'] ?? null,
+            ];
+        }
+
+        if ($goalRows === []) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'goals' => 'Add at least one goal with a title.',
+            ]);
+        }
+
+        return [$shared, $goalRows];
     }
 
     private function hrStaff(Request $request): Staff

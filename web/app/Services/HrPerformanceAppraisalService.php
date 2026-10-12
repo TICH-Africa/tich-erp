@@ -215,12 +215,30 @@ class HrPerformanceAppraisalService
         return sprintf('APR-%d-Q%d-%04d', $cycle->fiscal_year, $cycle->quarter, $seq);
     }
 
+    public function nextCorporateGoalCode(): string
+    {
+        $year = (int) now()->year;
+        $prefix = "CG-{$year}-";
+        $pattern = '/^'.preg_quote($prefix, '/').'(\d+)$/';
+
+        $max = 0;
+        HrCorporateGoal::query()
+            ->where('code', 'like', $prefix.'%')
+            ->pluck('code')
+            ->each(function (?string $code) use ($pattern, &$max) {
+                if ($code && preg_match($pattern, $code, $matches)) {
+                    $max = max($max, (int) $matches[1]);
+                }
+            });
+
+        return $prefix.str_pad((string) ($max + 1), 4, '0', STR_PAD_LEFT);
+    }
+
     public function saveCorporateGoal(Staff $hrStaff, array $data, ?HrCorporateGoal $goal = null): HrCorporateGoal
     {
         $payload = [
             'cycle_id' => $data['cycle_id'] ?? null,
             'parent_id' => $data['parent_id'] ?? null,
-            'code' => $data['code'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'role_scope' => $data['role_scope'] ?? 'all',
@@ -230,14 +248,89 @@ class HrPerformanceAppraisalService
         ];
 
         if ($goal) {
+            // Keep existing code on update; only fill if somehow blank.
+            if (blank($goal->code)) {
+                $payload['code'] = $this->nextCorporateGoalCode();
+            }
             $goal->update($payload);
 
             return $goal->fresh();
         }
 
+        $payload['code'] = $this->nextCorporateGoalCode();
         $payload['created_by'] = $hrStaff->id;
 
         return HrCorporateGoal::query()->create($payload);
+    }
+
+    /**
+     * Create several corporate goals that share cycle + scope.
+     *
+     * @param  list<array{title: string, description?: ?string, weight_hint?: mixed}>  $goalRows
+     * @return Collection<int, HrCorporateGoal>
+     */
+    public function saveCorporateGoalBatch(Staff $hrStaff, array $shared, array $goalRows): Collection
+    {
+        $created = collect();
+
+        foreach ($goalRows as $row) {
+            $created->push($this->saveCorporateGoal($hrStaff, array_merge($shared, [
+                'title' => $row['title'],
+                'description' => $row['description'] ?? null,
+                'weight_hint' => $row['weight_hint'] ?? null,
+            ])));
+        }
+
+        $this->notifyStaffOfCorporateGoals($created);
+
+        return $created;
+    }
+
+    /**
+     * @param  Collection<int, HrCorporateGoal>  $goals
+     */
+    public function notifyStaffOfCorporateGoals(Collection $goals): void
+    {
+        if ($goals->isEmpty()) {
+            return;
+        }
+
+        $cycleId = (int) ($goals->first()->cycle_id ?? 0);
+        if ($cycleId < 1) {
+            return;
+        }
+
+        $openAppraisals = HrAppraisal::query()
+            ->with(['staff.user'])
+            ->where('cycle_id', $cycleId)
+            ->whereIn('status', ['draft_goals', 'goals_pending_approval', 'self_assessment'])
+            ->get();
+
+        foreach ($openAppraisals as $appraisal) {
+            $staff = $appraisal->staff;
+            if (! $staff?->user_id) {
+                continue;
+            }
+
+            $applicable = $goals->filter(fn (HrCorporateGoal $g) => $g->appliesTo($staff));
+            if ($applicable->isEmpty()) {
+                continue;
+            }
+
+            $this->notifications->notifyUser(
+                (int) $staff->user_id,
+                'New corporate appraisal goals',
+                sprintf(
+                    '%d cascading goal(s) were assigned for %s. Open your appraisal to accept and complete them.',
+                    $applicable->count(),
+                    $appraisal->cycle?->label() ?? 'this cycle'
+                ),
+                'hr_appraisal',
+                (string) $appraisal->id,
+                'normal',
+                route('employee.appraisals.show', $appraisal),
+            );
+        }
     }
 
     /**
@@ -254,6 +347,59 @@ class HrPerformanceAppraisalService
             ->get()
             ->filter(fn (HrCorporateGoal $goal) => $goal->appliesTo($staff))
             ->values();
+    }
+
+    /**
+     * Corporate goals assigned to this staff that are not yet on the appraisal.
+     *
+     * @return Collection<int, HrCorporateGoal>
+     */
+    public function pendingCascadingGoalsFor(HrAppraisal $appraisal): Collection
+    {
+        $staff = $appraisal->staff;
+        if (! $staff) {
+            return collect();
+        }
+
+        $linkedIds = $appraisal->goals()
+            ->whereNotNull('corporate_goal_id')
+            ->pluck('corporate_goal_id')
+            ->all();
+
+        return $this->cascadingGoalsFor($staff, $appraisal->cycle_id)
+            ->reject(fn (HrCorporateGoal $goal) => in_array($goal->id, $linkedIds, true))
+            ->values();
+    }
+
+    public function acceptCascadingGoal(HrAppraisal $appraisal, HrCorporateGoal $corporate): HrAppraisalGoal
+    {
+        if (! $appraisal->canEmployeeEditGoals()) {
+            throw new \RuntimeException('You can only add cascading goals while goals are still editable.');
+        }
+
+        $staff = $appraisal->staff;
+        if (! $staff || ! $corporate->appliesTo($staff)) {
+            throw new \RuntimeException('This corporate goal is not assigned to you.');
+        }
+
+        if ($appraisal->goals()->where('corporate_goal_id', $corporate->id)->exists()) {
+            throw new \RuntimeException('This corporate goal is already on your appraisal.');
+        }
+
+        $weight = $corporate->weight_hint !== null ? (float) $corporate->weight_hint : 10.0;
+
+        return $this->upsertGoal($appraisal, [
+            'title' => $corporate->title,
+            'description' => $corporate->description,
+            'corporate_goal_id' => $corporate->id,
+            'goal_type' => 'cascaded',
+            'weight' => $weight,
+            'smart_specific' => $corporate->description ?: ('Deliver on: '.$corporate->title),
+            'smart_measurable' => 'Define clear success measures for '.$corporate->title,
+            'smart_achievable' => 'Confirm resources and capacity to deliver '.$corporate->title,
+            'smart_relevant' => 'Aligns with cascading KPI '.$corporate->code,
+            'smart_timebound' => 'Complete within the '.$appraisal->cycle?->label().' review period',
+        ]);
     }
 
     public function upsertGoal(HrAppraisal $appraisal, array $data, ?HrAppraisalGoal $goal = null): HrAppraisalGoal

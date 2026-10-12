@@ -57,12 +57,24 @@ class HrCorporateGoal extends Model
 
         return match ($this->role_scope) {
             'department' => in_array((int) $staff->department_id, array_map('intval', $this->scope_values ?? []), true),
+            'staff' => in_array((int) $staff->id, array_map('intval', $this->scope_values ?? []), true),
+            // Legacy scope kept for existing rows.
             'job_title' => in_array(
                 mb_strtolower(trim((string) $staff->job_title)),
                 array_map(fn ($v) => mb_strtolower(trim((string) $v)), $this->scope_values ?? []),
                 true
             ),
             default => true,
+        };
+    }
+
+    public function scopeLabel(): string
+    {
+        return match ($this->role_scope) {
+            'department' => 'Departments',
+            'staff' => 'Individual employees',
+            'job_title' => 'Job titles',
+            default => 'All employees',
         };
     }
 }

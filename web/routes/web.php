@@ -1215,6 +1215,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::post('/cycles/{cycle}/calibration', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'startCalibration'])->name('cycles.calibration');
                 Route::post('/cycles/{cycle}/close', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'closeCycle'])->name('cycles.close');
                 Route::get('/corporate-goals', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'corporateGoals'])->name('corporate-goals');
+                Route::get('/corporate-goals/create', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'createCorporateGoal'])->name('corporate-goals.create');
                 Route::post('/corporate-goals', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'storeCorporateGoal'])->name('corporate-goals.store');
                 Route::put('/corporate-goals/{goal}', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'updateCorporateGoal'])->name('corporate-goals.update');
                 Route::get('/{appraisal}', [\App\Http\Controllers\HR\PerformanceAppraisalController::class, 'show'])->name('show');
@@ -1419,6 +1420,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/team/{appraisal}/review/submit', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'submitManagerReview'])->name('team.review.submit');
             Route::get('/{appraisal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'show'])->name('show');
             Route::post('/{appraisal}/goals', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'storeGoal'])->name('goals.store');
+            Route::post('/{appraisal}/corporate-goals/{corporateGoal}/accept', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'acceptCascadingGoal'])->name('corporate-goals.accept');
             Route::put('/{appraisal}/goals/{goal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'updateGoal'])->name('goals.update');
             Route::delete('/{appraisal}/goals/{goal}', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'destroyGoal'])->name('goals.destroy');
             Route::post('/{appraisal}/goals/submit', [\App\Http\Controllers\Employee\EmployeeAppraisalController::class, 'submitGoals'])->name('goals.submit');

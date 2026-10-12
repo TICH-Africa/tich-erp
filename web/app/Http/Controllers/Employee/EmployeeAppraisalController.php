@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\HrAppraisal;
 use App\Models\HrAppraisalGoal;
+use App\Models\HrCorporateGoal;
 use App\Models\Staff;
 use App\Services\HrPerformanceAppraisalService;
 use Illuminate\Http\RedirectResponse;
@@ -37,14 +38,31 @@ class EmployeeAppraisalController extends Controller
 
         $appraisal->load(['cycle', 'lineManager', 'goals.corporateGoal', 'competencies', 'department']);
 
+        $cascadingGoals = $this->appraisals->cascadingGoalsFor($staff, $appraisal->cycle_id);
+
         return view('employee.appraisals.show', [
             'staff' => $staff,
             'appraisal' => $appraisal,
-            'cascadingGoals' => $this->appraisals->cascadingGoalsFor($staff, $appraisal->cycle_id),
+            'cascadingGoals' => $cascadingGoals,
+            'pendingCascadingGoals' => $this->appraisals->pendingCascadingGoalsFor($appraisal),
             'ratingScale' => $this->appraisals->ratingScale(),
             'statuses' => config('tich-performance-appraisals.statuses', []),
             'mode' => 'employee',
         ]);
+    }
+
+    public function acceptCascadingGoal(Request $request, HrAppraisal $appraisal, HrCorporateGoal $corporateGoal): RedirectResponse
+    {
+        $staff = $this->employeeStaff($request);
+        abort_unless((int) $appraisal->staff_id === (int) $staff->id, 403);
+
+        try {
+            $this->appraisals->acceptCascadingGoal($appraisal, $corporateGoal);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['goal' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'Corporate goal added to your appraisal. Complete the SMART details, then submit to your supervisor.');
     }
 
     public function storeGoal(Request $request, HrAppraisal $appraisal): RedirectResponse

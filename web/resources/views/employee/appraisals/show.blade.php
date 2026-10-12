@@ -49,10 +49,38 @@
             </div>
         </div>
 
+        @if ($isEmployee && isset($pendingCascadingGoals) && $pendingCascadingGoals->isNotEmpty() && $appraisal->canEmployeeEditGoals())
+            <div class="uf-form-section">
+                <div class="uf-section-head">Assigned corporate / cascading goals</div>
+                <div class="uf-section-body">
+                    <p class="uf-hint">HR assigned these KPIs to you. Accept each one to add it to your appraisal, then refine the SMART details before submitting to your supervisor.</p>
+                    <div class="tich-appraisal-cascade-list">
+                        @foreach ($pendingCascadingGoals as $cg)
+                            <div class="tich-appraisal-cascade-item">
+                                <div>
+                                    <strong>{{ $cg->code ? $cg->code.' · ' : '' }}{{ $cg->title }}</strong>
+                                    @if ($cg->description)
+                                        <p class="uf-hint">{{ $cg->description }}</p>
+                                    @endif
+                                    @if ($cg->weight_hint !== null)
+                                        <p class="uf-hint">Suggested weight: {{ number_format((float) $cg->weight_hint, 1) }}%</p>
+                                    @endif
+                                </div>
+                                <form method="POST" action="{{ route('employee.appraisals.corporate-goals.accept', [$appraisal, $cg]) }}">
+                                    @csrf
+                                    <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">Accept &amp; work on</button>
+                                </form>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="uf-form-section">
             <div class="uf-section-head">Section I — Objectives &amp; SMART goals</div>
             <div class="uf-section-body">
-                <p class="uf-hint">Objective 1 is always JD duties. Add role-specific SMART goals and link a corporate KPI where cascading applies. Weights must total 100%.</p>
+                <p class="uf-hint">Objective 1 is always JD duties. Accept cascading goals above (if any), add personal SMART goals, and keep weights at 100% total.</p>
                 <p class="uf-hint">Current weight total: <strong>{{ $weightTotal }}%</strong></p>
 
                 @foreach ($appraisal->goals as $goal)
