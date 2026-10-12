@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\HrPolicy;
 use App\Models\PolicyAcknowledgement;
+use App\Models\PolicyRead;
 use App\Models\Staff;
 use App\Services\StoredFileService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
@@ -29,7 +32,21 @@ class HrPolicyController extends Controller
 
     public function create(): View
     {
-        return view('hr.policies.create');
+        $departments = Department::query()
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name']);
+
+        $staffList = Staff::query()
+            ->excludePlatformOperators()
+            ->with('department')
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id']);
+
+        return view('hr.policies.create', [
+            'departments' => $departments,
+            'staffList' => $staffList,
+        ]);
     }
 
     public function store(Request $request)
@@ -42,6 +59,11 @@ class HrPolicyController extends Controller
             'effective_date' => 'nullable|date',
             'expiry_date' => 'nullable|date',
             'tags' => 'nullable|string|max:500',
+            'target_type' => 'required|string|in:all,department,staff',
+            'target_departments' => 'required_if:target_type,department|nullable|array|min:1',
+            'target_departments.*' => 'exists:departments,id',
+            'target_staff_ids' => 'required_if:target_type,staff|nullable|array|min:1',
+            'target_staff_ids.*' => 'exists:staff,id',
         ]);
 
         $file = $validated['file'];
@@ -59,24 +81,118 @@ class HrPolicyController extends Controller
             'effective_date' => $validated['effective_date'],
             'expiry_date' => $validated['expiry_date'],
             'tags' => $validated['tags'],
+            'target_type' => $validated['target_type'],
+            'target_departments' => $validated['target_type'] === 'department' ? $validated['target_departments'] : null,
+            'target_staff_ids' => $validated['target_type'] === 'staff' ? $validated['target_staff_ids'] : null,
+            'target_roles' => null,
             'uploaded_by' => $request->user()->staff_id ?? Staff::first()?->id,
         ]);
 
-        return redirect()->route('hr.policies.show', $policy)->with('success', 'Policy uploaded successfully.');
+        // Auto-send to selected audience
+        $this->sendPolicyToAudience($policy);
+
+        return redirect()->route('hr.policies.show', $policy)->with('success', 'Policy uploaded and sent successfully.');
+    }
+
+    private function sendPolicyToAudience(HrPolicy $policy): int
+    {
+        $staffIds = $this->recipientStaffIds(
+            $policy->target_type,
+            $policy->target_staff_ids ?? [],
+            $policy->target_departments ?? [],
+        );
+
+        return $this->createAcknowledgements($policy, $staffIds);
+    }
+
+    /**
+     * @param  array<int, int|string>  $staffIds
+     * @param  array<int, int|string>  $departmentIds
+     * @return list<int>
+     */
+    private function recipientStaffIds(string $targetType, array $staffIds = [], array $departmentIds = []): array
+    {
+        $query = Staff::query()->excludePlatformOperators();
+
+        if ($targetType === 'staff') {
+            $query->whereIn('id', $staffIds);
+        } elseif ($targetType === 'department') {
+            $query->whereIn('department_id', $departmentIds);
+        } elseif ($targetType !== 'all') {
+            return [];
+        }
+
+        return $query->distinct()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * @param  list<int>  $staffIds
+     */
+    private function createAcknowledgements(HrPolicy $policy, array $staffIds): int
+    {
+        $sent = 0;
+
+        foreach ($staffIds as $staffId) {
+            $existing = PolicyAcknowledgement::query()
+                ->where('policy_id', $policy->id)
+                ->where('staff_id', $staffId)
+                ->where('policy_version', $policy->version)
+                ->first();
+
+            if (! $existing) {
+                PolicyAcknowledgement::create([
+                    'policy_id' => $policy->id,
+                    'policy_name' => $policy->title,
+                    'policy_version' => $policy->version,
+                    'policy_file_path' => $policy->file_path,
+                    'effective_date' => $policy->effective_date ?? now()->toDateString(),
+                    'staff_id' => $staffId,
+                    'is_acknowledged' => false,
+                    'acknowledgement_method' => 'digital',
+                ]);
+                $sent++;
+            }
+        }
+
+        return $sent;
     }
 
     public function show(int $id): View
     {
         $policy = HrPolicy::with('uploadedBy')->findOrFail($id);
 
-        return view('hr.policies.show', ['policy' => $policy]);
+        $acknowledgements = $this->acknowledgementsQuery()
+            ->where('policy_id', $id)
+            ->with(['staff.department', 'staff.user.roles'])
+            ->orderByDesc('created_at')
+            ->paginate(25);
+
+        return view('hr.policies.show', [
+            'policy' => $policy,
+            'acknowledgements' => $acknowledgements,
+        ]);
     }
 
     public function edit(int $id): View
     {
         $policy = HrPolicy::findOrFail($id);
 
-        return view('hr.policies.edit', ['policy' => $policy]);
+        $departments = Department::query()
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name']);
+
+        $staffList = Staff::query()
+            ->excludePlatformOperators()
+            ->with('department')
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id']);
+
+        return view('hr.policies.edit', [
+            'policy' => $policy,
+            'departments' => $departments,
+            'staffList' => $staffList,
+        ]);
     }
 
     public function update(Request $request, int $id)
@@ -92,6 +208,11 @@ class HrPolicyController extends Controller
             'expiry_date' => 'nullable|date',
             'tags' => 'nullable|string|max:500',
             'is_active' => 'sometimes|boolean',
+            'target_type' => 'required|string|in:all,department,staff',
+            'target_departments' => 'required_if:target_type,department|nullable|array|min:1',
+            'target_departments.*' => 'exists:departments,id',
+            'target_staff_ids' => 'required_if:target_type,staff|nullable|array|min:1',
+            'target_staff_ids.*' => 'exists:staff,id',
         ]);
 
         $updateData = [
@@ -103,6 +224,10 @@ class HrPolicyController extends Controller
             'expiry_date' => $validated['expiry_date'],
             'tags' => $validated['tags'],
             'is_active' => $request->boolean('is_active', $policy->is_active),
+            'target_type' => $validated['target_type'],
+            'target_departments' => $validated['target_type'] === 'department' ? $validated['target_departments'] : null,
+            'target_staff_ids' => $validated['target_type'] === 'staff' ? $validated['target_staff_ids'] : null,
+            'target_roles' => null,
         ];
 
         if ($request->hasFile('file')) {
@@ -137,9 +262,14 @@ class HrPolicyController extends Controller
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title', 'department_id']);
 
+        $departments = Department::query()
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name']);
+
         return view('hr.policies.send', [
             'policy' => $policy,
             'staffList' => $staffList,
+            'departments' => $departments,
         ]);
     }
 
@@ -148,49 +278,39 @@ class HrPolicyController extends Controller
         $policy = HrPolicy::findOrFail($id);
 
         $validated = $request->validate([
-            'staff_ids' => 'required|array|min:1',
+            'target_type' => 'required|string|in:all,staff,department',
+            'staff_ids' => 'required_if:target_type,staff|nullable|array|min:1',
             'staff_ids.*' => 'exists:staff,id',
-            'send_to_all' => 'sometimes|boolean',
+            'target_departments' => 'required_if:target_type,department|nullable|array|min:1',
+            'target_departments.*' => 'exists:departments,id',
         ]);
 
-        if (! empty($validated['send_to_all'])) {
-            $staffIds = Staff::excludePlatformOperators()->pluck('id')->toArray();
-        } else {
-            $staffIds = Staff::excludePlatformOperators()
-                ->whereIn('id', $validated['staff_ids'])
-                ->pluck('id')
-                ->toArray();
-        }
+        $targetType = $validated['target_type'];
+        $staffIds = $this->recipientStaffIds(
+            $targetType,
+            $validated['staff_ids'] ?? [],
+            $validated['target_departments'] ?? [],
+        );
 
-        $sent = 0;
-        foreach ($staffIds as $staffId) {
-            $existing = PolicyAcknowledgement::query()
-                ->where('policy_id', $policy->id)
-                ->where('staff_id', $staffId)
-                ->where('policy_version', $policy->version)
-                ->first();
+        abort_if($staffIds === [], 422, 'No eligible staff members were found for the selected audience.');
 
-            if (! $existing) {
-                PolicyAcknowledgement::create([
-                    'policy_id' => $policy->id,
-                    'policy_name' => $policy->title,
-                    'policy_version' => $policy->version,
-                    'policy_file_path' => $policy->file_path,
-                    'effective_date' => $policy->effective_date,
-                    'staff_id' => $staffId,
-                    'is_acknowledged' => false,
-                    'acknowledgement_method' => 'digital',
-                ]);
-                $sent++;
-            }
-        }
+        $sent = DB::transaction(function () use ($policy, $targetType, $validated, $staffIds): int {
+            $policy->update([
+                'target_type' => $targetType,
+                'target_staff_ids' => $targetType === 'staff' ? $validated['staff_ids'] : null,
+                'target_departments' => $targetType === 'department' ? $validated['target_departments'] : null,
+                'target_roles' => null,
+            ]);
+
+            return $this->createAcknowledgements($policy, $staffIds);
+        });
 
         return redirect()->route('hr.policies.show', $policy)->with('success', "Policy sent to {$sent} staff member(s).");
     }
 
     public function acknowledgementsIndex(Request $request): View
     {
-        $query = PolicyAcknowledgement::query()
+        $query = $this->acknowledgementsQuery()
             ->with(['policy', 'staff'])
             ->when($request->filled('status'), function ($q) use ($request) {
                 $q->where('is_acknowledged', $request->boolean('status'));
@@ -207,9 +327,9 @@ class HrPolicyController extends Controller
     public function acknowledgements(int $id): View
     {
         $policy = HrPolicy::findOrFail($id);
-        $acknowledgements = PolicyAcknowledgement::query()
+        $acknowledgements = $this->acknowledgementsQuery()
             ->where('policy_id', $id)
-            ->with('staff')
+            ->with(['staff.department', 'staff.user.roles'])
             ->orderByDesc('created_at')
             ->paginate(25);
 
@@ -217,6 +337,20 @@ class HrPolicyController extends Controller
             'policy' => $policy,
             'acknowledgements' => $acknowledgements,
         ]);
+    }
+
+    private function acknowledgementsQuery()
+    {
+        return PolicyAcknowledgement::query()
+            ->select('policy_acknowledgements.*')
+            ->addSelect([
+                'read_at' => PolicyRead::query()
+                    ->select('read_at')
+                    ->whereColumn('policy_reads.policy_id', 'policy_acknowledgements.policy_id')
+                    ->whereColumn('policy_reads.staff_id', 'policy_acknowledgements.staff_id')
+                    ->limit(1),
+            ])
+            ->withCasts(['read_at' => 'datetime']);
     }
 
     public function assigned(Request $request)
@@ -265,26 +399,42 @@ class HrPolicyController extends Controller
         $staff = app(\App\Services\EmployeePortalService::class)->staffForUser($request->user());
         abort_if(! $staff, 404);
 
-        $acknowledgement = PolicyAcknowledgement::query()
-            ->where('policy_id', $id)
-            ->where('staff_id', $staff->id)
-            ->firstOrFail();
-
-        abort_if($acknowledgement->is_acknowledged, 403, 'You have already acknowledged this policy.');
-
         $validated = $request->validate([
             'full_name' => 'required|string|max:200',
             'employee_number' => 'required|string|max:50',
             'signature' => 'nullable|string|max:2000',
+            'read_confirmed' => 'required|accepted',
         ]);
 
-        $acknowledgement->update([
-            'is_acknowledged' => true,
-            'acknowledged_at' => now(),
-            'acknowledged_by' => $validated['full_name'],
-            'employee_number' => $validated['employee_number'],
-            'signature' => $validated['signature'],
-        ]);
+        DB::transaction(function () use ($staff, $id, $validated, $request): void {
+            $acknowledgement = PolicyAcknowledgement::query()
+                ->where('policy_id', $id)
+                ->where('staff_id', $staff->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_if($acknowledgement->is_acknowledged, 403, 'You have already acknowledged this policy.');
+
+            $acknowledgedAt = now();
+            $userAgent = $request->userAgent();
+
+            $acknowledgement->update([
+                'is_acknowledged' => true,
+                'acknowledged_at' => $acknowledgedAt,
+                'acknowledged_by' => $validated['full_name'],
+                'employee_number' => $validated['employee_number'],
+                'signature' => $validated['signature'],
+            ]);
+
+            PolicyRead::query()->firstOrCreate([
+                'policy_id' => $id,
+                'staff_id' => $staff->id,
+            ], [
+                'read_at' => $acknowledgedAt,
+                'ip_address' => $request->ip(),
+                'user_agent' => $userAgent ? substr($userAgent, 0, 500) : null,
+            ]);
+        });
 
         return redirect()->route('policies.assigned')->with('success', 'Policy acknowledged successfully.');
     }
@@ -316,6 +466,18 @@ class HrPolicyController extends Controller
 
         if (! $policy->file_path || ! Storage::disk('public')->exists($policy->file_path)) {
             abort(404);
+        }
+
+        // Track read event for employee portal
+        $staff = app(\App\Services\EmployeePortalService::class)->staffForUser(request()->user());
+        if ($staff) {
+            PolicyRead::firstOrCreate([
+                'policy_id' => $policy->id,
+                'staff_id' => $staff->id,
+            ], [
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
         }
 
         return Storage::disk('public')->response($policy->file_path, $policy->original_filename);

@@ -40,11 +40,7 @@
                             </td>
                             <td class="tich-caption">{{ $policy->uploadedBy?->fullName() ?? '-' }}</td>
                             <td>
-                                <div class="tich-flex tich-flex--gap">
-                                    <a href="{{ route('hr.policies.show', $policy) }}" class="tich-btn tich-btn-ghost">View</a>
-                                    <a href="{{ route('hr.policies.send', $policy) }}" class="tich-btn tich-btn-secondary">Send to staff</a>
-                                    <a href="{{ route('hr.policies.acknowledgements', $policy) }}" class="tich-btn tich-btn-secondary">Acknowledgements</a>
-                                </div>
+                                <a href="{{ route('hr.policies.show', $policy) }}" class="tich-btn tich-btn-ghost">View</a>
                             </td>
                         </tr>
                     @empty

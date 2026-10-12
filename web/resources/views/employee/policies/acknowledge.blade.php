@@ -66,6 +66,16 @@
             </div>
 
             <div class="tich-mt-6">
+                <label class="tich-checkbox">
+                    <input type="checkbox" name="read_confirmed" value="1" required>
+                    <span>I have read and understood this policy</span>
+                </label>
+                @error('read_confirmed')
+                    <p class="tich-field-error">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="tich-mt-6">
                 <button type="submit" class="tich-btn tich-btn-primary">I acknowledge this policy</button>
                 <a href="{{ route('policies.assigned') }}" class="tich-btn tich-btn-ghost">Cancel</a>
             </div>

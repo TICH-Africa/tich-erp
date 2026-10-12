@@ -5203,6 +5203,10 @@ CREATE TABLE IF NOT EXISTS `hr_policies` (
   `expiry_date` date DEFAULT NULL,
   `is_active` tinyint(4) NOT NULL DEFAULT 1,
   `tags` text DEFAULT NULL,
+  `target_type` enum('all','department','staff','role') NOT NULL DEFAULT 'all',
+  `target_departments` json DEFAULT NULL,
+  `target_staff_ids` json DEFAULT NULL,
+  `target_roles` json DEFAULT NULL,
   `uploaded_by` bigint(20) unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
@@ -5229,6 +5233,10 @@ CALL `tich_ensure_column`('hr_policies', 'effective_date', 'date NULL DEFAULT NU
 CALL `tich_ensure_column`('hr_policies', 'expiry_date', 'date NULL DEFAULT NULL');
 CALL `tich_ensure_column`('hr_policies', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('hr_policies', 'tags', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_type', 'enum(\'all\',\'department\',\'staff\',\'role\') NOT NULL DEFAULT \'all\'');
+CALL `tich_ensure_column`('hr_policies', 'target_departments', 'json NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_staff_ids', 'json NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_roles', 'json NULL');
 CALL `tich_ensure_column`('hr_policies', 'uploaded_by', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('hr_policies', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('hr_policies', 'updated_at', 'datetime NULL DEFAULT NULL');
@@ -8332,6 +8340,37 @@ CALL `tich_ensure_column`('policy_acknowledgements', 'updated_at', 'datetime NUL
 -- Indexes for `policy_acknowledgements` (add only if missing)
 CALL `tich_ensure_index`('policy_acknowledgements', 'policy_acknowledgements_policy_id_foreign', '`policy_id`');
 CALL `tich_ensure_unique`('policy_acknowledgements', 'policy_ack_unique', '`staff_id`, `policy_name`, `policy_version`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `policy_reads`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `policy_reads` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `policy_id` bigint(20) unsigned NOT NULL,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `read_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `policy_reads_unique` (`policy_id`,`staff_id`),
+  KEY `policy_reads_staff_id_foreign` (`staff_id`),
+  KEY `policy_reads_read_at_index` (`read_at`),
+  CONSTRAINT `policy_reads_policy_id_foreign` FOREIGN KEY (`policy_id`) REFERENCES `hr_policies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `policy_reads_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `policy_reads` (add only if missing)
+CALL `tich_ensure_column`('policy_reads', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('policy_reads', 'policy_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('policy_reads', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('policy_reads', 'read_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('policy_reads', 'ip_address', 'varchar(45) NULL');
+CALL `tich_ensure_column`('policy_reads', 'user_agent', 'varchar(500) NULL');
+
+-- Indexes for `policy_reads` (add only if missing)
+CALL `tich_ensure_index`('policy_reads', 'policy_reads_read_at_index', '`read_at`');
+CALL `tich_ensure_index`('policy_reads', 'policy_reads_staff_id_foreign', '`staff_id`');
+CALL `tich_ensure_unique`('policy_reads', 'policy_reads_unique', '`policy_id`, `staff_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `procurement_invoices`
@@ -14097,6 +14136,8 @@ CALL `tich_ensure_fk`('performance_reviews', 'performance_reviews_staff_id_forei
 -- Foreign keys for `policy_acknowledgements`
 CALL `tich_ensure_fk`('policy_acknowledgements', 'policy_acknowledgements_policy_id_foreign', '`policy_id`', 'hr_policies', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('policy_acknowledgements', 'policy_acknowledgements_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+CALL `tich_ensure_fk`('policy_reads', 'policy_reads_policy_id_foreign', '`policy_id`', 'hr_policies', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('policy_reads', 'policy_reads_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `procurement_invoices`
 CALL `tich_ensure_fk`('procurement_invoices', 'procurement_invoices_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');

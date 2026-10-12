@@ -3,7 +3,11 @@
 @section('title', $policy->title)
 
 @section('hr-content')
-    <x-page-toolbar :title="$policy->title" />
+    <x-page-toolbar :title="$policy->title">
+        <x-slot:actions>
+            <a href="{{ route('hr.policies.index') }}" class="tich-btn tich-btn-ghost">← Back to policies</a>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <article class="tich-card">
@@ -14,6 +18,13 @@
                 <p><strong>Effective Date:</strong> {{ $policy->effective_date?->format('Y-m-d') ?? '-' }}</p>
                 <p><strong>Expiry Date:</strong> {{ $policy->expiry_date?->format('Y-m-d') ?? '-' }}</p>
                 <p><strong>Status:</strong> {{ $policy->is_active ? 'Active' : 'Inactive' }}</p>
+                <p><strong>Target:</strong> {{ $policy->target_type === 'role' ? 'Existing audience' : ucfirst($policy->target_type) }}
+                    @if ($policy->target_type === 'department' && $policy->target_departments)
+                        {{ is_array($policy->target_departments) ? implode(', ', $policy->target_departments) : $policy->target_departments }}
+                    @elseif ($policy->target_type === 'staff' && $policy->target_staff_ids)
+                        ({{ count($policy->target_staff_ids) }} staff)
+                    @endif
+                </p>
                 <p><strong>File:</strong> {{ $policy->original_filename }}</p>
                 <p><strong>Uploaded By:</strong> {{ $policy->uploadedBy?->fullName() ?? '-' }}</p>
                 <p><strong>Tags:</strong> {{ $policy->tags ?: '-' }}</p>
@@ -57,6 +68,64 @@
                     <p class="tich-text tich-text--secondary">Preview not available for this file type.</p>
                     <a href="{{ route('hr.policies.download', $policy) }}" class="tich-btn tich-btn-primary tich-mt-4" target="_blank">Download to view</a>
                 </div>
+            @endif
+        </div>
+    </article>
+
+    <article class="tich-card tich-mt-8">
+        <h3 class="tich-h3">Sent To ({{ $acknowledgements->total() }} staff)</h3>
+        <div class="tich-mt-4">
+            @if ($acknowledgements->count() > 0)
+                <div style="overflow-x: auto;">
+                    <table class="tich-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Staff</th>
+                                <th>Department</th>
+                                <th>Role</th>
+                                <th>Read status</th>
+                                <th>Read at</th>
+                                <th>Status</th>
+                                <th>Acknowledged At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($acknowledgements as $ack)
+                                @php($readAt = $ack->is_acknowledged ? ($ack->acknowledged_at ?? $ack->read_at) : null)
+                                <tr>
+                                    <td>
+                                        @if ($ack->staff)
+                                            {{ $ack->staff->first_name }} {{ $ack->staff->surname }} ({{ $ack->staff->employee_number }})
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td>{{ $ack->staff?->department?->dept_name ?? '-' }}</td>
+                                    <td>{{ $ack->staff?->user?->roles?->pluck('display_name')->filter()->implode(', ') ?: '-' }}</td>
+                                    <td>
+                                        @if ($readAt)
+                                            <span class="uf-badge" style="background: #dcfce7; color: #166534;">Read</span>
+                                        @else
+                                            <span class="uf-badge" style="background: #fef3c7; color: #92400e;">Not read</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $readAt?->format('Y-m-d H:i') ?? '-' }}</td>
+                                    <td>
+                                        @if ($ack->is_acknowledged)
+                                            <span class="uf-badge" style="background: #dcfce7; color: #166534;">Acknowledged</span>
+                                        @else
+                                            <span class="uf-badge" style="background: #fef3c7; color: #92400e;">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $ack->acknowledged_at?->format('Y-m-d H:i') ?? '-' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                {{ $acknowledgements->links() }}
+            @else
+                <p class="tich-text tich-text--secondary">No staff members have been sent this policy yet.</p>
             @endif
         </div>
     </article>
