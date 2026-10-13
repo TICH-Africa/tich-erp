@@ -72,6 +72,7 @@ class HrPolicyController extends Controller
         $policy = HrPolicy::create([
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']) . '-' . time(),
+            'version' => '1.0',
             'description' => $validated['description'],
             'file_path' => $path,
             'original_filename' => $file->getClientOriginalName(),
@@ -130,20 +131,27 @@ class HrPolicyController extends Controller
      */
     private function createAcknowledgements(HrPolicy $policy, array $staffIds): int
     {
+        $policyVersion = trim((string) $policy->version);
+
+        if ($policyVersion === '') {
+            $policyVersion = '1.0';
+            $policy->update(['version' => $policyVersion]);
+        }
+
         $sent = 0;
 
         foreach ($staffIds as $staffId) {
             $existing = PolicyAcknowledgement::query()
                 ->where('policy_id', $policy->id)
                 ->where('staff_id', $staffId)
-                ->where('policy_version', $policy->version)
+                ->where('policy_version', $policyVersion)
                 ->first();
 
             if (! $existing) {
                 PolicyAcknowledgement::create([
                     'policy_id' => $policy->id,
                     'policy_name' => $policy->title,
-                    'policy_version' => $policy->version,
+                    'policy_version' => $policyVersion,
                     'policy_file_path' => $policy->file_path,
                     'effective_date' => $policy->effective_date ?? now()->toDateString(),
                     'staff_id' => $staffId,
