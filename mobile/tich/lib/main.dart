@@ -53,11 +53,13 @@ class _AuthGate extends StatelessWidget {
         if (state is AuthAuthenticated) {
           return HomePage(user: state.user);
         }
-        if (state is AuthLoading || state is AuthInitial) {
+        // Only block the whole app while restoring a saved session.
+        if (state is AuthInitial || state is AuthChecking) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
+        // AuthLoading stays on LoginPage so timeouts/errors are visible.
         return const LoginPage();
       },
     );

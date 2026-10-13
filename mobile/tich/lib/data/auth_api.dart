@@ -30,21 +30,25 @@ class AuthApi {
 
   final http.Client _client;
 
+  static const Duration _timeout = Duration(seconds: 15);
+
   Future<LoginResult> login({
     required String email,
     required String password,
   }) async {
-    final response = await _client.post(
-      ApiConfig.uri('/auth/login'),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'login': email.trim(),
-        'password': password,
-      }),
-    );
+    final response = await _client
+        .post(
+          ApiConfig.uri('/auth/login'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'login': email.trim(),
+            'password': password,
+          }),
+        )
+        .timeout(_timeout);
 
     final body = _decode(response);
 
@@ -73,13 +77,15 @@ class AuthApi {
   }
 
   Future<AuthUser> me(String token) async {
-    final response = await _client.get(
-      ApiConfig.uri('/auth/me'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final response = await _client
+        .get(
+          ApiConfig.uri('/auth/me'),
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        )
+        .timeout(_timeout);
 
     final body = _decode(response);
 
@@ -106,13 +112,15 @@ class AuthApi {
   }
 
   Future<void> logout(String token) async {
-    final response = await _client.post(
-      ApiConfig.uri('/auth/logout'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final response = await _client
+        .post(
+          ApiConfig.uri('/auth/logout'),
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        )
+        .timeout(_timeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;

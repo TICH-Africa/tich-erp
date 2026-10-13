@@ -18,7 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthStarted event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
+    emit(const AuthChecking());
     try {
       final user = await _repository.restoreSession();
       if (user == null) {
@@ -27,7 +27,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthAuthenticated(user));
       }
     } catch (e) {
-      emit(AuthUnauthenticated(message: e.toString()));
+      emit(AuthUnauthenticated(
+        message:
+            'Could not restore session. Check API_BASE_URL and that Laravel is serving.\n$e',
+      ));
     }
   }
 
