@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../adaptive/adaptive.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/auth/auth_event.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -165,15 +167,22 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 10),
               TextField(controller: _nokPhone, decoration: const InputDecoration(labelText: 'Phone')),
               const SizedBox(height: 20),
-              FilledButton(
+              AdaptiveFilledButton(
                 onPressed: _busy ? null : _save,
                 child: _busy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AdaptiveProgress(color: Colors.white),
                       )
                     : const Text('Save profile updates'),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.read<AuthBloc>().add(const AuthLogoutRequested()),
+                icon: const Icon(Icons.logout),
+                label: const Text('Sign out'),
               ),
             ],
           );

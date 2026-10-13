@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 
 class LeavePage extends StatefulWidget {
@@ -303,9 +302,9 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
 
   Future<void> _pickDate({required bool start}) async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: start ? (_start ?? now) : (_end ?? _start ?? now),
+    final picked = await pickDateTime(
+      context,
+      initial: start ? (_start ?? now) : (_end ?? _start ?? now),
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
     );
@@ -322,7 +321,7 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
 
   Future<void> _submit() async {
     if (_typeId == null || _start == null || _end == null || _reason.text.trim().isEmpty) {
-      setState(() => _error = 'Leave type, dates, and reason are required.');
+      setState(() => _error = 'Leave type, date & time, and reason are required.');
       return;
     }
     setState(() {
@@ -330,11 +329,12 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
       _error = null;
     });
     try {
-      final fmt = DateFormat('yyyy-MM-dd');
       await widget.api.submitLeave({
         'leave_type_id': _typeId,
-        'start_date': fmt.format(_start!),
-        'end_date': fmt.format(_end!),
+        'start_date': dateApi.format(_start!),
+        'end_date': dateApi.format(_end!),
+        'start_time': timeApi.format(_start!),
+        'end_time': timeApi.format(_end!),
         'reason': _reason.text.trim(),
       });
       if (!mounted) return;
@@ -380,8 +380,8 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
                   onPressed: _busy ? null : () => _pickDate(start: true),
                   child: Text(
                     _start == null
-                        ? 'Start date'
-                        : DateFormat('dd MMM yyyy').format(_start!),
+                        ? 'Start date & time'
+                        : dateTimeDisplay.format(_start!),
                   ),
                 ),
               ),
@@ -391,8 +391,8 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
                   onPressed: _busy ? null : () => _pickDate(start: false),
                   child: Text(
                     _end == null
-                        ? 'End date'
-                        : DateFormat('dd MMM yyyy').format(_end!),
+                        ? 'End date & time'
+                        : dateTimeDisplay.format(_end!),
                   ),
                 ),
               ),

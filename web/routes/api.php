@@ -22,6 +22,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/mfa/setup', [AuthController::class, 'mfaSetup'])->middleware('throttle:mfa');
         Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify'])->middleware('throttle:mfa');
         Route::post('/mfa/disable', [AuthController::class, 'mfaDisable']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
         Route::prefix('mfa')->middleware('throttle:mfa')->group(function () {

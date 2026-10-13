@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 
 class AttendancePage extends StatefulWidget {
@@ -39,14 +39,12 @@ class _AttendancePageState extends State<AttendancePage> {
   void _reload() => setState(() => _future = widget.api.attendance());
 
   Future<Map<String, dynamic>> _locationPayload() async {
-    final requireLocation = true;
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      if (!requireLocation) return {};
       throw ApiException('Location permission is required to clock in.');
     }
 
@@ -149,8 +147,8 @@ class _AttendancePageState extends State<AttendancePage> {
                           style: tichUi(color: TichColors.neutralMuted),
                         )
                       else ...[
-                        Text('In: ${today['clock_in_at'] ?? '—'}'),
-                        Text('Out: ${today['clock_out_at'] ?? '—'}'),
+                        Text('In: ${formatDateTime(today['clock_in_at'])}'),
+                        Text('Out: ${formatDateTime(today['clock_out_at'])}'),
                       ],
                       const SizedBox(height: 12),
                       SwitchListTile(

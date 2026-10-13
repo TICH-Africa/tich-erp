@@ -89,11 +89,13 @@ class EmployeeApi {
   Future<Map<String, dynamic>> submitWfh({
     required String workDate,
     required String reason,
+    String startTime = '08:00',
+    String endTime = '17:00',
   }) =>
       _client.post('/employee/wfh', body: {
         'work_date': workDate,
-        'start_time': '08:00',
-        'end_time': '17:00',
+        'start_time': startTime,
+        'end_time': endTime,
         'remote_tasks': [reason],
         'reason': reason,
       });

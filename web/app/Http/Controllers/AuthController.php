@@ -157,6 +157,25 @@ class AuthController extends Controller
         return response()->json(['message' => 'MFA disabled successfully']);
     }
 
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($validated['current_password'], $user->password_hash)) {
+            return response()->json(['message' => 'Current password is incorrect.'], 422);
+        }
+
+        $user->password_hash = Hash::make($validated['password']);
+        $user->save();
+
+        return response()->json(['message' => 'Password updated successfully.']);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();

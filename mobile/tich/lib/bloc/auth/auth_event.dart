@@ -24,6 +24,27 @@ final class AuthLoginSubmitted extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
+final class AuthBiometricUnlockRequested extends AuthEvent {
+  const AuthBiometricUnlockRequested();
+}
+
+final class AuthPasswordUnlockSubmitted extends AuthEvent {
+  const AuthPasswordUnlockSubmitted({
+    required this.email,
+    required this.password,
+  });
+
+  final String email;
+  final String password;
+
+  @override
+  List<Object?> get props => [email, password];
+}
+
+final class AuthAppPaused extends AuthEvent {
+  const AuthAppPaused();
+}
+
 final class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }

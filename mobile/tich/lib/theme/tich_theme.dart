@@ -133,6 +133,48 @@ abstract final class TichTheme {
     );
   }
 
+  static ThemeData dark() {
+    final merriweather = GoogleFonts.merriweatherTextTheme(ThemeData.dark().textTheme);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: TichColors.blue,
+      brightness: Brightness.dark,
+      primary: TichColors.blueLight,
+      secondary: TichColors.green,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFF121417),
+      textTheme: merriweather,
+      appBarTheme: AppBarTheme(
+        backgroundColor: TichColors.blueDark,
+        foregroundColor: TichColors.white,
+        titleTextStyle: GoogleFonts.merriweather(
+          color: TichColors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1C1F24),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF2A2E35)),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: TichColors.blue,
+          foregroundColor: TichColors.white,
+        ),
+      ),
+    );
+  }
+
   static CupertinoThemeData cupertino() {
     return CupertinoThemeData(
       primaryColor: TichColors.blue,

@@ -111,6 +111,38 @@ class AuthApi {
     );
   }
 
+  Future<void> changePassword({
+    required String token,
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final response = await _client
+        .post(
+          ApiConfig.uri('/auth/change-password'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'current_password': currentPassword,
+            'password': password,
+            'password_confirmation': passwordConfirmation,
+          }),
+        )
+        .timeout(_timeout);
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+    throw AuthApiException(
+      body['message']?.toString() ?? 'Could not change password (${response.statusCode})',
+      statusCode: response.statusCode,
+    );
+  }
+
   Future<void> logout(String token) async {
     final response = await _client
         .post(

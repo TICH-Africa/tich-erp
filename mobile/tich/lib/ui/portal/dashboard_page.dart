@@ -1,12 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import 'notifications_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, required this.api});
@@ -19,21 +21,82 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   late Future<Map<String, dynamic>> _future;
+  int _notifCount = 0;
 
   @override
   void initState() {
     super.initState();
     _future = widget.api.dashboard();
+    _loadNotifications();
   }
 
-  void _reload() => setState(() => _future = widget.api.dashboard());
+  Future<void> _loadNotifications() async {
+    try {
+      final data = await widget.api.notifications();
+      if (!mounted) return;
+      setState(() => _notifCount = (data['total'] as num?)?.toInt() ?? 0);
+    } catch (_) {
+      // Keep badge at 0 if notifications fail.
+    }
+  }
+
+  void _reload() {
+    setState(() => _future = widget.api.dashboard());
+    _loadNotifications();
+  }
+
+  Widget _notificationAction() {
+    final icon = usesCupertino
+        ? CupertinoIcons.bell
+        : Icons.notifications_outlined;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          tooltip: 'Notifications',
+          onPressed: () async {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => NotificationsPage(api: widget.api),
+              ),
+            );
+            _loadNotifications();
+          },
+          icon: Icon(icon, color: usesCupertino ? TichColors.white : null),
+        ),
+        if (_notifCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 16),
+              height: 16,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.red.shade600,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                _notifCount > 99 ? '99+' : '$_notifCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'My Employee Portal',
-      showLogout: true,
-      onLogout: tichLogout(context),
+      actions: [_notificationAction()],
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
@@ -99,23 +162,15 @@ class _DashboardPageState extends State<DashboardPage> {
                               [
                                 staff['job_title'],
                                 staff['department'],
-                              ].where((e) => e != null && e.toString().isNotEmpty).join(' · '),
+                              ]
+                                  .where((e) =>
+                                      e != null && e.toString().isNotEmpty)
+                                  .join(' · '),
                               style: tichUi(
                                 color: TichColors.neutralMuted,
                                 fontSize: 13,
                               ),
                             ),
-                            if (data['employment_duration'] != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                'With TICH for ${data['employment_duration']}',
-                                style: tichUi(
-                                  color: TichColors.greenDark,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -147,21 +202,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Type: ${contract['type'] ?? '—'}',
+                        'Period: ${formatDateTime(contract['start_date'])} → ${formatDateTime(contract['end_date'])}',
                         style: tichUi(fontSize: 13),
                       ),
-                      Text(
-                        'Period: ${_fmt(contract['start_date'])} → ${_fmt(contract['end_date'])}',
-                        style: tichUi(fontSize: 13),
-                      ),
-                      if (contract['days_remaining'] != null)
-                        Text(
-                          'Days remaining: ${contract['days_remaining']}',
-                          style: tichUi(
-                            fontSize: 13,
-                            color: TichColors.blueDark,
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -180,9 +223,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             Expanded(
                               child: Text(
                                 b['leave_type_name']?.toString() ?? 'Leave',
-                                style: tichUi(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: tichUi(fontWeight: FontWeight.w600),
                               ),
                             ),
                             Text(
@@ -215,9 +256,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 Expanded(
                                   child: Text(
                                     r['leave_type_name']?.toString() ?? 'Leave',
-                                    style: tichUi(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: tichUi(fontWeight: FontWeight.w600),
                                   ),
                                 ),
                                 TichStatusChip(
@@ -230,7 +269,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${_fmt(r['start_date'])} → ${_fmt(r['end_date'])} · ${r['days_requested']} day(s)',
+                              '${formatDateTime(r['start_date'])} → ${formatDateTime(r['end_date'])}',
                               style: tichUi(
                                 fontSize: 12,
                                 color: TichColors.neutralMuted,
@@ -241,24 +280,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     );
                   }),
-                if ((data['pending_profile_changes'] as num?)?.toInt() != null &&
-                    (data['pending_profile_changes'] as num).toInt() > 0) ...[
-                  const SizedBox(height: 16),
-                  TichCard(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: TichColors.blue),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '${data['pending_profile_changes']} profile change(s) awaiting HR approval.',
-                            style: tichUi(fontSize: 13),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           );
@@ -272,10 +293,5 @@ class _DashboardPageState extends State<DashboardPage> {
     if (parts.isEmpty || parts.first.isEmpty) return 'T';
     if (parts.length == 1) return parts.first[0].toUpperCase();
     return (parts.first[0] + parts.last[0]).toUpperCase();
-  }
-
-  String _fmt(dynamic value) {
-    if (value == null) return '—';
-    return value.toString();
   }
 }

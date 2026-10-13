@@ -160,6 +160,8 @@ class LeaveController extends Controller
             'start_date' => ['required', 'date', 'after_or_equal:today'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'return_date' => ['nullable', 'date', 'after_or_equal:end_date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'reason' => ['required', 'string', 'max:2000'],
             'handover_notes' => ['nullable', 'string', 'max:2000'],
             'contact_mobile' => ['nullable', 'string', 'max:40'],
@@ -174,6 +176,20 @@ class LeaveController extends Controller
 
         $data['is_emergency'] = $request->boolean('is_emergency');
         $data['cover_staff_id'] = $data['cover_staff_id'] ?? [];
+
+        // Persist optional times in handover notes (leave days still use calendar dates).
+        $startTime = $data['start_time'] ?? null;
+        $endTime = $data['end_time'] ?? null;
+        unset($data['start_time'], $data['end_time']);
+        if ($startTime || $endTime) {
+            $timeNote = trim(sprintf(
+                'Requested times: %s – %s',
+                $startTime ?? '—',
+                $endTime ?? '—'
+            ));
+            $existing = trim((string) ($data['handover_notes'] ?? ''));
+            $data['handover_notes'] = $existing === '' ? $timeNote : ($existing."\n".$timeNote);
+        }
 
         return $data;
     }

@@ -15,6 +15,9 @@ class AdaptiveApp extends StatelessWidget {
     required this.title,
     required this.home,
     required this.materialTheme,
+    this.materialDarkTheme,
+    this.themeMode = ThemeMode.system,
+    this.textScaleFactor = 1.0,
     this.cupertinoTheme,
     this.debugShowCheckedModeBanner = false,
   });
@@ -22,16 +25,30 @@ class AdaptiveApp extends StatelessWidget {
   final String title;
   final Widget home;
   final ThemeData materialTheme;
+  final ThemeData? materialDarkTheme;
+  final ThemeMode themeMode;
+  final double textScaleFactor;
   final CupertinoThemeData? cupertinoTheme;
   final bool debugShowCheckedModeBanner;
 
   @override
   Widget build(BuildContext context) {
+    final builder = (BuildContext ctx, Widget? child) {
+      final media = MediaQuery.of(ctx);
+      return MediaQuery(
+        data: media.copyWith(
+          textScaler: TextScaler.linear(textScaleFactor),
+        ),
+        child: child ?? const SizedBox.shrink(),
+      );
+    };
+
     if (usesCupertino) {
       return CupertinoApp(
         title: title,
         debugShowCheckedModeBanner: debugShowCheckedModeBanner,
         theme: cupertinoTheme,
+        builder: builder,
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
           DefaultCupertinoLocalizations.delegate,
@@ -45,6 +62,9 @@ class AdaptiveApp extends StatelessWidget {
       title: title,
       debugShowCheckedModeBanner: debugShowCheckedModeBanner,
       theme: materialTheme,
+      darkTheme: materialDarkTheme ?? materialTheme,
+      themeMode: themeMode,
+      builder: builder,
       home: home,
     );
   }

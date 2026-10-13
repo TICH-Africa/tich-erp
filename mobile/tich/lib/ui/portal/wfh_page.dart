@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 
 class WfhPage extends StatefulWidget {
@@ -31,40 +29,64 @@ class _WfhPageState extends State<WfhPage> {
 
   Future<void> _apply() async {
     final reason = TextEditingController();
-    DateTime date = DateTime.now().add(const Duration(days: 1));
+    DateTime start = DateTime.now().add(const Duration(days: 1)).copyWith(hour: 8, minute: 0);
+    DateTime end = start.copyWith(hour: 17, minute: 0);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Apply for WFH'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            OutlinedButton(
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: ctx,
-                  initialDate: date,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 120)),
-                );
-                if (picked != null) date = picked;
-              },
-              child: Text(DateFormat('dd MMM yyyy').format(date)),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) => AlertDialog(
+            title: const Text('Apply for WFH'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton(
+                  onPressed: () async {
+                    final picked = await pickDateTime(
+                      ctx,
+                      initial: start,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 120)),
+                    );
+                    if (picked != null) setModal(() => start = picked);
+                  },
+                  child: Text('Start: ${dateTimeDisplay.format(start)}'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () async {
+                    final picked = await pickDateTime(
+                      ctx,
+                      initial: end,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 120)),
+                    );
+                    if (picked != null) setModal(() => end = picked);
+                  },
+                  child: Text('End: ${dateTimeDisplay.format(end)}'),
+                ),
+                TextField(
+                  controller: reason,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Tasks / reason'),
+                ),
+              ],
             ),
-            TextField(controller: reason, maxLines: 3, decoration: const InputDecoration(labelText: 'Reason')),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
-        ],
-      ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
+            ],
+          ),
+        );
+      },
     );
     if (ok != true) return;
     try {
       await widget.api.submitWfh(
-        workDate: DateFormat('yyyy-MM-dd').format(date),
+        workDate: dateApi.format(start),
         reason: reason.text.trim(),
+        startTime: timeApi.format(start),
+        endTime: timeApi.format(end),
       );
       _reload();
     } on ApiException catch (e) {

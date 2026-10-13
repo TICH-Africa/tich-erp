@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
-import '../../adaptive/adaptive.dart';
-import '../shell/portal_shell.dart';
+import '../settings/settings_hub_page.dart';
 import 'appraisals_page.dart';
 import 'concerns_page.dart';
 import 'documents_page.dart';
@@ -22,6 +21,7 @@ class MorePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _MoreItem('My profile', Icons.person_outline, () => ProfilePage(api: api)),
+      _MoreItem('Settings', Icons.settings_outlined, () => const SettingsHubPage()),
       _MoreItem('Documents', Icons.folder_outlined, () => DocumentsPage(api: api)),
       _MoreItem('HR policies', Icons.policy_outlined, () => PoliciesPage(api: api)),
       _MoreItem('Work from home', Icons.home_work_outlined, () => WfhPage(api: api)),
@@ -32,8 +32,6 @@ class MorePage extends StatelessWidget {
 
     return AdaptiveScaffold(
       title: 'More',
-      showLogout: true,
-      onLogout: tichLogout(context),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
