@@ -124,6 +124,49 @@ class EmployeeProfileUpdatePromptService
             ]);
     }
 
+    /**
+     * Remove completed fields from the active prompt; mark fulfilled when none remain.
+     *
+     * @param  list<string>  $fulfilledFields
+     */
+    public function fulfillFieldsForStaff(Staff $staff, array $fulfilledFields): void
+    {
+        $prompt = $this->findActiveForStaff($staff);
+        if (! $prompt || $fulfilledFields === []) {
+            return;
+        }
+
+        $fulfilled = array_values(array_unique($fulfilledFields));
+        $remaining = collect($prompt->requested_fields ?? [])
+            ->reject(fn ($field) => in_array($field, $fulfilled, true))
+            ->values()
+            ->all();
+
+        if ($remaining === []) {
+            $prompt->update([
+                'status' => StaffProfileUpdatePrompt::STATUS_FULFILLED,
+                'fulfilled_at' => now(),
+                'requested_fields' => [],
+            ]);
+
+            return;
+        }
+
+        if (count($remaining) !== count($prompt->requested_fields ?? [])) {
+            $prompt->update(['requested_fields' => $remaining]);
+        }
+    }
+
+    /**
+     * Mark a requested document type as done. Clears the prompt when nothing remains.
+     */
+    public function fulfillDocumentTypeForStaff(Staff $staff, string $documentType): void
+    {
+        $this->fulfillFieldsForStaff($staff, [
+            EmployeeProfileCompletenessService::documentFieldKey($documentType),
+        ]);
+    }
+
     public function findStaffByEmail(string $email): ?Staff
     {
         $normalized = strtolower(trim($email));

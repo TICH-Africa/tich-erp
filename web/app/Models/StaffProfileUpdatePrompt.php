@@ -65,6 +65,17 @@ class StaffProfileUpdatePrompt extends Model
 
     public function portalUrl(): string
     {
+        $fields = $this->requested_fields ?? [];
+        $docTypes = EmployeeProfileCompletenessService::requestedDocumentTypes($fields);
+        $nonDocFields = collect($fields)
+            ->reject(fn ($field) => EmployeeProfileCompletenessService::isDocumentField((string) $field))
+            ->values()
+            ->all();
+
+        if ($docTypes !== [] && $nonDocFields === []) {
+            return route('employee.documents.create', ['prompt' => $this->token]);
+        }
+
         return route('employee.profile.edit', ['prompt' => $this->token]);
     }
 }

@@ -609,6 +609,8 @@ class LeaveRequestService
         $maxAllowed = $normalEntitlement + $carryForward;
 
         if ($staff && strtoupper((string) $leaveType->leave_code) === 'ANNUAL') {
+            app(LeaveAccrualService::class)->ensureBalancesForStaff($staff);
+
             $balance = DB::table('leave_balances')
                 ->where('staff_id', $staff->id)
                 ->where('leave_type_id', $leaveType->id)
@@ -620,6 +622,8 @@ class LeaveRequestService
                     - (float) $balance->days_taken
                     - (float) $balance->days_pending;
                 $maxAllowed = (int) max(0, floor($available));
+            } else {
+                $maxAllowed = 0;
             }
         }
 

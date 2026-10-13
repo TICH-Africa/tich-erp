@@ -32,12 +32,25 @@
     @endif
 
     @if ($profileUpdatePrompt ?? null)
+        @php
+            $requestedDocTypes = \App\Services\EmployeeProfileCompletenessService::requestedDocumentTypes($profileUpdatePrompt->requested_fields ?? []);
+            $requestedDocLabels = collect($requestedDocTypes)
+                ->map(fn ($type) => \App\Services\EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS[$type] ?? $type)
+                ->all();
+        @endphp
         <div class="tich-alert tich-alert--warning tich-mt-4" role="status" id="profile-update-prompt-banner">
             <strong>Profile update requested.</strong>
             {{ $profileUpdatePrompt->requested_via_module === 'ict' ? 'ICT' : 'HR' }} has asked you to update:
             {{ implode(', ', $profileUpdatePrompt->fieldLabels()) }}.
             @if ($profileUpdatePrompt->notes)
                 <p class="tich-mt-2 tich-caption"><strong>Note:</strong> {{ $profileUpdatePrompt->notes }}</p>
+            @endif
+            @if ($requestedDocLabels !== [])
+                <p class="tich-mt-2">
+                    Documents requested:
+                    <strong>{{ implode(', ', $requestedDocLabels) }}</strong>.
+                    <a href="{{ route('employee.documents.create', ['prompt' => $profileUpdatePrompt->token]) }}" class="tich-btn tich-btn-secondary tich-btn--sm" style="margin-left:0.35rem;">Upload documents</a>
+                </p>
             @endif
         </div>
     @endif
@@ -258,6 +271,44 @@
             </div>
 
             @unless ($mustCompleteProfile)
+                <div class="uf-form-section {{ $profileHighlightClass('next_of_kin') }}" id="profile-field-next_of_kin">
+                    <div class="uf-section-head">Next of kin</div>
+                    <div class="uf-section-body">
+                        <p class="uf-hint">Primary next of kin kept on your HR record. Update these details when requested.</p>
+                        @php $nok = $staff->primaryNextOfKin; @endphp
+                        <div class="uf-form-grid-2">
+                            <div class="uf-field">
+                                <label for="nok_full_name">Full name</label>
+                                <input type="text" id="nok_full_name" name="nok_full_name" value="{{ old('nok_full_name', $nok?->full_name) }}" maxlength="200">
+                            </div>
+                            <div class="uf-field">
+                                <label for="nok_relationship">Relationship</label>
+                                <input type="text" id="nok_relationship" name="nok_relationship" value="{{ old('nok_relationship', $nok?->relationship) }}" maxlength="100" placeholder="e.g. Spouse, Parent, Sibling">
+                            </div>
+                            <div class="uf-field">
+                                <label for="nok_phone_number">Phone number</label>
+                                <input type="text" id="nok_phone_number" name="nok_phone_number" value="{{ old('nok_phone_number', $nok?->phone_number) }}" maxlength="30">
+                            </div>
+                            <div class="uf-field">
+                                <label for="nok_alt_phone">Alternative phone</label>
+                                <input type="text" id="nok_alt_phone" name="nok_alt_phone" value="{{ old('nok_alt_phone', $nok?->alt_phone) }}" maxlength="30">
+                            </div>
+                            <div class="uf-field">
+                                <label for="nok_email">Email</label>
+                                <input type="email" id="nok_email" name="nok_email" value="{{ old('nok_email', $nok?->email) }}" maxlength="255">
+                            </div>
+                            <div class="uf-field">
+                                <label for="nok_occupation">Occupation</label>
+                                <input type="text" id="nok_occupation" name="nok_occupation" value="{{ old('nok_occupation', $nok?->occupation) }}" maxlength="200">
+                            </div>
+                            <div class="uf-field" style="grid-column:1/-1;">
+                                <label for="nok_physical_address">Physical address</label>
+                                <textarea id="nok_physical_address" name="nok_physical_address" rows="2">{{ old('nok_physical_address', $nok?->physical_address) }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="uf-form-section" id="profile-field-statutory">
                     <div class="uf-section-head">Statutory details</div>
                     <div class="uf-section-body">

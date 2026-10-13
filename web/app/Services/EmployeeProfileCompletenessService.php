@@ -52,6 +52,23 @@ class EmployeeProfileCompletenessService
         'kra_pin' => 'KRA PIN',
         'nssf_number' => 'NSSF number',
         'sha_number' => 'SHA number',
+        'next_of_kin' => 'Next of kin details',
+    ];
+
+    /** @var array<string, string> */
+    public const DOCUMENT_TYPE_LABELS = [
+        'cv' => 'CV',
+        'academic_certificate' => 'Academic certificate',
+        'professional_license' => 'Professional license',
+        'kra_pin' => 'KRA PIN document',
+        'nssf' => 'NSSF document',
+        'sha' => 'SHA document',
+        'national_id' => 'National ID',
+        'good_conduct' => 'Certificate of good conduct',
+        'passport_photo' => 'Passport photo',
+        'bank_confirmation' => 'Bank confirmation',
+        'training_certification' => 'Training certification',
+        'other' => 'Other document',
     ];
 
     /**
@@ -61,7 +78,13 @@ class EmployeeProfileCompletenessService
      */
     public static function requestableFieldLabels(): array
     {
-        return self::FIELD_LABELS;
+        $labels = self::FIELD_LABELS;
+
+        foreach (self::DOCUMENT_TYPE_LABELS as $type => $label) {
+            $labels[self::documentFieldKey($type)] = 'Upload: '.$label;
+        }
+
+        return $labels;
     }
 
     /**
@@ -69,7 +92,45 @@ class EmployeeProfileCompletenessService
      */
     public static function requestableFieldKeys(): array
     {
-        return array_keys(self::FIELD_LABELS);
+        return array_keys(self::requestableFieldLabels());
+    }
+
+    public static function documentFieldKey(string $type): string
+    {
+        return 'document_'.$type;
+    }
+
+    public static function documentTypeFromFieldKey(string $key): ?string
+    {
+        if (! str_starts_with($key, 'document_')) {
+            return null;
+        }
+
+        $type = substr($key, strlen('document_'));
+
+        return array_key_exists($type, self::DOCUMENT_TYPE_LABELS) ? $type : null;
+    }
+
+    /**
+     * @param  list<string>|null  $requestedFields
+     * @return list<string>
+     */
+    public static function requestedDocumentTypes(?array $requestedFields): array
+    {
+        $types = [];
+        foreach ($requestedFields ?? [] as $field) {
+            $type = self::documentTypeFromFieldKey((string) $field);
+            if ($type) {
+                $types[] = $type;
+            }
+        }
+
+        return array_values(array_unique($types));
+    }
+
+    public static function isDocumentField(string $key): bool
+    {
+        return self::documentTypeFromFieldKey($key) !== null;
     }
 
     public function __construct(

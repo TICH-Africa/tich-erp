@@ -7,6 +7,8 @@ use App\Models\Staff;
 use App\Models\StaffDocument;
 use App\Models\StaffDocumentTemplate;
 use App\Services\DocumentGenerationService;
+use App\Services\EmployeeProfileCompletenessService;
+use App\Services\EmployeeProfileUpdatePromptService;
 use App\Services\StaffLifecycleService;
 use App\Services\StoredFileService;
 use Illuminate\Http\Request;
@@ -26,6 +28,7 @@ class StaffDocumentController extends Controller
         protected DocumentGenerationService $documentService,
         protected \App\Services\PlatformNotificationService $notifications,
         protected StoredFileService $files,
+        protected EmployeeProfileUpdatePromptService $profilePrompts,
     ) {}
 
     public function index(): View
@@ -210,24 +213,40 @@ class StaffDocumentController extends Controller
         return $this->streamDocument($document);
     }
 
-    public function employeeIndex(): View
+    public function employeeIndex(Request $request): View
     {
         $staff = auth()->user()->staff;
 
         abort_unless($staff, 403);
 
         $staffDocuments = $staff->documents()->orderByDesc('created_at')->get();
+        $profileUpdatePrompt = $this->profilePrompts->findActiveForStaff($staff, $request->string('prompt')->toString() ?: null);
+        $requestedDocTypes = EmployeeProfileCompletenessService::requestedDocumentTypes($profileUpdatePrompt?->requested_fields);
 
-        return view('employee.documents.index', ['staff' => $staff, 'staffDocuments' => $staffDocuments]);
+        return view('employee.documents.index', [
+            'staff' => $staff,
+            'staffDocuments' => $staffDocuments,
+            'profileUpdatePrompt' => $profileUpdatePrompt,
+            'requestedDocTypes' => $requestedDocTypes,
+            'preselectDocumentType' => $requestedDocTypes[0] ?? null,
+        ]);
     }
 
-    public function employeeCreate(): View
+    public function employeeCreate(Request $request): View
     {
         $staff = auth()->user()->staff;
 
         abort_unless($staff, 403);
 
-        return view('employee.documents.create', ['staff' => $staff]);
+        $profileUpdatePrompt = $this->profilePrompts->findActiveForStaff($staff, $request->string('prompt')->toString() ?: null);
+        $requestedDocTypes = EmployeeProfileCompletenessService::requestedDocumentTypes($profileUpdatePrompt?->requested_fields);
+
+        return view('employee.documents.create', [
+            'staff' => $staff,
+            'profileUpdatePrompt' => $profileUpdatePrompt,
+            'requestedDocTypes' => $requestedDocTypes,
+            'preselectDocumentType' => $request->string('type')->toString() ?: ($requestedDocTypes[0] ?? null),
+        ]);
     }
 
     public function employeeStore(Request $request)
@@ -254,6 +273,8 @@ class StaffDocumentController extends Controller
             'expiry_date' => $validated['expiry_date'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ], $request->user()->id);
+
+        $this->profilePrompts->fulfillDocumentTypeForStaff($staff, $validated['document_type']);
 
         return redirect()
             ->route('employee.documents.index')

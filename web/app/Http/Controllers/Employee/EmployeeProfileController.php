@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
+use App\Models\StaffNextOfKin;
 use App\Models\StaffProfileChangeRequest;
 use App\Services\AuthService;
 use App\Services\EmployeePortalService;
-use App\Services\EmployeeProfileCompletenessService;
 use App\Services\EmployeeProfileChangeService;
+use App\Services\EmployeeProfileCompletenessService;
 use App\Services\EmployeeProfileUpdatePromptService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class EmployeeProfileController extends Controller
 
         $profileUpdatePrompt = $this->profilePrompts->findActiveForStaff($staff, $request->string('prompt')->toString() ?: null);
         $highlightFields = $profileUpdatePrompt?->requested_fields ?? [];
+        $staff->loadMissing('primaryNextOfKin');
 
         return view('employee.profile.edit', [
             'portalTitle' => $mustComplete ? 'Complete your profile' : 'Update my profile',
@@ -92,6 +94,13 @@ class EmployeeProfileController extends Controller
             'kra_pin' => 'nullable|string|max:50',
             'nssf_number' => 'nullable|string|max:50',
             'sha_number' => 'nullable|string|max:50',
+            'nok_full_name' => 'nullable|string|max:200',
+            'nok_relationship' => 'nullable|string|max:100',
+            'nok_phone_number' => 'nullable|string|max:30',
+            'nok_alt_phone' => 'nullable|string|max:30',
+            'nok_email' => 'nullable|email|max:255',
+            'nok_occupation' => 'nullable|string|max:200',
+            'nok_physical_address' => 'nullable|string|max:500',
             'employee_notes' => 'nullable|string|max:2000',
             'profile_photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:6144',
             'cropped_photo' => 'nullable|string',
@@ -164,17 +173,27 @@ class EmployeeProfileController extends Controller
             }
 
             $emailSettingsChanged = $this->profileChanges->applyEmailSettings($staff, $request->user(), $validated);
+            $nokChanged = $this->saveNextOfKin($staff, $validated);
             $staff = $staff->fresh();
 
             try {
                 $created = $this->profileChanges->submitUpdates($staff, $request->user(), $validated);
             } catch (\InvalidArgumentException $exception) {
-                if ($emailSettingsChanged) {
-                    $this->profilePrompts->fulfillForStaff($staff);
+                if ($emailSettingsChanged || $nokChanged) {
+                    if ($nokChanged) {
+                        $this->profilePrompts->fulfillFieldsForStaff($staff, ['next_of_kin']);
+                    }
+                    $parts = [];
+                    if ($emailSettingsChanged) {
+                        $parts[] = 'Email settings saved';
+                    }
+                    if ($nokChanged) {
+                        $parts[] = 'Next of kin details saved';
+                    }
 
                     return redirect()
                         ->route('employee.profile.edit')
-                        ->with('success', 'Email settings saved. ERP notifications will use your preferred address.');
+                        ->with('success', implode(' ', $parts));
                 }
 
                 throw $exception;
@@ -194,6 +213,9 @@ class EmployeeProfileController extends Controller
         if ($emailSettingsChanged) {
             $message = 'Email settings saved immediately. '.$message;
         }
+        if ($nokChanged) {
+            $message = 'Next of kin details saved. '.$message;
+        }
         if ($hasPhotoRequest) {
             $message .= ' Your new profile photo will appear after HR approves the photo update.';
         }
@@ -201,6 +223,44 @@ class EmployeeProfileController extends Controller
         return redirect()
             ->route('employee.profile.edit')
             ->with('success', $message);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function saveNextOfKin(\App\Models\Staff $staff, array $validated): bool
+    {
+        $name = trim((string) ($validated['nok_full_name'] ?? ''));
+        $relationship = trim((string) ($validated['nok_relationship'] ?? ''));
+        $phone = trim((string) ($validated['nok_phone_number'] ?? ''));
+
+        if ($name === '' && $relationship === '' && $phone === '') {
+            return false;
+        }
+
+        if ($name === '' || $relationship === '' || $phone === '') {
+            throw new \InvalidArgumentException('Next of kin requires full name, relationship, and phone number.');
+        }
+
+        $payload = [
+            'full_name' => $name,
+            'relationship' => $relationship,
+            'phone_number' => $phone,
+            'alt_phone' => filled($validated['nok_alt_phone'] ?? null) ? trim((string) $validated['nok_alt_phone']) : null,
+            'email' => filled($validated['nok_email'] ?? null) ? strtolower(trim((string) $validated['nok_email'])) : null,
+            'occupation' => filled($validated['nok_occupation'] ?? null) ? trim((string) $validated['nok_occupation']) : null,
+            'physical_address' => filled($validated['nok_physical_address'] ?? null) ? trim((string) $validated['nok_physical_address']) : null,
+            'is_primary' => true,
+        ];
+
+        $existing = $staff->primaryNextOfKin;
+        if ($existing) {
+            $existing->update($payload);
+        } else {
+            StaffNextOfKin::query()->create(array_merge($payload, ['staff_id' => $staff->id]));
+        }
+
+        return true;
     }
 
     private function staff(Request $request): \App\Models\Staff

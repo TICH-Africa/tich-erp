@@ -1,8 +1,28 @@
 @extends('layouts.employee')
 
 @section('employee-content')
+    @php
+        $requestedDocTypes = $requestedDocTypes ?? [];
+        $preselectDocumentType = old('document_type', $preselectDocumentType ?? null);
+        $docTypeLabels = \App\Services\EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS;
+        $requestedDocLabels = collect($requestedDocTypes)
+            ->map(fn ($type) => $docTypeLabels[$type] ?? $type)
+            ->all();
+    @endphp
+
     <x-page-toolbar title="Upload Document" meta="Add a new document to your profile">
     </x-page-toolbar>
+
+    @if (($profileUpdatePrompt ?? null) && $requestedDocLabels !== [])
+        <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
+            <strong>Documents requested.</strong>
+            {{ $profileUpdatePrompt->requested_via_module === 'ict' ? 'ICT' : 'HR' }} has asked you to upload:
+            <strong>{{ implode(', ', $requestedDocLabels) }}</strong>.
+            @if ($profileUpdatePrompt->notes)
+                <p class="tich-mt-2 tich-caption"><strong>Note:</strong> {{ $profileUpdatePrompt->notes }}</p>
+            @endif
+        </div>
+    @endif
 
     <div class="uf-form">
         <form method="POST" action="{{ route('employee.documents.store') }}" enctype="multipart/form-data" data-uf="ready">
@@ -24,18 +44,11 @@
                             <label for="document_type">Document Type <span class="uf-req">*</span></label>
                             <select id="document_type" name="document_type" required class="{{ $errors->has('document_type') ? 'is-invalid' : '' }}">
                                 <option value="">Select type</option>
-                                <option value="cv" @selected(old('document_type') === 'cv')>CV / Resume</option>
-                                <option value="academic_certificate" @selected(old('document_type') === 'academic_certificate')>Academic Certificate</option>
-                                <option value="professional_license" @selected(old('document_type') === 'professional_license')>Professional License</option>
-                                <option value="kra_pin" @selected(old('document_type') === 'kra_pin')>KRA PIN</option>
-                                <option value="nssf" @selected(old('document_type') === 'nssf')>NSSF</option>
-                                <option value="sha" @selected(old('document_type') === 'sha')>SHA</option>
-                                <option value="national_id" @selected(old('document_type') === 'national_id')>National ID</option>
-                                <option value="good_conduct" @selected(old('document_type') === 'good_conduct')>Good Conduct</option>
-                                <option value="passport_photo" @selected(old('document_type') === 'passport_photo')>Passport Photo</option>
-                                <option value="bank_confirmation" @selected(old('document_type') === 'bank_confirmation')>Bank Confirmation</option>
-                                <option value="training_certification" @selected(old('document_type') === 'training_certification')>Training Certification</option>
-                                <option value="other" @selected(old('document_type') === 'other')>Other</option>
+                                @foreach ($docTypeLabels as $type => $label)
+                                    <option value="{{ $type }}" @selected($preselectDocumentType === $type)>
+                                        {{ $label }}@if (in_array($type, $requestedDocTypes, true)) (requested)@endif
+                                    </option>
+                                @endforeach
                             </select>
                             @error('document_type')
                                 <span class="uf-error">{{ $message }}</span>

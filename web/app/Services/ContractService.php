@@ -429,7 +429,7 @@ class ContractService
     private function refreshLeaveAccrual(Staff $staff): void
     {
         try {
-            app(LeaveAccrualService::class)->recalculateForStaff($staff->fresh());
+            app(LeaveAccrualService::class)->ensureBalancesForStaff($staff->fresh());
         } catch (\Throwable) {
             // Leave accrual must not block contract create/renew.
         }

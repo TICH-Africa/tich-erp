@@ -15,6 +15,7 @@ class EmployeePortalService
 {
     public function __construct(
         protected StaffPortalService $staffPortal,
+        protected LeaveAccrualService $leaveAccrual,
     ) {}
 
     public function hasEmployeeProfile(User $user): bool
@@ -155,6 +156,10 @@ class EmployeePortalService
      */
     public function leaveBalancesFor(Staff $staff): Collection
     {
+        if (Schema::hasTable('leave_balances') && Schema::hasTable('leave_types')) {
+            $this->leaveAccrual->ensureBalancesForStaff($staff);
+        }
+
         return $this->leaveBalances($staff);
     }
 

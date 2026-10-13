@@ -24,6 +24,17 @@
                 'description' => 'Emergency contact person',
                 'fields' => ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'],
             ],
+            'Next of kin' => [
+                'description' => 'Primary next of kin details for the employee record',
+                'fields' => ['next_of_kin'],
+            ],
+            'Documents' => [
+                'description' => 'Ask the employee to upload specific document types',
+                'fields' => collect(EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS)
+                    ->keys()
+                    ->map(fn ($type) => EmployeeProfileCompletenessService::documentFieldKey($type))
+                    ->all(),
+            ],
             'Qualifications' => [
                 'description' => 'Academic and professional certificates',
                 'fields' => ['qualification'],

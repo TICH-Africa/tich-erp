@@ -43,9 +43,12 @@ class StaffProfileUpdatePromptController extends Controller
     {
         $staff->load(['qualifications', 'department']);
 
+        $staff->loadMissing(['qualifications', 'department', 'primaryNextOfKin', 'documents']);
+
         return view('hr.staff.profile-update-prompt', [
             'staff' => $staff,
             'currentValues' => $this->currentFieldValues($staff),
+            'documentTypes' => \App\Services\EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS,
         ]);
     }
 
@@ -55,15 +58,33 @@ class StaffProfileUpdatePromptController extends Controller
     protected function currentFieldValues(Staff $staff): array
     {
         $values = [];
+        $nok = $staff->primaryNextOfKin;
+        $docsByType = $staff->documents->groupBy('document_type');
 
         foreach (\App\Services\EmployeeProfileCompletenessService::requestableFieldKeys() as $key) {
+            if ($key === 'next_of_kin') {
+                $values[$key] = $nok
+                    ? trim($nok->full_name.' · '.$nok->relationship.' · '.$nok->phone_number)
+                    : 'No next of kin on file';
+                continue;
+            }
+
+            $docType = \App\Services\EmployeeProfileCompletenessService::documentTypeFromFieldKey($key);
+            if ($docType) {
+                $count = $docsByType->get($docType)?->count() ?? 0;
+                $values[$key] = $count > 0
+                    ? $count.' file(s) on record'
+                    : 'Not uploaded';
+                continue;
+            }
+
             $values[$key] = match ($key) {
                 'photo' => $staff->photoUrl() ? 'Photo on file' : 'No photo uploaded',
                 'date_of_birth' => $staff->date_of_birth?->format('d M Y') ?? '-',
                 'qualification' => $staff->qualifications->isNotEmpty()
                     ? $staff->qualifications->map(fn ($q) => trim(($q->qualification_name ?? 'Qualification').($q->institution ? ' · '.$q->institution : '')))->join('; ')
                     : 'No qualifications on file',
-                default => filled($staff->{$key}) ? (string) $staff->{$key} : '-',
+                default => filled($staff->{$key} ?? null) ? (string) $staff->{$key} : '-',
             };
         }
 

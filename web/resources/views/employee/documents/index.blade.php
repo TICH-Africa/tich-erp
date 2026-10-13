@@ -2,7 +2,13 @@
 
 @section('employee-content')
     @php
-        $openUploadModal = $errors->any();
+        $requestedDocTypes = $requestedDocTypes ?? [];
+        $preselectDocumentType = old('document_type', $preselectDocumentType ?? null);
+        $docTypeLabels = \App\Services\EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS;
+        $requestedDocLabels = collect($requestedDocTypes)
+            ->map(fn ($type) => $docTypeLabels[$type] ?? $type)
+            ->all();
+        $openUploadModal = $errors->any() || (($profileUpdatePrompt ?? null) && $requestedDocTypes !== []);
     @endphp
 
     <x-page-toolbar title="My Documents" meta="View and manage your submitted documents">
@@ -10,6 +16,24 @@
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="upload-document-modal">+ Upload Document</button>
         </x-slot:actions>
     </x-page-toolbar>
+
+    @if (($profileUpdatePrompt ?? null) && $requestedDocLabels !== [])
+        <div class="tich-alert tich-alert--warning tich-mt-4" role="status">
+            <strong>Documents requested.</strong>
+            {{ $profileUpdatePrompt->requested_via_module === 'ict' ? 'ICT' : 'HR' }} has asked you to upload:
+            <strong>{{ implode(', ', $requestedDocLabels) }}</strong>.
+            Use <strong>Upload Document</strong> and pick the matching type
+            @if (count($requestedDocTypes) > 1)
+                (upload each requested type)
+            @endif.
+            @if ($profileUpdatePrompt->notes)
+                <p class="tich-mt-2 tich-caption"><strong>Note:</strong> {{ $profileUpdatePrompt->notes }}</p>
+            @endif
+            <p class="tich-mt-2">
+                <a href="{{ route('employee.documents.create', ['prompt' => $profileUpdatePrompt->token]) }}" class="tich-btn tich-btn-secondary tich-btn--sm">Open full upload form</a>
+            </p>
+        </div>
+    @endif
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
@@ -92,18 +116,11 @@
                         <label for="document_type" class="tich-label">Document Type *</label>
                         <select id="document_type" name="document_type" required class="tich-input">
                             <option value="">Select type</option>
-                            <option value="cv" @selected(old('document_type') === 'cv')>CV / Resume</option>
-                            <option value="academic_certificate" @selected(old('document_type') === 'academic_certificate')>Academic Certificate</option>
-                            <option value="professional_license" @selected(old('document_type') === 'professional_license')>Professional License</option>
-                            <option value="kra_pin" @selected(old('document_type') === 'kra_pin')>KRA PIN</option>
-                            <option value="nssf" @selected(old('document_type') === 'nssf')>NSSF</option>
-                            <option value="sha" @selected(old('document_type') === 'sha')>SHA</option>
-                            <option value="national_id" @selected(old('document_type') === 'national_id')>National ID</option>
-                            <option value="good_conduct" @selected(old('document_type') === 'good_conduct')>Good Conduct</option>
-                            <option value="passport_photo" @selected(old('document_type') === 'passport_photo')>Passport Photo</option>
-                            <option value="bank_confirmation" @selected(old('document_type') === 'bank_confirmation')>Bank Confirmation</option>
-                            <option value="training_certification" @selected(old('document_type') === 'training_certification')>Training Certification</option>
-                            <option value="other" @selected(old('document_type') === 'other')>Other</option>
+                            @foreach ($docTypeLabels as $type => $label)
+                                <option value="{{ $type }}" @selected($preselectDocumentType === $type)>
+                                    {{ $label }}@if (in_array($type, $requestedDocTypes, true)) (requested)@endif
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <div>

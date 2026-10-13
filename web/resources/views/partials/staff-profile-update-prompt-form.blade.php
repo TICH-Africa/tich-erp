@@ -7,6 +7,11 @@
         'Contact' => ['primary_email', 'phone_number', 'alt_phone_number', 'physical_address', 'postal_address', 'postal_code', 'home_county'],
         'Statutory' => ['national_id_number', 'kra_pin', 'nssf_number', 'sha_number'],
         'Emergency' => ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'],
+        'Next of kin' => ['next_of_kin'],
+        'Documents' => collect(EmployeeProfileCompletenessService::DOCUMENT_TYPE_LABELS)
+            ->keys()
+            ->map(fn ($type) => EmployeeProfileCompletenessService::documentFieldKey($type))
+            ->all(),
         'Qualifications' => ['qualification'],
     ];
     $selectedFields = old('fields', $selectedFields ?? []);
