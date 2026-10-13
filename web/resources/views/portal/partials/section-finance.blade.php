@@ -20,6 +20,14 @@
     </x-slot:actions>
 </x-page-toolbar>
 
+@if ($errors->any())
+    <div class="tich-alert tich-alert--error tich-mt-4" role="alert">
+        @foreach ($errors->all() as $error)
+            <p>{{ $error }}</p>
+        @endforeach
+    </div>
+@endif
+
 @if ($pendingStk)
     <div
         id="mpesa-payment-banner"

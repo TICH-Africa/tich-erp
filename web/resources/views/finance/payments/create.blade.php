@@ -9,6 +9,12 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if ($errors->has('chart_of_accounts'))
+        <div class="tich-alert tich-alert--error tich-mb-6" role="alert">
+            {{ $errors->first('chart_of_accounts') }}
+        </div>
+    @endif
+
     <div class="uf-form">
         <form method="POST" action="{{ route('finance.payments.store') }}" data-uf="ready">
             @csrf

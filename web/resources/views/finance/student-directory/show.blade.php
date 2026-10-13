@@ -26,6 +26,42 @@
         </article>
     </div>
 
+    <div class="tich-card tich-mt-6">
+        <h3 class="tich-h3">Payments Recorded Through Finance</h3>
+        <p class="tich-caption tich-mt-2">
+            {{ $paymentHistory->count() }} successful payment(s) ·
+            Total KES {{ number_format((float) $paymentHistory->sum('amount'), 2) }}
+        </p>
+        <div class="tich-table-wrap tich-mt-4">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Payment Number</th>
+                        <th>Invoice</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($paymentHistory as $payment)
+                        <tr>
+                            <td>{{ $payment->payment_date?->format('Y-m-d') ?? '-' }}</td>
+                            <td>{{ $payment->payment_number }}</td>
+                            <td>{{ $payment->invoice?->invoice_number ?? '-' }}</td>
+                            <td>KES {{ number_format((float) $payment->amount, 2) }}</td>
+                            <td>{{ config('finance.payment_methods.'.$payment->payment_method, ucfirst(str_replace('_', ' ', $payment->payment_method))) }}</td>
+                            <td>{{ $payment->payment_reference ?: $payment->transaction_channel_ref ?: '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="tich-caption">No successful payments have been recorded.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="tich-grid tich-grid--2 tich-mt-6">
         <article class="tich-card">
             <h3 class="tich-h4">Academic Programme</h3>

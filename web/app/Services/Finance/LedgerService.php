@@ -6,6 +6,7 @@ use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class LedgerService
 {
@@ -48,7 +49,7 @@ class LedgerService
     {
         return $this->postEntry(
             'invoice_raised',
-            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable'),
             $this->revenueAccountForInvoiceType($invoiceType),
             $amount,
             "Invoice raised: {$invoiceNumber}",
@@ -64,7 +65,7 @@ class LedgerService
         return $this->postEntry(
             'student_payment',
             $this->cashAccountFor($paymentMethod),
-            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable'),
             $amount,
             "Student payment: {$paymentNumber}",
             'student_fees',
@@ -80,7 +81,7 @@ class LedgerService
         return $this->postEntry(
             'credit_memo',
             $this->revenueAccountForInvoiceType($invoiceType),
-            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor']),
+            $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable'),
             $amount,
             "Credit memo: {$creditMemoNumber}",
             'student_fees',
@@ -98,8 +99,8 @@ class LedgerService
         if ((float) $run->total_gross > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                $this->resolveChartCode((string) config('finance.accounts.salaries_expense'), 'expense', ['salary', 'payroll', 'staff cost']),
-                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_expense'), 'expense', ['salary', 'payroll', 'staff cost'], 'FINANCE_SALARIES_EXPENSE_ACCOUNT', 'Salaries Expense'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll'], 'FINANCE_SALARIES_PAYABLE_ACCOUNT', 'Salaries Payable'),
                 (float) $run->total_gross,
                 "Payroll gross - {$period}",
                 'payroll',
@@ -114,8 +115,8 @@ class LedgerService
         if ($employerStatutory > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                $this->resolveChartCode((string) config('finance.accounts.employer_statutory_expense'), 'expense', ['statutory']),
-                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
+                $this->resolveChartCode((string) config('finance.accounts.employer_statutory_expense'), 'expense', ['statutory'], 'FINANCE_EMPLOYER_STATUTORY_ACCOUNT', 'Employer Statutory Expense'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll'], 'FINANCE_SALARIES_PAYABLE_ACCOUNT', 'Salaries Payable'),
                 $employerStatutory,
                 "Employer statutory - {$period}",
                 'payroll',
@@ -147,11 +148,13 @@ class LedgerService
                 (string) config('finance.accounts.'.$type.'_payable'),
                 'liability',
                 $statutoryHints[$type],
+                'FINANCE_'.strtoupper($type).'_PAYABLE_ACCOUNT',
+                strtoupper($type).' Payable',
             );
 
             $this->postEntry(
                 'statutory_remittance',
-                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll'], 'FINANCE_SALARIES_PAYABLE_ACCOUNT', 'Salaries Payable'),
                 $payableAccount,
                 $amount,
                 strtoupper($type)." remittance - {$period}",
@@ -167,8 +170,8 @@ class LedgerService
         if ($netPay > 0) {
             $this->postEntry(
                 'payroll_disbursement',
-                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll']),
-                $this->cashAccountFor('bank'),
+                $this->resolveChartCode((string) config('finance.accounts.salaries_payable'), 'liability', ['salary payable', 'payroll'], 'FINANCE_SALARIES_PAYABLE_ACCOUNT', 'Salaries Payable'),
+                $this->cashAccountFor('bank_transfer'),
                 $netPay,
                 "Net salaries disbursed - {$period}",
                 'payroll',
@@ -352,12 +355,32 @@ class LedgerService
 
     public function cashAccountFor(?string $paymentMethod): string
     {
-        [$configKey, $hints] = match (strtolower((string) $paymentMethod)) {
-            'mpesa', 'mobile_money' => ['cash_mpesa', ['mpesa', 'mobile money']],
-            default => ['cash_bank', ['bank', 'cash']],
+        [$configKey, $hints, $environmentVariable, $postingAccountName] = match (strtolower((string) $paymentMethod)) {
+            'mpesa', 'mobile_money' => ['cash_mpesa', ['mpesa', 'mobile money'], 'FINANCE_MPESA_CASH_ACCOUNT', 'M-Pesa Cash'],
+            'cash' => ['cash_on_hand', ['cash on hand', 'cash'], 'FINANCE_CASH_ACCOUNT', 'Cash on Hand'],
+            'card' => ['cash_card', ['card clearing', 'card settlement', 'bank'], 'FINANCE_CARD_CLEARING_ACCOUNT', 'Card Clearing'],
+            'helb' => ['helb_clearing', ['helb clearing', 'helb', 'student aid'], 'FINANCE_HELB_CLEARING_ACCOUNT', 'HELB Clearing'],
+            'sponsor' => ['sponsor_clearing', ['sponsor clearing', 'sponsor', 'bank'], 'FINANCE_SPONSOR_CLEARING_ACCOUNT', 'Sponsor Clearing'],
+            'work_study_credit' => ['work_study_clearing', ['work study clearing', 'work study', 'bank'], 'FINANCE_WORK_STUDY_CLEARING_ACCOUNT', 'Work-study Clearing'],
+            'bank', 'bank_transfer', 'cheque', 'eft' => ['cash_bank', ['bank', 'cash'], 'FINANCE_BANK_CASH_ACCOUNT', 'Bank Cash'],
+            default => throw ValidationException::withMessages([
+                'payment_method' => 'No chart-of-accounts mapping is configured for this payment method.',
+            ]),
         };
 
-        return $this->resolveChartCode((string) config('finance.accounts.'.$configKey), 'asset', $hints);
+        return $this->resolveChartCode((string) config('finance.accounts.'.$configKey), 'asset', $hints, $environmentVariable, $postingAccountName);
+    }
+
+    public function validateStudentPaymentAccounts(?string $paymentMethod): void
+    {
+        $this->cashAccountFor($paymentMethod);
+        $this->resolveChartCode(
+            (string) config('finance.accounts.accounts_receivable'),
+            'asset',
+            ['receivable', 'debtor'],
+            'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT',
+            'Student Fees Receivable',
+        );
     }
 
     /**
@@ -366,58 +389,223 @@ class LedgerService
      */
     private function revenueAccountForInvoiceType(?string $invoiceType): string
     {
-        [$configKey, $hints] = match (strtolower((string) $invoiceType)) {
-            'application' => ['application_fee_revenue', ['application']],
-            'examination', 'exam', 'supplementary' => ['examination_fee_revenue', ['examination', 'exam']],
-            'graduation' => ['graduation_fee_revenue', ['graduation']],
-            'tuition', 'semester', 'semester_charges', 'hostel' => ['tuition_revenue', ['tuition', 'fee income', 'school fee']],
-            default => ['other_fee_revenue', ['other income', 'other fee', 'miscellaneous']],
+        [$configKey, $hints, $environmentVariable, $postingAccountName] = match (strtolower((string) $invoiceType)) {
+            'application' => ['application_fee_revenue', ['application'], 'FINANCE_APPLICATION_FEE_REVENUE_ACCOUNT', 'Application Fee Revenue'],
+            'examination', 'exam', 'supplementary' => ['examination_fee_revenue', ['examination', 'exam'], 'FINANCE_EXAMINATION_FEE_REVENUE_ACCOUNT', 'Examination Fee Revenue'],
+            'graduation' => ['graduation_fee_revenue', ['graduation'], 'FINANCE_GRADUATION_FEE_REVENUE_ACCOUNT', 'Graduation Fee Revenue'],
+            'tuition', 'semester', 'semester_charges', 'hostel' => ['tuition_revenue', ['tuition', 'fee income', 'school fee'], 'FINANCE_TUITION_REVENUE_ACCOUNT', 'Tuition Fee Revenue'],
+            default => ['other_fee_revenue', ['other income', 'other fee', 'miscellaneous'], 'FINANCE_OTHER_FEE_REVENUE_ACCOUNT', 'Other Fee Revenue'],
         };
 
         return $this->resolveChartCode(
             (string) config('finance.accounts.'.$configKey, config('finance.accounts.tuition_revenue')),
             'revenue',
             $hints,
+            $environmentVariable,
+            $postingAccountName,
         );
     }
 
     /**
-     * Resolve a configured posting account against the live chart of accounts.
-     *
-     * Invoices, payments and payroll post to account codes from config, but a live
-     * school may number those accounts differently in its own imported chart. A
-     * posting to a code the chart does not know is invisible on every statement, so
-     * the chart is asked first: the configured code wins when it exists, otherwise
-     * the first active account of the right type whose name matches a hint is used,
-     * preferring child accounts since they carry the real postings. A matched child
-     * keeps its parent_account_code, so the amount still rolls up under its parent
-     * on the chart of accounts, trial balance and P&L.
+     * Resolve a posting only to an active leaf account of the expected type.
+     * Summary accounts are not used directly: their child balances are rolled up
+     * by ChartOfAccountService.
      *
      * @param  list<string>  $nameHints
      */
-    public function resolveChartCode(string $configured, string $type, array $nameHints = []): string
+    public function resolveChartCode(
+        string $configured,
+        string $type,
+        array $nameHints = [],
+        string $environmentVariable = 'FINANCE_ACCOUNT',
+        ?string $postingAccountName = null,
+    ): string
     {
         $accounts = $this->chartAccounts();
         $configured = trim($configured);
+        $parentCodes = $accounts->pluck('parent_account_code')
+            ->filter()
+            ->flip();
 
         $exact = $accounts->firstWhere('account_code', $configured);
 
         if ($exact !== null) {
-            return (string) $exact->account_code;
-        }
+            if (! $exact->is_active || $exact->account_type !== $type) {
+                $this->throwAccountMappingError(
+                    $environmentVariable,
+                    $configured,
+                    "it is inactive or is not a {$type} account"
+                );
+            }
 
-        if ($nameHints === []) {
-            return $configured;
+            if (isset($parentCodes[$configured])) {
+                if ($postingAccountName !== null) {
+                    return $this->ensurePostingLeafAccount(
+                        $exact,
+                        $type,
+                        $postingAccountName,
+                        $environmentVariable,
+                    );
+                }
+
+                return $this->leafAccountForParent(
+                    $accounts,
+                    $parentCodes,
+                    $configured,
+                    $type,
+                    $nameHints,
+                    $environmentVariable,
+                );
+            }
+
+            return (string) $exact->account_code;
         }
 
         $match = $accounts
             ->filter(fn (ChartOfAccount $account) => $account->account_type === $type
-                && (int) $account->is_active === 1
+                && $account->is_active
+                && ! isset($parentCodes[$account->account_code])
                 && $this->nameMatches($account, $nameHints))
-            ->sortBy(fn (ChartOfAccount $account) => [$account->isTopLevel() ? 1 : 0, (string) $account->account_code])
-            ->first();
+            ->values();
 
-        return $match !== null ? (string) $match->account_code : $configured;
+        if ($match->count() === 1) {
+            return (string) $match->first()->account_code;
+        }
+
+        $candidateCodes = $match->pluck('account_code')->take(5)->implode(', ');
+        $reason = $match->isEmpty()
+            ? 'the configured code does not exist and no active matching leaf account was found'
+            : "the configured code does not exist and matching leaf accounts are ambiguous ({$candidateCodes})";
+
+        $this->throwAccountMappingError($environmentVariable, $configured, $reason);
+    }
+
+    private function ensurePostingLeafAccount(
+        ChartOfAccount $parent,
+        string $type,
+        string $accountName,
+        string $environmentVariable,
+    ): string {
+        return DB::transaction(function () use ($parent, $type, $accountName, $environmentVariable): string {
+            $lockedParent = ChartOfAccount::query()
+                ->whereKey($parent->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $lockedParent->is_active || $lockedParent->account_type !== $type) {
+                $this->throwAccountMappingError(
+                    $environmentVariable,
+                    (string) $lockedParent->account_code,
+                    "it is inactive or is not a {$type} parent account"
+                );
+            }
+
+            $existing = ChartOfAccount::query()
+                ->where('parent_account_code', $lockedParent->account_code)
+                ->where('account_type', $type)
+                ->where('account_name', $accountName)
+                ->where('is_active', 1)
+                ->get()
+                ->filter(fn (ChartOfAccount $account) => ! $account->children()->exists())
+                ->values();
+
+            if ($existing->count() === 1) {
+                return (string) $existing->first()->account_code;
+            }
+
+            if ($existing->count() > 1) {
+                $systemAccounts = $existing->where('is_system_account', true)->values();
+
+                if ($systemAccounts->count() === 1) {
+                    return (string) $systemAccounts->first()->account_code;
+                }
+
+                $this->throwAccountMappingError(
+                    $environmentVariable,
+                    (string) $lockedParent->account_code,
+                    'it has multiple posting children named '.$accountName.' ('.$existing->pluck('account_code')->implode(', ').')'
+                );
+            }
+
+            $accountCode = (new ChartOfAccountService($this))->suggestChildCode($lockedParent);
+
+            return (string) ChartOfAccount::query()->create([
+                'account_code' => $accountCode,
+                'account_name' => $accountName,
+                'account_type' => $type,
+                'currency' => $lockedParent->currency ?: ChartOfAccountService::DEFAULT_CURRENCY,
+                'parent_account_code' => $lockedParent->account_code,
+                'is_active' => true,
+                'is_system_account' => true,
+            ])->account_code;
+        }, 3);
+    }
+
+    /**
+     * Resolve a configured summary account to a uniquely identifiable active leaf
+     * below it; never choose arbitrarily when the parent has several plausible children.
+     *
+     * @param  Collection<int, ChartOfAccount>  $accounts
+     * @param  Collection<string, int>  $parentCodes
+     * @param  list<string>  $nameHints
+     */
+    private function leafAccountForParent(
+        Collection $accounts,
+        Collection $parentCodes,
+        string $parentCode,
+        string $type,
+        array $nameHints,
+        string $environmentVariable,
+    ): string {
+        $byCode = $accounts->keyBy('account_code');
+        $leaves = $accounts->filter(function (ChartOfAccount $account) use ($byCode, $parentCodes, $parentCode, $type): bool {
+            if (! $account->is_active || $account->account_type !== $type || isset($parentCodes[$account->account_code])) {
+                return false;
+            }
+
+            $ancestorCode = $account->parent_account_code;
+            $seen = [$account->account_code => true];
+
+            while ($ancestorCode !== null && $ancestorCode !== '' && ! isset($seen[$ancestorCode])) {
+                if ($ancestorCode === $parentCode) {
+                    return true;
+                }
+
+                $seen[$ancestorCode] = true;
+                $ancestorCode = $byCode->get($ancestorCode)?->parent_account_code;
+            }
+
+            return false;
+        })->values();
+
+        $matchingLeaves = $leaves
+            ->filter(fn (ChartOfAccount $account) => $this->nameMatches($account, $nameHints))
+            ->values();
+
+        if ($matchingLeaves->count() === 1) {
+            return (string) $matchingLeaves->first()->account_code;
+        }
+
+        if ($matchingLeaves->isEmpty() && $leaves->count() === 1) {
+            return (string) $leaves->first()->account_code;
+        }
+
+        $candidateCodes = ($matchingLeaves->isNotEmpty() ? $matchingLeaves : $leaves)
+            ->pluck('account_code')
+            ->take(10)
+            ->implode(', ');
+        $reason = $candidateCodes === ''
+            ? "it is a parent account and has no active {$type} leaf descendants"
+            : "it is a parent account with multiple possible {$type} leaf accounts ({$candidateCodes})";
+
+        $this->throwAccountMappingError($environmentVariable, $parentCode, $reason);
+    }
+
+    private function throwAccountMappingError(string $environmentVariable, string $configured, string $reason): never
+    {
+        throw ValidationException::withMessages([
+            'chart_of_accounts' => "Finance posting is blocked: account code '{$configured}' {$reason}. Set {$environmentVariable} to an existing active chart account of the required type; a parent account can be used because the system creates a numbered posting child beneath it.",
+        ]);
     }
 
     /**

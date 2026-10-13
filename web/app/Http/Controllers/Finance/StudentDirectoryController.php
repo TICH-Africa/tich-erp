@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Finance;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicProgram;
 use App\Models\AcademicYear;
+use App\Models\Payment;
 use App\Models\Student;
 use App\Services\StudentFinancialService;
 use Illuminate\Http\RedirectResponse;
@@ -33,10 +34,27 @@ class StudentDirectoryController extends Controller
     {
         $summary = $this->financialService->getSummary($student);
         $financialHistory = $this->financialService->getForStudent($student);
+        $paymentHistory = Payment::query()
+            ->where('status', 'SUCCESS')
+            ->where(function ($query) use ($student): void {
+                $query->where('student_id', $student->id)
+                    ->orWhereHas('studentAccount', fn ($accountQuery) => $accountQuery->where('student_id', $student->id));
+            })
+            ->with('invoice')
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get();
         $academicRecords = $student->academicRecords()->with('program')->get();
         $academicYears = AcademicYear::orderByDesc('id')->get();
 
-        return view('finance.student-directory.show', compact('student', 'summary', 'financialHistory', 'academicRecords', 'academicYears'));
+        return view('finance.student-directory.show', compact(
+            'student',
+            'summary',
+            'financialHistory',
+            'paymentHistory',
+            'academicRecords',
+            'academicYears',
+        ));
     }
 
     public function createPastRecord(Request $request, Student $student): RedirectResponse

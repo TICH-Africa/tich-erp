@@ -155,6 +155,7 @@ class PaymentService
     {
         abort_unless($invoice->isPayable(), 422, 'This invoice is not open for payment.');
         abort_unless($this->mpesaSettings->isEnabled(), 422, 'M-Pesa payments are not enabled. Configure them under Finance → M-Pesa settings.');
+        $this->ledger->validateStudentPaymentAccounts('mpesa');
 
         $payAmount = round(min($amount, (float) $invoice->balance), 2);
         abort_if($payAmount <= 0, 422, 'Nothing left to pay on this invoice.');
