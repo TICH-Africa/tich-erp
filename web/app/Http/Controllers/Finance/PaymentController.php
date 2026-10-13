@@ -21,6 +21,7 @@ class PaymentController extends Controller
         $payments = Payment::query()
             ->with(['student.applicant', 'invoice'])
             ->when($request->filled('method'), fn ($query) => $query->where('payment_method', $request->string('method')))
+            ->orderByDesc('created_at')
             ->orderByDesc('payment_date')
             ->paginate(25)
             ->withQueryString();
@@ -60,7 +61,7 @@ class PaymentController extends Controller
             'payment_method' => 'required|string|in:'.implode(',', array_keys(config('finance.payment_methods'))),
             'payment_reference' => 'nullable|string|max:100',
             'transaction_channel_ref' => 'nullable|string|max:100',
-            'payment_date' => 'nullable|date',
+            'payment_date' => 'required|date',
         ]);
 
         $invoice = Invoice::query()->findOrFail($validated['invoice_id']);
