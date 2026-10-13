@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Employee\Concerns;
+namespace App\Http\Controllers\Api\Employee\mobile\Concerns;
 
 use App\Models\Staff;
 use App\Services\EmployeePortalService;

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api\Employee;
+namespace App\Http\Controllers\Api\Employee\mobile;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\Employee\Concerns\ResolvesPortalStaff;
+use App\Http\Controllers\Api\Employee\mobile\Concerns\ResolvesPortalStaff;
 use App\Models\StaffDocument;
 use App\Services\EmployeeProfileCompletenessService;
 use App\Services\EmployeeProfileUpdatePromptService;

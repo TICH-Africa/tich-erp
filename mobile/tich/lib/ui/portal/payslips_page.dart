@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
 
@@ -39,13 +40,13 @@ class _PayslipsPageState extends State<PayslipsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: tichAppBar(context, title: 'Payslips'),
+    return AdaptiveScaffold(
+      title: 'Payslips',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AdaptiveProgress());
           }
           if (snap.hasError) {
             return TichErrorRefresh(
@@ -131,8 +132,8 @@ class PayslipDetailPage extends StatelessWidget {
     final breakdown = Map<String, dynamic>.from(detail['breakdown'] as Map? ?? {});
     final webUrl = detail['web_url']?.toString();
 
-    return Scaffold(
-      appBar: tichAppBar(context, title: detail['period_label']?.toString() ?? 'Payslip'),
+    return AdaptiveScaffold(
+      title: detail['period_label']?.toString() ?? 'Payslip',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

@@ -16,6 +16,8 @@ Flutter client for the TICH ERP Laravel API — **My Employee Portal**.
 
 Design tokens match `web/public/css/tich-platform.css` (green `#6cab33`, blue `#1669a6`, Merriweather / Arial).
 
+**Adaptive UI:** checks the OS and renders **Material** on Android and **Cupertino** on iOS (`lib/adaptive/adaptive.dart`).
+
 MFA is **not** enforced on mobile in v1.
 
 ## Local setup
@@ -47,3 +49,7 @@ flutter run --dart-define=API_BASE_URL=https://tich.africa
 ## API
 
 Employee self-service lives under `/api/employee/*` (Sanctum + `employee.portal`).
+
+PHP controllers live under:
+
+`web/app/Http/Controllers/Api/Employee/mobile/`

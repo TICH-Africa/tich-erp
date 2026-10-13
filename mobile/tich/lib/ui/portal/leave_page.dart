@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
 
@@ -39,8 +40,8 @@ class _LeavePageState extends State<LeavePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: tichAppBar(context, title: 'Leave'),
+    return AdaptiveScaffold(
+      title: 'Leave',
       floatingActionButton: FutureBuilder(
         future: _future,
         builder: (context, snap) {
@@ -57,7 +58,7 @@ class _LeavePageState extends State<LeavePage> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AdaptiveProgress());
           }
           if (snap.hasError) {
             return TichErrorRefresh(
@@ -351,8 +352,8 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
 
-    return Scaffold(
-      appBar: tichAppBar(context, title: 'Apply for leave'),
+    return AdaptiveScaffold(
+      title: 'Apply for leave',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

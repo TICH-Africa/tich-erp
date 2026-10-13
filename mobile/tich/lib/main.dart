@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'adaptive/adaptive.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/auth/auth_event.dart';
 import 'bloc/auth/auth_state.dart';
@@ -33,10 +34,10 @@ class TichApp extends StatelessWidget {
         create: (context) => AuthBloc(
           repository: context.read<AuthRepository>(),
         )..add(const AuthStarted()),
-        child: MaterialApp(
+        child: AdaptiveApp(
           title: 'TICH',
-          debugShowCheckedModeBanner: false,
-          theme: TichTheme.light(),
+          materialTheme: TichTheme.light(),
+          cupertinoTheme: TichTheme.cupertino(),
           home: const _AuthGate(),
         ),
       ),
@@ -56,7 +57,7 @@ class _AuthGate extends StatelessWidget {
         }
         if (state is AuthInitial || state is AuthChecking) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(child: AdaptiveProgress()),
           );
         }
         return const LoginPage();

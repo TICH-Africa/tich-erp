@@ -126,37 +126,37 @@ Route::get('/session-check', function () {
 | MFA is intentionally not required here (product: mobile v1).
 */
 Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->group(function () {
-    Route::get('/dashboard', \App\Http\Controllers\Api\Employee\DashboardController::class);
-    Route::get('/notifications', \App\Http\Controllers\Api\Employee\NotificationController::class);
+    Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
+    Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
 
-    Route::get('/profile', [\App\Http\Controllers\Api\Employee\ProfileController::class, 'show']);
-    Route::put('/profile', [\App\Http\Controllers\Api\Employee\ProfileController::class, 'update']);
+    Route::get('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'show']);
+    Route::put('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'update']);
 
-    Route::get('/leave', [\App\Http\Controllers\Api\Employee\LeaveController::class, 'index']);
-    Route::post('/leave', [\App\Http\Controllers\Api\Employee\LeaveController::class, 'store']);
-    Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Api\Employee\LeaveController::class, 'cancel']);
-    Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Api\Employee\LeaveController::class, 'acceptCoverage']);
-    Route::post('/leave/coverages/{coverage}/decline', [\App\Http\Controllers\Api\Employee\LeaveController::class, 'declineCoverage']);
+    Route::get('/leave', [\App\Http\Controllers\Api\Employee\mobile\LeaveController::class, 'index']);
+    Route::post('/leave', [\App\Http\Controllers\Api\Employee\mobile\LeaveController::class, 'store']);
+    Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Api\Employee\mobile\LeaveController::class, 'cancel']);
+    Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Api\Employee\mobile\LeaveController::class, 'acceptCoverage']);
+    Route::post('/leave/coverages/{coverage}/decline', [\App\Http\Controllers\Api\Employee\mobile\LeaveController::class, 'declineCoverage']);
 
-    Route::get('/attendance', [\App\Http\Controllers\Api\Employee\AttendanceController::class, 'index']);
-    Route::post('/attendance/clock-in', [\App\Http\Controllers\Api\Employee\AttendanceController::class, 'clockIn']);
-    Route::post('/attendance/clock-out', [\App\Http\Controllers\Api\Employee\AttendanceController::class, 'clockOut']);
+    Route::get('/attendance', [\App\Http\Controllers\Api\Employee\mobile\AttendanceController::class, 'index']);
+    Route::post('/attendance/clock-in', [\App\Http\Controllers\Api\Employee\mobile\AttendanceController::class, 'clockIn']);
+    Route::post('/attendance/clock-out', [\App\Http\Controllers\Api\Employee\mobile\AttendanceController::class, 'clockOut']);
 
-    Route::get('/documents', [\App\Http\Controllers\Api\Employee\DocumentController::class, 'index']);
-    Route::post('/documents', [\App\Http\Controllers\Api\Employee\DocumentController::class, 'store']);
-    Route::get('/documents/{document}/download', [\App\Http\Controllers\Api\Employee\DocumentController::class, 'download']);
+    Route::get('/documents', [\App\Http\Controllers\Api\Employee\mobile\DocumentController::class, 'index']);
+    Route::post('/documents', [\App\Http\Controllers\Api\Employee\mobile\DocumentController::class, 'store']);
+    Route::get('/documents/{document}/download', [\App\Http\Controllers\Api\Employee\mobile\DocumentController::class, 'download']);
 
-    Route::get('/payslips', [\App\Http\Controllers\Api\Employee\PayslipController::class, 'index']);
-    Route::get('/payslips/{payrollItem}', [\App\Http\Controllers\Api\Employee\PayslipController::class, 'show']);
+    Route::get('/payslips', [\App\Http\Controllers\Api\Employee\mobile\PayslipController::class, 'index']);
+    Route::get('/payslips/{payrollItem}', [\App\Http\Controllers\Api\Employee\mobile\PayslipController::class, 'show']);
 
-    Route::get('/policies', [\App\Http\Controllers\Api\Employee\PolicyController::class, 'index']);
-    Route::post('/policies/{id}/acknowledge', [\App\Http\Controllers\Api\Employee\PolicyController::class, 'acknowledge']);
+    Route::get('/policies', [\App\Http\Controllers\Api\Employee\mobile\PolicyController::class, 'index']);
+    Route::post('/policies/{id}/acknowledge', [\App\Http\Controllers\Api\Employee\mobile\PolicyController::class, 'acknowledge']);
 
-    Route::get('/wfh', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'wfh']);
-    Route::post('/wfh', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'storeWfh']);
-    Route::get('/concerns', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'concerns']);
-    Route::post('/concerns', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'storeConcern']);
-    Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'appraisals']);
-    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'timeLogs']);
-    Route::get('/feedback', [\App\Http\Controllers\Api\Employee\PortalListsController::class, 'feedback']);
+    Route::get('/wfh', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'wfh']);
+    Route::post('/wfh', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeWfh']);
+    Route::get('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'concerns']);
+    Route::post('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeConcern']);
+    Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'appraisals']);
+    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'timeLogs']);
+    Route::get('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'feedback']);
 });

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
 
@@ -102,8 +103,8 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: tichAppBar(context, title: 'Documents'),
+    return AdaptiveScaffold(
+      title: 'Documents',
       floatingActionButton: FutureBuilder(
         future: _future,
         builder: (context, snap) {
@@ -120,7 +121,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AdaptiveProgress());
           }
           if (snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);

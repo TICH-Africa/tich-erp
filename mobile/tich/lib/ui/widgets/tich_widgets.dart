@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../theme/tich_theme.dart';
 
 class TichSectionHeader extends StatelessWidget {
@@ -135,7 +136,7 @@ class TichErrorRefresh extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            AdaptiveFilledButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

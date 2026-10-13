@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import 'appraisals_page.dart';
 import 'concerns_page.dart';
@@ -29,8 +30,10 @@ class MorePage extends StatelessWidget {
       _MoreItem('Concerns', Icons.report_problem_outlined, () => ConcernsPage(api: api)),
     ];
 
-    return Scaffold(
-      appBar: tichAppBar(context, title: 'More', showLogout: true),
+    return AdaptiveScaffold(
+      title: 'More',
+      showLogout: true,
+      onLogout: tichLogout(context),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,

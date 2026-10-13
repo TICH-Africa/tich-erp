@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -128,6 +129,36 @@ abstract final class TichTheme {
       dividerColor: TichColors.neutralBorder,
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: TichColors.blue,
+      ),
+    );
+  }
+
+  static CupertinoThemeData cupertino() {
+    return CupertinoThemeData(
+      primaryColor: TichColors.blue,
+      scaffoldBackgroundColor: TichColors.neutral,
+      barBackgroundColor: TichColors.blue,
+      primaryContrastingColor: TichColors.white,
+      textTheme: CupertinoTextThemeData(
+        primaryColor: TichColors.grey,
+        textStyle: GoogleFonts.merriweather(
+          color: TichColors.grey,
+          fontSize: 14,
+        ),
+        navTitleTextStyle: GoogleFonts.merriweather(
+          color: TichColors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+        navLargeTitleTextStyle: GoogleFonts.merriweather(
+          color: TichColors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+        ),
+        actionTextStyle: tichUi(
+          color: TichColors.blue,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
