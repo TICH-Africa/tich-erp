@@ -4,9 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/auth/auth_event.dart';
 import 'bloc/auth/auth_state.dart';
+import 'data/api_client.dart';
 import 'data/auth_repository.dart';
-import 'ui/home_page.dart';
+import 'data/employee_api.dart';
+import 'theme/tich_theme.dart';
 import 'ui/login_page.dart';
+import 'ui/shell/portal_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,8 +21,14 @@ class TichApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (_) => AuthRepository(),
+    final apiClient = ApiClient();
+
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(create: (_) => AuthRepository()),
+        RepositoryProvider.value(value: apiClient),
+        RepositoryProvider(create: (_) => EmployeeApi(apiClient)),
+      ],
       child: BlocProvider(
         create: (context) => AuthBloc(
           repository: context.read<AuthRepository>(),
@@ -27,15 +36,7 @@ class TichApp extends StatelessWidget {
         child: MaterialApp(
           title: 'TICH',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF1669A6),
-            ),
-            useMaterial3: true,
-            inputDecorationTheme: const InputDecorationTheme(
-              border: OutlineInputBorder(),
-            ),
-          ),
+          theme: TichTheme.light(),
           home: const _AuthGate(),
         ),
       ),
@@ -51,15 +52,13 @@ class _AuthGate extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          return HomePage(user: state.user);
+          return const PortalShell();
         }
-        // Only block the whole app while restoring a saved session.
         if (state is AuthInitial || state is AuthChecking) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // AuthLoading stays on LoginPage so timeouts/errors are visible.
         return const LoginPage();
       },
     );
