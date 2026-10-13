@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-08 18:28:03 EAT
+-- Generated: 2026-10-13 10:58:42 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -5204,9 +5204,9 @@ CREATE TABLE IF NOT EXISTS `hr_policies` (
   `is_active` tinyint(4) NOT NULL DEFAULT 1,
   `tags` text DEFAULT NULL,
   `target_type` enum('all','department','staff','role') NOT NULL DEFAULT 'all',
-  `target_departments` json DEFAULT NULL,
-  `target_staff_ids` json DEFAULT NULL,
-  `target_roles` json DEFAULT NULL,
+  `target_departments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`target_departments`)),
+  `target_staff_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`target_staff_ids`)),
+  `target_roles` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`target_roles`)),
   `uploaded_by` bigint(20) unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
@@ -5233,10 +5233,10 @@ CALL `tich_ensure_column`('hr_policies', 'effective_date', 'date NULL DEFAULT NU
 CALL `tich_ensure_column`('hr_policies', 'expiry_date', 'date NULL DEFAULT NULL');
 CALL `tich_ensure_column`('hr_policies', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('hr_policies', 'tags', 'text NULL DEFAULT NULL');
-CALL `tich_ensure_column`('hr_policies', 'target_type', 'enum(\'all\',\'department\',\'staff\',\'role\') NOT NULL DEFAULT \'all\'');
-CALL `tich_ensure_column`('hr_policies', 'target_departments', 'json NULL');
-CALL `tich_ensure_column`('hr_policies', 'target_staff_ids', 'json NULL');
-CALL `tich_ensure_column`('hr_policies', 'target_roles', 'json NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_type', 'enum(\'all\',\'department\',\'staff\',\'role\') NOT NULL DEFAULT \'\\\'all\\\'\'');
+CALL `tich_ensure_column`('hr_policies', 'target_departments', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_staff_ids', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('hr_policies', 'target_roles', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('hr_policies', 'uploaded_by', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('hr_policies', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('hr_policies', 'updated_at', 'datetime NULL DEFAULT NULL');
@@ -8364,8 +8364,8 @@ CALL `tich_ensure_column`('policy_reads', 'id', 'bigint(20) unsigned NOT NULL AU
 CALL `tich_ensure_column`('policy_reads', 'policy_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('policy_reads', 'staff_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('policy_reads', 'read_at', 'datetime NOT NULL DEFAULT current_timestamp()');
-CALL `tich_ensure_column`('policy_reads', 'ip_address', 'varchar(45) NULL');
-CALL `tich_ensure_column`('policy_reads', 'user_agent', 'varchar(500) NULL');
+CALL `tich_ensure_column`('policy_reads', 'ip_address', 'varchar(45) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('policy_reads', 'user_agent', 'varchar(500) NULL DEFAULT NULL');
 
 -- Indexes for `policy_reads` (add only if missing)
 CALL `tich_ensure_index`('policy_reads', 'policy_reads_read_at_index', '`read_at`');
@@ -14136,6 +14136,8 @@ CALL `tich_ensure_fk`('performance_reviews', 'performance_reviews_staff_id_forei
 -- Foreign keys for `policy_acknowledgements`
 CALL `tich_ensure_fk`('policy_acknowledgements', 'policy_acknowledgements_policy_id_foreign', '`policy_id`', 'hr_policies', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('policy_acknowledgements', 'policy_acknowledgements_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `policy_reads`
 CALL `tich_ensure_fk`('policy_reads', 'policy_reads_policy_id_foreign', '`policy_id`', 'hr_policies', '`id`', 'RESTRICT', 'CASCADE');
 CALL `tich_ensure_fk`('policy_reads', 'policy_reads_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
 

@@ -13998,3 +13998,114 @@ input[type="time"]::-moz-calendar-picker-indicator {
     border-color: #5c6370;
 }
 
+/* HR time-log filters — one horizontal labeled row */
+.tich-time-log-filters {
+    padding: 0.875rem 1rem;
+}
+
+.tich-time-log-filters__row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 0.625rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.125rem;
+}
+
+.tich-time-log-filters__field {
+    margin: 0;
+    flex: 0 0 auto;
+    min-width: 7.5rem;
+}
+
+.tich-time-log-filters__field--search {
+    flex: 1 1 14rem;
+    min-width: 12rem;
+    max-width: 20rem;
+}
+
+.tich-time-log-filters__field--year {
+    min-width: 5.5rem;
+    max-width: 6.5rem;
+}
+
+.tich-time-log-filters__field--week {
+    min-width: 5.5rem;
+    max-width: 6.5rem;
+}
+
+.tich-time-log-filters__field .tich-label {
+    white-space: nowrap;
+    margin-bottom: 0.25rem;
+}
+
+.tich-time-log-filters__field .tich-input {
+    width: 100%;
+}
+
+.tich-time-log-filters__actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    padding-bottom: 0.05rem;
+}
+
+.tich-time-log-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.tich-time-log-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.tich-time-log-mark--yes {
+    background: var(--tich-status-success-bg, #e8f5e9);
+    color: var(--tich-status-success-text, #1b5e20);
+    border: 1px solid var(--tich-status-success-border, #a5d6a7);
+}
+
+.tich-time-log-mark--no {
+    background: var(--tich-surface-muted, #f0f2f5);
+    color: var(--tich-text-muted, #5c6370);
+    border: 1px solid var(--tich-neutral-border, #c4cad2);
+}
+
+.tich-time-log-matrix__week {
+    text-align: center;
+    min-width: 5.5rem;
+}
+
+.tich-time-log-matrix__cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .tich-time-log-mark--yes {
+    background: #1b4332;
+    color: #95d5b2;
+    border-color: #2d6a4f;
+}
+
+[data-theme="dark"] .tich-time-log-mark--no {
+    background: #3a4048;
+    color: #9aa3b0;
+    border-color: #5c6370;
+}
+

@@ -3,60 +3,65 @@
 @section('title', 'Time logs')
 
 @section('hr-content')
-    <x-page-toolbar title="Time logs" meta="Staff weekly time logs submitted for HR review" />
+    <x-page-toolbar title="Time logs" meta="Staff weekly time logs submitted for HR review">
+        <x-slot:actions>
+            <a href="{{ route('hr.time-logs.submissions') }}" class="tich-btn tich-btn-primary">View submissions per employee</a>
+        </x-slot:actions>
+    </x-page-toolbar>
 
     @if (session('status'))
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
     @endif
 
-    <form method="GET" class="tich-card tich-mt-6" style="padding:1rem;">
-        <div class="tich-grid tich-grid--3" style="gap:0.75rem; align-items:end;">
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Search</label>
-                <input type="search" name="search" class="tich-input" value="{{ $filters['search'] ?? '' }}" placeholder="Name, employee no., code…">
+    <form method="GET" action="{{ route('hr.time-logs.index') }}" class="tich-card tich-time-log-filters tich-mt-4">
+        <div class="tich-time-log-filters__row">
+            <div class="tich-form-group tich-time-log-filters__field tich-time-log-filters__field--search">
+                <label class="tich-label" for="tl-search">Search</label>
+                <input id="tl-search" type="search" name="search" class="tich-input tich-input--compact" value="{{ $filters['search'] ?? '' }}" placeholder="Name, employee no., code…">
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Status</label>
-                <select name="status" class="tich-input">
+            <div class="tich-form-group tich-time-log-filters__field">
+                <label class="tich-label" for="tl-status">Status</label>
+                <select id="tl-status" name="status" class="tich-input tich-input--compact">
+                    <option value="all" @selected(($filters['status'] ?? '') === 'all')>All</option>
                     <option value="pending_hr" @selected(($filters['status'] ?? 'pending_hr') === 'pending_hr')>Pending HR</option>
                     <option value="approved" @selected(($filters['status'] ?? '') === 'approved')>Approved</option>
                     <option value="rejected" @selected(($filters['status'] ?? '') === 'rejected')>Rejected</option>
                     <option value="returned" @selected(($filters['status'] ?? '') === 'returned')>Returned</option>
                 </select>
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Year</label>
-                <input type="number" name="year" class="tich-input" value="{{ $filters['year'] ?? '' }}" min="2020" max="2100" placeholder="e.g. {{ now()->year }}">
+            <div class="tich-form-group tich-time-log-filters__field tich-time-log-filters__field--year">
+                <label class="tich-label" for="tl-year">Year</label>
+                <input id="tl-year" type="number" name="year" class="tich-input tich-input--compact" value="{{ $filters['year'] ?? '' }}" min="2020" max="2100" placeholder="e.g. {{ now()->year }}">
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Month</label>
-                <select name="month" class="tich-input">
+            <div class="tich-form-group tich-time-log-filters__field">
+                <label class="tich-label" for="tl-month">Month</label>
+                <select id="tl-month" name="month" class="tich-input tich-input--compact">
                     <option value="">Any</option>
                     @for ($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}" @selected((int) ($filters['month'] ?? 0) === $m)>{{ \Carbon\Carbon::create(null, $m, 1)->format('F') }}</option>
                     @endfor
                 </select>
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Week of month</label>
-                <input type="number" name="week_number" class="tich-input" value="{{ $filters['week_number'] ?? '' }}" min="1" max="6" placeholder="1–6">
+            <div class="tich-form-group tich-time-log-filters__field tich-time-log-filters__field--week">
+                <label class="tich-label" for="tl-week">Week of month</label>
+                <input id="tl-week" type="number" name="week_number" class="tich-input tich-input--compact" value="{{ $filters['week_number'] ?? '' }}" min="1" max="6" placeholder="1–6">
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Submitted from</label>
-                <input type="date" name="submitted_from" class="tich-input" value="{{ $filters['submitted_from'] ?? '' }}">
+            <div class="tich-form-group tich-time-log-filters__field">
+                <label class="tich-label" for="tl-from">Submitted from</label>
+                <input id="tl-from" type="date" name="submitted_from" class="tich-input tich-input--compact" value="{{ $filters['submitted_from'] ?? '' }}">
             </div>
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Submitted to</label>
-                <input type="date" name="submitted_to" class="tich-input" value="{{ $filters['submitted_to'] ?? '' }}">
+            <div class="tich-form-group tich-time-log-filters__field">
+                <label class="tich-label" for="tl-to">Submitted to</label>
+                <input id="tl-to" type="date" name="submitted_to" class="tich-input tich-input--compact" value="{{ $filters['submitted_to'] ?? '' }}">
             </div>
-            <div style="display:flex; gap:0.5rem;">
+            <div class="tich-time-log-filters__actions">
                 <button type="submit" class="tich-btn tich-btn-primary">Filter</button>
                 <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Reset</a>
             </div>
         </div>
     </form>
 
-    <div class="tich-card tich-table-panel tich-mt-6">
+    <div class="tich-card tich-table-panel tich-mt-4">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">
                 <thead>

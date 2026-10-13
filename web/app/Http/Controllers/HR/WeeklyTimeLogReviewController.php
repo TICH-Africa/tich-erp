@@ -21,7 +21,7 @@ class WeeklyTimeLogReviewController extends Controller
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'status' => ['nullable', 'in:pending_hr,approved,rejected,returned'],
+            'status' => ['nullable', 'in:all,pending_hr,approved,rejected,returned'],
             'year' => ['nullable', 'integer', 'min:2020', 'max:2100'],
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'week_number' => ['nullable', 'integer', 'min:1', 'max:6'],
@@ -29,12 +29,43 @@ class WeeklyTimeLogReviewController extends Controller
             'submitted_to' => ['nullable', 'date', 'after_or_equal:submitted_from'],
         ]);
 
+        if (! array_key_exists('status', $filters) || $filters['status'] === null || $filters['status'] === '') {
+            $filters['status'] = 'pending_hr';
+        }
+
         return view('hr.time-logs.index', [
             'logs' => $this->timeLogs->hrIndex($filters),
             'filters' => $filters,
             'weeks' => ! empty($filters['year']) && ! empty($filters['month'])
                 ? $this->timeLogs->weeksForMonth((int) $filters['year'], (int) $filters['month'])
                 : [],
+        ]);
+    }
+
+    public function submissions(Request $request): View
+    {
+        $filters = $request->validate([
+            'year' => ['nullable', 'integer', 'min:2020', 'max:2100'],
+            'month' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'search' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $year = (int) ($filters['year'] ?? now()->year);
+        $month = (int) ($filters['month'] ?? now()->month);
+
+        $matrix = $this->timeLogs->hrMonthlySubmissions(
+            $year,
+            $month,
+            $filters['search'] ?? null
+        );
+
+        return view('hr.time-logs.submissions', [
+            'matrix' => $matrix,
+            'filters' => [
+                'year' => $year,
+                'month' => $month,
+                'search' => $filters['search'] ?? '',
+            ],
         ]);
     }
 

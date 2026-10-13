@@ -569,10 +569,9 @@ class WeeklyTimeLogService
             ])
             ->latest('employee_signed_at');
 
-        if (! empty($filters['status'])) {
-            $q->where('status', $filters['status']);
-        } else {
-            $q->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR);
+        $status = (string) ($filters['status'] ?? 'pending_hr');
+        if ($status !== 'all' && $status !== '') {
+            $q->where('status', $status);
         }
 
         if (! empty($filters['month'])) {
@@ -616,6 +615,107 @@ class WeeklyTimeLogService
         return StaffWeeklyTimeLog::query()
             ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
             ->count();
+    }
+
+    /**
+     * Per-employee week submission matrix for a calendar month.
+     *
+     * @return array{
+     *     year: int,
+     *     month: int,
+     *     weeks: list<array{week_number: int, week_ref: string, period_start: string, period_end: string, label: string}>,
+     *     rows: list<array{staff: Staff, weeks: array<int, array{submitted: bool, status: ?string, log: ?StaffWeeklyTimeLog}>, submitted_count: int}>
+     * }
+     */
+    public function hrMonthlySubmissions(int $year, int $month, ?string $search = null): array
+    {
+        $weeks = array_map(static function (array $week) {
+            return [
+                'week_number' => $week['week_number'],
+                'week_ref' => $week['week_ref'],
+                'period_start' => $week['period_start'],
+                'period_end' => $week['period_end'],
+                'label' => $week['label'],
+            ];
+        }, $this->weeksForMonth($year, $month));
+
+        $staffQuery = Staff::query()
+            ->excludePlatformOperators()
+            ->whereIn('employment_status', ['active', 'on_leave', 'onboarding'])
+            ->orderBy('surname')
+            ->orderBy('first_name');
+
+        if ($search !== null && trim($search) !== '') {
+            $term = '%'.trim($search).'%';
+            $staffQuery->where(function ($q) use ($term) {
+                $q->where('first_name', 'like', $term)
+                    ->orWhere('surname', 'like', $term)
+                    ->orWhere('employee_number', 'like', $term)
+                    ->orWhere('organisation_email', 'like', $term);
+            });
+        }
+
+        $staff = $staffQuery->get([
+            'id',
+            'employee_number',
+            'first_name',
+            'surname',
+            'job_title',
+            'department_id',
+            'employment_status',
+        ]);
+
+        $logsByStaff = StaffWeeklyTimeLog::query()
+            ->where('log_year', $year)
+            ->where('log_month', $month)
+            ->whereIn('staff_id', $staff->pluck('id'))
+            ->get()
+            ->groupBy('staff_id');
+
+        $rows = [];
+        foreach ($staff as $member) {
+            $memberLogs = $logsByStaff->get($member->id, collect());
+            $weekCells = [];
+            $submittedCount = 0;
+
+            foreach ($weeks as $week) {
+                $weekNumber = (int) $week['week_number'];
+                $log = $memberLogs->firstWhere('week_number', $weekNumber);
+                $submitted = $log !== null
+                    && (
+                        $log->employee_signed_at !== null
+                        || in_array($log->status, [
+                            StaffWeeklyTimeLog::STATUS_PENDING_HR,
+                            StaffWeeklyTimeLog::STATUS_APPROVED,
+                            StaffWeeklyTimeLog::STATUS_REJECTED,
+                            StaffWeeklyTimeLog::STATUS_RETURNED,
+                        ], true)
+                    );
+
+                if ($submitted) {
+                    $submittedCount++;
+                }
+
+                $weekCells[$weekNumber] = [
+                    'submitted' => $submitted,
+                    'status' => $log?->status,
+                    'log' => $log,
+                ];
+            }
+
+            $rows[] = [
+                'staff' => $member,
+                'weeks' => $weekCells,
+                'submitted_count' => $submittedCount,
+            ];
+        }
+
+        return [
+            'year' => $year,
+            'month' => $month,
+            'weeks' => $weeks,
+            'rows' => $rows,
+        ];
     }
 
     public function logsForStaff(Staff $staff, int $perPage = 20): LengthAwarePaginator
