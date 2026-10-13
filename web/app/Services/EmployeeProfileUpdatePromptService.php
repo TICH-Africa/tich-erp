@@ -14,6 +14,7 @@ class EmployeeProfileUpdatePromptService
 {
     public function __construct(
         protected AuditService $auditService,
+        protected PlatformNotificationService $notifications,
     ) {}
 
     /**
@@ -63,13 +64,30 @@ class EmployeeProfileUpdatePromptService
 
         $prompt->update(['emailed_at' => now()]);
 
+        $source = $module === 'ict' ? 'ICT' : 'HR';
+        $fieldSummary = implode(', ', $prompt->fieldLabels());
+        $body = $source.' has asked you to update: '.$fieldSummary.'.'
+            .($notes ? ' Note: '.trim($notes) : '')
+            .' Open My Profile to complete the request.';
+
+        $this->notifications->notifyUser(
+            (int) $staff->user_id,
+            'Profile update requested',
+            $body,
+            'staff_profile_update_prompt',
+            (string) $prompt->id,
+            'high',
+            $prompt->portalUrl(),
+            false,
+        );
+
         $this->auditService->log(
             'staff.profile.update_prompt_sent',
             'staff_profile_update_prompts',
             $prompt->id,
             null,
             ['fields' => $fields, 'module' => $module],
-            'Profile update request emailed to employee',
+            'Profile update request emailed and notified to employee',
             'success',
             $requester->id,
         );

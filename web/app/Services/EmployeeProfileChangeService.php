@@ -31,6 +31,10 @@ class EmployeeProfileChangeService
         'emergency_contact_name',
         'emergency_contact_phone',
         'emergency_contact_relationship',
+        'national_id_number',
+        'kra_pin',
+        'nssf_number',
+        'sha_number',
     ];
 
     /**

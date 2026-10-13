@@ -36,7 +36,7 @@ class StaffProfileUpdatePromptController extends Controller
 
         return redirect()
             ->route('hr.staff.show', $staff)
-            ->with('success', 'Profile update request sent to '.$staff->fullName().'.');
+            ->with('success', 'Profile update request sent to '.$staff->fullName().' by email and in-app notification.');
     }
 
     public function create(Staff $staff): \Illuminate\View\View
@@ -99,6 +99,6 @@ class StaffProfileUpdatePromptController extends Controller
             return back()->withInput()->with('error', $exception->getMessage());
         }
 
-        return back()->with('success', 'Profile update request sent to '.$staff->fullName().'.');
+        return back()->with('success', 'Profile update request sent to '.$staff->fullName().' by email and in-app notification.');
     }
 }

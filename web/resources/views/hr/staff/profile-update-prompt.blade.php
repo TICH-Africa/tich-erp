@@ -16,6 +16,10 @@
                 'description' => 'Email, phone, and address information',
                 'fields' => ['primary_email', 'phone_number', 'alt_phone_number', 'physical_address', 'postal_address', 'postal_code', 'home_county'],
             ],
+            'Statutory' => [
+                'description' => 'National ID and statutory registration numbers',
+                'fields' => ['national_id_number', 'kra_pin', 'nssf_number', 'sha_number'],
+            ],
             'Emergency' => [
                 'description' => 'Emergency contact person',
                 'fields' => ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'],
@@ -60,7 +64,7 @@
     </div>
 
     <div class="tich-prompt-callout">
-        <p>Select the profile items the employee should update. They will receive an email at <strong>{{ $notifyEmail ?: 'their registered email' }}</strong> with a link to <strong>My Employee Portal</strong>, where the selected fields will be highlighted.</p>
+        <p>Select the profile items the employee should update. They will receive an <strong>in-app notification</strong> and an email at <strong>{{ $notifyEmail ?: 'their registered email' }}</strong> with a link to <strong>My Employee Portal</strong>, where the selected fields will be highlighted.</p>
     </div>
 
     <form method="POST" action="{{ route('hr.staff.profile-update-prompt.store', $staff) }}" class="tich-prompt-form" id="profile-update-prompt-form">
@@ -337,10 +341,16 @@
         .tich-prompt-field {
             display: block;
             cursor: pointer;
+            position: relative;
         }
 
         .tich-prompt-field__input {
             position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            width: 1px;
+            height: 1px;
+            margin: 0;
             opacity: 0;
             pointer-events: none;
         }
@@ -560,6 +570,21 @@
                 if (event.target.matches('.tich-prompt-field__input')) {
                     syncUI();
                 }
+            });
+
+            form.addEventListener('click', function (event) {
+                var label = event.target.closest('label.tich-prompt-field');
+                if (! label || ! form.contains(label)) {
+                    return;
+                }
+                // Keep focus on the card so the page does not jump to the hidden input.
+                event.preventDefault();
+                var input = label.querySelector('.tich-prompt-field__input');
+                if (! input) {
+                    return;
+                }
+                input.checked = ! input.checked;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
             });
 
             form.querySelectorAll('[data-prompt-section]').forEach(function (section) {

@@ -5,6 +5,7 @@
     $grouped = [
         'Identity' => ['photo', 'first_name', 'middle_name', 'surname', 'date_of_birth', 'gender', 'marital_status'],
         'Contact' => ['primary_email', 'phone_number', 'alt_phone_number', 'physical_address', 'postal_address', 'postal_code', 'home_county'],
+        'Statutory' => ['national_id_number', 'kra_pin', 'nssf_number', 'sha_number'],
         'Emergency' => ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'],
         'Qualifications' => ['qualification'],
     ];

@@ -48,6 +48,10 @@ class EmployeeProfileCompletenessService
         'home_county' => 'Home county',
         'photo' => 'Profile photo',
         'qualification' => 'Qualification / certificate',
+        'national_id_number' => 'National ID number',
+        'kra_pin' => 'KRA PIN',
+        'nssf_number' => 'NSSF number',
+        'sha_number' => 'SHA number',
     ];
 
     /**

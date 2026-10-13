@@ -258,6 +258,35 @@
             </div>
 
             @unless ($mustCompleteProfile)
+                <div class="uf-form-section" id="profile-field-statutory">
+                    <div class="uf-section-head">Statutory details</div>
+                    <div class="uf-section-body">
+                        <p class="uf-hint">National ID and statutory numbers. Changes are reviewed by HR before they take effect.</p>
+                        <div class="uf-form-grid-2">
+                            <div class="uf-field {{ $profileHighlightClass('national_id_number') }}" id="profile-field-national_id_number">
+                                <label for="national_id_number">National ID number</label>
+                                <input type="text" id="national_id_number" name="national_id_number" class="{{ $errors->has('national_id_number') ? 'is-invalid' : '' }}" value="{{ old('national_id_number', $staff->national_id_number) }}" maxlength="50" autocomplete="off">
+                                @error('national_id_number')<span class="uf-error">{{ $message }}</span>@enderror
+                            </div>
+                            <div class="uf-field {{ $profileHighlightClass('kra_pin') }}" id="profile-field-kra_pin">
+                                <label for="kra_pin">KRA PIN</label>
+                                <input type="text" id="kra_pin" name="kra_pin" class="{{ $errors->has('kra_pin') ? 'is-invalid' : '' }}" value="{{ old('kra_pin', $staff->kra_pin) }}" maxlength="50" autocomplete="off">
+                                @error('kra_pin')<span class="uf-error">{{ $message }}</span>@enderror
+                            </div>
+                            <div class="uf-field {{ $profileHighlightClass('nssf_number') }}" id="profile-field-nssf_number">
+                                <label for="nssf_number">NSSF number</label>
+                                <input type="text" id="nssf_number" name="nssf_number" class="{{ $errors->has('nssf_number') ? 'is-invalid' : '' }}" value="{{ old('nssf_number', $staff->nssf_number) }}" maxlength="50" autocomplete="off">
+                                @error('nssf_number')<span class="uf-error">{{ $message }}</span>@enderror
+                            </div>
+                            <div class="uf-field {{ $profileHighlightClass('sha_number') }}" id="profile-field-sha_number">
+                                <label for="sha_number">SHA number</label>
+                                <input type="text" id="sha_number" name="sha_number" class="{{ $errors->has('sha_number') ? 'is-invalid' : '' }}" value="{{ old('sha_number', $staff->sha_number) }}" maxlength="50" autocomplete="off">
+                                @error('sha_number')<span class="uf-error">{{ $message }}</span>@enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="uf-form-section {{ $profileHighlightClass('qualification') }}" id="profile-field-qualification">
                     <div class="uf-section-head">Qualification / Certificate</div>
                     <div class="uf-section-body">
