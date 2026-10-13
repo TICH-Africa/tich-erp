@@ -9,7 +9,8 @@ class LeaveBalance extends Model
 {
     protected $table = 'leave_balances';
 
-    public $timestamps = true;
+    /** Table uses `last_updated` (and DB-default `created_at`); no `updated_at` column. */
+    public $timestamps = false;
 
     protected $fillable = [
         'staff_id',
