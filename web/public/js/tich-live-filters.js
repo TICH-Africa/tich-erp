@@ -27,18 +27,21 @@
             }
         }, 320);
 
-        form.querySelectorAll('input[type="search"], input[type="text"], input:not([type])').forEach(function (input) {
+        function submitNow() {
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+
+        form.querySelectorAll('input[type="search"], input[type="text"], input[type="number"], input:not([type])').forEach(function (input) {
             input.addEventListener('input', submitLive);
+            input.addEventListener('change', submitLive);
         });
 
-        form.querySelectorAll('select').forEach(function (select) {
-            select.addEventListener('change', function () {
-                if (typeof form.requestSubmit === 'function') {
-                    form.requestSubmit();
-                } else {
-                    form.submit();
-                }
-            });
+        form.querySelectorAll('input[type="date"], select').forEach(function (el) {
+            el.addEventListener('change', submitNow);
         });
     }
 

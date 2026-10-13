@@ -14,43 +14,41 @@
 
     <x-page-toolbar title="Submissions per employee" meta="Weekly submission status for {{ $monthLabel }}">
         <x-slot:actions>
+            <a
+                href="{{ route('hr.time-logs.submissions', ['year' => $prev->year, 'month' => $prev->month, 'search' => $filters['search'] ?? null]) }}"
+                class="tich-btn tich-btn-ghost"
+            >← Prev month</a>
+            <a
+                href="{{ route('hr.time-logs.submissions', ['year' => $next->year, 'month' => $next->month, 'search' => $filters['search'] ?? null]) }}"
+                class="tich-btn tich-btn-ghost"
+            >Next month →</a>
             <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Back to time logs</a>
         </x-slot:actions>
-    </x-page-toolbar>
-
-    <form method="GET" action="{{ route('hr.time-logs.submissions') }}" class="tich-card tich-time-log-filters tich-mt-4">
-        <div class="tich-time-log-filters__row">
-            <div class="tich-form-group tich-time-log-filters__field tich-time-log-filters__field--search">
-                <label class="tich-label" for="sub-search">Search</label>
-                <input id="sub-search" type="search" name="search" class="tich-input tich-input--compact" value="{{ $filters['search'] ?? '' }}" placeholder="Name, employee no.…">
-            </div>
-            <div class="tich-form-group tich-time-log-filters__field tich-time-log-filters__field--year">
-                <label class="tich-label" for="sub-year">Year</label>
-                <input id="sub-year" type="number" name="year" class="tich-input tich-input--compact" value="{{ $year }}" min="2020" max="2100" required>
-            </div>
-            <div class="tich-form-group tich-time-log-filters__field">
-                <label class="tich-label" for="sub-month">Month</label>
-                <select id="sub-month" name="month" class="tich-input tich-input--compact" required>
+        <x-slot:filters>
+            <form method="GET" action="{{ route('hr.time-logs.submissions') }}" class="tich-page-toolbar__filters-form tich-time-log-toolbar-filters" data-live-filter>
+                @include('partials.search-field', ['placeholder' => 'Name, employee no.…', 'value' => $filters['search'] ?? ''])
+                <input
+                    id="sub-year"
+                    type="number"
+                    name="year"
+                    class="tich-input tich-input--compact tich-time-log-toolbar-filters__year"
+                    value="{{ $year }}"
+                    min="2020"
+                    max="2100"
+                    required
+                    title="Year"
+                    aria-label="Year"
+                >
+                <select id="sub-month" name="month" class="tich-input tich-input--compact" required title="Month" aria-label="Month">
                     @for ($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}" @selected($month === $m)>{{ \Carbon\Carbon::create(null, $m, 1)->format('F') }}</option>
                     @endfor
                 </select>
-            </div>
-            <div class="tich-time-log-filters__actions">
-                <button type="submit" class="tich-btn tich-btn-primary">Show month</button>
-                <a
-                    href="{{ route('hr.time-logs.submissions', ['year' => $prev->year, 'month' => $prev->month, 'search' => $filters['search'] ?? null]) }}"
-                    class="tich-btn tich-btn-ghost"
-                >← Prev</a>
-                <a
-                    href="{{ route('hr.time-logs.submissions', ['year' => $next->year, 'month' => $next->month, 'search' => $filters['search'] ?? null]) }}"
-                    class="tich-btn tich-btn-ghost"
-                >Next →</a>
-            </div>
-        </div>
-    </form>
+            </form>
+        </x-slot:filters>
+    </x-page-toolbar>
 
-    <div class="tich-time-log-legend tich-mt-4">
+    <div class="tich-time-log-legend">
         <span class="tich-time-log-mark tich-time-log-mark--yes" title="Submitted">✓</span>
         <span class="tich-caption">Submitted</span>
         <span class="tich-time-log-mark tich-time-log-mark--no" title="Not submitted">–</span>

@@ -13998,61 +13998,82 @@ input[type="time"]::-moz-calendar-picker-indicator {
     border-color: #5c6370;
 }
 
-/* HR time-log filters — one horizontal labeled row */
-.tich-time-log-filters {
-    padding: 0.875rem 1rem;
-}
-
-.tich-time-log-filters__row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    gap: 0.625rem;
+/* HR time-log toolbar filters — one row, all visible, no side-scroll */
+.tich-time-log-toolbar-filters {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.5fr)
+        minmax(0, 1.05fr)
+        minmax(0, 0.55fr)
+        minmax(0, 0.95fr)
+        minmax(0, 0.6fr)
+        minmax(0, 1.05fr)
+        minmax(0, 1.05fr);
+    align-items: center;
+    gap: 0.4rem;
     width: 100%;
     min-width: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.125rem;
+    overflow: visible;
 }
 
-.tich-time-log-filters__field {
-    margin: 0;
-    flex: 0 0 auto;
-    min-width: 7.5rem;
+/* Submissions page only has search + year + month */
+.tich-time-log-toolbar-filters:has(> :nth-child(3):last-child) {
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(0, 0.7fr)
+        minmax(0, 1.2fr);
 }
 
-.tich-time-log-filters__field--search {
-    flex: 1 1 14rem;
-    min-width: 12rem;
-    max-width: 20rem;
+.tich-page-toolbar__filters:has(.tich-time-log-toolbar-filters) {
+    overflow: visible;
+    min-width: 0;
 }
 
-.tich-time-log-filters__field--year {
-    min-width: 5.5rem;
-    max-width: 6.5rem;
-}
-
-.tich-time-log-filters__field--week {
-    min-width: 5.5rem;
-    max-width: 6.5rem;
-}
-
-.tich-time-log-filters__field .tich-label {
-    white-space: nowrap;
-    margin-bottom: 0.25rem;
-}
-
-.tich-time-log-filters__field .tich-input {
+.tich-time-log-toolbar-filters > * {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
-.tich-time-log-filters__actions {
+.tich-time-log-toolbar-filters .tich-search-field {
     display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 0 0 auto;
-    padding-bottom: 0.05rem;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+}
+
+.tich-time-log-toolbar-filters .tich-search-field__input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+}
+
+.tich-time-log-toolbar-filters .tich-search-field__btn {
+    display: none;
+}
+
+.tich-time-log-toolbar-filters .tich-input--compact,
+.tich-time-log-toolbar-filters select.tich-input--compact,
+.tich-time-log-toolbar-filters input.tich-input--compact {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: none !important;
+    box-sizing: border-box;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    font-size: 0.8125rem;
+}
+
+.tich-time-log-toolbar-filters input[type="date"].tich-input--compact {
+    min-width: 0 !important;
+}
+
+.tich-time-log-toolbar-filters__year,
+.tich-time-log-toolbar-filters__week {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
 }
 
 .tich-time-log-legend {
