@@ -75,6 +75,10 @@ class ContractService
         $contract->load('staff');
         $this->syncToStaff($contract);
 
+        if ($contract->staff) {
+            $this->refreshLeaveAccrual($contract->staff);
+        }
+
         return $contract;
     }
 
@@ -102,6 +106,10 @@ class ContractService
         $contract->load('staff');
         $this->syncToStaff($contract);
 
+        if ($contract->staff) {
+            $this->refreshLeaveAccrual($contract->staff);
+        }
+
         return $contract->fresh();
     }
 
@@ -109,11 +117,20 @@ class ContractService
     {
         $contract = StaffContract::findOrFail($contractId);
 
-        if (! $contract->is_renewable) {
-            throw new \InvalidArgumentException('This contract is not marked as renewable');
+        if ($contract->renewal_status === 'renewed' || $contract->new_contract_id) {
+            throw new \InvalidArgumentException('This contract has already been renewed.');
+        }
+
+        if ($contract->renewal_status === 'terminated') {
+            throw new \InvalidArgumentException('A terminated contract cannot be renewed.');
         }
 
         $newContract = DB::transaction(function () use ($contract, $renewalData, $renewedBy) {
+            $contractType = $renewalData['contract_type'] ?? $contract->contract_type;
+            $isRenewable = array_key_exists('is_renewable', $renewalData)
+                ? (bool) $renewalData['is_renewable']
+                : (bool) ($contract->is_renewable || $contractType !== 'permanent');
+
             $newContract = StaffContract::create(array_merge($renewalData, [
                 'staff_id' => $contract->staff_id,
                 'contract_number' => $this->generateContractNumber(),
@@ -121,12 +138,14 @@ class ContractService
                 'renewal_notice_sent' => 0,
                 'renewal_status' => 'pending',
                 'is_signed' => 0,
-                'contract_type' => $renewalData['contract_type'] ?? $contract->contract_type,
+                'is_renewable' => $isRenewable ? 1 : 0,
+                'contract_type' => $contractType,
                 'job_title' => $renewalData['job_title'] ?? $contract->job_title,
-                'probation_status' => ($renewalData['contract_type'] ?? $contract->contract_type) === 'permanent' ? 'not_applicable' : 'active',
+                'probation_status' => $contractType === 'permanent' ? 'not_applicable' : 'active',
             ]));
 
             $contract->update([
+                'is_renewable' => 1,
                 'renewal_status' => 'renewed',
                 'new_contract_id' => $newContract->id,
             ]);
@@ -147,6 +166,10 @@ class ContractService
 
         $newContract->load('staff');
         $this->syncToStaff($newContract);
+
+        if ($newContract->staff) {
+            $this->refreshLeaveAccrual($newContract->staff);
+        }
 
         return $newContract;
     }
@@ -364,6 +387,18 @@ class ContractService
             return;
         }
 
+        // Leave accrual counts from the original employment/contract start.
+        // Renewals must not reset employment_start_date mid-year.
+        $originalStart = StaffContract::query()
+            ->where('staff_id', $contract->staff_id)
+            ->whereNotNull('start_date')
+            ->orderBy('start_date')
+            ->value('start_date');
+
+        $employmentStart = $originalStart
+            ?? $contract->staff->employment_start_date
+            ?? $contract->start_date;
+
         $updates = [
             'job_title' => $contract->job_title,
             'department_id' => $contract->department_id,
@@ -373,7 +408,7 @@ class ContractService
             'salary_scale' => $contract->salary_scale,
             'line_manager_id' => $contract->line_manager_id,
             'gross_monthly_salary' => $contract->gross_salary,
-            'employment_start_date' => $contract->start_date,
+            'employment_start_date' => $employmentStart,
             'contract_end_date' => $contract->end_date,
             'employment_category' => $contract->contract_type,
             'probation_end_date' => $contract->probation_end_date,
@@ -386,5 +421,17 @@ class ContractService
         }
 
         $contract->staff->update($updates);
+    }
+
+    /**
+     * Recalculate leave balances from the preserved employment start date.
+     */
+    private function refreshLeaveAccrual(Staff $staff): void
+    {
+        try {
+            app(LeaveAccrualService::class)->recalculateForStaff($staff->fresh());
+        } catch (\Throwable) {
+            // Leave accrual must not block contract create/renew.
+        }
     }
 }

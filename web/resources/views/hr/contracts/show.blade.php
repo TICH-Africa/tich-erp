@@ -65,53 +65,79 @@
         <section class="tich-detail-card">
             <h3 class="tich-detail-card__title">Actions</h3>
 
-            <form method="POST" action="{{ route('hr.contracts.renew', $contract) }}" class="tich-mb-6" style="padding-bottom:1rem; border-bottom:1px solid var(--tich-neutral-border);">
-                @csrf
-                <p class="tich-text tich-mb-3">Renew this contract for another term.</p>
-                <div class="tich-grid tich-grid--2 tich-mb-4">
-                    <div>
-                        <label for="renew_start_date" class="tich-label">Start date *</label>
-                        <input type="date" id="renew_start_date" name="start_date" value="{{ old('start_date', $contract->start_date?->format('Y-m-d')) }}" required class="tich-input">
-                    </div>
-                    <div>
-                        <label for="renew_duration" class="tich-label">Duration</label>
-                        <input type="text" id="renew_duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year">
-                    </div>
-                    <div>
-                        <label for="renew_end_date" class="tich-label">End date</label>
-                        <input type="date" id="renew_end_date" name="end_date" value="{{ old('end_date', $contract->end_date?->format('Y-m-d')) }}" class="tich-input" readonly>
-                    </div>
-                    <div>
-                        <label for="renew_gross_salary" class="tich-label">Gross salary *</label>
-                        <input type="number" step="0.01" id="renew_gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
-                    </div>
-                    <div>
-                        <label for="renew_contract_type" class="tich-label">Contract type</label>
-                        <select id="renew_contract_type" name="contract_type" class="tich-input">
-                            @foreach (['permanent' => 'Permanent', 'contract' => 'Contract', 'intern' => 'Intern', 'visiting' => 'Visiting', 'casual' => 'Casual', 'probation' => 'Probation', 'consultancy' => 'Consultancy'] as $value => $label)
-                                <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="tich-grid--span-2">
-                        <label for="renew_job_title" class="tich-label">Job title</label>
-                        <input type="text" id="renew_job_title" name="job_title" value="{{ old('job_title', $contract->job_title) }}" class="tich-input">
-                    </div>
-                </div>
-                <button type="submit" class="tich-btn tich-btn-primary">Renew contract</button>
-            </form>
+            @if (session('error'))
+                <div class="tich-alert tich-alert--danger tich-mb-4">{{ session('error') }}</div>
+            @endif
+            @if (session('success'))
+                <div class="tich-alert tich-alert--success tich-mb-4">{{ session('success') }}</div>
+            @endif
 
-            <form method="POST" action="{{ route('hr.contracts.convert-permanent', $contract) }}" class="tich-mb-4">
-                @csrf
-                <p class="tich-text tich-mb-2">Convert this contract to permanent employment.</p>
-                <button type="submit" class="tich-btn tich-btn-secondary">Convert to permanent</button>
-            </form>
+            @if ($contract->renewal_status === 'renewed' || $contract->new_contract_id)
+                <p class="tich-text tich-mb-4">This contract has already been renewed
+                    @if ($contract->newContract)
+                        — see <a href="{{ route('hr.contracts.show', $contract->newContract) }}">{{ $contract->newContract->contract_number }}</a>.
+                    @else
+                        .
+                    @endif
+                </p>
+            @elseif ($contract->renewal_status === 'terminated')
+                <p class="tich-text tich-mb-4">This contract is terminated and cannot be renewed.</p>
+            @else
+                <form method="POST" action="{{ route('hr.contracts.renew', $contract) }}" class="tich-mb-6" style="padding-bottom:1rem; border-bottom:1px solid var(--tich-neutral-border);">
+                    @csrf
+                    <p class="tich-text tich-mb-3">Renew this contract for another term.</p>
+                    @unless ($contract->is_renewable)
+                        <p class="tich-caption tich-mb-3">This contract was not originally marked renewable. Renewing it will create a new term and mark the current contract as renewed.</p>
+                    @endunless
+                    <div class="tich-grid tich-grid--2 tich-mb-4">
+                        <div>
+                            <label for="renew_start_date" class="tich-label">Start date *</label>
+                            <input type="date" id="renew_start_date" name="start_date" value="{{ old('start_date', $contract->end_date?->copy()->addDay()->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d')) }}" required class="tich-input">
+                        </div>
+                        <div>
+                            <label for="renew_duration" class="tich-label">Duration</label>
+                            <input type="text" id="renew_duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year">
+                        </div>
+                        <div>
+                            <label for="renew_end_date" class="tich-label">End date</label>
+                            <input type="date" id="renew_end_date" name="end_date" value="{{ old('end_date') }}" class="tich-input" readonly>
+                        </div>
+                        <div>
+                            <label for="renew_gross_salary" class="tich-label">Gross salary *</label>
+                            <input type="number" step="0.01" id="renew_gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                        </div>
+                        <div>
+                            <label for="renew_contract_type" class="tich-label">Contract type</label>
+                            <select id="renew_contract_type" name="contract_type" class="tich-input">
+                                @foreach (['permanent' => 'Permanent', 'contract' => 'Contract', 'intern' => 'Intern', 'visiting' => 'Visiting', 'casual' => 'Casual', 'probation' => 'Probation', 'consultancy' => 'Consultancy'] as $value => $label)
+                                    <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="tich-grid--span-2">
+                            <label for="renew_job_title" class="tich-label">Job title</label>
+                            <input type="text" id="renew_job_title" name="job_title" value="{{ old('job_title', $contract->job_title) }}" class="tich-input">
+                        </div>
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-primary">Renew contract</button>
+                </form>
+            @endif
 
-            <form method="POST" action="{{ route('hr.contracts.sign', $contract) }}">
-                @csrf
-                <p class="tich-text tich-mb-2">Mark this contract as signed.</p>
-                <button type="submit" class="tich-btn tich-btn-secondary">Mark as signed</button>
-            </form>
+            @if ($contract->contract_type !== 'permanent' && ! in_array($contract->renewal_status, ['renewed', 'terminated'], true))
+                <form method="POST" action="{{ route('hr.contracts.convert-permanent', $contract) }}" class="tich-mb-4">
+                    @csrf
+                    <p class="tich-text tich-mb-2">Convert this contract to permanent employment.</p>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Convert to permanent</button>
+                </form>
+            @endif
+
+            @unless ($contract->is_signed)
+                <form method="POST" action="{{ route('hr.contracts.sign', $contract) }}">
+                    @csrf
+                    <p class="tich-text tich-mb-2">Mark this contract as signed.</p>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Mark as signed</button>
+                </form>
+            @endunless
         </section>
     </div>
 

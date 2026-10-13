@@ -158,7 +158,7 @@
                         </div>
                         <div class="uf-field">
                             <label class="tich-checkbox">
-                                <input type="checkbox" id="is_renewable" name="is_renewable" value="1" @checked(old('is_renewable'))>
+                                <input type="checkbox" id="is_renewable" name="is_renewable" value="1" @checked(old('is_renewable', true))>
                                 <span>Renewable</span>
                             </label>
                         </div>

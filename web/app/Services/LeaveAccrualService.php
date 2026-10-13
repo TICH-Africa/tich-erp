@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\LeaveBalance;
 use App\Models\LeaveCarryForwardRequest;
 use App\Models\LeaveType;
 use App\Models\Staff;
-use App\Models\LeaveBalance;
+use App\Models\StaffContract;
 use Illuminate\Support\Facades\DB;
 
 class LeaveAccrualService
@@ -44,7 +45,8 @@ class LeaveAccrualService
         }
 
         $currentYear = now()->year;
-        $startDate = $staff->employment_start_date;
+        // Count from original employment/contract start (not a mid-year renewal start).
+        $startDate = $this->resolveEmploymentStart($staff);
 
         if (! $startDate || $startDate->year > $currentYear) {
             return;
@@ -107,7 +109,7 @@ class LeaveAccrualService
     public function recalculateForStaff(Staff $staff, ?int $year = null): void
     {
         $year = $year ?? now()->year;
-        $startDate = $staff->employment_start_date;
+        $startDate = $this->resolveEmploymentStart($staff);
 
         if (! $startDate || $startDate->year > $year) {
             return;
@@ -121,6 +123,26 @@ class LeaveAccrualService
         foreach ($leaveTypes as $leaveType) {
             $this->accrueForStaff($staff, $leaveType);
         }
+    }
+
+    /**
+     * Prefer the earliest contract start so renewals within the same year continue accrual.
+     */
+    private function resolveEmploymentStart(Staff $staff): ?\Carbon\Carbon
+    {
+        $earliestContractStart = StaffContract::query()
+            ->where('staff_id', $staff->id)
+            ->whereNotNull('start_date')
+            ->orderBy('start_date')
+            ->value('start_date');
+
+        if ($earliestContractStart) {
+            return \Carbon\Carbon::parse($earliestContractStart)->startOfDay();
+        }
+
+        return $staff->employment_start_date
+            ? $staff->employment_start_date->copy()->startOfDay()
+            : null;
     }
 
     /**

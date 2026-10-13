@@ -18,7 +18,6 @@
                         <th>Status</th>
                         <th>Started</th>
                         <th>Documents</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,14 +48,9 @@
                                     {{ $onboarding->staff->documents->count() }} uploaded
                                 @endif
                             </td>
-                            <td>
-                                @if ($onboarding->staff)
-                                    <a href="{{ route('hr.contracts.create', ['staff_id' => $onboarding->staff->id]) }}" class="tich-btn tich-btn-primary">+ Contract</a>
-                                @endif
-                            </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No onboarding records found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No onboarding records found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

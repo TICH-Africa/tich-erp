@@ -173,7 +173,11 @@ class ContractController extends Controller
             }
         }
 
-        $newContract = $this->contractService->renewContract($id, $validated, $request->user()->id);
+        try {
+            $newContract = $this->contractService->renewContract($id, $validated, $request->user()->id);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('hr.contracts.show', $newContract)->with('success', 'Contract renewed successfully.');
     }
