@@ -92,6 +92,20 @@
                             @enderror
                         </div>
                         <div class="uf-field">
+                            <label for="payment_date">Date payment was made <span class="uf-req">*</span></label>
+                            <input
+                                type="date"
+                                id="payment_date"
+                                name="payment_date"
+                                value="{{ old('payment_date', now()->toDateString()) }}"
+                                required
+                                class="{{ $errors->has('payment_date') ? 'is-invalid' : '' }}"
+                            >
+                            @error('payment_date')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="uf-field">
                             <label for="payment_reference">Reference</label>
                             <input
                                 type="text"
