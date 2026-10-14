@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.tich.africa.tich"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android requires SDK 37+
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
