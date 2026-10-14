@@ -1,14 +1,21 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/portal_hero.dart';
+import '../widgets/quick_actions.dart';
 import '../widgets/tich_widgets.dart';
+import 'documents_page.dart';
+import 'finance_page.dart';
 import 'notifications_page.dart';
+import 'profile_page.dart';
 import 'student_helpers.dart';
+import 'suggestions_page.dart';
+import 'timetable_page.dart';
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key, required this.api});
@@ -22,6 +29,7 @@ class StudentHomePage extends StatefulWidget {
 class _StudentHomePageState extends State<StudentHomePage> {
   late Future<Map<String, dynamic>> _future;
   int _unread = 0;
+  Map<String, dynamic>? _nextLesson;
 
   @override
   void initState() {
@@ -31,11 +39,26 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   void _reload() {
     setState(() {
-      _future = widget.api.dashboard().then((data) {
-        _unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
+      _future = widget.api.dashboard().then((data) async {
+        final unread =
+            (data['unread_notifications'] as num?)?.toInt() ?? 0;
+        await _primeLessonReminders();
+        await TichNotifications.instance
+            .syncFromServerInBackground(isStudent: true);
+        if (mounted) setState(() => _unread = unread);
         return data;
       });
     });
+  }
+
+  Future<void> _primeLessonReminders() async {
+    try {
+      final tt = await widget.api.timetable();
+      final sessions = lessonSessionsFromTimetablePayload(tt);
+      await TichNotifications.instance.scheduleLessonReminders(sessions);
+      if (!mounted) return;
+      setState(() => _nextLesson = nextLessonToday(sessions));
+    } catch (_) {}
   }
 
   Widget _notificationAction() {
@@ -106,57 +129,121 @@ class _StudentHomePageState extends State<StudentHomePage> {
               Map<String, dynamic>.from(data['finance_summary'] as Map? ?? {});
           final preview = data['notifications_preview'] as List? ?? const [];
 
+          final identity = [
+            student['registration_number'],
+            student['program'],
+          ].where((e) => e != null && '$e'.isNotEmpty).join(' · ');
+          final nextUnit = _nextLesson == null
+              ? null
+              : [
+                  _nextLesson!['unit_code'],
+                  _nextLesson!['unit_name'],
+                ].where((e) => e != null && '$e'.isNotEmpty).join(' · ');
+          final nextStart = _nextLesson?['start_time']?.toString();
+          final nextRoom = _nextLesson?['room']?.toString();
+
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                TichCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                PortalHero(
+                  title: student['full_name']?.toString() ?? 'Student',
+                  subtitle:
+                      identity.isEmpty ? 'Student Portal' : identity,
+                  accent: TichColors.greenDark,
+                  footer: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      Text(
-                        student['full_name']?.toString() ?? 'Student',
-                        style: GoogleFonts.merriweather(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      PortalHeroPill(
+                        icon: Icons.school_outlined,
+                        label: stats['enrollment_status']?.toString() ??
+                            student['enrollment_status']?.toString() ??
+                            'enrolled',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        [
-                          student['registration_number'],
-                          student['program'],
-                        ]
-                            .where((e) => e != null && '$e'.isNotEmpty)
-                            .join(' · '),
-                        style: tichUi(
-                          color: TichColors.neutralMuted,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          TichStatusChip(
-                            stats['enrollment_status']?.toString() ??
-                                student['enrollment_status']?.toString() ??
-                                'enrolled',
-                            tone: TichChipTone.info,
-                          ),
-                          TichStatusChip(
+                      PortalHeroPill(
+                        icon: Icons.payments_outlined,
+                        label:
                             'Fees: ${stats['fee_clearance'] ?? finance['fee_clearance_status'] ?? 'pending'}',
-                            tone: toneForStatus(
-                              '${stats['fee_clearance'] ?? finance['fee_clearance_status']}',
-                            ),
-                          ),
-                        ],
                       ),
+                      if (_unread > 0)
+                        PortalHeroPill(
+                          icon: Icons.notifications_active_outlined,
+                          label: '$_unread unread',
+                        ),
                     ],
                   ),
                 ),
+                if (_nextLesson != null) ...[
+                  const SizedBox(height: 14),
+                  TichCard(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            StudentTimetablePage(api: widget.api),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: TichColors.greenLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.schedule,
+                            color: TichColors.greenDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Up next',
+                                style: tichUi(
+                                  fontSize: 11,
+                                  color: TichColors.neutralMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                nextUnit?.isNotEmpty == true
+                                    ? nextUnit!
+                                    : 'Upcoming class',
+                                style: tichUi(fontWeight: FontWeight.w700),
+                              ),
+                              Text(
+                                [
+                                  if (nextStart != null && nextStart.isNotEmpty)
+                                    nextStart.substring(
+                                      0,
+                                      nextStart.length >= 5 ? 5 : nextStart.length,
+                                    ),
+                                  if (nextRoom != null && nextRoom.isNotEmpty)
+                                    'Room $nextRoom',
+                                ].join(' · '),
+                                style: tichUi(
+                                  fontSize: 12,
+                                  color: TichColors.neutralMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: TichColors.neutralMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 const TichSectionHeader('Overview'),
                 Row(
@@ -186,6 +273,48 @@ class _StudentHomePageState extends State<StudentHomePage> {
                     StudentStatTile(
                       label: 'Documents',
                       value: '${stats['document_count'] ?? 0}',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                QuickActionsGrid(
+                  actions: [
+                    QuickAction(
+                      label: 'Pay fees',
+                      icon: Icons.payments_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => StudentFinancePage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'My profile',
+                      icon: Icons.person_outline,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => StudentProfilePage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'Documents',
+                      icon: Icons.folder_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => StudentDocumentsPage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'Suggestion box',
+                      icon: Icons.lightbulb_outline,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              StudentSuggestionsPage(api: widget.api),
+                        ),
+                      ),
                     ),
                   ],
                 ),

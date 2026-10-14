@@ -1,15 +1,21 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
+import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/employee_avatar.dart';
+import '../widgets/portal_hero.dart';
+import '../widgets/quick_actions.dart';
 import '../widgets/tich_widgets.dart';
+import 'attendance_page.dart';
+import 'documents_page.dart';
+import 'leave_page.dart';
 import 'notifications_page.dart';
+import 'profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, required this.api});
@@ -23,27 +29,47 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   late Future<Map<String, dynamic>> _future;
   int _notifCount = 0;
+  bool? _clockedInToday;
 
   @override
   void initState() {
     super.initState();
     _future = widget.api.dashboard();
     _loadNotifications();
+    _syncAttendanceReminders();
   }
 
   Future<void> _loadNotifications() async {
     try {
       final data = await widget.api.notifications();
       if (!mounted) return;
-      setState(() => _notifCount = (data['total'] as num?)?.toInt() ?? 0);
+      setState(() =>
+          _notifCount = (data['unread'] as num?)?.toInt() ??
+              (data['total'] as num?)?.toInt() ??
+              0);
+      await TichNotifications.instance
+          .syncFromServerInBackground(isStudent: false);
     } catch (_) {
       // Keep badge at 0 if notifications fail.
     }
   }
 
+  Future<void> _syncAttendanceReminders() async {
+    try {
+      final data = await widget.api.attendance();
+      final today = data['today'] as Map?;
+      final clockedIn = today != null && today['clock_in_at'] != null;
+      if (!mounted) return;
+      setState(() => _clockedInToday = clockedIn);
+      await TichNotifications.instance
+          .scheduleClockInReminders(alreadyClockedIn: clockedIn);
+    } catch (_) {}
+  }
+
   void _reload() {
     setState(() => _future = widget.api.dashboard());
     _loadNotifications();
+    _syncAttendanceReminders();
   }
 
   Widget _notificationAction() {
@@ -120,50 +146,109 @@ class _DashboardPageState extends State<DashboardPage> {
           final recentLeave =
               (data['recent_leave_requests'] as List? ?? const []);
 
+          final roleLine = [
+            staff['job_title'],
+            staff['department'],
+          ]
+              .where((e) => e != null && e.toString().isNotEmpty)
+              .join(' · ');
+          final clockLabel = _clockedInToday == null
+              ? 'Checking attendance…'
+              : (_clockedInToday!
+                  ? 'Clocked in today'
+                  : 'Not clocked in yet');
+
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                TichCard(
-                  child: Row(
+                PortalHero(
+                  title: staff['full_name']?.toString() ?? 'Employee',
+                  subtitle: roleLine.isEmpty ? 'My Employee Portal' : roleLine,
+                  accent: TichColors.blue,
+                  trailing: EmployeeAvatar(
+                    name: staff['full_name']?.toString() ?? 'Employee',
+                    radius: 28,
+                    photoUrl: staff['photo_url']?.toString(),
+                  ),
+                  footer: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      EmployeeAvatar(
-                        name: staff['full_name']?.toString() ?? 'Employee',
-                        radius: 28,
-                        photoUrl: staff['photo_url']?.toString(),
+                      PortalHeroPill(
+                        icon: _clockedInToday == true
+                            ? Icons.check_circle_outline
+                            : Icons.fingerprint,
+                        label: clockLabel,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AttendancePage(api: widget.api),
+                            ),
+                          );
+                          _syncAttendanceReminders();
+                          _loadNotifications();
+                        },
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              staff['full_name']?.toString() ?? 'Employee',
-                              style: GoogleFonts.merriweather(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                      if (_notifCount > 0)
+                        PortalHeroPill(
+                          icon: Icons.notifications_active_outlined,
+                          label: '$_notifCount unread',
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    NotificationsPage(api: widget.api),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              [
-                                staff['job_title'],
-                                staff['department'],
-                              ]
-                                  .where((e) =>
-                                      e != null && e.toString().isNotEmpty)
-                                  .join(' · '),
-                              style: tichUi(
-                                color: TichColors.neutralMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                            );
+                            _loadNotifications();
+                          },
                         ),
-                      ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 16),
+                QuickActionsGrid(
+                  actions: [
+                    QuickAction(
+                      label: 'Apply leave',
+                      icon: Icons.event_available_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => LeavePage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'Clock in / out',
+                      icon: Icons.fingerprint,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AttendancePage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'Upload document',
+                      icon: Icons.upload_file_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DocumentsPage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                    QuickAction(
+                      label: 'My profile',
+                      icon: Icons.person_outline,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ProfilePage(api: widget.api),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 const TichSectionHeader('Contract'),

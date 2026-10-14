@@ -9,6 +9,7 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/employee_api.dart';
 import 'data/student_api.dart';
+import 'notifications/tich_notifications.dart';
 import 'settings/app_settings.dart';
 import 'theme/tich_theme.dart';
 import 'ui/auth/unlock_page.dart';
@@ -19,6 +20,7 @@ import 'ui/shell/student_portal_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppSettings.instance.load();
+  await TichNotifications.instance.init();
   runApp(const TichApp());
 }
 
@@ -97,6 +99,9 @@ class _AuthGate extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
+          TichNotifications.instance.onAuthenticated(
+            isStudent: state.user.isStudent,
+          );
           if (state.user.isStudent) {
             return const StudentPortalShell();
           }

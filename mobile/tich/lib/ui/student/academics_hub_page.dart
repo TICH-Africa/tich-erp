@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
@@ -6,6 +7,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import 'assessment_take_page.dart';
 import 'student_helpers.dart';
 
 class StudentAcademicsHubPage extends StatefulWidget {
@@ -142,7 +144,24 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                     final sub = a['submission'] is Map
                         ? Map<String, dynamic>.from(a['submission'] as Map)
                         : null;
+                    final id = (a['id'] as num?)?.toInt();
+                    final canTake = sub == null &&
+                        (a['status']?.toString() == 'ready' ||
+                            a['status']?.toString() == 'open');
                     return TichCard(
+                      onTap: id == null
+                          ? null
+                          : () async {
+                              final done = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => StudentAssessmentTakePage(
+                                    api: widget.api,
+                                    assessmentId: id,
+                                  ),
+                                ),
+                              );
+                              if (done == true) _reload();
+                            },
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(a['title']?.toString() ?? 'Assessment',
@@ -152,12 +171,36 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                             a['unit_code'],
                             '${a['question_count'] ?? 0} questions',
                             if (sub != null) 'Score: ${sub['score'] ?? '—'}',
+                            if (canTake) 'Tap to take',
                           ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
                         ),
-                        trailing: TichStatusChip(
-                          sub != null ? 'Submitted' : (a['status']?.toString() ?? 'open'),
-                          tone: sub != null ? TichChipTone.success : TichChipTone.info,
-                        ),
+                        trailing: canTake
+                            ? FilledButton(
+                                onPressed: id == null
+                                    ? null
+                                    : () async {
+                                        final done =
+                                            await Navigator.of(context).push<bool>(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                StudentAssessmentTakePage(
+                                              api: widget.api,
+                                              assessmentId: id,
+                                            ),
+                                          ),
+                                        );
+                                        if (done == true) _reload();
+                                      },
+                                child: const Text('Take'),
+                              )
+                            : TichStatusChip(
+                                sub != null
+                                    ? 'Submitted'
+                                    : (a['status']?.toString() ?? 'open'),
+                                tone: sub != null
+                                    ? TichChipTone.success
+                                    : TichChipTone.info,
+                              ),
                       ),
                     );
                   },
@@ -408,62 +451,20 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         () => _openSection(
               'Supp / special exams',
               (data) {
+                final academics =
+                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
+                final units =
+                    academics['registered_units'] as List? ?? const [];
                 final special =
                     data['special_exam_requests'] as List? ?? const [];
                 final supp =
                     data['supplementary_exam_requests'] as List? ?? const [];
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    const TichSectionHeader('Special exam requests'),
-                    if (special.isEmpty)
-                      const TichCard(child: TichEmpty('None yet.'))
-                    else
-                      ...special.map((raw) {
-                        final r = Map<String, dynamic>.from(raw as Map);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                '${r['unit_code'] ?? ''} · ${r['unit_name'] ?? ''}',
-                                style: tichUi(fontWeight: FontWeight.w600),
-                              ),
-                              subtitle: Text(r['reason']?.toString() ?? ''),
-                              trailing: TichStatusChip(
-                                r['status']?.toString() ?? 'pending',
-                                tone: toneForStatus(r['status']?.toString()),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    const SizedBox(height: 12),
-                    const TichSectionHeader('Supplementary requests'),
-                    if (supp.isEmpty)
-                      const TichCard(child: TichEmpty('None yet.'))
-                    else
-                      ...supp.map((raw) {
-                        final r = Map<String, dynamic>.from(raw as Map);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                '${r['unit_code'] ?? ''} · ${r['unit_name'] ?? ''}',
-                                style: tichUi(fontWeight: FontWeight.w600),
-                              ),
-                              trailing: TichStatusChip(
-                                r['status']?.toString() ?? 'pending',
-                                tone: toneForStatus(r['status']?.toString()),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                  ],
+                return _ExamRequestsInteractive(
+                  api: widget.api,
+                  units: units,
+                  special: special,
+                  supplementary: supp,
+                  onChanged: _reload,
                 );
               },
             ),
@@ -505,6 +506,255 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
           );
         },
       ),
+    );
+  }
+}
+
+class _ExamRequestsInteractive extends StatefulWidget {
+  const _ExamRequestsInteractive({
+    required this.api,
+    required this.units,
+    required this.special,
+    required this.supplementary,
+    required this.onChanged,
+  });
+
+  final StudentApi api;
+  final List units;
+  final List special;
+  final List supplementary;
+  final VoidCallback onChanged;
+
+  @override
+  State<_ExamRequestsInteractive> createState() =>
+      _ExamRequestsInteractiveState();
+}
+
+class _ExamRequestsInteractiveState extends State<_ExamRequestsInteractive> {
+  String _type = 'special_exam';
+  int? _unitId;
+  int? _semesterId;
+  final _reason = TextEditingController();
+  final List<({String path, String name})> _files = [];
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.units.isNotEmpty) {
+      final first = Map<String, dynamic>.from(widget.units.first as Map);
+      _unitId = (first['unit_id'] as num?)?.toInt();
+      _semesterId = (first['semester_id'] as num?)?.toInt();
+    }
+  }
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick() async {
+    final pick = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+    );
+    if (pick == null) return;
+    setState(() {
+      for (final f in pick.files) {
+        if (f.path != null) _files.add((path: f.path!, name: f.name));
+      }
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_unitId == null || _semesterId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No registered unit available to request against.')),
+      );
+      return;
+    }
+    if (_type == 'special_exam' && _reason.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reason is required for special exams.')),
+      );
+      return;
+    }
+    if (_type == 'special_exam' && _files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Attach supporting documents for special exams.')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final res = await widget.api.submitExamSitting(
+        requestType: _type,
+        unitId: _unitId!,
+        semesterId: _semesterId!,
+        reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
+        attachments: List.of(_files),
+      );
+      if (!mounted) return;
+      _reason.clear();
+      _files.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['message']?.toString() ?? 'Submitted')),
+      );
+      widget.onChanged();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unitItems = widget.units
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .where((u) => u['unit_id'] != null && u['semester_id'] != null)
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const TichSectionHeader('New request'),
+        TichCard(
+          child: Column(
+            children: [
+              DropdownButtonFormField<String>(
+                value: _type,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'special_exam',
+                    child: Text('Special exam'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'supplementary',
+                    child: Text('Supplementary exam'),
+                  ),
+                ],
+                onChanged: _busy ? null : (v) => setState(() => _type = v ?? 'special_exam'),
+                decoration: const InputDecoration(labelText: 'Request type'),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<int>(
+                value: _unitId,
+                items: unitItems
+                    .map(
+                      (u) => DropdownMenuItem(
+                        value: (u['unit_id'] as num).toInt(),
+                        child: Text(
+                          '${u['unit_code'] ?? ''} · ${u['unit_name'] ?? ''}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _busy
+                    ? null
+                    : (v) {
+                        final match = unitItems.firstWhere(
+                          (u) => (u['unit_id'] as num).toInt() == v,
+                        );
+                        setState(() {
+                          _unitId = v;
+                          _semesterId =
+                              (match['semester_id'] as num?)?.toInt();
+                        });
+                      },
+                decoration: const InputDecoration(labelText: 'Unit'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _reason,
+                enabled: !_busy,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: _type == 'special_exam'
+                      ? 'Reason (required)'
+                      : 'Notes (optional)',
+                ),
+              ),
+              if (_type == 'special_exam') ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _pick,
+                  icon: const Icon(Icons.attach_file),
+                  label: Text(
+                    _files.isEmpty
+                        ? 'Attach documents'
+                        : '${_files.length} file(s) attached',
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              AdaptiveFilledButton(
+                onPressed: _busy ? null : _submit,
+                child: _busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: AdaptiveProgress(color: Colors.white),
+                      )
+                    : const Text('Submit request'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const TichSectionHeader('Special exam requests'),
+        if (widget.special.isEmpty)
+          const TichCard(child: TichEmpty('None yet.'))
+        else
+          ...widget.special.map((raw) {
+            final r = Map<String, dynamic>.from(raw as Map);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${r['unit_code'] ?? ''} · ${r['unit_name'] ?? ''}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(r['reason']?.toString() ?? ''),
+                  trailing: TichStatusChip(
+                    r['status']?.toString() ?? 'pending',
+                    tone: toneForStatus(r['status']?.toString()),
+                  ),
+                ),
+              ),
+            );
+          }),
+        const SizedBox(height: 12),
+        const TichSectionHeader('Supplementary requests'),
+        if (widget.supplementary.isEmpty)
+          const TichCard(child: TichEmpty('None yet.'))
+        else
+          ...widget.supplementary.map((raw) {
+            final r = Map<String, dynamic>.from(raw as Map);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${r['unit_code'] ?? ''} · ${r['unit_name'] ?? ''}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  trailing: TichStatusChip(
+                    r['status']?.toString() ?? 'pending',
+                    tone: toneForStatus(r['status']?.toString()),
+                  ),
+                ),
+              ),
+            );
+          }),
+      ],
     );
   }
 }

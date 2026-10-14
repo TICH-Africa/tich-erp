@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
+import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
@@ -27,7 +28,13 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.attendance();
+    _future = widget.api.attendance().then((data) {
+      final today = data['today'] as Map?;
+      final clockedIn = today != null && today['clock_in_at'] != null;
+      TichNotifications.instance
+          .scheduleClockInReminders(alreadyClockedIn: clockedIn);
+      return data;
+    });
   }
 
   @override
@@ -69,6 +76,8 @@ class _AttendancePageState extends State<AttendancePage> {
         ...await _locationPayload(),
       };
       await widget.api.clockIn(payload);
+      await TichNotifications.instance
+          .scheduleClockInReminders(alreadyClockedIn: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked in.')),

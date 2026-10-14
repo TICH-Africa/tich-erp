@@ -81,18 +81,40 @@ class ApiClient {
     required String filePath,
     required String fileName,
     String? mimeType,
+  }) =>
+      multipartFiles(
+        path,
+        fields: fields,
+        files: [
+          (
+            field: fileField,
+            path: filePath,
+            name: fileName,
+            mimeType: mimeType,
+          ),
+        ],
+      );
+
+  Future<Map<String, dynamic>> multipartFiles(
+    String path, {
+    required Map<String, String> fields,
+    required List<({String field, String path, String name, String? mimeType})>
+        files,
   }) async {
     final request = http.MultipartRequest('POST', ApiConfig.uri(path));
     request.headers.addAll(await _headers(json: false));
     request.fields.addAll(fields);
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        fileField,
-        filePath,
-        filename: fileName,
-        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
-      ),
-    );
+    for (final file in files) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          file.field,
+          file.path,
+          filename: file.name,
+          contentType:
+              file.mimeType != null ? MediaType.parse(file.mimeType!) : null,
+        ),
+      );
+    }
     final streamed = await request.send().timeout(timeout);
     final response = await http.Response.fromStream(streamed);
     return _decode(response);

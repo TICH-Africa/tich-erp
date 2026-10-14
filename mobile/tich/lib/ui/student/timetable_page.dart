@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_helpers.dart';
@@ -24,7 +25,13 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
-    _future = widget.api.timetable();
+    _future = widget.api.timetable().then((data) {
+      final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
+      final timetables = tt['timetables'] as List? ?? const [];
+      TichNotifications.instance
+          .scheduleLessonReminders(_sessionsFor(timetables, 'lesson'));
+      return data;
+    });
   }
 
   @override

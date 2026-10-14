@@ -10,6 +10,9 @@ class EmployeeApi {
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/employee/notifications');
 
+  Future<Map<String, dynamic>> markNotificationRead(int id) =>
+      _client.post('/employee/notifications/$id/read');
+
   Future<Map<String, dynamic>> profile() => _client.get('/employee/profile');
 
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> body) =>

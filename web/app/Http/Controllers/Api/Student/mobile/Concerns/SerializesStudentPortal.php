@@ -96,7 +96,7 @@ trait SerializesStudentPortal
 
                 return [
                     'id' => $assessment->id,
-                    'title' => $assessment->title,
+                    'title' => $assessment->name ?? $assessment->title,
                     'status' => $assessment->status,
                     'unit_code' => $assessment->allocation?->unit?->unit_code,
                     'unit_name' => $assessment->allocation?->unit?->unit_name,

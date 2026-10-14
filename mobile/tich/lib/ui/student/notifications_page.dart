@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
@@ -53,51 +54,101 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
             return studentErrorBody(snap.error, _reload);
           }
           final items = snap.data!['items'] as List? ?? const [];
-          if (items.isEmpty) {
-            return const Center(child: TichEmpty('No notifications.'));
-          }
+          final unread = (snap.data!['unread'] as num?)?.toInt() ?? 0;
+
           return RefreshIndicator(
             onRefresh: () async => _reload(),
-            child: ListView.separated(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final n = Map<String, dynamic>.from(items[i] as Map);
-                final unread = n['read_at'] == null;
-                return TichCard(
-                  onTap: unread ? () => _markRead((n['id'] as num).toInt()) : null,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6CAB33), Color(0xFF1669A6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              n['title']?.toString() ?? 'Notification',
-                              style: tichUi(fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Student alerts',
+                              style: GoogleFonts.merriweather(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                              ),
                             ),
-                          ),
-                          if (unread)
-                            const TichStatusChip('New', tone: TichChipTone.info),
-                        ],
-                      ),
-                      if ((n['body']?.toString() ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(n['body'].toString(), style: tichUi(fontSize: 13)),
-                      ],
-                      const SizedBox(height: 6),
-                      Text(
-                        formatDateTime(n['created_at']),
-                        style: tichUi(
-                          fontSize: 12,
-                          color: TichColors.neutralMuted,
+                            const SizedBox(height: 4),
+                            Text(
+                              unread == 0
+                                  ? 'No new alerts'
+                                  : '$unread unread',
+                              style: tichUi(color: Colors.white70, fontSize: 13),
+                            ),
+                          ],
                         ),
                       ),
+                      Icon(Icons.notifications_active,
+                          color: Colors.white.withValues(alpha: 0.9), size: 28),
                     ],
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 16),
+                if (items.isEmpty)
+                  const TichCard(child: TichEmpty('No notifications.'))
+                else
+                  ...items.map((raw) {
+                    final n = Map<String, dynamic>.from(raw as Map);
+                    final unreadItem = n['read_at'] == null;
+                    final id = (n['id'] as num?)?.toInt();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: TichCard(
+                        onTap: unreadItem && id != null
+                            ? () => _markRead(id)
+                            : null,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    n['title']?.toString() ?? 'Notification',
+                                    style: tichUi(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                if (unreadItem)
+                                  const TichStatusChip('New',
+                                      tone: TichChipTone.info),
+                              ],
+                            ),
+                            if ((n['body']?.toString() ?? '').isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(n['body'].toString(),
+                                  style: tichUi(fontSize: 13, height: 1.35)),
+                            ],
+                            const SizedBox(height: 6),
+                            Text(
+                              formatDateTime(n['created_at']),
+                              style: tichUi(
+                                fontSize: 12,
+                                color: TichColors.neutralMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+              ],
             ),
           );
         },

@@ -24,6 +24,8 @@ Route::prefix('auth')->group(function () {
         Route::post('/mfa/disable', [AuthController::class, 'mfaDisable']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
+        Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
 
         Route::prefix('mfa')->middleware('throttle:mfa')->group(function () {
             Route::get('/status', [MFAController::class, 'getMFAStatus']);
@@ -129,6 +131,7 @@ Route::get('/session-check', function () {
 Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Employee\mobile\NotificationController::class, 'markRead']);
 
     Route::get('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'show']);
     Route::put('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'update']);
@@ -195,4 +198,8 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::post('/requests/lifecycle', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeLifecycle']);
     Route::post('/requests/suggestions', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeSuggestion']);
     Route::post('/requests/transcript', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeTranscript']);
+    Route::post('/requests/exam-sitting', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeExamSitting']);
+
+    Route::get('/assessments/{assessment}', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'show']);
+    Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'submit']);
 });

@@ -207,3 +207,13 @@ Schedule::command('app:check-expiry-alerts')->dailyAt('07:30');
 Schedule::command('app:send-birthday-wishes')->dailyAt('08:00');
 Schedule::command('leave:accrual')->monthlyOn(1, '00:05');
 Schedule::command('leave:carry-forward')->yearlyOn(1, 1, '00:30');
+
+// Mobile reminders (Africa/Nairobi / EAT via APP_TIMEZONE).
+Schedule::command('attendance:remind-clock-in')
+    ->everyThirtyMinutes()
+    ->between('8:00', '17:59')
+    ->weekdays()
+    ->timezone('Africa/Nairobi');
+Schedule::command('academics:remind-upcoming-lessons')
+    ->everyFiveMinutes()
+    ->timezone('Africa/Nairobi');

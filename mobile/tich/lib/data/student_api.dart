@@ -87,4 +87,55 @@ class StudentApi {
         'delivery_method': deliveryMethod,
         if (notes != null) 'student_notes': notes,
       });
+
+  Future<Map<String, dynamic>> assessment(int id) =>
+      _client.get('/student/assessments/$id');
+
+  Future<Map<String, dynamic>> submitAssessment(
+    int id, {
+    required Map<String, String> responses,
+    int? timeTakenSeconds,
+  }) =>
+      _client.post('/student/assessments/$id/submit', body: {
+        'responses': responses,
+        if (timeTakenSeconds != null) 'time_taken_seconds': timeTakenSeconds,
+      });
+
+  Future<Map<String, dynamic>> submitLifecycle({
+    required int defermentMonths,
+    required String reason,
+    required List<({String path, String name})> attachments,
+  }) =>
+      _client.multipartFiles(
+        '/student/requests/lifecycle',
+        fields: {
+          'deferment_months': '$defermentMonths',
+          'reason': reason,
+        },
+        files: [
+          for (final f in attachments)
+            (field: 'attachments[]', path: f.path, name: f.name, mimeType: null),
+        ],
+      );
+
+  Future<Map<String, dynamic>> submitExamSitting({
+    required String requestType,
+    required int unitId,
+    required int semesterId,
+    String? reason,
+    List<({String path, String name})> attachments = const [],
+  }) =>
+      _client.multipartFiles(
+        '/student/requests/exam-sitting',
+        fields: {
+          'request_type': requestType,
+          'unit_id': '$unitId',
+          'semester_id': '$semesterId',
+          if (reason != null) 'reason': reason,
+        },
+        files: [
+          for (final f in attachments)
+            (field: 'attachments[]', path: f.path, name: f.name, mimeType: null),
+        ],
+      );
 }

@@ -34,6 +34,38 @@ String dayName(int? day, Map? labels) {
   return fallback[day] ?? 'Day $day';
 }
 
+List<Map<String, dynamic>> lessonSessionsFromTimetablePayload(
+  Map<String, dynamic> data,
+) {
+  final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
+  final timetables = tt['timetables'] as List? ?? const [];
+  final match = timetables
+      .map((e) => Map<String, dynamic>.from(e as Map))
+      .where((t) => (t['kind']?.toString() ?? '') == 'lesson');
+  if (match.isEmpty) return const [];
+  return (match.first['sessions'] as List? ?? const [])
+      .map((e) => Map<String, dynamic>.from(e as Map))
+      .toList();
+}
+
+/// Next upcoming lesson today (or null).
+Map<String, dynamic>? nextLessonToday(List<Map<String, dynamic>> sessions) {
+  final now = DateTime.now();
+  final todayIso = now.weekday;
+  final upcoming = sessions.where((s) {
+    if ((s['day_of_week'] as num?)?.toInt() != todayIso) return false;
+    final raw = s['start_time']?.toString() ?? '';
+    final parts = raw.split(':');
+    if (parts.length < 2) return false;
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts[1]) ?? 0;
+    final start = DateTime(now.year, now.month, now.day, h, m);
+    return start.isAfter(now);
+  }).toList()
+    ..sort((a, b) => '${a['start_time']}'.compareTo('${b['start_time']}'));
+  return upcoming.isEmpty ? null : upcoming.first;
+}
+
 class StudentStatTile extends StatelessWidget {
   const StudentStatTile({
     super.key,
