@@ -162,3 +162,37 @@ Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->grou
     Route::get('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'feedback']);
     Route::post('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeFeedback']);
 });
+
+/*
+| Mobile / Sanctum student self-service portal.
+| MFA is intentionally not required here (product: mobile v1).
+*/
+Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
+    Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
+    Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
+
+    Route::get('/finance', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'show']);
+    Route::post('/finance/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'pay']);
+    Route::get('/finance/mpesa/{stkRequest}/status', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'stkStatus']);
+
+    Route::get('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'show']);
+    Route::put('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'update']);
+
+    Route::get('/documents', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'index']);
+    Route::post('/documents/requests', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'storeRequest']);
+
+    Route::get('/notifications', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'index']);
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'markRead']);
+
+    Route::get('/clearance', [\App\Http\Controllers\Api\Student\mobile\ClearanceController::class, 'index']);
+    Route::post('/clearance/ensure', [\App\Http\Controllers\Api\Student\mobile\ClearanceController::class, 'ensure']);
+
+    Route::get('/evaluations', [\App\Http\Controllers\Api\Student\mobile\EvaluationsController::class, 'index']);
+    Route::post('/evaluations', [\App\Http\Controllers\Api\Student\mobile\EvaluationsController::class, 'store']);
+
+    Route::get('/requests/lifecycle', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'lifecycleIndex']);
+    Route::post('/requests/lifecycle', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeLifecycle']);
+    Route::post('/requests/suggestions', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeSuggestion']);
+    Route::post('/requests/transcript', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeTranscript']);
+});
