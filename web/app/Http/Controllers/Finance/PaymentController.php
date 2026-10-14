@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChartOfAccount;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Finance\PaymentService;
@@ -46,10 +47,17 @@ class PaymentController extends Controller
             ->limit(100)
             ->get();
 
+        $paymentAccounts = ChartOfAccount::query()
+            ->where('account_type', 'asset')
+            ->where('is_active', true)
+            ->orderBy('account_code')
+            ->get();
+
         return view('finance.payments.create', [
             'invoice' => $invoice,
             'openInvoices' => $openInvoices,
             'paymentMethods' => config('finance.payment_methods'),
+            'paymentAccounts' => $paymentAccounts,
         ]);
     }
 
@@ -62,6 +70,7 @@ class PaymentController extends Controller
             'payment_reference' => 'nullable|string|max:100',
             'transaction_channel_ref' => 'nullable|string|max:100',
             'payment_date' => 'required|date',
+            'payment_account_code' => 'required|string|exists:chart_of_accounts,account_code',
         ]);
 
         $invoice = Invoice::query()->findOrFail($validated['invoice_id']);

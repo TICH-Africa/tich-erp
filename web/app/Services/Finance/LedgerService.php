@@ -60,11 +60,29 @@ class LedgerService
         );
     }
 
-    public function postStudentPayment(float $amount, string $paymentNumber, string $paymentMethod, ?int $recordedByStaffId = null, ?string $paymentDate = null): AccountLedger
+    public function postStudentPayment(
+        float $amount,
+        string $paymentNumber,
+        string $paymentMethod,
+        ?int $recordedByStaffId = null,
+        ?string $paymentDate = null,
+        ?string $paymentAccountCode = null,
+    ): AccountLedger
     {
+        $receivingAccountCode = $paymentAccountCode === null || trim($paymentAccountCode) === ''
+            ? $this->cashAccountFor($paymentMethod)
+            : $this->resolveChartCode(
+                $paymentAccountCode,
+                'asset',
+                [],
+                'payment account',
+                'Student Payment Receipts',
+                true,
+            );
+
         return $this->postEntry(
             'student_payment',
-            $this->cashAccountFor($paymentMethod),
+            $receivingAccountCode,
             $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable'),
             $amount,
             "Student payment: {$paymentNumber}",
@@ -419,6 +437,7 @@ class LedgerService
         array $nameHints = [],
         string $environmentVariable = 'FINANCE_ACCOUNT',
         ?string $postingAccountName = null,
+        bool $alwaysCreatePostingChild = false,
     ): string
     {
         $accounts = $this->chartAccounts();
@@ -438,7 +457,7 @@ class LedgerService
                 );
             }
 
-            if (isset($parentCodes[$configured])) {
+            if (isset($parentCodes[$configured]) || $alwaysCreatePostingChild) {
                 if ($postingAccountName !== null) {
                     return $this->ensurePostingLeafAccount(
                         $exact,

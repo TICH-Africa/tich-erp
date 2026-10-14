@@ -24,7 +24,7 @@ class PaymentService
     ) {}
 
     /**
-     * @param  array{amount: float, payment_method: string, payment_reference?: string|null, transaction_channel_ref?: string|null, payment_date?: string|null}  $data
+     * @param  array{amount: float, payment_method: string, payment_reference?: string|null, transaction_channel_ref?: string|null, payment_date?: string|null, payment_account_code?: string|null}  $data
      */
     public function recordPayment(Invoice $invoice, array $data, int $recordedByStaffId, bool $sendConfirmation = true): Payment
     {
@@ -92,7 +92,14 @@ class PaymentService
                 'payment_gateway_ref' => $data['transaction_channel_ref'] ?? $invoice->payment_gateway_ref,
             ]);
 
-            $this->ledger->postStudentPayment($amount, $payment->payment_number, $payment->payment_method, $recordedByStaffId, $payment->payment_date);
+            $this->ledger->postStudentPayment(
+                $amount,
+                $payment->payment_number,
+                $payment->payment_method,
+                $recordedByStaffId,
+                $payment->payment_date,
+                $data['payment_account_code'] ?? null,
+            );
             $this->accounts->recalculate($invoice->studentAccount);
 
             if (! Receipt::where('payment_id', $payment->id)->exists()) {

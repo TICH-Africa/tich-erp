@@ -92,6 +92,29 @@
                             @enderror
                         </div>
                         <div class="uf-field">
+                            <label for="payment_account_code">Parent deposit account <span class="uf-req">*</span></label>
+                            <select
+                                id="payment_account_code"
+                                name="payment_account_code"
+                                required
+                                class="{{ $errors->has('payment_account_code') ? 'is-invalid' : '' }}"
+                            >
+                                <option value="">Select the account receiving this payment</option>
+                                @foreach ($paymentAccounts as $paymentAccount)
+                                    <option
+                                        value="{{ $paymentAccount->account_code }}"
+                                        @selected(old('payment_account_code') === $paymentAccount->account_code)
+                                    >
+                                        {{ $paymentAccount->account_code }} — {{ $paymentAccount->account_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('payment_account_code')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                            <span class="uf-hint">Choose the cash, bank, or other asset parent account where the money was received. The payment will be posted to a numbered child under this account.</span>
+                        </div>
+                        <div class="uf-field">
                             <label for="payment_date">Date payment was made <span class="uf-req">*</span></label>
                             <input
                                 type="date"

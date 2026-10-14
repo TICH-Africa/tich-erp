@@ -553,10 +553,20 @@ class ChartOfAccountService
     public function suggestChildCode(ChartOfAccount $parent): string
     {
         $parentCode = (string) $parent->account_code;
-        $childCodes = array_map(
-            static fn ($code) => trim((string) $code),
-            $parent->children()->pluck('account_code')->all()
-        );
+        $accounts = ChartOfAccount::query()
+            ->get(['account_code', 'parent_account_code']);
+        $knownCodes = $accounts->pluck('account_code')->map(fn ($code) => trim((string) $code))->all();
+        $childCodes = $accounts
+            ->filter(function (ChartOfAccount $account) use ($parentCode, $knownCodes): bool {
+                if ($account->parent_account_code !== null && $account->parent_account_code !== '') {
+                    return $account->parent_account_code === $parentCode;
+                }
+
+                return $this->parentCodeFor((string) $account->account_code, $knownCodes) === $parentCode;
+            })
+            ->pluck('account_code')
+            ->map(static fn ($code) => trim((string) $code))
+            ->all();
 
         return $this->suggestBlockChildCode($parentCode, $childCodes)
             ?? $this->suggestSeparatorChildCode($parentCode, $childCodes);
