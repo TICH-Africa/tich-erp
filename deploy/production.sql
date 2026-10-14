@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-13 10:58:42 EAT
+-- Generated: 2026-10-14 17:51:30 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -506,6 +506,53 @@ CALL `tich_ensure_index`('accounts_payable', 'accounts_payable_purchase_order_id
 CALL `tich_ensure_index`('accounts_payable', 'accounts_payable_requisition_id_foreign', '`requisition_id`');
 CALL `tich_ensure_index`('accounts_payable', 'accounts_payable_supplier_id_foreign', '`supplier_id`');
 CALL `tich_ensure_index`('accounts_payable', 'accounts_payable_three_way_match_by_foreign', '`three_way_match_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `account_expense_entries`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `account_expense_entries` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_code` varchar(30) NOT NULL,
+  `reference_no` varchar(30) NOT NULL,
+  `expense_date` date NOT NULL,
+  `payee_name` varchar(200) DEFAULT NULL,
+  `address` varchar(500) DEFAULT NULL,
+  `memo` varchar(500) DEFAULT NULL,
+  `class` varchar(100) DEFAULT NULL,
+  `currency` varchar(3) NOT NULL DEFAULT 'KES',
+  `exchange_rate` decimal(18,6) NOT NULL DEFAULT 1.000000,
+  `amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `vat_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `supplier_vat_code` varchar(50) DEFAULT NULL,
+  `credit_account_code` varchar(30) DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `account_expense_entries_account_code_expense_date_index` (`account_code`,`expense_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `account_expense_entries` (add only if missing)
+CALL `tich_ensure_column`('account_expense_entries', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('account_expense_entries', 'account_code', 'varchar(30) NOT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'reference_no', 'varchar(30) NOT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'expense_date', 'date NOT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'payee_name', 'varchar(200) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'address', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'memo', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'class', 'varchar(100) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'currency', 'varchar(3) NOT NULL DEFAULT \'\\\'KES\\\'\'');
+CALL `tich_ensure_column`('account_expense_entries', 'exchange_rate', 'decimal(18,6) NOT NULL DEFAULT \'1.000000\'');
+CALL `tich_ensure_column`('account_expense_entries', 'amount', 'decimal(18,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('account_expense_entries', 'vat_amount', 'decimal(18,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('account_expense_entries', 'supplier_vat_code', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'credit_account_code', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'recorded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('account_expense_entries', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `account_expense_entries` (add only if missing)
+CALL `tich_ensure_index`('account_expense_entries', 'account_expense_entries_account_code_expense_date_index', '`account_code`, `expense_date`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `account_ledger`
