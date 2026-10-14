@@ -8,11 +8,13 @@ import 'bloc/auth/auth_state.dart';
 import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/employee_api.dart';
+import 'data/student_api.dart';
 import 'settings/app_settings.dart';
 import 'theme/tich_theme.dart';
 import 'ui/auth/unlock_page.dart';
 import 'ui/login_page.dart';
 import 'ui/shell/portal_shell.dart';
+import 'ui/shell/student_portal_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +66,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
         RepositoryProvider.value(value: _authRepository),
         RepositoryProvider.value(value: _apiClient),
         RepositoryProvider(create: (_) => EmployeeApi(_apiClient)),
+        RepositoryProvider(create: (_) => StudentApi(_apiClient)),
       ],
       child: BlocProvider.value(
         value: _authBloc,
@@ -94,6 +97,9 @@ class _AuthGate extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
+          if (state.user.isStudent) {
+            return const StudentPortalShell();
+          }
           return const PortalShell();
         }
         if (state is AuthLocked) {
