@@ -7,6 +7,7 @@ import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/employee_avatar.dart';
 import '../widgets/tich_widgets.dart';
 import 'notifications_page.dart';
 
@@ -127,23 +128,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 TichCard(
                   child: Row(
                     children: [
-                      CircleAvatar(
+                      EmployeeAvatar(
+                        name: staff['full_name']?.toString() ?? 'Employee',
                         radius: 28,
-                        backgroundColor: TichColors.blueLight,
-                        backgroundImage: (staff['photo_url'] != null &&
-                                staff['photo_url'].toString().isNotEmpty)
-                            ? NetworkImage(staff['photo_url'].toString())
-                            : null,
-                        child: (staff['photo_url'] == null ||
-                                staff['photo_url'].toString().isEmpty)
-                            ? Text(
-                                _initials(staff['full_name']?.toString()),
-                                style: tichUi(
-                                  color: TichColors.blueDark,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              )
-                            : null,
+                        photoUrl: staff['photo_url']?.toString(),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -288,10 +276,4 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  String _initials(String? name) {
-    final parts = (name ?? '').trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return 'T';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return (parts.first[0] + parts.last[0]).toUpperCase();
-  }
 }

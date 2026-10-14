@@ -112,4 +112,14 @@ class EmployeeApi {
       _client.get('/employee/time-logs');
 
   Future<Map<String, dynamic>> feedback() => _client.get('/employee/feedback');
+
+  Future<Map<String, dynamic>> submitFeedback({
+    String? type,
+    required String description,
+  }) =>
+      _client.post('/employee/feedback', body: {
+        if (type != null && type.trim().isNotEmpty)
+          'feedback_type': type.trim(),
+        'description': description,
+      });
 }

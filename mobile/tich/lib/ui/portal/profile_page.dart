@@ -8,6 +8,7 @@ import '../../bloc/auth/auth_event.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/employee_avatar.dart';
 import '../widgets/tich_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -40,7 +41,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _address.text = p['physical_address']?.toString() ?? '';
       _emergencyName.text = p['emergency_contact_name']?.toString() ?? '';
       _emergencyPhone.text = p['emergency_contact_phone']?.toString() ?? '';
-      _emergencyRel.text = p['emergency_contact_relationship']?.toString() ?? '';
+      _emergencyRel.text =
+          p['emergency_contact_relationship']?.toString() ?? '';
       final nok = Map<String, dynamic>.from(p['next_of_kin'] as Map? ?? {});
       _nokName.text = nok['full_name']?.toString() ?? '';
       _nokRel.text = nok['relationship']?.toString() ?? '';
@@ -81,7 +83,9 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -131,41 +135,82 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
               const SizedBox(height: 12),
               TichCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      p['full_name']?.toString() ?? '',
-                      style: GoogleFonts.merriweather(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    EmployeeAvatar(
+                      name: p['full_name']?.toString() ?? '',
+                      radius: 30,
+                      photoUrl: p['photo_url']?.toString(),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p['full_name']?.toString() ?? '',
+                            style: GoogleFonts.merriweather(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            '${p['employee_number']} · ${p['job_title'] ?? ''}',
+                          ),
+                          Text(p['department']?.toString() ?? ''),
+                          Text(p['primary_email']?.toString() ?? ''),
+                        ],
                       ),
                     ),
-                    Text('${p['employee_number']} · ${p['job_title'] ?? ''}'),
-                    Text(p['department']?.toString() ?? ''),
-                    Text(p['primary_email']?.toString() ?? ''),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               const TichSectionHeader('Contact'),
-              TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone')),
+              TextField(
+                controller: _phone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _address, maxLines: 2, decoration: const InputDecoration(labelText: 'Physical address')),
+              TextField(
+                controller: _address,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Physical address',
+                ),
+              ),
               const SizedBox(height: 16),
               const TichSectionHeader('Emergency contact'),
-              TextField(controller: _emergencyName, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(
+                controller: _emergencyName,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _emergencyPhone, decoration: const InputDecoration(labelText: 'Phone')),
+              TextField(
+                controller: _emergencyPhone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _emergencyRel, decoration: const InputDecoration(labelText: 'Relationship')),
+              TextField(
+                controller: _emergencyRel,
+                decoration: const InputDecoration(labelText: 'Relationship'),
+              ),
               const SizedBox(height: 16),
               const TichSectionHeader('Next of kin'),
-              TextField(controller: _nokName, decoration: const InputDecoration(labelText: 'Full name')),
+              TextField(
+                controller: _nokName,
+                decoration: const InputDecoration(labelText: 'Full name'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _nokRel, decoration: const InputDecoration(labelText: 'Relationship')),
+              TextField(
+                controller: _nokRel,
+                decoration: const InputDecoration(labelText: 'Relationship'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _nokPhone, decoration: const InputDecoration(labelText: 'Phone')),
+              TextField(
+                controller: _nokPhone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
               const SizedBox(height: 20),
               AdaptiveFilledButton(
                 onPressed: _busy ? null : _save,

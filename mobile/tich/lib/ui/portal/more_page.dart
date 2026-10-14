@@ -7,6 +7,7 @@ import '../settings/settings_hub_page.dart';
 import 'appraisals_page.dart';
 import 'concerns_page.dart';
 import 'documents_page.dart';
+import 'feedback_page.dart';
 import 'policies_page.dart';
 import 'profile_page.dart';
 import 'time_logs_page.dart';
@@ -28,6 +29,7 @@ class MorePage extends StatelessWidget {
       _MoreItem('Time logs', Icons.schedule_outlined, () => TimeLogsPage(api: api)),
       _MoreItem('Appraisals', Icons.flag_outlined, () => AppraisalsPage(api: api)),
       _MoreItem('Concerns', Icons.report_problem_outlined, () => ConcernsPage(api: api)),
+      _MoreItem('Feedback', Icons.feedback_outlined, () => FeedbackPage(api: api)),
     ];
 
     return AdaptiveScaffold(

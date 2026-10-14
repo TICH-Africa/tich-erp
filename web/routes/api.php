@@ -160,4 +160,5 @@ Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->grou
     Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'appraisals']);
     Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'timeLogs']);
     Route::get('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'feedback']);
+    Route::post('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeFeedback']);
 });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Employee\mobile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Employee\mobile\Concerns\ResolvesPortalStaff;
+use App\Models\Feedback;
 use App\Models\Grievance;
 use App\Models\WorkFromHomeRequest;
 use App\Services\EmployeeConcernService;
@@ -149,26 +150,41 @@ class PortalListsController extends Controller
     {
         $staff = $this->portalStaff($request);
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('weekly_time_logs')
-            && ! \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')) {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')
+            && ! \Illuminate\Support\Facades\Schema::hasTable('weekly_time_logs')) {
             return response()->json(['weeks' => [], 'message' => 'Time logs unavailable.']);
         }
 
-        $table = \Illuminate\Support\Facades\Schema::hasTable('weekly_time_logs')
-            ? 'weekly_time_logs'
-            : 'staff_weekly_time_logs';
+        $table = \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')
+            ? 'staff_weekly_time_logs'
+            : 'weekly_time_logs';
+        $columns = \Illuminate\Support\Facades\Schema::getColumnListing($table);
+        $periodColumn = in_array('period_start', $columns, true)
+            ? 'period_start'
+            : (in_array('week_start', $columns, true) ? 'week_start' : null);
 
-        $weeks = \Illuminate\Support\Facades\DB::table($table)
-            ->where('staff_id', $staff->id)
-            ->orderByDesc('week_start')
-            ->limit(24)
-            ->get();
+        $query = \Illuminate\Support\Facades\DB::table($table)
+            ->where('staff_id', $staff->id);
+        if ($periodColumn !== null) {
+            $query->orderByDesc($periodColumn);
+        } elseif (in_array('log_year', $columns, true)
+            && in_array('log_month', $columns, true)
+            && in_array('week_number', $columns, true)) {
+            $query->orderByDesc('log_year')
+                ->orderByDesc('log_month')
+                ->orderByDesc('week_number');
+        } elseif (in_array('created_at', $columns, true)) {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderByDesc('id');
+        }
+        $weeks = $query->limit(24)->get();
 
         return response()->json([
             'weeks' => $weeks->map(fn ($w) => [
                 'id' => $w->id,
-                'week_start' => $w->week_start ?? null,
-                'week_end' => $w->week_end ?? null,
+                'week_start' => $w->period_start ?? $w->week_start ?? null,
+                'week_end' => $w->period_end ?? $w->week_end ?? null,
                 'status' => $w->status ?? null,
                 'total_hours' => isset($w->total_hours) ? (float) $w->total_hours : null,
             ])->values(),
@@ -179,15 +195,51 @@ class PortalListsController extends Controller
     {
         $staff = $this->portalStaff($request);
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('employee_feedback')
-            && ! \Illuminate\Support\Facades\Schema::hasTable('staff_relation_feedback')) {
-            return response()->json(['items' => []]);
-        }
+        return response()->json([
+            'items' => Feedback::query()
+                ->where('staff_id', $staff->id)
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get()
+                ->map(fn (Feedback $feedback) => [
+                    'id' => $feedback->id,
+                    'feedback_type' => $feedback->feedback_type,
+                    'description' => $feedback->description,
+                    'status' => $feedback->status,
+                    'response' => $feedback->response,
+                    'hr_comments' => $feedback->hr_comments,
+                    'created_at' => optional($feedback->created_at)?->toIso8601String(),
+                ])
+                ->values(),
+        ]);
+    }
+
+    public function storeFeedback(Request $request): JsonResponse
+    {
+        $staff = $this->portalStaff($request);
+        $validated = $request->validate([
+            'feedback_type' => ['nullable', 'string', 'max:100'],
+            'description' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $feedback = Feedback::query()->create([
+            'staff_id' => $staff->id,
+            'feedback_type' => $validated['feedback_type'] ?? null,
+            'description' => $validated['description'],
+            'status' => 'open',
+        ]);
 
         return response()->json([
-            'items' => [],
-            'message' => 'Open the web portal to submit detailed HR feedback.',
-            'web_url' => url('/employee/relations/feedback'),
-        ]);
+            'message' => 'Feedback submitted to HR.',
+            'item' => [
+                'id' => $feedback->id,
+                'feedback_type' => $feedback->feedback_type,
+                'description' => $feedback->description,
+                'status' => $feedback->status,
+                'response' => $feedback->response,
+                'hr_comments' => $feedback->hr_comments,
+                'created_at' => optional($feedback->created_at)?->toIso8601String(),
+            ],
+        ], 201);
     }
 }
