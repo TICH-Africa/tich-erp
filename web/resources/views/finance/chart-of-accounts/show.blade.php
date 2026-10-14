@@ -6,6 +6,9 @@
     <x-page-toolbar title="{{ $chartOfAccount->account_code }} - {{ $chartOfAccount->account_name }}" meta="{{ $chartOfAccount->isTopLevel() ? 'Main account' : 'Child account' }} - parent, children and balances">
         <x-slot:actions>
             @can('finance.chart_of_accounts.manage')
+                @if ($canRecordExpenses)
+                    <button type="button" class="tich-btn tich-btn-primary" data-open-modal="expense-modal">+ Record transaction</button>
+                @endif
                 <a href="{{ route('finance.chart-of-accounts.create', ['parent' => $chartOfAccount->account_code]) }}" class="tich-btn tich-btn-secondary">+ Add Child</a>
                 <a href="{{ route('finance.chart-of-accounts.edit', $chartOfAccount) }}" class="tich-btn tich-btn-ghost">Edit</a>
             @endcan
@@ -190,4 +193,284 @@
             @endif
         </div>
     </div>
+
+    @if ($canRecordExpenses || $expenseEntries->isNotEmpty())
+        <section class="tich-card tich-mt-6 tich-table-panel">
+            <div class="tich-card__body">
+                <div class="tich-flex tich-flex--middle" style="justify-content: space-between;">
+                    <h3 class="tich-h3" style="margin: 0;">Transaction Breakdown</h3>
+                    @can('finance.chart_of_accounts.manage')
+                        @if ($canRecordExpenses)
+                            <button type="button" class="tich-btn tich-btn-primary tich-btn--sm" data-open-modal="expense-modal">+ Record transaction</button>
+                        @endif
+                    @endcan
+                </div>
+
+                @if ($expenseEntries->isNotEmpty())
+                    <div class="tich-table-wrap tich-mt-4">
+                        <table class="tich-admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Num</th>
+                                    <th>Name</th>
+                                    <th>Memo</th>
+                                    <th>Split</th>
+                                    <th style="text-align: right;">Amount (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($expenseEntries as $entry)
+                                    <tr>
+                                        <td>{{ $chartOfAccount->isDebitNormal() ? 'Payment' : 'Receipt' }}</td>
+                                        <td>{{ $entry->expense_date?->format('d/m/Y') }}</td>
+                                        <td>{{ $entry->reference_no }}</td>
+                                        <td>{{ $entry->payee_name ?? '-' }}</td>
+                                        <td>{{ $entry->memo ?? '-' }}</td>
+                                        <td><code>{{ $entry->credit_account_code }}</code></td>
+                                        <td style="text-align: right;">{{ number_format((float) $entry->amount + (float) $entry->vat_amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="6" style="text-align: right;"><strong>Total distributed</strong></td>
+                                    <td style="text-align: right;">
+                                        <strong>{{ number_format($expenseEntries->sum(fn ($entry) => (float) $entry->amount + (float) $entry->vat_amount), 2) }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                @else
+                    <p class="tich-text tich-text--muted tich-mt-4">No transactions recorded on this account yet.</p>
+                @endif
+            </div>
+        </section>
+    @endif
+
+    @can('finance.chart_of_accounts.manage')
+        @if ($canRecordExpenses)
+            <div id="expense-modal" class="tich-modal" aria-hidden="true" role="dialog" aria-modal="true">
+                <div class="tich-modal__backdrop" data-close-modal="expense-modal"></div>
+                <div class="tich-modal__dialog" style="max-width: 860px;">
+                    <header class="tich-modal__header">
+                        <h2 class="tich-h3" style="margin: 0;">Record Transaction - <code>{{ $chartOfAccount->account_code }}</code> {{ $chartOfAccount->account_name }}</h2>
+                        <button type="button" class="tich-modal__close" data-close-modal="expense-modal" aria-label="Close">&times;</button>
+                    </header>
+                    <form method="POST" action="{{ route('finance.chart-of-accounts.expenses.store', $chartOfAccount) }}" id="expense-form" class="tich-modal__body">
+                        @csrf
+                        <input type="hidden" name="after_save" id="after_save" value="close">
+
+                        <div class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle tich-mb-4">
+                            <div>
+                                <label class="tich-caption" for="bank_account_code">BANK ACCOUNT</label>
+                                <select id="bank_account_code" name="bank_account_code" class="tich-select" required>
+                                    @foreach ($bankOptions as $bank)
+                                        <option value="{{ $bank['code'] }}" data-balance="{{ $bank['balance'] }}" @selected(old('bank_account_code', $defaultBankCode) === $bank['code'])>
+                                            {{ $bank['code'] }} - {{ $bank['name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <span class="tich-caption">ENDING BALANCE</span><br>
+                                <strong id="bank-ending-balance">KES 0.00</strong>
+                            </div>
+                            <div style="flex: 1;"></div>
+                            <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0;">
+                                Amounts post to <code>{{ $chartOfAccount->account_code }}</code>@if ($chartOfAccount->parent)
+                                    and roll up to <code>{{ $chartOfAccount->parent->account_code }}</code> automatically
+                                @endif.
+                            </p>
+                        </div>
+
+                        <div class="tich-grid tich-grid--2 tich-mb-4" style="gap: 1rem;">
+                            <div>
+                                <label class="tich-caption" for="reference_no">NO.</label>
+                                <input type="text" id="reference_no" name="reference_no" class="tich-input" value="{{ old('reference_no', $nextExpenseReference) }}">
+                            </div>
+                            <div>
+                                <label class="tich-caption" for="expense_date">DATE</label>
+                                <input type="date" id="expense_date" name="expense_date" class="tich-input" required value="{{ old('expense_date', now()->toDateString()) }}">
+                            </div>
+                            <div>
+                                <label class="tich-caption" for="payee_name">PAY TO THE ORDER OF</label>
+                                <input type="text" id="payee_name" name="payee_name" class="tich-input" value="{{ old('payee_name') }}">
+                            </div>
+                            <div>
+                                <label class="tich-caption" for="address">ADDRESS</label>
+                                <textarea id="address" name="address" class="tich-input" rows="2">{{ old('address') }}</textarea>
+                            </div>
+                            <div style="grid-column: 1 / -1;">
+                                <label class="tich-caption" for="header_memo">MEMO</label>
+                                <input type="text" id="header_memo" name="header_memo" class="tich-input" value="{{ old('header_memo') }}">
+                            </div>
+                        </div>
+
+                        <p class="tich-caption" style="margin: 0 0 0.35rem;">BREAKDOWN</p>
+                        <div class="tich-table-wrap" style="max-height: 240px; overflow-y: auto;">
+                            <table class="tich-admin-table" id="expense-lines">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 34%;">MEMO</th>
+                                        <th style="width: 15%;">VAT (KES)</th>
+                                        <th style="width: 17%;">AMOUNT (KES)</th>
+                                        <th style="width: 20%;">CLASS</th>
+                                        <th style="width: 8%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (old('lines', [[]]) as $i => $line)
+                                        <tr class="expense-line">
+                                            <td><input type="text" name="lines[{{ $i }}][memo]" class="tich-input" value="{{ $line['memo'] ?? '' }}"></td>
+                                            <td><input type="number" step="0.01" min="0" name="lines[{{ $i }}][vat_amount]" class="tich-input line-vat" value="{{ $line['vat_amount'] ?? '' }}"></td>
+                                            <td><input type="number" step="0.01" min="0" name="lines[{{ $i }}][amount]" class="tich-input line-amount" value="{{ $line['amount'] ?? '' }}"></td>
+                                            <td><input type="text" name="lines[{{ $i }}][class]" class="tich-input" value="{{ $line['class'] ?? '' }}"></td>
+                                            <td><button type="button" class="tich-btn tich-btn-ghost tich-btn--sm line-remove" aria-label="Remove line">&times;</button></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="tich-btn tich-btn-ghost tich-btn--sm tich-mt-2" id="add-line">+ Add line</button>
+
+                        <div class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle tich-mt-4">
+                            <div>
+                                <label class="tich-caption" for="supplier_vat_code">SUPPLIER VAT CODE</label>
+                                <input type="text" id="supplier_vat_code" name="supplier_vat_code" class="tich-input" value="{{ old('supplier_vat_code') }}">
+                            </div>
+                            <div>
+                                <label class="tich-caption" for="exchange_rate">EXCHANGE RATE (1 {{ $chartOfAccount->currency ?? 'KES' }} =)</label>
+                                <input type="number" step="0.000001" min="0" id="exchange_rate" name="exchange_rate" class="tich-input" value="{{ old('exchange_rate', '1') }}" style="width: 110px;">
+                            </div>
+                            <div style="flex: 1;"></div>
+                            <div><span class="tich-caption">SUBTOTAL</span> <strong id="expenses-total">KES 0.00</strong></div>
+                            <div><span class="tich-caption">TOTAL VAT</span> <strong id="vat-total">KES 0.00</strong></div>
+                        </div>
+
+                        <footer class="tich-modal__footer" style="margin-top: 1rem;">
+                            <button type="button" class="tich-btn tich-btn-ghost tich-btn--sm" id="clear-form-btn">Clear</button>
+                            <div style="flex: 1;"></div>
+                            <button type="button" class="tich-btn tich-btn-secondary tich-btn--sm" data-close-modal="expense-modal">Cancel</button>
+                            <button type="submit" class="tich-btn tich-btn-primary tich-btn--sm">Save &amp; Close</button>
+                            <button type="button" class="tich-btn tich-btn-primary tich-btn--sm" id="save-new-btn">Save &amp; New</button>
+                        </footer>
+                    </form>
+                </div>
+            </div>
+        @endif
+    @endcan
+@endsection
+
+@section('scripts')
+    @parent
+    @include('admin.partials.tich-modal-assets')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('expense-form');
+
+            if (!form) {
+                return;
+            }
+
+            const linesBody = form.querySelector('#expense-lines tbody');
+            const addBtn = document.getElementById('add-line');
+
+            function money(amount) {
+                return 'KES ' + amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            function recalc() {
+                let expenses = 0;
+                let vat = 0;
+
+                linesBody.querySelectorAll('.line-amount').forEach(function (input) {
+                    expenses += parseFloat(input.value) || 0;
+                });
+
+                linesBody.querySelectorAll('.line-vat').forEach(function (input) {
+                    vat += parseFloat(input.value) || 0;
+                });
+
+                document.getElementById('expenses-total').textContent = money(expenses);
+                document.getElementById('vat-total').textContent = money(vat);
+            }
+
+            addBtn.addEventListener('click', function () {
+                const index = linesBody.querySelectorAll('tr.expense-line').length;
+                const row = document.createElement('tr');
+                row.className = 'expense-line';
+                row.innerHTML =
+                    '<td><input type="text" name="lines[' + index + '][memo]" class="tich-input"></td>'
+                    + '<td><input type="number" step="0.01" min="0" name="lines[' + index + '][vat_amount]" class="tich-input line-vat"></td>'
+                    + '<td><input type="number" step="0.01" min="0" name="lines[' + index + '][amount]" class="tich-input line-amount"></td>'
+                    + '<td><input type="text" name="lines[' + index + '][class]" class="tich-input"></td>'
+                    + '<td><button type="button" class="tich-btn tich-btn-ghost tich-btn--sm line-remove" aria-label="Remove line">&times;</button></td>';
+                linesBody.appendChild(row);
+                row.querySelector('.line-amount').focus();
+            });
+
+            linesBody.addEventListener('click', function (event) {
+                const button = event.target.closest('.line-remove');
+
+                if (!button) {
+                    return;
+                }
+
+                const rows = linesBody.querySelectorAll('tr.expense-line');
+
+                if (rows.length <= 1) {
+                    rows[0].querySelectorAll('input').forEach(function (input) {
+                        input.value = '';
+                    });
+                } else {
+                    button.closest('tr').remove();
+                }
+
+                recalc();
+            });
+
+            linesBody.addEventListener('input', recalc);
+
+            const bankSelect = document.getElementById('bank_account_code');
+            const balanceEl = document.getElementById('bank-ending-balance');
+
+            function updateBankBalance() {
+                const option = bankSelect.options[bankSelect.selectedIndex];
+                const balance = parseFloat(option ? option.getAttribute('data-balance') : '0') || 0;
+                balanceEl.textContent = money(Math.abs(balance)) + (balance >= 0 ? ' Dr' : ' Cr');
+            }
+
+            bankSelect.addEventListener('change', updateBankBalance);
+            updateBankBalance();
+
+            document.getElementById('save-new-btn').addEventListener('click', function () {
+                document.getElementById('after_save').value = 'new';
+                form.submit();
+            });
+
+            document.getElementById('clear-form-btn').addEventListener('click', function () {
+                form.reset();
+                const rows = linesBody.querySelectorAll('tr.expense-line');
+                rows.forEach(function (row, index) {
+                    if (index > 0) {
+                        row.remove();
+                    }
+                });
+                rows[0].querySelectorAll('input').forEach(function (input) {
+                    input.value = '';
+                });
+                recalc();
+                updateBankBalance();
+            });
+
+            @if (session('open_expense_modal') || $errors->isNotEmpty())
+                if (window.tichOpenModal) {
+                    window.tichOpenModal('expense-modal');
+                }
+            @endif
+        });
+    </script>
 @endsection

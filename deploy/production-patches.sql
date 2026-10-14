@@ -2406,5 +2406,33 @@ WHERE c.status = 'accepted'
   AND lr.overall_status IN ('pending_hr', 'returned');
 -- APPLY ON PRODUCTION: leave stand-in accept/decline + reopen pending covers
 
+-- -----------------------------------------------------------------------------
+-- 48. Account expense distributions (Chart of accounts → child account → Record expense)
+--     Check-style expense entry form per child account; each line posts to the
+--     journal so parent roll-up, trial balance and P&L move automatically.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `account_expense_entries` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_code` varchar(30) NOT NULL,
+  `reference_no` varchar(30) NOT NULL,
+  `expense_date` date NOT NULL,
+  `payee_name` varchar(200) DEFAULT NULL,
+  `address` varchar(500) DEFAULT NULL,
+  `memo` varchar(500) DEFAULT NULL,
+  `class` varchar(100) DEFAULT NULL,
+  `currency` varchar(3) NOT NULL DEFAULT 'KES',
+  `exchange_rate` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `amount` decimal(18,2) NOT NULL DEFAULT '0.00',
+  `vat_amount` decimal(18,2) NOT NULL DEFAULT '0.00',
+  `supplier_vat_code` varchar(50) DEFAULT NULL,
+  `credit_account_code` varchar(30) DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `account_expense_entries_account_code_expense_date_index` (`account_code`,`expense_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: expense distributions recorded on child chart accounts
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

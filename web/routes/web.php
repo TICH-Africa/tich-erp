@@ -647,6 +647,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
             Route::post('/chart-of-accounts', [$chartOfAccounts, 'store'])->name('finance.chart-of-accounts.store');
             Route::post('/chart-of-accounts/import', [$chartOfAccounts, 'import'])->name('finance.chart-of-accounts.import');
+            Route::post('/chart-of-accounts/{chartOfAccount}/expenses', [$chartOfAccounts, 'storeExpense'])->name('finance.chart-of-accounts.expenses.store');
             Route::put('/chart-of-accounts/{chartOfAccount}', [$chartOfAccounts, 'update'])->name('finance.chart-of-accounts.update');
             // The literal delete-all path must stay above the {chartOfAccount} wildcard.
             Route::delete('/chart-of-accounts/delete-all', [$chartOfAccounts, 'destroyAll'])->name('finance.chart-of-accounts.destroy-all');
@@ -838,12 +839,16 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'store' => 'procurement.grns.store',
             'show' => 'procurement.grns.show',
         ]);
-        Route::resource('inventory-items', \App\Http\Controllers\Procurement\InventoryItemController::class)->only(['index', 'create', 'store', 'show'])->names([
+        Route::resource('inventory-items', \App\Http\Controllers\Procurement\InventoryItemController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update'])->names([
             'index' => 'procurement.inventory-items.index',
             'create' => 'procurement.inventory-items.create',
             'store' => 'procurement.inventory-items.store',
             'show' => 'procurement.inventory-items.show',
-        ]);
+            'edit' => 'procurement.inventory-items.edit',
+            'update' => 'procurement.inventory-items.update',
+            // The controller binds $item, so the URL parameter must be named item;
+            // otherwise implicit binding never fires and edit links 404.
+        ])->parameters(['inventory-items' => 'item']);
         Route::resource('stock-alerts', \App\Http\Controllers\Procurement\StockAlertController::class)->only(['index', 'show', 'autoReorder'])->names([
             'index' => 'procurement.stock-alerts.index',
             'show' => 'procurement.stock-alerts.show',

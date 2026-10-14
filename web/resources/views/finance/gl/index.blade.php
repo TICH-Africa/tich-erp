@@ -260,6 +260,7 @@
                         <strong>Excel (.xlsx/.xls) export is unavailable</strong>
                         <p class="tich-text tich-text--sm" style="margin:0.35rem 0 0;">
                             {{ \App\Support\PhpSpreadsheetAvailability::missingMessage('Chart of accounts Excel') }}
+                            The export and template buttons download .csv files instead until the package is restored.
                             CSV import may still work.
                         </p>
                     </div>

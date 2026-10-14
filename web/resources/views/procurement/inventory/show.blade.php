@@ -6,6 +6,7 @@
     <x-page-toolbar title="{{ $item->item_name }}" meta="{{ $item->item_code }}">
         <x-slot:actions>
             <a href="{{ route('procurement.inventory-items.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('procurement.inventory-items.edit', $item) }}" class="tich-btn tich-btn-primary">Edit</a>
         </x-slot:actions>
     </x-page-toolbar>
 

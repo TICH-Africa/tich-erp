@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Models\AccountExpenseEntry;
 use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use Illuminate\Support\Collection;
@@ -91,6 +92,85 @@ class LedgerService
             $paymentNumber,
             $recordedByStaffId,
             $paymentDate,
+        );
+    }
+
+    /**
+     * Post a distribution recorded against a chart account. Debit-normal accounts
+     * (expense, asset) record money paid out: the account is debited and the bank
+     * credited. Credit-normal accounts (revenue, liability, equity) record money
+     * received: the bank is debited and the account credited. Either way the
+     * amount rolls up to the parent automatically.
+     */
+    public function postAccountExpense(AccountExpenseEntry $entry, ?int $recordedByStaffId = null): void
+    {
+        $bank = (string) $entry->credit_account_code;
+        $reference = $entry->reference_no;
+        $ledgerDate = $entry->expense_date?->toDateString();
+        $memo = $entry->memo !== null && $entry->memo !== '' ? " - {$entry->memo}" : '';
+
+        $account = ChartOfAccount::query()->where('account_code', $entry->account_code)->first();
+        $creditNormal = $account !== null && ! $account->isDebitNormal();
+
+        if ($creditNormal) {
+            $receivedFrom = $entry->payee_name !== null && $entry->payee_name !== '' ? " from {$entry->payee_name}" : '';
+
+            $this->postEntry(
+                'account_transaction',
+                $bank,
+                (string) $entry->account_code,
+                (float) $entry->amount + (float) $entry->vat_amount,
+                "Receipt {$reference}{$receivedFrom}{$memo}",
+                'account_distribution',
+                'account_expense_entries',
+                (string) $entry->id,
+                $recordedByStaffId,
+                $ledgerDate,
+            );
+
+            return;
+        }
+
+        $paidTo = $entry->payee_name !== null && $entry->payee_name !== '' ? " to {$entry->payee_name}" : '';
+
+        $this->postEntry(
+            'account_transaction',
+            (string) $entry->account_code,
+            $bank,
+            (float) $entry->amount,
+            "Payment {$reference}{$paidTo}{$memo}",
+            'account_distribution',
+            'account_expense_entries',
+            (string) $entry->id,
+            $recordedByStaffId,
+            $ledgerDate,
+        );
+
+        $vat = (float) $entry->vat_amount;
+
+        if ($vat <= 0) {
+            return;
+        }
+
+        $vatAccount = (string) (ChartOfAccount::query()
+            ->where('is_active', 1)
+            ->where(fn ($query) => $query->where('account_name', 'like', '%vat%')
+                ->orWhere('account_name', 'like', '%value added tax%'))
+            ->orderByRaw("CASE WHEN account_type = 'asset' THEN 0 WHEN account_type = 'liability' THEN 1 ELSE 2 END")
+            ->orderBy('account_code')
+            ->value('account_code') ?: $entry->account_code);
+
+        $this->postEntry(
+            'account_transaction',
+            $vatAccount,
+            $bank,
+            $vat,
+            "VAT on payment {$reference}{$paidTo}",
+            'account_distribution',
+            'account_expense_entries',
+            (string) $entry->id,
+            $recordedByStaffId,
+            $ledgerDate,
         );
     }
 

@@ -73,4 +73,34 @@ class InventoryItemController extends Controller
 
         return view('procurement.inventory.show', compact('item'));
     }
+
+    public function edit(InventoryItem $item): View
+    {
+        $suppliers = Supplier::query()->orderBy('supplier_name')->get(['id', 'supplier_name']);
+
+        return view('procurement.inventory.edit', compact('item', 'suppliers'));
+    }
+
+    public function update(Request $request, InventoryItem $item): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validate([
+            'item_code' => ['required', 'string', 'max:50', 'unique:inventory_items,item_code,' . $item->id],
+            'item_name' => ['required', 'string', 'max:300'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'unit_of_measure' => ['required', 'string', 'max:30'],
+            'current_stock' => ['required', 'integer', 'min:0'],
+            'reorder_level' => ['required', 'integer', 'min:0'],
+            'minimum_stock' => ['nullable', 'integer', 'min:0'],
+            'maximum_stock' => ['nullable', 'integer', 'min:0'],
+            'unit_cost' => ['required', 'numeric', 'min:0'],
+            'supplier_id' => ['required', 'exists:suppliers,id'],
+            'store_location' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $item->update($validated);
+
+        return redirect()
+            ->route('procurement.inventory-items.show', $item)
+            ->with('status', 'Inventory item updated successfully.');
+    }
 }

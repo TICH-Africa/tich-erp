@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Imports\ChartOfAccountsImport;
+use App\Models\AccountExpenseEntry;
 use App\Models\AccountLedger;
 use App\Models\ChartOfAccount;
 use App\Services\Finance\ChartOfAccountService;
@@ -11,6 +12,7 @@ use App\Services\Finance\LedgerService;
 use App\Support\PhpSpreadsheetAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -188,6 +190,24 @@ class ChartOfAccountController extends Controller
         $balance = $balances[$chartOfAccount->account_code] ?? ['debit' => 0.0, 'credit' => 0.0, 'net' => 0.0, 'ownNet' => 0.0, 'childNet' => 0.0];
 
         $descendants = $service->descendants($chartOfAccount);
+        $ledger = app(LedgerService::class);
+
+        $bankAccounts = ChartOfAccount::query()
+            ->where('is_active', 1)
+            ->where('account_type', 'asset')
+            ->orderBy('account_code')
+            ->get(['account_code', 'account_name']);
+        $bankOptions = $bankAccounts->map(fn (ChartOfAccount $account) => [
+            'code' => $account->account_code,
+            'name' => $account->account_name,
+            'balance' => (float) ($balances[$account->account_code]['net'] ?? 0.0),
+        ])->all();
+
+        try {
+            $defaultBankCode = $ledger->cashAccountFor('bank');
+        } catch (\Throwable) {
+            $defaultBankCode = $bankOptions[0]['code'] ?? '';
+        }
 
         return view('finance.chart-of-accounts.show', [
             'chartOfAccount' => $chartOfAccount,
@@ -202,7 +222,109 @@ class ChartOfAccountController extends Controller
             'ownBalance' => $balance['ownNet'],
             'childBalance' => $balance['childNet'],
             'entryCount' => $chartOfAccount->ledgerEntries()->count(),
+            'expenseEntries' => AccountExpenseEntry::query()
+                ->where('account_code', $chartOfAccount->account_code)
+                ->orderByDesc('expense_date')
+                ->orderByDesc('id')
+                ->limit(200)
+                ->get(),
+            'bankOptions' => $bankOptions,
+            'defaultBankCode' => $defaultBankCode,
+            'nextExpenseReference' => $this->nextExpenseReference(),
+            'canRecordExpenses' => ! $chartOfAccount->isTopLevel() && (bool) $chartOfAccount->is_active,
         ]);
+    }
+
+    /**
+     * Record distributions on a child account. Each line posts to the journal with
+     * the direction set by the account type (money in or out), so the parent
+     * roll-up, trial balance and P&L move automatically.
+     */
+    public function storeExpense(Request $request, ChartOfAccount $chartOfAccount): RedirectResponse
+    {
+        $request->merge([
+            'lines' => collect($request->input('lines', []))
+                ->filter(fn ($line) => is_array($line)
+                    && (trim((string) ($line['amount'] ?? '')) !== ''
+                        || trim((string) ($line['memo'] ?? '')) !== ''
+                        || trim((string) ($line['vat_amount'] ?? '')) !== ''))
+                ->values()
+                ->all(),
+        ]);
+
+        $validated = $request->validate([
+            'bank_account_code' => ['required', 'string', 'exists:chart_of_accounts,account_code'],
+            'reference_no' => ['nullable', 'string', 'max:30'],
+            'expense_date' => ['required', 'date'],
+            'payee_name' => ['nullable', 'string', 'max:200'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'header_memo' => ['nullable', 'string', 'max:500'],
+            'supplier_vat_code' => ['nullable', 'string', 'max:50'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
+            'after_save' => ['nullable', 'in:close,new'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'lines.*.vat_amount' => ['nullable', 'numeric', 'min:0'],
+            'lines.*.memo' => ['nullable', 'string', 'max:500'],
+            'lines.*.class' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        if ($chartOfAccount->isTopLevel()) {
+            return back()->withErrors(['expense' => 'Record transactions on a child account so they are filed correctly.'])->withInput();
+        }
+
+        $bank = ChartOfAccount::query()->where('account_code', $validated['bank_account_code'])->first();
+
+        if ($bank === null || $bank->account_type !== 'asset' || ! $bank->is_active) {
+            return back()->withErrors(['bank_account_code' => 'Pick an active bank or cash account (type Asset) to pay from.'])->withInput();
+        }
+
+        $reference = trim((string) ($validated['reference_no'] ?? '')) ?: $this->nextExpenseReference();
+
+        $lines = collect($validated['lines'])->map(fn (array $line) => [
+            'amount' => round((float) $line['amount'], 2),
+            'vat_amount' => round((float) ($line['vat_amount'] ?? 0), 2),
+            'memo' => trim((string) ($line['memo'] ?? '')) ?: (trim((string) ($validated['header_memo'] ?? '')) ?: null),
+            'class' => trim((string) ($line['class'] ?? '')) ?: null,
+        ])->all();
+
+        $ledger = app(LedgerService::class);
+        $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
+
+        DB::transaction(function () use ($ledger, $chartOfAccount, $validated, $reference, $lines, $bank, $staffId): void {
+            foreach ($lines as $line) {
+                $entry = AccountExpenseEntry::query()->create([
+                    'account_code' => $chartOfAccount->account_code,
+                    'reference_no' => $reference,
+                    'expense_date' => $validated['expense_date'],
+                    'payee_name' => $validated['payee_name'] ?? null,
+                    'address' => $validated['address'] ?? null,
+                    'memo' => $line['memo'],
+                    'class' => $line['class'],
+                    'currency' => self::DEFAULT_CURRENCY,
+                    'exchange_rate' => (float) ($validated['exchange_rate'] ?? 1) > 0 ? (float) $validated['exchange_rate'] : 1.0,
+                    'amount' => $line['amount'],
+                    'vat_amount' => $line['vat_amount'],
+                    'supplier_vat_code' => $validated['supplier_vat_code'] ?? null,
+                    'credit_account_code' => (string) $bank->account_code,
+                    'recorded_by' => $staffId,
+                ]);
+
+                $ledger->postAccountExpense($entry, $staffId);
+            }
+        });
+
+        $total = array_sum(array_map(fn (array $line) => $line['amount'] + $line['vat_amount'], $lines));
+
+        return redirect()
+            ->route('finance.chart-of-accounts.show', $chartOfAccount)
+            ->with('status', 'Transaction recorded: '.count($lines).' line(s), total KES '.number_format($total, 2).' posted to '.$chartOfAccount->account_code.'.')
+            ->with('open_expense_modal', ($validated['after_save'] ?? 'close') === 'new');
+    }
+
+    private function nextExpenseReference(): string
+    {
+        return str_pad((string) ((int) AccountExpenseEntry::query()->max('id') + 1), 5, '0', STR_PAD_LEFT);
     }
 
     public function edit(ChartOfAccount $chartOfAccount): View
