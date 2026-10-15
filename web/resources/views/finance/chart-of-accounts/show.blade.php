@@ -81,13 +81,13 @@
                 <dt>Total Debits</dt><dd>{{ number_format($debitTotal, 2) }}</dd>
                 <dt>Total Credits</dt><dd>{{ number_format($creditTotal, 2) }}</dd>
                 <dt>Posted on this account</dt>
-                <dd>{{ number_format(abs($ownBalance), 2) }} ({{ $ownBalance >= 0 ? 'Debit' : 'Credit' }})</dd>
+                <dd>{{ number_format(abs($ownBalance), 2) }} ({{ $chartOfAccount->signedBalanceLabel($ownBalance, true) }})</dd>
                 <dt>From child accounts</dt>
-                <dd>{{ number_format(abs($childBalance), 2) }} ({{ $childBalance >= 0 ? 'Debit' : 'Credit' }})</dd>
+                <dd>{{ number_format(abs($childBalance), 2) }} ({{ $chartOfAccount->signedBalanceLabel($childBalance, true) }})</dd>
                 <dt>Balance including children</dt>
                 <dd>
                     <strong>{{ number_format(abs($balance), 2) }}</strong>
-                    <span class="tich-text--muted">({{ $balance >= 0 ? 'Debit' : 'Credit' }}, {{ $chartOfAccount->isDebitNormal() ? 'debit normal' : 'credit normal' }})</span>
+                    <span class="tich-text--muted">({{ $chartOfAccount->signedBalanceLabel($balance, true) }} balance, {{ $chartOfAccount->isDebitNormal() ? 'debit normal' : 'credit normal' }})</span>
                 </dd>
                 <dt>Ledger entries on this account</dt><dd>{{ $entryCount }}</dd>
             </dl>
@@ -126,7 +126,7 @@
                                 <td>
                                     @php $ancestorBalance = $descendantBalances[$ancestor->account_code] ?? null; @endphp
                                     @if ($ancestorBalance)
-                                        {{ number_format(abs($ancestorBalance['net']), 2) }} {{ $ancestorBalance['net'] >= 0 ? 'Dr' : 'Cr' }}
+                                        {{ number_format(abs($ancestorBalance['net']), 2) }} {{ $ancestor->signedBalanceLabel($ancestorBalance['net']) }}
                                     @else
                                         <span class="tich-text--muted">Parent roll-up</span>
                                     @endif
@@ -145,7 +145,7 @@
                             <td>{{ ucfirst($chartOfAccount->account_type) }}</td>
                             <td>{{ $chartOfAccount->currency ?? 'KES' }}</td>
                             <td>
-                                <strong>{{ number_format(abs($balance), 2) }} {{ $balance >= 0 ? 'Dr' : 'Cr' }}</strong>
+                                <strong>{{ number_format(abs($balance), 2) }} {{ $chartOfAccount->signedBalanceLabel($balance) }}</strong>
                                 <br><span class="tich-text--sm tich-text--muted">own {{ number_format(abs($ownBalance), 2) }}</span>
                             </td>
                             <td class="tich-text--muted">This account</td>
@@ -166,7 +166,7 @@
                                 <td>{{ ucfirst($child->account_type) }}</td>
                                 <td>{{ $child->currency ?? 'KES' }}</td>
                                 <td>
-                                    {{ number_format(abs($childBalance['net']), 2) }} {{ $childBalance['net'] >= 0 ? 'Dr' : 'Cr' }}
+                                    {{ number_format(abs($childBalance['net']), 2) }} {{ $child->signedBalanceLabel($childBalance['net']) }}
                                     <br><span class="tich-text--sm tich-text--muted">Dr {{ number_format($childBalance['debit'], 2) }} / Cr {{ number_format($childBalance['credit'], 2) }}</span>
                                 </td>
                                 <td>
@@ -217,27 +217,30 @@
                                     <th>Name</th>
                                     <th>Memo</th>
                                     <th>Split</th>
-                                    <th style="text-align: right;">Amount (KES)</th>
+                                    <th style="text-align: right;">VAT (KES)</th>
+                                    <th style="text-align: right;">Effect on account (KES)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($expenseEntries as $entry)
                                     <tr>
-                                        <td>{{ $chartOfAccount->isDebitNormal() ? 'Payment' : 'Receipt' }}</td>
+                                        <td>{{ $entry->paidOut() ? 'Payment (money out)' : 'Receipt (money in)' }}</td>
                                         <td>{{ $entry->expense_date?->format('d/m/Y') }}</td>
                                         <td>{{ $entry->reference_no }}</td>
                                         <td>{{ $entry->payee_name ?? '-' }}</td>
                                         <td>{{ $entry->memo ?? '-' }}</td>
                                         <td><code>{{ $entry->credit_account_code }}</code></td>
-                                        <td style="text-align: right;">{{ number_format((float) $entry->amount + (float) $entry->vat_amount, 2) }}</td>
+                                        <td style="text-align: right;">{{ number_format((float) $entry->vat_amount, 2) }}</td>
+                                        <td style="text-align: right;">{{ $entry->increasesAccount() ? '+' : '-' }}{{ number_format((float) $entry->amount, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="6" style="text-align: right;"><strong>Total distributed</strong></td>
+                                    <td colspan="7" style="text-align: right;"><strong>Net effect on this account</strong></td>
                                     <td style="text-align: right;">
-                                        <strong>{{ number_format($expenseEntries->sum(fn ($entry) => (float) $entry->amount + (float) $entry->vat_amount), 2) }}</strong>
+                                        @php $netEffect = $expenseEntries->sum(fn ($entry) => $entry->increasesAccount() ? (float) $entry->amount : -(float) $entry->amount); @endphp
+                                        <strong>{{ $netEffect < 0 ? '-' : '+' }}{{ number_format(abs($netEffect), 2) }}</strong>
                                     </td>
                                 </tr>
                             </tfoot>
@@ -264,6 +267,7 @@
                         <input type="hidden" name="after_save" id="after_save" value="close">
 
                         <div class="tich-flex tich-flex--wrap tich-gap-2 tich-flex--middle tich-mb-4">
+                            @php $debitNormal = $chartOfAccount->isDebitNormal(); @endphp
                             <div>
                                 <label class="tich-caption" for="bank_account_code">BANK ACCOUNT</label>
                                 <select id="bank_account_code" name="bank_account_code" class="tich-select" required>
@@ -275,13 +279,24 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="tich-caption" for="direction">DIRECTION</label>
+                                <select id="direction" name="direction" class="tich-select" data-debit-normal="{{ $debitNormal ? 'true' : 'false' }}">
+                                    <option value="increase" @selected(old('direction', 'increase') === 'increase')>
+                                        Increase account ({{ $debitNormal ? 'money paid out' : 'money received' }})
+                                    </option>
+                                    <option value="decrease" @selected(old('direction') === 'decrease')>
+                                        Decrease account ({{ $debitNormal ? 'money refunded to us' : 'money paid out' }})
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
                                 <span class="tich-caption">ENDING BALANCE</span><br>
                                 <strong id="bank-ending-balance">KES 0.00</strong>
                             </div>
                             <div style="flex: 1;"></div>
                             <p class="tich-text tich-text--sm tich-text--muted" style="margin: 0;">
-                                Amounts post to <code>{{ $chartOfAccount->account_code }}</code>@if ($chartOfAccount->parent)
-                                    and roll up to <code>{{ $chartOfAccount->parent->account_code }}</code> automatically
+                                Posts Dr <code id="effect-dr">{{ $debitNormal ? $chartOfAccount->account_code : $defaultBankCode }}</code> / Cr <code id="effect-cr">{{ $debitNormal ? $defaultBankCode : $chartOfAccount->account_code }}</code>@if ($chartOfAccount->parent)
+                                    , then rolls up to <code>{{ $chartOfAccount->parent->account_code }}</code>
                                 @endif.
                             </p>
                         </div>
@@ -436,6 +451,11 @@
 
             const bankSelect = document.getElementById('bank_account_code');
             const balanceEl = document.getElementById('bank-ending-balance');
+            const directionSelect = document.getElementById('direction');
+            const effectDr = document.getElementById('effect-dr');
+            const effectCr = document.getElementById('effect-cr');
+            const accountCode = @json($chartOfAccount->account_code);
+            const debitNormal = @json($chartOfAccount->isDebitNormal());
 
             function updateBankBalance() {
                 const option = bankSelect.options[bankSelect.selectedIndex];
@@ -443,8 +463,20 @@
                 balanceEl.textContent = money(Math.abs(balance)) + (balance >= 0 ? ' Dr' : ' Cr');
             }
 
-            bankSelect.addEventListener('change', updateBankBalance);
+            function updatePostingEffect() {
+                const paidOut = debitNormal === (directionSelect.value !== 'decrease');
+                const bankCode = bankSelect.value || 'bank';
+                effectDr.textContent = paidOut ? accountCode : bankCode;
+                effectCr.textContent = paidOut ? bankCode : accountCode;
+            }
+
+            bankSelect.addEventListener('change', function () {
+                updateBankBalance();
+                updatePostingEffect();
+            });
+            directionSelect.addEventListener('change', updatePostingEffect);
             updateBankBalance();
+            updatePostingEffect();
 
             document.getElementById('save-new-btn').addEventListener('click', function () {
                 document.getElementById('after_save').value = 'new';

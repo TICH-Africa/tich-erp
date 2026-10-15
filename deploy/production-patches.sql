@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-08
+-- Last updated: 2026-10-15
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2433,6 +2433,19 @@ CREATE TABLE IF NOT EXISTS `account_expense_entries` (
   KEY `account_expense_entries_account_code_expense_date_index` (`account_code`,`expense_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- APPLY ON PRODUCTION: expense distributions recorded on child chart accounts
+
+-- -----------------------------------------------------------------------------
+-- 49. Account expense entries: increase / decrease direction
+--     "Record transaction" on a child chart account can now either add to or
+--     reduce the account (and its parent rolls up the same way). Existing rows
+--     default to 'increase', the side they were already posted on, so no
+--     historical figure moves.
+--     If MySQL reports #1060 Duplicate column name 'direction', the column is
+--     already there and this statement can be skipped.
+-- -----------------------------------------------------------------------------
+ALTER TABLE `account_expense_entries`
+  ADD COLUMN `direction` varchar(10) NOT NULL DEFAULT 'increase' AFTER `amount`;
+-- APPLY ON PRODUCTION: increase/decrease direction on child account transactions
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

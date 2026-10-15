@@ -141,7 +141,7 @@
                                     <td>{{ $account->currency ?? 'KES' }}</td>
                                     <td>
                                         <span class="tich-text--sm">Dr {{ number_format($balance['debit'], 2) }} / Cr {{ number_format($balance['credit'], 2) }}</span>
-                                        <br><strong>{{ number_format(abs($balance['net']), 2) }} {{ $balance['net'] >= 0 ? 'Dr' : 'Cr' }}</strong>
+                                        <br><strong>{{ number_format(abs($balance['net']), 2) }} {{ $account->signedBalanceLabel($balance['net']) }}</strong>
                                         @if ($childCount > 0)
                                             <br><span class="tich-text--sm tich-text--muted">
                                                 Own {{ number_format(abs($balance['ownNet']), 2) }} + children {{ number_format(abs($balance['childNet']), 2) }}

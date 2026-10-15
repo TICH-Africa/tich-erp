@@ -223,6 +223,7 @@ class ChartOfAccountController extends Controller
             'childBalance' => $balance['childNet'],
             'entryCount' => $chartOfAccount->ledgerEntries()->count(),
             'expenseEntries' => AccountExpenseEntry::query()
+                ->with('account')
                 ->where('account_code', $chartOfAccount->account_code)
                 ->orderByDesc('expense_date')
                 ->orderByDesc('id')
@@ -236,9 +237,9 @@ class ChartOfAccountController extends Controller
     }
 
     /**
-     * Record distributions on a child account. Each line posts to the journal with
-     * the direction set by the account type (money in or out), so the parent
-     * roll-up, trial balance and P&L move automatically.
+     * Record transactions on a child account. Each line posts to the journal on the side
+     * chosen by its direction, so the parent roll-up, trial balance and P&L move up or
+     * down accordingly.
      */
     public function storeExpense(Request $request, ChartOfAccount $chartOfAccount): RedirectResponse
     {
@@ -257,6 +258,7 @@ class ChartOfAccountController extends Controller
             'reference_no' => ['nullable', 'string', 'max:30'],
             'expense_date' => ['required', 'date'],
             'payee_name' => ['nullable', 'string', 'max:200'],
+            'direction' => ['nullable', 'in:increase,decrease'],
             'address' => ['nullable', 'string', 'max:500'],
             'header_memo' => ['nullable', 'string', 'max:500'],
             'supplier_vat_code' => ['nullable', 'string', 'max:50'],
@@ -279,7 +281,12 @@ class ChartOfAccountController extends Controller
             return back()->withErrors(['bank_account_code' => 'Pick an active bank or cash account (type Asset) to pay from.'])->withInput();
         }
 
+        if ($bank->account_code === $chartOfAccount->account_code) {
+            return back()->withErrors(['bank_account_code' => 'Pick a bank or cash account other than the account being recorded.'])->withInput();
+        }
+
         $reference = trim((string) ($validated['reference_no'] ?? '')) ?: $this->nextExpenseReference();
+        $direction = ($validated['direction'] ?? 'increase') === 'decrease' ? 'decrease' : 'increase';
 
         $lines = collect($validated['lines'])->map(fn (array $line) => [
             'amount' => round((float) $line['amount'], 2),
@@ -291,7 +298,7 @@ class ChartOfAccountController extends Controller
         $ledger = app(LedgerService::class);
         $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
 
-        DB::transaction(function () use ($ledger, $chartOfAccount, $validated, $reference, $lines, $bank, $staffId): void {
+        DB::transaction(function () use ($ledger, $chartOfAccount, $validated, $reference, $lines, $bank, $direction, $staffId): void {
             foreach ($lines as $line) {
                 $entry = AccountExpenseEntry::query()->create([
                     'account_code' => $chartOfAccount->account_code,
@@ -304,6 +311,7 @@ class ChartOfAccountController extends Controller
                     'currency' => self::DEFAULT_CURRENCY,
                     'exchange_rate' => (float) ($validated['exchange_rate'] ?? 1) > 0 ? (float) $validated['exchange_rate'] : 1.0,
                     'amount' => $line['amount'],
+                    'direction' => $direction,
                     'vat_amount' => $line['vat_amount'],
                     'supplier_vat_code' => $validated['supplier_vat_code'] ?? null,
                     'credit_account_code' => (string) $bank->account_code,
@@ -314,11 +322,14 @@ class ChartOfAccountController extends Controller
             }
         });
 
-        $total = array_sum(array_map(fn (array $line) => $line['amount'] + $line['vat_amount'], $lines));
+        $effect = array_sum(array_map(
+            fn (array $line) => $direction === 'decrease' ? -$line['amount'] : $line['amount'],
+            $lines,
+        ));
 
         return redirect()
             ->route('finance.chart-of-accounts.show', $chartOfAccount)
-            ->with('status', 'Transaction recorded: '.count($lines).' line(s), total KES '.number_format($total, 2).' posted to '.$chartOfAccount->account_code.'.')
+            ->with('status', 'Transaction recorded: '.count($lines).' line(s), KES '.number_format(abs($effect), 2).' '.($effect < 0 ? 'reduced' : 'added to').' '.$chartOfAccount->account_code.' ('.$chartOfAccount->account_name.').')
             ->with('open_expense_modal', ($validated['after_save'] ?? 'close') === 'new');
     }
 

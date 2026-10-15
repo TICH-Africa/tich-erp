@@ -128,4 +128,20 @@ class ChartOfAccount extends Model
     {
         return in_array($this->account_type, ['asset', 'expense'], true);
     }
+
+    /**
+     * Label a signed balance, which is stored positive on the account's normal side.
+     * A credit-normal account (liability, equity, revenue) therefore reads Cr when the
+     * signed figure is positive, not Dr.
+     */
+    public function signedBalanceLabel(float $signedBalance, bool $long = false): string
+    {
+        $debitSide = $this->isDebitNormal() === $signedBalance >= 0;
+
+        if ($long) {
+            return $debitSide ? 'Debit' : 'Credit';
+        }
+
+        return $debitSide ? 'Dr' : 'Cr';
+    }
 }
