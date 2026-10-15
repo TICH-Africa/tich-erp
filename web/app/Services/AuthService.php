@@ -507,17 +507,56 @@ class AuthService
 
         return [
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->displayName(),
-                'email' => $user->email,
-                'user_type' => $user->user_type,
-            ],
+            'user' => $this->mobileUserPayload($user),
             'mfa_required' => $this->mfaService->isMFARequired($user),
             'mfa_enabled' => (bool) $user->mfa_enabled,
             'mfa_setup_required' => $this->mfaService->isMFARequired($user) && ! $user->mfa_enabled,
             'roles' => $this->rbacService->getUserRoles($user),
         ];
+    }
+
+    /**
+     * Shared user payload for mobile login /me (portal capabilities).
+     *
+     * @return array<string, mixed>
+     */
+    public function mobileUserPayload(User $user): array
+    {
+        $isStudent = $user->user_type === 'student' || (bool) $user->student_id;
+        $canEmployee = ! $isStudent && (bool) $this->staffPortalStaffId($user);
+        $canStaff = ! $isStudent && $this->isTeachingStaff($user);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->displayName(),
+            'email' => $user->email,
+            'user_type' => $user->user_type,
+            'staff_id' => $user->staff_id,
+            'student_id' => $user->student_id,
+            'is_teaching_staff' => $canStaff,
+            'can_access_employee_portal' => $canEmployee,
+            'can_access_staff_portal' => $canStaff,
+        ];
+    }
+
+    protected function staffPortalStaffId(User $user): ?int
+    {
+        try {
+            $staff = app(StaffPortalService::class)->staffForUser($user);
+
+            return $staff?->id;
+        } catch (\Throwable) {
+            return $user->staff_id ? (int) $user->staff_id : null;
+        }
+    }
+
+    protected function isTeachingStaff(User $user): bool
+    {
+        try {
+            return app(StaffPortalService::class)->isTeachingStaff($user);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     public function logLogout(?User $user, ?Request $request = null): void

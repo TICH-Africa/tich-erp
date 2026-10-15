@@ -125,7 +125,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
-      title: 'My Employee Portal',
+      title: 'Employee Portal',
       actions: [_notificationAction()],
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,

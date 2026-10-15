@@ -203,3 +203,28 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/assessments/{assessment}', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'show']);
     Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'submit']);
 });
+
+/*
+| Mobile / Sanctum teaching Staff Portal (separate from Employee HR portal).
+| MFA intentionally not required (mobile v1).
+*/
+Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Api\Staff\mobile\DashboardController::class);
+    Route::get('/units', \App\Http\Controllers\Api\Staff\mobile\UnitsController::class);
+    Route::get('/timetable', \App\Http\Controllers\Api\Staff\mobile\TimetableController::class);
+
+    Route::get('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'index']);
+    Route::post('/attendance/sync', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'sync']);
+    Route::post('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'store']);
+    Route::get('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'show']);
+    Route::post('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'save']);
+
+    Route::get('/grading', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'index']);
+    Route::post('/grading/cat', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'storeCat']);
+
+    Route::get('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'index']);
+    Route::post('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'store']);
+    Route::post('/lesson-plans/{plan}/submit', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'submit']);
+
+    Route::get('/content', \App\Http\Controllers\Api\Staff\mobile\ContentController::class);
+});
