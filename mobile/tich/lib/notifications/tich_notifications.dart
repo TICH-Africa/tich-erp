@@ -17,6 +17,7 @@ const _channelName = 'TICH Alerts';
 const _syncTask = 'tich.notification.sync';
 const _deviceIdKey = 'tich_push_device_id';
 const _shownIdsKey = 'tich_shown_notification_ids';
+const _lastClockInNudgeKey = 'tich_last_clockin_nudge_ms';
 
 @pragma('vm:entry-point')
 void tichNotificationDispatcherCallback() {
@@ -89,8 +90,9 @@ class TichNotifications {
 
       _ready = true;
 
-      // Permissions + Workmanager after channel/plugin are ready (non-blocking callers).
-      unawaited(_postInitHeavyWork());
+      // Ask for notification permission before any schedules fire.
+      await _ensurePermissions();
+      unawaited(_initWorkmanager());
     } catch (_) {
       _ready = true; // allow app to proceed even if notifications fail
     }
@@ -102,15 +104,19 @@ class TichNotifications {
     }
   }
 
-  Future<void> _postInitHeavyWork() async {
+  Future<void> _ensurePermissions() async {
     try {
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-        final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-        await Permission.notification.request();
-        await androidPlugin?.requestNotificationsPermission();
-        await androidPlugin?.requestExactAlarmsPermission();
-      }
+      if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await Permission.notification.request();
+      await androidPlugin?.requestNotificationsPermission();
+      await androidPlugin?.requestExactAlarmsPermission();
+    } catch (_) {}
+  }
+
+  Future<void> _initWorkmanager() async {
+    try {
       await Workmanager().initialize(tichNotificationDispatcherCallback);
       await Workmanager().registerPeriodicTask(
         'tich-notification-sync',
@@ -210,37 +216,67 @@ class TichNotifications {
 
   Future<void> _scheduleClockInReminders(bool alreadyClockedIn) async {
     if (!_ready) await init();
+    await _ensurePermissions();
     await _cancelTracked(_clockInIds);
-    if (alreadyClockedIn) return;
+    if (alreadyClockedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_lastClockInNudgeKey);
+      return;
+    }
 
     final now = tz.TZDateTime.now(tz.local);
-    var id = 8000;
-    var scheduled = 0;
+    if (now.weekday == DateTime.saturday || now.weekday == DateTime.sunday) {
+      return;
+    }
 
-    // Only the next few upcoming slots (keeps UI snappy vs 40+ schedules).
-    for (var dayOffset = 0; dayOffset <= 1 && scheduled < 6; dayOffset++) {
+    const title = 'Clock-in reminder';
+    const body =
+        'You have not clocked in yet today. Open TICH in Africa to clock in.';
+
+    // Immediate heads-up if already past 08:00 EAT and still not clocked in
+    // (throttled so opening Home/Clock does not spam every few seconds).
+    final eightAm = tz.TZDateTime(tz.local, now.year, now.month, now.day, 8);
+    if (!now.isBefore(eightAm) && now.hour < 18) {
+      final prefs = await SharedPreferences.getInstance();
+      final lastMs = prefs.getInt(_lastClockInNudgeKey) ?? 0;
+      final last = DateTime.fromMillisecondsSinceEpoch(lastMs);
+      if (now.difference(last) >= const Duration(minutes: 25)) {
+        await showPopup(
+          title: title,
+          body: body,
+          id: 7999,
+          payload: 'attendance',
+        );
+        await prefs.setInt(
+          _lastClockInNudgeKey,
+          now.millisecondsSinceEpoch,
+        );
+      }
+    }
+
+    // Remaining half-hour slots today (08:00–17:30), then tomorrow morning.
+    var id = 8000;
+    for (var dayOffset = 0; dayOffset <= 1; dayOffset++) {
       final day = now.add(Duration(days: dayOffset));
       if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
         continue;
       }
       var slot = tz.TZDateTime(tz.local, day.year, day.month, day.day, 8, 0);
-      while (slot.hour < 18 && scheduled < 6) {
+      while (slot.hour < 18) {
         if (slot.isAfter(now)) {
           await _plugin.zonedSchedule(
             id: id,
             scheduledDate: slot,
             notificationDetails: _details,
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-            title: 'Clock-in reminder',
-            body:
-                'You have not clocked in yet today. Open TICH to clock in.',
+            title: title,
+            body: body,
             payload: 'attendance',
           );
           _clockInIds.add(id);
-          scheduled++;
+          id++;
         }
         slot = slot.add(const Duration(minutes: 30));
-        id++;
       }
     }
   }

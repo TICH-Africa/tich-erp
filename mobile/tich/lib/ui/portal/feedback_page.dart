@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 
 class FeedbackPage extends StatefulWidget {
@@ -121,7 +122,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              item['created_at']?.toString() ?? '',
+                              formatDateTime(item['created_at']),
                               style: tichUi(
                                 fontSize: 12,
                                 color: TichColors.neutralMuted,
@@ -294,7 +295,7 @@ class _FeedbackDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item['created_at']?.toString() ?? '',
+                  formatDateTime(item['created_at']),
                   style: tichUi(
                     fontSize: 12,
                     color: TichColors.neutralMuted,

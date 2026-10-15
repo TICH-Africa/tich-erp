@@ -60,7 +60,7 @@ class MobileReminderService
 
             $name = trim(($member->first_name ?? '').' '.($member->surname ?? '')) ?: 'there';
             $title = 'Clock-in reminder';
-            $body = "Good day {$name}. You have not clocked in yet today. Please open TICH and clock in.";
+            $body = "Good day {$name}. You have not clocked in yet today. Please open TICH in Africa and clock in.";
 
             // notifyUser also fans out FCM when configured; in-app row keeps the counter.
             $this->notifications->notifyUser(
