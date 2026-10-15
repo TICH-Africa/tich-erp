@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/tich_theme.dart';
+import 'lazy_indexed_stack.dart';
 
 /// True when the current OS should use Cupertino chrome (iOS).
 bool get usesCupertino =>
@@ -94,7 +95,7 @@ class AdaptiveScaffold extends StatelessWidget {
     this.leading,
     this.showLogout = false,
     this.onLogout,
-    this.brandEyebrow = 'TICH',
+    this.brandEyebrow = 'TICH in Africa',
   });
 
   final String title;
@@ -243,7 +244,7 @@ class AdaptiveTabScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      body: IndexedStack(index: currentIndex, children: pages),
+      body: LazyIndexedStack(index: currentIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,

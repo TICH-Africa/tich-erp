@@ -29,6 +29,7 @@ class AuthRepository {
     AuthApi? api,
     AuthTokenStore? tokenStore,
     AppSettings? settings,
+    this.onTokenChanged,
   })  : _api = api ?? AuthApi(),
         _tokenStore = tokenStore ?? AuthTokenStore(),
         _settings = settings ?? AppSettings.instance;
@@ -36,6 +37,17 @@ class AuthRepository {
   final AuthApi _api;
   final AuthTokenStore _tokenStore;
   final AppSettings _settings;
+  final void Function(String? token)? onTokenChanged;
+
+  Future<void> _persistToken(String token) async {
+    await _tokenStore.save(token);
+    onTokenChanged?.call(token);
+  }
+
+  Future<void> _clearToken() async {
+    await _tokenStore.clear();
+    onTokenChanged?.call(null);
+  }
 
   Future<SessionRestoreResult> restoreSession() async {
     final token = await _tokenStore.read();
@@ -44,10 +56,12 @@ class AuthRepository {
     }
 
     if (_settings.sessionExpired) {
-      await _tokenStore.clear();
+      await _clearToken();
       await _settings.clearSessionMeta();
       return SessionRestoreResult.expired();
     }
+
+    onTokenChanged?.call(token);
 
     try {
       final user = await _api.me(token);
@@ -57,7 +71,7 @@ class AuthRepository {
       return SessionRestoreResult.authenticated(user);
     } on AuthApiException catch (e) {
       if (e.statusCode == 401 || e.statusCode == 403) {
-        await _tokenStore.clear();
+        await _clearToken();
         await _settings.clearSessionMeta();
         return SessionRestoreResult.none();
       }
@@ -70,7 +84,7 @@ class AuthRepository {
     required String password,
   }) async {
     final result = await _api.login(email: email, password: password);
-    await _tokenStore.save(result.token);
+    await _persistToken(result.token);
     await _settings.markSignedIn();
     try {
       return await _api.me(result.token);
@@ -85,7 +99,7 @@ class AuthRepository {
   }) async {
     // Re-auth with password without discarding token until success.
     final result = await _api.login(email: email, password: password);
-    await _tokenStore.save(result.token);
+    await _persistToken(result.token);
     await _settings.markSignedIn();
     try {
       return await _api.me(result.token);
@@ -120,7 +134,7 @@ class AuthRepository {
         // Local logout still proceeds.
       }
     }
-    await _tokenStore.clear();
+    await _clearToken();
     await _settings.clearSessionMeta();
   }
 }

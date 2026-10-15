@@ -37,7 +37,40 @@ abstract final class TichColors {
 }
 
 abstract final class TichTheme {
+  static ThemeData? _light;
+  static ThemeData? _dark;
+  static CupertinoThemeData? _cupertino;
+  static TextStyle? _displayBase;
+
+  /// Pre-build themes so first paint and settings toggles stay cheap.
+  static void warmCache() {
+    light();
+    dark();
+    cupertino();
+    display();
+  }
+
+  /// Cached Merriweather style for titles (avoids GoogleFonts work per widget).
+  static TextStyle display({
+    double fontSize = 16,
+    FontWeight fontWeight = FontWeight.w700,
+    Color? color,
+    double? height,
+  }) {
+    _displayBase ??= GoogleFonts.merriweather(
+      fontWeight: FontWeight.w700,
+      fontSize: 16,
+    );
+    return _displayBase!.copyWith(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+    );
+  }
+
   static ThemeData light() {
+    if (_light != null) return _light!;
     final merriweather = GoogleFonts.merriweatherTextTheme();
     final colorScheme = ColorScheme.fromSeed(
       seedColor: TichColors.blue,
@@ -50,7 +83,7 @@ abstract final class TichTheme {
       error: const Color(0xFFB3261E),
     );
 
-    return ThemeData(
+    final built = ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: TichColors.neutral,
@@ -63,10 +96,9 @@ abstract final class TichTheme {
         foregroundColor: TichColors.white,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.merriweather(
+        titleTextStyle: display(
           color: TichColors.white,
           fontSize: 18,
-          fontWeight: FontWeight.w700,
         ),
       ),
       cardTheme: CardThemeData(
@@ -131,9 +163,11 @@ abstract final class TichTheme {
         color: TichColors.blue,
       ),
     );
+    return _light = built;
   }
 
   static ThemeData dark() {
+    if (_dark != null) return _dark!;
     final merriweather = GoogleFonts.merriweatherTextTheme(ThemeData.dark().textTheme);
     final colorScheme = ColorScheme.fromSeed(
       seedColor: TichColors.blue,
@@ -142,7 +176,7 @@ abstract final class TichTheme {
       secondary: TichColors.green,
     );
 
-    return ThemeData(
+    final built = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
@@ -151,10 +185,9 @@ abstract final class TichTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: TichColors.blueDark,
         foregroundColor: TichColors.white,
-        titleTextStyle: GoogleFonts.merriweather(
+        titleTextStyle: display(
           color: TichColors.white,
           fontSize: 18,
-          fontWeight: FontWeight.w700,
         ),
       ),
       cardTheme: CardThemeData(
@@ -173,29 +206,30 @@ abstract final class TichTheme {
         ),
       ),
     );
+    return _dark = built;
   }
 
   static CupertinoThemeData cupertino() {
-    return CupertinoThemeData(
+    if (_cupertino != null) return _cupertino!;
+    final built = CupertinoThemeData(
       primaryColor: TichColors.blue,
       scaffoldBackgroundColor: TichColors.neutral,
       barBackgroundColor: TichColors.blue,
       primaryContrastingColor: TichColors.white,
       textTheme: CupertinoTextThemeData(
         primaryColor: TichColors.grey,
-        textStyle: GoogleFonts.merriweather(
+        textStyle: display(
           color: TichColors.grey,
           fontSize: 14,
+          fontWeight: FontWeight.w400,
         ),
-        navTitleTextStyle: GoogleFonts.merriweather(
+        navTitleTextStyle: display(
           color: TichColors.white,
           fontSize: 16,
-          fontWeight: FontWeight.w700,
         ),
-        navLargeTitleTextStyle: GoogleFonts.merriweather(
+        navLargeTitleTextStyle: display(
           color: TichColors.white,
           fontSize: 28,
-          fontWeight: FontWeight.w700,
         ),
         actionTextStyle: tichUi(
           color: TichColors.blue,
@@ -203,5 +237,6 @@ abstract final class TichTheme {
         ),
       ),
     );
+    return _cupertino = built;
   }
 }

@@ -28,6 +28,8 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
     _future = widget.api.timetable().then((data) {
       final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
       final timetables = tt['timetables'] as List? ?? const [];
+      // Fire-and-forget so opening Timetable stays responsive.
+      // ignore: unawaited_futures
       TichNotifications.instance
           .scheduleLessonReminders(_sessionsFor(timetables, 'lesson'));
       return data;

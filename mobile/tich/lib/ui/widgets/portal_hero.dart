@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/tich_theme.dart';
 
@@ -25,97 +24,61 @@ class PortalHero extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent,
-            Color.lerp(accent, TichColors.green, 0.45)!,
-          ],
-        ),
+        color: accent,
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.28),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: accent.withValues(alpha: 0.22),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -18,
-            top: -22,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.10),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 36,
-            bottom: -28,
-            child: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            child: Column(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: GoogleFonts.merriweather(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                            ),
-                          ),
-                          if (subtitle != null && subtitle!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              subtitle!,
-                              style: tichUi(
-                                color: Colors.white.withValues(alpha: 0.88),
-                                fontSize: 13,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TichTheme.display(
+                          color: Colors.white,
+                          fontSize: 20,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                    if (trailing != null) ...[
-                      const SizedBox(width: 12),
-                      trailing!,
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          subtitle!,
+                          style: tichUi(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: 13,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-                if (footer != null) ...[
-                  const SizedBox(height: 14),
-                  footer!,
+                if (trailing != null) ...[
+                  const SizedBox(width: 12),
+                  trailing!,
                 ],
               ],
             ),
-          ),
-        ],
+            if (footer != null) ...[
+              const SizedBox(height: 14),
+              footer!,
+            ],
+          ],
+        ),
       ),
     );
   }

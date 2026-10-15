@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,6 +10,7 @@ import 'bloc/auth/auth_event.dart';
 import 'bloc/auth/auth_state.dart';
 import 'data/api_client.dart';
 import 'data/auth_repository.dart';
+import 'data/auth_token_store.dart';
 import 'data/employee_api.dart';
 import 'data/student_api.dart';
 import 'notifications/tich_notifications.dart';
@@ -20,8 +24,10 @@ import 'ui/shell/student_portal_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppSettings.instance.load();
-  await TichNotifications.instance.init();
+  TichTheme.warmCache();
   runApp(const TichApp());
+  // Defer timezone / Workmanager / permission work off the first frame.
+  unawaited(TichNotifications.instance.init());
 }
 
 class TichApp extends StatefulWidget {
@@ -37,12 +43,27 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
   late final ApiClient _apiClient;
   final _settings = AppSettings.instance;
 
+  late final ThemeData _lightTheme = TichTheme.light();
+  late final ThemeData _darkTheme = TichTheme.dark();
+  late final CupertinoThemeData _cupertinoTheme = TichTheme.cupertino();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _apiClient = ApiClient();
-    _authRepository = AuthRepository();
+    final tokenStore = AuthTokenStore();
+    _apiClient = ApiClient(tokenStore: tokenStore);
+    TichNotifications.instance.attachApiClient(_apiClient);
+    _authRepository = AuthRepository(
+      tokenStore: tokenStore,
+      onTokenChanged: (token) {
+        if (token == null) {
+          _apiClient.invalidateTokenCache();
+        } else {
+          _apiClient.cacheToken(token);
+        }
+      },
+    );
     _authBloc = AuthBloc(repository: _authRepository)..add(const AuthStarted());
   }
 
@@ -55,7 +76,6 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Lock only when the app truly goes to background (not mid-dialog).
     if (state == AppLifecycleState.paused) {
       _authBloc.add(const AuthAppPaused());
     }
@@ -76,12 +96,12 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
           listenable: _settings,
           builder: (context, _) {
             return AdaptiveApp(
-              title: 'TICH',
-              materialTheme: TichTheme.light(),
-              materialDarkTheme: TichTheme.dark(),
+              title: 'TICH in Africa',
+              materialTheme: _lightTheme,
+              materialDarkTheme: _darkTheme,
               themeMode: _settings.themeMode,
               textScaleFactor: _settings.textScaleFactor,
-              cupertinoTheme: TichTheme.cupertino(),
+              cupertinoTheme: _cupertinoTheme,
               home: const _AuthGate(),
             );
           },
@@ -91,23 +111,49 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
   }
 }
 
-class _AuthGate extends StatelessWidget {
+class _AuthGate extends StatefulWidget {
   const _AuthGate();
 
   @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  String? _primedUserKey;
+
+  void _primeIfNeeded(AuthAuthenticated state) {
+    final key = '${state.user.id}:${state.user.isStudent}';
+    if (_primedUserKey == key) return;
+    _primedUserKey = key;
+    unawaited(
+      TichNotifications.instance.onAuthenticated(
+        isStudent: state.user.isStudent,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listenWhen: (prev, next) => next is AuthAuthenticated,
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          _primeIfNeeded(state);
+        }
+      },
+      buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
+          (next is AuthAuthenticated && prev is AuthAuthenticated &&
+              next.user.id != prev.user.id) ||
+          next is AuthLocked,
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          TichNotifications.instance.onAuthenticated(
-            isStudent: state.user.isStudent,
-          );
           if (state.user.isStudent) {
             return const StudentPortalShell();
           }
           return const PortalShell();
         }
         if (state is AuthLocked) {
+          _primedUserKey = null;
           return UnlockPage(user: state.user, message: state.message);
         }
         if (state is AuthInitial || state is AuthChecking) {
@@ -115,6 +161,7 @@ class _AuthGate extends StatelessWidget {
             body: Center(child: AdaptiveProgress()),
           );
         }
+        _primedUserKey = null;
         return const LoginPage();
       },
     );

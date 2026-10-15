@@ -21,22 +21,28 @@ class PortalShell extends StatefulWidget {
 
 class _PortalShellState extends State<PortalShell> {
   int _index = 0;
+  List<Widget>? _pages;
 
   @override
-  Widget build(BuildContext context) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_pages != null) return;
     final api = context.read<EmployeeApi>();
-    final pages = [
+    _pages = [
       DashboardPage(api: api),
       LeavePage(api: api),
       AttendancePage(api: api),
       PayslipsPage(api: api),
       MorePage(api: api),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return AdaptiveTabScaffold(
       currentIndex: _index,
       onTap: (i) => setState(() => _index = i),
-      pages: pages,
+      pages: _pages!,
       items: const [
         AdaptiveTabItem(
           label: 'Home',

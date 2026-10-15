@@ -19,22 +19,28 @@ class StudentPortalShell extends StatefulWidget {
 
 class _StudentPortalShellState extends State<StudentPortalShell> {
   int _index = 0;
+  List<Widget>? _pages;
 
   @override
-  Widget build(BuildContext context) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_pages != null) return;
     final api = context.read<StudentApi>();
-    final pages = [
+    _pages = [
       StudentHomePage(api: api),
       StudentAcademicsHubPage(api: api),
       StudentTimetablePage(api: api),
       StudentFinancePage(api: api),
       StudentMorePage(api: api),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return AdaptiveTabScaffold(
       currentIndex: _index,
       onTap: (i) => setState(() => _index = i),
-      pages: pages,
+      pages: _pages!,
       items: const [
         AdaptiveTabItem(
           label: 'Home',

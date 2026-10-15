@@ -64,11 +64,7 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6CAB33), Color(0xFF1669A6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: TichColors.greenDark,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(

@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
@@ -33,46 +34,83 @@ class TichNotifications {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
-  final ApiClient _api = ApiClient();
+  ApiClient _api = ApiClient();
   bool _ready = false;
+  bool _initStarted = false;
   String? _deviceId;
+  Future<void>? _clockInInflight;
+  Future<void>? _lessonInflight;
+  final List<int> _clockInIds = [];
+  final List<int> _lessonIds = [];
+
+  void attachApiClient(ApiClient client) {
+    _api = client;
+  }
 
   Future<void> init() async {
-    if (_ready) return;
-    tzdata.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('Africa/Nairobi'));
-
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    await _plugin.initialize(
-      settings: const InitializationSettings(android: android, iOS: ios),
-    );
-
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(
-      const AndroidNotificationChannel(
-        _channelId,
-        _channelName,
-        description: 'Clock-in, class, and portal alerts',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      ),
-    );
-
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      await Permission.notification.request();
-      await androidPlugin?.requestNotificationsPermission();
-      await androidPlugin?.requestExactAlarmsPermission();
-    }
+    if (_ready || _initStarted) return _ready ? Future.value() : _waitReady();
+    _initStarted = true;
 
     try {
+      // Smaller timezone DB load path than default when available.
+      tzdata.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('Africa/Nairobi'));
+
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const ios = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+      await _plugin.initialize(
+        settings: const InitializationSettings(android: android, iOS: ios),
+      );
+
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: 'Clock-in, class, and portal alerts',
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+          showBadge: true,
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      _deviceId = prefs.getString(_deviceIdKey);
+      if (_deviceId == null || _deviceId!.isEmpty) {
+        _deviceId = const Uuid().v4();
+        await prefs.setString(_deviceIdKey, _deviceId!);
+      }
+
+      _ready = true;
+
+      // Permissions + Workmanager after channel/plugin are ready (non-blocking callers).
+      unawaited(_postInitHeavyWork());
+    } catch (_) {
+      _ready = true; // allow app to proceed even if notifications fail
+    }
+  }
+
+  Future<void> _waitReady() async {
+    while (!_ready) {
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+  }
+
+  Future<void> _postInitHeavyWork() async {
+    try {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        await Permission.notification.request();
+        await androidPlugin?.requestNotificationsPermission();
+        await androidPlugin?.requestExactAlarmsPermission();
+      }
       await Workmanager().initialize(tichNotificationDispatcherCallback);
       await Workmanager().registerPeriodicTask(
         'tich-notification-sync',
@@ -81,18 +119,7 @@ class TichNotifications {
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
         constraints: Constraints(networkType: NetworkType.connected),
       );
-    } catch (_) {
-      // Workmanager may be unavailable on desktop/web.
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    _deviceId = prefs.getString(_deviceIdKey);
-    if (_deviceId == null || _deviceId!.isEmpty) {
-      _deviceId = const Uuid().v4();
-      await prefs.setString(_deviceIdKey, _deviceId!);
-    }
-
-    _ready = true;
+    } catch (_) {}
   }
 
   Future<void> registerDeviceToken() async {
@@ -107,14 +134,14 @@ class TichNotifications {
     } catch (_) {}
   }
 
-  /// After login: refresh device registration and pull unread into system trays.
   Future<void> onAuthenticated({required bool isStudent}) async {
     if (!_ready) await init();
     await registerDeviceToken();
-    await syncFromServerInBackground(isStudent: isStudent);
+    // Sync tray popups without blocking portal UI.
+    unawaited(syncFromServerInBackground(isStudent: isStudent));
   }
 
-  NotificationDetails get _details => NotificationDetails(
+  NotificationDetails get _details => const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -127,7 +154,7 @@ class TichNotifications {
           enableVibration: true,
           ticker: 'TICH',
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -173,25 +200,31 @@ class TichNotifications {
     );
   }
 
-  Future<void> scheduleClockInReminders({required bool alreadyClockedIn}) async {
+  Future<void> scheduleClockInReminders({required bool alreadyClockedIn}) {
+    _clockInInflight ??=
+        _scheduleClockInReminders(alreadyClockedIn).whenComplete(() {
+      _clockInInflight = null;
+    });
+    return _clockInInflight!;
+  }
+
+  Future<void> _scheduleClockInReminders(bool alreadyClockedIn) async {
     if (!_ready) await init();
-    await cancelClockInReminders();
+    await _cancelTracked(_clockInIds);
     if (alreadyClockedIn) return;
 
     final now = tz.TZDateTime.now(tz.local);
     var id = 8000;
+    var scheduled = 0;
 
-    // Cover today and the next weekday so reminders survive overnight without
-    // opening the app (until clock-in cancels them).
-    for (var dayOffset = 0; dayOffset <= 1; dayOffset++) {
+    // Only the next few upcoming slots (keeps UI snappy vs 40+ schedules).
+    for (var dayOffset = 0; dayOffset <= 1 && scheduled < 6; dayOffset++) {
       final day = now.add(Duration(days: dayOffset));
       if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
         continue;
       }
-
       var slot = tz.TZDateTime(tz.local, day.year, day.month, day.day, 8, 0);
-      while (slot.hour < 18 || (slot.hour == 18 && slot.minute == 0)) {
-        if (slot.hour >= 18) break;
+      while (slot.hour < 18 && scheduled < 6) {
         if (slot.isAfter(now)) {
           await _plugin.zonedSchedule(
             id: id,
@@ -203,32 +236,41 @@ class TichNotifications {
                 'You have not clocked in yet today. Open TICH to clock in.',
             payload: 'attendance',
           );
+          _clockInIds.add(id);
+          scheduled++;
         }
         slot = slot.add(const Duration(minutes: 30));
         id++;
-        if (id >= 8100) return;
       }
     }
   }
 
   Future<void> cancelClockInReminders() async {
-    for (var id = 8000; id < 8100; id++) {
-      await _plugin.cancel(id: id);
-    }
+    await _cancelTracked(_clockInIds);
   }
 
   Future<void> scheduleLessonReminders(
     List<Map<String, dynamic>> sessions,
+  ) {
+    _lessonInflight ??=
+        _scheduleLessonReminders(sessions).whenComplete(() {
+      _lessonInflight = null;
+    });
+    return _lessonInflight!;
+  }
+
+  Future<void> _scheduleLessonReminders(
+    List<Map<String, dynamic>> sessions,
   ) async {
     if (!_ready) await init();
-    for (var id = 9000; id < 9200; id++) {
-      await _plugin.cancel(id: id);
-    }
+    await _cancelTracked(_lessonIds);
 
     final now = tz.TZDateTime.now(tz.local);
     var id = 9000;
+    var scheduled = 0;
 
     for (final s in sessions) {
+      if (scheduled >= 8) break;
       final day = (s['day_of_week'] as num?)?.toInt();
       if (day == null) continue;
       final startRaw = s['start_time']?.toString() ?? '';
@@ -237,7 +279,6 @@ class TichNotifications {
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute = int.tryParse(parts[1]) ?? 0;
 
-      // Schedule for the next occurrence of that weekday (today or later this week).
       var start = tz.TZDateTime(
         tz.local,
         now.year,
@@ -248,12 +289,8 @@ class TichNotifications {
       );
       var delta = (day - now.weekday) % 7;
       if (delta < 0) delta += 7;
-      if (delta == 0 && !start.isAfter(now)) {
-        delta = 7;
-      }
-      if (delta > 0) {
-        start = start.add(Duration(days: delta));
-      }
+      if (delta == 0 && !start.isAfter(now)) delta = 7;
+      if (delta > 0) start = start.add(Duration(days: delta));
 
       final remindAt = start.subtract(const Duration(minutes: 30));
       if (!remindAt.isAfter(now)) continue;
@@ -268,7 +305,7 @@ class TichNotifications {
           '${room != null && room.isNotEmpty ? ' in $room' : ''}.';
 
       await _plugin.zonedSchedule(
-        id: id++,
+        id: id,
         scheduledDate: remindAt,
         notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
@@ -294,7 +331,18 @@ class TichNotifications {
         body: body,
         payload: 'timetable',
       );
-      if (id >= 9200) break;
+      _lessonIds.add(id);
+      id++;
+      scheduled++;
+    }
+  }
+
+  Future<void> _cancelTracked(List<int> ids) async {
+    if (ids.isEmpty) return;
+    final copy = List<int>.from(ids);
+    ids.clear();
+    for (final id in copy) {
+      await _plugin.cancel(id: id);
     }
   }
 
@@ -308,7 +356,7 @@ class TichNotifications {
     final list = prefs.getStringList(_shownIdsKey) ?? <String>[];
     if (list.contains(key)) return;
     list.add(key);
-    while (list.length > 200) {
+    while (list.length > 120) {
       list.removeAt(0);
     }
     await prefs.setStringList(_shownIdsKey, list);
@@ -319,10 +367,10 @@ class TichNotifications {
       if (!_ready) await init();
       final shown = await _shownIds();
 
-      Future<void> drain(String path, String idField, String readField) async {
+      Future<void> drain(String path, String readField) async {
         final data = await _api.get(path);
         final items = data['items'] as List? ?? const [];
-        for (final raw in items.take(8)) {
+        for (final raw in items.take(5)) {
           final n = Map<String, dynamic>.from(raw as Map);
           final id = n['id']?.toString() ?? '';
           if (id.isEmpty) continue;
@@ -342,18 +390,17 @@ class TichNotifications {
       }
 
       if (isStudent == true) {
-        await drain('/student/notifications', 'id', 'read_at');
+        await drain('/student/notifications', 'read_at');
         return;
       }
       if (isStudent == false) {
-        await drain('/employee/notifications', 'id', 'is_read');
+        await drain('/employee/notifications', 'is_read');
         return;
       }
-
       try {
-        await drain('/employee/notifications', 'id', 'is_read');
+        await drain('/employee/notifications', 'is_read');
       } catch (_) {
-        await drain('/student/notifications', 'id', 'read_at');
+        await drain('/student/notifications', 'read_at');
       }
     } catch (_) {}
   }

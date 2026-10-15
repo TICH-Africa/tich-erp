@@ -57,10 +57,10 @@ class _LoginPageState extends State<LoginPage> {
 
         final formChildren = <Widget>[
           Text(
-            'TICH',
+            'TICH in Africa',
             textAlign: TextAlign.center,
             style: GoogleFonts.merriweather(
-              fontSize: 40,
+              fontSize: 32,
               fontWeight: FontWeight.w700,
               color: TichColors.green,
             ),
@@ -192,14 +192,8 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
 
-    final body = Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [TichColors.blueLight, TichColors.neutral],
-        ),
-      ),
+    final body = ColoredBox(
+      color: TichColors.neutral,
       child: SafeArea(child: content),
     );
 

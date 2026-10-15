@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../theme/tich_theme.dart';
@@ -19,9 +18,8 @@ class TichSectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.merriweather(
+              style: TichTheme.display(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
                 color: TichColors.grey,
               ),
             ),

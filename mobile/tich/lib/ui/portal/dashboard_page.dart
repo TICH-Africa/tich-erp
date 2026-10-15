@@ -47,8 +47,6 @@ class _DashboardPageState extends State<DashboardPage> {
           _notifCount = (data['unread'] as num?)?.toInt() ??
               (data['total'] as num?)?.toInt() ??
               0);
-      await TichNotifications.instance
-          .syncFromServerInBackground(isStudent: false);
     } catch (_) {
       // Keep badge at 0 if notifications fail.
     }
@@ -61,7 +59,9 @@ class _DashboardPageState extends State<DashboardPage> {
       final clockedIn = today != null && today['clock_in_at'] != null;
       if (!mounted) return;
       setState(() => _clockedInToday = clockedIn);
-      await TichNotifications.instance
+      // Don't block the UI isolate on dozens of plugin schedules.
+      // ignore: unawaited_futures
+      TichNotifications.instance
           .scheduleClockInReminders(alreadyClockedIn: clockedIn);
     } catch (_) {}
   }

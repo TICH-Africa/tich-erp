@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -34,18 +36,28 @@ class _StudentHomePageState extends State<StudentHomePage> {
   @override
   void initState() {
     super.initState();
-    _reload();
+    _future = widget.api.dashboard().then((data) {
+      final unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
+      // Paint home first; timetable + reminders run in the background.
+      scheduleMicrotask(() {
+        if (!mounted) return;
+        setState(() => _unread = unread);
+        unawaited(_primeLessonReminders());
+      });
+      return data;
+    });
   }
 
   void _reload() {
     setState(() {
-      _future = widget.api.dashboard().then((data) async {
+      _future = widget.api.dashboard().then((data) {
         final unread =
             (data['unread_notifications'] as num?)?.toInt() ?? 0;
-        await _primeLessonReminders();
-        await TichNotifications.instance
-            .syncFromServerInBackground(isStudent: true);
-        if (mounted) setState(() => _unread = unread);
+        scheduleMicrotask(() {
+          if (!mounted) return;
+          setState(() => _unread = unread);
+          unawaited(_primeLessonReminders());
+        });
         return data;
       });
     });
@@ -55,9 +67,11 @@ class _StudentHomePageState extends State<StudentHomePage> {
     try {
       final tt = await widget.api.timetable();
       final sessions = lessonSessionsFromTimetablePayload(tt);
-      await TichNotifications.instance.scheduleLessonReminders(sessions);
       if (!mounted) return;
       setState(() => _nextLesson = nextLessonToday(sessions));
+      unawaited(
+        TichNotifications.instance.scheduleLessonReminders(sessions),
+      );
     } catch (_) {}
   }
 

@@ -41,6 +41,9 @@ class EmployeeAvatar extends StatelessWidget {
       style: tichUi(color: TichColors.blueDark, fontWeight: FontWeight.w700),
     );
 
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final px = (radius * 2 * dpr).round().clamp(48, 256);
+
     return CircleAvatar(
       radius: radius,
       backgroundColor: TichColors.blueLight,
@@ -52,7 +55,14 @@ class EmployeeAvatar extends StatelessWidget {
                 width: radius * 2,
                 height: radius * 2,
                 fit: BoxFit.cover,
+                cacheWidth: px,
+                cacheHeight: px,
+                filterQuality: FilterQuality.low,
                 errorBuilder: (context, error, stackTrace) => fallback,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) return child;
+                  return fallback;
+                },
               ),
             ),
     );
