@@ -96,11 +96,12 @@ class LedgerService
     }
 
     /**
-     * Post a distribution recorded against a chart account. Debit-normal accounts
-     * (expense, asset) record money paid out: the account is debited and the bank
-     * credited. Credit-normal accounts (revenue, liability, equity) record money
-     * received: the bank is debited and the account credited. Either way the
-     * amount rolls up to the parent automatically.
+     * Post a transaction recorded against a child chart account. The chosen direction
+     * decides which side the account sits on: an increase of a debit-normal account
+     * (expense, asset) and a decrease of a credit-normal one (revenue, liability, equity)
+     * both pay money out; the other two take money in. VAT always follows the money, so
+     * it lands on a VAT account rather than on the recorded account. The signed ledger
+     * rows then move the parent roll-up, trial balance and P&L in the right direction.
      */
     public function postAccountExpense(AccountExpenseEntry $entry, ?int $recordedByStaffId = null): void
     {
@@ -108,19 +109,29 @@ class LedgerService
         $reference = $entry->reference_no;
         $ledgerDate = $entry->expense_date?->toDateString();
         $memo = $entry->memo !== null && $entry->memo !== '' ? " - {$entry->memo}" : '';
+        $net = round((float) $entry->amount, 2);
+        $vat = round((float) $entry->vat_amount, 2);
 
         $account = ChartOfAccount::query()->where('account_code', $entry->account_code)->first();
-        $creditNormal = $account !== null && ! $account->isDebitNormal();
 
-        if ($creditNormal) {
-            $receivedFrom = $entry->payee_name !== null && $entry->payee_name !== '' ? " from {$entry->payee_name}" : '';
+        if ($account === null) {
+            throw ValidationException::withMessages([
+                'account_code' => "Chart account {$entry->account_code} no longer exists, so this transaction cannot be posted.",
+            ]);
+        }
+
+        $accountCode = (string) $account->account_code;
+        $payee = $entry->payee_name !== null && $entry->payee_name !== '' ? trim((string) $entry->payee_name) : '';
+
+        if ($entry->paidOut()) {
+            $paidTo = $payee !== '' ? " to {$payee}" : '';
 
             $this->postEntry(
                 'account_transaction',
+                $accountCode,
                 $bank,
-                (string) $entry->account_code,
-                (float) $entry->amount + (float) $entry->vat_amount,
-                "Receipt {$reference}{$receivedFrom}{$memo}",
+                $net,
+                "Payment {$reference}{$paidTo}{$memo}",
                 'account_distribution',
                 'account_expense_entries',
                 (string) $entry->id,
@@ -128,17 +139,32 @@ class LedgerService
                 $ledgerDate,
             );
 
+            if ($vat > 0) {
+                $this->postEntry(
+                    'account_transaction',
+                    $this->vatAccountFor('asset', $vat),
+                    $bank,
+                    $vat,
+                    "VAT on payment {$reference}{$paidTo}",
+                    'account_distribution',
+                    'account_expense_entries',
+                    (string) $entry->id,
+                    $recordedByStaffId,
+                    $ledgerDate,
+                );
+            }
+
             return;
         }
 
-        $paidTo = $entry->payee_name !== null && $entry->payee_name !== '' ? " to {$entry->payee_name}" : '';
+        $receivedFrom = $payee !== '' ? " from {$payee}" : '';
 
         $this->postEntry(
             'account_transaction',
-            (string) $entry->account_code,
             $bank,
-            (float) $entry->amount,
-            "Payment {$reference}{$paidTo}{$memo}",
+            $accountCode,
+            $net,
+            "Receipt {$reference}{$receivedFrom}{$memo}",
             'account_distribution',
             'account_expense_entries',
             (string) $entry->id,
@@ -146,32 +172,44 @@ class LedgerService
             $ledgerDate,
         );
 
-        $vat = (float) $entry->vat_amount;
-
-        if ($vat <= 0) {
-            return;
+        if ($vat > 0) {
+            $this->postEntry(
+                'account_transaction',
+                $bank,
+                $this->vatAccountFor('liability', $vat),
+                $vat,
+                "VAT on receipt {$reference}{$receivedFrom}",
+                'account_distribution',
+                'account_expense_entries',
+                (string) $entry->id,
+                $recordedByStaffId,
+                $ledgerDate,
+            );
         }
+    }
 
-        $vatAccount = (string) (ChartOfAccount::query()
+    /**
+     * Nearest VAT account for a posting, preferring the type that carries the tax:
+     * an asset for input VAT paid, a liability for output VAT collected.
+     */
+    private function vatAccountFor(string $preferredType, float $vat): string
+    {
+        $code = ChartOfAccount::query()
             ->where('is_active', 1)
             ->where(fn ($query) => $query->where('account_name', 'like', '%vat%')
                 ->orWhere('account_name', 'like', '%value added tax%'))
+            ->orderByRaw('CASE WHEN account_type = ? THEN 0 ELSE 1 END', [$preferredType])
             ->orderByRaw("CASE WHEN account_type = 'asset' THEN 0 WHEN account_type = 'liability' THEN 1 ELSE 2 END")
             ->orderBy('account_code')
-            ->value('account_code') ?: $entry->account_code);
+            ->value('account_code');
 
-        $this->postEntry(
-            'account_transaction',
-            $vatAccount,
-            $bank,
-            $vat,
-            "VAT on payment {$reference}{$paidTo}",
-            'account_distribution',
-            'account_expense_entries',
-            (string) $entry->id,
-            $recordedByStaffId,
-            $ledgerDate,
-        );
+        if ($code === null) {
+            throw ValidationException::withMessages([
+                'lines' => 'Add a VAT account to the chart of accounts (type '.ucfirst($preferredType).') before posting VAT, or set the VAT amount to 0.',
+            ]);
+        }
+
+        return (string) $code;
     }
 
     public function postCreditMemo(float $amount, string $creditMemoNumber, ?int $recordedByStaffId = null, ?string $invoiceType = null): AccountLedger

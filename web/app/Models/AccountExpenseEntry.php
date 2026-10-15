@@ -20,6 +20,7 @@ class AccountExpenseEntry extends Model
         'currency',
         'exchange_rate',
         'amount',
+        'direction',
         'vat_amount',
         'supplier_vat_code',
         'credit_account_code',
@@ -41,5 +42,19 @@ class AccountExpenseEntry extends Model
     public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(ChartOfAccount::class, 'credit_account_code', 'account_code');
+    }
+
+    public function increasesAccount(): bool
+    {
+        return $this->direction !== 'decrease';
+    }
+
+    /**
+     * True when the entry takes money out of the bank, which is the account being
+     * debited: an increase of a debit-normal account or a decrease of a credit-normal one.
+     */
+    public function paidOut(): bool
+    {
+        return ($this->account?->isDebitNormal() ?? true) === $this->increasesAccount();
     }
 }
