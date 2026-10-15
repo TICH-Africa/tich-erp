@@ -31,7 +31,9 @@
                                 id="student_id"
                                 name="student_id"
                                 required
-                                class="{{ $errors->has('student_id') ? 'is-invalid' : '' }}"
+                                class="tich-select {{ $errors->has('student_id') ? 'is-invalid' : '' }}"
+                                data-tich-search="true"
+                                data-tich-search-placeholder="Search by name or student ID…"
                             >
                                 <option value="">Select student</option>
                                 @foreach ($students as $student)
