@@ -376,42 +376,69 @@ class FinanceReportExportService
     private function reconciliationRows(array $data): array
     {
         $rows = [
-            ['Reconciliation Report', $data['period_label']],
+            [$data['title'] ?? 'Bank & Cash Reconciliation', $data['period_label']],
             [],
             ['Opening balance', '', '', number_format($data['opening_balance'], 2)],
+            ['', 'Money received', '', number_format($data['received']['total'], 2)],
+            ['', 'Money paid out', '', number_format($data['paid_out']['total'], 2)],
+            ['', 'Net movement', '', number_format($data['net_movement'], 2)],
+            ['', 'Closing balance', '', number_format($data['closing_balance'], 2)],
             [],
         ];
 
-        foreach ($data['income']['categories'] as $category => $summary) {
-            $rows[] = ['INCOME', $category, 'Count: '.$summary['count'], number_format($summary['total'], 2)];
+        $rows[] = ['BY ACCOUNT'];
+        $rows[] = ['Account', 'Received', 'Paid out', 'Transfers in', 'Transfers out', 'Closing'];
+
+        foreach ($data['received']['accounts'] as $account) {
+            $rows[] = [
+                $account['account_code'].' '.$account['account_name'],
+                number_format($account['received'], 2),
+                number_format($account['paid_out'], 2),
+                number_format($account['transfers_in'], 2),
+                number_format($account['transfers_out'], 2),
+                number_format($account['closing_balance'], 2),
+            ];
         }
-        $rows[] = ['', 'Total income', '', number_format($data['income']['total'], 2)];
         $rows[] = [];
 
-        foreach ($data['expenses']['categories'] as $category => $summary) {
-            $rows[] = ['EXPENSE', $category, 'Count: '.$summary['count'], number_format($summary['total'], 2)];
+        foreach (['received' => 'RECEIVED BY TYPE', 'paid_out' => 'PAID OUT BY TYPE'] as $key => $heading) {
+            $rows[] = [$heading];
+
+            foreach ($data[$key]['sources'] as $type => $summary) {
+                $rows[] = ['', $type, 'Count: '.$summary['count'], number_format($summary['total'], 2)];
+            }
+
+            $rows[] = ['', 'Total '.$key, '', number_format($data[$key]['total'], 2)];
+            $rows[] = [];
         }
-        $rows[] = ['', 'Total expenses', '', number_format($data['expenses']['total'], 2)];
-        $rows[] = [];
 
-        $rows[] = ['', 'Net position', '', number_format($data['net_position'], 2)];
-        $rows[] = ['', 'Closing balance', '', number_format($data['closing_balance'], 2)];
-        $rows[] = [];
+        foreach ($data['differences'] ?? [] as $difference) {
+            $rows[] = [
+                'DIFFERENCE',
+                $difference['label'],
+                'Recorded: '.number_format($difference['recorded'], 2).' | Posted: '.number_format($difference['posted'], 2),
+                number_format($difference['difference'], 2),
+            ];
+        }
 
-        $rows[] = ['DETAILED TRANSACTIONS'];
-        $rows[] = [];
-        $rows[] = ['Date', 'Account Code', 'Category', 'Type', 'Narration', 'Reference', 'Income (KES)', 'Expense (KES)'];
+        if (! empty($data['differences'])) {
+            $rows[] = [];
+        }
+
+        $rows[] = ['BANK AND CASH MOVEMENTS'];
+        $rows[] = ['Date', 'Account', 'Movement', 'Type', 'Narration', 'Reference', 'Received (KES)', 'Paid out (KES)', 'Transfer (KES)'];
 
         foreach ($data['rows'] as $row) {
             $rows[] = [
                 $row['date_display'],
-                $row['account_code'] ?? '',
-                $row['category'],
+                $row['account_code'],
+                $row['movement'],
                 $row['type'],
                 $row['narration'],
                 $row['reference'],
-                $row['income'] != 0 ? number_format($row['income'], 2) : '',
-                $row['expense'] != 0 ? number_format($row['expense'], 2) : '',
+                $row['received'] != 0 ? number_format($row['received'], 2) : '',
+                $row['paid_out'] != 0 ? number_format($row['paid_out'], 2) : '',
+                $row['transfer'] != 0 ? number_format($row['transfer'], 2) : '',
             ];
         }
 

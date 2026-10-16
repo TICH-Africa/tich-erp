@@ -1918,6 +1918,10 @@ class StudentFinanceController extends Controller
             'payments',
         ];
 
+        if (Schema::hasTable('academic_programs')) {
+            $relations[] = 'student.program';
+        }
+
         if (Schema::hasTable('invoice_items')) {
             $relations[] = 'invoices.items';
         }
