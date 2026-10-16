@@ -25,8 +25,9 @@
             'report' => $report,
             'period' => $period,
             'view' => $viewMode,
-            'from' => $period === 'custom' ? $from : null,
-            'to' => $period === 'custom' ? $to : null,
+            'from' => $filters['from'] ?? null,
+            'to' => $filters['to'] ?? null,
+            'cash_account' => $filters['cash_account'] ?? null,
         ]);
     @endphp
 
@@ -117,8 +118,21 @@
                     <label class="tich-label" for="report-to">To</label>
                     <input type="date" id="report-to" name="to" value="{{ $filters['to'] ?? '' }}" class="tich-input">
                 </div>
+                @if ($report === 'reconciliation')
+                    <div class="tich-form-group" style="margin:0;">
+                        <label class="tich-label" for="report-cash-account">Bank / cash account</label>
+                        <select id="report-cash-account" name="cash_account" class="tich-input" data-tich-search="true" data-tich-search-placeholder="Search accounts…">
+                            <option value="">All bank, cash and M-Pesa accounts</option>
+                            @foreach ($reportData['cash_accounts'] ?? [] as $account)
+                                <option value="{{ $account['code'] }}" @selected(($filters['cash_account'] ?? '') === $account['code'])>
+                                    {{ $account['code'] }} · {{ $account['name'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
                 <button type="submit" class="tich-btn tich-btn-primary">Apply period</button>
-                @if (! empty($filters['from']) || ! empty($filters['to']))
+                @if (! empty($filters['from']) || ! empty($filters['to']) || ! empty($filters['cash_account']))
                     <a href="{{ route('finance.reports.index', ['report' => $report]) }}" class="tich-btn tich-btn-ghost">Clear</a>
                 @endif
             </div>

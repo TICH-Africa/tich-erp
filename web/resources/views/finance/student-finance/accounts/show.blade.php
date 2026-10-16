@@ -9,14 +9,24 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @php
+        $student = $account->student;
+        $program = $student->program ?? null;
+    @endphp
+
     <div class="tich-stat-row tich-mb-8">
         <div class="tich-stat">
             <p class="tich-stat__label">Student</p>
-            <p class="tich-stat__value">{{ $account->student->fullName() ?? 'N/A' }}</p>
+            <p class="tich-stat__value">{{ $student->fullName() ?? 'N/A' }}</p>
         </div>
         <div class="tich-stat">
             <p class="tich-stat__label">Registration No</p>
-            <p class="tich-stat__value">{{ $account->student->registration_number ?? 'N/A' }}</p>
+            <p class="tich-stat__value">{{ $student->registration_number ?? 'N/A' }}</p>
+        </div>
+        <div class="tich-stat">
+            <p class="tich-stat__label">Course taken</p>
+            <p class="tich-stat__value">{{ $program?->program_name ?? 'Not assigned' }}</p>
+            <p class="tich-caption">{{ $program?->program_code ?? '-' }}@if (! empty($student->current_year)) · {{ $student->current_year }}@endif</p>
         </div>
         <div class="tich-stat">
             <p class="tich-stat__label">Academic Year</p>
