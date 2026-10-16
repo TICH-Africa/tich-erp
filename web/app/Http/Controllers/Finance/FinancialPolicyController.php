@@ -93,13 +93,18 @@ class FinancialPolicyController extends Controller
 
         $module = $this->resolveModuleKey($request);
         $moduleContext = $module ? $this->budgeting->moduleContext($module) : null;
-        $department = $module ? $this->budgeting->departmentForModule($module) : null;
+        $department = $module
+            ? ($module === 'academics'
+                ? $this->budgeting->budgetDepartmentForUser($module, $request->user())
+                : $this->budgeting->departmentForModule($module))
+            : null;
         $staff = $this->staffPortal->staffForUser($request->user());
         $document = $this->documentMeta($policy);
         $signoff = $this->policies->signoffProgress($policy);
         $canViewSignoffRoster = $this->userCanViewSignoffRoster($request->user());
         $alreadySigned = $department
-            ? $this->policies->departmentHasHodSignoff($policy, $department)
+            ? ($this->policies->departmentHasHodSignoff($policy, $department)
+                || $this->policies->userHasPersonalSignoff($request->user(), $department))
             : false;
         $signStoreRoute = $this->signStoreRouteName($request, $module);
         $signFormRoute = $this->signFormRouteName($request, $module);
@@ -131,7 +136,11 @@ class FinancialPolicyController extends Controller
         ]);
 
         $module = $this->resolveModuleKey($request);
-        $department = $module ? $this->budgeting->departmentForModule($module) : null;
+        $department = $module
+            ? ($module === 'academics'
+                ? $this->budgeting->budgetDepartmentForUser($module, $request->user())
+                : $this->budgeting->departmentForModule($module))
+            : null;
 
         try {
             $this->policies->signOff($policy, $request->user(), $data, $request->ip(), $department);

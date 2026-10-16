@@ -91,7 +91,25 @@ class FinancePolicyService
             return true;
         }
 
-        return $this->departmentHasHodSignoff($policy, $department);
+        if ($this->departmentHasHodSignoff($policy, $department)) {
+            return true;
+        }
+
+        return $this->userHasPersonalSignoff($user, $department);
+    }
+
+    public function userHasPersonalSignoff(User $user, Department $department): bool
+    {
+        $policy = $this->currentPublishedPolicy();
+        if (! $policy) {
+            return true;
+        }
+
+        return FinancePolicySignoff::query()
+            ->where('policy_id', $policy->id)
+            ->where('department_id', $department->id)
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function gateMessage(Department $department): string
@@ -99,7 +117,7 @@ class FinancePolicyService
         $policy = $this->currentPublishedPolicy();
         $title = $policy?->title ?? 'Financial Policy';
 
-        return "Heads of Department must view and digitally sign \"{$title}\" before submitting annual budgets and departmental plans. Sign off from the Financial Policy portal, then try again.";
+        return "View and digitally sign \"{$title}\" for your department before submitting a budget (HODs may sign for the department, or lecturers/tutors may sign individually). Open Sign financial policy, then try again.";
     }
 
     /**
@@ -140,7 +158,11 @@ class FinancePolicyService
         ]);
 
         if (! $isPrivileged && ! $this->staffIsHod($staff, $department)) {
-            throw new \RuntimeException('Only the Head of Department can digitally sign the financial policy for this department.');
+            $isTeachingStaff = $user->hasRole('Lecturer/Tutor') || $staff->is_teaching_staff;
+            $ownsDepartment = (int) $staff->department_id === (int) $department->id;
+            if (! ($isTeachingStaff && $ownsDepartment && $department->isLearningDepartment())) {
+                throw new \RuntimeException('Only the Head of Department, or a lecturer/tutor in this learning department, can digitally sign the financial policy here.');
+            }
         }
 
         $role = $this->resolveSignRole($user, $staff, $department, $isPrivileged);

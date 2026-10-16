@@ -27,14 +27,15 @@ class BudgetingController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->routeNames($module);
 
         return view('module-budgeting.index', [
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
-            'requests' => $this->budgeting->requestsForDepartment($department),
+            'scopeToOwnRequests' => $this->budgeting->shouldScopeBudgetRequestsToSubmitter($request->user(), $module),
+            'requests' => $this->budgeting->requestsForDepartment($department, $request->user(), $module),
             'indexRoute' => $routes['index'],
             'createRoute' => $routes['create'],
             'storeRoute' => $routes['store'],
@@ -46,7 +47,7 @@ class BudgetingController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->routeNames($module);
 
         $policy = $this->financePolicies->currentPublishedPolicy();
@@ -58,6 +59,7 @@ class BudgetingController extends Controller
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
+            'scopeToOwnRequests' => $this->budgeting->shouldScopeBudgetRequestsToSubmitter($request->user(), $module),
             'cycles' => $this->budgeting->openCycles(),
             'quarters' => self::ANNUAL_QUARTERS,
             'quarterData' => $this->defaultQuarterData(),
@@ -79,9 +81,9 @@ class BudgetingController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->routeNames($module);
-        $record = $this->budgeting->findDepartmentRequest($department, $budgetRequest);
+        $record = $this->budgeting->findDepartmentRequest($department, $budgetRequest, $request->user(), $module);
 
         abort_unless($record->status === 'returned', 403, 'Only returned requests can be revised.');
 
@@ -142,7 +144,7 @@ class BudgetingController extends Controller
     private function persist(Request $request, ?int $budgetRequestId = null): RedirectResponse
     {
         $module = $this->moduleKey($request);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
 
         if (! $this->financePolicies->userMaySubmitBudget($request->user(), $department)) {
             return back()->withInput()->withErrors([
@@ -218,7 +220,7 @@ class BudgetingController extends Controller
 
         try {
             if ($budgetRequestId) {
-                $record = $this->budgeting->findDepartmentRequest($department, $budgetRequestId);
+                $record = $this->budgeting->findDepartmentRequest($department, $budgetRequestId, $request->user(), $module);
                 $this->budgeting->resubmit($record, $department, $payload, $request->user());
                 $message = 'Budget revised and re-submitted to Administration/Finance.';
             } else {

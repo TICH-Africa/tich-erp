@@ -120,6 +120,13 @@ class LeaveCoverageService
                 ->where('department_id', $department->id)
                 ->first();
 
+            $previousCoverStaffId = $existing ? (int) $existing->cover_staff_id : null;
+            $replacingCoverPerson = $existing && $previousCoverStaffId !== $coverStaffId;
+
+            if ($replacingCoverPerson && $existing->access_granted_at && ! $existing->access_revoked_at) {
+                $this->revokeDepartmentAccess($existing);
+            }
+
             $samePersonAlreadyAccepted = $existing
                 && (int) $existing->cover_staff_id === $coverStaffId
                 && $existing->status === LeaveRequestCoverage::STATUS_ACCEPTED;
@@ -137,8 +144,18 @@ class LeaveCoverageService
                     'notified_at' => now(),
                     'responded_at' => $samePersonAlreadyAccepted ? ($existing->responded_at ?? now()) : null,
                     'response_notes' => $samePersonAlreadyAccepted ? $existing->response_notes : null,
+                    'access_granted_at' => $samePersonAlreadyAccepted ? $existing->access_granted_at : null,
+                    'access_revoked_at' => $samePersonAlreadyAccepted ? $existing->access_revoked_at : null,
                 ]
             );
+
+            if ($replacingCoverPerson) {
+                $former = $previousCoverStaffId ? Staff::query()->find($previousCoverStaffId) : null;
+                if ($former) {
+                    $this->notifyReplacedCoverPerson($coverage, $leaveRequest, $applicant, $former, $coverStaff);
+                }
+                $this->notifyApplicantOfCoverageReassignment($coverage, $leaveRequest, $applicant, $former, $coverStaff);
+            }
 
             if (! $samePersonAlreadyAccepted) {
                 $this->notifyCoverPerson($coverage->load('department'), $leaveRequest, $applicant, $coverStaff);
@@ -532,6 +549,60 @@ class LeaveCoverageService
             'leave_request',
             (string) $leave->id,
             $accepted ? 'normal' : 'high',
+            route('employee.leave.index'),
+        );
+    }
+
+    private function notifyReplacedCoverPerson(
+        LeaveRequestCoverage $coverage,
+        LeaveRequest $leaveRequest,
+        Staff $applicant,
+        Staff $formerCoverStaff,
+        Staff $newCoverStaff,
+    ): void {
+        if (! $formerCoverStaff->user_id) {
+            return;
+        }
+
+        $dept = $coverage->department?->dept_name ?? 'department';
+        $this->notifications->notifyUser(
+            (int) $formerCoverStaff->user_id,
+            'You were replaced as leave stand-in',
+            $applicant->fullName().' appointed '.$newCoverStaff->fullName().' instead of you to cover '
+                .$dept.' for leave '.$leaveRequest->start_date?->format('d M Y').' to '
+                .$leaveRequest->end_date?->format('d M Y').'. You no longer need to stand in for this request.',
+            'leave_request',
+            (string) $leaveRequest->id,
+            'normal',
+            route('employee.leave.index'),
+        );
+    }
+
+    private function notifyApplicantOfCoverageReassignment(
+        LeaveRequestCoverage $coverage,
+        LeaveRequest $leaveRequest,
+        Staff $applicant,
+        ?Staff $formerCoverStaff,
+        Staff $newCoverStaff,
+    ): void {
+        if (! $applicant->user_id) {
+            return;
+        }
+
+        $dept = $coverage->department?->dept_name ?? 'department';
+        $from = $formerCoverStaff?->fullName() ?? 'the previous appointee';
+        $body = 'Stand-in for '.$dept.' on your leave ('
+            .$leaveRequest->start_date?->format('d M Y').' to '.$leaveRequest->end_date?->format('d M Y')
+            .') changed from '.$from.' to '.$newCoverStaff->fullName()
+            .'. '.$newCoverStaff->fullName().' must accept before leave starts.';
+
+        $this->notifications->notifyUser(
+            (int) $applicant->user_id,
+            'Leave stand-in updated',
+            $body,
+            'leave_request',
+            (string) $leaveRequest->id,
+            'normal',
             route('employee.leave.index'),
         );
     }

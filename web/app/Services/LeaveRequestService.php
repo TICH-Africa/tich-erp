@@ -236,6 +236,26 @@ class LeaveRequestService
         });
     }
 
+    /**
+     * @param  array<int, int>  $coverMap  department_id => cover_staff_id
+     */
+    public function updateCoveragesByEmployee(LeaveRequest $leaveRequest, Staff $staff, array $coverMap): LeaveRequest
+    {
+        abort_unless($leaveRequest->staff_id === $staff->id, 403);
+        abort_unless($leaveRequest->isCoverageEditableByEmployee(), 422, 'Stand-in appointees can only be changed before your leave starts.');
+
+        return DB::transaction(function () use ($leaveRequest, $staff, $coverMap) {
+            $this->coverages->assignCoverages($leaveRequest->fresh(), $staff, $coverMap);
+
+            if ($leaveRequest->overall_status === 'approved') {
+                $fresh = $leaveRequest->fresh(['coverages.coverStaff', 'staff']);
+                $this->coverages->grantAccessForApprovedLeave($fresh);
+            }
+
+            return $leaveRequest->fresh(['leaveType', 'coverages.coverStaff', 'coverages.department']);
+        });
+    }
+
     public function cancelByEmployee(LeaveRequest $leaveRequest, Staff $staff, ?string $reason = null): LeaveRequest
     {
         abort_unless($leaveRequest->staff_id === $staff->id, 403);
