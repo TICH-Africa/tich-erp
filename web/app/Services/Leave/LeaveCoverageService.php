@@ -9,6 +9,7 @@ use App\Models\LeaveRequestCoverage;
 use App\Models\Staff;
 use App\Services\PlatformNotificationService;
 use App\Services\RBACService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -260,6 +261,14 @@ class LeaveCoverageService
 
     public function grantAccessForApprovedLeave(LeaveRequest $leaveRequest): void
     {
+        if ($leaveRequest->overall_status !== 'approved') {
+            return;
+        }
+
+        if (! $this->isWithinLeavePeriod($leaveRequest)) {
+            return;
+        }
+
         $leaveRequest->loadMissing(['coverages.coverStaff', 'staff']);
 
         foreach ($leaveRequest->coverages as $coverage) {
@@ -273,6 +282,76 @@ class LeaveCoverageService
             $this->grantDepartmentAccess($coverage, $leaveRequest);
             $coverage->update(['access_granted_at' => now(), 'access_revoked_at' => null]);
         }
+    }
+
+    /**
+     * Activate stand-in department access when leave starts; revoke when it ends (or if granted too early).
+     *
+     * @return array{granted: int, revoked: int}
+     */
+    public function syncScheduledCoverageAccess(?Carbon $onDate = null): array
+    {
+        $onDate = ($onDate ?? now())->copy()->startOfDay();
+        $granted = 0;
+        $revoked = 0;
+
+        LeaveRequest::query()
+            ->where('overall_status', 'approved')
+            ->whereDate('start_date', '<=', $onDate)
+            ->whereDate('end_date', '>=', $onDate)
+            ->with(['coverages.coverStaff', 'staff', 'coverages'])
+            ->orderBy('id')
+            ->each(function (LeaveRequest $leave) use (&$granted) {
+                $before = $leave->coverages
+                    ->filter(fn (LeaveRequestCoverage $c) => $c->isAccepted()
+                        && $c->access_granted_at
+                        && ! $c->access_revoked_at)
+                    ->count();
+
+                $this->grantAccessForApprovedLeave($leave);
+
+                $leave->loadMissing('coverages');
+                $after = $leave->coverages
+                    ->filter(fn (LeaveRequestCoverage $c) => $c->isAccepted()
+                        && $c->access_granted_at
+                        && ! $c->access_revoked_at)
+                    ->count();
+
+                $granted += max(0, $after - $before);
+            });
+
+        LeaveRequestCoverage::query()
+            ->whereNotNull('access_granted_at')
+            ->whereNull('access_revoked_at')
+            ->where('status', LeaveRequestCoverage::STATUS_ACCEPTED)
+            ->whereHas('leaveRequest', fn ($q) => $q->where('overall_status', 'approved'))
+            ->with('leaveRequest')
+            ->orderBy('id')
+            ->each(function (LeaveRequestCoverage $coverage) use ($onDate, &$revoked) {
+                $leave = $coverage->leaveRequest;
+                if (! $leave || $this->isWithinLeavePeriod($leave, $onDate)) {
+                    return;
+                }
+
+                $this->revokeDepartmentAccess($coverage);
+                $coverage->update(['access_revoked_at' => now()]);
+                $revoked++;
+            });
+
+        return ['granted' => $granted, 'revoked' => $revoked];
+    }
+
+    public function isWithinLeavePeriod(LeaveRequest $leaveRequest, ?Carbon $onDate = null): bool
+    {
+        $onDate = ($onDate ?? now())->copy()->startOfDay();
+        $start = $leaveRequest->start_date?->copy()->startOfDay();
+        $end = $leaveRequest->end_date?->copy()->startOfDay();
+
+        if (! $start || ! $end) {
+            return false;
+        }
+
+        return $onDate->betweenIncluded($start, $end);
     }
 
     public function revokeAccessForLeave(LeaveRequest $leaveRequest): void
@@ -414,7 +493,7 @@ class LeaveCoverageService
             'Leave stand-in request - please respond',
             $applicant->fullName().' asked you to cover '.$dept.' from '
                 .$leaveRequest->start_date?->format('d M Y').' to '.$leaveRequest->end_date?->format('d M Y')
-                .'. Please accept or decline on My leave. Department access is granted only after you accept and HR approves the leave.',
+                .'. Please accept or decline on My leave. Department access begins on the first day of leave and ends when leave ends, after HR approval.',
             'leave_request',
             (string) $leaveRequest->id,
             'high',
@@ -471,7 +550,7 @@ class LeaveCoverageService
         $body = $accepted
             ? 'You accepted covering '.$dept.' for '.$applicant->fullName().' ('
                 .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y')
-                .'). You will receive department access when HR approves the leave.'
+                .'). You will receive department access on the first day of leave through the last day, once HR has approved the leave.'
             : 'You declined covering '.$dept.' for '.$applicant->fullName().' ('
                 .$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y').').';
 
