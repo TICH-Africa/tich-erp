@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-15
+-- Last updated: 2026-10-16
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2446,6 +2446,40 @@ CREATE TABLE IF NOT EXISTS `account_expense_entries` (
 ALTER TABLE `account_expense_entries`
   ADD COLUMN `direction` varchar(10) NOT NULL DEFAULT 'increase' AFTER `amount`;
 -- APPLY ON PRODUCTION: increase/decrease direction on child account transactions
+
+-- -----------------------------------------------------------------------------
+-- 50. Admissions: two next of kin / emergency contacts per student
+--     The first contact is required, the second is optional. Contacts for the
+--     student live in student_next_of_kin (already in production.sql); these four
+--     columns let the public application form capture the second contact before the
+--     student record exists.
+--     Each statement is separate on purpose: if MySQL reports
+--     #1060 Duplicate column name, that column is already there - skip that one
+--     statement and run the rest.
+-- -----------------------------------------------------------------------------
+ALTER TABLE `applicants` ADD COLUMN `next_of_kin2_name` varchar(300) DEFAULT NULL;
+ALTER TABLE `applicants` ADD COLUMN `next_of_kin2_relationship` varchar(50) DEFAULT NULL;
+ALTER TABLE `applicants` ADD COLUMN `next_of_kin2_phone` varchar(30) DEFAULT NULL;
+ALTER TABLE `applicants` ADD COLUMN `next_of_kin2_address` varchar(500) DEFAULT NULL;
+
+-- The table the admission form writes both contacts into (safe to re-run).
+CREATE TABLE IF NOT EXISTS `student_next_of_kin` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `full_name` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `relationship` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone_number` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alt_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `physical_address` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `occupation` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `student_next_of_kin_student_id_foreign` (`student_id`),
+  CONSTRAINT `student_next_of_kin_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- APPLY ON PRODUCTION: second next of kin contact on admissions
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

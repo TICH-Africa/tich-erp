@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicProgram;
 use App\Models\Campus;
 use App\Models\Student;
+use App\Models\StudentNextOfKin;
 use App\Services\AcademicRecordService;
 use App\Services\ProgramsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -33,6 +35,7 @@ class ExistingStudentController extends Controller
             'programs' => $programs,
             'campusSelectionOptions' => $campusSelectionOptions,
             'student' => null,
+            'nextOfKin' => collect(),
         ]);
     }
 
@@ -76,9 +79,13 @@ class ExistingStudentController extends Controller
             'surname' => 'required|string|max:100',
             'email' => 'required|email|unique:users,email',
             'phone_number' => 'nullable|string|max:20',
-            'emergency_contact_name' => 'nullable|string|max:200',
-            'emergency_contact_phone' => 'nullable|string|max:30',
-            'emergency_contact_relationship' => 'nullable|string|max:100',
+            'next_of_kin' => 'nullable|array',
+            'next_of_kin.*.full_name' => 'nullable|string|max:300',
+            'next_of_kin.*.relationship' => 'nullable|string|max:100',
+            'next_of_kin.*.phone_number' => 'nullable|string|max:30',
+            'next_of_kin.*.alt_phone' => 'nullable|string|max:30',
+            'next_of_kin.*.email' => 'nullable|email|max:255',
+            'next_of_kin.*.physical_address' => 'nullable|string|max:500',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
             'current_year' => 'required|integer|min:1|max:4',
@@ -92,6 +99,9 @@ class ExistingStudentController extends Controller
             'photo' => 'nullable|image|max:2048',
             'notes' => 'nullable|string',
         ]);
+
+        $nextOfKin = $this->nextOfKinContacts($validated);
+        $primary = $nextOfKin[0] ?? [];
 
         $selectionType = $validated['campus_selection_type'];
         $normalCampusId = $validated['campus_id'] ?? null;
@@ -161,12 +171,14 @@ class ExistingStudentController extends Controller
             'date_of_admission' => $yearJoined,
             'is_active' => 1,
             'created_by' => auth()->id(),
-            'emergency_contact_name' => $validated['emergency_contact_name'],
-            'emergency_contact_phone' => $validated['emergency_contact_phone'],
-            'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
+            'emergency_contact_name' => $primary['full_name'] ?? null,
+            'emergency_contact_phone' => $primary['phone_number'] ?? null,
+            'emergency_contact_relationship' => $primary['relationship'] ?? null,
             'email' => $validated['email'] ?? null,
             'phone_number' => $validated['phone_number'] ?? null,
         ]);
+
+        $this->syncNextOfKin($student, $nextOfKin);
 
         if ($request->hasFile('photo')) {
             $student->photo_path = $this->storeStudentPhoto($student, $request->file('photo'));
@@ -191,8 +203,9 @@ class ExistingStudentController extends Controller
     public function show(Student $student): View
     {
         $academicRecords = $student->academicRecords()->with('program', 'semester')->get();
+        $nextOfKin = $this->nextOfKinRows($student);
 
-        return view('administration.applications.existing-student-show', compact('student', 'academicRecords'));
+        return view('administration.applications.existing-student-show', compact('student', 'academicRecords', 'nextOfKin'));
     }
 
     public function edit(Student $student): View
@@ -200,7 +213,12 @@ class ExistingStudentController extends Controller
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
         $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
 
-        return view('administration.applications.existing-student', compact('programs', 'campusSelectionOptions', 'student'));
+        return view('administration.applications.existing-student', [
+            'programs' => $programs,
+            'campusSelectionOptions' => $campusSelectionOptions,
+            'student' => $student,
+            'nextOfKin' => $this->nextOfKinRows($student),
+        ]);
     }
 
     public function update(Request $request, Student $student): RedirectResponse
@@ -216,9 +234,13 @@ class ExistingStudentController extends Controller
                 Rule::unique('users', 'email')->ignore($student->user_id),
             ],
             'phone_number' => 'nullable|string|max:20',
-            'emergency_contact_name' => 'nullable|string|max:200',
-            'emergency_contact_phone' => 'nullable|string|max:30',
-            'emergency_contact_relationship' => 'nullable|string|max:100',
+            'next_of_kin' => 'nullable|array',
+            'next_of_kin.*.full_name' => 'nullable|string|max:300',
+            'next_of_kin.*.relationship' => 'nullable|string|max:100',
+            'next_of_kin.*.phone_number' => 'nullable|string|max:30',
+            'next_of_kin.*.alt_phone' => 'nullable|string|max:30',
+            'next_of_kin.*.email' => 'nullable|email|max:255',
+            'next_of_kin.*.physical_address' => 'nullable|string|max:500',
             'program_id' => 'required|exists:academic_programs,id',
             'year_joined' => 'required|date',
             'current_year' => 'required|integer|min:1|max:4',
@@ -233,6 +255,9 @@ class ExistingStudentController extends Controller
             'photo_remove' => 'boolean',
             'notes' => 'nullable|string',
         ]);
+
+        $nextOfKin = $this->nextOfKinContacts($validated);
+        $primary = $nextOfKin[0] ?? [];
 
         $selectionType = $validated['campus_selection_type'];
         $normalCampusId = $validated['campus_id'] ?? null;
@@ -303,12 +328,14 @@ class ExistingStudentController extends Controller
             'enrollment_campus_id' => $validated['campus_id'],
             'entry_pathway' => $validated['program_type'],
             'date_of_admission' => $yearJoined,
-            'emergency_contact_name' => $validated['emergency_contact_name'],
-            'emergency_contact_phone' => $validated['emergency_contact_phone'],
-            'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
+            'emergency_contact_name' => $primary['full_name'] ?? null,
+            'emergency_contact_phone' => $primary['phone_number'] ?? null,
+            'emergency_contact_relationship' => $primary['relationship'] ?? null,
             'email' => $email,
             'phone_number' => $validated['phone_number'] ?? null,
         ]);
+
+        $this->syncNextOfKin($student, $nextOfKin);
 
         // A photo can be replaced or removed independently of the rest of the profile.
         if (! empty($validated['photo_remove']) && $student->photo_path !== null) {
@@ -343,5 +370,97 @@ class ExistingStudentController extends Controller
         $directory = "students/{$student->id}";
 
         return $file->store($directory, 'public');
+    }
+
+    /**
+     * Stored contacts for the two form slots. Older records only ever had the flat
+     * emergency_contact_* columns, so the first slot falls back to those.
+     *
+     * @return \Illuminate\Support\Collection<int, StudentNextOfKin>
+     */
+    private function nextOfKinRows(Student $student): \Illuminate\Support\Collection
+    {
+        if (! Schema::hasTable('student_next_of_kin')) {
+            return collect();
+        }
+
+        return StudentNextOfKin::query()
+            ->where('student_id', $student->id)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * The first next of kin is required, the second is optional. A partially entered
+     * contact is rejected rather than saved as half a name and no number.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return list<array<string, string>>
+     */
+    private function nextOfKinContacts(array $validated): array
+    {
+        $contacts = collect($validated['next_of_kin'] ?? [])
+            ->map(function ($contact) {
+                return collect($contact ?? [])
+                    ->map(fn ($value) => is_string($value) ? trim($value) : $value)
+                    ->filter(fn ($value) => $value !== null && $value !== '')
+                    ->only(['full_name', 'relationship', 'phone_number', 'alt_phone', 'email', 'physical_address'])
+                    ->all();
+            })
+            ->reject(fn (array $contact) => $contact === [])
+            ->take(2)
+            ->values()
+            ->all();
+
+        $required = ['full_name' => 'name', 'relationship' => 'relationship', 'phone_number' => 'phone'];
+        $errors = [];
+
+        foreach ($contacts as $index => $contact) {
+            foreach ($required as $field => $label) {
+                if (isset($contact[$field])) {
+                    continue;
+                }
+
+                $errors["next_of_kin.$index.$field"] = $index === 0
+                    ? "The first contact needs its {$label}."
+                    : 'Give the name, relationship and phone together, or leave the second contact empty.';
+            }
+        }
+
+        if ($contacts === []) {
+            $errors['next_of_kin.0.full_name'] = 'A first next of kin / emergency contact is required.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $contacts;
+    }
+
+    /**
+     * @param  list<array<string, string>>  $contacts
+     */
+    private function syncNextOfKin(Student $student, array $contacts): void
+    {
+        if (! Schema::hasTable('student_next_of_kin')) {
+            return;
+        }
+
+        StudentNextOfKin::query()->where('student_id', $student->id)->delete();
+
+        foreach ($contacts as $contact) {
+            StudentNextOfKin::create([
+                'student_id' => $student->id,
+                'full_name' => $contact['full_name'],
+                'relationship' => $contact['relationship'],
+                'phone_number' => $contact['phone_number'],
+                'alt_phone' => $contact['alt_phone'] ?? null,
+                'email' => $contact['email'] ?? null,
+                'physical_address' => $contact['physical_address'] ?? null,
+                'created_at' => now(),
+                'created_by' => auth()->id(),
+            ]);
+        }
     }
 }
