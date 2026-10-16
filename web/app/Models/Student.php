@@ -127,6 +127,11 @@ class Student extends Model
         return $this->hasMany(StudentSuggestion::class);
     }
 
+    public function nextOfKin(): HasMany
+    {
+        return $this->hasMany(StudentNextOfKin::class)->orderBy('id');
+    }
+
     public function displayName(): string
     {
         $this->loadMissing('applicant');

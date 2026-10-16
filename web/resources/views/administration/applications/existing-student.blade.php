@@ -73,30 +73,74 @@
                 </div>
             </div>
 
-            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Emergency Contact</h3>
-            <div class="tich-grid tich-grid--3 tich-mt-3">
-                <div>
-                    <label class="tich-label">Contact Name</label>
-                    <input type="text" name="emergency_contact_name" class="tich-input" value="{{ old('emergency_contact_name', $student->emergency_contact_name ?? '') }}">
-                    @error('emergency_contact_name')
-                        <p class="tich-field-error">{{ $message }}</p>
-                    @enderror
+            @php
+                $kinRows = $nextOfKin ?? collect();
+                $legacyContact = [
+                    'full_name' => $student->emergency_contact_name ?? '',
+                    'relationship' => $student->emergency_contact_relationship ?? '',
+                    'phone_number' => $student->emergency_contact_phone ?? '',
+                ];
+                $contactValue = function (int $slot, string $field) use ($kinRows, $legacyContact) {
+                    $entered = old("next_of_kin.$slot.$field");
+                    if ($entered !== null) {
+                        return $entered;
+                    }
+                    if (isset($kinRows[$slot]->$field)) {
+                        return $kinRows[$slot]->$field;
+                    }
+                    return $slot === 0 ? ($legacyContact[$field] ?? '') : '';
+                };
+            @endphp
+
+            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Next of kin / emergency contacts</h3>
+            <p class="tich-caption tich-mt-2">The first contact is required. A second contact is optional and is stored with the student record.</p>
+
+            @foreach ([0, 1] as $slot)
+                <div class="tich-mt-4" style="border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
+                    <h4 class="tich-h4" style="margin:0 0 0.75rem;">Contact {{ $slot + 1 }}@if ($slot === 1) (optional)@endif</h4>
+                    <div class="tich-grid tich-grid--3">
+                        <div>
+                            <label class="tich-label">Full name @if ($slot === 0)*@endif</label>
+                            <input type="text" name="next_of_kin[{{ $slot }}][full_name]" class="tich-input"
+                                   value="{{ $contactValue($slot, 'full_name') }}" placeholder="e.g. Jane Wanjiku"
+                                   @if ($slot === 0) required @endif>
+                            @error("next_of_kin.$slot.full_name")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="tich-label">Relationship @if ($slot === 0)*@endif</label>
+                            <input type="text" name="next_of_kin[{{ $slot }}][relationship]" class="tich-input"
+                                   @if ($slot === 0) required @endif
+                                   value="{{ $contactValue($slot, 'relationship') }}" placeholder="e.g. Mother, Spouse, Sibling">
+                            @error("next_of_kin.$slot.relationship")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="tich-label">Phone @if ($slot === 0)*@endif</label>
+                            <input type="text" name="next_of_kin[{{ $slot }}][phone_number]" class="tich-input"
+                                   @if ($slot === 0) required @endif
+                                   value="{{ $contactValue($slot, 'phone_number') }}" placeholder="e.g. 0712 345 678">
+                            @error("next_of_kin.$slot.phone_number")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="tich-label">Alternate phone</label>
+                            <input type="text" name="next_of_kin[{{ $slot }}][alt_phone]" class="tich-input"
+                                   value="{{ $contactValue($slot, 'alt_phone') }}">
+                            @error("next_of_kin.$slot.alt_phone")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="tich-label">Email</label>
+                            <input type="email" name="next_of_kin[{{ $slot }}][email]" class="tich-input"
+                                   value="{{ $contactValue($slot, 'email') }}">
+                            @error("next_of_kin.$slot.email")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="tich-label">Physical address</label>
+                            <input type="text" name="next_of_kin[{{ $slot }}][physical_address]" class="tich-input"
+                                   value="{{ $contactValue($slot, 'physical_address') }}">
+                            @error("next_of_kin.$slot.physical_address")<p class="tich-field-error">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="tich-label">Phone</label>
-                    <input type="text" name="emergency_contact_phone" class="tich-input" value="{{ old('emergency_contact_phone', $student->emergency_contact_phone ?? '') }}">
-                    @error('emergency_contact_phone')
-                        <p class="tich-field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="tich-label">Relationship</label>
-                    <input type="text" name="emergency_contact_relationship" class="tich-input" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship ?? '') }}">
-                    @error('emergency_contact_relationship')
-                        <p class="tich-field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
+            @endforeach
 
             <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Profile Photo</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
