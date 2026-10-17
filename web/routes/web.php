@@ -1036,6 +1036,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () use ($registerModuleBudgeting, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
         Route::get('/calendar', [\App\Http\Controllers\HR\HrCalendarController::class, 'index'])->name('hr.calendar.index');
+        Route::post('/calendar/gazette-holidays', [\App\Http\Controllers\HR\HrCalendarController::class, 'storeGazetteHoliday'])
+            ->middleware('permission:hr.manage_leave')
+            ->name('hr.calendar.gazette-holidays.store');
+        Route::delete('/calendar/gazette-holidays', [\App\Http\Controllers\HR\HrCalendarController::class, 'destroyGazetteHoliday'])
+            ->middleware('permission:hr.manage_leave')
+            ->name('hr.calendar.gazette-holidays.destroy');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
         $registerModuleBudgeting('hr');
         $registerModuleMeReports('hr');

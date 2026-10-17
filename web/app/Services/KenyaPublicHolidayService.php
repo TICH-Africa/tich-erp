@@ -87,7 +87,16 @@ class KenyaPublicHolidayService
                 $payload['source'] = $source;
             }
 
-            if (DB::table('public_holidays')->where('holiday_date', $date)->exists()) {
+            $existing = DB::table('public_holidays')->where('holiday_date', $date)->first();
+            if (
+                $existing
+                && Schema::hasColumn('public_holidays', 'source')
+                && ($existing->source ?? '') === 'gazette'
+            ) {
+                continue;
+            }
+
+            if ($existing) {
                 DB::table('public_holidays')->where('holiday_date', $date)->update($payload);
             } else {
                 DB::table('public_holidays')->insert(array_merge($payload, [
@@ -135,11 +144,16 @@ class KenyaPublicHolidayService
             return collect();
         }
 
+        $columns = ['holiday_date', 'holiday_name', 'holiday_type'];
+        if (Schema::hasColumn('public_holidays', 'source')) {
+            $columns[] = 'source';
+        }
+
         return DB::table('public_holidays')
             ->where('is_active', 1)
             ->whereBetween('holiday_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('holiday_date')
-            ->get(['holiday_date', 'holiday_name', 'holiday_type']);
+            ->get($columns);
     }
 
     /**
@@ -171,8 +185,14 @@ class KenyaPublicHolidayService
     public function selectableYears(): array
     {
         $current = (int) now()->year;
-        $behind = (int) config('tich-kenya-public-holidays.sync_years_behind', 2);
-        $ahead = (int) config('tich-kenya-public-holidays.sync_years_ahead', 5);
+        $behind = (int) config(
+            'tich-kenya-public-holidays.calendar_years_behind',
+            config('tich-kenya-public-holidays.sync_years_behind', 2),
+        );
+        $ahead = (int) config(
+            'tich-kenya-public-holidays.calendar_years_ahead',
+            config('tich-kenya-public-holidays.sync_years_ahead', 5),
+        );
 
         return range($current - $behind, $current + $ahead);
     }
@@ -246,12 +266,64 @@ class KenyaPublicHolidayService
         $query->delete();
     }
 
+    public function upsertGazettedHoliday(string $date, string $name, ?string $notes = null): void
+    {
+        if (! Schema::hasTable('public_holidays')) {
+            return;
+        }
+
+        $name = trim($name);
+        if ($name === '') {
+            throw new \InvalidArgumentException('Holiday name is required.');
+        }
+
+        $now = now();
+        $payload = [
+            'holiday_name' => $name,
+            'holiday_type' => 'national',
+            'description' => $notes !== null && trim($notes) !== ''
+                ? trim($notes)
+                : 'Gazetted public holiday added by HR.',
+            'is_active' => 1,
+            'updated_at' => $now,
+        ];
+
+        if (Schema::hasColumn('public_holidays', 'source')) {
+            $payload['source'] = 'gazette';
+        }
+
+        if (DB::table('public_holidays')->where('holiday_date', $date)->exists()) {
+            DB::table('public_holidays')->where('holiday_date', $date)->update($payload);
+        } else {
+            DB::table('public_holidays')->insert(array_merge($payload, [
+                'holiday_date' => $date,
+                'created_at' => $now,
+            ]));
+        }
+    }
+
+    public function deleteGazettedHoliday(string $date): bool
+    {
+        if (! Schema::hasTable('public_holidays')) {
+            return false;
+        }
+
+        $query = DB::table('public_holidays')->where('holiday_date', $date);
+
+        if (Schema::hasColumn('public_holidays', 'source')) {
+            $query->where('source', 'gazette');
+        }
+
+        return $query->delete() > 0;
+    }
+
     private function descriptionForSource(string $source): string
     {
         return match ($source) {
             'nager' => 'Synced from Nager.Date (Kenya public holidays).',
             'aladhan' => 'Idd dates from Aladhan (calculation method in config; confirm official gazette if required).',
             'config' => 'Fixed-date fallback list in application config.',
+            'gazette' => 'Gazetted public holiday added by HR.',
             default => 'Kenyan public holiday (auto-maintained).',
         };
     }

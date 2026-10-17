@@ -42,4 +42,9 @@ return [
     'sync_years_behind' => 2,
 
     'sync_years_ahead' => 5,
+
+    /** HR/academics calendar year picker (independent of automatic sync window). */
+    'calendar_years_behind' => (int) env('TICH_CALENDAR_YEARS_BEHIND', 2),
+
+    'calendar_years_ahead' => (int) env('TICH_CALENDAR_YEARS_AHEAD', 30),
 ];
