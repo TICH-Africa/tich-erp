@@ -92,20 +92,40 @@
                         <td class="tich-caption">Phone Number</td>
                         <td>{{ $student->phone_number ?? $student->user?->phone_number ?? '-' }}</td>
                     </tr>
+                    @php
+                        $nextOfKinContacts = ($nextOfKin ?? collect())->isNotEmpty()
+                            ? $nextOfKin
+                            : collect(empty($student->emergency_contact_name) ? [] : [[
+                                'full_name' => $student->emergency_contact_name,
+                                'relationship' => $student->emergency_contact_relationship,
+                                'phone_number' => $student->emergency_contact_phone,
+                            ]]);
+                    @endphp
                     <tr>
-                        <td class="tich-caption">Emergency Contact</td>
+                        <td class="tich-caption">Next of kin / emergency contacts</td>
                         <td>
-                            @if ($student->emergency_contact_name)
-                                {{ $student->emergency_contact_name }}
-                                @if ($student->emergency_contact_phone)
-                                    · {{ $student->emergency_contact_phone }}
-                                @endif
-                                @if ($student->emergency_contact_relationship)
-                                    ({{ $student->emergency_contact_relationship }})
-                                @endif
-                            @else
+                            @forelse ($nextOfKinContacts as $contact)
+                                <div>
+                                    {{ $contact['full_name'] }}
+                                    @if (! empty($contact['relationship']))
+                                        ({{ $contact['relationship'] }})
+                                    @endif
+                                    @if (! empty($contact['phone_number']))
+                                        · {{ $contact['phone_number'] }}
+                                    @endif
+                                    @if (! empty($contact['alt_phone']))
+                                        / {{ $contact['alt_phone'] }}
+                                    @endif
+                                    @if (! empty($contact['email']))
+                                        · {{ $contact['email'] }}
+                                    @endif
+                                    @if (! empty($contact['physical_address']))
+                                        · {{ $contact['physical_address'] }}
+                                    @endif
+                                </div>
+                            @empty
                                 -
-                            @endif
+                            @endforelse
                         </td>
                     </tr>
                     <tr>

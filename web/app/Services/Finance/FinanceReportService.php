@@ -29,7 +29,7 @@ class FinanceReportService
             'ap_aging' => 'Accounts Payable Ageing',
             'payroll_summary' => 'Institutional Payroll Summary',
             'finance_audit' => 'Finance Audit Trail',
-            'reconciliation' => 'Reconciliation Report',
+            'reconciliation' => 'Bank & Cash Reconciliation',
             default => 'Financial Report',
         };
     }
@@ -906,9 +906,11 @@ class FinanceReportService
     }
 
     /**
-     * Income and expenditure for a period, taken from the account types rather than
-     * transaction type names so manual journals, imports and new posting modules all
-     * count towards the result.
+     * Bank reconciliation: what came INTO the bank, cash and M-Pesa accounts against
+     * what went OUT of them. This reads the cash side of the ledger, so raising an
+     * invoice is never counted as money received and an accrual is never counted as
+     * money paid. Money moved between two of our own accounts is shown as a transfer
+     * and left out of the received and paid totals.
      *
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
@@ -918,9 +920,29 @@ class FinanceReportService
         $from = $this->periodStart($filters) ?? now()->subMonth()->toDateString();
         $to = $this->periodEnd($filters) ?? now()->toDateString();
 
-        $accounts = ChartOfAccount::query()->get(['account_code', 'account_name', 'account_type']);
-        $names = $accounts->pluck('account_name', 'account_code');
-        $types = $accounts->pluck('account_type', 'account_code');
+        $names = ChartOfAccount::query()->pluck('account_name', 'account_code');
+        $cashCodes = $this->cashAccountCodes();
+        $chosen = trim((string) ($filters['cash_account'] ?? ''));
+
+        if ($chosen !== '' && in_array($chosen, $cashCodes, true)) {
+            $cashCodes = [$chosen];
+        }
+
+        $opening = $this->ledger->signedBalances(null, $this->dayBefore($from));
+        $accounts = [];
+
+        foreach ($cashCodes as $code) {
+            $accounts[$code] = [
+                'account_code' => $code,
+                'account_name' => (string) ($names[$code] ?? $code),
+                'opening_balance' => round((float) ($opening[$code] ?? 0.0), 2),
+                'received' => 0.0,
+                'paid_out' => 0.0,
+                'transfers_in' => 0.0,
+                'transfers_out' => 0.0,
+                'entry_count' => 0,
+            ];
+        }
 
         $entries = AccountLedger::query()
             ->where('is_reversed', 0)
@@ -929,89 +951,86 @@ class FinanceReportService
             ->orderBy('id')
             ->get();
 
-        $incomeRows = [];
-        $expenseRows = [];
+        $rows = [];
+        $supplierPosted = 0.0;
 
         foreach ($entries as $entry) {
             $debitCode = (string) $entry->debit_account_code;
             $creditCode = (string) $entry->credit_account_code;
-            $debitAmount = (float) $entry->debit_amount;
-            $creditAmount = (float) $entry->credit_amount;
+            $intoCash = isset($accounts[$debitCode]);
+            $outOfCash = isset($accounts[$creditCode]);
 
-            $base = [
+            if (! $intoCash && ! $outOfCash) {
+                // Neither side is a bank, cash or M-Pesa account: invoices, accruals
+                // and provisions. No money moved, so reconciliation ignores it.
+                continue;
+            }
+
+            $amount = round((float) $entry->debit_amount, 2);
+            $transfer = $intoCash && $outOfCash;
+            $movement = $transfer ? 'transfer' : ($intoCash ? 'in' : 'out');
+            $cashCode = $intoCash ? $debitCode : $creditCode;
+
+            if ($transfer) {
+                $accounts[$debitCode]['transfers_in'] += $amount;
+                $accounts[$creditCode]['transfers_out'] += $amount;
+            } else {
+                $accounts[$cashCode]['entry_count'] += 1;
+
+                if ($movement === 'in') {
+                    $accounts[$cashCode]['received'] += $amount;
+                } else {
+                    $accounts[$cashCode]['paid_out'] += $amount;
+
+                    if (in_array((string) $entry->transaction_type, ['supplier_payment', 'ap_payment', 'procurement_payment'], true)) {
+                        $supplierPosted += $amount;
+                    }
+                }
+            }
+
+            $rows[] = [
                 'date' => $entry->ledger_date?->format('Y-m-d'),
                 'date_display' => $entry->ledger_date?->format('d M Y'),
+                'account_code' => $transfer ? $debitCode.' / '.$creditCode : $cashCode,
+                'account_name' => (string) ($names[$cashCode] ?? $cashCode),
                 'type' => str_replace('_', ' ', (string) $entry->transaction_type),
+                'movement' => $movement,
                 'narration' => $entry->narration,
                 'reference' => $entry->reference_id,
-                'source' => $entry->source_module,
-                'income' => 0.0,
-                'expense' => 0.0,
+                'received' => $movement === 'in' ? $amount : 0.0,
+                'paid_out' => $movement === 'out' ? $amount : 0.0,
+                'transfer' => $transfer ? $amount : 0.0,
             ];
-
-            // Income is the net movement on revenue accounts and expenditure the net
-            // movement on expense accounts, so credit notes, waivers and reversals
-            // reduce the figure they belong to. Anything else is a transfer between
-            // balance sheet accounts and neither report counts it.
-            $income = round(($types[$creditCode] ?? null) === 'revenue' ? $creditAmount : 0.0, 2)
-                - round(($types[$debitCode] ?? null) === 'revenue' ? $debitAmount : 0.0, 2);
-            $expense = round(($types[$debitCode] ?? null) === 'expense' ? $debitAmount : 0.0, 2)
-                - round(($types[$creditCode] ?? null) === 'expense' ? $creditAmount : 0.0, 2);
-
-            if ($income >= 0.01) {
-                $incomeRows[] = array_merge($base, [
-                    'category' => $names[$creditCode] ?? $creditCode,
-                    'account_code' => $creditCode,
-                    'account_name' => $names[$creditCode] ?? $creditCode,
-                    'income' => $income,
-                ]);
-            } elseif ($income <= -0.01) {
-                $incomeRows[] = array_merge($base, [
-                    'category' => $names[$debitCode] ?? $debitCode,
-                    'account_code' => $debitCode,
-                    'account_name' => $names[$debitCode] ?? $debitCode,
-                    'income' => $income,
-                ]);
-            }
-
-            if ($expense >= 0.01) {
-                $expenseRows[] = array_merge($base, [
-                    'category' => $names[$debitCode] ?? $debitCode,
-                    'account_code' => $debitCode,
-                    'account_name' => $names[$debitCode] ?? $debitCode,
-                    'expense' => $expense,
-                ]);
-            } elseif ($expense <= -0.01) {
-                $expenseRows[] = array_merge($base, [
-                    'category' => $names[$creditCode] ?? $creditCode,
-                    'account_code' => $creditCode,
-                    'account_name' => $names[$creditCode] ?? $creditCode,
-                    'expense' => $expense,
-                ]);
-            }
         }
 
-        $incomeTotal = round(collect($incomeRows)->sum('income'), 2);
-        $expenseTotal = round(collect($expenseRows)->sum('expense'), 2);
+        foreach ($accounts as $code => $account) {
+            $accounts[$code]['received'] = round($account['received'], 2);
+            $accounts[$code]['paid_out'] = round($account['paid_out'], 2);
+            $accounts[$code]['transfers_in'] = round($account['transfers_in'], 2);
+            $accounts[$code]['transfers_out'] = round($account['transfers_out'], 2);
+            $accounts[$code]['net_movement'] = round($account['received'] - $account['paid_out'], 2);
+            $accounts[$code]['closing_balance'] = round(
+                $account['opening_balance'] + $account['received'] + $account['transfers_in']
+                - $account['paid_out'] - $account['transfers_out'],
+                2
+            );
+        }
 
-        $incomeByCategory = collect($incomeRows)->groupBy('category')->map(fn ($rows) => [
-            'count' => $rows->count(),
-            'total' => round($rows->sum('income'), 2),
-        ])->sortByDesc('total')->values()->all();
+        $accountRows = array_values($accounts);
+        $receivedTotal = round(collect($accountRows)->sum('received'), 2);
+        $paidOutTotal = round(collect($accountRows)->sum('paid_out'), 2);
+        $openingTotal = round(collect($accountRows)->sum('opening_balance'), 2);
+        $transfersTotal = round(collect($accountRows)->sum('transfers_in'), 2);
 
-        $expenseByCategory = collect($expenseRows)->groupBy('category')->map(fn ($rows) => [
-            'count' => $rows->count(),
-            'total' => round($rows->sum('expense'), 2),
-        ])->sortByDesc('total')->values()->all();
-
-        $detailRows = collect(array_merge($incomeRows, $expenseRows))
-            ->sortBy([['date', 'asc'], ['category', 'asc']])
-            ->values()
+        $byMovement = fn (string $movement) => collect($rows)
+            ->where('movement', $movement)
+            ->groupBy('type')
+            ->map(fn ($group) => [
+                'count' => $group->count(),
+                'total' => round($group->sum(fn (array $row) => $movement === 'in' ? $row['received'] : $row['paid_out']), 2),
+            ])
+            ->sortByDesc('total')
             ->all();
-
-        $openingBalances = $this->ledger->signedBalances(null, $this->dayBefore((string) $from));
-        $cashCodes = $this->cashAccountCodes();
-        $openingBalance = round(collect($cashCodes)->sum(fn (string $code) => (float) ($openingBalances[$code] ?? 0.0)), 2);
 
         return [
             'report' => 'reconciliation',
@@ -1020,21 +1039,120 @@ class FinanceReportService
             'filters' => $filters,
             'from' => $from,
             'to' => $to,
-            'opening_balance' => $openingBalance,
-            'income' => [
-                'categories' => $incomeByCategory,
-                'total' => $incomeTotal,
-                'rows' => $incomeRows,
+            'cash_account' => $chosen !== '' && $chosen !== null ? $chosen : null,
+            'cash_accounts' => collect($this->cashAccountCodes())
+                ->map(fn (string $code) => ['code' => $code, 'name' => (string) ($names[$code] ?? $code)])
+                ->values()
+                ->all(),
+            'opening_balance' => $openingTotal,
+            'received' => [
+                'total' => $receivedTotal,
+                'sources' => $byMovement('in'),
+                'accounts' => $accountRows,
             ],
-            'expenses' => [
-                'categories' => $expenseByCategory,
-                'total' => $expenseTotal,
-                'rows' => $expenseRows,
+            'paid_out' => [
+                'total' => $paidOutTotal,
+                'sources' => $byMovement('out'),
             ],
-            'net_position' => round($incomeTotal - $expenseTotal, 2),
-            'closing_balance' => round($openingBalance + $incomeTotal - $expenseTotal, 2),
-            'rows' => $detailRows,
-            'entry_count' => count($detailRows),
+            'transfers_total' => $transfersTotal,
+            'net_movement' => round($receivedTotal - $paidOutTotal, 2),
+            'closing_balance' => round($openingTotal + $receivedTotal - $paidOutTotal, 2),
+            'differences' => $this->reconciliationDifferences($from, $to, $rows, round($supplierPosted, 2)),
+            'rows' => $rows,
+            'entry_count' => count($rows),
+        ];
+    }
+
+    /**
+     * Money the operational modules say moved, against what actually posted to the bank
+     * accounts in the ledger. A difference here is what a bank statement would show and
+     * the books would not, so it is what finance has to chase.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function reconciliationDifferences(string $from, string $to, array $rows, float $supplierPosted): array
+    {
+        $ledgerFor = function (array $types, string $movement) use ($rows): float {
+            return round(collect($rows)
+                ->where('movement', $movement)
+                ->whereIn('type', $types)
+                ->sum(fn (array $row) => $movement === 'in' ? $row['received'] : $row['paid_out']), 2);
+        };
+
+        $differences = [];
+
+        if (Schema::hasTable('payments')) {
+            $feesCollected = round((float) DB::table('payments')
+                ->where('status', 'SUCCESS')
+                ->whereBetween('payment_date', [$from, $to])
+                ->sum('amount'), 2);
+            $feesPosted = $ledgerFor(['student payment'], 'in');
+
+            $differences[] = $this->differenceRow(
+                'Student fee payments',
+                $feesCollected,
+                $feesPosted,
+                'Fees the payments screen records against the student receipts that reached these accounts. A positive gap means money booked as collected never reached the bank figures.'
+            );
+        }
+
+        if (Schema::hasTable('procurement_payments') || Schema::hasTable('accounts_payable')) {
+            $suppliersPaid = 0.0;
+
+            if (Schema::hasTable('procurement_payments')) {
+                $suppliersPaid += (float) DB::table('procurement_payments')
+                    ->where('status', 'success')
+                    ->whereBetween('payment_date', [$from, $to])
+                    ->sum('amount');
+            }
+
+            if (Schema::hasTable('accounts_payable')) {
+                $suppliersPaid += (float) DB::table('accounts_payable')
+                    ->whereIn('payment_status', ['partial', 'paid'])
+                    ->whereBetween('payment_date', [$from, $to])
+                    ->sum('amount_paid');
+            }
+
+            $differences[] = $this->differenceRow(
+                'Supplier payments',
+                round($suppliersPaid, 2),
+                $supplierPosted,
+                'Supplier payments recorded in Procurement and Accounts payable against the supplier payments that actually left these accounts.'
+            );
+        }
+
+        if (Schema::hasTable('refunds')) {
+            $refundsPaid = round((float) DB::table('refunds')
+                ->where('status', 'processed')
+                ->whereBetween('processed_at', [$from, now()->parse($to)->endOfDay()->toDateTimeString()])
+                ->sum('amount'), 2);
+
+            $differences[] = $this->differenceRow(
+                'Student refunds paid out',
+                $refundsPaid,
+                $ledgerFor(['refund', 'student refund'], 'out'),
+                'Refunds marked processed reduce what the bank holds, but are not posted to the ledger from the refunds screen.'
+            );
+        }
+
+        return array_values(array_filter(
+            $differences,
+            static fn (array $row) => abs((float) $row['difference']) >= 0.01 || (float) $row['recorded'] > 0
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function differenceRow(string $label, float $recorded, float $posted, string $note): array
+    {
+        return [
+            'label' => $label,
+            'recorded' => $recorded,
+            'posted' => $posted,
+            'difference' => round($recorded - $posted, 2),
+            'note' => $note,
         ];
     }
 }

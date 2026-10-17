@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Applicant;
 use App\Models\Campus;
 use App\Models\Student;
+use App\Models\StudentNextOfKin;
 use App\Support\IntakeIdentity;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class StudentEnrollmentService
@@ -47,6 +49,8 @@ class StudentEnrollmentService
                 'updated_at' => now(),
                 'created_by' => $createdBy,
             ]);
+
+            $this->carryNextOfKin($applicant, $student, $createdBy);
 
             $this->auditService->log(
                 'sis.student.registered_from_application',
@@ -107,6 +111,8 @@ class StudentEnrollmentService
                 'updated_at' => now(),
                 'created_by' => $createdBy,
             ]);
+
+            $this->carryNextOfKin($applicant, $student, $createdBy);
 
             $this->auditService->log(
                 'sis.student.enrolled',
@@ -206,5 +212,57 @@ class StudentEnrollmentService
     private function mapEntryPathway(?string $qualification): string
     {
         return $qualification === 'rpl' ? 'rpl' : 'regular';
+    }
+
+    /**
+     * Carry the next of kin entered on the application onto the student record so the
+     * profile, portal and emergency contact lists are populated from day one.
+     */
+    private function carryNextOfKin(Applicant $applicant, Student $student, ?int $createdBy): void
+    {
+        $contacts = [];
+
+        foreach (['', '2'] as $suffix) {
+            $name = $applicant->getAttribute('next_of_kin'.$suffix.'_name');
+
+            if (filled($name)) {
+                $contacts[] = [
+                    'full_name' => trim((string) $name),
+                    'relationship' => $applicant->getAttribute('next_of_kin'.$suffix.'_relationship'),
+                    'phone_number' => $applicant->getAttribute('next_of_kin'.$suffix.'_phone'),
+                    'physical_address' => $applicant->getAttribute('next_of_kin'.$suffix.'_address'),
+                ];
+            }
+        }
+
+        if ($contacts === []) {
+            return;
+        }
+
+        $primary = $contacts[0];
+
+        if ($primary['phone_number'] || $primary['relationship']) {
+            $student->update([
+                'emergency_contact_name' => $primary['full_name'],
+                'emergency_contact_phone' => $primary['phone_number'],
+                'emergency_contact_relationship' => $primary['relationship'],
+            ]);
+        }
+
+        if (! Schema::hasTable('student_next_of_kin')) {
+            return;
+        }
+
+        foreach ($contacts as $contact) {
+            StudentNextOfKin::create([
+                'student_id' => $student->id,
+                'full_name' => $contact['full_name'],
+                'relationship' => (string) ($contact['relationship'] ?? ''),
+                'phone_number' => (string) ($contact['phone_number'] ?? ''),
+                'physical_address' => $contact['physical_address'] ?? null,
+                'created_at' => now(),
+                'created_by' => $createdBy,
+            ]);
+        }
     }
 }

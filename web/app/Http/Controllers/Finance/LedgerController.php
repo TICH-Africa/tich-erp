@@ -256,6 +256,7 @@ class LedgerController extends Controller
             'action' => $request->string('action')->toString() ?: null,
             'from' => $request->string('from')->toString() ?: null,
             'to' => $request->string('to')->toString() ?: null,
+            'cash_account' => $request->string('cash_account')->toString() ?: null,
             'period' => $period,
             'view' => $view,
         ], static fn ($value) => $value !== null && $value !== '');

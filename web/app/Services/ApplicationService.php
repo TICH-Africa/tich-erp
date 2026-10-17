@@ -383,11 +383,17 @@ class ApplicationService
 
     private function validateNextOfKinStep(Request $request): array
     {
+        $relationships = 'in:'.implode(',', array_keys(config('tich-application.next_of_kin_relationships', [])));
+
         return Validator::make($request->all(), [
             'next_of_kin_name' => ['required', 'string', 'max:200'],
-            'next_of_kin_relationship' => ['required', 'in:'.implode(',', array_keys(config('tich-application.next_of_kin_relationships', [])))],
+            'next_of_kin_relationship' => ['required', $relationships],
             'next_of_kin_address' => ['nullable', 'string', 'max:500'],
             'next_of_kin_phone' => ['required', 'string', 'max:30'],
+            'next_of_kin2_name' => ['nullable', 'string', 'max:200', 'required_with:next_of_kin2_relationship,next_of_kin2_phone'],
+            'next_of_kin2_relationship' => ['nullable', $relationships, 'required_with:next_of_kin2_name,next_of_kin2_phone'],
+            'next_of_kin2_address' => ['nullable', 'string', 'max:500'],
+            'next_of_kin2_phone' => ['nullable', 'string', 'max:30', 'required_with:next_of_kin2_name,next_of_kin2_relationship'],
         ])->validate();
     }
 
@@ -452,6 +458,10 @@ class ApplicationService
             'next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
             'next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
             'next_of_kin_address' => $data['next_of_kin_address'] ?? null,
+            'next_of_kin2_name' => $data['next_of_kin2_name'] ?? null,
+            'next_of_kin2_relationship' => $data['next_of_kin2_relationship'] ?? null,
+            'next_of_kin2_phone' => $data['next_of_kin2_phone'] ?? null,
+            'next_of_kin2_address' => $data['next_of_kin2_address'] ?? null,
             'status' => 'submitted_admin',
             'academic_review_status' => 'pending',
             'application_source' => 'online',

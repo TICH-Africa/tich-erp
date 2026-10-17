@@ -97,6 +97,11 @@
             <div><dt>Relationship</dt><dd>{{ $relationshipOptions[$applicant->next_of_kin_relationship ?? ''] ?? ucfirst(str_replace('_', ' ', $applicant->next_of_kin_relationship ?? '-')) }}</dd></div>
             <div><dt>Address</dt><dd>{{ $display($applicant->next_of_kin_address) }}</dd></div>
             <div><dt>Telephone</dt><dd>{{ $display($applicant->next_of_kin_phone, '-') }}</dd></div>
+            @if ($applicant->next_of_kin2_name)
+                <div><dt>Second contact</dt><dd>{{ $applicant->next_of_kin2_name }}@if ($applicant->next_of_kin2_relationship) ({{ $relationshipOptions[$applicant->next_of_kin2_relationship] ?? $applicant->next_of_kin2_relationship }})@endif</dd></div>
+                <div><dt>Second telephone</dt><dd>{{ $display($applicant->next_of_kin2_phone, '-') }}</dd></div>
+                <div><dt>Second address</dt><dd>{{ $display($applicant->next_of_kin2_address) }}</dd></div>
+            @endif
         </dl>
     </article>
 </div>

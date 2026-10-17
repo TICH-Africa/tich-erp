@@ -84,6 +84,16 @@
             <div><dt>Address</dt><dd>{{ $reviewData['next_of_kin_address'] ?? 'Not provided' }}</dd></div>
             <div><dt>Telephone</dt><dd>{{ $reviewData['next_of_kin_phone'] ?? '-' }}</dd></div>
         </dl>
+
+        @if (! empty($reviewData['next_of_kin2_name']))
+            <h4 class="tich-h4 tich-mt-4">Second next of kin</h4>
+            <dl class="tich-review-list tich-mt-4">
+                <div><dt>Full name</dt><dd>{{ $reviewData['next_of_kin2_name'] }}</dd></div>
+                <div><dt>Relationship</dt><dd>{{ $relationshipOptions[$reviewData['next_of_kin2_relationship'] ?? ''] ?? '-' }}</dd></div>
+                <div><dt>Address</dt><dd>{{ $reviewData['next_of_kin2_address'] ?? 'Not provided' }}</dd></div>
+                <div><dt>Telephone</dt><dd>{{ $reviewData['next_of_kin2_phone'] ?? '-' }}</dd></div>
+            </dl>
+        @endif
     </section>
 @endif
 
