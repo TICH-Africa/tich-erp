@@ -7,6 +7,8 @@ use App\Models\Semester;
 use App\Services\AcademicCalendarService;
 use App\Services\AcademicsAccessService;
 use App\Services\DepartmentDashboardService;
+use App\Services\KenyaPublicHolidayService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,6 +17,7 @@ class CalendarController extends DepartmentAcademicsController
 {
     public function __construct(
         protected AcademicCalendarService $calendar,
+        protected KenyaPublicHolidayService $kenyaHolidays,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -25,9 +28,27 @@ class CalendarController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
 
+        $years = $this->calendar->listYears();
+        $this->kenyaHolidays->syncConfiguredWindow();
+
+        $rangeStart = $years->min('start_date') ?? now()->startOfYear();
+        $rangeEnd = $years->max('end_date') ?? now()->endOfYear();
+        $publicHolidays = $this->kenyaHolidays->between(
+            Carbon::parse($rangeStart)->startOfDay(),
+            Carbon::parse($rangeEnd)->endOfDay(),
+        );
+
+        if ($publicHolidays->isEmpty()) {
+            $publicHolidays = $this->kenyaHolidays->between(
+                now()->startOfYear(),
+                now()->endOfYear()->addYears(2),
+            );
+        }
+
         return view('academics.calendar.index', [
             'department' => $hub,
-            'years' => $this->calendar->listYears(),
+            'years' => $years,
+            'publicHolidays' => $publicHolidays,
             'defaultTrimesters' => config('tich-academics.default_trimester_count'),
             'intakeMonths' => config('tich-academics.default_intake_months'),
         ]);

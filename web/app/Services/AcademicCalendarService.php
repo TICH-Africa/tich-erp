@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class AcademicCalendarService
 {
-    public function __construct(protected AuditService $auditService) {}
+    public function __construct(
+        protected AuditService $auditService,
+        protected KenyaPublicHolidayService $kenyaHolidays,
+    ) {}
 
     /**
      * @return Collection<int, AcademicYear>
@@ -41,6 +44,10 @@ class AcademicCalendarService
             ]);
 
             $this->seedTrimesters($user, $year, $data);
+
+            $startYear = (int) \Carbon\Carbon::parse($data['start_date'])->year;
+            $endYear = (int) \Carbon\Carbon::parse($data['end_date'])->year;
+            $this->kenyaHolidays->syncRange($startYear, $endYear);
 
             $this->auditService->log(
                 'academics.calendar.year_created',

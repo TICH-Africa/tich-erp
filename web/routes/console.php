@@ -208,6 +208,7 @@ Schedule::command('app:send-birthday-wishes')->dailyAt('08:00');
 Schedule::command('leave:accrual')->monthlyOn(1, '00:05');
 Schedule::command('leave:carry-forward')->yearlyOn(1, 1, '00:30');
 Schedule::command('leave:coverage-access')->dailyAt('00:10');
+Schedule::command('holidays:sync-kenya')->monthlyOn(1, '00:15');
 
 // Mobile reminders (Africa/Nairobi / EAT via APP_TIMEZONE).
 Schedule::command('attendance:remind-clock-in')
