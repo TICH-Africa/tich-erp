@@ -9,6 +9,13 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @include('finance.student-finance.partials.student-search-filters', [
+        'action' => route('finance.student-finance.accounts.index'),
+        'search' => $search ?? '',
+        'programId' => $programId ?? 0,
+        'programs' => $programs ?? collect(),
+    ])
+
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
             <table class="tich-admin-table">

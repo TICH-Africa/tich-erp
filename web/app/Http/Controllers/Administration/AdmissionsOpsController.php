@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicProgram;
 use App\Models\Applicant;
 use App\Models\Student;
+use Illuminate\Database\Eloquent\Builder;
 use App\Services\Administration\AdministrationService;
 use App\Services\Administration\AdmissionLetterTemplateService;
 use Illuminate\Http\RedirectResponse;
@@ -21,24 +23,75 @@ class AdmissionsOpsController extends Controller
         protected AdmissionLetterTemplateService $admissionLetters,
     ) {}
 
-    public function applications(): View
+    public function applications(Request $request): View
     {
-        $applications = Schema::hasTable('applicants')
-            ? Applicant::query()->with(['program'])->latest('id')->paginate(20)
+        $search = trim((string) $request->query('search', ''));
+        $programId = (int) ($request->query('program_id', 0) ?: 0);
+
+        $programs = Schema::hasTable('academic_programs')
+            ? AcademicProgram::query()->where('status', 'active')->orderBy('program_name')->get(['id', 'program_code', 'program_name'])
             : collect();
 
-        $existingStudents = Schema::hasTable('students')
-            ? Student::query()
+        $applications = collect();
+        if (Schema::hasTable('applicants')) {
+            $applicationQuery = Applicant::query()->with(['program']);
+
+            if ($search !== '') {
+                $applicationQuery->where(function (Builder $q) use ($search) {
+                    $q->where('application_number', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhereHas('program', function (Builder $pq) use ($search) {
+                            $pq->where('program_name', 'like', "%{$search}%")
+                                ->orWhere('program_code', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            if ($programId > 0) {
+                $applicationQuery->where('program_id', $programId);
+            }
+
+            $applications = $applicationQuery->latest('id')->paginate(20)->withQueryString();
+        }
+
+        $existingStudents = collect();
+        if (Schema::hasTable('students')) {
+            $studentQuery = Student::query()
                 ->with(['program', 'campus'])
-                ->where('is_active', 1)
-                ->latest('id')
-                ->paginate(15)
-            : collect();
+                ->where('is_active', 1);
+
+            if ($search !== '') {
+                $studentQuery->where(function (Builder $q) use ($search) {
+                    $q->where('registration_number', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhereHas('program', function (Builder $pq) use ($search) {
+                            $pq->where('program_name', 'like', "%{$search}%")
+                                ->orWhere('program_code', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('applicant', function (Builder $aq) use ($search) {
+                            $aq->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('surname', 'like', "%{$search}%")
+                                ->orWhere('application_number', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            if ($programId > 0) {
+                $studentQuery->where('program_id', $programId);
+            }
+
+            $existingStudents = $studentQuery->latest('id')->paginate(15)->withQueryString();
+        }
 
         return view('administration.applications.index', [
             'applications' => $applications,
             'existingStudents' => $existingStudents,
             'applyUrl' => route('apply.index'),
+            'search' => $search,
+            'programId' => $programId,
+            'programs' => $programs,
         ]);
     }
 
