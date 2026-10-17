@@ -10,7 +10,7 @@
     </x-page-toolbar>
 
     <div class="uf-form">
-        <form method="POST" action="{{ route('hr.employee-relations.disciplinary.store') }}" data-uf="ready">
+        <form method="POST" action="{{ route('hr.employee-relations.disciplinary.store') }}" data-uf="ready" enctype="multipart/form-data">
             @csrf
 
             <div class="uf-amount-bar">
@@ -86,6 +86,17 @@
                     <div class="uf-field">
                         <label for="committee_members">Committee members</label>
                         <textarea id="committee_members" name="committee_members" rows="2" placeholder="Names of committee members...">{{ old('committee_members') }}</textarea>
+                    </div>
+                    <div class="uf-field">
+                        <label for="documents">Attachments</label>
+                        <input type="file" id="documents" name="documents[]" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                        <p class="tich-caption tich-mt-2">Optional. Up to 10 files (PDF, Word, images). Max 10 MB each.</p>
+                        @error('documents')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
+                        @error('documents.*')
+                            <span class="uf-error">{{ $message }}</span>
+                        @enderror
                     </div>
                 </div>
             </div>

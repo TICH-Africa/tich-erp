@@ -4,19 +4,29 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\DisciplinaryCase;
+use App\Models\DisciplinaryDocument;
 use App\Models\Staff;
 use App\Services\AuditService;
+use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DisciplinaryController extends Controller
 {
+    private const DOCUMENT_EXTENSIONS = 'pdf,jpg,jpeg,png,webp,doc,docx';
+
+    private const MAX_DOCUMENTS = 10;
+
     public function __construct(
         protected AuditService $auditService,
+        protected StoredFileService $files,
     ) {}
 
     public function index(Request $request): View
@@ -59,6 +69,8 @@ class DisciplinaryController extends Controller
             'witness_information' => 'nullable|string|max:3000',
             'hearing_date' => 'nullable|date',
             'committee_members' => 'nullable|string|max:2000',
+            'documents' => 'nullable|array|max:'.self::MAX_DOCUMENTS,
+            'documents.*' => 'file|extensions:'.self::DOCUMENT_EXTENSIONS.'|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -72,8 +84,8 @@ class DisciplinaryController extends Controller
         $validated = $validator->validated();
         $caseNumber = 'DISC-'.now()->format('Y').'-'.strtoupper(Str::random(6));
 
-        $case = DB::transaction(function () use ($validated, $caseNumber) {
-            return DisciplinaryCase::create([
+        $case = DB::transaction(function () use ($validated, $caseNumber, $request) {
+            $case = DisciplinaryCase::create([
                 'case_number' => $caseNumber,
                 'staff_id' => $validated['staff_id'],
                 'assigned_to' => $validated['assigned_to'],
@@ -85,6 +97,10 @@ class DisciplinaryController extends Controller
                 'committee_members' => $validated['committee_members'],
                 'status' => 'open',
             ]);
+
+            $this->storeUploadedDocuments($case, $request->file('documents', []));
+
+            return $case;
         });
 
         $this->auditService->log(
@@ -110,6 +126,26 @@ class DisciplinaryController extends Controller
         return view('hr.disciplinary.show', [
             'case' => $case,
         ]);
+    }
+
+    public function downloadDocument(DisciplinaryCase $disciplinaryCase, DisciplinaryDocument $document): StreamedResponse
+    {
+        if ((int) $document->disciplinary_case_id !== (int) $disciplinaryCase->id) {
+            abort(404);
+        }
+
+        $path = ltrim(str_replace('\\', '/', (string) $document->document_path), '/');
+
+        if ($path === '' || ! Storage::disk('local')->exists($path)) {
+            abort(404, 'Document file is missing from storage.');
+        }
+
+        $filename = preg_replace('/[^\w.\-() ]+/u', '_', (string) $document->document_name) ?: 'document';
+
+        $mime = $document->mime_type
+            ?: (Storage::disk('local')->mimeType($path) ?: 'application/octet-stream');
+
+        return Storage::disk('local')->download($path, $filename, ['Content-Type' => $mime]);
     }
 
     public function edit(DisciplinaryCase $disciplinaryCase): View
@@ -189,6 +225,36 @@ class DisciplinaryController extends Controller
         return redirect()
             ->route('hr.employee-relations.disciplinary.index')
             ->with('success', 'Disciplinary case deleted successfully.');
+    }
+
+    /**
+     * @param  array<int, UploadedFile>|UploadedFile|null  $uploads
+     */
+    private function storeUploadedDocuments(DisciplinaryCase $case, array|UploadedFile|null $uploads): void
+    {
+        if ($uploads === null) {
+            return;
+        }
+
+        $files = is_array($uploads) ? $uploads : [$uploads];
+
+        foreach ($files as $file) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                continue;
+            }
+
+            $original = $file->getClientOriginalName();
+            $displayName = pathinfo($original, PATHINFO_FILENAME) ?: 'Attachment';
+            $safeName = time().'_'.Str::random(6).'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $original);
+            $path = $this->files->store($file, "disciplinary/{$case->id}", 'local', $safeName);
+
+            DisciplinaryDocument::create([
+                'disciplinary_case_id' => $case->id,
+                'document_name' => $displayName,
+                'document_path' => $path,
+                'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
+            ]);
+        }
     }
 
     private function staffList()

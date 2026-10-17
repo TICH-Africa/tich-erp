@@ -12,7 +12,7 @@ class DisciplinaryDocument extends Model
 
     /** @var array<string, string> */
     protected array $storedFiles = [
-        'document_path' => 'public',
+        'document_path' => 'local',
     ];
     protected $table = 'disciplinary_documents';
 

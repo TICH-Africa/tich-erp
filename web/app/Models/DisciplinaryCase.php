@@ -38,6 +38,15 @@ class DisciplinaryCase extends Model
         'metadata' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (self $case): void {
+            $case->documents()->each(function (DisciplinaryDocument $document): void {
+                $document->delete();
+            });
+        });
+    }
+
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);

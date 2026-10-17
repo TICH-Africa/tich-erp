@@ -12,7 +12,7 @@
             <h2 id="disciplinary-create-modal-title" class="tich-h3" style="margin: 0;">New disciplinary case</h2>
             <button type="button" class="tich-modal__close" data-close-modal="disciplinary-create-modal" aria-label="Close">&times;</button>
         </header>
-        <form method="POST" action="{{ route('hr.employee-relations.disciplinary.store') }}" class="tich-modal__body" data-uf="skip">
+        <form method="POST" action="{{ route('hr.employee-relations.disciplinary.store') }}" class="tich-modal__body" data-uf="skip" enctype="multipart/form-data">
             @csrf
 
             @if ($errors->any())
@@ -72,6 +72,17 @@
             <div class="uf-field">
                 <label for="disciplinary-committee_members">Committee members</label>
                 <textarea id="disciplinary-committee_members" name="committee_members" rows="2" placeholder="Names of committee members...">{{ old('committee_members') }}</textarea>
+            </div>
+            <div class="uf-field">
+                <label for="disciplinary-documents">Attachments</label>
+                <input type="file" id="disciplinary-documents" name="documents[]" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                <p class="tich-caption tich-mt-2">Optional. Up to 10 files (PDF, Word, images). Max 10 MB each.</p>
+                @error('documents')
+                    <span class="uf-error">{{ $message }}</span>
+                @enderror
+                @error('documents.*')
+                    <span class="uf-error">{{ $message }}</span>
+                @enderror
             </div>
 
             <footer class="tich-modal__footer">
