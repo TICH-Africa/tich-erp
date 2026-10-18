@@ -114,6 +114,44 @@ class EmployeeApi {
   Future<Map<String, dynamic>> timeLogs() =>
       _client.get('/employee/time-logs');
 
+  Future<Map<String, dynamic>> timeLogWeeks({
+    required int year,
+    required int month,
+  }) =>
+      _client.get(
+        '/employee/time-logs/weeks?year=$year&month=$month',
+      );
+
+  Future<Map<String, dynamic>> createTimeLog({
+    required int year,
+    required int month,
+    required int weekNumber,
+  }) =>
+      _client.post('/employee/time-logs', body: {
+        'year': year,
+        'month': month,
+        'week_number': weekNumber,
+      });
+
+  Future<Map<String, dynamic>> timeLog(int id) =>
+      _client.get('/employee/time-logs/$id');
+
+  Future<Map<String, dynamic>> updateTimeLog(
+    int id, {
+    required Map<String, dynamic> days,
+  }) =>
+      _client.put('/employee/time-logs/$id', body: {'days': days});
+
+  Future<Map<String, dynamic>> submitTimeLog(
+    int id, {
+    required Map<String, dynamic> days,
+    bool selfEndorse = false,
+  }) =>
+      _client.post('/employee/time-logs/$id/submit', body: {
+        'days': days,
+        if (selfEndorse) 'self_endorse': true,
+      });
+
   Future<Map<String, dynamic>> feedback() => _client.get('/employee/feedback');
 
   Future<Map<String, dynamic>> submitFeedback({

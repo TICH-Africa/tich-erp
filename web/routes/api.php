@@ -161,7 +161,12 @@ Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->grou
     Route::get('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'concerns']);
     Route::post('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeConcern']);
     Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'appraisals']);
-    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'timeLogs']);
+    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'index']);
+    Route::get('/time-logs/weeks', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'weeks']);
+    Route::post('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'store']);
+    Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'show']);
+    Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'update']);
+    Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'submit']);
     Route::get('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'feedback']);
     Route::post('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeFeedback']);
 });
