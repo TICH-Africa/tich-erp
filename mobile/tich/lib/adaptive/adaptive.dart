@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/tich_theme.dart';
+import '../ui/widgets/tich_form_dialog.dart';
 import '../ui/widgets/tich_live_refresh.dart';
 import '../ui/widgets/tich_tab_active_scope.dart';
 import 'lazy_indexed_stack.dart';
@@ -447,8 +448,12 @@ Future<T?> showAdaptiveConfirm<T>({
   return showDialog<T>(
     context: context,
     builder: (ctx) => AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: Text(title),
-      content: content,
+      content: SizedBox(
+        width: tichFormDialogWidth(ctx),
+        child: content,
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false as T?),

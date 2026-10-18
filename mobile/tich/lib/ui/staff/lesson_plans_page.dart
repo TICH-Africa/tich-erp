@@ -6,6 +6,7 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
@@ -49,12 +50,13 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
+        builder: (ctx, setLocal) => TichFormDialog(
           title: const Text('New lesson plan'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          scrollable: true,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 TichDropdownFormField<int>(
                   initialValue: allocationId,
                   items: [
@@ -98,8 +100,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
                     if (picked != null) setLocal(() => planned = picked);
                   },
                 ),
-              ],
-            ),
+            ],
           ),
           actions: [
             TextButton(

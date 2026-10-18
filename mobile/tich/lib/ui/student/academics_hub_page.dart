@@ -6,6 +6,7 @@ import '../../data/api_client.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'assessment_take_page.dart';
@@ -296,14 +297,27 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                       onPressed: () async {
                         final method = await showDialog<String>(
                           context: context,
-                          builder: (ctx) => SimpleDialog(
+                          builder: (ctx) => TichFormDialog(
                             title: const Text('Request transcript'),
-                            children: [
-                              for (final m in ['download', 'email', 'collect'])
-                                SimpleDialogOption(
-                                  onPressed: () => Navigator.pop(ctx, m),
-                                  child: Text(m),
-                                ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (final m in ['download', 'email', 'collect'])
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: OutlinedButton(
+                                      onPressed: () => Navigator.pop(ctx, m),
+                                      child: Text(m),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel'),
+                              ),
                             ],
                           ),
                         );

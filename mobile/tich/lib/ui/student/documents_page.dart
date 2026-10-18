@@ -6,6 +6,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
@@ -44,10 +45,12 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
+        builder: (ctx, setModal) => TichFormDialog(
           title: const Text('Request document'),
+          scrollable: true,
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TichDropdownFormField<String>(
                 value: selected,

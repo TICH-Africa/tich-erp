@@ -5,6 +5,7 @@ import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
@@ -53,12 +54,13 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => TichFormDialog(
         title: const Text('Record CAT score'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
               TichDropdownFormField<int>(
                 initialValue: allocationId,
                 items: [
@@ -98,8 +100,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Score obtained'),
               ),
-            ],
-          ),
+          ],
         ),
         actions: [
           TextButton(

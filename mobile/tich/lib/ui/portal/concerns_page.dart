@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class ConcernsPage extends StatefulWidget {
@@ -45,24 +46,24 @@ class _ConcernsPageState extends State<ConcernsPage> {
     final description = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => TichFormDialog(
         title: const Text('Raise a concern'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TichDropdownFormField<String>(
-                value: category,
-                items: categories.entries
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
-                    .toList(),
-                onChanged: (v) => category = v,
-                decoration: const InputDecoration(labelText: 'Category'),
-              ),
-              TextField(controller: subject, decoration: const InputDecoration(labelText: 'Subject')),
-              TextField(controller: description, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
-            ],
-          ),
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TichDropdownFormField<String>(
+              value: category,
+              items: categories.entries
+                  .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
+                  .toList(),
+              onChanged: (v) => category = v,
+              decoration: const InputDecoration(labelText: 'Category'),
+            ),
+            TextField(controller: subject, decoration: const InputDecoration(labelText: 'Subject')),
+            TextField(controller: description, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

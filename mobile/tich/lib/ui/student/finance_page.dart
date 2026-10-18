@@ -6,6 +6,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
@@ -48,10 +49,11 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
     final amountCtrl = TextEditingController(text: balance.toStringAsFixed(2));
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => TichFormDialog(
         title: Text('Pay ${invoice['invoice_number'] ?? 'invoice'}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: amountCtrl,

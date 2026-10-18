@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class WfhPage extends StatefulWidget {
@@ -45,10 +46,12 @@ class _WfhPageState extends State<WfhPage> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx, setModal) => AlertDialog(
+          builder: (ctx, setModal) => TichFormDialog(
             title: const Text('Apply for WFH'),
+            scrollable: true,
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 OutlinedButton(
                   onPressed: () async {
@@ -75,6 +78,7 @@ class _WfhPageState extends State<WfhPage> {
                   },
                   child: Text('End: ${dateTimeDisplay.format(end)}'),
                 ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: reason,
                   maxLines: 3,

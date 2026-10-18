@@ -5,6 +5,7 @@ import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'time_log_detail_page.dart';
@@ -80,12 +81,13 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
               }
             }
 
-            return AlertDialog(
+            return TichFormDialog(
               title: const Text('Open weekly time log'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              scrollable: true,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                     Row(
                       children: [
                         const Text('Year'),
@@ -137,8 +139,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                           if (v != null) setModal(() => weekNumber = v);
                         },
                       ),
-                  ],
-                ),
+                ],
               ),
               actions: [
                 TextButton(

@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_helpers.dart';
@@ -73,7 +74,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
           Map<String, dynamic>.from(res['submission'] as Map? ?? {});
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
+        builder: (ctx) => TichFormDialog(
           title: const Text('Submitted'),
           content: Text(
             'Score: ${submission['score'] ?? '—'}'
