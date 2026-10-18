@@ -89,6 +89,8 @@ class _ActionTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   action.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: tichUi(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,

@@ -124,7 +124,7 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
                 TichCard(
                   child: Column(
                     children: [
-                      DropdownButtonFormField<int>(
+                      TichDropdownFormField<int>(
                         value: _months,
                         items: [1, 2, 3, 6, 12, 18, 24, 36]
                             .map(

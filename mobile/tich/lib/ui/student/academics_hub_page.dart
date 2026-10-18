@@ -638,7 +638,7 @@ class _ExamRequestsInteractiveState extends State<_ExamRequestsInteractive> {
         TichCard(
           child: Column(
             children: [
-              DropdownButtonFormField<String>(
+              TichDropdownFormField<String>(
                 value: _type,
                 items: const [
                   DropdownMenuItem(
@@ -654,7 +654,7 @@ class _ExamRequestsInteractiveState extends State<_ExamRequestsInteractive> {
                 decoration: const InputDecoration(labelText: 'Request type'),
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<int>(
+              TichDropdownFormField<int>(
                 value: _unitId,
                 items: unitItems
                     .map(

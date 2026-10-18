@@ -47,6 +47,8 @@ class PortalHero extends StatelessWidget {
                     children: [
                       Text(
                         title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TichTheme.display(
                           color: Colors.white,
                           fontSize: 20,
@@ -57,6 +59,8 @@ class PortalHero extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           subtitle!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: tichUi(
                             color: Colors.white.withValues(alpha: 0.88),
                             fontSize: 13,
@@ -112,14 +116,14 @@ class PortalHeroPill extends StatelessWidget {
             Icon(icon, size: 16, color: Colors.white),
             const SizedBox(width: 6),
           ],
-          Flexible(
-            child: Text(
-              label,
-              style: tichUi(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tichUi(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

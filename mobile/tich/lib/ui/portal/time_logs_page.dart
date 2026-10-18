@@ -101,7 +101,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
+                    TichDropdownFormField<int>(
                       value: month,
                       decoration: const InputDecoration(labelText: 'Month'),
                       items: List.generate(
@@ -121,7 +121,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                     if (weekOptions.isEmpty)
                       const Text('No weeks for this month.')
                     else
-                      DropdownButtonFormField<int>(
+                      TichDropdownFormField<int>(
                         value: weekNumber,
                         decoration: const InputDecoration(labelText: 'Week'),
                         items: [

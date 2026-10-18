@@ -18,6 +18,8 @@ class TichSectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TichTheme.display(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -80,6 +82,9 @@ class TichStatusChip extends StatelessWidget {
       ),
       child: Text(
         label.replaceAll('_', ' '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
         style: tichUi(
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -91,6 +96,63 @@ class TichStatusChip extends StatelessWidget {
 }
 
 enum TichChipTone { success, info, warning, danger, neutral }
+
+/// Dropdown with [isExpanded] and ellipsized selected label (avoids overflow stripes).
+class TichDropdownFormField<T> extends StatelessWidget {
+  const TichDropdownFormField({
+    super.key,
+    this.value,
+    this.initialValue,
+    required this.items,
+    required this.onChanged,
+    this.decoration,
+    this.hint,
+    this.validator,
+  });
+
+  final T? value;
+  final T? initialValue;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?>? onChanged;
+  final InputDecoration? decoration;
+  final Widget? hint;
+  final FormFieldValidator<T>? validator;
+
+  static String _labelFromWidget(Widget? child) {
+    if (child is Text) {
+      return child.data ?? child.textSpan?.toPlainText() ?? '';
+    }
+    return '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<T>(
+      isExpanded: true,
+      value: value,
+      initialValue: initialValue,
+      decoration: decoration,
+      hint: hint,
+      items: items,
+      onChanged: onChanged,
+      validator: validator,
+      selectedItemBuilder: (context) {
+        return items
+            .map(
+              (item) => Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  _labelFromWidget(item.child),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList();
+      },
+    );
+  }
+}
 
 class TichEmpty extends StatelessWidget {
   const TichEmpty(this.message, {super.key});

@@ -51,7 +51,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<String>(
+              TichDropdownFormField<String>(
                 value: category,
                 items: categories.entries
                     .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))

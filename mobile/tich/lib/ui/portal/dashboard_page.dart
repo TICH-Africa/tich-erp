@@ -508,6 +508,8 @@ class _StatCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: tichUi(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
@@ -562,6 +564,8 @@ class _EmploymentKvRow extends StatelessWidget {
                 flex: 3,
                 child: Text(
                   display,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: tichUi(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
@@ -608,9 +612,14 @@ class _CompensationRow extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                _kes(amount, obscure: !revealed),
-                style: tichUi(fontWeight: FontWeight.w700),
+              Flexible(
+                child: Text(
+                  _kes(amount, obscure: !revealed),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: tichUi(fontWeight: FontWeight.w700),
+                ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,

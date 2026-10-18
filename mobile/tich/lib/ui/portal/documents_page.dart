@@ -63,7 +63,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 children: [
                   Text('Upload document', style: GoogleFonts.merriweather(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  TichDropdownFormField<String>(
                     value: selected,
                     items: types.entries
                         .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))

@@ -59,7 +59,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<int>(
+              TichDropdownFormField<int>(
                 initialValue: allocationId,
                 items: [
                   for (final raw in allocations)

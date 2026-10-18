@@ -65,7 +65,7 @@ class _StudentSuggestionsPageState extends State<StudentSuggestionsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           const TichSectionHeader('Send feedback'),
-          DropdownButtonFormField<String>(
+          TichDropdownFormField<String>(
             value: _category,
             items: const [
               DropdownMenuItem(value: 'suggestion', child: Text('Suggestion')),

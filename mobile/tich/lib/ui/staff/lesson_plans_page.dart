@@ -55,7 +55,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<int>(
+                TichDropdownFormField<int>(
                   initialValue: allocationId,
                   items: [
                     for (final raw in allocations)

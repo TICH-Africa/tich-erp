@@ -49,7 +49,7 @@ class _StudentEvaluationsPageState extends State<StudentEvaluationsPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<int>(
+              TichDropdownFormField<int>(
                 value: rating,
                 items: [1, 2, 3, 4, 5]
                     .map((v) => DropdownMenuItem(value: v, child: Text('$v')))

@@ -49,7 +49,7 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<String>(
+              TichDropdownFormField<String>(
                 value: selected,
                 items: types.entries
                     .map(

@@ -140,27 +140,36 @@ class AdaptiveScaffold extends StatelessWidget {
         navigationBar: CupertinoNavigationBar(
           backgroundColor: TichColors.blue,
           border: null,
-          middle: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                brandEyebrow,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: TichColors.greenLight,
+          middle: SizedBox(
+            width: MediaQuery.sizeOf(context).width * 0.52,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  brandEyebrow,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: TichColors.greenLight,
+                  ),
                 ),
-              ),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: TichColors.white,
-                  fontWeight: FontWeight.w600,
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: TichColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           trailing: trailingActions.isEmpty
               ? null
@@ -194,13 +203,19 @@ class AdaptiveScaffold extends StatelessWidget {
           children: [
             Text(
               brandEyebrow,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
               ),
             ),
-            Text(title),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
         actions: trailingActions,
@@ -256,6 +271,7 @@ class AdaptiveTabScaffold extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: [
           for (final item in items)
             NavigationDestination(

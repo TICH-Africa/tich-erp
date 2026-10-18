@@ -383,7 +383,7 @@ class _LeaveApplyPageState extends State<LeaveApplyPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          DropdownButtonFormField<int>(
+          TichDropdownFormField<int>(
             value: _typeId,
             decoration: const InputDecoration(labelText: 'Leave type'),
             items: types

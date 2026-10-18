@@ -49,11 +49,15 @@ class StaffStatTile extends StatelessWidget {
           children: [
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: tichUi(fontSize: 11, color: TichColors.neutralMuted),
             ),
             const SizedBox(height: 6),
             Text(
               value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: tichUi(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ],

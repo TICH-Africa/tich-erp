@@ -130,6 +130,10 @@ abstract final class TichTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: TichColors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        alignLabelWithHint: true,
+        isDense: true,
+        errorMaxLines: 2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: TichColors.neutralBorder),
@@ -216,6 +220,10 @@ abstract final class TichTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF1C1F24),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        alignLabelWithHint: true,
+        isDense: true,
+        errorMaxLines: 2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFF2A2E35)),
