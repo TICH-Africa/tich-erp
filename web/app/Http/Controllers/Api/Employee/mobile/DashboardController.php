@@ -28,6 +28,11 @@ class DashboardController extends Controller
             }
         }
 
+        $employmentStart = $staff->employment_start_date;
+        if ($employmentStart instanceof \DateTimeInterface) {
+            $employmentStart = $employmentStart->format('Y-m-d');
+        }
+
         return response()->json([
             'staff' => [
                 'id' => $staff->id,
@@ -36,11 +41,33 @@ class DashboardController extends Controller
                 'job_title' => $staff->job_title,
                 'department' => $staff->department?->dept_name,
                 'campus' => $staff->campus?->name ?? $staff->campus?->campus_name,
+                'line_manager' => $staff->lineManager?->fullName(),
+                'employment_status' => $staff->employment_status,
+                'employment_start_date' => $employmentStart,
                 'photo_url' => $staff->photoUrl(),
                 'organisation_email' => $staff->organisation_email,
                 'primary_email' => $staff->primary_email,
                 'phone_number' => $staff->phone_number,
             ],
+            'contract_history' => $staff->contracts->map(function ($item) {
+                $start = $item->start_date;
+                $end = $item->end_date;
+                if ($start instanceof \DateTimeInterface) {
+                    $start = $start->format('Y-m-d');
+                }
+                if ($end instanceof \DateTimeInterface) {
+                    $end = $end->format('Y-m-d');
+                }
+
+                return [
+                    'contract_number' => $item->contract_number,
+                    'contract_type' => $item->contract_type,
+                    'start_date' => $start,
+                    'end_date' => $end,
+                    'is_expired' => $item->isExpired(),
+                    'is_expiring_soon' => $item->isExpiringSoon(),
+                ];
+            })->values(),
             'contract' => $contract,
             'compensation' => [
                 'gross_monthly_salary' => $data['compensation']['gross_monthly_salary'],
