@@ -205,6 +205,37 @@ abstract final class TichTheme {
           foregroundColor: TichColors.white,
         ),
       ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: TichColors.blueLight,
+          side: const BorderSide(color: Color(0xFF3D4F5F)),
+          textStyle: tichUi(fontWeight: FontWeight.w600, fontSize: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1C1F24),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF2A2E35)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF2A2E35)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: TichColors.blueLight, width: 1.5),
+        ),
+        labelStyle: tichUi(color: const Color(0xFF9AA0A6), fontSize: 14),
+        hintStyle: tichUi(color: const Color(0xFF9AA0A6), fontSize: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      ),
+      dividerColor: const Color(0xFF2A2E35),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: TichColors.blueLight,
+      ),
     );
     return _dark = built;
   }

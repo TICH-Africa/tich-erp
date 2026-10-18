@@ -84,6 +84,66 @@ Future<DateTime?> pickDateTime(
   return DateTime(date.year, date.month, date.day, time.hour, time.minute);
 }
 
+/// Calendar date only (no time picker).
+Future<DateTime?> pickDateOnly(
+  BuildContext context, {
+  DateTime? initial,
+  DateTime? firstDate,
+  DateTime? lastDate,
+}) async {
+  final now = DateTime.now();
+  final start = initial ?? now;
+  final first = firstDate ?? DateTime(now.year - 1);
+  final last = lastDate ?? DateTime(now.year + 2);
+
+  if (usesCupertino) {
+    DateTime temp = DateTime(start.year, start.month, start.day);
+    final confirmed = await showCupertinoModalPopup<bool>(
+      context: context,
+      builder: (ctx) => Container(
+        height: 280,
+        color: CupertinoColors.systemBackground.resolveFrom(ctx),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(ctx, false),
+                ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(ctx, true),
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: temp,
+                minimumDate: first,
+                maximumDate: last,
+                onDateTimeChanged: (v) => temp = DateTime(v.year, v.month, v.day),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return confirmed == true ? temp : null;
+  }
+
+  final date = await showDatePicker(
+    context: context,
+    initialDate: start,
+    firstDate: first,
+    lastDate: last,
+  );
+  if (date == null) return null;
+  return DateTime(date.year, date.month, date.day);
+}
+
 DateTime? parseAppDateTime(dynamic value) {
   if (value == null) return null;
   if (value is DateTime) return value.toLocal();

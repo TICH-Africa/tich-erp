@@ -20,7 +20,7 @@ class TichSectionHeader extends StatelessWidget {
               title,
               style: TichTheme.display(
                 fontSize: 16,
-                color: TichColors.grey,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -104,7 +104,9 @@ class TichEmpty extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: tichUi(color: TichColors.neutralMuted),
+        style: tichUi(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+        ),
       ),
     );
   }
