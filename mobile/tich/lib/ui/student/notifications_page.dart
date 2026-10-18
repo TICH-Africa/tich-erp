@@ -22,6 +22,7 @@ class StudentNotificationsPage extends StatefulWidget {
 
 class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.notifications(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -59,14 +60,16 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
-          final items = snap.data!['items'] as List? ?? const [];
-          final unread = (snap.data!['unread'] as num?)?.toInt() ?? 0;
+          final data = merged! as Map<String, dynamic>;
+          final items = data['items'] as List? ?? const [];
+          final unread = (data['unread'] as num?)?.toInt() ?? 0;
 
           return RefreshIndicator(
             onRefresh: () async => _reload(),

@@ -18,6 +18,7 @@ class StaffTimetablePage extends StatefulWidget {
 
 class _StaffTimetablePageState extends State<StaffTimetablePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.timetable(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -45,15 +46,17 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return staffLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }
-          final sessions = [...(snap.data!['sessions'] as List? ?? const [])];
-          final dayLabels = snap.data!['day_labels'] is Map
-              ? Map.from(snap.data!['day_labels'] as Map)
+          final data = merged! as Map<String, dynamic>;
+          final sessions = [...(data['sessions'] as List? ?? const [])];
+          final dayLabels = data['day_labels'] is Map
+              ? Map.from(data['day_labels'] as Map)
               : null;
           sessions.sort((a, b) {
             final am = Map<String, dynamic>.from(a as Map);

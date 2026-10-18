@@ -26,9 +26,9 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   int _notifCount = 0;
   bool? _clockedInToday;
-  bool _showCompensation = false;
 
   @override
   void initState() {
@@ -75,7 +75,7 @@ class _DashboardPageState extends State<DashboardPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.dashboard(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
     _loadNotifications();
     _syncAttendanceReminders();
@@ -138,10 +138,11 @@ class _DashboardPageState extends State<DashboardPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            if (snap.connectionState != ConnectionState.done) {
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+            if (tichShowLoadingSpinner(snap, merged)) {
               return const Center(child: AdaptiveProgress());
             }
-            if (snap.hasError) {
+            if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error is ApiException
                     ? snap.error.toString()
@@ -149,14 +150,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 onRetry: _reload,
               );
             }
-            final data = snap.data!;
+            final data = merged! as Map<String, dynamic>;;
             final staff =
                 Map<String, dynamic>.from(data['staff'] as Map? ?? {});
             final contract =
                 Map<String, dynamic>.from(data['contract'] as Map? ?? {});
-            final compensation = Map<String, dynamic>.from(
-              data['compensation'] as Map? ?? {},
-            );
             final contractHistory =
                 (data['contract_history'] as List? ?? const []);
             final employmentDuration =
@@ -241,17 +239,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       staff['employment_status']?.toString(),
                     ),
                     contractLabel: _contractSummaryLabel(contract),
-                    monthlyCompensation: _kes(
-                      compensation['total_monthly'],
-                      obscure: !_showCompensation,
-                    ),
                     timeWithTich: employmentDuration?.isNotEmpty == true
                         ? employmentDuration!
                         : '—',
-                    showCompensation: _showCompensation,
-                    onToggleCompensation: () => setState(
-                      () => _showCompensation = !_showCompensation,
-                    ),
                   ),
                   const SizedBox(height: 16),
                   const TichSectionHeader('Employment & contract'),
@@ -295,39 +285,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           label: 'Contract type',
                           value: _labelContractType(
                             contract['type']?.toString(),
-                          ),
-                          showDivider: false,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const TichSectionHeader('Compensation'),
-                  TichCard(
-                    child: Column(
-                      children: [
-                        _CompensationRow(
-                          label: 'Consolidated gross pay',
-                          amount: compensation['gross_monthly_salary'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
-                          ),
-                        ),
-                        _CompensationRow(
-                          label: 'Allowances',
-                          amount: compensation['allowances_total'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
-                          ),
-                        ),
-                        _CompensationRow(
-                          label: 'Total package',
-                          amount: compensation['total_monthly'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
                           ),
                           showDivider: false,
                         ),
@@ -397,29 +354,16 @@ String _formatEmploymentDate(dynamic value) {
   return formatDate(value);
 }
 
-String _kes(dynamic value, {required bool obscure}) {
-  final n = (value is num) ? value.toDouble() : double.tryParse('$value') ?? 0;
-  final formatted = 'KES ${n.toStringAsFixed(2)}';
-  if (!obscure) return formatted;
-  return 'KES •••••';
-}
-
 class _EmploymentStatGrid extends StatelessWidget {
   const _EmploymentStatGrid({
     required this.employmentStatus,
     required this.contractLabel,
-    required this.monthlyCompensation,
     required this.timeWithTich,
-    required this.showCompensation,
-    required this.onToggleCompensation,
   });
 
   final String employmentStatus;
   final String contractLabel;
-  final String monthlyCompensation;
   final String timeWithTich;
-  final bool showCompensation;
-  final VoidCallback onToggleCompensation;
 
   @override
   Widget build(BuildContext context) {
@@ -439,25 +383,6 @@ class _EmploymentStatGrid extends StatelessWidget {
               width: w,
               caption: 'Contract',
               value: contractLabel,
-            ),
-            _StatCard(
-              width: w,
-              caption: 'Monthly compensation',
-              value: monthlyCompensation,
-              trailing: IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                tooltip: showCompensation ? 'Hide amounts' : 'Show amounts',
-                onPressed: onToggleCompensation,
-                icon: Icon(
-                  showCompensation
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  size: 18,
-                  color: TichColors.neutralMuted,
-                ),
-              ),
             ),
             _StatCard(
               width: w,
@@ -567,71 +492,6 @@ class _EmploymentKvRow extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: tichUi(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (showDivider) const Divider(height: 1),
-      ],
-    );
-  }
-}
-
-class _CompensationRow extends StatelessWidget {
-  const _CompensationRow({
-    required this.label,
-    required this.amount,
-    required this.revealed,
-    required this.onToggle,
-    this.showDivider = true,
-  });
-
-  final String label;
-  final dynamic amount;
-  final bool revealed;
-  final VoidCallback onToggle;
-  final bool showDivider;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label.toUpperCase(),
-                  style: tichUi(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                    color: TichColors.neutralMuted,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  _kes(amount, obscure: !revealed),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: tichUi(fontWeight: FontWeight.w700),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: onToggle,
-                icon: Icon(
-                  revealed
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  size: 18,
-                  color: TichColors.neutralMuted,
                 ),
               ),
             ],

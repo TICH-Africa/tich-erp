@@ -31,6 +31,7 @@ class StaffHomePage extends StatefulWidget {
 
 class _StaffHomePageState extends State<StaffHomePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -45,7 +46,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.dashboard(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -81,13 +82,14 @@ class _StaffHomePageState extends State<StaffHomePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return staffLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;
           final staff =
               Map<String, dynamic>.from(data['staff'] as Map? ?? {});
           final stats =

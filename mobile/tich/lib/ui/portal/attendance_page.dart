@@ -8,6 +8,7 @@ import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../shell/portal_shell.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class AttendancePage extends StatefulWidget {
@@ -21,6 +22,7 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   bool _busy = false;
   bool _offCampus = false;
   final _project = TextEditingController();
@@ -51,7 +53,7 @@ class _AttendancePageState extends State<AttendancePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.attendance(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -93,6 +95,7 @@ class _AttendancePageState extends State<AttendancePage> {
         const SnackBar(content: Text('Clocked in.')),
       );
       _reload();
+      EmployeePortalNavSignals.onAttendanceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -115,6 +118,7 @@ class _AttendancePageState extends State<AttendancePage> {
         const SnackBar(content: Text('Clocked out.')),
       );
       _reload();
+      EmployeePortalNavSignals.onAttendanceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -161,16 +165,17 @@ class _AttendancePageState extends State<AttendancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: _reload,
             );
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;;
           final today = data['today'] as Map?;
           final recent = data['recent'] as List? ?? const [];
           final clockedIn = today != null && today['clock_in_at'] != null;

@@ -23,6 +23,7 @@ class StudentAcademicsHubPage extends StatefulWidget {
 
 class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.academics(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -502,10 +503,11 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
           return RefreshIndicator(

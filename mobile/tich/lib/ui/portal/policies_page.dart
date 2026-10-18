@@ -20,6 +20,7 @@ class PoliciesPage extends StatefulWidget {
 
 class _PoliciesPageState extends State<PoliciesPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _PoliciesPageState extends State<PoliciesPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.policies(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -67,13 +68,15 @@ class _PoliciesPageState extends State<PoliciesPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final items = snap.data!['policies'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final items = data['policies'] as List? ?? const [];
           if (items.isEmpty) {
             return const Center(child: TichEmpty('No assigned policies.'));
           }

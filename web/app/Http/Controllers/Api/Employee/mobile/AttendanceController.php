@@ -29,6 +29,7 @@ class AttendanceController extends Controller
             'recent' => $this->attendance->recentRecords($staff)
                 ->map(fn ($r) => $this->serializeAttendance($r))
                 ->values(),
+            'clock_in_status' => $this->attendance->clockInPromptStatus($staff),
             'require_location' => (bool) config('hr-attendance.require_location', true),
             'max_location_accuracy' => (int) config('hr-attendance.max_accuracy_meters', 2000),
             'geofence' => $geofence,

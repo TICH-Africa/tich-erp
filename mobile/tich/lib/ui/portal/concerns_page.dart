@@ -21,6 +21,7 @@ class ConcernsPage extends StatefulWidget {
 
 class _ConcernsPageState extends State<ConcernsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -35,7 +36,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.concerns(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -105,13 +106,15 @@ class _ConcernsPageState extends State<ConcernsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final items = snap.data!['concerns'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final items = data['concerns'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(

@@ -26,6 +26,7 @@ class StudentAssessmentTakePage extends StatefulWidget {
 
 class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final Map<String, String> _responses = {};
   bool _busy = false;
   DateTime? _startedAt;
@@ -42,7 +43,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.assessment(widget.assessmentId),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 

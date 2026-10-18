@@ -16,39 +16,10 @@ class TichMoreRowTrailing extends StatelessWidget {
         if (badgeCount > 0)
           Padding(
             padding: const EdgeInsets.only(right: 6),
-            child: _CountPill(count: badgeCount),
+            child: TichNavBadge.circleCount(badgeCount),
           ),
         const Icon(Icons.chevron_right),
       ],
-    );
-  }
-}
-
-class _CountPill extends StatelessWidget {
-  const _CountPill({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = count > 99 ? '99+' : '$count';
-    return Container(
-      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: TichNavBadge.alertRed,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          height: 1.1,
-        ),
-      ),
     );
   }
 }

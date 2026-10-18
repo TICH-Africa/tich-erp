@@ -11,8 +11,14 @@ import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
 import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
+import 'employee_clock_nav.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
+
+/// Called after clock-in/out so the bottom nav pulse updates immediately.
+abstract final class EmployeePortalNavSignals {
+  static VoidCallback? onAttendanceChanged;
+}
 
 class PortalShell extends StatefulWidget {
   const PortalShell({super.key});
@@ -29,6 +35,7 @@ class _PortalShellState extends State<PortalShell>
   int _homeBadge = 0;
   int _leaveBadge = 0;
   int _clockBadge = 0;
+  bool _clockPulse = false;
   int _moreDot = 0;
 
   static const _moreMenuKeys = [
@@ -38,6 +45,20 @@ class _PortalShellState extends State<PortalShell>
     'concerns',
     'feedback',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
+  }
+
+  @override
+  void dispose() {
+    if (EmployeePortalNavSignals.onAttendanceChanged == refreshNavBadges) {
+      EmployeePortalNavSignals.onAttendanceChanged = null;
+    }
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -58,6 +79,15 @@ class _PortalShellState extends State<PortalShell>
     scheduleNavBadgeFetch(() async {
       if (!mounted) return;
       final api = context.read<EmployeeApi>();
+
+      var clockPulse = _clockPulse;
+      try {
+        final attendance = await api.attendance();
+        if (mounted) {
+          clockPulse = employeeNeedsClockInPulse(attendance);
+        }
+      } catch (_) {}
+
       try {
         final data = await api.notifications();
         if (!mounted) return;
@@ -72,20 +102,33 @@ class _PortalShellState extends State<PortalShell>
           _homeBadge = total;
           _leaveBadge = counts['leave.returned'] ?? 0;
           _clockBadge = counts['attendance_clock_in'] ?? 0;
+          _clockPulse = clockPulse;
           _moreDot = moreDot;
         });
-      } catch (_) {}
+      } catch (_) {
+        if (mounted) {
+          setState(() => _clockPulse = clockPulse);
+        }
+      }
     });
     return Future.value();
   }
 
   @override
   Widget build(BuildContext context) {
+    final showClockPulse = _clockPulse;
+    final showClockCount = !showClockPulse && _clockBadge > 0;
+
     return PortalNavCountsScope(
       counts: _counts,
       child: AdaptiveTabScaffold(
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        onTap: (i) {
+          setState(() => _index = i);
+          if (i == 2) {
+            refreshNavBadges();
+          }
+        },
         pages: _pages!,
         items: [
           AdaptiveTabItem(
@@ -105,12 +148,14 @@ class _PortalShellState extends State<PortalShell>
             badgeCount: _leaveBadge,
           ),
           AdaptiveTabItem(
-            label: 'Clock',
+            label: 'Clock in',
             materialIcon: Icons.fingerprint_outlined,
             materialActiveIcon: Icons.fingerprint,
             cupertinoIcon: CupertinoIcons.clock,
             cupertinoActiveIcon: CupertinoIcons.clock_fill,
-            badgeCount: _clockBadge,
+            badgeCount: showClockPulse ? 1 : (showClockCount ? _clockBadge : 0),
+            badgeDotOnly: showClockPulse,
+            badgePulse: showClockPulse,
           ),
           const AdaptiveTabItem(
             label: 'Payslips',

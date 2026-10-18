@@ -270,7 +270,9 @@ class AdaptiveTabScaffold extends StatelessWidget {
 
     return Scaffold(
       body: LazyIndexedStack(index: currentIndex, children: pages),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarTheme.of(context).copyWith(height: 72),
+        child: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -282,6 +284,7 @@ class AdaptiveTabScaffold extends StatelessWidget {
               label: item.label,
             ),
         ],
+        ),
       ),
     );
   }
@@ -296,6 +299,7 @@ class AdaptiveTabItem {
     this.cupertinoActiveIcon,
     this.badgeCount = 0,
     this.badgeDotOnly = false,
+    this.badgePulse = false,
   });
 
   final String label;
@@ -305,6 +309,7 @@ class AdaptiveTabItem {
   final IconData? cupertinoActiveIcon;
   final int badgeCount;
   final bool badgeDotOnly;
+  final bool badgePulse;
 
   Widget _materialIcon({required bool active}) {
     final icon = Icon(
@@ -314,6 +319,7 @@ class AdaptiveTabItem {
       child: icon,
       count: badgeCount,
       dotOnly: badgeDotOnly,
+      pulse: badgePulse,
     );
   }
 
@@ -325,6 +331,7 @@ class AdaptiveTabItem {
       child: icon,
       count: badgeCount,
       dotOnly: badgeDotOnly,
+      pulse: badgePulse,
     );
   }
 }

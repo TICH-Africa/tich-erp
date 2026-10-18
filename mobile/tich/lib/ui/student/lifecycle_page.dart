@@ -21,6 +21,7 @@ class StudentLifecyclePage extends StatefulWidget {
 
 class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final _reason = TextEditingController();
   int _months = 3;
   final List<({String path, String name})> _files = [];
@@ -45,7 +46,7 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.lifecycleRequests(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -108,13 +109,15 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
-          final requests = snap.data!['requests'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final requests = data['requests'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(

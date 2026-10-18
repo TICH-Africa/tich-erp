@@ -21,6 +21,7 @@ class TimeLogsPage extends StatefulWidget {
 
 class _TimeLogsPageState extends State<TimeLogsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -35,7 +36,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.timeLogs(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -224,17 +225,19 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            if (snap.connectionState != ConnectionState.done) {
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+            if (tichShowLoadingSpinner(snap, merged)) {
               return const Center(child: AdaptiveProgress());
             }
-            if (snap.hasError) {
+            if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error.toString(),
                 onRetry: _reload,
               );
             }
-            final weeks = snap.data!['weeks'] as List? ?? const [];
-            final message = snap.data!['message']?.toString();
+            final data = merged! as Map<String, dynamic>;
+            final weeks = data['weeks'] as List? ?? const [];
+            final message = data['message']?.toString();
             if (weeks.isEmpty) {
               return Center(
                 child: Padding(

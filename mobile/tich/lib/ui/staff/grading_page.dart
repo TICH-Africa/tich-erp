@@ -20,6 +20,7 @@ class StaffGradingPage extends StatefulWidget {
 
 class _StaffGradingPageState extends State<StaffGradingPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.grading(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -162,13 +163,15 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return staffLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }
-          final scores = snap.data!['recent_scores'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final scores = data['recent_scores'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: scores.isEmpty

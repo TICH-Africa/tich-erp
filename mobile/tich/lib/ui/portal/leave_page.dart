@@ -20,6 +20,7 @@ class LeavePage extends StatefulWidget {
 
 class _LeavePageState extends State<LeavePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _LeavePageState extends State<LeavePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.leave(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -68,16 +69,17 @@ class _LeavePageState extends State<LeavePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: _reload,
             );
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;;
           final balances = data['balances'] as List? ?? const [];
           final requests = data['requests'] as List? ?? const [];
           final pending = data['pending_coverages'] as List? ?? const [];

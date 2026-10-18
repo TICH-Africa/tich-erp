@@ -21,6 +21,7 @@ class StudentFinancePage extends StatefulWidget {
 
 class _StudentFinancePageState extends State<StudentFinancePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   bool _paying = false;
 
   @override
@@ -36,7 +37,7 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.finance(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -136,14 +137,16 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
+          final data = merged! as Map<String, dynamic>;
           final finance =
-              Map<String, dynamic>.from(snap.data!['finance'] as Map? ?? {});
+              Map<String, dynamic>.from(data['finance'] as Map? ?? {});
           final summary =
               Map<String, dynamic>.from(finance['summary'] as Map? ?? {});
           final invoices = finance['invoices'] as List? ?? const [];

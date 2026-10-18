@@ -19,6 +19,7 @@ class FeedbackPage extends StatefulWidget {
 
 class _FeedbackPageState extends State<FeedbackPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.feedback(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -67,17 +68,19 @@ class _FeedbackPageState extends State<FeedbackPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: _reload,
             );
           }
+          final data = merged! as Map<String, dynamic>;
 
-          final items = snap.data!['items'] as List? ?? const [];
+          final items = data['items'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(

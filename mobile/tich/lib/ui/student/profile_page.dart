@@ -23,6 +23,7 @@ class StudentProfilePage extends StatefulWidget {
 
 class _StudentProfilePageState extends State<StudentProfilePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _county = TextEditingController();
@@ -113,7 +114,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.profile(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 

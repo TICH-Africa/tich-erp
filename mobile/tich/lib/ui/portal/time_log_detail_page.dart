@@ -24,6 +24,7 @@ class TimeLogDetailPage extends StatefulWidget {
 
 class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final _dayEditors = <String, _DayEditor>{};
   bool _busy = false;
 
@@ -47,7 +48,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: _load,
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -145,16 +146,18 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            if (snap.connectionState != ConnectionState.done) {
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+            if (tichShowLoadingSpinner(snap, merged)) {
               return const Center(child: AdaptiveProgress());
             }
-            if (snap.hasError) {
+            if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error.toString(),
                 onRetry: _reload,
               );
             }
-            final log = Map<String, dynamic>.from(snap.data!['log'] as Map? ?? {});
+            final data = merged! as Map<String, dynamic>;
+            final log = Map<String, dynamic>.from(data['log'] as Map? ?? {});
             final editable = log['editable'] == true;
             final canSubmit = log['can_submit'] == true;
             final departments = (log['departments'] as List? ?? const [])

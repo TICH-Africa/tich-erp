@@ -21,6 +21,7 @@ class StudentDocumentsPage extends StatefulWidget {
 
 class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -35,7 +36,7 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.documents(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -106,9 +107,11 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
       floatingActionButton: FutureBuilder(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const SizedBox.shrink();
-          final types = snap.data!['request_types'] is Map
-              ? Map.from(snap.data!['request_types'] as Map)
+          final fabData = tichMergeSnapshot(snap, _dataCache as dynamic)
+              as Map<String, dynamic>?;
+          if (fabData == null) return const SizedBox.shrink();
+          final types = fabData['request_types'] is Map
+              ? Map.from(fabData['request_types'] as Map)
               : <String, String>{};
           return FloatingActionButton.extended(
             onPressed: () => _requestDoc(types),
@@ -120,15 +123,17 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
-          final docs = snap.data!['documents'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final docs = data['documents'] as List? ?? const [];
           final requests =
-              snap.data!['document_requests'] as List? ?? const [];
+              data['document_requests'] as List? ?? const [];
 
           return RefreshIndicator(
             onRefresh: () async => _reload(),

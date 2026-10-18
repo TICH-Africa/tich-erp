@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\LeaveRequest;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class StaffAttendanceService
 {
@@ -133,5 +135,62 @@ class StaffAttendanceService
         );
 
         return $record->fresh();
+    }
+
+    /**
+     * Whether the employee should be prompted to clock in today (working day, not on leave/holiday).
+     *
+     * @return array{needs_clock_in: bool, is_holiday: bool, on_leave: bool, is_weekend: bool, clocked_in: bool}
+     */
+    public function clockInPromptStatus(Staff $staff, ?Carbon $now = null): array
+    {
+        $now = ($now ?? now('Africa/Nairobi'))->timezone('Africa/Nairobi');
+        $today = $now->toDateString();
+        $isWeekend = $now->isWeekend();
+        $isHoliday = $this->isPublicHoliday($today);
+        $onLeave = $this->isOnApprovedLeave($staff, $today);
+        $record = $this->todayRecord($staff);
+        $clockedIn = $record !== null && $record->clock_in_time !== null;
+        $completed = $record !== null && $record->clock_out_time !== null;
+
+        $needsClockIn = ! $isWeekend
+            && ! $isHoliday
+            && ! $onLeave
+            && ! $clockedIn
+            && ! $completed;
+
+        return [
+            'needs_clock_in' => $needsClockIn,
+            'is_holiday' => $isHoliday,
+            'on_leave' => $onLeave,
+            'is_weekend' => $isWeekend,
+            'clocked_in' => $clockedIn,
+        ];
+    }
+
+    protected function isPublicHoliday(string $date): bool
+    {
+        if (! Schema::hasTable('public_holidays')) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('public_holidays')
+            ->where('holiday_date', $date)
+            ->exists();
+    }
+
+    protected function isOnApprovedLeave(Staff $staff, string $date): bool
+    {
+        if (! Schema::hasTable('leave_requests')) {
+            return false;
+        }
+
+        return LeaveRequest::query()
+            ->where('staff_id', $staff->id)
+            ->where('overall_status', 'approved')
+            ->where('is_cancelled', false)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->exists();
     }
 }

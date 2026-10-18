@@ -20,6 +20,7 @@ class StudentTimetablePage extends StatefulWidget {
 class _StudentTimetablePageState extends State<StudentTimetablePage>
     with SingleTickerProviderStateMixin {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   late TabController _tabs;
 
   @override
@@ -50,7 +51,7 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.timetable(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 

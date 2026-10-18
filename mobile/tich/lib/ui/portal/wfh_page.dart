@@ -20,6 +20,7 @@ class WfhPage extends StatefulWidget {
 
 class _WfhPageState extends State<WfhPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _WfhPageState extends State<WfhPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.wfh(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -123,13 +124,15 @@ class _WfhPageState extends State<WfhPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final requests = snap.data!['requests'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final requests = data['requests'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(

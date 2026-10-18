@@ -19,6 +19,7 @@ class StudentClearancePage extends StatefulWidget {
 
 class _StudentClearancePageState extends State<StudentClearancePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.clearance(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -46,13 +47,15 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
-          final items = snap.data!['items'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final items = data['items'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async {
               await widget.api.ensureClearance();

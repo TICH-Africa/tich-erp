@@ -19,6 +19,7 @@ class StudentEnrolmentPage extends StatefulWidget {
 
 class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.profile(),
-      apply: (f) => _future = f,
+      onData: (data) => _dataCache = data,
     );
   }
 
@@ -68,14 +69,16 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (merged == null && snap.connectionState != ConnectionState.done) {
             return studentLoadingBody();
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
+          final data = merged! as Map<String, dynamic>;
           final biodata =
-              Map<String, dynamic>.from(snap.data!['biodata'] as Map? ?? {});
+              Map<String, dynamic>.from(data['biodata'] as Map? ?? {});
           final academic =
               Map<String, dynamic>.from(biodata['academic'] as Map? ?? {});
           final enrollment =

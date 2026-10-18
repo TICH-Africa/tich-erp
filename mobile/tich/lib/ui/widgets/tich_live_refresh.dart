@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../adaptive/adaptive.dart';
 import 'tich_tab_active_scope.dart';
+import 'tich_widgets.dart';
 
 /// Observes pushed routes for live refresh when a page becomes visible again.
 final RouteObserver<ModalRoute<void>> tichRouteObserver =
@@ -11,17 +13,130 @@ final RouteObserver<ModalRoute<void>> tichRouteObserver =
 /// Default background poll interval while a screen is visible (WhatsApp-style).
 const Duration tichLiveRefreshInterval = Duration(seconds: 25);
 
-/// Re-fetch without showing the loading spinner (keeps prior [FutureBuilder] data).
+/// Hook for [TichLiveRefreshBinder] → [TichLiveData] silent updates (no [FutureBuilder] swap).
+class TichAsyncRefreshHandle {
+  VoidCallback? _silent;
+
+  void attach(VoidCallback silent) => _silent = silent;
+
+  void detach() => _silent = null;
+
+  void refreshSilently() => _silent?.call();
+}
+
+/// Loads once, keeps data on screen while refreshing in the background (no flicker).
+class TichLiveData<T> extends StatefulWidget {
+  const TichLiveData({
+    super.key,
+    required this.fetch,
+    required this.builder,
+    required this.refreshHandle,
+    this.errorMessage,
+  });
+
+  final Future<T> Function() fetch;
+  final Widget Function(
+    BuildContext context,
+    T data,
+    Future<void> Function() reload,
+  ) builder;
+  final TichAsyncRefreshHandle refreshHandle;
+  final String? errorMessage;
+
+  @override
+  State<TichLiveData<T>> createState() => _TichLiveDataState<T>();
+}
+
+class _TichLiveDataState<T> extends State<TichLiveData<T>> {
+  T? _data;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.refreshHandle.attach(_silentFetch);
+    _fetch(showError: true);
+  }
+
+  @override
+  void dispose() {
+    widget.refreshHandle.detach();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TichLiveData<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshHandle != widget.refreshHandle) {
+      oldWidget.refreshHandle.detach();
+      widget.refreshHandle.attach(_silentFetch);
+    }
+  }
+
+  Future<void> _fetch({required bool showError}) async {
+    try {
+      final result = await widget.fetch();
+      if (!mounted) return;
+      setState(() {
+        _data = result;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (showError || _data == null) {
+          _error = e;
+        }
+      });
+    }
+  }
+
+  void _silentFetch() {
+    unawaited(_fetch(showError: false));
+  }
+
+  Future<void> _reload() => _fetch(showError: true);
+
+  @override
+  Widget build(BuildContext context) {
+    if (_data == null && _error == null) {
+      return const Center(child: AdaptiveProgress());
+    }
+    if (_data == null && _error != null) {
+      return TichErrorRefresh(
+        message: widget.errorMessage ?? _error.toString(),
+        onRetry: _reload,
+      );
+    }
+    return widget.builder(context, _data as T, _reload);
+  }
+}
+
+/// Merge [AsyncSnapshot] with [_dataCache] so background refresh does not flash loading.
+T? tichMergeSnapshot<T>(AsyncSnapshot<T> snap, T? cache) {
+  if (snap.hasData) return snap.data;
+  return cache;
+}
+
+bool tichShowLoadingSpinner<T>(AsyncSnapshot<T> snap, T? merged) {
+  return merged == null && snap.connectionState != ConnectionState.done;
+}
+
+/// Background refresh: pass [onData] only (no new [Future]) to avoid [FutureBuilder] flicker.
 void tichSilentReload<T>({
   required bool Function() mounted,
   required void Function(VoidCallback fn) setState,
   required Future<T> Function() fetch,
-  required void Function(Future<T> future) apply,
+  void Function(T data)? onData,
+  void Function(Future<T> future)? apply,
 }) {
   unawaited(
     fetch().then((data) {
       if (!mounted()) return;
-      setState(() => apply(Future.value(data)));
+      setState(() {
+        onData?.call(data);
+        apply?.call(Future.value(data));
+      });
     }).catchError((_) {}),
   );
 }
