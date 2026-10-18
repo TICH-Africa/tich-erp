@@ -49,4 +49,7 @@ class StaffApi {
       _client.post('/staff/lesson-plans/$id/submit');
 
   Future<Map<String, dynamic>> content() => _client.get('/staff/content');
+
+  Future<Map<String, dynamic>> notifications() =>
+      _client.get('/staff/notifications');
 }

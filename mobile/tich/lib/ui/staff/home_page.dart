@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/auth/auth_state.dart';
 import '../../data/staff_api.dart';
+import '../../models/auth_user.dart';
+import '../shell/portal_shell.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/portal_hero.dart';
@@ -44,12 +49,35 @@ class _StaffHomePageState extends State<StaffHomePage> {
     );
   }
 
+  bool _canSwitchToEmployee(AuthUser? user) {
+    if (user == null || user.isStudent) return false;
+    return user.canAccessEmployeePortal ||
+        user.hasBothStaffPortals ||
+        (user.staffId != null && user.isTeachingStaff);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthBloc>().state;
+    final user = auth is AuthAuthenticated ? auth.user : null;
+    final employeePortalAction = _canSwitchToEmployee(user)
+        ? [
+            IconButton(
+              tooltip: 'My Employee Portal',
+              onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const PortalShell()),
+                (route) => false,
+              ),
+              icon: const Icon(Icons.badge_outlined),
+            ),
+          ]
+        : null;
+
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
       title: 'Staff Portal',
+      actions: employeePortalAction,
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {

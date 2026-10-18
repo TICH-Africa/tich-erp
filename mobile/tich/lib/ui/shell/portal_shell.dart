@@ -11,6 +11,8 @@ import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
 import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
+import 'portal_nav_counts_scope.dart';
+import 'shell_nav_badge_mixin.dart';
 
 class PortalShell extends StatefulWidget {
   const PortalShell({super.key});
@@ -19,9 +21,23 @@ class PortalShell extends StatefulWidget {
   State<PortalShell> createState() => _PortalShellState();
 }
 
-class _PortalShellState extends State<PortalShell> {
+class _PortalShellState extends State<PortalShell>
+    with WidgetsBindingObserver, ShellNavBadgeMixin {
   int _index = 0;
   List<Widget>? _pages;
+  Map<String, int> _counts = const {};
+  int _homeBadge = 0;
+  int _leaveBadge = 0;
+  int _clockBadge = 0;
+  int _moreDot = 0;
+
+  static const _moreMenuKeys = [
+    'profile-changes',
+    'policies',
+    'appraisals',
+    'concerns',
+    'feedback',
+  ];
 
   @override
   void didChangeDependencies() {
@@ -38,48 +54,82 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   @override
+  Future<void> refreshNavBadges() {
+    scheduleNavBadgeFetch(() async {
+      if (!mounted) return;
+      final api = context.read<EmployeeApi>();
+      try {
+        final data = await api.notifications();
+        if (!mounted) return;
+        final counts = parseSidebarCounts(data['counts']);
+        final total = (data['total'] as num?)?.toInt() ?? 0;
+        var moreDot = 0;
+        for (final key in _moreMenuKeys) {
+          moreDot += counts[key] ?? 0;
+        }
+        setState(() {
+          _counts = counts;
+          _homeBadge = total;
+          _leaveBadge = counts['leave.returned'] ?? 0;
+          _clockBadge = counts['attendance_clock_in'] ?? 0;
+          _moreDot = moreDot;
+        });
+      } catch (_) {}
+    });
+    return Future.value();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AdaptiveTabScaffold(
-      currentIndex: _index,
-      onTap: (i) => setState(() => _index = i),
-      pages: _pages!,
-      items: const [
-        AdaptiveTabItem(
-          label: 'Home',
-          materialIcon: Icons.home_outlined,
-          materialActiveIcon: Icons.home,
-          cupertinoIcon: CupertinoIcons.house,
-          cupertinoActiveIcon: CupertinoIcons.house_fill,
-        ),
-        AdaptiveTabItem(
-          label: 'Leave',
-          materialIcon: Icons.event_available_outlined,
-          materialActiveIcon: Icons.event_available,
-          cupertinoIcon: CupertinoIcons.calendar,
-          cupertinoActiveIcon: CupertinoIcons.calendar_today,
-        ),
-        AdaptiveTabItem(
-          label: 'Clock',
-          materialIcon: Icons.fingerprint_outlined,
-          materialActiveIcon: Icons.fingerprint,
-          cupertinoIcon: CupertinoIcons.clock,
-          cupertinoActiveIcon: CupertinoIcons.clock_fill,
-        ),
-        AdaptiveTabItem(
-          label: 'Payslips',
-          materialIcon: Icons.payments_outlined,
-          materialActiveIcon: Icons.payments,
-          cupertinoIcon: CupertinoIcons.money_dollar,
-          cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
-        ),
-        AdaptiveTabItem(
-          label: 'More',
-          materialIcon: Icons.menu,
-          materialActiveIcon: Icons.menu_open,
-          cupertinoIcon: CupertinoIcons.ellipsis_circle,
-          cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
-        ),
-      ],
+    return PortalNavCountsScope(
+      counts: _counts,
+      child: AdaptiveTabScaffold(
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
+        pages: _pages!,
+        items: [
+          AdaptiveTabItem(
+            label: 'Home',
+            materialIcon: Icons.home_outlined,
+            materialActiveIcon: Icons.home,
+            cupertinoIcon: CupertinoIcons.house,
+            cupertinoActiveIcon: CupertinoIcons.house_fill,
+            badgeCount: _homeBadge,
+          ),
+          AdaptiveTabItem(
+            label: 'Leave',
+            materialIcon: Icons.event_available_outlined,
+            materialActiveIcon: Icons.event_available,
+            cupertinoIcon: CupertinoIcons.calendar,
+            cupertinoActiveIcon: CupertinoIcons.calendar_today,
+            badgeCount: _leaveBadge,
+          ),
+          AdaptiveTabItem(
+            label: 'Clock',
+            materialIcon: Icons.fingerprint_outlined,
+            materialActiveIcon: Icons.fingerprint,
+            cupertinoIcon: CupertinoIcons.clock,
+            cupertinoActiveIcon: CupertinoIcons.clock_fill,
+            badgeCount: _clockBadge,
+          ),
+          const AdaptiveTabItem(
+            label: 'Payslips',
+            materialIcon: Icons.payments_outlined,
+            materialActiveIcon: Icons.payments,
+            cupertinoIcon: CupertinoIcons.money_dollar,
+            cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
+          ),
+          AdaptiveTabItem(
+            label: 'More',
+            materialIcon: Icons.menu,
+            materialActiveIcon: Icons.menu_open,
+            cupertinoIcon: CupertinoIcons.ellipsis_circle,
+            cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
+            badgeCount: _moreDot,
+            badgeDotOnly: true,
+          ),
+        ],
+      ),
     );
   }
 }

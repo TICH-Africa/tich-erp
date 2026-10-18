@@ -177,6 +177,7 @@ Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->grou
 */
 Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
+    Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
 
@@ -215,6 +216,7 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
 */
 Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Staff\mobile\DashboardController::class);
+    Route::get('/notifications', \App\Http\Controllers\Api\Staff\mobile\NotificationController::class);
     Route::get('/units', \App\Http\Controllers\Api\Staff\mobile\UnitsController::class);
     Route::get('/timetable', \App\Http\Controllers\Api\Staff\mobile\TimetableController::class);
 

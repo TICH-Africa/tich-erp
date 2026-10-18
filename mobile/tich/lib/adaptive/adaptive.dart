@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme/tich_theme.dart';
 import '../ui/widgets/tich_form_dialog.dart';
 import '../ui/widgets/tich_live_refresh.dart';
+import '../ui/widgets/tich_nav_badge.dart';
 import '../ui/widgets/tich_tab_active_scope.dart';
 import 'lazy_indexed_stack.dart';
 
@@ -253,8 +254,8 @@ class AdaptiveTabScaffold extends StatelessWidget {
           items: [
             for (final item in items)
               BottomNavigationBarItem(
-                icon: Icon(item.cupertinoIcon),
-                activeIcon: Icon(item.cupertinoActiveIcon ?? item.cupertinoIcon),
+                icon: item._cupertinoIcon(active: false),
+                activeIcon: item._cupertinoIcon(active: true),
                 label: item.label,
               ),
           ],
@@ -272,12 +273,12 @@ class AdaptiveTabScaffold extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           for (final item in items)
             NavigationDestination(
-              icon: Icon(item.materialIcon),
-              selectedIcon: Icon(item.materialActiveIcon ?? item.materialIcon),
+              icon: item._materialIcon(active: false),
+              selectedIcon: item._materialIcon(active: true),
               label: item.label,
             ),
         ],
@@ -293,6 +294,8 @@ class AdaptiveTabItem {
     required this.cupertinoIcon,
     this.materialActiveIcon,
     this.cupertinoActiveIcon,
+    this.badgeCount = 0,
+    this.badgeDotOnly = false,
   });
 
   final String label;
@@ -300,6 +303,30 @@ class AdaptiveTabItem {
   final IconData cupertinoIcon;
   final IconData? materialActiveIcon;
   final IconData? cupertinoActiveIcon;
+  final int badgeCount;
+  final bool badgeDotOnly;
+
+  Widget _materialIcon({required bool active}) {
+    final icon = Icon(
+      active ? (materialActiveIcon ?? materialIcon) : materialIcon,
+    );
+    return TichNavBadge.wrap(
+      child: icon,
+      count: badgeCount,
+      dotOnly: badgeDotOnly,
+    );
+  }
+
+  Widget _cupertinoIcon({required bool active}) {
+    final icon = Icon(
+      active ? (cupertinoActiveIcon ?? cupertinoIcon) : cupertinoIcon,
+    );
+    return TichNavBadge.wrap(
+      child: icon,
+      count: badgeCount,
+      dotOnly: badgeDotOnly,
+    );
+  }
 }
 
 class AdaptiveFilledButton extends StatelessWidget {

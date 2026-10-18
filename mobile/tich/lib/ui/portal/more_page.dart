@@ -7,7 +7,9 @@ import '../../bloc/auth/auth_state.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../settings/settings_hub_page.dart';
+import '../shell/portal_nav_counts_scope.dart';
 import '../shell/staff_portal_shell.dart';
+import '../widgets/tich_more_row_trailing.dart';
 import 'appraisals_page.dart';
 import 'concerns_page.dart';
 import 'documents_page.dart';
@@ -27,6 +29,7 @@ class MorePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthBloc>().state;
     final user = auth is AuthAuthenticated ? auth.user : null;
+    final nav = PortalNavCountsScope.maybeOf(context);
 
     final items = <_MoreItem>[
       if (user?.canAccessStaffPortal == true)
@@ -43,7 +46,12 @@ class MorePage extends StatelessWidget {
           () => PortalChooserPage(user: user!),
           replaceRoot: true,
         ),
-      _MoreItem('My profile', Icons.person_outline, () => ProfilePage(api: api)),
+      _MoreItem(
+        'My profile',
+        Icons.person_outline,
+        () => ProfilePage(api: api),
+        badgeKey: 'profile-changes',
+      ),
       _MoreItem(
         'Settings',
         Icons.settings_outlined,
@@ -54,6 +62,7 @@ class MorePage extends StatelessWidget {
         'HR policies',
         Icons.policy_outlined,
         () => PoliciesPage(api: api),
+        badgeKey: 'policies',
       ),
       _MoreItem(
         'Work from home',
@@ -69,16 +78,19 @@ class MorePage extends StatelessWidget {
         'Appraisals',
         Icons.flag_outlined,
         () => AppraisalsPage(api: api),
+        badgeKey: 'appraisals',
       ),
       _MoreItem(
         'Concerns',
         Icons.report_problem_outlined,
         () => ConcernsPage(api: api),
+        badgeKey: 'concerns',
       ),
       _MoreItem(
         'Feedback',
         Icons.feedback_outlined,
         () => FeedbackPage(api: api),
+        badgeKey: 'feedback',
       ),
     ];
 
@@ -90,6 +102,9 @@ class MorePage extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final item = items[i];
+          final badge = item.badgeKey != null && nav != null
+              ? nav.countFor(item.badgeKey!)
+              : 0;
           return Card(
             child: ListTile(
               leading: CircleAvatar(
@@ -100,7 +115,7 @@ class MorePage extends StatelessWidget {
                 item.label,
                 style: tichUi(fontWeight: FontWeight.w600),
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: TichMoreRowTrailing(badgeCount: badge),
               onTap: () {
                 final page = item.builder();
                 if (item.replaceRoot) {
@@ -128,10 +143,12 @@ class _MoreItem {
     this.icon,
     this.builder, {
     this.replaceRoot = false,
+    this.badgeKey,
   });
 
   final String label;
   final IconData icon;
   final Widget Function() builder;
   final bool replaceRoot;
+  final String? badgeKey;
 }

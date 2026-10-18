@@ -4,6 +4,8 @@ import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../settings/settings_hub_page.dart';
+import '../shell/portal_nav_counts_scope.dart';
+import '../widgets/tich_more_row_trailing.dart';
 import 'clearance_page.dart';
 import 'documents_page.dart';
 import 'enrolment_page.dart';
@@ -20,19 +22,41 @@ class StudentMorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nav = PortalNavCountsScope.maybeOf(context);
+
     final items = [
-      _Item('My profile', Icons.person_outline, () => StudentProfilePage(api: api)),
-      _Item('Enrolment', Icons.badge_outlined, () => StudentEnrolmentPage(api: api)),
-      _Item('Documents', Icons.folder_outlined, () => StudentDocumentsPage(api: api)),
-      _Item('Clearance', Icons.task_alt_outlined, () => StudentClearancePage(api: api)),
-      _Item('Course evaluations', Icons.rate_review_outlined,
-          () => StudentEvaluationsPage(api: api)),
-      _Item('Deferment requests', Icons.event_busy_outlined,
-          () => StudentLifecyclePage(api: api)),
-      _Item('Suggestion box', Icons.lightbulb_outline,
-          () => StudentSuggestionsPage(api: api)),
-      _Item('Notifications', Icons.notifications_outlined,
-          () => StudentNotificationsPage(api: api)),
+      _Item('My profile', Icons.person_outline, () => StudentProfilePage(api: api),
+          badgeKey: 'profile'),
+      _Item('Enrolment', Icons.badge_outlined, () => StudentEnrolmentPage(api: api),
+          badgeKey: 'enrolment'),
+      _Item('Documents', Icons.folder_outlined, () => StudentDocumentsPage(api: api),
+          badgeKey: 'documents'),
+      _Item('Clearance', Icons.task_alt_outlined, () => StudentClearancePage(api: api),
+          badgeKey: 'clearance'),
+      _Item(
+        'Course evaluations',
+        Icons.rate_review_outlined,
+        () => StudentEvaluationsPage(api: api),
+        badgeKey: 'evaluations',
+      ),
+      _Item(
+        'Deferment requests',
+        Icons.event_busy_outlined,
+        () => StudentLifecyclePage(api: api),
+        badgeKey: 'requests',
+      ),
+      _Item(
+        'Suggestion box',
+        Icons.lightbulb_outline,
+        () => StudentSuggestionsPage(api: api),
+        badgeKey: 'suggestions',
+      ),
+      _Item(
+        'Notifications',
+        Icons.notifications_outlined,
+        () => StudentNotificationsPage(api: api),
+        badgeKey: 'notifications',
+      ),
       _Item('Settings', Icons.settings_outlined, () => const SettingsHubPage()),
     ];
 
@@ -44,6 +68,9 @@ class StudentMorePage extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final item = items[i];
+          final badge = item.badgeKey != null && nav != null
+              ? nav.countFor(item.badgeKey!)
+              : 0;
           return Card(
             child: ListTile(
               leading: CircleAvatar(
@@ -51,7 +78,7 @@ class StudentMorePage extends StatelessWidget {
                 child: Icon(item.icon, color: TichColors.blueDark),
               ),
               title: Text(item.label, style: tichUi(fontWeight: FontWeight.w600)),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: TichMoreRowTrailing(badgeCount: badge),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => item.builder()),
               ),
@@ -64,8 +91,10 @@ class StudentMorePage extends StatelessWidget {
 }
 
 class _Item {
-  const _Item(this.label, this.icon, this.builder);
+  const _Item(this.label, this.icon, this.builder, {this.badgeKey});
+
   final String label;
   final IconData icon;
   final Widget Function() builder;
+  final String? badgeKey;
 }

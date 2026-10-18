@@ -49,6 +49,9 @@ class StudentApi {
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/student/notifications');
 
+  Future<Map<String, dynamic>> sidebarNotifications() =>
+      _client.get('/student/sidebar-notifications');
+
   Future<Map<String, dynamic>> markNotificationRead(int id) =>
       _client.post('/student/notifications/$id/read');
 
