@@ -10,6 +10,7 @@ import '../widgets/date_time_pickers.dart';
 import '../widgets/employee_avatar.dart';
 import '../widgets/portal_hero.dart';
 import '../widgets/quick_actions.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'attendance_page.dart';
 import 'documents_page.dart';
@@ -75,6 +76,17 @@ class _DashboardPageState extends State<DashboardPage> {
     _syncAttendanceReminders();
   }
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      apply: (f) => _future = f,
+    );
+    _loadNotifications();
+    _syncAttendanceReminders();
+  }
+
   Widget _notificationAction() {
     final icon = usesCupertino
         ? CupertinoIcons.bell
@@ -124,7 +136,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Employee Portal',
       actions: [_notificationAction()],
       body: FutureBuilder<Map<String, dynamic>>(
@@ -360,6 +374,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

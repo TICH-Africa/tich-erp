@@ -6,6 +6,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentDocumentsPage extends StatefulWidget {
@@ -27,6 +28,15 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.documents());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.documents(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _requestDoc(Map types) async {
     String? selected = types.keys.isEmpty ? null : types.keys.first.toString();
@@ -86,7 +96,9 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Documents',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -184,6 +196,7 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

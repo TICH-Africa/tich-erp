@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_helpers.dart';
 
@@ -33,6 +34,15 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
     super.initState();
     _future = widget.api.assessment(widget.assessmentId);
     _startedAt = DateTime.now();
+  }
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.assessment(widget.assessmentId),
+      apply: (f) => _future = f,
+    );
   }
 
   Future<void> _submit(Map assessment) async {
@@ -146,7 +156,10 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      enabled: !_busy,
+      child: AdaptiveScaffold(
       title: 'Assessment',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -263,6 +276,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
             ],
           );
         },
+      ),
       ),
     );
   }

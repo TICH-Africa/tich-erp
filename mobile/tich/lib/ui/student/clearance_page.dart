@@ -5,6 +5,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentClearancePage extends StatefulWidget {
@@ -27,9 +28,20 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
 
   void _reload() => setState(() => _future = widget.api.clearance());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.clearance(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Clearance',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -84,6 +96,7 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
                   ),
           );
         },
+      ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class WfhPage extends StatefulWidget {
   const WfhPage({super.key, required this.api});
@@ -26,6 +27,15 @@ class _WfhPageState extends State<WfhPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.wfh());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.wfh(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _apply() async {
     final reason = TextEditingController();
@@ -97,7 +107,9 @@ class _WfhPageState extends State<WfhPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Work from home',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _apply,
@@ -148,6 +160,7 @@ class _WfhPageState extends State<WfhPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

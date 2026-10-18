@@ -7,6 +7,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentLifecyclePage extends StatefulWidget {
@@ -38,6 +39,15 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
   }
 
   void _reload() => setState(() => _future = widget.api.lifecycleRequests());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.lifecycleRequests(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _pickFiles() async {
     final pick = await FilePicker.platform.pickFiles(
@@ -91,7 +101,9 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Deferment requests',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -211,6 +223,7 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

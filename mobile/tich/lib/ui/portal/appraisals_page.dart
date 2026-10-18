@@ -6,6 +6,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class AppraisalsPage extends StatefulWidget {
   const AppraisalsPage({super.key, required this.api});
@@ -27,9 +28,20 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
 
   void _reload() => setState(() => _future = widget.api.appraisals());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.appraisals(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Appraisals',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -72,6 +84,7 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

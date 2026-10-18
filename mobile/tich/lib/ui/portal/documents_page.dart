@@ -8,6 +8,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key, required this.api});
@@ -28,6 +29,15 @@ class _DocumentsPageState extends State<DocumentsPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.documents());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.documents(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _upload(Map<String, dynamic> data) async {
     final types = Map<String, dynamic>.from(data['document_types'] as Map? ?? {});
@@ -103,7 +113,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Documents',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -184,6 +196,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

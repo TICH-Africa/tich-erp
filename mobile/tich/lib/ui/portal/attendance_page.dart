@@ -8,6 +8,7 @@ import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key, required this.api});
@@ -44,6 +45,15 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   void _reload() => setState(() => _future = widget.api.attendance());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.attendance(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<Map<String, dynamic>> _locationPayload() async {
     var permission = await Geolocator.checkPermission();
@@ -144,7 +154,9 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Clock in / out',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -279,6 +291,7 @@ class _AttendancePageState extends State<AttendancePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentEnrolmentPage extends StatefulWidget {
@@ -26,6 +27,15 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.profile());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.profile(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Widget _kv(String label, dynamic value) {
     return Padding(
@@ -51,7 +61,9 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Enrolment',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -125,6 +137,7 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'attendance_session_page.dart';
 import 'staff_helpers.dart';
 
@@ -30,6 +31,15 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
 
   void _reload() => setState(() => _future = widget.api.attendance());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.attendance(),
+      apply: (f) => _future = f,
+    );
+  }
+
   Future<void> _sync() async {
     setState(() => _syncing = true);
     try {
@@ -52,7 +62,9 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Class attendance',
       actions: [
         IconButton(
@@ -150,6 +162,7 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

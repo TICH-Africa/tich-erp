@@ -6,6 +6,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentEvaluationsPage extends StatefulWidget {
@@ -27,6 +28,15 @@ class _StudentEvaluationsPageState extends State<StudentEvaluationsPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.evaluations());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.evaluations(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _submit(Map<String, dynamic> window) async {
     int rating = 5;
@@ -82,7 +92,9 @@ class _StudentEvaluationsPageState extends State<StudentEvaluationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Course evaluations',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -151,6 +163,7 @@ class _StudentEvaluationsPageState extends State<StudentEvaluationsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

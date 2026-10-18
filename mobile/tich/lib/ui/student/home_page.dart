@@ -10,6 +10,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/portal_hero.dart';
 import '../widgets/quick_actions.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'documents_page.dart';
 import 'finance_page.dart';
@@ -61,6 +62,20 @@ class _StudentHomePageState extends State<StudentHomePage> {
         return data;
       });
     });
+  }
+
+  void _liveRefresh() {
+    unawaited(
+      widget.api.dashboard().then((data) {
+        if (!mounted) return;
+        final unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
+        setState(() {
+          _future = Future.value(data);
+          _unread = unread;
+        });
+        unawaited(_primeLessonReminders());
+      }).catchError((_) {}),
+    );
   }
 
   Future<void> _primeLessonReminders() async {
@@ -122,7 +137,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Student Portal',
       actions: [_notificationAction()],
       body: FutureBuilder<Map<String, dynamic>>(
@@ -373,6 +390,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

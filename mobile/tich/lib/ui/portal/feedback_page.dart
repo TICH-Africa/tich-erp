@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key, required this.api});
@@ -27,6 +28,15 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
   void _reload() => setState(() => _future = widget.api.feedback());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.feedback(),
+      apply: (f) => _future = f,
+    );
+  }
+
   Future<void> _createFeedback() async {
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -45,7 +55,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'My feedback',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createFeedback,
@@ -137,6 +149,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

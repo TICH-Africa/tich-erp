@@ -7,6 +7,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentNotificationsPage extends StatefulWidget {
@@ -30,6 +31,15 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
 
   void _reload() => setState(() => _future = widget.api.notifications());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.notifications(),
+      apply: (f) => _future = f,
+    );
+  }
+
   Future<void> _markRead(int id) async {
     try {
       await widget.api.markNotificationRead(id);
@@ -42,7 +52,9 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Notifications',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -148,6 +160,7 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
 class StaffUnitsPage extends StatefulWidget {
@@ -26,9 +27,20 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
 
   void _reload() => setState(() => _future = widget.api.units());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.units(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'My units',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -88,6 +100,7 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
                   ),
           );
         },
+      ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
 class StaffLessonPlansPage extends StatefulWidget {
@@ -27,6 +28,15 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.lessonPlans());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.lessonPlans(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _create(List allocations) async {
     if (allocations.isEmpty) return;
@@ -138,7 +148,9 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Lesson plans',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -250,6 +262,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
                   ),
           );
         },
+      ),
       ),
     );
   }

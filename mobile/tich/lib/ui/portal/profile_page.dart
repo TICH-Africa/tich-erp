@@ -9,6 +9,7 @@ import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/employee_avatar.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -91,9 +92,21 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.profile(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      enabled: !_busy,
+      child: AdaptiveScaffold(
       title: 'My profile',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -232,6 +245,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           );
         },
+      ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../data/api_client.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'assessment_take_page.dart';
 import 'student_helpers.dart';
@@ -29,6 +30,15 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.academics());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.academics(),
+      apply: (f) => _future = f,
+    );
+  }
 
   void _openSection(String title, Widget Function(Map<String, dynamic>) builder) {
     _future.then((data) {
@@ -471,7 +481,9 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       ),
     ];
 
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Academics',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -505,6 +517,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

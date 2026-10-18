@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
 class StaffTimetablePage extends StatefulWidget {
@@ -26,9 +27,20 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
 
   void _reload() => setState(() => _future = widget.api.timetable());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timetable(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Timetable',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -111,6 +123,7 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
                   ),
           );
         },
+      ),
       ),
     );
   }

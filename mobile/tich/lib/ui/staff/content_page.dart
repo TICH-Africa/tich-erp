@@ -5,6 +5,7 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'staff_helpers.dart';
 
 class StaffContentPage extends StatefulWidget {
@@ -27,9 +28,20 @@ class _StaffContentPageState extends State<StaffContentPage> {
 
   void _reload() => setState(() => _future = widget.api.content());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.content(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Learning content',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -91,6 +103,7 @@ class _StaffContentPageState extends State<StaffContentPage> {
                   ),
           );
         },
+      ),
       ),
     );
   }

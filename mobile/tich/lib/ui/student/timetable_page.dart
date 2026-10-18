@@ -5,6 +5,7 @@ import '../../data/student_api.dart';
 import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentTimetablePage extends StatefulWidget {
@@ -43,6 +44,15 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   }
 
   void _reload() => setState(() => _future = widget.api.timetable());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timetable(),
+      apply: (f) => _future = f,
+    );
+  }
 
   List<Map<String, dynamic>> _sessionsFor(
     List timetables,
@@ -110,7 +120,9 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Timetable',
       body: Column(
         children: [
@@ -176,6 +188,7 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
             ),
           ),
         ],
+      ),
       ),
     );
   }

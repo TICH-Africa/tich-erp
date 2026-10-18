@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class PoliciesPage extends StatefulWidget {
   const PoliciesPage({super.key, required this.api});
@@ -27,6 +28,15 @@ class _PoliciesPageState extends State<PoliciesPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.policies());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.policies(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _ack(Map<String, dynamic> p) async {
     final profile = await widget.api.profile();
@@ -50,7 +60,9 @@ class _PoliciesPageState extends State<PoliciesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'HR policies',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -110,6 +122,7 @@ class _PoliciesPageState extends State<PoliciesPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

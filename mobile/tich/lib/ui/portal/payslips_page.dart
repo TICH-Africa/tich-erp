@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class PayslipsPage extends StatefulWidget {
   const PayslipsPage({super.key, required this.api});
@@ -28,6 +29,15 @@ class _PayslipsPageState extends State<PayslipsPage> {
 
   void _reload() => setState(() => _future = widget.api.payslips());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.payslips(),
+      apply: (f) => _future = f,
+    );
+  }
+
   Future<void> _open(Map<String, dynamic> item) async {
     final detail = await widget.api.payslip((item['id'] as num).toInt());
     if (!mounted) return;
@@ -40,7 +50,9 @@ class _PayslipsPageState extends State<PayslipsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Payslips',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -112,6 +124,7 @@ class _PayslipsPageState extends State<PayslipsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

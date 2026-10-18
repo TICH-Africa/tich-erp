@@ -6,6 +6,7 @@ import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
 
 class StudentFinancePage extends StatefulWidget {
@@ -28,6 +29,15 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
   }
 
   void _reload() => setState(() => _future = widget.api.finance());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.finance(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _pay(Map<String, dynamic> invoice, Map finance) async {
     final balance = (invoice['balance'] as num?)?.toDouble() ?? 0;
@@ -117,7 +127,9 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Finance',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -294,6 +306,7 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

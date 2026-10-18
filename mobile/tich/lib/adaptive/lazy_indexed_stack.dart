@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../ui/widgets/tich_tab_active_scope.dart';
+
 /// Like [IndexedStack], but only mounts a child the first time it is selected.
 /// Avoids parallel API loads from every tab on cold start.
 class LazyIndexedStack extends StatefulWidget {
@@ -50,7 +52,11 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       children: [
         for (var i = 0; i < widget.children.length; i++)
           _activated[i]
-              ? widget.children[i]
+              ? TichTabActiveScope(
+                  activeIndex: widget.index,
+                  tabIndex: i,
+                  child: widget.children[i],
+                )
               : const SizedBox.shrink(),
       ],
     );

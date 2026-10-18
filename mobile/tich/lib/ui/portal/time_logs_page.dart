@@ -6,6 +6,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class TimeLogsPage extends StatefulWidget {
   const TimeLogsPage({super.key, required this.api});
@@ -27,9 +28,20 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
 
   void _reload() => setState(() => _future = widget.api.timeLogs());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timeLogs(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Time logs',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -76,6 +88,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

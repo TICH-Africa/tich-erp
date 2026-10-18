@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/tich_theme.dart';
+import '../ui/widgets/tich_live_refresh.dart';
+import '../ui/widgets/tich_tab_active_scope.dart';
 import 'lazy_indexed_stack.dart';
 
 /// True when the current OS should use Cupertino chrome (iOS).
@@ -49,6 +51,7 @@ class AdaptiveApp extends StatelessWidget {
         title: title,
         debugShowCheckedModeBanner: debugShowCheckedModeBanner,
         theme: cupertinoTheme,
+        navigatorObservers: [tichRouteObserver],
         builder: builder,
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
@@ -65,6 +68,7 @@ class AdaptiveApp extends StatelessWidget {
       theme: materialTheme,
       darkTheme: materialDarkTheme ?? materialTheme,
       themeMode: themeMode,
+      navigatorObservers: [tichRouteObserver],
       builder: builder,
       home: home,
     );
@@ -239,7 +243,11 @@ class AdaptiveTabScaffold extends StatelessWidget {
               ),
           ],
         ),
-        tabBuilder: (context, index) => pages[index],
+        tabBuilder: (context, index) => TichTabActiveScope(
+          activeIndex: currentIndex,
+          tabIndex: index,
+          child: pages[index],
+        ),
       );
     }
 

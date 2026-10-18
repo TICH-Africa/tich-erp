@@ -7,6 +7,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class LeavePage extends StatefulWidget {
   const LeavePage({super.key, required this.api});
@@ -28,6 +29,15 @@ class _LeavePageState extends State<LeavePage> {
 
   void _reload() => setState(() => _future = widget.api.leave());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.leave(),
+      apply: (f) => _future = f,
+    );
+  }
+
   Future<void> _openApply(Map<String, dynamic> data) async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -39,7 +49,9 @@ class _LeavePageState extends State<LeavePage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Leave',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -276,6 +288,7 @@ class _LeavePageState extends State<LeavePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

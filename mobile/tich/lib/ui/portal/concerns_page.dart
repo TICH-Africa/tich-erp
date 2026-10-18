@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class ConcernsPage extends StatefulWidget {
   const ConcernsPage({super.key, required this.api});
@@ -27,6 +28,15 @@ class _ConcernsPageState extends State<ConcernsPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.concerns());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.concerns(),
+      apply: (f) => _future = f,
+    );
+  }
 
   Future<void> _raise(Map<String, dynamic> data) async {
     final categories = Map<String, dynamic>.from(data['categories'] as Map? ?? {});
@@ -76,7 +86,9 @@ class _ConcernsPageState extends State<ConcernsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Concerns',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -127,6 +139,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

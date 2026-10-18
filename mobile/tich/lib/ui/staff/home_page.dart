@@ -7,6 +7,7 @@ import '../widgets/date_time_pickers.dart';
 import '../widgets/portal_hero.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'attendance_page.dart';
 import 'grading_page.dart';
 import 'lesson_plans_page.dart';
@@ -34,9 +35,20 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   void _reload() => setState(() => _future = widget.api.dashboard());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      apply: (f) => _future = f,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Staff Portal',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -287,6 +299,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
@@ -5,6 +7,7 @@ import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'staff_helpers.dart';
 
@@ -33,7 +36,11 @@ class _StaffAttendanceSessionPageState
   @override
   void initState() {
     super.initState();
-    _future = widget.api.attendanceSession(widget.sessionId).then((data) {
+    _future = _fetchSession();
+  }
+
+  Future<Map<String, dynamic>> _fetchSession() {
+    return widget.api.attendanceSession(widget.sessionId).then((data) {
       final records = data['records'] as List? ?? const [];
       _present
         ..clear()
@@ -51,23 +58,17 @@ class _StaffAttendanceSessionPageState
   }
 
   void _reload() {
-    setState(() {
-      _future = widget.api.attendanceSession(widget.sessionId).then((data) {
-        final records = data['records'] as List? ?? const [];
-        _present
-          ..clear()
-          ..addAll(
-            records
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .where((r) => r['is_present'] == true)
-                .map((r) => (r['student_id'] as num).toInt()),
-          );
-        final session =
-            Map<String, dynamic>.from(data['session'] as Map? ?? {});
-        _locked = session['is_locked'] == true;
-        return data;
-      });
-    });
+    setState(() => _future = _fetchSession());
+  }
+
+  void _liveRefresh() {
+    if (_busy) return;
+    unawaited(
+      _fetchSession().then((data) {
+        if (!mounted) return;
+        setState(() => _future = Future.value(data));
+      }).catchError((_) {}),
+    );
   }
 
   Future<void> _save({bool lock = false}) async {
@@ -96,7 +97,10 @@ class _StaffAttendanceSessionPageState
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      enabled: !_busy,
+      child: AdaptiveScaffold(
       title: 'Attendance session',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -216,6 +220,7 @@ class _StaffAttendanceSessionPageState
             ],
           );
         },
+      ),
       ),
     );
   }
