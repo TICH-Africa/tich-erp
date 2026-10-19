@@ -5,11 +5,10 @@ import '../../adaptive/adaptive.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../../data/employee_api.dart';
-import '../../theme/tich_theme.dart';
 import '../settings/settings_hub_page.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../shell/staff_portal_shell.dart';
-import '../widgets/tich_more_row_trailing.dart';
+import '../widgets/tich_more_drawer.dart';
 import 'appraisals_page.dart';
 import 'concerns_page.dart';
 import 'documents_page.dart';
@@ -25,130 +24,94 @@ class MorePage extends StatelessWidget {
 
   final EmployeeApi api;
 
-  @override
-  Widget build(BuildContext context) {
+  /// The links the More side bar shows (and the iOS More page lists).
+  static List<TichMoreItem> items(BuildContext context, EmployeeApi api) {
     final auth = context.watch<AuthBloc>().state;
     final user = auth is AuthAuthenticated ? auth.user : null;
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    final items = <_MoreItem>[
+    void open(Widget page) =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+
+    int badge(String key) => nav?.countFor(key) ?? 0;
+
+    return [
       if (user?.canAccessStaffPortal == true)
-        _MoreItem(
-          'Switch to Staff Portal',
-          Icons.school_outlined,
-          () => const StaffPortalShell(),
-          replaceRoot: true,
+        TichMoreItem(
+          label: 'Switch to Staff Portal',
+          icon: Icons.school_outlined,
+          onTap: () => Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const StaffPortalShell()),
+            (route) => false,
+          ),
         ),
       if (user?.hasBothStaffPortals == true)
-        _MoreItem(
-          'Choose portal',
-          Icons.apps_outlined,
-          () => PortalChooserPage(user: user!),
-          replaceRoot: true,
+        TichMoreItem(
+          label: 'Choose portal',
+          icon: Icons.apps_outlined,
+          onTap: () => Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => PortalChooserPage(user: user!)),
+            (route) => false,
+          ),
         ),
-      _MoreItem(
-        'My profile',
-        Icons.person_outline,
-        () => ProfilePage(api: api),
-        badgeKey: 'profile-changes',
+      TichMoreItem(
+        label: 'My profile',
+        icon: Icons.person_outline,
+        badgeCount: badge('profile-changes'),
+        onTap: () => open(ProfilePage(api: api)),
       ),
-      _MoreItem(
-        'Settings',
-        Icons.settings_outlined,
-        () => const SettingsHubPage(),
+      TichMoreItem(
+        label: 'Settings',
+        icon: Icons.settings_outlined,
+        onTap: () => open(const SettingsHubPage()),
       ),
-      _MoreItem('Documents', Icons.folder_outlined, () => DocumentsPage(api: api)),
-      _MoreItem(
-        'HR policies',
-        Icons.policy_outlined,
-        () => PoliciesPage(api: api),
-        badgeKey: 'policies',
+      TichMoreItem(
+        label: 'Documents',
+        icon: Icons.folder_outlined,
+        onTap: () => open(DocumentsPage(api: api)),
       ),
-      _MoreItem(
-        'Work from home',
-        Icons.home_work_outlined,
-        () => WfhPage(api: api),
+      TichMoreItem(
+        label: 'HR policies',
+        icon: Icons.policy_outlined,
+        badgeCount: badge('policies'),
+        onTap: () => open(PoliciesPage(api: api)),
       ),
-      _MoreItem(
-        'Time logs',
-        Icons.schedule_outlined,
-        () => TimeLogsPage(api: api),
+      TichMoreItem(
+        label: 'Work from home',
+        icon: Icons.home_work_outlined,
+        onTap: () => open(WfhPage(api: api)),
       ),
-      _MoreItem(
-        'Appraisals',
-        Icons.flag_outlined,
-        () => AppraisalsPage(api: api),
-        badgeKey: 'appraisals',
+      TichMoreItem(
+        label: 'Time logs',
+        icon: Icons.schedule_outlined,
+        onTap: () => open(TimeLogsPage(api: api)),
       ),
-      _MoreItem(
-        'Concerns',
-        Icons.report_problem_outlined,
-        () => ConcernsPage(api: api),
-        badgeKey: 'concerns',
+      TichMoreItem(
+        label: 'Appraisals',
+        icon: Icons.flag_outlined,
+        badgeCount: badge('appraisals'),
+        onTap: () => open(AppraisalsPage(api: api)),
       ),
-      _MoreItem(
-        'Feedback',
-        Icons.feedback_outlined,
-        () => FeedbackPage(api: api),
-        badgeKey: 'feedback',
+      TichMoreItem(
+        label: 'Concerns',
+        icon: Icons.report_problem_outlined,
+        badgeCount: badge('concerns'),
+        onTap: () => open(ConcernsPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Feedback',
+        icon: Icons.feedback_outlined,
+        badgeCount: badge('feedback'),
+        onTap: () => open(FeedbackPage(api: api)),
       ),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'More',
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          final item = items[i];
-          final badge = item.badgeKey != null && nav != null
-              ? nav.countFor(item.badgeKey!)
-              : 0;
-          return Card(
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: TichColors.blueLight,
-                child: Icon(item.icon, color: TichColors.blueDark),
-              ),
-              title: Text(
-                item.label,
-                style: tichUi(fontWeight: FontWeight.w600),
-              ),
-              trailing: TichMoreRowTrailing(badgeCount: badge),
-              onTap: () {
-                final page = item.builder();
-                if (item.replaceRoot) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => page),
-                    (route) => false,
-                  );
-                } else {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => page),
-                  );
-                }
-              },
-            ),
-          );
-        },
-      ),
+      body: TichMoreList(items: items(context, api)),
     );
   }
-}
-
-class _MoreItem {
-  const _MoreItem(
-    this.label,
-    this.icon,
-    this.builder, {
-    this.replaceRoot = false,
-    this.badgeKey,
-  });
-
-  final String label;
-  final IconData icon;
-  final Widget Function() builder;
-  final bool replaceRoot;
-  final String? badgeKey;
 }

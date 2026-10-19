@@ -9,7 +9,7 @@ Widget staffLoadingBody() => const Center(child: AdaptiveProgress());
 
 Widget staffErrorBody(Object? error, VoidCallback onRetry) {
   return TichErrorRefresh(
-    message: error is ApiException ? error.toString() : 'Could not load data.',
+    message: tichDescribeError(error),
     onRetry: onRetry,
   );
 }

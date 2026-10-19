@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -16,6 +18,62 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Plain words for a failure a screen shows.
+///
+/// A tab used to print the Dart object text straight to the user — "TimeoutException
+/// after 0:00:20.000000: Future not completed" — which names nothing they can act on.
+/// Network, timeout and server failures are mapped to what happened and what to do,
+/// and a message the backend wrote on purpose is passed through as written.
+String tichDescribeError(Object? error) {
+  if (error is ApiException) {
+    return tichDescribeHttpStatus(error.statusCode) ?? error.message;
+  }
+
+  final text = (error ?? '').toString().trim();
+  if (text.isEmpty) {
+    return 'Something went wrong. Pull down to try again.';
+  }
+
+  if (error is TimeoutException ||
+      text.contains('TimeoutException') ||
+      text.contains('Future not completed')) {
+    return 'The server is slow to answer. Check the connection and try again.';
+  }
+
+  if (error is SocketException ||
+      text.contains('SocketException') ||
+      text.contains('Failed host lookup') ||
+      text.contains('Connection refused')) {
+    return 'Cannot reach the server. Check the network or the app address.';
+  }
+
+  if (text.contains('ClientException')) {
+    return 'The connection to the server dropped. Try again.';
+  }
+
+  final stripped = text.replaceFirst(RegExp(r'^(Exception|ApiException):\s*'), '');
+  final status = RegExp(r'\((\d{3})\)$').firstMatch(stripped)?.group(1);
+  final described = tichDescribeHttpStatus(status == null ? null : int.parse(status));
+
+  return described ?? stripped;
+}
+
+/// What a rejected request means for the person holding the phone.
+String? tichDescribeHttpStatus(int? status) {
+  final code = status;
+  if (code == null) return null;
+
+  return switch (code) {
+    401 => 'Your session expired. Sign in again.',
+    403 => 'This account is not allowed to open that page.',
+    404 => 'That record is no longer there.',
+    422 => 'Some details are missing or wrong. Check the form.',
+    429 => 'Too many requests. Wait a moment and try again.',
+    >=500 => 'The server could not complete the request. Try again shortly.',
+    _ => null,
+  };
+}
+
 class ApiClient {
   ApiClient({
     AuthTokenStore? tokenStore,
@@ -25,7 +83,11 @@ class ApiClient {
 
   final AuthTokenStore _tokenStore;
   final http.Client _client;
-  static const Duration timeout = Duration(seconds: 15);
+
+  /// Opening a tab fires the page plus the nav badge counts, and a server that
+  /// handles one request at a time queues them behind each other. Anything tighter
+  /// than this gave up on requests the server was still going to answer.
+  static const Duration timeout = Duration(seconds: 30);
   String? _cachedToken;
 
   Future<String?> _token() async {

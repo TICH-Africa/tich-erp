@@ -9,6 +9,7 @@ import '../student/finance_page.dart';
 import '../student/home_page.dart';
 import '../student/more_page.dart';
 import '../student/timetable_page.dart';
+import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 
@@ -110,6 +111,12 @@ class _StudentPortalShellState extends State<StudentPortalShell>
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         pages: _pages!,
+        portalName: 'Student portal',
+        moreIndex: 4,
+        moreDrawer: (context) => TichMoreDrawer(
+          portalName: 'Student portal',
+          items: StudentMorePage.items(context, context.read<StudentApi>()),
+        ),
         items: [
           AdaptiveTabItem(
             label: 'Home',

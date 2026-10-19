@@ -9,6 +9,7 @@ import '../staff/home_page.dart';
 import '../staff/more_page.dart';
 import '../staff/timetable_page.dart';
 import '../staff/units_page.dart';
+import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 
@@ -88,6 +89,12 @@ class _StaffPortalShellState extends State<StaffPortalShell>
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         pages: _pages!,
+        portalName: 'Staff portal',
+        moreIndex: 4,
+        moreDrawer: (context) => TichMoreDrawer(
+          portalName: 'Staff portal',
+          items: StaffMorePage.items(context, context.read<StaffApi>()),
+        ),
         items: [
           AdaptiveTabItem(
             label: 'Home',

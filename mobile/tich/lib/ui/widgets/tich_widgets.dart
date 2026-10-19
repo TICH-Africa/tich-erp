@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../data/api_client.dart';
 import '../../theme/tich_theme.dart';
 
 class TichSectionHeader extends StatelessWidget {
@@ -67,11 +68,11 @@ class TichStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = switch (tone) {
-      TichChipTone.success => (TichColors.greenLight, TichColors.greenDark),
-      TichChipTone.info => (TichColors.blueLight, TichColors.blueDark),
-      TichChipTone.warning => (const Color(0xFFFFF3CD), const Color(0xFF856404)),
-      TichChipTone.danger => (const Color(0xFFFDECEA), const Color(0xFFB3261E)),
-      TichChipTone.neutral => (TichColors.neutral, TichColors.neutralMuted),
+      TichChipTone.success => (TichColors.successSoft, TichColors.successText),
+      TichChipTone.info => (TichColors.cautionSoft, TichColors.cautionText),
+      TichChipTone.warning => (TichColors.warningSoft, TichColors.warningText),
+      TichChipTone.danger => (TichColors.errorSoft, TichColors.errorDark),
+      TichChipTone.neutral => (TichColors.statusSoft, TichColors.statusText),
     };
 
     return Container(
@@ -186,20 +187,42 @@ class TichErrorRefresh extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 16),
-            AdaptiveFilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
+        child: TichCard(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_outlined, color: scheme.error, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                'This page did not load',
+                textAlign: TextAlign.center,
+                style: TichTheme.display(
+                  fontSize: 16,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                tichDescribeError(message),
+                textAlign: TextAlign.center,
+                style: tichUi(
+                  fontSize: 14,
+                  color: TichColors.neutralMuted,
+                ),
+              ),
+              const SizedBox(height: 18),
+              AdaptiveFilledButton(
+                onPressed: onRetry,
+                child: const Text('Try again'),
+              ),
+            ],
+          ),
         ),
       ),
     );

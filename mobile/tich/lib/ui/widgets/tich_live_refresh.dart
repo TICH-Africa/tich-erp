@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../data/api_client.dart';
 import 'tich_tab_active_scope.dart';
 import 'tich_widgets.dart';
 
@@ -104,7 +105,7 @@ class _TichLiveDataState<T> extends State<TichLiveData<T>> {
     }
     if (_data == null && _error != null) {
       return TichErrorRefresh(
-        message: widget.errorMessage ?? _error.toString(),
+        message: widget.errorMessage ?? tichDescribeError(_error),
         onRetry: _reload,
       );
     }

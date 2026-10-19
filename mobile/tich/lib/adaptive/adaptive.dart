@@ -91,6 +91,29 @@ class AdaptiveProgress extends StatelessWidget {
   }
 }
 
+/// Keeps a page to the web container width on a tablet or desktop window.
+class TichContentWidth extends StatelessWidget {
+  const TichContentWidth({
+    super.key,
+    required this.child,
+    this.maxWidth = TichLayout.contentMaxWidth,
+  });
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
 class AdaptiveScaffold extends StatelessWidget {
   const AdaptiveScaffold({
     super.key,
@@ -137,6 +160,12 @@ class AdaptiveScaffold extends StatelessWidget {
       if (logout != null) logout,
     ];
 
+    // An inner page says which portal it belongs to and pops back to it.
+    final portalName = TichPortal.name;
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final backToPortal =
+        canPop && portalName != null ? () => Navigator.of(context).pop() : null;
+
     if (usesCupertino) {
       return CupertinoPageScaffold(
         navigationBar: CupertinoNavigationBar(
@@ -147,17 +176,10 @@ class AdaptiveScaffold extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  brandEyebrow,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: TichColors.greenLight,
-                  ),
+                _AdaptiveHeaderEyebrow(
+                  portalName: backToPortal == null ? null : portalName,
+                  brandEyebrow: brandEyebrow,
+                  onTap: backToPortal,
                 ),
                 Text(
                   title,
@@ -179,7 +201,18 @@ class AdaptiveScaffold extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: trailingActions,
                 ),
-          leading: leading,
+          leading: leading ??
+              (backToPortal == null
+                  ? null
+                  : CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: backToPortal,
+                      child: const Icon(
+                        CupertinoIcons.chevron_back,
+                        color: TichColors.white,
+                        size: 20,
+                      ),
+                    )),
         ),
         child: SafeArea(
           child: Stack(
@@ -203,15 +236,10 @@ class AdaptiveScaffold extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              brandEyebrow,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
+            _AdaptiveHeaderEyebrow(
+              portalName: backToPortal == null ? null : portalName,
+              brandEyebrow: brandEyebrow,
+              onTap: backToPortal,
             ),
             Text(
               title,
@@ -222,37 +250,122 @@ class AdaptiveScaffold extends StatelessWidget {
         ),
         actions: trailingActions,
       ),
-      body: body,
+      body: TichContentWidth(child: body),
       floatingActionButton: floatingActionButton,
     );
   }
 }
 
-class AdaptiveTabScaffold extends StatelessWidget {
+/// The small line above a page title: the brand, or "‹ Employee portal" when
+/// there is a portal to go back to.
+class _AdaptiveHeaderEyebrow extends StatelessWidget {
+  const _AdaptiveHeaderEyebrow({
+    required this.portalName,
+    required this.brandEyebrow,
+    required this.onTap,
+  });
+
+  final String? portalName;
+  final String brandEyebrow;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.2,
+      color: portalName == null ? null : TichColors.greenLight,
+    );
+
+    final label = Text(
+      portalName ?? brandEyebrow,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: usesCupertino ? TextAlign.center : TextAlign.start,
+      style: style,
+    );
+
+    if (onTap == null) return label;
+
+    return Tooltip(
+      message: 'Back to $portalName',
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!usesCupertino)
+              const Icon(Icons.chevron_left, size: 16, color: TichColors.greenLight),
+            label,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Which portal the open shell belongs to. Pages are pushed onto the root
+/// navigator, above the shell, so they read the name from here rather than from
+/// an inherited scope and can say "‹ Employee portal" with a way back.
+abstract final class TichPortal {
+  static String? name;
+}
+
+/// Portal chrome: the five footer tabs stay put at every window size, and the
+/// [moreIndex] tab slides open [moreDrawer] instead of replacing them.
+class AdaptiveTabScaffold extends StatefulWidget {
   const AdaptiveTabScaffold({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.pages,
     required this.items,
+    this.portalName,
+    this.moreIndex,
+    this.moreDrawer,
   });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<Widget> pages;
   final List<AdaptiveTabItem> items;
+  final String? portalName;
+  final int? moreIndex;
+  final WidgetBuilder? moreDrawer;
+
+  @override
+  State<AdaptiveTabScaffold> createState() => _AdaptiveTabScaffoldState();
+}
+
+class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    TichPortal.name = widget.portalName;
+  }
+
+  void _handleTap(int index) {
+    if (widget.moreDrawer != null && index == widget.moreIndex) {
+      _scaffoldKey.currentState?.openDrawer();
+      return;
+    }
+    widget.onTap(index);
+  }
 
   @override
   Widget build(BuildContext context) {
-    assert(pages.length == items.length);
+    assert(widget.pages.length == widget.items.length);
 
     if (usesCupertino) {
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
-          currentIndex: currentIndex,
-          onTap: onTap,
+          currentIndex: widget.currentIndex,
+          onTap: widget.onTap,
           items: [
-            for (final item in items)
+            for (final item in widget.items)
               BottomNavigationBarItem(
                 icon: item._cupertinoIcon(active: false),
                 activeIcon: item._cupertinoIcon(active: true),
@@ -261,29 +374,35 @@ class AdaptiveTabScaffold extends StatelessWidget {
           ],
         ),
         tabBuilder: (context, index) => TichTabActiveScope(
-          activeIndex: currentIndex,
+          activeIndex: widget.currentIndex,
           tabIndex: index,
-          child: pages[index],
+          child: widget.pages[index],
         ),
       );
     }
 
     return Scaffold(
-      body: LazyIndexedStack(index: currentIndex, children: pages),
+      key: _scaffoldKey,
+      drawer:
+          widget.moreDrawer == null ? null : Builder(builder: widget.moreDrawer!),
+      body: LazyIndexedStack(
+        index: widget.currentIndex,
+        children: widget.pages,
+      ),
       bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarTheme.of(context).copyWith(height: 72),
+        data: NavigationBarTheme.of(context).copyWith(height: 68),
         child: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: onTap,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          for (final item in items)
-            NavigationDestination(
-              icon: item._materialIcon(active: false),
-              selectedIcon: item._materialIcon(active: true),
-              label: item.label,
-            ),
-        ],
+          selectedIndex: widget.currentIndex,
+          onDestinationSelected: _handleTap,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            for (final item in widget.items)
+              NavigationDestination(
+                icon: item._materialIcon(active: false),
+                selectedIcon: item._materialIcon(active: true),
+                label: item.label,
+              ),
+          ],
         ),
       ),
     );

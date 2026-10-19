@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
-import '../../theme/tich_theme.dart';
 import '../settings/settings_hub_page.dart';
 import '../shell/portal_nav_counts_scope.dart';
-import '../widgets/tich_more_row_trailing.dart';
+import '../widgets/tich_more_drawer.dart';
 import 'clearance_page.dart';
 import 'documents_page.dart';
 import 'enrolment_page.dart';
@@ -20,81 +19,77 @@ class StudentMorePage extends StatelessWidget {
 
   final StudentApi api;
 
-  @override
-  Widget build(BuildContext context) {
+  /// The links the More side bar shows (and the iOS More page lists).
+  static List<TichMoreItem> items(BuildContext context, StudentApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    final items = [
-      _Item('My profile', Icons.person_outline, () => StudentProfilePage(api: api),
-          badgeKey: 'profile'),
-      _Item('Enrolment', Icons.badge_outlined, () => StudentEnrolmentPage(api: api),
-          badgeKey: 'enrolment'),
-      _Item('Documents', Icons.folder_outlined, () => StudentDocumentsPage(api: api),
-          badgeKey: 'documents'),
-      _Item('Clearance', Icons.task_alt_outlined, () => StudentClearancePage(api: api),
-          badgeKey: 'clearance'),
-      _Item(
-        'Course evaluations',
-        Icons.rate_review_outlined,
-        () => StudentEvaluationsPage(api: api),
-        badgeKey: 'evaluations',
-      ),
-      _Item(
-        'Deferment requests',
-        Icons.event_busy_outlined,
-        () => StudentLifecyclePage(api: api),
-        badgeKey: 'requests',
-      ),
-      _Item(
-        'Suggestion box',
-        Icons.lightbulb_outline,
-        () => StudentSuggestionsPage(api: api),
-        badgeKey: 'suggestions',
-      ),
-      _Item(
-        'Notifications',
-        Icons.notifications_outlined,
-        () => StudentNotificationsPage(api: api),
-        badgeKey: 'notifications',
-      ),
-      _Item('Settings', Icons.settings_outlined, () => const SettingsHubPage()),
-    ];
+    void open(Widget page) =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
+    int badge(String key) => nav?.countFor(key) ?? 0;
+
+    return [
+      TichMoreItem(
+        label: 'My profile',
+        icon: Icons.person_outline,
+        badgeCount: badge('profile'),
+        onTap: () => open(StudentProfilePage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Enrolment',
+        icon: Icons.badge_outlined,
+        badgeCount: badge('enrolment'),
+        onTap: () => open(StudentEnrolmentPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Documents',
+        icon: Icons.folder_outlined,
+        badgeCount: badge('documents'),
+        onTap: () => open(StudentDocumentsPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Clearance',
+        icon: Icons.task_alt_outlined,
+        badgeCount: badge('clearance'),
+        onTap: () => open(StudentClearancePage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Course evaluations',
+        icon: Icons.rate_review_outlined,
+        badgeCount: badge('evaluations'),
+        onTap: () => open(StudentEvaluationsPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Deferment requests',
+        icon: Icons.event_busy_outlined,
+        badgeCount: badge('requests'),
+        onTap: () => open(StudentLifecyclePage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Suggestion box',
+        icon: Icons.lightbulb_outline,
+        badgeCount: badge('suggestions'),
+        onTap: () => open(StudentSuggestionsPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Notifications',
+        icon: Icons.notifications_outlined,
+        badgeCount: badge('notifications'),
+        onTap: () => open(StudentNotificationsPage(api: api)),
+      ),
+      TichMoreItem(
+        label: 'Settings',
+        icon: Icons.settings_outlined,
+        onTap: () => open(const SettingsHubPage()),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'More',
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          final item = items[i];
-          final badge = item.badgeKey != null && nav != null
-              ? nav.countFor(item.badgeKey!)
-              : 0;
-          return Card(
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: TichColors.blueLight,
-                child: Icon(item.icon, color: TichColors.blueDark),
-              ),
-              title: Text(item.label, style: tichUi(fontWeight: FontWeight.w600)),
-              trailing: TichMoreRowTrailing(badgeCount: badge),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => item.builder()),
-              ),
-            ),
-          );
-        },
-      ),
+      body: TichMoreList(items: items(context, api)),
     );
   }
-}
-
-class _Item {
-  const _Item(this.label, this.icon, this.builder, {this.badgeKey});
-
-  final String label;
-  final IconData icon;
-  final Widget Function() builder;
-  final String? badgeKey;
 }

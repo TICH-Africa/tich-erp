@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/auth_user.dart';
+import 'api_client.dart';
 
 class AuthApiException implements Exception {
   AuthApiException(this.message, {this.statusCode});
@@ -30,7 +31,7 @@ class AuthApi {
 
   final http.Client _client;
 
-  static const Duration _timeout = Duration(seconds: 15);
+  static const Duration _timeout = ApiClient.timeout;
 
   Future<LoginResult> login({
     required String email,
