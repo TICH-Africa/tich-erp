@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
 use App\Models\Department;
 use App\Models\Unit;
 use App\Models\User;
@@ -10,16 +11,22 @@ use Illuminate\Support\Collection;
 
 class UnitCatalogService
 {
-    public function __construct(protected AuditService $auditService) {}
+    public function __construct(
+        protected AuditService $auditService,
+        protected AcademicsAccessService $access,
+    ) {}
 
     /**
      * @return Collection<int, Unit>
      */
-    public function listForHub(Department $hub, ?int $learningDepartmentId = null, ?string $status = null): Collection
-    {
-        $scopeIds = $learningDepartmentId
-            ? [(int) $learningDepartmentId]
-            : $hub->academicsScopeDepartmentIds();
+    public function listForHub(
+        User $user,
+        Department $hub,
+        ?int $learningDepartmentId = null,
+        ?string $status = null
+    ): Collection {
+        $authorizedId = $this->access->authorizedLearningDepartmentId($user, $hub, $learningDepartmentId);
+        $scopeIds = $authorizedId !== null ? [$authorizedId] : $this->access->accessibleLearningDepartmentIds($user, $hub);
 
         if ($scopeIds === []) {
             return collect();
@@ -43,8 +50,12 @@ class UnitCatalogService
 
     public function create(User $user, Department $hub, array $data, ?Request $request = null): Unit
     {
-        $scopeIds = $hub->academicsScopeDepartmentIds();
-        abort_unless(in_array((int) $data['department_id'], $scopeIds, true), 422, 'Invalid department for this academics hub.');
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
+        abort_unless(
+            in_array((int) $data['department_id'], $scopeIds, true),
+            422,
+            'That department is outside your academics access.'
+        );
 
         $payload = [
             'unit_code' => $data['unit_code'],
@@ -67,6 +78,13 @@ class UnitCatalogService
         ];
 
         if (! empty($data['program_id'])) {
+            $program = AcademicProgram::query()->find((int) $data['program_id']);
+            abort_unless(
+                $program && in_array((int) $program->department_id, $scopeIds, true),
+                422,
+                'That programme belongs to another department.'
+            );
+
             $payload['program_id'] = (int) $data['program_id'];
         }
 
@@ -89,7 +107,7 @@ class UnitCatalogService
 
     public function update(User $user, Department $hub, Unit $unit, array $data, ?Request $request = null): Unit
     {
-        $this->assertUnitInHub($hub, $unit);
+        $this->assertUnitInScope($user, $hub, $unit);
         abort_unless($unit->isEditable(), 422, 'This unit can no longer be edited.');
 
         $old = $unit->only(['unit_code', 'unit_name', 'contact_hours', 'total_learning_hours', 'status']);
@@ -128,7 +146,7 @@ class UnitCatalogService
 
     public function submitForRegistry(User $user, Department $hub, Unit $unit, ?Request $request = null): Unit
     {
-        $this->assertUnitInHub($hub, $unit);
+        $this->assertUnitInScope($user, $hub, $unit);
         abort_unless(in_array($unit->status, ['draft', 'pending_registry'], true), 422);
 
         $unit->update([
@@ -155,7 +173,8 @@ class UnitCatalogService
 
     public function approveRegistry(User $user, Department $hub, Unit $unit, ?Request $request = null): Unit
     {
-        $this->assertUnitInHub($hub, $unit);
+        $this->assertUnitInScope($user, $hub, $unit);
+        abort_unless($this->access->canApproveRegistry($user), 403, 'Only the Academic Registrar can verify a unit.');
         abort_unless($unit->status === 'pending_registry', 422);
 
         $unit->update([
@@ -180,13 +199,13 @@ class UnitCatalogService
         return $unit->fresh();
     }
 
-    private function assertUnitInHub(Department $hub, Unit $unit): void
+    private function assertUnitInScope(User $user, Department $hub, Unit $unit): void
     {
-        $scopeIds = $hub->academicsScopeDepartmentIds();
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
         $inScope = in_array((int) $unit->department_id, $scopeIds, true)
             || ($unit->program && in_array((int) $unit->program->department_id, $scopeIds, true));
 
-        abort_unless($inScope, 403);
+        abort_unless($inScope, 403, 'That unit belongs to another department.');
     }
 
     /**

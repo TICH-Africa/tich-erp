@@ -33,12 +33,21 @@ class SpecialExamRequestController extends DepartmentAcademicsController
         return $hub;
     }
 
+    protected function assertReviewable(Request $request, ?int $studentId): void
+    {
+        abort_unless(
+            $this->access->managesStudentId($request->user(), $studentId),
+            403,
+            'That request belongs to another department.'
+        );
+    }
+
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeReviewer($request, $department);
         $status = (string) $request->query('status', 'pending');
 
-        $requests = SpecialExamRequest::query()
+        $requests = $this->access->scopeToManagedStudents(SpecialExamRequest::query(), $request->user())
             ->with(['student.applicant', 'student.program:id,program_code,program_name', 'unit', 'semester'])
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
             ->orderByDesc('created_at')
@@ -55,6 +64,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function show(Request $request, Department $department, SpecialExamRequest $specialExamRequest): View
     {
         $hub = $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
         $specialExamRequest->load(['student.applicant', 'student.program', 'unit', 'semester', 'reviewer']);
 
         return view('academics.special-exam-requests.show', [
@@ -66,6 +76,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function viewAttachment(Request $request, Department $department, SpecialExamRequest $specialExamRequest, int $index): StreamedResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
 
         return SupportingDocumentResponse::view($specialExamRequest->supporting_docs ?? [], $index);
     }
@@ -73,6 +84,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function downloadAttachment(Request $request, Department $department, SpecialExamRequest $specialExamRequest, int $index): StreamedResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
 
         return SupportingDocumentResponse::download($specialExamRequest->supporting_docs ?? [], $index);
     }
@@ -80,6 +92,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function approve(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 
@@ -107,6 +120,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function hold(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 
@@ -134,6 +148,7 @@ class SpecialExamRequestController extends DepartmentAcademicsController
     public function reject(Request $request, Department $department, SpecialExamRequest $specialExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $specialExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 

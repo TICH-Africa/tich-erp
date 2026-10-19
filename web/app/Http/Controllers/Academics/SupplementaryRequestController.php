@@ -33,12 +33,21 @@ class SupplementaryRequestController extends DepartmentAcademicsController
         return $hub;
     }
 
+    protected function assertReviewable(Request $request, ?int $studentId): void
+    {
+        abort_unless(
+            $this->access->managesStudentId($request->user(), $studentId),
+            403,
+            'That request belongs to another department.'
+        );
+    }
+
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeReviewer($request, $department);
         $status = (string) $request->query('status', 'pending_review');
 
-        $requests = SupplementaryExamRequest::query()
+        $requests = $this->access->scopeToManagedStudents(SupplementaryExamRequest::query(), $request->user())
             ->with(['student.applicant', 'student.program:id,program_code,program_name', 'unit', 'semester'])
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('application_status', $status))
             ->orderByDesc('created_at')
@@ -55,6 +64,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function show(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): View
     {
         $hub = $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
         $supplementaryExamRequest->load(['student.applicant', 'student.program', 'unit', 'semester', 'reviewer']);
 
         return view('academics.supplementary-requests.show', [
@@ -66,6 +76,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function viewAttachment(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest, int $index): StreamedResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
 
         return SupportingDocumentResponse::view($supplementaryExamRequest->supporting_docs ?? [], $index);
     }
@@ -73,6 +84,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function downloadAttachment(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest, int $index): StreamedResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
 
         return SupportingDocumentResponse::download($supplementaryExamRequest->supporting_docs ?? [], $index);
     }
@@ -80,6 +92,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function approve(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 
@@ -107,6 +120,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function hold(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 
@@ -134,6 +148,7 @@ class SupplementaryRequestController extends DepartmentAcademicsController
     public function reject(Request $request, Department $department, SupplementaryExamRequest $supplementaryExamRequest): RedirectResponse
     {
         $this->authorizeReviewer($request, $department);
+        $this->assertReviewable($request, $supplementaryExamRequest->student_id);
         $staff = $this->staffPortal->staffForUser($request->user());
         abort_unless($staff, 403);
 

@@ -23,12 +23,14 @@ class CourseEvaluationWindowController extends DepartmentAcademicsController
         return view('academics.evaluation-windows.index', [
             'department' => $hub,
             'windows' => $windows,
+            'canManageWindows' => $this->access->actsInstitutionWide($request->user()),
         ]);
     }
 
     public function store(Request $request, Department $department): RedirectResponse
     {
         $this->authorizeHub($request, $department);
+        $this->assertManagesWindows($request);
 
         $validated = $request->validate([
             'title' => 'required|string|max:191',
@@ -55,6 +57,7 @@ class CourseEvaluationWindowController extends DepartmentAcademicsController
     public function update(Request $request, Department $department, CourseEvaluationWindow $evaluationWindow): RedirectResponse
     {
         $this->authorizeHub($request, $department);
+        $this->assertManagesWindows($request);
 
         $validated = $request->validate([
             'title' => 'required|string|max:191',
@@ -75,5 +78,14 @@ class CourseEvaluationWindowController extends DepartmentAcademicsController
         return redirect()
             ->route('departments.academics.evaluation-windows.index', \App\Support\AcademicsRouteParams::fromRequest($request))
             ->with('success', 'Evaluation window updated.');
+    }
+
+    private function assertManagesWindows(Request $request): void
+    {
+        abort_unless(
+            $this->access->actsInstitutionWide($request->user()),
+            403,
+            'Course evaluation windows are set at head office.'
+        );
     }
 }

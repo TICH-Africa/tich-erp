@@ -50,7 +50,7 @@ class ProgramCurriculumService
 
     public function updateProgramFormat(User $user, Department $hub, AcademicProgram $program, array $data, ?Request $request = null): AcademicProgram
     {
-        $scopeIds = $hub->academicsScopeDepartmentIds();
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
         abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
 
         $old = $program->only(['curriculum_format', 'semester_count', 'block_count', 'is_nursing_track', 'duration_months']);
@@ -87,7 +87,7 @@ class ProgramCurriculumService
 
     public function syncProgramUnits(User $user, Department $hub, AcademicProgram $program, array $mappings, ?Request $request = null): void
     {
-        $scopeIds = $hub->academicsScopeDepartmentIds();
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
         abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
 
         $activeUnitIds = Unit::query()

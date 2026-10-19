@@ -31,6 +31,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class ProgramCurriculumController extends DepartmentAcademicsController
@@ -56,11 +57,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeHub($request, $department);
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
-
-        if ($learningDepartmentId) {
-            abort_unless(in_array($learningDepartmentId, $hub->academicsScopeDepartmentIds(), true), 404);
-        }
+        $learningDepartmentId = $this->access->authorizedLearningDepartmentId(
+            $request->user(),
+            $hub,
+            $request->integer('learning_department') ?: null
+        );
 
         $programsQuery = $this->access->programsQueryForHub($request->user(), $hub);
 
@@ -198,7 +199,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'academicYears' => AcademicYear::query()->orderByDesc('start_date')->get(),
             'canApproveRegistry' => $this->access->canApproveRegistry($request->user()),
             'canApproveCeo' => $this->access->canApproveCeo($request->user()),
-            'catalogUnits' => $this->unitCatalog->listForHub($hub, (int) $program->department_id),
+            'catalogUnits' => $this->unitCatalog->listForHub($request->user(), $hub, (int) $program->department_id),
             'statusLabels' => UnitCatalogService::statusLabels(),
             'section' => $section,
             'intakeSelectionRequired' => $intakeSelectionRequired,
@@ -255,7 +256,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 ? Room::query()->with('campus')->where('is_active', 1)->orderBy('room_code')->get()
                 : collect(),
             'timetableStaff' => $section === 'timetable'
-                ? Staff::query()->orderBy('surname')->limit(200)->get()
+                ? $this->staffChoices($request, $program)->limit(200)->get()
                 : collect(),
             'examHub' => $section === 'exams' && $selectedIntake
                 ? $this->programExams->hubData(
@@ -273,17 +274,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 ? $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview')
                 : 'overview',
             'examStaff' => $section === 'exams'
-                ? Staff::query()->orderBy('surname')->limit(200)->get()
+                ? $this->staffChoices($request, $program)->limit(200)->get()
                 : collect(),
             'catalogAllocations' => in_array($section, ['catalog', 'semesters'], true) && $selectedIntake
                 ? $this->unitAllocations->forUnitsInIntake(
-                    $this->unitCatalog->listForHub($hub, (int) $program->department_id)->pluck('id')->all(),
+                    $this->unitCatalog->listForHub($request->user(), $hub, (int) $program->department_id)->pluck('id')->all(),
                     $selectedIntake,
                     $program,
                 )
                 : collect(),
             'allocationStaffList' => in_array($section, ['catalog', 'semesters'], true)
-                ? Staff::query()->where('is_teaching_staff', 1)->where('employment_status', 'active')->orderBy('surname')->get()
+                ? $this->staffChoices($request, $program)
+                    ->where('is_teaching_staff', 1)
+                    ->where('employment_status', 'active')
+                    ->get()
                 : collect(),
             'allocationCampuses' => in_array($section, ['catalog', 'semesters'], true)
                 ? Campus::query()->where('is_active', 1)->orderBy('campus_name')->get()
@@ -609,6 +613,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'class_group' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $this->assertSessionRefsInDepartment($request, $hub, $program, $validated);
+
         $session = $this->timetableScheduling->addSession($request->user(), $timetable, $validated, $request);
 
         if (
@@ -883,6 +889,15 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         ]);
 
         $unitIds = $this->programExams->unitIdsForSemester($intake, $teachingPeriod);
+
+        if (! empty($validated['invigilator_id'])) {
+            abort_unless(
+                $this->staffChoices($request, $program)->find((int) $validated['invigilator_id']),
+                422,
+                'Assign an invigilator who belongs to this department.'
+            );
+        }
+
         $this->programExams->updateExamSchedule($schedule, $validated, $unitIds);
 
         return redirect()
@@ -901,6 +916,12 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        abort_unless(
+            $this->access->unitsInScope($hub, $program->department_id)->contains('id', $unit->id),
+            403,
+            'That unit does not belong to this programme.'
+        );
 
         $validated = $request->validate([
             'cat_weight' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -950,12 +971,18 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->firstWhere('id', (int) $validated['unit_id']);
         abort_unless($unit, 404);
 
+        $lecturer = $this->staffChoices($request, $program)
+            ->where('is_teaching_staff', 1)
+            ->where('employment_status', 'active')
+            ->find((int) $validated['staff_id']);
+        abort_unless($lecturer, 422, 'Assign a lecturer who belongs to this department.');
+
         $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period']);
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
 
         $this->unitAllocations->assign([
             'unit_id' => $unit->id,
-            'staff_id' => (int) $validated['staff_id'],
+            'staff_id' => $lecturer->id,
             'semester_id' => $semesterId,
             'campus_id' => (int) $validated['campus_id'],
             'contact_hours_assigned' => (int) ($validated['contact_hours_assigned'] ?? $unit->contact_hours ?? 0),
@@ -993,6 +1020,45 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'section' => $section,
             ]))
             ->with('status', 'Lecturer allocation removed.');
+    }
+
+    /**
+     * Staff a user may schedule: an HOD is limited to their own department, registry roles see everyone.
+     */
+    private function staffChoices(Request $request, AcademicProgram $program): Builder
+    {
+        return Staff::query()
+            ->when(
+                ! $this->access->actsInstitutionWide($request->user()),
+                fn (Builder $query) => $query->where('department_id', $program->department_id)
+            )
+            ->orderBy('surname');
+    }
+
+    /**
+     * Keep an HOD's timetable sessions inside their own department's units and lecturers.
+     */
+    private function assertSessionRefsInDepartment(Request $request, Department $hub, AcademicProgram $program, array $validated): void
+    {
+        if ($this->access->actsInstitutionWide($request->user())) {
+            return;
+        }
+
+        if (! empty($validated['unit_id'])) {
+            abort_unless(
+                $this->access->unitsInScope($hub, $program->department_id)->contains('id', (int) $validated['unit_id']),
+                422,
+                'Schedule units from your own department.'
+            );
+        }
+
+        if (! empty($validated['staff_id'])) {
+            abort_unless(
+                $this->staffChoices($request, $program)->whereKey((int) $validated['staff_id'])->exists(),
+                422,
+                'Schedule lecturers from your own department.'
+            );
+        }
     }
 }
 

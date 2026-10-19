@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Academics;
 
 use App\Models\Department;
 use App\Models\StudentSuggestion;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -17,9 +19,10 @@ class SuggestionBoxController extends DepartmentAcademicsController
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
         $category = (string) $request->query('category', '');
+        $programIds = $this->accessibleProgramIds($request->user(), $hub);
 
         $suggestions = Schema::hasTable('student_suggestions')
-            ? StudentSuggestion::query()
+            ? $this->scopedQuery($programIds)
                 ->with(['student.applicant', 'student.program:id,program_code,program_name', 'reviewer'])
                 ->when($search !== '', function ($q) use ($search) {
                     $q->where(function ($inner) use ($search) {
@@ -45,10 +48,10 @@ class SuggestionBoxController extends DepartmentAcademicsController
             : collect();
 
         $openCount = Schema::hasTable('student_suggestions')
-            ? StudentSuggestion::query()->whereIn('status', ['open', 'under_review'])->count()
+            ? $this->scopedQuery($programIds)->whereIn('status', ['open', 'under_review'])->count()
             : 0;
         $resolvedCount = Schema::hasTable('student_suggestions')
-            ? StudentSuggestion::query()->where('status', 'resolved')->count()
+            ? $this->scopedQuery($programIds)->where('status', 'resolved')->count()
             : 0;
 
         return view('academics.suggestions.index', [
@@ -67,6 +70,7 @@ class SuggestionBoxController extends DepartmentAcademicsController
     public function show(Request $request, Department $department, StudentSuggestion $suggestion): View
     {
         $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
+        $this->assertSuggestionInScope($request->user(), $hub, $suggestion);
         $suggestion->load(['student.applicant', 'student.program', 'reviewer']);
 
         return view('academics.suggestions.show', [
@@ -79,6 +83,7 @@ class SuggestionBoxController extends DepartmentAcademicsController
     public function update(Request $request, Department $department, StudentSuggestion $suggestion): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department, allowSuggestionsOnly: true);
+        $this->assertSuggestionInScope($request->user(), $hub, $suggestion);
 
         $validated = $request->validate([
             'status' => 'required|in:open,under_review,resolved,closed',
@@ -105,5 +110,46 @@ class SuggestionBoxController extends DepartmentAcademicsController
                 ['suggestion' => $suggestion->id]
             ))
             ->with('success', 'Suggestion updated.');
+    }
+
+    /**
+     * An HOD reviews suggestions from their own students only; the Dean of Students remit is institution-wide.
+     *
+     * @return list<int>|null
+     */
+    private function accessibleProgramIds(User $user, Department $hub): ?array
+    {
+        return $this->access->isDepartmentHod($user)
+            ? ($this->access->managedProgramIds($user, $hub) ?? [])
+            : null;
+    }
+
+    /**
+     * @param list<int>|null $programIds
+     */
+    private function scopedQuery(?array $programIds): Builder
+    {
+        return StudentSuggestion::query()
+            ->when($programIds !== null, function (Builder $query) use ($programIds) {
+                $query->whereIn('student_id', function ($inner) use ($programIds) {
+                    $inner->select('id')->from('students')->whereIn('program_id', $programIds);
+                });
+            });
+    }
+
+    private function assertSuggestionInScope(User $user, Department $hub, StudentSuggestion $suggestion): void
+    {
+        $programIds = $this->accessibleProgramIds($user, $hub);
+
+        if ($programIds === null) {
+            return;
+        }
+
+        $student = $suggestion->student;
+        abort_unless(
+            $student !== null && in_array((int) $student->program_id, $programIds, true),
+            404,
+            'That suggestion belongs to another department.'
+        );
     }
 }

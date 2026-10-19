@@ -38,7 +38,10 @@ class DepartmentController extends DepartmentAcademicsController
     public function updateProfile(Request $request, Department $department, Department $learningDepartment): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        abort_unless(in_array($learningDepartment->id, $hub->academicsScopeDepartmentIds(), true), 404);
+        abort_unless(
+            $this->access->managesLearningDepartment($request->user(), $hub, $learningDepartment->id),
+            404
+        );
         abort_unless($learningDepartment->isValidLearningDepartment(), 404);
 
         $validated = $request->validate([

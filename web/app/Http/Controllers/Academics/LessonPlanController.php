@@ -25,8 +25,12 @@ class LessonPlanController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeHub($request, $department);
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
-        $departmentId = $learningDepartmentId ?: (int) ($hub->academicsScopeDepartmentIds()[0] ?? $hub->id);
+        $learningDepartmentId = $this->access->authorizedLearningDepartmentId(
+            $request->user(),
+            $hub,
+            $request->integer('learning_department') ?: null
+        );
+        $departmentId = $learningDepartmentId ?? (int) $hub->id;
         $status = $request->string('status')->toString() ?: null;
 
         return view('academics.lesson-plans.index', [
@@ -49,10 +53,7 @@ class LessonPlanController extends DepartmentAcademicsController
         abort_unless($plan->allocation?->unit, 404);
 
         $unitDepartmentId = (int) $plan->allocation->unit->department_id;
-        abort_unless(
-            in_array($unitDepartmentId, $hub->academicsScopeDepartmentIds(), true) || $this->access->canAccessAll($request->user()),
-            404
-        );
+        abort_unless($this->access->managesLearningDepartment($request->user(), $hub, $unitDepartmentId), 404);
 
         $canReview = $staff && $this->lessonPlans->hodCanReview($plan, $staff, $request->user());
 
@@ -76,11 +77,15 @@ class LessonPlanController extends DepartmentAcademicsController
             403
         );
 
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
-        $scopeIds = $hub->academicsScopeDepartmentIds();
-        $departmentIds = $learningDepartmentId
-            ? [(int) $learningDepartmentId]
-            : $scopeIds;
+        $requestedDepartmentId = $request->integer('learning_department') ?: null;
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($request->user(), $hub);
+
+        if ($requestedDepartmentId === null) {
+            $departmentIds = $scopeIds;
+        } else {
+            abort_unless(in_array($requestedDepartmentId, $scopeIds, true), 403, 'That learning department is outside your access.');
+            $departmentIds = [$requestedDepartmentId];
+        }
 
         $status = $request->string('status')->toString() ?: null;
         $semesterId = $request->integer('semester') ?: null;
@@ -92,7 +97,7 @@ class LessonPlanController extends DepartmentAcademicsController
 
         return view('academics.lesson-plans.audit', [
             'department' => $hub,
-            'learningDepartment' => $learningDepartmentId ? Department::query()->find($learningDepartmentId) : null,
+            'learningDepartment' => $requestedDepartmentId ? Department::query()->find($requestedDepartmentId) : null,
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'plans' => $plans,
             'semesters' => Semester::query()->with('academicYear')->orderByDesc('id')->get(),

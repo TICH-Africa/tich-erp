@@ -27,29 +27,35 @@ class UnitController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View|RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
+        $requestedDepartmentId = $request->integer('learning_department') ?: null;
+        $learningDepartmentId = $this->access->authorizedLearningDepartmentId(
+            $request->user(),
+            $hub,
+            $requestedDepartmentId
+        );
 
-        if ($learningDepartmentId) {
-            abort_unless(in_array($learningDepartmentId, $hub->academicsScopeDepartmentIds(), true), 404);
-
+        if ($requestedDepartmentId) {
             return redirect()
                 ->route('departments.academics.programs.index', \App\Support\AcademicsRouteParams::for([
-                    'learning_department' => $learningDepartmentId,
+                    'learning_department' => $requestedDepartmentId,
                 ]))
                 ->with('status', 'Open a programme curriculum to create and manage units.');
         }
 
         return view('academics.units.index', [
             'department' => $hub,
-            'learningDepartment' => null,
+            'learningDepartment' => $learningDepartmentId
+                ? Department::query()->find($learningDepartmentId)
+                : null,
             'units' => $this->units->listForHub(
+                $request->user(),
                 $hub,
-                null,
+                $learningDepartmentId,
                 $request->string('status')->toString() ?: null
             ),
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
             'filters' => [
-                'learning_department' => null,
+                'learning_department' => $learningDepartmentId,
                 'status' => $request->string('status')->toString(),
             ],
             'statusLabels' => UnitCatalogService::statusLabels(),

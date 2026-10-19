@@ -64,6 +64,11 @@ class ExaminationPaperController extends DepartmentAcademicsController
     {
         $this->authorizeHub($request, $department);
         abort_unless(in_array($kind, ['draft', 'moderated', 'approved'], true), 404);
+        abort_unless(
+            $this->papers->canViewPaper($this->staffPortal->staffForUser($request->user()), $examinationPaper),
+            403,
+            'That paper is outside your department.'
+        );
 
         $path = $this->files->relativePath($examinationPaper->filePathFor($kind));
         abort_unless($path && Storage::disk('public')->exists($path), 404);

@@ -122,7 +122,7 @@ class CurriculumVersionService
         abort_unless($version->status === 'draft', 422, 'Only draft intakes can be edited.');
 
         $program = $version->program;
-        $scopeIds = $hub->academicsScopeDepartmentIds();
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
 
         $mappableUnitIds = Unit::query()
             ->whereIn('status', self::mappableUnitStatuses())
@@ -200,6 +200,12 @@ class CurriculumVersionService
         $unit = Unit::query()
             ->where('id', $unitId)
             ->whereIn('status', self::mappableUnitStatuses())
+            ->where(function ($builder) use ($user, $hub) {
+                $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
+
+                $builder->whereIn('department_id', $scopeIds)
+                    ->orWhereHas('program', fn ($q) => $q->whereIn('department_id', $scopeIds));
+            })
             ->firstOrFail();
 
         if (CurriculumVersionUnit::query()->where('curriculum_version_id', $version->id)->where('unit_id', $unitId)->exists()) {

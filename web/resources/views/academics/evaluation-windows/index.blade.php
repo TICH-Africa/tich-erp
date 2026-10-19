@@ -9,6 +9,7 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if ($canManageWindows)
     <article class="tich-card tich-mb-8">
         <h2 class="tich-h3">New evaluation window</h2>
         <form method="POST" action="{{ route('departments.academics.evaluation-windows.store', $hub) }}" class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem; align-items:end;">
@@ -39,6 +40,7 @@
             </div>
         </form>
     </article>
+    @endif
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
@@ -64,6 +66,7 @@
                             <td>{{ $window->is_active ? 'Yes' : 'No' }}</td>
                             <td>{{ $window->evaluations_count }}</td>
                             <td>
+                                @if ($canManageWindows)
                                 <form method="POST" action="{{ route('departments.academics.evaluation-windows.update', array_merge($hub, ['evaluationWindow' => $window->id])) }}" class="tich-flex-wrap" style="gap:0.5rem; align-items:end;">
                                     @csrf
                                     @method('PUT')
@@ -76,6 +79,7 @@
                                     </label>
                                     <button type="submit" class="tich-btn tich-btn-ghost tich-btn--compact">Save</button>
                                 </form>
+                                @endif
                             </td>
                         </tr>
                     @empty

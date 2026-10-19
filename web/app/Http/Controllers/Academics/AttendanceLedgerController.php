@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Academics;
 
 use App\Models\AttendanceSession;
 use App\Models\Department;
+use App\Models\User;
 use App\Services\AttendanceVerificationService;
 use App\Services\StaffPortalService;
 use Illuminate\Http\RedirectResponse;
@@ -24,8 +25,12 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function index(Request $request, Department $department): View
     {
         $hub = $this->authorizeHub($request, $department);
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
-        $departmentId = $learningDepartmentId ?: (int) ($hub->academicsScopeDepartmentIds()[0] ?? $hub->id);
+        $learningDepartmentId = $this->access->authorizedLearningDepartmentId(
+            $request->user(),
+            $hub,
+            $request->integer('learning_department') ?: null
+        );
+        $departmentId = $learningDepartmentId ?? (int) $hub->id;
         $status = $request->string('status')->toString() ?: null;
 
         return view('academics.attendance-ledger.index', [
@@ -41,7 +46,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function show(Request $request, Department $department, AttendanceSession $session): View
     {
         $hub = $this->authorizeHub($request, $department);
-        $this->assertSessionInHub($hub, $session);
+        $this->assertSessionInScope($request->user(), $hub, $session);
 
         $sheet = $this->verification->sheetData($session);
         $session->loadMissing(['hodVerifier', 'registrarVerifier', 'rosterVerifier']);
@@ -70,7 +75,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function verifyHod(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        $this->assertSessionInHub($hub, $session);
+        $this->assertSessionInScope($request->user(), $hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -89,7 +94,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function verifyRegistrar(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        $this->assertSessionInHub($hub, $session);
+        $this->assertSessionInScope($request->user(), $hub, $session);
         abort_unless($request->user()->hasAnyRole(['Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -108,7 +113,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function verifyRoster(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        $this->assertSessionInHub($hub, $session);
+        $this->assertSessionInScope($request->user(), $hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -122,7 +127,7 @@ class AttendanceLedgerController extends DepartmentAcademicsController
     public function examEligibilityCheck(Request $request, Department $department, AttendanceSession $session): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
-        $this->assertSessionInHub($hub, $session);
+        $this->assertSessionInScope($request->user(), $hub, $session);
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin']), 403);
 
         $staff = $this->staffPortal->staffForUser($request->user());
@@ -135,11 +140,11 @@ class AttendanceLedgerController extends DepartmentAcademicsController
         return back()->with('status', $blockedCount > 0 ? "Exam eligibility check complete. {$blockedCount} student(s) blocked due to attendance." : 'Exam eligibility check complete. All students eligible.');
     }
 
-    protected function assertSessionInHub(Department $hub, AttendanceSession $session): void
+    protected function assertSessionInScope(User $user, Department $hub, AttendanceSession $session): void
     {
         $session->loadMissing('allocation.unit');
         $unitDepartmentId = (int) ($session->allocation?->unit?->department_id ?? 0);
-        $scopeIds = $this->access->scopeDepartmentIds($hub);
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
 
         abort_unless($unitDepartmentId > 0 && in_array($unitDepartmentId, $scopeIds, true), 404);
     }

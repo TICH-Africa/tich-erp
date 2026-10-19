@@ -24,8 +24,12 @@ class PerformanceTerminalController extends DepartmentAcademicsController
         abort_unless($request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Academic Registrar', 'Super Admin'])
             || $request->user()->hasPermission('academics.approve'), 403);
 
-        $learningDepartmentId = $request->integer('learning_department') ?: null;
-        $departmentId = $learningDepartmentId ?: (int) ($hub->academicsScopeDepartmentIds()[0] ?? $hub->id);
+        $learningDepartmentId = $this->access->authorizedLearningDepartmentId(
+            $request->user(),
+            $hub,
+            $request->integer('learning_department') ?: null
+        );
+        $departmentId = $learningDepartmentId ?? (int) $hub->id;
         $semesterId = $request->integer('semester') ?: null;
 
         return view('academics.performance.index', [

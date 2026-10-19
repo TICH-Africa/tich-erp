@@ -20,7 +20,7 @@ class AcademicsDashboardService
      */
     public function stats(User $user, Department $hub): array
     {
-        $departmentIds = $this->access->scopeDepartmentIds($hub);
+        $departmentIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
 
         return [
             'departments' => count($departmentIds),

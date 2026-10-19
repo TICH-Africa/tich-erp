@@ -51,12 +51,14 @@ class CalendarController extends DepartmentAcademicsController
             'publicHolidays' => $publicHolidays,
             'defaultTrimesters' => config('tich-academics.default_trimester_count'),
             'intakeMonths' => config('tich-academics.default_intake_months'),
+            'canManageCalendar' => $this->access->actsInstitutionWide($request->user()),
         ]);
     }
 
     public function storeYear(Request $request, Department $department): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
+        $this->assertManagesCalendar($request);
 
         $validated = $request->validate([
             'year_label' => ['required', 'string', 'max:20', 'unique:academic_years,year_label'],
@@ -74,6 +76,7 @@ class CalendarController extends DepartmentAcademicsController
     public function updateSemester(Request $request, Department $department, Semester $semester): RedirectResponse
     {
         $this->authorizeHub($request, $department);
+        $this->assertManagesCalendar($request);
 
         $validated = $request->validate([
             'semester_label' => ['required', 'string', 'max:20'],
@@ -89,5 +92,14 @@ class CalendarController extends DepartmentAcademicsController
         $this->calendar->updateSemester($request->user(), $semester, $validated, $request);
 
         return back()->with('status', 'Term updated.');
+    }
+
+    private function assertManagesCalendar(Request $request): void
+    {
+        abort_unless(
+            $this->access->actsInstitutionWide($request->user()),
+            403,
+            'The academic calendar is maintained at head office.'
+        );
     }
 }

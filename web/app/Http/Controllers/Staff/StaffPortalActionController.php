@@ -734,13 +734,7 @@ class StaffPortalActionController extends Controller
         abort_unless(in_array($kind, ['draft', 'moderated', 'approved'], true), 404);
 
         $papers = app(\App\Services\ExaminationPaperService::class);
-        $canAccess = (int) $examinationPaper->prepared_by === (int) $staff->id
-            || $papers->userCanModerate($staff)
-            || \App\Models\UnitAllocation::query()
-                ->where('staff_id', $staff->id)
-                ->where('unit_id', $examinationPaper->unit_id)
-                ->where('is_active', 1)
-                ->exists();
+        $canAccess = $papers->canViewPaper($staff, $examinationPaper);
 
         abort_unless($canAccess, 403);
 

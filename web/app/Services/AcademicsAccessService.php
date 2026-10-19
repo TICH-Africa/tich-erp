@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\Department;
+use App\Models\Student;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,6 +36,14 @@ class AcademicsAccessService
         protected RBACService $rbacService,
         protected DepartmentDashboardService $departmentDashboard,
     ) {}
+
+    /**
+     * Roles that act across the whole institution rather than one learning department.
+     */
+    public function actsInstitutionWide(User $user): bool
+    {
+        return $this->canAccessAll($user) || $this->rbacService->isPlatformAdministrator($user);
+    }
 
     public function canAccessAll(User $user): bool
     {
@@ -145,17 +154,109 @@ class AcademicsAccessService
      */
     public function accessibleLearningDepartmentIds(User $user, Department $hub): array
     {
-        if ($this->canAccessAll($user) || $this->rbacService->isPlatformAdministrator($user)) {
+        if ($this->actsInstitutionWide($user)) {
             return $this->scopeDepartmentIds($hub);
         }
 
         return $this->learningDepartmentsInScope($user, $hub)->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
+    /**
+     * The learning department a screen may show: an HOD's own, any department for registry roles.
+     */
+    public function authorizedLearningDepartmentId(User $user, Department $hub, ?int $requestedId): ?int
+    {
+        if ($this->actsInstitutionWide($user)) {
+            return $requestedId !== null && $requestedId > 0 ? $requestedId : null;
+        }
+
+        $managed = $this->accessibleLearningDepartmentIds($user, $hub);
+
+        if ($requestedId === null || $requestedId <= 0) {
+            return $managed === [] ? null : $managed[0];
+        }
+
+        abort_unless(in_array($requestedId, $managed, true), 403, 'That learning department is outside your access.');
+
+        return $requestedId;
+    }
+
+    public function managesLearningDepartment(User $user, Department $hub, ?int $departmentId): bool
+    {
+        return $departmentId !== null
+            && in_array((int) $departmentId, $this->accessibleLearningDepartmentIds($user, $hub), true);
+    }
+
+    /**
+     * Programmes the user's department runs. Null means every programme (registry roles).
+     *
+     * @return list<int>|null
+     */
+    public function managedProgramIds(User $user, ?Department $hub = null): ?array
+    {
+        if ($this->actsInstitutionWide($user)) {
+            return null;
+        }
+
+        $hub ??= Department::findAcademicsHub();
+
+        if (! $hub instanceof Department) {
+            return null;
+        }
+
+        $departmentIds = $this->accessibleLearningDepartmentIds($user, $hub);
+
+        if ($departmentIds === []) {
+            return [];
+        }
+
+        return AcademicProgram::query()
+            ->whereIn('department_id', $departmentIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function managesStudent(User $user, Student $student): bool
+    {
+        $programIds = $this->managedProgramIds($user);
+
+        return $programIds === null || in_array((int) $student->program_id, $programIds, true);
+    }
+
+    public function managesStudentId(User $user, ?int $studentId): bool
+    {
+        $programIds = $this->managedProgramIds($user);
+
+        if ($programIds === null) {
+            return true;
+        }
+
+        return $studentId !== null
+            && Student::query()->whereKey($studentId)->whereIn('program_id', $programIds)->exists();
+    }
+
+    /**
+     * Filter a record list that carries a student_id down to the department the user runs.
+     *
+     * @param  Builder<*>  $query
+     */
+    public function scopeToManagedStudents(Builder $query, User $user): Builder
+    {
+        $programIds = $this->managedProgramIds($user);
+
+        if ($programIds === null) {
+            return $query;
+        }
+
+        return $query->whereIn('student_id', function ($inner) use ($programIds) {
+            $inner->select('id')->from('students')->whereIn('program_id', $programIds);
+        });
+    }
+
     public function canApproveRegistry(User $user): bool
     {
-        return $this->canAccessAll($user)
-            || $this->rbacService->hasPermission($user, 'academics.approve');
+        return $this->canAccessAll($user);
     }
 
     public function canApproveCeo(User $user): bool
@@ -232,12 +333,7 @@ class AcademicsAccessService
             return false;
         }
 
-        if ($this->canAccessAll($user)) {
-            return true;
-        }
-
-        return $this->departmentDashboard->userCanAccessDepartment($user, $hub)
-            || ($program->department && $this->departmentDashboard->userCanAccessDepartment($user, $program->department));
+        return in_array((int) $program->department_id, $this->accessibleLearningDepartmentIds($user, $hub), true);
     }
 
     public function findProgramForHub(User $user, Department $hub, int $programId): AcademicProgram

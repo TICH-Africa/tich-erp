@@ -37,6 +37,16 @@ class DashboardController extends DepartmentAcademicsController
             );
         }
 
+        $requestedDepartmentId = $request->integer('learning_department') ?: null;
+
+        if ($requestedDepartmentId !== null) {
+            abort_unless(
+                $this->access->managesLearningDepartment($request->user(), $hub, $requestedDepartmentId),
+                403,
+                'That learning department is outside your access.'
+            );
+        }
+
         if ($this->access->isDepartmentHod($request->user()) && ! $request->integer('learning_department')) {
             $learningDepartment = $this->access->primaryLearningDepartment($request->user(), $hub);
             if ($learningDepartment) {

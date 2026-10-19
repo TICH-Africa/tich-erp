@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\ExaminationPaper;
 use App\Models\Staff;
+use App\Models\Unit;
 use App\Models\UnitAllocation;
 use App\Models\User;
 use App\Services\Sidebar\StaffSidebarNotificationService;
@@ -18,6 +20,7 @@ class ExaminationPaperService
     public function __construct(
         protected StoredFileService $files,
         protected StaffSidebarNotificationService $sidebarNotifications,
+        protected AcademicsAccessService $access,
     ) {}
 
     /**
@@ -65,14 +68,21 @@ class ExaminationPaperService
 
     public function tableForModeration(ExaminationPaper $paper, Staff $staff): ExaminationPaper
     {
-        abort_unless((int) $paper->prepared_by === (int) $staff->id || $this->userCanModerate($staff), 403);
+        $isPreparer = (int) $paper->prepared_by === (int) $staff->id;
+
+        abort_unless(
+            $isPreparer
+                || ($this->userCanModerate($staff)
+                    && $this->actsOnUnitDepartment($this->userForStaff($staff), $paper->unit?->department_id)),
+            403
+        );
 
         return $this->table($paper);
     }
 
     public function moderate(ExaminationPaper $paper, Staff $staff, ?UploadedFile $moderatedFile = null, ?string $notes = null): ExaminationPaper
     {
-        $this->assertCanModerate($staff);
+        $this->assertPaperInScope($staff, $paper);
         abort_unless($paper->status === 'tabled', 422, 'Only tabled papers can be moderated.');
 
         $updates = [
@@ -94,7 +104,7 @@ class ExaminationPaperService
 
     public function approve(ExaminationPaper $paper, Staff $staff, ?UploadedFile $approvedFile = null): ExaminationPaper
     {
-        $this->assertCanModerate($staff);
+        $this->assertPaperInScope($staff, $paper);
         abort_unless($paper->status === 'moderated', 422, 'Only moderated papers can be approved.');
 
         $updates = [
@@ -131,6 +141,13 @@ class ExaminationPaperService
         }
 
         $user = $this->userForStaff($staff);
+
+        abort_unless(
+            $this->actsOnUnitDepartment($user, Unit::query()->find($unitId)?->department_id),
+            403,
+            'That unit belongs to another department.'
+        );
+
         $isTeachingLead = $user && $user->hasAnyRole(['HOD', 'Academic Registrar', 'Super Admin', 'Head of Academics']);
 
         abort_unless(
@@ -149,6 +166,60 @@ class ExaminationPaperService
     public function assertCanModerate(Staff $staff): void
     {
         abort_unless($this->userCanModerate($staff), 403, 'Only HOD / Academic Registrar can moderate or approve papers.');
+    }
+
+    /**
+     * A department HOD moderates and approves the papers their own tutors prepare.
+     */
+    private function assertPaperInScope(Staff $staff, ExaminationPaper $paper): void
+    {
+        $this->assertCanModerate($staff);
+
+        abort_unless(
+            $this->actsOnUnitDepartment($this->userForStaff($staff), $paper->unit?->department_id),
+            403,
+            'That paper belongs to a unit in another department.'
+        );
+    }
+
+    public function actsOnUnitDepartment(?User $user, ?int $departmentId): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        if ($this->access->actsInstitutionWide($user)) {
+            return true;
+        }
+
+        $hub = Department::findAcademicsHub();
+
+        return $hub instanceof Department
+            && $this->access->managesLearningDepartment($user, $hub, $departmentId);
+    }
+
+    /**
+     * The preparer, a tutor allocated to the unit, or a moderator covering the paper's department.
+     */
+    public function canViewPaper(?Staff $staff, ExaminationPaper $paper): bool
+    {
+        if (! $staff) {
+            return false;
+        }
+
+        if ((int) $paper->prepared_by === (int) $staff->id) {
+            return true;
+        }
+
+        if ($this->actsOnUnitDepartment($this->userForStaff($staff), $paper->unit?->department_id)) {
+            return true;
+        }
+
+        return UnitAllocation::query()
+            ->where('staff_id', $staff->id)
+            ->where('unit_id', $paper->unit_id)
+            ->where('is_active', 1)
+            ->exists();
     }
 
     public function userCanModerate(?Staff $staff): bool

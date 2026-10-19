@@ -277,6 +277,7 @@ class StaffPortalDashboardController extends Controller
         return UnitAllocation::query()
             ->with(['unit', 'staff'])
             ->whereHas('staff', fn ($query) => $query->where('department_id', $departmentId))
+            ->whereHas('unit', fn ($query) => $query->where('department_id', $departmentId))
             ->where('is_active', 1)
             ->orderByDesc('semester_id')
             ->get();
@@ -294,6 +295,7 @@ class StaffPortalDashboardController extends Controller
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->join('staff as tutor', 'tutor.id', '=', 's.recorded_by')
             ->where('tutor.department_id', $departmentId)
+            ->where('u.department_id', $departmentId)
             ->where('s.is_locked', 1)
             ->orderByDesc('s.session_date')
             ->select([
