@@ -4,7 +4,9 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key, required this.api});
@@ -17,6 +19,7 @@ class FeedbackPage extends StatefulWidget {
 
 class _FeedbackPageState extends State<FeedbackPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -25,6 +28,15 @@ class _FeedbackPageState extends State<FeedbackPage> {
   }
 
   void _reload() => setState(() => _future = widget.api.feedback());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.feedback(),
+      onData: (data) => _dataCache = data,
+    );
+  }
 
   Future<void> _createFeedback() async {
     final created = await Navigator.of(context).push<bool>(
@@ -44,7 +56,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'My feedback',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createFeedback,
@@ -54,17 +68,19 @@ class _FeedbackPageState extends State<FeedbackPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: _reload,
             );
           }
+          final data = merged! as Map<String, dynamic>;
 
-          final items = snap.data!['items'] as List? ?? const [];
+          final items = data['items'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
@@ -121,7 +137,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              item['created_at']?.toString() ?? '',
+                              formatDateTime(item['created_at']),
                               style: tichUi(
                                 fontSize: 12,
                                 color: TichColors.neutralMuted,
@@ -136,6 +152,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -294,7 +311,7 @@ class _FeedbackDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item['created_at']?.toString() ?? '',
+                  formatDateTime(item['created_at']),
                   style: tichUi(
                     fontSize: 12,
                     color: TichColors.neutralMuted,

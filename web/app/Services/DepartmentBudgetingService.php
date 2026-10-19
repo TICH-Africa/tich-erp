@@ -6,6 +6,8 @@ use App\Models\Administration\BudgetRequest;
 use App\Models\Administration\PlanningCycle;
 use App\Models\Department;
 use App\Models\User;
+use App\Services\AcademicsAccessService;
+use App\Services\StaffPortalService;
 use App\Services\Administration\AdministrationService;
 use App\Services\Sidebar\AdministrationSidebarNotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -110,6 +112,45 @@ class DepartmentBudgetingService
         }
 
         abort(404, 'Department for this module is not configured.');
+    }
+
+    /**
+     * Academics: institutional hub for registry roles; learning department for lecturers/HODs.
+     */
+    public function budgetDepartmentForUser(string $module, User $user): Department
+    {
+        if ($module !== 'academics') {
+            return $this->departmentForModule($module);
+        }
+
+        $access = app(AcademicsAccessService::class);
+        if ($access->canAccessFullAcademics($user)) {
+            return $this->departmentForModule('academics');
+        }
+
+        $staff = app(StaffPortalService::class)->staffForUser($user);
+        if ($staff?->department_id) {
+            $department = Department::query()->find($staff->department_id);
+            if ($department && ($department->isLearningDepartment() || $access->isDepartmentHod($user))) {
+                return $department;
+            }
+        }
+
+        return $this->departmentForModule('academics');
+    }
+
+    public function shouldScopeBudgetRequestsToSubmitter(User $user, string $module): bool
+    {
+        if ($module !== 'academics') {
+            return false;
+        }
+
+        $access = app(AcademicsAccessService::class);
+        if ($access->canAccessFullAcademics($user) || $access->isDepartmentHod($user)) {
+            return false;
+        }
+
+        return $access->isTeachingOnly($user) || $user->hasRole('Lecturer/Tutor');
     }
 
     /**
@@ -223,17 +264,22 @@ class DepartmentBudgetingService
     /**
      * @return LengthAwarePaginator<int, BudgetRequest>|Collection<int, BudgetRequest>
      */
-    public function requestsForDepartment(Department $department, int $perPage = 20)
+    public function requestsForDepartment(Department $department, ?User $scopedToUser = null, string $module = '', int $perPage = 20)
     {
         if (! Schema::hasTable('admin_budget_requests')) {
             return collect();
         }
 
-        return BudgetRequest::query()
+        $query = BudgetRequest::query()
             ->with(['planningCycle'])
             ->where('department_id', $department->id)
-            ->latest()
-            ->paginate($perPage);
+            ->latest();
+
+        if ($scopedToUser && $module !== '' && $this->shouldScopeBudgetRequestsToSubmitter($scopedToUser, $module)) {
+            $query->where('submitted_by', $scopedToUser->id);
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**
@@ -251,11 +297,17 @@ class DepartmentBudgetingService
             ->get();
     }
 
-    public function findDepartmentRequest(Department $department, int $id): BudgetRequest
+    public function findDepartmentRequest(Department $department, int $id, ?User $user = null, string $module = ''): BudgetRequest
     {
-        return BudgetRequest::query()
+        $request = BudgetRequest::query()
             ->where('department_id', $department->id)
             ->findOrFail($id);
+
+        if ($user && $module !== '' && $this->shouldScopeBudgetRequestsToSubmitter($user, $module)) {
+            abort_unless((int) $request->submitted_by === (int) $user->id, 403);
+        }
+
+        return $request;
     }
 
     /**

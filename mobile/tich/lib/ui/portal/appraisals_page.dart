@@ -6,6 +6,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class AppraisalsPage extends StatefulWidget {
   const AppraisalsPage({super.key, required this.api});
@@ -18,6 +19,7 @@ class AppraisalsPage extends StatefulWidget {
 
 class _AppraisalsPageState extends State<AppraisalsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -27,20 +29,33 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
 
   void _reload() => setState(() => _future = widget.api.appraisals());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.appraisals(),
+      onData: (data) => _dataCache = data,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Appraisals',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final items = snap.data!['appraisals'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final items = data['appraisals'] as List? ?? const [];
           if (items.isEmpty) {
             return const Center(child: TichEmpty('No appraisals yet.'));
           }
@@ -72,6 +87,7 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

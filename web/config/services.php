@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'fcm' => [
+        'server_key' => env('FCM_SERVER_KEY'),
+    ],
+
     'quickbooks' => [
         'enabled' => env('QUICKBOOKS_ENABLED', false),
         'client_id' => env('QUICKBOOKS_CLIENT_ID'),

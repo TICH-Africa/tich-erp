@@ -3,6 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/tich_theme.dart';
+import '../ui/widgets/tich_form_dialog.dart';
+import '../ui/widgets/tich_live_refresh.dart';
+import '../ui/widgets/tich_nav_badge.dart';
+import '../ui/widgets/tich_tab_active_scope.dart';
+import 'lazy_indexed_stack.dart';
 
 /// True when the current OS should use Cupertino chrome (iOS).
 bool get usesCupertino =>
@@ -48,6 +53,7 @@ class AdaptiveApp extends StatelessWidget {
         title: title,
         debugShowCheckedModeBanner: debugShowCheckedModeBanner,
         theme: cupertinoTheme,
+        navigatorObservers: [tichRouteObserver],
         builder: builder,
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
@@ -64,6 +70,7 @@ class AdaptiveApp extends StatelessWidget {
       theme: materialTheme,
       darkTheme: materialDarkTheme ?? materialTheme,
       themeMode: themeMode,
+      navigatorObservers: [tichRouteObserver],
       builder: builder,
       home: home,
     );
@@ -94,7 +101,7 @@ class AdaptiveScaffold extends StatelessWidget {
     this.leading,
     this.showLogout = false,
     this.onLogout,
-    this.brandEyebrow = 'TICH',
+    this.brandEyebrow = 'TICH in Africa',
   });
 
   final String title;
@@ -135,27 +142,36 @@ class AdaptiveScaffold extends StatelessWidget {
         navigationBar: CupertinoNavigationBar(
           backgroundColor: TichColors.blue,
           border: null,
-          middle: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                brandEyebrow,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: TichColors.greenLight,
+          middle: SizedBox(
+            width: MediaQuery.sizeOf(context).width * 0.52,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  brandEyebrow,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: TichColors.greenLight,
+                  ),
                 ),
-              ),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: TichColors.white,
-                  fontWeight: FontWeight.w600,
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: TichColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           trailing: trailingActions.isEmpty
               ? null
@@ -189,13 +205,19 @@ class AdaptiveScaffold extends StatelessWidget {
           children: [
             Text(
               brandEyebrow,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
               ),
             ),
-            Text(title),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
         actions: trailingActions,
@@ -232,29 +254,37 @@ class AdaptiveTabScaffold extends StatelessWidget {
           items: [
             for (final item in items)
               BottomNavigationBarItem(
-                icon: Icon(item.cupertinoIcon),
-                activeIcon: Icon(item.cupertinoActiveIcon ?? item.cupertinoIcon),
+                icon: item._cupertinoIcon(active: false),
+                activeIcon: item._cupertinoIcon(active: true),
                 label: item.label,
               ),
           ],
         ),
-        tabBuilder: (context, index) => pages[index],
+        tabBuilder: (context, index) => TichTabActiveScope(
+          activeIndex: currentIndex,
+          tabIndex: index,
+          child: pages[index],
+        ),
       );
     }
 
     return Scaffold(
-      body: IndexedStack(index: currentIndex, children: pages),
-      bottomNavigationBar: NavigationBar(
+      body: LazyIndexedStack(index: currentIndex, children: pages),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarTheme.of(context).copyWith(height: 72),
+        child: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           for (final item in items)
             NavigationDestination(
-              icon: Icon(item.materialIcon),
-              selectedIcon: Icon(item.materialActiveIcon ?? item.materialIcon),
+              icon: item._materialIcon(active: false),
+              selectedIcon: item._materialIcon(active: true),
               label: item.label,
             ),
         ],
+        ),
       ),
     );
   }
@@ -267,6 +297,9 @@ class AdaptiveTabItem {
     required this.cupertinoIcon,
     this.materialActiveIcon,
     this.cupertinoActiveIcon,
+    this.badgeCount = 0,
+    this.badgeDotOnly = false,
+    this.badgePulse = false,
   });
 
   final String label;
@@ -274,6 +307,33 @@ class AdaptiveTabItem {
   final IconData cupertinoIcon;
   final IconData? materialActiveIcon;
   final IconData? cupertinoActiveIcon;
+  final int badgeCount;
+  final bool badgeDotOnly;
+  final bool badgePulse;
+
+  Widget _materialIcon({required bool active}) {
+    final icon = Icon(
+      active ? (materialActiveIcon ?? materialIcon) : materialIcon,
+    );
+    return TichNavBadge.wrap(
+      child: icon,
+      count: badgeCount,
+      dotOnly: badgeDotOnly,
+      pulse: badgePulse,
+    );
+  }
+
+  Widget _cupertinoIcon({required bool active}) {
+    final icon = Icon(
+      active ? (cupertinoActiveIcon ?? cupertinoIcon) : cupertinoIcon,
+    );
+    return TichNavBadge.wrap(
+      child: icon,
+      count: badgeCount,
+      dotOnly: badgeDotOnly,
+      pulse: badgePulse,
+    );
+  }
 }
 
 class AdaptiveFilledButton extends StatelessWidget {
@@ -422,8 +482,12 @@ Future<T?> showAdaptiveConfirm<T>({
   return showDialog<T>(
     context: context,
     builder: (ctx) => AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: Text(title),
-      content: content,
+      content: SizedBox(
+        width: tichFormDialogWidth(ctx),
+        child: content,
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false as T?),

@@ -126,4 +126,24 @@
             <p class="tich-text tich-mt-4" style="white-space: pre-wrap;">{{ $case->hr_comments }}</p>
         </article>
     @endif
+
+    <article class="tich-card tich-mb-8">
+        <h2 class="tich-h3">Attachments</h2>
+        @if ($case->documents->isNotEmpty())
+            <ul class="tich-mt-4" style="margin: 0; padding-left: 1.1rem;">
+                @foreach ($case->documents as $document)
+                    <li class="tich-mb-2">
+                        <a href="{{ route('hr.employee-relations.disciplinary.documents.download', [$case, $document]) }}" class="tich-link">
+                            {{ $document->document_name }}
+                        </a>
+                        @if ($document->created_at)
+                            <span class="tich-caption"> - {{ $document->created_at->format('d M Y') }}</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="tich-caption tich-mt-4">No documents attached to this case.</p>
+        @endif
+    </article>
 @endsection

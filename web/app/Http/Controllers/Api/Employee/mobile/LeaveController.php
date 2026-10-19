@@ -212,6 +212,7 @@ class LeaveController extends Controller
             'overall_status' => $r->overall_status,
             'is_emergency' => (bool) $r->is_emergency,
             'editable' => $r->isEditableByEmployee(),
+            'coverage_editable' => $r->isCoverageEditableByEmployee(),
             'coverages' => $r->coverages->map(fn ($c) => [
                 'id' => $c->id,
                 'cover_staff' => $c->coverStaff?->fullName(),

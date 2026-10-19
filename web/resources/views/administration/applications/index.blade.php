@@ -8,6 +8,23 @@
             <a href="{{ route('administration.applications.existing-student.create') }}" class="tich-btn tich-btn-primary">Add Existing Student</a>
             <a href="{{ $applyUrl }}" class="tich-btn tich-btn-secondary" target="_blank" rel="noopener">Open apply portal</a>
         </x-slot:actions>
+        <x-slot:filters>
+            <form method="GET" action="{{ route('administration.applications.index') }}" class="tich-page-toolbar__filters-form" data-live-filter>
+                @include('partials.search-field', [
+                    'placeholder' => 'Search name, reg no, application no, programme…',
+                    'value' => $search ?? '',
+                    'hideButton' => true,
+                ])
+                <select name="program_id" class="tich-input tich-input--compact" aria-label="Programme">
+                    <option value="0">All programmes</option>
+                    @foreach ($programs as $program)
+                        <option value="{{ $program->id }}" @selected((int) ($programId ?? 0) === (int) $program->id)>
+                            {{ $program->program_code }} - {{ $program->program_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </x-slot:filters>
     </x-page-toolbar>
 
     @if (session('status'))

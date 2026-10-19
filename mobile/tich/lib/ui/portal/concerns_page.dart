@@ -7,6 +7,8 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class ConcernsPage extends StatefulWidget {
   const ConcernsPage({super.key, required this.api});
@@ -19,6 +21,7 @@ class ConcernsPage extends StatefulWidget {
 
 class _ConcernsPageState extends State<ConcernsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -28,6 +31,15 @@ class _ConcernsPageState extends State<ConcernsPage> {
 
   void _reload() => setState(() => _future = widget.api.concerns());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.concerns(),
+      onData: (data) => _dataCache = data,
+    );
+  }
+
   Future<void> _raise(Map<String, dynamic> data) async {
     final categories = Map<String, dynamic>.from(data['categories'] as Map? ?? {});
     String? category = categories.keys.firstOrNull;
@@ -35,24 +47,24 @@ class _ConcernsPageState extends State<ConcernsPage> {
     final description = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => TichFormDialog(
         title: const Text('Raise a concern'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: category,
-                items: categories.entries
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
-                    .toList(),
-                onChanged: (v) => category = v,
-                decoration: const InputDecoration(labelText: 'Category'),
-              ),
-              TextField(controller: subject, decoration: const InputDecoration(labelText: 'Subject')),
-              TextField(controller: description, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
-            ],
-          ),
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TichDropdownFormField<String>(
+              value: category,
+              items: categories.entries
+                  .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
+                  .toList(),
+              onChanged: (v) => category = v,
+              decoration: const InputDecoration(labelText: 'Category'),
+            ),
+            TextField(controller: subject, decoration: const InputDecoration(labelText: 'Subject')),
+            TextField(controller: description, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -76,7 +88,9 @@ class _ConcernsPageState extends State<ConcernsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Concerns',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -92,13 +106,15 @@ class _ConcernsPageState extends State<ConcernsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final items = snap.data!['concerns'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final items = data['concerns'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
@@ -127,6 +143,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

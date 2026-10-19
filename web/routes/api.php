@@ -24,6 +24,8 @@ Route::prefix('auth')->group(function () {
         Route::post('/mfa/disable', [AuthController::class, 'mfaDisable']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
+        Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
 
         Route::prefix('mfa')->middleware('throttle:mfa')->group(function () {
             Route::get('/status', [MFAController::class, 'getMFAStatus']);
@@ -129,6 +131,7 @@ Route::get('/session-check', function () {
 Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Employee\mobile\NotificationController::class, 'markRead']);
 
     Route::get('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'show']);
     Route::put('/profile', [\App\Http\Controllers\Api\Employee\mobile\ProfileController::class, 'update']);
@@ -158,7 +161,77 @@ Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->grou
     Route::get('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'concerns']);
     Route::post('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeConcern']);
     Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'appraisals']);
-    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'timeLogs']);
+    Route::get('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'index']);
+    Route::get('/time-logs/weeks', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'weeks']);
+    Route::post('/time-logs', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'store']);
+    Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'show']);
+    Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'update']);
+    Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Api\Employee\mobile\TimeLogController::class, 'submit']);
     Route::get('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'feedback']);
     Route::post('/feedback', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeFeedback']);
+});
+
+/*
+| Mobile / Sanctum student self-service portal.
+| MFA is intentionally not required here (product: mobile v1).
+*/
+Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
+    Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
+    Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
+    Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
+
+    Route::get('/finance', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'show']);
+    Route::post('/finance/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'pay']);
+    Route::get('/finance/mpesa/{stkRequest}/status', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'stkStatus']);
+
+    Route::get('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'show']);
+    Route::put('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'update']);
+
+    Route::get('/documents', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'index']);
+    Route::post('/documents/requests', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'storeRequest']);
+
+    Route::get('/notifications', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'index']);
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'markRead']);
+
+    Route::get('/clearance', [\App\Http\Controllers\Api\Student\mobile\ClearanceController::class, 'index']);
+    Route::post('/clearance/ensure', [\App\Http\Controllers\Api\Student\mobile\ClearanceController::class, 'ensure']);
+
+    Route::get('/evaluations', [\App\Http\Controllers\Api\Student\mobile\EvaluationsController::class, 'index']);
+    Route::post('/evaluations', [\App\Http\Controllers\Api\Student\mobile\EvaluationsController::class, 'store']);
+
+    Route::get('/requests/lifecycle', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'lifecycleIndex']);
+    Route::post('/requests/lifecycle', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeLifecycle']);
+    Route::post('/requests/suggestions', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeSuggestion']);
+    Route::post('/requests/transcript', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeTranscript']);
+    Route::post('/requests/exam-sitting', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeExamSitting']);
+
+    Route::get('/assessments/{assessment}', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'show']);
+    Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'submit']);
+});
+
+/*
+| Mobile / Sanctum teaching Staff Portal (separate from Employee HR portal).
+| MFA intentionally not required (mobile v1).
+*/
+Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Api\Staff\mobile\DashboardController::class);
+    Route::get('/notifications', \App\Http\Controllers\Api\Staff\mobile\NotificationController::class);
+    Route::get('/units', \App\Http\Controllers\Api\Staff\mobile\UnitsController::class);
+    Route::get('/timetable', \App\Http\Controllers\Api\Staff\mobile\TimetableController::class);
+
+    Route::get('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'index']);
+    Route::post('/attendance/sync', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'sync']);
+    Route::post('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'store']);
+    Route::get('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'show']);
+    Route::post('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'save']);
+
+    Route::get('/grading', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'index']);
+    Route::post('/grading/cat', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'storeCat']);
+
+    Route::get('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'index']);
+    Route::post('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'store']);
+    Route::post('/lesson-plans/{plan}/submit', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'submit']);
+
+    Route::get('/content', \App\Http\Controllers\Api\Staff\mobile\ContentController::class);
 });

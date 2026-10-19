@@ -25,14 +25,30 @@ class ApiClient {
 
   final AuthTokenStore _tokenStore;
   final http.Client _client;
-  static const Duration timeout = Duration(seconds: 20);
+  static const Duration timeout = Duration(seconds: 15);
+  String? _cachedToken;
+
+  Future<String?> _token() async {
+    if (_cachedToken != null && _cachedToken!.isNotEmpty) {
+      return _cachedToken;
+    }
+    _cachedToken = await _tokenStore.read();
+    return _cachedToken;
+  }
+
+  /// Call after login / logout so secure-storage isn't hit every request.
+  void invalidateTokenCache() => _cachedToken = null;
+
+  void cacheToken(String? token) {
+    _cachedToken = token;
+  }
 
   Future<Map<String, String>> _headers({bool json = true}) async {
     final headers = <String, String>{'Accept': 'application/json'};
     if (json) {
       headers['Content-Type'] = 'application/json';
     }
-    final token = await _tokenStore.read();
+    final token = await _token();
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
@@ -81,18 +97,40 @@ class ApiClient {
     required String filePath,
     required String fileName,
     String? mimeType,
+  }) =>
+      multipartFiles(
+        path,
+        fields: fields,
+        files: [
+          (
+            field: fileField,
+            path: filePath,
+            name: fileName,
+            mimeType: mimeType,
+          ),
+        ],
+      );
+
+  Future<Map<String, dynamic>> multipartFiles(
+    String path, {
+    required Map<String, String> fields,
+    required List<({String field, String path, String name, String? mimeType})>
+        files,
   }) async {
     final request = http.MultipartRequest('POST', ApiConfig.uri(path));
     request.headers.addAll(await _headers(json: false));
     request.fields.addAll(fields);
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        fileField,
-        filePath,
-        filename: fileName,
-        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
-      ),
-    );
+    for (final file in files) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          file.field,
+          file.path,
+          filename: file.name,
+          contentType:
+              file.mimeType != null ? MediaType.parse(file.mimeType!) : null,
+        ),
+      );
+    }
     final streamed = await request.send().timeout(timeout);
     final response = await http.Response.fromStream(streamed);
     return _decode(response);

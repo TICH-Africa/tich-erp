@@ -43,10 +43,10 @@ class _UnlockPageState extends State<UnlockPage> {
             children: [
               const Spacer(),
               Text(
-                'TICH',
+                'TICH in Africa',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.merriweather(
-                  fontSize: 36,
+                  fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: TichColors.green,
                 ),

@@ -43,6 +43,18 @@ class PlatformNotificationService
 
         DB::table('notifications')->insert($row);
 
+        // Mobile pop-up push (FCM) — independent of email.
+        try {
+            app(PushNotificationService::class)->sendToUser($userId, $title, $body, [
+                'entity_type' => (string) $entityType,
+                'entity_id' => (string) $entityId,
+                'priority' => $priority,
+                'action_url' => (string) $actionUrl,
+            ]);
+        } catch (Throwable $e) {
+            Log::debug('Push notification skipped', ['error' => $e->getMessage()]);
+        }
+
         if (! $sendEmail) {
             return;
         }

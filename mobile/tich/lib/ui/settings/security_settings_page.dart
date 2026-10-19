@@ -19,8 +19,10 @@ class SecuritySettingsPage extends StatefulWidget {
 class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
   final _settings = AppSettings.instance;
   final _biometrics = BiometricService();
+  bool _checkingBiometric = true;
   bool _canBiometric = false;
   String _biometricLabel = 'Fingerprint / Face unlock';
+  bool _togglingBiometric = false;
 
   final _current = TextEditingController();
   final _next = TextEditingController();
@@ -34,13 +36,37 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
   }
 
   Future<void> _loadBiometrics() async {
-    final can = await _biometrics.canCheckBiometrics;
+    setState(() => _checkingBiometric = true);
+    final can = await _biometrics.isSupported;
     final label = await _biometrics.label;
     if (!mounted) return;
     setState(() {
       _canBiometric = can;
       _biometricLabel = label;
+      _checkingBiometric = false;
     });
+  }
+
+  Future<void> _onBiometricChanged(bool enable) async {
+    if (_togglingBiometric) return;
+    setState(() => _togglingBiometric = true);
+    try {
+      if (enable) {
+        final error = await _biometrics.authenticate(
+          reason: 'Enable biometric unlock for TICH',
+        );
+        if (!mounted) return;
+        if (error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+          return;
+        }
+      }
+      await _settings.setBiometricEnabled(enable);
+    } finally {
+      if (mounted) setState(() => _togglingBiometric = false);
+    }
   }
 
   @override
@@ -118,26 +144,28 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(_biometricLabel),
                       subtitle: const Text(
-                        'Use fingerprint or face to unlock the app (like WhatsApp).',
+                        'Use fingerprint or face to unlock the app.',
                       ),
                       value: _settings.biometricEnabled,
-                      onChanged: !_canBiometric
+                      onChanged: (_checkingBiometric ||
+                              !_canBiometric ||
+                              _togglingBiometric)
                           ? null
-                          : (v) async {
-                              if (v) {
-                                final ok = await _biometrics.authenticate(
-                                  reason: 'Enable biometric unlock for TICH',
-                                );
-                                if (!ok) return;
-                              }
-                              await _settings.setBiometricEnabled(v);
-                            },
+                          : _onBiometricChanged,
                     ),
-                    if (!_canBiometric)
+                    if (_checkingBiometric)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
-                          'Biometrics are not available on this device.',
+                          'Checking biometric support…',
+                          style: tichUi(fontSize: 12, color: TichColors.neutralMuted),
+                        ),
+                      )
+                    else if (!_canBiometric)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Set a screen lock (PIN, pattern, fingerprint, or face) in your phone settings, then reopen this screen.',
                           style: tichUi(fontSize: 12, color: TichColors.neutralMuted),
                         ),
                       ),

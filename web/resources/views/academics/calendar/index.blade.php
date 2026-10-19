@@ -8,6 +8,36 @@
     <x-page-toolbar title="Academic calendar" :meta="'Academic years and terms for ' . $department->dept_name" />
 
     <article class="tich-card tich-mt-8">
+        <h2 class="tich-h3">Kenyan national public holidays</h2>
+        <p class="tich-caption tich-mt-2">
+            Holidays are synced automatically from external Kenya holiday sources (including movable Christian and Islamic dates).
+            Confirm Idd dates against the official gazette when planning critical activities.
+        </p>
+        @if ($publicHolidays->isNotEmpty())
+            <div class="tich-table-wrap tich-mt-4">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Holiday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($publicHolidays as $holiday)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($holiday->holiday_date)->format('D, d M Y') }}</td>
+                                <td>{{ $holiday->holiday_name }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="tich-text tich-mt-4">No public holidays loaded yet. Run <code class="tich-caption">php artisan holidays:sync-kenya</code> or open this page again after migrations.</p>
+        @endif
+    </article>
+
+    <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Create academic year</h2>
         <form method="POST" action="{{ route('departments.academics.calendar.store-year', $hub) }}" class="tich-mt-4">
             @csrf

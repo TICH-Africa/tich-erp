@@ -8,6 +8,8 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../shell/portal_shell.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key, required this.api});
@@ -20,6 +22,7 @@ class DocumentsPage extends StatefulWidget {
 
 class _DocumentsPageState extends State<DocumentsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -29,54 +32,61 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   void _reload() => setState(() => _future = widget.api.documents());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.documents(),
+      onData: (data) => _dataCache = data,
+    );
+  }
+
   Future<void> _upload(Map<String, dynamic> data) async {
     final types = Map<String, dynamic>.from(data['document_types'] as Map? ?? {});
     String? selected = (data['requested_types'] as List?)?.cast<dynamic>().firstOrNull?.toString()
         ?? types.keys.firstOrNull;
     final nameCtrl = TextEditingController();
 
-    final confirmed = await showModalBottomSheet<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => TichFormDialog(
+          title: Text(
+            'Upload document',
+            style: GoogleFonts.merriweather(fontWeight: FontWeight.w700),
           ),
-          child: StatefulBuilder(
-            builder: (ctx, setModal) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Upload document', style: GoogleFonts.merriweather(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selected,
-                    items: types.entries
-                        .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
-                        .toList(),
-                    onChanged: (v) => setModal(() => selected = v),
-                    decoration: const InputDecoration(labelText: 'Type'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Document name'),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Choose file & upload'),
-                  ),
-                ],
-              );
-            },
+          scrollable: true,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TichDropdownFormField<String>(
+                value: selected,
+                items: types.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text('${e.value}')))
+                    .toList(),
+                onChanged: (v) => setModal(() => selected = v),
+                decoration: const InputDecoration(labelText: 'Type'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Document name'),
+              ),
+            ],
           ),
-        );
-      },
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Choose file & upload'),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (confirmed != true || selected == null) return;
@@ -103,7 +113,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Documents',
       floatingActionButton: FutureBuilder(
         future: _future,
@@ -120,14 +132,16 @@ class _DocumentsPageState extends State<DocumentsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final docs = snap.data!['documents'] as List? ?? const [];
-          final requested = snap.data!['requested_types'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final docs = data['documents'] as List? ?? const [];
+          final requested = data['requested_types'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
@@ -184,6 +198,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

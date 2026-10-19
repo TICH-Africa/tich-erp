@@ -66,6 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'employee.profile.complete' => \App\Http\Middleware\EnsureEmployeeProfileComplete::class,
             'employee.unassigned.restrict' => \App\Http\Middleware\RestrictUnassignedEmployeeAccess::class,
             'resolve.academics.hub' => \App\Http\Middleware\ResolveAcademicsHub::class,
+            'academics.budgeting' => \App\Http\Middleware\EnsureAcademicsBudgetingAccess::class,
             'redirect.legacy.academics' => \App\Http\Middleware\RedirectLegacyAcademicsUrls::class,
             'admin.ip' => \App\Http\Middleware\RestrictAdminIp::class,
         ]);

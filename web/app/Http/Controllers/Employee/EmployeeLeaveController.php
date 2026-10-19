@@ -158,6 +158,29 @@ class EmployeeLeaveController extends Controller
             ->with('success', 'Your leave request has been updated and sent back to HR.');
     }
 
+    public function updateCoverages(Request $request, LeaveRequest $leaveRequest): RedirectResponse
+    {
+        $staff = $this->staff($request);
+        $data = $request->validate([
+            'cover_staff_id' => ['required', 'array'],
+            'cover_staff_id.*' => ['required', 'integer', 'exists:staff,id'],
+        ]);
+
+        try {
+            $this->leaveRequests->updateCoveragesByEmployee(
+                $leaveRequest,
+                $staff,
+                $data['cover_staff_id'],
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('employee.leave.index')
+            ->with('success', 'Stand-in appointees updated. The previous and new appointees have been notified.');
+    }
+
     public function cancel(Request $request, LeaveRequest $leaveRequest): RedirectResponse
     {
         $staff = $this->staff($request);

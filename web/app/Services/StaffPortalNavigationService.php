@@ -67,6 +67,14 @@ class StaffPortalNavigationService
             $items[] = ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'];
             $items[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'];
             $items[] = ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'];
+            if (\Illuminate\Support\Facades\Route::has('academics.budgeting.index')) {
+                $items[] = ['type' => 'heading', 'label' => 'Planning & budget'];
+                $items[] = ['type' => 'route', 'label' => 'My budget', 'route' => 'academics.budgeting.index', 'icon' => 'wallet'];
+                $items[] = ['type' => 'route', 'label' => 'Technical plan', 'route' => 'academics.technical-plans.index', 'icon' => 'file-text'];
+                if (\Illuminate\Support\Facades\Route::has('academics.finance-policy.sign')) {
+                    $items[] = ['type' => 'route', 'label' => 'Sign financial policy', 'route' => 'academics.finance-policy.sign', 'icon' => 'shield'];
+                }
+            }
         }
 
         if ($this->userIsHod()) {

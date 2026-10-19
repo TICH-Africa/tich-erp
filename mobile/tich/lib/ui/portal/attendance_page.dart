@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
+import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../shell/portal_shell.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key, required this.api});
@@ -20,6 +22,7 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   bool _busy = false;
   bool _offCampus = false;
   final _project = TextEditingController();
@@ -27,7 +30,14 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.attendance();
+    _future = widget.api.attendance().then((data) {
+      final today = data['today'] as Map?;
+      final clockedIn = today != null && today['clock_in_at'] != null;
+      // ignore: unawaited_futures
+      TichNotifications.instance
+          .scheduleClockInReminders(alreadyClockedIn: clockedIn);
+      return data;
+    });
   }
 
   @override
@@ -37,6 +47,15 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   void _reload() => setState(() => _future = widget.api.attendance());
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.attendance(),
+      onData: (data) => _dataCache = data,
+    );
+  }
 
   Future<Map<String, dynamic>> _locationPayload() async {
     var permission = await Geolocator.checkPermission();
@@ -69,17 +88,22 @@ class _AttendancePageState extends State<AttendancePage> {
         ...await _locationPayload(),
       };
       await widget.api.clockIn(payload);
+      await TichNotifications.instance
+          .scheduleClockInReminders(alreadyClockedIn: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked in.')),
       );
       _reload();
+      EmployeePortalNavSignals.onAttendanceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -94,31 +118,64 @@ class _AttendancePageState extends State<AttendancePage> {
         const SnackBar(content: Text('Clocked out.')),
       );
       _reload();
+      EmployeePortalNavSignals.onAttendanceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Widget _stampRow(String label, dynamic value) {
+    final hasValue = parseAppDateTime(value) != null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 36,
+            child: Text(label, style: tichUi(fontWeight: FontWeight.w700)),
+          ),
+          Expanded(
+            child: Text(
+              hasValue ? formatDate(value) : '—',
+              style: tichUi(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            hasValue ? formatTime(value) : '',
+            style: tichUi(
+              fontWeight: FontWeight.w700,
+              color: TichColors.blueDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Clock in / out',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: _reload,
             );
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;;
           final today = data['today'] as Map?;
           final recent = data['recent'] as List? ?? const [];
           final clockedIn = today != null && today['clock_in_at'] != null;
@@ -134,21 +191,18 @@ class _AttendancePageState extends State<AttendancePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Today',
-                        style: GoogleFonts.merriweather(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
+                        'Today · ${formatDate(DateTime.now())}',
+                        style: TichTheme.display(fontSize: 16),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       if (today == null)
                         Text(
                           'Not clocked in yet.',
                           style: tichUi(color: TichColors.neutralMuted),
                         )
                       else ...[
-                        Text('In: ${formatDateTime(today['clock_in_at'])}'),
-                        Text('Out: ${formatDateTime(today['clock_out_at'])}'),
+                        _stampRow('In', today['clock_in_at']),
+                        _stampRow('Out', today['clock_out_at']),
                       ],
                       const SizedBox(height: 12),
                       SwitchListTile(
@@ -191,22 +245,46 @@ class _AttendancePageState extends State<AttendancePage> {
                 else
                   ...recent.map((raw) {
                     final r = Map<String, dynamic>.from(raw as Map);
+                    final dateLabel = formatDate(
+                      r['clock_in_at'] ?? r['attendance_date'],
+                    );
+                    final inTime = r['clock_in_at'] != null
+                        ? formatTime(r['clock_in_at'])
+                        : '—';
+                    final outTime = r['clock_out_at'] != null
+                        ? formatTime(r['clock_out_at'])
+                        : '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                r['attendance_date']?.toString() ?? '',
-                                style: tichUi(fontWeight: FontWeight.w600),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    dateLabel,
+                                    style: tichUi(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    r['is_off_campus'] == true
+                                        ? 'Field'
+                                        : 'Campus',
+                                    style: tichUi(
+                                      fontSize: 12,
+                                      color: TichColors.neutralMuted,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             Text(
-                              r['is_off_campus'] == true ? 'Field' : 'Campus',
+                              '$inTime – $outTime',
                               style: tichUi(
-                                fontSize: 12,
-                                color: TichColors.neutralMuted,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -218,6 +296,7 @@ class _AttendancePageState extends State<AttendancePage> {
             ),
           );
         },
+      ),
       ),
     );
   }

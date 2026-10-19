@@ -9,6 +9,7 @@ import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/employee_avatar.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -22,6 +23,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _emergencyName = TextEditingController();
@@ -91,17 +93,30 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.profile(),
+      onData: (data) => _dataCache = data,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      enabled: !_busy,
+      child: AdaptiveScaffold(
       title: 'My profile',
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
               onRetry: () => setState(() {
@@ -109,7 +124,7 @@ class _ProfilePageState extends State<ProfilePage> {
               }),
             );
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;;
           final p = Map<String, dynamic>.from(data['profile'] as Map? ?? {});
           final prompt = data['profile_update_prompt'] as Map?;
           final missing = data['missing_fields'] as List? ?? const [];
@@ -232,6 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           );
         },
+      ),
       ),
     );
   }

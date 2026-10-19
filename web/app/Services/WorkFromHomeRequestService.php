@@ -315,8 +315,8 @@ class WorkFromHomeRequestService
                     ->orWhereHas('staff', function ($staffQuery) use ($search) {
                         $staffQuery->where('employee_number', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
-                            ->orWhere('surname', 'like', "%{$search}%")
-                            ->orWhere('other_names', 'like', "%{$search}%");
+                            ->orWhere('middle_name', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%");
                     });
             });
         }

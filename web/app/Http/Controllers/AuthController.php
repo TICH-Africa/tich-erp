@@ -196,14 +196,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->displayName(),
-                'email' => $user->email,
-                'user_type' => $user->user_type,
-                'staff_id' => $user->staff_id,
-                'student_id' => $user->student_id,
-            ],
+            'user' => $this->authService->mobileUserPayload($user),
             'roles' => $this->rbacService->getUserRoles($user),
             'permissions' => $this->rbacService->getUserPermissions($user),
             'mfa_required' => $this->mfaService->isMFARequired($user),

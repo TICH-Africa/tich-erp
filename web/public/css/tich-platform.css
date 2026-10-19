@@ -5714,6 +5714,64 @@ a.tich-notification-badge:hover {
     background: var(--tich-primary-dark, #004080);
 }
 
+.tich-search-field--live {
+    width: 100%;
+    min-width: 0;
+}
+
+.tich-live-filter-bar {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--tich-neutral-border, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    background: var(--tich-white, #fff);
+}
+
+.tich-live-filter-bar__form {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.tich-live-filter-bar__form .tich-search-field {
+    flex: 1 1 16rem;
+    min-width: 10rem;
+    max-width: 28rem;
+}
+
+.tich-live-filter-bar__form .tich-input--compact,
+.tich-live-filter-bar__form select.tich-input--compact {
+    flex: 0 1 11rem;
+    min-width: 9rem;
+    max-width: 14rem;
+    width: auto;
+}
+
+.tich-live-filter-bar__clear {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .tich-live-filter-bar__form {
+        flex-wrap: wrap;
+    }
+
+    .tich-live-filter-bar__form .tich-search-field {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    .tich-live-filter-bar__form .tich-input--compact,
+    .tich-live-filter-bar__form select.tich-input--compact {
+        flex: 1 1 calc(50% - 0.5rem);
+        max-width: none;
+    }
+}
+
 .tich-input--compact {
     width: auto;
     min-width: 9rem;

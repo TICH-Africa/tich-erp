@@ -29,17 +29,22 @@ class TechnicalPlanController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->technicalPlanRouteNames($module);
 
         $plans = collect();
         if (Schema::hasTable('me_technical_plans')) {
-            $plans = MeTechnicalPlan::query()
+            $plansQuery = MeTechnicalPlan::query()
                 ->withCount('outputs')
                 ->where('department_id', $department->id)
                 ->whereNull('budget_request_id')
-                ->latest()
-                ->paginate(20);
+                ->latest();
+
+            if ($this->budgeting->shouldScopeBudgetRequestsToSubmitter($request->user(), $module)) {
+                $plansQuery->where('submitted_by', $request->user()->id);
+            }
+
+            $plans = $plansQuery->paginate(20);
         }
 
         return view('module-technical-plans.index', [
@@ -58,7 +63,7 @@ class TechnicalPlanController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->technicalPlanRouteNames($module);
 
         return view('module-technical-plans.create', [
@@ -79,9 +84,9 @@ class TechnicalPlanController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->technicalPlanRouteNames($module);
-        $record = $this->findDepartmentPlan($department->id, $plan);
+        $record = $this->findDepartmentPlan($department->id, $plan, $request->user(), $module);
 
         return view('module-technical-plans.show', [
             'module' => $module,
@@ -98,9 +103,9 @@ class TechnicalPlanController extends Controller
     {
         $module = $this->moduleKey($request);
         $context = $this->budgeting->moduleContext($module);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
         $routes = $this->budgeting->technicalPlanRouteNames($module);
-        $record = $this->findDepartmentPlan($department->id, $plan);
+        $record = $this->findDepartmentPlan($department->id, $plan, $request->user(), $module);
 
         abort_unless(in_array($record->status, ['draft', 'returned'], true), 403, 'Only draft or returned plans can be revised.');
         abort_if($record->isBaselineLocked(), 403, 'Baseline-locked plans cannot be edited.');
@@ -137,7 +142,7 @@ class TechnicalPlanController extends Controller
     private function persist(Request $request, ?int $planId = null): RedirectResponse
     {
         $module = $this->moduleKey($request);
-        $department = $this->budgeting->departmentForModule($module);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:300'],
@@ -167,7 +172,7 @@ class TechnicalPlanController extends Controller
 
         try {
             if ($planId) {
-                $existing = $this->findDepartmentPlan($department->id, $planId);
+                $existing = $this->findDepartmentPlan($department->id, $planId, $request->user(), $module);
                 $this->mePlans->submitIndependentPlan(
                     $department,
                     $request->user(),
@@ -290,12 +295,18 @@ class TechnicalPlanController extends Controller
         return $data;
     }
 
-    private function findDepartmentPlan(int $departmentId, int $planId): MeTechnicalPlan
+    private function findDepartmentPlan(int $departmentId, int $planId, ?\App\Models\User $user = null, string $module = ''): MeTechnicalPlan
     {
-        return MeTechnicalPlan::query()
+        $plan = MeTechnicalPlan::query()
             ->where('department_id', $departmentId)
             ->whereNull('budget_request_id')
             ->findOrFail($planId);
+
+        if ($user && $module !== '' && $this->budgeting->shouldScopeBudgetRequestsToSubmitter($user, $module)) {
+            abort_unless((int) $plan->submitted_by === (int) $user->id, 403);
+        }
+
+        return $plan;
     }
 
     private function moduleKey(Request $request): string

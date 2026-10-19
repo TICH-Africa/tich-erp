@@ -25,26 +25,11 @@ class AttendanceController extends Controller
         $geofence = $this->locations->geofenceForStaff($staff);
 
         return response()->json([
-            'today' => $today ? [
-                'id' => $today->id,
-                'attendance_date' => optional($today->attendance_date)?->format('Y-m-d'),
-                'clock_in_at' => optional($today->clock_in_at)?->toIso8601String(),
-                'clock_out_at' => optional($today->clock_out_at)?->toIso8601String(),
-                'is_off_campus' => (bool) $today->is_off_campus,
-                'field_project_name' => $today->field_project_name,
-                'location_verified' => method_exists($today, 'hasVerifiedClockInLocation')
-                    ? $today->hasVerifiedClockInLocation()
-                    : null,
-                'status' => $today->status ?? null,
-            ] : null,
-            'recent' => $this->attendance->recentRecords($staff)->map(fn ($r) => [
-                'id' => $r->id,
-                'attendance_date' => optional($r->attendance_date)?->format('Y-m-d'),
-                'clock_in_at' => optional($r->clock_in_at)?->toIso8601String(),
-                'clock_out_at' => optional($r->clock_out_at)?->toIso8601String(),
-                'is_off_campus' => (bool) $r->is_off_campus,
-                'status' => $r->status ?? null,
-            ])->values(),
+            'today' => $today ? $this->serializeAttendance($today) : null,
+            'recent' => $this->attendance->recentRecords($staff)
+                ->map(fn ($r) => $this->serializeAttendance($r))
+                ->values(),
+            'clock_in_status' => $this->attendance->clockInPromptStatus($staff),
             'require_location' => (bool) config('hr-attendance.require_location', true),
             'max_location_accuracy' => (int) config('hr-attendance.max_accuracy_meters', 2000),
             'geofence' => $geofence,
@@ -94,5 +79,32 @@ class AttendanceController extends Controller
             'message' => 'Clocked out successfully.',
             'today' => $this->index($request)->getData(true)['today'],
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeAttendance($record): array
+    {
+        $date = optional($record->attendance_date)?->format('Y-m-d');
+        $clockIn = $record->clock_in_time
+            ? ($date.' '.$record->clock_in_time)
+            : null;
+        $clockOut = $record->clock_out_time
+            ? ($date.' '.$record->clock_out_time)
+            : null;
+
+        return [
+            'id' => $record->id,
+            'attendance_date' => $date,
+            'clock_in_at' => $clockIn,
+            'clock_out_at' => $clockOut,
+            'is_off_campus' => (bool) $record->is_off_campus,
+            'field_project_name' => $record->field_project_name ?? null,
+            'location_verified' => method_exists($record, 'hasVerifiedClockInLocation')
+                ? $record->hasVerifiedClockInLocation()
+                : null,
+            'status' => $record->hr_review_status ?? $record->status ?? null,
+        ];
     }
 }

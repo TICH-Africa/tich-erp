@@ -22,7 +22,9 @@ use App\Services\Finance\InvoiceService;
 use App\Services\Finance\StudentFinanceService;
 use App\Services\PrintDocumentService;
 use App\Support\SafeWrite;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -77,6 +79,10 @@ class StudentFinanceController extends Controller
 
     public function accounts(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $programId = (int) ($request->query('program_id', 0) ?: 0);
+        $programs = $this->activeProgramsForFilter();
+
         if (! Schema::hasTable('student_accounts') || StudentAccount::count() === 0) {
             $mockStudent1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -128,14 +134,25 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $accounts = StudentAccount::query()
-                ->with(['student', 'academicYear'])
-                ->orderByDesc('created_at')
-                ->paginate(20);
+            $query = StudentAccount::query()
+                ->with(['student.program', 'academicYear']);
+
+            if ($search !== '') {
+                $query->whereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
+            }
+
+            if ($programId > 0) {
+                $query->whereHas('student', fn (Builder $sq) => $sq->where('program_id', $programId));
+            }
+
+            $accounts = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         }
 
         return $this->view($request, 'finance.student-finance.accounts.index', $department, [
             'accounts' => $accounts,
+            'search' => $search,
+            'programId' => $programId,
+            'programs' => $programs,
         ]);
     }
 
@@ -376,6 +393,10 @@ class StudentFinanceController extends Controller
 
     public function invoices(Request $request, Department $department): View
     {
+        $search = trim((string) $request->query('search', ''));
+        $programId = (int) ($request->query('program_id', 0) ?: 0);
+        $programs = $this->activeProgramsForFilter();
+
         if (! Schema::hasTable('invoices') || Invoice::count() === 0) {
             $mockStudent1 = new class {
                 public function fullName(): string { return 'Wanjiku Mwangi'; }
@@ -438,14 +459,27 @@ class StudentFinanceController extends Controller
                 $invoiceRelations[] = 'items';
             }
 
-            $invoices = Invoice::query()
-                ->with($invoiceRelations)
-                ->orderByDesc('issue_date')
-                ->paginate(20);
+            $query = Invoice::query()->with(array_merge($invoiceRelations, ['student.program']));
+
+            if ($search !== '') {
+                $query->where(function (Builder $q) use ($search) {
+                    $q->where('invoice_number', 'like', "%{$search}%")
+                        ->orWhereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
+                });
+            }
+
+            if ($programId > 0) {
+                $query->whereHas('student', fn (Builder $sq) => $sq->where('program_id', $programId));
+            }
+
+            $invoices = $query->orderByDesc('issue_date')->paginate(20)->withQueryString();
         }
 
         return $this->view($request, 'finance.student-finance.invoices.index', $department, [
             'invoices' => $invoices,
+            'search' => $search,
+            'programId' => $programId,
+            'programs' => $programs,
         ]);
     }
 
@@ -688,16 +722,11 @@ class StudentFinanceController extends Controller
             }
 
             if ($search !== '') {
-                $query->where(function ($q) use ($search) {
+                $query->where(function (Builder $q) use ($search) {
                     $q->where('payment_number', 'like', "%{$search}%")
-                      ->orWhere('payment_reference', 'like', "%{$search}%")
-                      ->orWhereHas('student', function ($sq) use ($search) {
-                          $sq->where('registration_number', 'like', "%{$search}%")
-                             ->orWhereHas('applicant', function ($sq2) use ($search) {
-                                 $sq2->where('first_name', 'like', "%{$search}%")
-                                     ->orWhere('surname', 'like', "%{$search}%");
-                             });
-                      });
+                        ->orWhere('payment_reference', 'like', "%{$search}%")
+                        ->orWhereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search))
+                        ->orWhereHas('invoice.student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
                 });
             }
 
@@ -832,16 +861,10 @@ class StudentFinanceController extends Controller
                 ->with(['student', 'invoice']);
 
             if ($search !== '') {
-                $query->where(function ($q) use ($search) {
+                $query->where(function (Builder $q) use ($search) {
                     $q->where('receipt_number', 'like', "%{$search}%")
-                      ->orWhere('payment_reference', 'like', "%{$search}%")
-                      ->orWhereHas('student', function ($sq) use ($search) {
-                          $sq->where('registration_number', 'like', "%{$search}%")
-                             ->orWhereHas('applicant', function ($sq2) use ($search) {
-                                 $sq2->where('first_name', 'like', "%{$search}%")
-                                     ->orWhere('surname', 'like', "%{$search}%");
-                             });
-                      });
+                        ->orWhere('payment_reference', 'like', "%{$search}%")
+                        ->orWhereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
                 });
             }
 
@@ -1057,13 +1080,7 @@ class StudentFinanceController extends Controller
                 ->with(['student', 'invoice.semester.academicYear', 'items', 'semester', 'academicYear']);
 
             if ($search !== '') {
-                $query->whereHas('student', function ($q) use ($search) {
-                    $q->where('registration_number', 'like', "%{$search}%")
-                        ->orWhereHas('applicant', function ($q2) use ($search) {
-                            $q2->where('first_name', 'like', "%{$search}%")
-                                ->orWhere('surname', 'like', "%{$search}%");
-                        });
-                });
+                $query->whereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
             }
 
             if ($semesterId > 0) {
@@ -1951,5 +1968,35 @@ class StudentFinanceController extends Controller
         }
 
         return $relations;
+    }
+
+    protected function activeProgramsForFilter(): Collection
+    {
+        if (! Schema::hasTable('academic_programs')) {
+            return collect();
+        }
+
+        return AcademicProgram::query()
+            ->where('status', 'active')
+            ->orderBy('program_name')
+            ->get(['id', 'program_code', 'program_name']);
+    }
+
+    protected function applyStudentSearchOnQuery(Builder $query, string $search): void
+    {
+        $query->where(function (Builder $q) use ($search) {
+            $q->where('registration_number', 'like', "%{$search}%")
+                ->orWhere('first_name', 'like', "%{$search}%")
+                ->orWhere('surname', 'like', "%{$search}%")
+                ->orWhereHas('program', function (Builder $pq) use ($search) {
+                    $pq->where('program_name', 'like', "%{$search}%")
+                        ->orWhere('program_code', 'like', "%{$search}%");
+                })
+                ->orWhereHas('applicant', function (Builder $aq) use ($search) {
+                    $aq->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhere('application_number', 'like', "%{$search}%");
+                });
+        });
     }
 }

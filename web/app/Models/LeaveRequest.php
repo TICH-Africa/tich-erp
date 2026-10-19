@@ -101,6 +101,20 @@ class LeaveRequest extends Model
         return $this->overall_status === 'returned' && ! $this->is_cancelled;
     }
 
+    /**
+     * Change stand-in appointees until the leave start date (inclusive of days before start).
+     */
+    public function isCoverageEditableByEmployee(): bool
+    {
+        if ($this->is_cancelled || in_array($this->overall_status, ['rejected', 'cancelled'], true)) {
+            return false;
+        }
+
+        $start = $this->start_date?->copy()->startOfDay();
+
+        return $start !== null && now()->startOfDay()->lt($start);
+    }
+
     public function isCancellableByEmployee(): bool
     {
         return in_array($this->overall_status, ['pending_hr', 'returned'], true) && ! $this->is_cancelled;

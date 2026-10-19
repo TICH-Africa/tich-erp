@@ -6,6 +6,8 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../widgets/tich_form_dialog.dart';
+import '../widgets/tich_live_refresh.dart';
 
 class WfhPage extends StatefulWidget {
   const WfhPage({super.key, required this.api});
@@ -18,6 +20,7 @@ class WfhPage extends StatefulWidget {
 
 class _WfhPageState extends State<WfhPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
 
   @override
   void initState() {
@@ -27,6 +30,15 @@ class _WfhPageState extends State<WfhPage> {
 
   void _reload() => setState(() => _future = widget.api.wfh());
 
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.wfh(),
+      onData: (data) => _dataCache = data,
+    );
+  }
+
   Future<void> _apply() async {
     final reason = TextEditingController();
     DateTime start = DateTime.now().add(const Duration(days: 1)).copyWith(hour: 8, minute: 0);
@@ -35,10 +47,12 @@ class _WfhPageState extends State<WfhPage> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx, setModal) => AlertDialog(
+          builder: (ctx, setModal) => TichFormDialog(
             title: const Text('Apply for WFH'),
+            scrollable: true,
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 OutlinedButton(
                   onPressed: () async {
@@ -65,6 +79,7 @@ class _WfhPageState extends State<WfhPage> {
                   },
                   child: Text('End: ${dateTimeDisplay.format(end)}'),
                 ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: reason,
                   maxLines: 3,
@@ -97,7 +112,9 @@ class _WfhPageState extends State<WfhPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
       title: 'Work from home',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _apply,
@@ -107,13 +124,15 @@ class _WfhPageState extends State<WfhPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+          if (tichShowLoadingSpinner(snap, merged)) {
             return const Center(child: AdaptiveProgress());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }
-          final requests = snap.data!['requests'] as List? ?? const [];
+          final data = merged! as Map<String, dynamic>;
+          final requests = data['requests'] as List? ?? const [];
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
@@ -148,6 +167,7 @@ class _WfhPageState extends State<WfhPage> {
             ),
           );
         },
+      ),
       ),
     );
   }

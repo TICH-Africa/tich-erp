@@ -22,7 +22,7 @@
     </p>
 
     <div class="tich-card tich-table-panel tich-mt-8">
-        <h2 class="tich-h3">{{ $department->dept_name }} requests</h2>
+        <h2 class="tich-h3">{{ ! empty($scopeToOwnRequests) ? 'My budget requests' : ($department->dept_name.' requests') }}</h2>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
                 <thead>

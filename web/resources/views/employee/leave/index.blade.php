@@ -148,6 +148,8 @@
                         <div class="tich-flex tich-gap-2" style="flex-wrap:wrap; justify-content:flex-end;">
                             @if ($request->isEditableByEmployee())
                                 <a href="{{ route('employee.leave.index', ['edit' => $request->id]) }}" class="tich-btn tich-btn-secondary">Edit &amp; resubmit</a>
+                            @elseif ($request->isCoverageEditableByEmployee())
+                                <button type="button" class="tich-btn tich-btn-secondary" data-open-modal="leave-coverage-modal-{{ $request->id }}">Change stand-in</button>
                             @endif
                             @if ($request->isCancellableByEmployee())
                                 <form method="POST" action="{{ route('employee.leave.cancel', $request) }}" onsubmit="return confirm('Cancel this leave request?');">
@@ -161,6 +163,47 @@
             </div>
         @endif
     </article>
+
+    @foreach ($leaveRequests as $request)
+        @if ($request->isCoverageEditableByEmployee() && $request->coverages->isNotEmpty())
+            @php
+                $existingCovers = $request->coverages->pluck('cover_staff_id', 'department_id')->all();
+            @endphp
+            <dialog id="leave-coverage-modal-{{ $request->id }}" class="tich-modal">
+                <form method="POST" action="{{ route('employee.leave.coverages.update', $request) }}" class="tich-modal__panel">
+                    @csrf
+                    <header class="tich-modal__header">
+                        <h2 class="tich-h3">Change stand-in</h2>
+                        <p class="tich-caption">{{ $request->leave_number }} · {{ $request->start_date->format('d M Y') }} – {{ $request->end_date->format('d M Y') }}</p>
+                    </header>
+                    <div class="tich-modal__body">
+                        <p class="tich-text">You can change who takes over until your leave starts. The previous appointee, the new appointee, and you will be notified. The new person must accept.</p>
+                        @foreach ($request->coverages as $coverage)
+                            @php $dept = $coverage->department; @endphp
+                            @if ($dept)
+                                <div class="uf-field">
+                                    <label for="cover_staff_{{ $request->id }}_{{ $dept->id }}">{{ $dept->dept_name }} <span class="uf-req">*</span></label>
+                                    <select id="cover_staff_{{ $request->id }}_{{ $dept->id }}" name="cover_staff_id[{{ $dept->id }}]" required>
+                                        <option value="">Select stand-in</option>
+                                        @foreach ($eligibleCoverStaff as $cover)
+                                            <option value="{{ $cover->id }}" @selected((int) ($existingCovers[$dept->id] ?? 0) === (int) $cover->id)>
+                                                {{ $cover->fullName() }}
+                                                @if ($cover->job_title) – {{ $cover->job_title }} @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                    <footer class="tich-modal__footer">
+                        <button type="button" class="tich-btn tich-btn-ghost" data-close-modal>Cancel</button>
+                        <button type="submit" class="tich-btn tich-btn-primary">Save stand-in changes</button>
+                    </footer>
+                </form>
+            </dialog>
+        @endif
+    @endforeach
 
     @include('employee.partials.leave-request-modal', [
         'editRequest' => $editRequest,

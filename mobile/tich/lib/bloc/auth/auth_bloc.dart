@@ -83,12 +83,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final current = state;
     if (current is! AuthLocked) return;
 
-    final ok = await _biometrics.authenticate(reason: 'Unlock TICH');
-    if (ok) {
+    final error = await _biometrics.authenticate(reason: 'Unlock TICH');
+    if (error == null) {
       await _settings.clearNeedsUnlock();
       emit(AuthAuthenticated(current.user));
     } else {
-      emit(AuthLocked(current.user, message: 'Biometric unlock cancelled.'));
+      emit(AuthLocked(current.user, message: error));
     }
   }
 

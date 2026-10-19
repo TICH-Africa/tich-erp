@@ -1035,6 +1035,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('hr')->middleware(['permission:hr.staff.view'])->group(function () use ($registerModuleBudgeting, $registerModuleMeReports) {
         Route::get('/', [\App\Http\Controllers\HR\DashboardController::class, '__invoke'])->name('hr.dashboard');
+        Route::get('/calendar', [\App\Http\Controllers\HR\HrCalendarController::class, 'index'])->name('hr.calendar.index');
+        Route::post('/calendar/gazette-holidays', [\App\Http\Controllers\HR\HrCalendarController::class, 'storeGazetteHoliday'])
+            ->middleware('permission:hr.manage_leave')
+            ->name('hr.calendar.gazette-holidays.store');
+        Route::delete('/calendar/gazette-holidays', [\App\Http\Controllers\HR\HrCalendarController::class, 'destroyGazetteHoliday'])
+            ->middleware('permission:hr.manage_leave')
+            ->name('hr.calendar.gazette-holidays.destroy');
         Route::get('/sidebar-notifications', \App\Http\Controllers\HR\SidebarNotificationController::class)->name('hr.sidebar-notifications');
         $registerModuleBudgeting('hr');
         $registerModuleMeReports('hr');
@@ -1234,6 +1241,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
                 Route::get('/disciplinary/create', [\App\Http\Controllers\HR\DisciplinaryController::class, 'create'])->name('disciplinary.create');
                 Route::post('/disciplinary', [\App\Http\Controllers\HR\DisciplinaryController::class, 'store'])->name('disciplinary.store');
                 Route::get('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'show'])->name('disciplinary.show');
+                Route::get('/disciplinary/{disciplinaryCase}/documents/{document}/download', [\App\Http\Controllers\HR\DisciplinaryController::class, 'downloadDocument'])->name('disciplinary.documents.download');
                 Route::get('/disciplinary/{disciplinaryCase}/edit', [\App\Http\Controllers\HR\DisciplinaryController::class, 'edit'])->name('disciplinary.edit');
                 Route::put('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'update'])->name('disciplinary.update');
                 Route::delete('/disciplinary/{disciplinaryCase}', [\App\Http\Controllers\HR\DisciplinaryController::class, 'destroy'])->name('disciplinary.destroy');
@@ -1295,7 +1303,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         ->middleware('resolve.academics.hub')
         ->group(function () use ($registerAcademicsRoutes, $registerModuleBudgeting, $registerModuleMeReports) {
             $registerAcademicsRoutes(true);
-            Route::middleware('permission:academics.read')->group(function () use ($registerModuleBudgeting) {
+            Route::middleware('academics.budgeting')->group(function () use ($registerModuleBudgeting) {
                 $registerModuleBudgeting('academics');
             });
             $registerModuleMeReports('academics');
@@ -1392,6 +1400,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'store'])->name('employee.leave.store');
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
         Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'cancel'])->name('employee.leave.cancel');
+        Route::post('/leave/{leaveRequest}/coverages', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'updateCoverages'])->name('employee.leave.coverages.update');
         Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'acceptCoverage'])->name('employee.leave.coverages.accept');
         Route::post('/leave/coverages/{coverage}/decline', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'declineCoverage'])->name('employee.leave.coverages.decline');
         Route::get('/leave/carry-forward', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'carryForwardForm'])->name('employee.leave.carry-forward');

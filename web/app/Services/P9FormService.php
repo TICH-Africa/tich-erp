@@ -185,7 +185,7 @@ class P9FormService
         $sheet->setCellValue('N6', "Employee's PIN");
         $sheet->setCellValue('P6', $staff->kra_pin ?? '');
         $sheet->setCellValue('A7', "Employee's Other Names");
-        $sheet->setCellValue('C7', $staff->other_names ?? '');
+        $sheet->setCellValue('C7', $staff->middle_name ?? '');
     }
 
     private function buildColumnHeaders(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): void

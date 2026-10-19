@@ -37,6 +37,16 @@
                         @endforeach
                     </div>
                 </div>
+            @elseif (($item['type'] ?? '') === 'route' && ! empty($item['route']) && \Illuminate\Support\Facades\Route::has($item['route']))
+                @php
+                    $routePattern = $item['activeRoute'] ?? (preg_replace('/\.(index|create)$/', '.*', $item['route']) ?? $item['route']);
+                @endphp
+                @include('partials.navigation.sidebar-link', [
+                    'href' => route($item['route']),
+                    'label' => $item['label'],
+                    'icon' => $item['icon'] ?? 'circle',
+                    'active' => request()->routeIs($routePattern),
+                ])
             @else
                 @include('partials.navigation.sidebar-link', [
                     'href' => route('staff.dashboard', ['section' => $item['section']]),
