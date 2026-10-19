@@ -28,6 +28,14 @@
 
 <div class="tich-card tich-table-panel">
     <h3 class="tich-h4" style="margin-top:0;">Reconciliation by account</h3>
+    <p class="tich-caption tich-mb-2">
+        Only the bank, cash and M-Pesa accounts your finance team actually feeds: accounts with ledger postings, a balance,
+        or a payment recorded into them.
+        @if (($data['unused_accounts'] ?? 0) > 0)
+            {{ number_format($data['unused_accounts']) }} account(s) in the chart of accounts hold no money and have never
+            been used, so they are left out.
+        @endif
+    </p>
     <table class="{{ $tableClass }}">
         <thead>
             <tr>
