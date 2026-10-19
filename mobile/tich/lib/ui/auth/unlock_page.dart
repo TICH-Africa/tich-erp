@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../adaptive/adaptive.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
@@ -9,6 +7,7 @@ import '../../bloc/auth/auth_state.dart';
 import '../../models/auth_user.dart';
 import '../../settings/app_settings.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/tich_brand_logo.dart';
 
 class UnlockPage extends StatefulWidget {
   const UnlockPage({super.key, required this.user, this.message});
@@ -42,15 +41,7 @@ class _UnlockPageState extends State<UnlockPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              Text(
-                'TICH in Africa',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.merriweather(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: TichColors.green,
-                ),
-              ),
+              const TichBrandLogo(wordmarkFontSize: 28),
               const SizedBox(height: 8),
               Text(
                 'Welcome back, ${widget.user.name}',

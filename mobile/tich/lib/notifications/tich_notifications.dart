@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
+import '../ui/widgets/tich_brand_logo.dart';
 
 const _channelId = 'tich_alerts';
 const _channelName = 'TICH Alerts';
@@ -57,14 +58,16 @@ class TichNotifications {
       tzdata.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Africa/Nairobi'));
 
-      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      final android = AndroidInitializationSettings(
+        TichBrandAssets.androidNotificationIcon,
+      );
       const ios = DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
       );
       await _plugin.initialize(
-        settings: const InitializationSettings(android: android, iOS: ios),
+        settings: InitializationSettings(android: android, iOS: ios),
       );
 
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
@@ -147,7 +150,7 @@ class TichNotifications {
     unawaited(syncFromServerInBackground(isStudent: isStudent));
   }
 
-  NotificationDetails get _details => const NotificationDetails(
+  NotificationDetails get _details => NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -156,6 +159,7 @@ class TichNotifications {
           priority: Priority.max,
           category: AndroidNotificationCategory.reminder,
           visibility: NotificationVisibility.public,
+          icon: TichBrandAssets.androidNotificationIcon,
           playSound: true,
           enableVibration: true,
           ticker: 'TICH',
@@ -190,6 +194,7 @@ class TichNotifications {
           priority: Priority.max,
           category: AndroidNotificationCategory.reminder,
           visibility: NotificationVisibility.public,
+          icon: TichBrandAssets.androidNotificationIcon,
           styleInformation: BigTextStyleInformation(body),
           playSound: true,
           enableVibration: true,
@@ -350,6 +355,7 @@ class TichNotifications {
             importance: Importance.max,
             priority: Priority.max,
             category: AndroidNotificationCategory.reminder,
+            icon: TichBrandAssets.androidNotificationIcon,
             styleInformation: BigTextStyleInformation(body),
             playSound: true,
             enableVibration: true,

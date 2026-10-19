@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/tich_theme.dart';
 import 'tich_more_row_trailing.dart';
 import 'tich_nav_badge.dart';
+import 'tich_brand_logo.dart';
 import 'tich_widgets.dart';
 
 /// One link in the More menu, used by both the side bar and the iOS list.
@@ -47,6 +48,8 @@ class TichMoreDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 12, 6, 10),
               child: Row(
                 children: [
+                  const TichBrandMark(size: 36),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
