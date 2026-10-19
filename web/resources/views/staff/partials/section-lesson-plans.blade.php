@@ -24,7 +24,11 @@
                         <select name="allocation_id" class="tich-input" data-lesson-plan-allocation required>
                             @foreach ($portalData['allocations'] as $allocation)
                                 <option value="{{ $allocation->id }}" @selected(old('allocation_id') == $allocation->id)>
-                                    {{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}
+                                    {{ collect([
+                                        $allocation->unit?->unit_code,
+                                        $allocation->unit?->unit_name,
+                                        $allocation->intake_label ?? $allocation->semester?->semester_label,
+                                    ])->filter(fn ($v) => filled($v))->implode(' · ') }}
                                 </option>
                             @endforeach
                         </select>
@@ -50,7 +54,13 @@
                         <label class="tich-label">Unit</label>
                         <select name="allocation_id" class="tich-input" required>
                             @foreach ($portalData['allocations'] as $allocation)
-                                <option value="{{ $allocation->id }}">{{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}</option>
+                                <option value="{{ $allocation->id }}">
+                                    {{ collect([
+                                        $allocation->unit?->unit_code,
+                                        $allocation->unit?->unit_name,
+                                        $allocation->intake_label ?? $allocation->semester?->semester_label,
+                                    ])->filter(fn ($v) => filled($v))->implode(' · ') }}
+                                </option>
                             @endforeach
                         </select>
                     </div>

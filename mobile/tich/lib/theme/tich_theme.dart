@@ -245,6 +245,10 @@ abstract final class TichTheme {
           ),
         ),
       ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: TichColors.sidebar,
+        surfaceTintColor: Colors.transparent,
+      ),
       chipTheme: ChipThemeData(
         backgroundColor: TichColors.greenLight,
         labelStyle: tichUi(fontSize: 12, color: TichColors.greenDark),
@@ -373,9 +377,27 @@ abstract final class TichTheme {
         indicatorColor: const Color(0xFF24384A),
         height: 68,
         elevation: 0,
-        labelTextStyle: WidgetStatePropertyAll(
-          tichUi(fontSize: 11, fontWeight: FontWeight.w600),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => tichUi(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: states.contains(WidgetState.selected)
+                ? TichColors.blueLight
+                : const Color(0xFF9AA0A6),
+          ),
         ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 24,
+            color: states.contains(WidgetState.selected)
+                ? TichColors.blueLight
+                : const Color(0xFF9AA0A6),
+          ),
+        ),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: TichColors.white,
+        surfaceTintColor: Colors.transparent,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),

@@ -117,9 +117,16 @@ class ApiClient {
     return headers;
   }
 
-  Future<Map<String, dynamic>> get(String path) async {
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? query,
+  }) async {
+    var uri = ApiConfig.uri(path);
+    if (query != null && query.isNotEmpty) {
+      uri = uri.replace(queryParameters: query);
+    }
     final response = await _client
-        .get(ApiConfig.uri(path), headers: await _headers())
+        .get(uri, headers: await _headers())
         .timeout(timeout);
     return _decode(response);
   }

@@ -260,19 +260,27 @@ class _StaffHomePageState extends State<StaffHomePage> {
                                   .join(' · '),
                               style: tichUi(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              [
-                                u['semester'],
-                                u['academic_year'],
-                              ]
-                                  .where((e) => e != null && '$e'.isNotEmpty)
-                                  .join(' · '),
-                              style: tichUi(
-                                fontSize: 12,
-                                color: TichColors.neutralMuted,
+                            if (staffUnitCohortYearLine(u).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                staffUnitCohortYearLine(u),
+                                style: tichUi(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: TichColors.blueDark,
+                                ),
                               ),
-                            ),
+                            ],
+                            if (staffTrimmed(u['semester']) != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                staffTrimmed(u['semester'])!,
+                                style: tichUi(
+                                  fontSize: 12,
+                                  color: TichColors.neutralMuted,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

@@ -362,6 +362,41 @@ h3.tich-h3 {
     }
 }
 
+.tich-lesson-plan-form .tich-form-toolbar {
+    display: block;
+    background: #1565c0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+}
+
+.tich-lesson-plan-form .tich-form-toolbar .tich-h3,
+.tich-lesson-plan-form .tich-form-toolbar h3.tich-h3 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.tich-lesson-plan-form .tich-form-toolbar .tich-caption {
+    color: rgba(255, 255, 255, 0.92);
+    margin: 0.35rem 0 0;
+}
+
+[data-theme="dark"] .tich-lesson-plan-form .tich-form-toolbar {
+    background: #0d3a6e;
+}
+
+[data-theme="dark"] .tich-lesson-plan-form .tich-form-toolbar .tich-h3,
+[data-theme="dark"] .tich-lesson-plan-form .tich-form-toolbar h3.tich-h3 {
+    color: #e3f2fd;
+}
+
+[data-theme="dark"] .tich-lesson-plan-form .tich-form-toolbar .tich-caption {
+    color: rgba(227, 242, 253, 0.9);
+}
+
 .tich-lesson-plan-grid-wrap {
     overflow-x: auto;
 }
@@ -4936,6 +4971,12 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     margin-bottom: calc(0.75rem * var(--sidebar-scale)) !important;
     font-size: calc(0.8125rem * var(--sidebar-scale));
     color: rgba(232, 243, 220, 0.72);
+}
+
+.tich-admin-sidebar__teaching-context {
+    color: #ffffff;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .tich-admin-sidebar__nav {

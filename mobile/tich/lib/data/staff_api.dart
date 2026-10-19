@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'api_client.dart';
 
 class StaffApi {
@@ -34,6 +36,51 @@ class StaffApi {
         'lock': lock,
       });
 
+  Future<Map<String, dynamic>> uploadSignedSheet(
+    int sessionId,
+    String filePath,
+  ) {
+    final name = _basename(filePath);
+    return _client.multipart(
+      '/staff/attendance/$sessionId/sheet',
+      fields: const {},
+      fileField: 'signed_sheet',
+      filePath: filePath,
+      fileName: name,
+      mimeType: _imageMime(name),
+    );
+  }
+
+  Future<Map<String, dynamic>> uploadClassPhoto(
+    int sessionId,
+    String filePath,
+  ) {
+    final name = _basename(filePath);
+    return _client.multipart(
+      '/staff/attendance/$sessionId/class-photo',
+      fields: const {},
+      fileField: 'class_photo',
+      filePath: filePath,
+      fileName: name,
+      mimeType: _imageMime(name),
+    );
+  }
+
+  String _basename(String filePath) {
+    final parts = filePath.split(Platform.pathSeparator);
+    final name = parts.isNotEmpty ? parts.last : 'photo.jpg';
+    return name.isNotEmpty ? name : 'photo.jpg';
+  }
+
+  String _imageMime(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    return switch (ext) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+  }
+
   Future<Map<String, dynamic>> grading() => _client.get('/staff/grading');
 
   Future<Map<String, dynamic>> recordCat(Map<String, dynamic> body) =>
@@ -41,6 +88,16 @@ class StaffApi {
 
   Future<Map<String, dynamic>> lessonPlans() =>
       _client.get('/staff/lesson-plans');
+
+  Future<Map<String, dynamic>> lessonPlanContext({
+    required int allocationId,
+    String? plannedDate,
+  }) =>
+      _client.get('/staff/lesson-plans/context', query: {
+        'allocation_id': '$allocationId',
+        if (plannedDate != null && plannedDate.isNotEmpty)
+          'planned_date': plannedDate,
+      });
 
   Future<Map<String, dynamic>> createLessonPlan(Map<String, dynamic> body) =>
       _client.post('/staff/lesson-plans', body: body);

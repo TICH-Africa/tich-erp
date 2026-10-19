@@ -66,7 +66,7 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
                 : ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final u = Map<String, dynamic>.from(items[i] as Map);
                       return TichCard(
@@ -82,17 +82,27 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
                                   .join(' · '),
                               style: tichUi(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 6),
+                            if (staffUnitCohortYearLine(u).isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                staffUnitCohortYearLine(u),
+                                style: tichUi(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: TichColors.blueDark,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 4),
                             Text(
                               [
                                 u['semester'],
-                                u['academic_year'],
                                 u['campus'],
                               ]
                                   .where((e) => e != null && '$e'.isNotEmpty)
                                   .join(' · '),
                               style: tichUi(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: TichColors.neutralMuted,
                               ),
                             ),

@@ -14,6 +14,26 @@ Widget staffErrorBody(Object? error, VoidCallback onRetry) {
   );
 }
 
+String? staffTrimmed(dynamic value) {
+  if (value == null) return null;
+  final text = value.toString().trim();
+  return text.isEmpty ? null : text;
+}
+
+/// Cohort (intake) label from a unit allocation payload.
+String? staffUnitCohort(Map<String, dynamic> unit) =>
+    staffTrimmed(unit['cohort']) ?? staffTrimmed(unit['intake_label']);
+
+/// "Cohort · Academic year" line for staff unit cards.
+String staffUnitCohortYearLine(Map<String, dynamic> unit) {
+  final cohort = staffUnitCohort(unit);
+  final year = staffTrimmed(unit['academic_year']);
+  return [
+    ?cohort,
+    ?year,
+  ].join(' · ');
+}
+
 String dayLabel(int? day, Map? labels) {
   if (day == null) return '—';
   if (labels != null && labels['$day'] != null) return labels['$day'].toString();

@@ -225,11 +225,14 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::post('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'store']);
     Route::get('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'show']);
     Route::post('/attendance/{session}', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'save']);
+    Route::post('/attendance/{session}/sheet', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'uploadSheet']);
+    Route::post('/attendance/{session}/class-photo', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'uploadClassPhoto']);
 
     Route::get('/grading', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'index']);
     Route::post('/grading/cat', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'storeCat']);
 
     Route::get('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'index']);
+    Route::get('/lesson-plans/context', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'context']);
     Route::post('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'store']);
     Route::post('/lesson-plans/{plan}/submit', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'submit']);
 

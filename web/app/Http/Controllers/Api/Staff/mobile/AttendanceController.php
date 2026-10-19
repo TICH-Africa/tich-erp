@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Staff\mobile;
 use App\Http\Controllers\Api\Staff\mobile\Concerns\ResolvesPortalTeachingStaff;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
+use App\Models\Staff;
 use App\Models\UnitAllocation;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\LessonPlanApprovalService;
@@ -32,12 +33,7 @@ class AttendanceController extends Controller
     public function show(Request $request, AttendanceSession $session): JsonResponse
     {
         $staff = $this->portalStaff($request);
-        $session->loadMissing('allocation');
-        abort_unless(
-            (int) $session->recorded_by === (int) $staff->id
-            || (int) ($session->allocation?->staff_id) === (int) $staff->id,
-            403
-        );
+        $this->assertCanViewSession($session, $staff);
 
         return response()->json($this->serializer->attendanceShow($session));
     }
@@ -103,5 +99,43 @@ class AttendanceController extends Controller
         }
 
         return response()->json($this->serializer->attendanceShow($session->fresh()));
+    }
+
+    public function uploadSheet(Request $request, AttendanceSession $session): JsonResponse
+    {
+        $staff = $this->portalStaff($request);
+        $this->assertCanViewSession($session, $staff);
+
+        $request->validate([
+            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
+        ]);
+
+        $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
+
+        return response()->json($this->serializer->attendanceShow($session->fresh()));
+    }
+
+    public function uploadClassPhoto(Request $request, AttendanceSession $session): JsonResponse
+    {
+        $staff = $this->portalStaff($request);
+        $this->assertCanViewSession($session, $staff);
+
+        $request->validate([
+            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
+        ]);
+
+        $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));
+
+        return response()->json($this->serializer->attendanceShow($session->fresh()));
+    }
+
+    protected function assertCanViewSession(AttendanceSession $session, Staff $staff): void
+    {
+        $session->loadMissing('allocation');
+        abort_unless(
+            (int) $session->recorded_by === (int) $staff->id
+            || (int) ($session->allocation?->staff_id) === (int) $staff->id,
+            403
+        );
     }
 }

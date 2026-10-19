@@ -7,7 +7,7 @@
     <p class="tich-admin-sidebar__title">Staff workspace</p>
     <p class="tich-caption">{{ $staff->job_title ?? 'Teaching staff' }} · {{ $staff->department?->dept_name }}</p>
     @if (! empty($portalData['teaching_context']['summary']))
-        <p class="tich-caption" style="color: var(--tich-blue, #1669a6);">{{ $portalData['teaching_context']['summary'] }}</p>
+        <p class="tich-caption tich-admin-sidebar__teaching-context">{{ $portalData['teaching_context']['summary'] }}</p>
     @endif
 
     <nav class="tich-admin-sidebar__nav">

@@ -6,6 +6,7 @@ use App\Models\AttendanceSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class StaffMobilePortalSerializer
 {
@@ -169,7 +170,11 @@ class StaffMobilePortalSerializer
         return [
             'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
                 'id' => $a->id,
-                'label' => trim(($a->unit?->unit_code ?? '').' · '.($a->unit?->unit_name ?? '')),
+                'label' => collect([
+                    $a->unit?->unit_code,
+                    $a->unit?->unit_name,
+                    $a->intake_label ?? $a->semester?->semester_label,
+                ])->filter(fn ($v) => filled($v))->implode(' · '),
             ])->values(),
             'items' => collect($data['lesson_plans'])->take(40)->map(fn ($p) => [
                 'id' => (int) $p->id,
@@ -226,6 +231,7 @@ class StaffMobilePortalSerializer
     public function allocationCard(UnitAllocation $allocation): array
     {
         $allocation->loadMissing(['unit', 'semester.academicYear', 'campus']);
+        $cohort = $this->dashboard->intakeLabelForSemester($allocation->semester);
 
         return [
             'id' => $allocation->id,
@@ -235,7 +241,10 @@ class StaffMobilePortalSerializer
             'semester_id' => $allocation->semester_id,
             'semester' => $allocation->semester?->name
                 ?? $allocation->semester?->semester_name
+                ?? $allocation->semester?->semester_label
                 ?? ('Semester '.$allocation->semester?->semester_number),
+            'cohort' => $cohort,
+            'intake_label' => $cohort,
             'academic_year' => $allocation->semester?->academicYear?->year_label
                 ?? $allocation->semester?->academicYear?->name,
             'campus' => $allocation->campus?->name ?? $allocation->campus?->campus_name,
@@ -264,6 +273,12 @@ class StaffMobilePortalSerializer
                 'is_locked' => (bool) $session->is_locked,
                 'has_signed_sheet' => (bool) $session->signed_sheet_image_path,
                 'has_class_photo' => (bool) $session->class_photo_image_path,
+                'signed_sheet_url' => $session->signed_sheet_image_path
+                    ? url(Storage::disk('public')->url($session->signed_sheet_image_path))
+                    : null,
+                'class_photo_url' => $session->class_photo_image_path
+                    ? url(Storage::disk('public')->url($session->class_photo_image_path))
+                    : null,
                 'total_expected_attendees' => (int) ($session->total_expected_attendees ?? 0),
             ];
         }

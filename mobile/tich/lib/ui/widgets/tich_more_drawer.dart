@@ -36,58 +36,76 @@ class TichMoreDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Material 3 may paint the drawer with a light surface in dark mode; use
+    // dark text there while keeping the branded blue panel in light mode.
+    final panelColor = isDark ? TichColors.white : TichColors.sidebar;
+
     return Drawer(
-      backgroundColor: TichColors.sidebar,
-      surfaceTintColor: TichColors.sidebar,
+      backgroundColor: panelColor,
+      surfaceTintColor: Colors.transparent,
       width: TichLayout.railWidth,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 6, 10),
-              child: Row(
-                children: [
-                  const TichBrandMark(size: 36),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'TICH in Africa',
-                          style: tichUi(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: TichColors.sidebarLink,
+      child: Material(
+        color: panelColor,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 6, 10),
+                child: Row(
+                  children: [
+                    const TichBrandMark(size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TICH in Africa',
+                            style: tichUi(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: isDark
+                                  ? TichColors.neutralMuted
+                                  : TichColors.sidebarLink,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          portalName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TichTheme.display(
-                            fontSize: 19,
-                            color: TichColors.white,
+                          const SizedBox(height: 2),
+                          Text(
+                            portalName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TichTheme.display(
+                              fontSize: 19,
+                              color: isDark
+                                  ? TichColors.blueDark
+                                  : TichColors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      color: TichColors.sidebarLink,
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close,
+                        color: isDark
+                            ? TichColors.grey
+                            : TichColors.sidebarLink,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1, color: Color(0x1FFFFFFF)),
+              Divider(
+                height: 1,
+                color: isDark
+                    ? TichColors.neutralBorder
+                    : const Color(0x1FFFFFFF),
+              ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -105,6 +123,7 @@ class TichMoreDrawer extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -125,10 +144,21 @@ class TichSideNavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark
+        ? (active ? TichColors.blueDark : TichColors.neutralMuted)
+        : (active ? TichColors.white : TichColors.sidebarMuted);
+    final labelColor = isDark
+        ? (active ? TichColors.blueDark : TichColors.grey)
+        : (active ? TichColors.sidebarActive : TichColors.sidebarLink);
+    final activeBg = isDark
+        ? TichColors.blueLight.withValues(alpha: 0.45)
+        : TichColors.sidebarActiveBg;
+
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: active ? TichColors.sidebarActiveBg : Colors.transparent,
+        color: active ? activeBg : Colors.transparent,
         decoration: active
             ? const BoxDecoration(
                 border: Border(
@@ -142,7 +172,7 @@ class TichSideNavRow extends StatelessWidget {
             Icon(
               item.icon,
               size: 20,
-              color: active ? TichColors.white : TichColors.sidebarMuted,
+              color: iconColor,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -153,9 +183,7 @@ class TichSideNavRow extends StatelessWidget {
                 style: tichUi(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: active
-                      ? TichColors.sidebarActive
-                      : TichColors.sidebarLink,
+                  color: labelColor,
                 ),
               ),
             ),
@@ -192,7 +220,10 @@ class TichMoreList extends StatelessWidget {
             leading: Icon(item.icon, color: TichColors.greenDark),
             title: Text(
               item.label,
-              style: tichUi(fontWeight: FontWeight.w600),
+              style: tichUi(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             trailing: TichMoreRowTrailing(badgeCount: item.badgeCount),
           ),
