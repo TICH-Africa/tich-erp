@@ -85,6 +85,10 @@ abstract final class TichLayout {
   /// --sb-width, the width the More side bar slides in at.
   static const double railWidth = 264;
   static const double contentMaxWidth = 980;
+
+  /// Tall enough to hold the brand line and the page title without crowding.
+  static const double headerHeight = 64;
+  static const double headerInset = 16;
   static const EdgeInsets pagePadding = EdgeInsets.fromLTRB(16, 12, 16, 24);
 }
 

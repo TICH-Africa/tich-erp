@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
 import '../../data/employee_api.dart';
 import '../portal/attendance_page.dart';
 import '../portal/dashboard_page.dart';
@@ -15,6 +13,7 @@ import '../widgets/tich_more_drawer.dart';
 import 'employee_clock_nav.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
+import 'tich_logout.dart';
 
 /// Called after clock-in/out so the bottom nav pulse updates immediately.
 abstract final class EmployeePortalNavSignals {
@@ -132,6 +131,7 @@ class _PortalShellState extends State<PortalShell>
         },
         pages: _pages!,
         portalName: 'Employee portal',
+        onSignOut: tichLogout(context),
         moreIndex: 4,
         moreDrawer: (context) => TichMoreDrawer(
           portalName: 'Employee portal',
@@ -184,9 +184,4 @@ class _PortalShellState extends State<PortalShell>
       ),
     );
   }
-}
-
-/// Shared logout callback used by AdaptiveScaffold pages.
-VoidCallback tichLogout(BuildContext context) {
-  return () => context.read<AuthBloc>().add(const AuthLogoutRequested());
 }

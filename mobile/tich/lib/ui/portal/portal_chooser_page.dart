@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
 import '../../models/auth_user.dart';
 import '../../theme/tich_theme.dart';
 import '../shell/portal_shell.dart';
 import '../shell/staff_portal_shell.dart';
+import '../shell/tich_logout.dart';
 import '../widgets/portal_hero.dart';
 import '../widgets/tich_widgets.dart';
 
@@ -21,9 +19,7 @@ class PortalChooserPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Choose portal',
-      showLogout: true,
-      onLogout: () =>
-          context.read<AuthBloc>().add(const AuthLogoutRequested()),
+      onLogout: tichLogout(context),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

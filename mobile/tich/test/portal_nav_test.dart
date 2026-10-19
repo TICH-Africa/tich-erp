@@ -38,7 +38,11 @@ const _tabs = [
   ),
 ];
 
-Future<List<int>> pumpShell(WidgetTester tester, {required Size size}) async {
+Future<List<int>> pumpShell(
+  WidgetTester tester, {
+  required Size size,
+  VoidCallback? onSignOut,
+}) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -54,6 +58,7 @@ Future<List<int>> pumpShell(WidgetTester tester, {required Size size}) async {
         ),
         items: _tabs,
         portalName: 'Employee portal',
+        onSignOut: onSignOut,
         moreIndex: 4,
         moreDrawer: (context) =>
             TichMoreDrawer(portalName: 'Employee portal', items: _links),
@@ -64,6 +69,15 @@ Future<List<int>> pumpShell(WidgetTester tester, {required Size size}) async {
   return tapped;
 }
 
+void _pushProfile(WidgetTester tester) {
+  Navigator.of(tester.element(find.text('Page 0'))).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          const AdaptiveScaffold(title: 'My profile', body: SizedBox()),
+    ),
+  );
+}
+
 void main() {
   testWidgets('a phone window keeps the five footer tabs', (tester) async {
     await pumpShell(tester, size: const Size(390, 844));
@@ -72,15 +86,17 @@ void main() {
     expect(find.byType(Drawer), findsNothing);
   });
 
-  testWidgets('a wide window keeps the footer tabs instead of a rail',
-      (tester) async {
+  testWidgets('a wide window keeps the footer tabs instead of a rail', (
+    tester,
+  ) async {
     await pumpShell(tester, size: const Size(1200, 900));
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Payslips'), findsOneWidget);
   });
 
-  testWidgets('More slides the side bar open without switching tab',
-      (tester) async {
+  testWidgets('More slides the side bar open without switching tab', (
+    tester,
+  ) async {
     final tapped = await pumpShell(tester, size: const Size(1200, 900));
 
     await tester.tap(find.text('More'));
@@ -93,20 +109,64 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('a page pushed inside a portal offers the way back',
-      (tester) async {
+  testWidgets('a page pushed inside a portal offers the way back', (
+    tester,
+  ) async {
     await pumpShell(tester, size: const Size(390, 844));
-
-    Navigator.of(tester.element(find.text('Page 0'))).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            const AdaptiveScaffold(title: 'My profile', body: SizedBox()),
-      ),
-    );
+    _pushProfile(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('My profile'), findsWidgets);
     expect(find.text('Employee portal'), findsOneWidget);
     expect(find.byTooltip('Back to Employee portal'), findsOneWidget);
+  });
+
+  testWidgets('the brand line sits above the title on one left edge', (
+    tester,
+  ) async {
+    await pumpShell(tester, size: const Size(390, 844));
+
+    final brand = tester.getTopLeft(find.text('TICH in Africa'));
+    final title = tester.getTopLeft(find.text('Page 0'));
+
+    expect(title.dx, brand.dx);
+    expect(title.dy, greaterThan(brand.dy));
+  });
+
+  testWidgets('every header inside the portal offers sign out', (tester) async {
+    var signedOut = 0;
+    await pumpShell(
+      tester,
+      size: const Size(390, 844),
+      onSignOut: () => signedOut++,
+    );
+
+    await tester.tap(find.byTooltip('Sign out'));
+    expect(signedOut, 1);
+
+    _pushProfile(tester);
+    await tester.pumpAndSettle();
+
+    // Only the visible route builds, so the pushed page offers it once.
+    expect(find.byTooltip('Sign out'), findsOneWidget);
+    await tester.tap(find.byTooltip('Sign out'));
+    expect(signedOut, 2);
+  });
+
+  testWidgets('no sign out button once the portal is closed', (tester) async {
+    await pumpShell(tester, size: const Size(390, 844), onSignOut: () {});
+    expect(find.byTooltip('Sign out'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AdaptiveScaffold(title: 'Signed out', body: SizedBox()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Sign out'), findsNothing);
+    expect(find.text('TICH in Africa'), findsOneWidget);
   });
 }

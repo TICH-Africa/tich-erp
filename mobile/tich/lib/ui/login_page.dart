@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../adaptive/adaptive.dart';
 import '../bloc/auth/auth_bloc.dart';
@@ -9,6 +8,7 @@ import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
 import '../config/api_config.dart';
 import '../theme/tich_theme.dart';
+import 'widgets/tich_brand_logo.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -56,15 +56,7 @@ class _LoginPageState extends State<LoginPage> {
         final error = state is AuthUnauthenticated ? state.message : null;
 
         final formChildren = <Widget>[
-          Text(
-            'TICH in Africa',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.merriweather(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: TichColors.green,
-            ),
-          ),
+          const TichBrandLogo(),
           const SizedBox(height: 8),
           Text(
             'Sign in with your ERP account',

@@ -12,6 +12,7 @@ import '../staff/units_page.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
+import 'tich_logout.dart';
 
 class StaffPortalShell extends StatefulWidget {
   const StaffPortalShell({super.key});
@@ -90,6 +91,7 @@ class _StaffPortalShellState extends State<StaffPortalShell>
         onTap: (i) => setState(() => _index = i),
         pages: _pages!,
         portalName: 'Staff portal',
+        onSignOut: tichLogout(context),
         moreIndex: 4,
         moreDrawer: (context) => TichMoreDrawer(
           portalName: 'Staff portal',

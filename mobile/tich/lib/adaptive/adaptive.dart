@@ -41,9 +41,7 @@ class AdaptiveApp extends StatelessWidget {
     final builder = (BuildContext ctx, Widget? child) {
       final media = MediaQuery.of(ctx);
       return MediaQuery(
-        data: media.copyWith(
-          textScaler: TextScaler.linear(textScaleFactor),
-        ),
+        data: media.copyWith(textScaler: TextScaler.linear(textScaleFactor)),
         child: child ?? const SizedBox.shrink(),
       );
     };
@@ -122,7 +120,6 @@ class AdaptiveScaffold extends StatelessWidget {
     this.actions,
     this.floatingActionButton,
     this.leading,
-    this.showLogout = false,
     this.onLogout,
     this.brandEyebrow = 'TICH in Africa',
   });
@@ -132,39 +129,38 @@ class AdaptiveScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? floatingActionButton;
   final Widget? leading;
-  final bool showLogout;
   final VoidCallback? onLogout;
   final String brandEyebrow;
 
   @override
   Widget build(BuildContext context) {
-    final logout = showLogout && onLogout != null
-        ? (usesCupertino
-            ? CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: onLogout,
-                child: const Icon(
-                  CupertinoIcons.square_arrow_right,
-                  color: TichColors.white,
-                ),
-              )
-            : IconButton(
-                tooltip: 'Sign out',
-                onPressed: onLogout,
-                icon: const Icon(Icons.logout),
-              ))
-        : null;
+    // A page can ask for sign out itself; inside a portal the header always offers it.
+    final signOut = onLogout ?? TichPortal.onSignOut;
+    final logout = signOut == null
+        ? null
+        : (usesCupertino
+              ? CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: signOut,
+                  child: const Icon(
+                    CupertinoIcons.square_arrow_right,
+                    color: TichColors.white,
+                  ),
+                )
+              : IconButton(
+                  tooltip: 'Sign out',
+                  onPressed: signOut,
+                  icon: const Icon(Icons.logout),
+                ));
 
-    final trailingActions = <Widget>[
-      ...?actions,
-      if (logout != null) logout,
-    ];
+    final trailingActions = <Widget>[...?actions, if (logout != null) logout];
 
     // An inner page says which portal it belongs to and pops back to it.
     final portalName = TichPortal.name;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
-    final backToPortal =
-        canPop && portalName != null ? () => Navigator.of(context).pop() : null;
+    final backToPortal = canPop && portalName != null
+        ? () => Navigator.of(context).pop()
+        : null;
 
     if (usesCupertino) {
       return CupertinoPageScaffold(
@@ -197,11 +193,9 @@ class AdaptiveScaffold extends StatelessWidget {
           ),
           trailing: trailingActions.isEmpty
               ? null
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: trailingActions,
-                ),
-          leading: leading ??
+              : Row(mainAxisSize: MainAxisSize.min, children: trailingActions),
+          leading:
+              leading ??
               (backToPortal == null
                   ? null
                   : CupertinoButton(
@@ -219,11 +213,7 @@ class AdaptiveScaffold extends StatelessWidget {
             children: [
               Positioned.fill(child: body),
               if (floatingActionButton != null)
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: floatingActionButton!,
-                ),
+                Positioned(right: 16, bottom: 16, child: floatingActionButton!),
             ],
           ),
         ),
@@ -232,8 +222,14 @@ class AdaptiveScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: TichLayout.headerHeight,
+        titleSpacing: TichLayout.headerInset,
+        actionsPadding: const EdgeInsets.only(right: 6),
         leading: leading,
+        // Two lines sharing one left edge, vertically centred against the icons.
         title: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _AdaptiveHeaderEyebrow(
@@ -241,11 +237,8 @@ class AdaptiveScaffold extends StatelessWidget {
               brandEyebrow: brandEyebrow,
               onTap: backToPortal,
             ),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            const SizedBox(height: 1),
+            Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
         actions: trailingActions,
@@ -272,10 +265,13 @@ class _AdaptiveHeaderEyebrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: FontWeight.w700,
       letterSpacing: 1.2,
-      color: portalName == null ? null : TichColors.greenLight,
+      height: 1.1,
+      color: portalName == null
+          ? const Color(0xCCFFFFFF)
+          : TichColors.greenLight,
     );
 
     final label = Text(
@@ -296,7 +292,11 @@ class _AdaptiveHeaderEyebrow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!usesCupertino)
-              const Icon(Icons.chevron_left, size: 16, color: TichColors.greenLight),
+              const Icon(
+                Icons.chevron_left,
+                size: 16,
+                color: TichColors.greenLight,
+              ),
             label,
           ],
         ),
@@ -310,6 +310,13 @@ class _AdaptiveHeaderEyebrow extends StatelessWidget {
 /// an inherited scope and can say "‹ Employee portal" with a way back.
 abstract final class TichPortal {
   static String? name;
+
+  /// Set by the open shell so any page header can offer sign out.
+  static VoidCallback? onSignOut;
+
+  /// The shell that wrote the two above, so a shell being torn down cannot clear
+  /// the values a replacement shell has already published.
+  static Object? owner;
 }
 
 /// Portal chrome: the five footer tabs stay put at every window size, and the
@@ -324,6 +331,7 @@ class AdaptiveTabScaffold extends StatefulWidget {
     this.portalName,
     this.moreIndex,
     this.moreDrawer,
+    this.onSignOut,
   });
 
   final int currentIndex;
@@ -333,6 +341,7 @@ class AdaptiveTabScaffold extends StatefulWidget {
   final String? portalName;
   final int? moreIndex;
   final WidgetBuilder? moreDrawer;
+  final VoidCallback? onSignOut;
 
   @override
   State<AdaptiveTabScaffold> createState() => _AdaptiveTabScaffoldState();
@@ -344,7 +353,29 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
   @override
   void initState() {
     super.initState();
+    _publishPortal();
+  }
+
+  @override
+  void didUpdateWidget(AdaptiveTabScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _publishPortal();
+  }
+
+  @override
+  void dispose() {
+    if (identical(TichPortal.owner, this)) {
+      TichPortal.owner = null;
+      TichPortal.name = null;
+      TichPortal.onSignOut = null;
+    }
+    super.dispose();
+  }
+
+  void _publishPortal() {
+    TichPortal.owner = this;
     TichPortal.name = widget.portalName;
+    TichPortal.onSignOut = widget.onSignOut;
   }
 
   void _handleTap(int index) {
@@ -383,8 +414,9 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer:
-          widget.moreDrawer == null ? null : Builder(builder: widget.moreDrawer!),
+      drawer: widget.moreDrawer == null
+          ? null
+          : Builder(builder: widget.moreDrawer!),
       body: LazyIndexedStack(
         index: widget.currentIndex,
         children: widget.pages,
@@ -531,10 +563,7 @@ class AdaptiveTextField extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: maxLines,
       onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        labelText: placeholder,
-        suffixIcon: suffix,
-      ),
+      decoration: InputDecoration(labelText: placeholder, suffixIcon: suffix),
     );
   }
 }
@@ -603,10 +632,7 @@ Future<T?> showAdaptiveConfirm<T>({
     builder: (ctx) => AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: Text(title),
-      content: SizedBox(
-        width: tichFormDialogWidth(ctx),
-        child: content,
-      ),
+      content: SizedBox(width: tichFormDialogWidth(ctx), child: content),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false as T?),

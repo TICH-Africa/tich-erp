@@ -12,6 +12,7 @@ import '../student/timetable_page.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
+import 'tich_logout.dart';
 
 class StudentPortalShell extends StatefulWidget {
   const StudentPortalShell({super.key});
@@ -112,6 +113,7 @@ class _StudentPortalShellState extends State<StudentPortalShell>
         onTap: (i) => setState(() => _index = i),
         pages: _pages!,
         portalName: 'Student portal',
+        onSignOut: tichLogout(context),
         moreIndex: 4,
         moreDrawer: (context) => TichMoreDrawer(
           portalName: 'Student portal',
