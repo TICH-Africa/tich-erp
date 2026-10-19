@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Module;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Services\DepartmentBudgetingService;
 use App\Services\Finance\FinancePolicyService;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,7 @@ class BudgetingController extends Controller
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
+            'learningDepartment' => $this->learningDepartmentContext($module, $department),
             'scopeToOwnRequests' => $this->budgeting->shouldScopeBudgetRequestsToSubmitter($request->user(), $module),
             'requests' => $this->budgeting->requestsForDepartment($department, $request->user(), $module),
             'indexRoute' => $routes['index'],
@@ -59,6 +61,7 @@ class BudgetingController extends Controller
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
+            'learningDepartment' => $this->learningDepartmentContext($module, $department),
             'scopeToOwnRequests' => $this->budgeting->shouldScopeBudgetRequestsToSubmitter($request->user(), $module),
             'cycles' => $this->budgeting->openCycles(),
             'quarters' => self::ANNUAL_QUARTERS,
@@ -114,6 +117,7 @@ class BudgetingController extends Controller
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
+            'learningDepartment' => $this->learningDepartmentContext($module, $department),
             'cycles' => $this->budgeting->openCycles(),
             'quarters' => self::ANNUAL_QUARTERS,
             'quarterData' => $quarterData,
@@ -429,6 +433,18 @@ class BudgetingController extends Controller
         return [
             ['item' => '', 'quantity' => '1', 'description' => '', 'unit_price' => '', 'unit_of_measure' => ''],
         ];
+    }
+
+    /**
+     * Lecturers and department HODs land on their own department menu instead of the academics hub.
+     */
+    private function learningDepartmentContext(string $module, Department $department): ?Department
+    {
+        if ($module !== 'academics' || ! $department->isLearningDepartment()) {
+            return null;
+        }
+
+        return $department;
     }
 
     private function moduleKey(Request $request): string

@@ -124,7 +124,7 @@ class DepartmentBudgetingService
         }
 
         $access = app(AcademicsAccessService::class);
-        if ($access->canAccessFullAcademics($user)) {
+        if (! $access->isDepartmentHod($user) && $access->canAccessFullAcademics($user)) {
             return $this->departmentForModule('academics');
         }
 

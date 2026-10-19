@@ -56,8 +56,10 @@ class StaffPortalNavigationService
     public function sidebarNavigation(): array
     {
         $items = [];
+        $isTeachingStaff = $this->userIsTeachingStaff();
+        $isHod = $this->userIsHod();
 
-        if ($this->userIsTeachingStaff()) {
+        if ($isTeachingStaff) {
             $items[] = ['type' => 'link', 'label' => 'Overview', 'section' => 'overview', 'icon' => 'dashboard'];
             $items[] = ['type' => 'heading', 'label' => 'Teaching'];
             $items[] = ['type' => 'link', 'label' => 'My units', 'section' => 'units', 'icon' => 'book-open'];
@@ -67,17 +69,10 @@ class StaffPortalNavigationService
             $items[] = ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'lesson-plans', 'icon' => 'notebook'];
             $items[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'];
             $items[] = ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'];
-            if (\Illuminate\Support\Facades\Route::has('academics.budgeting.index')) {
-                $items[] = ['type' => 'heading', 'label' => 'Planning & budget'];
-                $items[] = ['type' => 'route', 'label' => 'My budget', 'route' => 'academics.budgeting.index', 'icon' => 'wallet'];
-                $items[] = ['type' => 'route', 'label' => 'Technical plan', 'route' => 'academics.technical-plans.index', 'icon' => 'file-text'];
-                if (\Illuminate\Support\Facades\Route::has('academics.finance-policy.sign')) {
-                    $items[] = ['type' => 'route', 'label' => 'Sign financial policy', 'route' => 'academics.finance-policy.sign', 'icon' => 'shield'];
-                }
-            }
+            $items = array_merge($items, $this->planningNavigation($isHod, withTechnicalPlans: true));
         }
 
-        if ($this->userIsHod()) {
+        if ($isHod) {
             $items[] = ['type' => 'heading', 'label' => 'Management'];
             $items[] = [
                 'type' => 'dropdown',
@@ -94,6 +89,34 @@ class StaffPortalNavigationService
                     ['type' => 'link', 'label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],
                 ],
             ];
+
+            if (! $isTeachingStaff) {
+                $items = array_merge($items, $this->planningNavigation(true, withTechnicalPlans: false));
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array<string, string>>
+     */
+    private function planningNavigation(bool $departmentScoped, bool $withTechnicalPlans): array
+    {
+        if (! \Illuminate\Support\Facades\Route::has('academics.budgeting.index')) {
+            return [];
+        }
+
+        $items = [
+            ['type' => 'heading', 'label' => 'Planning & budget'],
+            ['type' => 'route', 'label' => $departmentScoped ? 'Department budget' : 'My budget', 'route' => 'academics.budgeting.index', 'icon' => 'wallet'],
+        ];
+
+        if ($withTechnicalPlans) {
+            $items[] = ['type' => 'route', 'label' => 'Technical plan', 'route' => 'academics.technical-plans.index', 'icon' => 'file-text'];
+            if (\Illuminate\Support\Facades\Route::has('academics.finance-policy.sign')) {
+                $items[] = ['type' => 'route', 'label' => 'Sign financial policy', 'route' => 'academics.finance-policy.sign', 'icon' => 'shield'];
+            }
         }
 
         return $items;
