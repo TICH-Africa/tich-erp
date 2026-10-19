@@ -228,7 +228,7 @@ class StaffPortalDashboardService
         }
 
         return UnitContent::query()
-            ->with(['unit', 'unitAllocation'])
+            ->with(['unit', 'unitAllocation.semester.academicYear'])
             ->whereIn('unit_id', $unitIds)
             ->orderByDesc('created_at')
             ->get();

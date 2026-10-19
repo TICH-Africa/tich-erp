@@ -170,6 +170,8 @@ class StaffMobilePortalSerializer
         return [
             'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
                 'id' => $a->id,
+                'unit_code' => $a->unit?->unit_code,
+                'unit_name' => $a->unit?->unit_name,
                 'label' => collect([
                     $a->unit?->unit_code,
                     $a->unit?->unit_name,
@@ -198,14 +200,34 @@ class StaffMobilePortalSerializer
         $data = $this->dashboard->forStaff($staff);
 
         return [
-            'items' => collect($data['learning_content'])->take(40)->map(fn ($c) => [
-                'id' => $c->id,
-                'title' => $c->title ?? $c->content_title ?? 'Content',
-                'content_type' => $c->content_type ?? $c->type ?? null,
-                'unit_code' => $c->unit?->unit_code,
-                'unit_name' => $c->unit?->unit_name,
-                'created_at' => optional($c->created_at)?->toIso8601String(),
+            'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
+                'unit_id' => $a->unit_id,
+                'label' => collect([
+                    $a->unit?->unit_code,
+                    $a->unit?->unit_name,
+                    $a->intake_label ?? $a->semester?->semester_label,
+                ])->filter(fn ($v) => filled($v))->implode(' · '),
+                'cohort' => $this->dashboard->intakeLabelForSemester($a->semester),
             ])->values(),
+            'items' => collect($data['learning_content'])->take(40)->map(function ($c) {
+                $cohort = $c->unitAllocation
+                    ? $this->dashboard->intakeLabelForSemester($c->unitAllocation->semester)
+                    : null;
+
+                return [
+                    'id' => $c->id,
+                    'title' => $c->title ?? $c->content_title ?? 'Content',
+                    'content_type' => $c->content_type ?? $c->type ?? null,
+                    'content_text' => $c->content_text,
+                    'unit_code' => $c->unit?->unit_code,
+                    'unit_name' => $c->unit?->unit_name,
+                    'cohort' => $cohort,
+                    'has_file' => filled($c->file_path),
+                    'file_name' => $c->original_filename,
+                    'created_at' => optional($c->created_at)?->toIso8601String(),
+                    'published_at' => optional($c->published_at)?->toIso8601String(),
+                ];
+            })->values(),
         ];
     }
 

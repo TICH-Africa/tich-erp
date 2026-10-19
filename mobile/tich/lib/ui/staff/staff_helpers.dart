@@ -25,6 +25,16 @@ String? staffUnitCohort(Map<String, dynamic> unit) =>
     staffTrimmed(unit['cohort']) ?? staffTrimmed(unit['intake_label']);
 
 /// "Cohort · Academic year" line for staff unit cards.
+String staffContentUnitLine(Map<String, dynamic> item) {
+  return [
+    staffTrimmed(item['unit_code']),
+    staffTrimmed(item['unit_name']),
+  ].whereType<String>().join(' · ');
+}
+
+String? staffContentCohort(Map<String, dynamic> item) =>
+    staffTrimmed(item['cohort']);
+
 String staffUnitCohortYearLine(Map<String, dynamic> unit) {
   final cohort = staffUnitCohort(unit);
   final year = staffTrimmed(unit['academic_year']);

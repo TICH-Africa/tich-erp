@@ -7,6 +7,7 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import 'staff_timetable_grid.dart';
 
 class StaffLessonPlanCreatePage extends StatefulWidget {
   const StaffLessonPlanCreatePage({
@@ -33,6 +34,8 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
   int _step = 0;
   bool _busy = false;
   bool _loadingContext = false;
+  bool _sessionTimeEdited = false;
+  List<Map<String, dynamic>> _timetableSessions = const [];
 
   int? _allocationId;
   DateTime _plannedDate = DateTime.now();
@@ -60,8 +63,67 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
     super.initState();
     if (widget.allocations.isNotEmpty) {
       _allocationId = (widget.allocations.first['id'] as num?)?.toInt();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _refreshContext());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadTimetable();
+        _refreshContext();
+      });
     }
+  }
+
+  Future<void> _loadTimetable() async {
+    try {
+      final data = await widget.api.timetable();
+      if (!mounted) return;
+      final sessions = (data['sessions'] as List? ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      setState(() => _timetableSessions = sessions);
+      _applySessionTimeFromTimetable();
+    } catch (_) {}
+  }
+
+  String? _selectedUnitCode() {
+    if (_allocationId == null) return null;
+    for (final raw in widget.allocations) {
+      if ((raw['id'] as num?)?.toInt() == _allocationId) {
+        final code = raw['unit_code']?.toString().trim();
+        if (code != null && code.isNotEmpty) return code;
+      }
+    }
+    return null;
+  }
+
+  void _applySessionTimeFromTimetable() {
+    if (_sessionTimeEdited) return;
+    final range = _sessionTimeRangeFromTimetable();
+    if (range == null || range.isEmpty) return;
+    setState(() => _sessionTime.text = range);
+  }
+
+  String? _sessionTimeRangeFromTimetable() {
+    final unitCode = _selectedUnitCode();
+    if (unitCode == null || _timetableSessions.isEmpty) return null;
+
+    final dow = _plannedDate.weekday;
+    Map<String, dynamic>? match;
+    for (final s in _timetableSessions) {
+      if (s['unit_code']?.toString() != unitCode) continue;
+      if ((s['day_of_week'] as num?)?.toInt() == dow) {
+        match = s;
+        break;
+      }
+    }
+    if (match == null) {
+      for (final s in _timetableSessions) {
+        if (s['unit_code']?.toString() == unitCode) {
+          match = s;
+          break;
+        }
+      }
+    }
+
+    if (match == null) return null;
+    return staffTimetableSessionTimeRange(match);
   }
 
   @override
@@ -104,7 +166,8 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
         if (defaults['week_number'] != null) {
           _weekNumber.text = '${defaults['week_number']}';
         }
-        if ('${defaults['session_time'] ?? ''}'.trim().isNotEmpty) {
+        if (!_sessionTimeEdited &&
+            '${defaults['session_time'] ?? ''}'.trim().isNotEmpty) {
           _sessionTime.text = '${defaults['session_time']}';
         }
         if ('${defaults['intake_class'] ?? ''}'.trim().isNotEmpty) {
@@ -119,6 +182,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
       });
     } catch (_) {
       // Context autofill is optional; tutor can still complete the form.
+      _applySessionTimeFromTimetable();
     } finally {
       if (mounted) setState(() => _loadingContext = false);
     }
@@ -346,7 +410,10 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
           onChanged: _busy
               ? null
               : (v) {
-                  setState(() => _allocationId = v);
+                  setState(() {
+                    _allocationId = v;
+                    _sessionTimeEdited = false;
+                  });
                   _refreshContext();
                 },
         ),
@@ -373,7 +440,12 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
                     initial: _plannedDate,
                   );
                   if (picked == null) return;
-                  setState(() => _plannedDate = picked);
+                  setState(() {
+                    _plannedDate = picked;
+                    if (!_sessionTimeEdited) {
+                      _sessionTime.clear();
+                    }
+                  });
                   _refreshContext();
                 },
         ),
@@ -387,9 +459,18 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
         const SizedBox(height: 12),
         TextField(
           controller: _sessionTime,
-          decoration: const InputDecoration(
+          onChanged: (_) {
+            if (!_sessionTimeEdited) {
+              setState(() => _sessionTimeEdited = true);
+            }
+          },
+          decoration: InputDecoration(
             labelText: 'Session time',
             hintText: '08:00 - 10:00',
+            helperText: _sessionTimeEdited
+                ? null
+                : 'From your timetable — edit if needed',
+            helperMaxLines: 2,
           ),
         ),
         const SizedBox(height: 12),

@@ -62,32 +62,13 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
             title: const Text('Weekly timetable'),
           ),
           body: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Text(
-                    'Monday – Friday · pinch or scroll for a wider view',
-                    style: tichUi(
-                      fontSize: 12,
-                      color: TichColors.neutralMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(12),
-                    child: StaffTimetableGrid(
-                      sessions: sessions,
-                      dayLabels: dayLabels,
-                      compact: false,
-                      dayColumnMinWidth: 148,
-                      enableZoom: true,
-                    ),
-                  ),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: StaffTimetableGrid(
+                sessions: sessions,
+                dayLabels: dayLabels,
+                compact: false,
+              ),
             ),
           ),
         ),
@@ -173,17 +154,11 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
                               sessions: sessions,
                               dayLabels: dayLabels,
                               compact: true,
-                              dayColumnMinWidth: 112,
                             ),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Swipe sideways on the table to see all weekdays.',
-                          style: tichUi(
-                            fontSize: 11,
-                            color: TichColors.neutralMuted,
-                          ),
+                        
                         ),
                         if (weekendSessions > 0) ...[
                           const SizedBox(height: 20),

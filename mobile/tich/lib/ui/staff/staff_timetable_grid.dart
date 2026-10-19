@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/tich_theme.dart';
 import 'staff_helpers.dart';
 
-/// Weekday columns shown in the staff grid (Mon–Fri).
+/// Weekday rows in the staff grid (Mon–Fri).
 const staffTimetableWeekdays = [1, 2, 3, 4, 5];
 
 String staffTimetableTimeKey(dynamic value) {
@@ -12,22 +12,26 @@ String staffTimetableTimeKey(dynamic value) {
   return raw;
 }
 
-/// Builds a scrollable Mon–Fri timetable table (time rows × day columns).
+String staffTimetableSessionTimeRange(Map<String, dynamic> session) {
+  final start = staffTimetableTimeKey(session['start_time']);
+  final end = staffTimetableTimeKey(session['end_time']);
+  if (start.isEmpty) return '';
+  if (end.isNotEmpty && end != start) return '$start - $end';
+  return start;
+}
+
+/// Days down the left, time slots across the top — sized to the screen width.
 class StaffTimetableGrid extends StatelessWidget {
   const StaffTimetableGrid({
     super.key,
     required this.sessions,
     this.dayLabels,
     this.compact = true,
-    this.dayColumnMinWidth = 108,
-    this.enableZoom = false,
   });
 
   final List<Map<String, dynamic>> sessions;
   final Map? dayLabels;
   final bool compact;
-  final double dayColumnMinWidth;
-  final bool enableZoom;
 
   List<Map<String, dynamic>> get _weekSessions => sessions
       .where((s) {
@@ -42,8 +46,7 @@ class StaffTimetableGrid extends StatelessWidget {
       final key = staffTimetableTimeKey(s['start_time']);
       if (key.isNotEmpty) slots.add(key);
     }
-    final list = slots.toList()..sort();
-    return list;
+    return slots.toList()..sort();
   }
 
   Map<String, List<Map<String, dynamic>>> get _cellIndex {
@@ -58,57 +61,42 @@ class StaffTimetableGrid extends StatelessWidget {
     return map;
   }
 
+  String _slotHeader(String slot) {
+    for (final day in staffTimetableWeekdays) {
+      final list = _cellIndex['$day|$slot'];
+      if (list != null && list.isNotEmpty) {
+        return staffTimetableSessionTimeRange(list.first);
+      }
+    }
+    return slot;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_weekSessions.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    const timeColumnWidth = 56.0;
-    final dayWidth = dayColumnMinWidth;
-    final tableWidth = timeColumnWidth + dayWidth * staffTimetableWeekdays.length;
-
-    Widget table = _TimetableTable(
-      timeSlots: _timeSlots,
-      cellIndex: _cellIndex,
-      dayLabels: dayLabels,
-      compact: compact,
-      timeColumnWidth: timeColumnWidth,
-      dayColumnWidth: dayWidth,
-      tableWidth: tableWidth,
-    );
-
-    if (enableZoom) {
-      table = InteractiveViewer(
-        minScale: 0.65,
-        maxScale: 2.5,
-        boundaryMargin: const EdgeInsets.all(48),
-        child: table,
-      );
+    final timeSlots = _timeSlots;
+    if (timeSlots.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final fitsWidth = constraints.maxWidth >= tableWidth;
-        if (fitsWidth && !enableZoom) {
-          final expandedDay =
-              (constraints.maxWidth - timeColumnWidth) / staffTimetableWeekdays.length;
-          return _TimetableTable(
-            timeSlots: _timeSlots,
-            cellIndex: _cellIndex,
-            dayLabels: dayLabels,
-            compact: compact,
-            timeColumnWidth: timeColumnWidth,
-            dayColumnWidth: expandedDay,
-            tableWidth: constraints.maxWidth,
-          );
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: table,
-          ),
+        final width = constraints.maxWidth;
+        const dayColWidth = 52.0;
+        final slotCount = timeSlots.length;
+        final slotColWidth = (width - dayColWidth) / slotCount;
+
+        return _TimetableTable(
+          timeSlots: timeSlots,
+          cellIndex: _cellIndex,
+          dayLabels: dayLabels,
+          compact: compact,
+          dayColWidth: dayColWidth,
+          slotColWidth: slotColWidth,
+          slotHeader: _slotHeader,
         );
       },
     );
@@ -121,18 +109,18 @@ class _TimetableTable extends StatelessWidget {
     required this.cellIndex,
     required this.dayLabels,
     required this.compact,
-    required this.timeColumnWidth,
-    required this.dayColumnWidth,
-    required this.tableWidth,
+    required this.dayColWidth,
+    required this.slotColWidth,
+    required this.slotHeader,
   });
 
   final List<String> timeSlots;
   final Map<String, List<Map<String, dynamic>>> cellIndex;
   final Map? dayLabels;
   final bool compact;
-  final double timeColumnWidth;
-  final double dayColumnWidth;
-  final double tableWidth;
+  final double dayColWidth;
+  final double slotColWidth;
+  final String Function(String slot) slotHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -145,9 +133,9 @@ class _TimetableTable extends StatelessWidget {
     return Table(
       border: TableBorder.all(color: borderColor, width: 1),
       columnWidths: {
-        0: FixedColumnWidth(timeColumnWidth),
-        for (var i = 0; i < staffTimetableWeekdays.length; i++)
-          i + 1: FixedColumnWidth(dayColumnWidth),
+        0: FixedColumnWidth(dayColWidth),
+        for (var i = 0; i < timeSlots.length; i++)
+          i + 1: FixedColumnWidth(slotColWidth),
       },
       defaultVerticalAlignment: TableCellVerticalAlignment.top,
       children: [
@@ -155,24 +143,29 @@ class _TimetableTable extends StatelessWidget {
           decoration: BoxDecoration(color: headBg),
           children: [
             _HeadCell(
-              label: 'Time',
+              label: 'Day',
               compact: compact,
               color: headText,
               align: Alignment.centerLeft,
             ),
-            for (final day in staffTimetableWeekdays)
+            for (final slot in timeSlots)
               _HeadCell(
-                label: _dayHeader(day, compact),
+                label: slotHeader(slot),
                 compact: compact,
                 color: headText,
+                maxLines: 3,
               ),
           ],
         ),
-        for (final slot in timeSlots)
+        for (final day in staffTimetableWeekdays)
           TableRow(
             children: [
-              _TimeCell(slot: slot, compact: compact, isDark: isDark),
-              for (final day in staffTimetableWeekdays)
+              _DayCell(
+                label: _dayLabel(day),
+                compact: compact,
+                isDark: isDark,
+              ),
+              for (final slot in timeSlots)
                 _SessionCell(
                   sessions: cellIndex['$day|$slot'] ?? const [],
                   compact: compact,
@@ -184,7 +177,7 @@ class _TimetableTable extends StatelessWidget {
     );
   }
 
-  String _dayHeader(int day, bool compact) {
+  String _dayLabel(int day) {
     final full = dayLabel(day, dayLabels);
     if (!compact) return full;
     if (full.length <= 3) return full;
@@ -198,29 +191,34 @@ class _HeadCell extends StatelessWidget {
     required this.compact,
     required this.color,
     this.align = Alignment.center,
+    this.maxLines = 2,
   });
 
   final String label;
   final bool compact;
   final Color color;
   final Alignment align;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 10,
-        vertical: compact ? 8 : 10,
+        horizontal: compact ? 3 : 6,
+        vertical: compact ? 6 : 8,
       ),
       child: Align(
         alignment: align,
         child: Text(
           label,
           textAlign: TextAlign.center,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
           style: tichUi(
-            fontSize: compact ? 11 : 13,
+            fontSize: compact ? 9 : 11,
             fontWeight: FontWeight.w700,
             color: color,
+            height: 1.15,
           ),
         ),
       ),
@@ -228,14 +226,14 @@ class _HeadCell extends StatelessWidget {
   }
 }
 
-class _TimeCell extends StatelessWidget {
-  const _TimeCell({
-    required this.slot,
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.label,
     required this.compact,
     required this.isDark,
   });
 
-  final String slot;
+  final String label;
   final bool compact;
   final bool isDark;
 
@@ -244,15 +242,17 @@ class _TimeCell extends StatelessWidget {
     return Container(
       color: isDark ? TichColors.darkSurface : TichColors.white,
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 4 : 8,
+        horizontal: compact ? 4 : 6,
         vertical: compact ? 8 : 10,
       ),
       child: Text(
-        slot,
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: tichUi(
-          fontSize: compact ? 11 : 12,
+          fontSize: compact ? 10 : 12,
           fontWeight: FontWeight.w700,
-          color: isDark ? const Color(0xFF9AA0A6) : TichColors.neutralMuted,
+          color: isDark ? const Color(0xFF9AA0A6) : TichColors.blueDark,
         ),
       ),
     );
@@ -275,11 +275,12 @@ class _SessionCell extends StatelessWidget {
     if (sessions.isEmpty) {
       return Container(
         color: isDark ? TichColors.darkBackground : TichColors.neutral,
-        padding: EdgeInsets.all(compact ? 6 : 8),
+        padding: EdgeInsets.all(compact ? 4 : 6),
         child: Text(
           '—',
+          textAlign: TextAlign.center,
           style: tichUi(
-            fontSize: 11,
+            fontSize: 10,
             color: isDark ? TichColors.darkBorder : TichColors.neutralBorder,
           ),
         ),
@@ -288,12 +289,12 @@ class _SessionCell extends StatelessWidget {
 
     return Container(
       color: isDark ? TichColors.darkBackground : TichColors.neutral,
-      padding: EdgeInsets.all(compact ? 4 : 6),
+      padding: EdgeInsets.all(compact ? 3 : 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < sessions.length; i++) ...[
-            if (i > 0) SizedBox(height: compact ? 4 : 6),
+            if (i > 0) SizedBox(height: compact ? 3 : 4),
             _SessionChip(session: sessions[i], compact: compact, isDark: isDark),
           ],
         ],
@@ -319,7 +320,6 @@ class _SessionChip extends StatelessWidget {
       'exam' => const Color(0xFFC53030),
       'supplementary' => const Color(0xFF8A6D1A),
       'special_exam' => const Color(0xFF7C3AED),
-      'break' => TichColors.neutralMuted,
       _ => TichColors.blue,
     };
   }
@@ -328,94 +328,65 @@ class _SessionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final code = session['unit_code']?.toString() ?? '';
     final name = session['unit_name']?.toString() ?? '';
-    final title = code.isNotEmpty
-        ? code
-        : (name.isNotEmpty ? name : 'Session');
-    final start = staffTimetableTimeKey(session['start_time']);
-    final end = staffTimetableTimeKey(session['end_time']);
-    final timeLine = end.isNotEmpty && end != start ? '$start–$end' : start;
+    final title = code.isNotEmpty ? code : name;
     final room = session['room']?.toString() ?? '';
-    final program = session['program']?.toString() ?? '';
-    final type = session['session_type']?.toString() ?? 'lesson';
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? TichColors.darkSurface : TichColors.white,
         borderRadius: TichRadius.borderRadiusSm,
         border: Border(
-          left: BorderSide(color: _accent, width: 3),
+          left: BorderSide(color: _accent, width: 2),
           top: BorderSide(
-            color: _accent.withValues(alpha: isDark ? 0.55 : 0.35),
+            color: _accent.withValues(alpha: isDark ? 0.45 : 0.3),
           ),
           right: BorderSide(
-            color: _accent.withValues(alpha: isDark ? 0.55 : 0.35),
+            color: _accent.withValues(alpha: isDark ? 0.45 : 0.3),
           ),
           bottom: BorderSide(
-            color: _accent.withValues(alpha: isDark ? 0.55 : 0.35),
+            color: _accent.withValues(alpha: isDark ? 0.45 : 0.3),
           ),
         ),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 5 : 8,
-        vertical: compact ? 5 : 7,
+        horizontal: compact ? 3 : 5,
+        vertical: compact ? 4 : 5,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
-            maxLines: compact ? 2 : 3,
+            title.isNotEmpty ? title : 'Session',
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: tichUi(
-              fontSize: compact ? 11 : 12,
+              fontSize: compact ? 9 : 10,
               fontWeight: FontWeight.w700,
+              height: 1.15,
             ),
           ),
           if (name.isNotEmpty && code.isNotEmpty) ...[
-            SizedBox(height: compact ? 2 : 3),
+            const SizedBox(height: 2),
             Text(
               name,
-              maxLines: compact ? 2 : 3,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: tichUi(
-                fontSize: compact ? 10 : 11,
+                fontSize: compact ? 8 : 9,
                 color: TichColors.neutralMuted,
+                height: 1.15,
               ),
             ),
           ],
-          if (timeLine.isNotEmpty) ...[
-            SizedBox(height: compact ? 2 : 3),
-            Text(
-              timeLine,
-              style: tichUi(fontSize: 10, color: TichColors.neutralMuted),
-            ),
-          ],
           if (room.isNotEmpty) ...[
-            SizedBox(height: compact ? 2 : 3),
-            Text(
-              'Room $room',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tichUi(fontSize: 10, color: TichColors.neutralMuted),
-            ),
-          ],
-          if (program.isNotEmpty) ...[
-            SizedBox(height: compact ? 2 : 3),
-            Text(
-              program,
-              maxLines: compact ? 1 : 2,
-              overflow: TextOverflow.ellipsis,
-              style: tichUi(fontSize: 10, color: TichColors.neutralMuted),
-            ),
-          ],
-          if (!compact && type != 'lesson') ...[
             const SizedBox(height: 2),
             Text(
-              type.replaceAll('_', ' '),
+              room,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: tichUi(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: _accent,
+                fontSize: compact ? 8 : 9,
+                color: TichColors.neutralMuted,
               ),
             ),
           ],

@@ -107,6 +107,35 @@ class StaffApi {
 
   Future<Map<String, dynamic>> content() => _client.get('/staff/content');
 
+  Future<Map<String, dynamic>> uploadContent({
+    required int unitId,
+    required String title,
+    String? contentText,
+    String? filePath,
+    String? fileName,
+  }) {
+    final fields = <String, String>{
+      'unit_id': '$unitId',
+      'title': title,
+      if (contentText != null && contentText.trim().isNotEmpty)
+        'content_text': contentText.trim(),
+    };
+    if (filePath != null && filePath.isNotEmpty) {
+      return _client.multipart(
+        '/staff/content',
+        fields: fields,
+        fileField: 'file',
+        filePath: filePath,
+        fileName: fileName ?? _basename(filePath),
+      );
+    }
+    return _client.multipartFiles(
+      '/staff/content',
+      fields: fields,
+      files: const [],
+    );
+  }
+
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/staff/notifications');
 }

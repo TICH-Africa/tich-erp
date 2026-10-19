@@ -236,5 +236,6 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::post('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'store']);
     Route::post('/lesson-plans/{plan}/submit', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'submit']);
 
-    Route::get('/content', \App\Http\Controllers\Api\Staff\mobile\ContentController::class);
+    Route::get('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'index']);
+    Route::post('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'store']);
 });

@@ -99,10 +99,6 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text(
-                  'Mark class attendance (separate from employee clock-in).',
-                  style: tichUi(color: TichColors.neutralMuted, fontSize: 13),
-                ),
                 const SizedBox(height: 12),
                 if (upcoming.isNotEmpty) ...[
                   const TichSectionHeader('Upcoming / recent'),
