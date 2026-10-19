@@ -442,11 +442,81 @@ class FinanceReportService
         foreach ($codes as $code) {
             $codes = array_values(array_unique(array_merge(
                 $codes,
-                ChartOfAccount::query()->where('parent_account_code', $code)->pluck('account_code')->map(fn ($c) => (string) $c)->all()
+                ChartOfAccount::query()
+                    ->where('is_active', 1)
+                    ->where('parent_account_code', $code)
+                    ->pluck('account_code')
+                    ->map(fn ($c) => (string) $c)
+                    ->all()
             )));
         }
 
         return $codes;
+    }
+
+    /**
+     * Cash, bank and mobile money accounts the institution really holds money in.
+     *
+     * A chart of accounts keeps the sample accounts that came with the setup, and a
+     * report that lists them shows finance banks the college has never used. An
+     * account is only genuine once the ledger has posted through it, it carries a
+     * balance, or staff record a payment into it, so the reconciliation works from
+     * those accounts alone.
+     *
+     * @return list<string>
+     */
+    private function usedCashAccountCodes(?string $to): array
+    {
+        $candidates = $this->cashAccountCodes();
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        $touched = [];
+
+        foreach (['debit_account_code', 'credit_account_code'] as $column) {
+            $posted = AccountLedger::query()
+                ->where('is_reversed', 0)
+                ->whereIn($column, $candidates)
+                ->distinct()
+                ->pluck($column);
+
+            foreach ($posted as $code) {
+                $touched[(string) $code] = true;
+            }
+        }
+
+        // Money a payment screen deposited into an account, even before it posted.
+        if (Schema::hasColumn('payments', 'payment_account_code')) {
+            $deposits = DB::table('payments')
+                ->whereNotNull('payment_account_code')
+                ->distinct()
+                ->pluck('payment_account_code');
+
+            foreach ($deposits as $deposit) {
+                $touched[(string) $deposit] = true;
+            }
+        }
+
+        // Money a payment screen deposited into an account, even before it posted.
+        if (Schema::hasColumn('payments', 'payment_account_code')) {
+            $deposits = DB::table('payments')
+                ->whereNotNull('payment_account_code')
+                ->distinct()
+                ->pluck('payment_account_code');
+
+            foreach ($deposits as $deposit) {
+                $touched[(string) $deposit] = true;
+            }
+        }
+
+        $balances = $this->ledger->signedBalances(null, $to);
+
+        return array_values(array_filter(
+            $candidates,
+            fn (string $code) => isset($touched[$code]) || abs((float) ($balances[$code] ?? 0.0)) >= 0.01
+        ));
     }
 
     private function cashBalanceUpTo(?string $date): float
@@ -921,10 +991,11 @@ class FinanceReportService
         $to = $this->periodEnd($filters) ?? now()->toDateString();
 
         $names = ChartOfAccount::query()->pluck('account_name', 'account_code');
-        $cashCodes = $this->cashAccountCodes();
+        $usableCodes = $this->usedCashAccountCodes($to);
         $chosen = trim((string) ($filters['cash_account'] ?? ''));
+        $cashCodes = $usableCodes;
 
-        if ($chosen !== '' && in_array($chosen, $cashCodes, true)) {
+        if ($chosen !== '' && in_array($chosen, $usableCodes, true)) {
             $cashCodes = [$chosen];
         }
 
@@ -1040,10 +1111,11 @@ class FinanceReportService
             'from' => $from,
             'to' => $to,
             'cash_account' => $chosen !== '' && $chosen !== null ? $chosen : null,
-            'cash_accounts' => collect($this->cashAccountCodes())
+            'cash_accounts' => collect($usableCodes)
                 ->map(fn (string $code) => ['code' => $code, 'name' => (string) ($names[$code] ?? $code)])
                 ->values()
                 ->all(),
+            'unused_accounts' => max(0, count($this->cashAccountCodes()) - count($usableCodes)),
             'opening_balance' => $openingTotal,
             'received' => [
                 'total' => $receivedTotal,
