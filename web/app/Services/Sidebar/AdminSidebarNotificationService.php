@@ -9,7 +9,7 @@ use App\Models\Department;
 use App\Models\User;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class AdminSidebarNotificationService
 {
@@ -66,31 +66,31 @@ class AdminSidebarNotificationService
     private function computeCounts(): array
     {
         $pendingDepartments = 0;
-        if (Schema::hasTable('departments') && Schema::hasColumn('departments', 'approval_status')) {
+        if (SchemaProbe::hasTable('departments') && SchemaProbe::hasColumn('departments', 'approval_status')) {
             $pendingDepartments = Department::query()
                 ->whereIn('approval_status', ['pending', 'pending_approval', 'draft'])
                 ->count();
         }
 
         $pendingPrograms = 0;
-        if (Schema::hasTable('academic_programs')) {
+        if (SchemaProbe::hasTable('academic_programs')) {
             $pendingPrograms = AcademicProgram::query()
                 ->where('status', 'pending_ceo')
                 ->count();
         }
 
         $inactiveCampuses = 0;
-        if (Schema::hasTable('campuses') && Schema::hasColumn('campuses', 'is_active')) {
+        if (SchemaProbe::hasTable('campuses') && SchemaProbe::hasColumn('campuses', 'is_active')) {
             $inactiveCampuses = Campus::query()->where('is_active', false)->count();
         }
 
         $inactiveUsers = 0;
-        if (Schema::hasTable('users') && Schema::hasColumn('users', 'is_active')) {
+        if (SchemaProbe::hasTable('users') && SchemaProbe::hasColumn('users', 'is_active')) {
             $inactiveUsers = User::query()->where('is_active', false)->count();
         }
 
         $recentFailures = 0;
-        if (Schema::hasTable('audit_logs') && Schema::hasColumn('audit_logs', 'status')) {
+        if (SchemaProbe::hasTable('audit_logs') && SchemaProbe::hasColumn('audit_logs', 'status')) {
             $recentFailures = \App\Models\AuditLog::query()
                 ->where('status', 'failure')
                 ->where('created_at', '>=', now()->subDays(7))

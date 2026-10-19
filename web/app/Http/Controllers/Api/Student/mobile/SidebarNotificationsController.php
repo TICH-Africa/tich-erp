@@ -17,10 +17,11 @@ class SidebarNotificationsController extends Controller
         StudentSidebarNotificationService $notifications,
     ): JsonResponse {
         $student = $this->portalStudent($request);
+        $counts = $notifications->countsFor($student, true);
 
         return response()->json([
-            'counts' => $notifications->countsFor($student, true),
-            'labels' => $notifications->formattedCountsFor($student, true),
+            'counts' => $counts,
+            'labels' => $notifications->formattedCounts($counts),
         ]);
     }
 }

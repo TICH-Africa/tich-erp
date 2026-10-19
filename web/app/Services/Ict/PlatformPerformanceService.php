@@ -17,6 +17,12 @@ class PlatformPerformanceService
 
     private bool $recording = false;
 
+    /** @var array<string, array<string, mixed>> */
+    private array $buckets = [];
+
+    /** @var array<string, bool> */
+    private array $dirty = [];
+
     public function recordRequest(int $durationMs, int $statusCode, float $memoryMb): void
     {
         if ($this->recording) {
@@ -909,9 +915,17 @@ class PlatformPerformanceService
      */
     private function readBucket(string $key): array
     {
-        $value = $this->metricsStore()->get($key);
+        if (array_key_exists($key, $this->buckets)) {
+            return $this->buckets[$key];
+        }
 
-        return is_array($value) ? $value : [];
+        try {
+            $stored = $this->metricsStore()->get($key);
+        } catch (Throwable) {
+            $stored = null;
+        }
+
+        return $this->buckets[$key] = is_array($stored) ? $stored : [];
     }
 
     /**
@@ -919,7 +933,53 @@ class PlatformPerformanceService
      */
     private function writeBucket(string $key, array $data): void
     {
-        $this->metricsStore()->put($key, $data, now()->addMinutes(self::WINDOW_MINUTES + 2));
+        $this->buckets[$key] = $data;
+        $this->dirty[$key] = true;
+    }
+
+    /**
+     * Write the collected metrics once, at the end of the request.
+     *
+     * Every query used to read and re-write its minute bucket through the cache
+     * store, so a page with seventy queries spent more time on bookkeeping than on
+     * the queries themselves. The counters now accumulate in memory and land on
+     * disk when the request finishes.
+     */
+    public function flush(): void
+    {
+        if ($this->dirty === []) {
+            return;
+        }
+
+        $store = $this->metricsStore();
+        $expires = now()->addMinutes(self::WINDOW_MINUTES + 2);
+
+        foreach (array_keys($this->dirty) as $key) {
+            try {
+                $store->put($key, $this->buckets[$key] ?? [], $expires);
+            } catch (Throwable) {
+                // Performance metrics never justify failing a request.
+            }
+        }
+
+        $this->dirty = [];
+    }
+
+    /**
+     * Flush whichever instance the container is holding, for shutdown hooks where
+     * the app may already be tearing down.
+     */
+    public static function flushResolved(): void
+    {
+        try {
+            $service = app(self::class);
+        } catch (Throwable) {
+            return;
+        }
+
+        if ($service instanceof self) {
+            $service->flush();
+        }
     }
 
     /**

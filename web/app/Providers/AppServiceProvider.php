@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\RBACService;
+use App\Support\SchemaProbe;
 use App\View\Composers\AcademicsSidebarComposer;
 use App\View\Composers\AdminSidebarComposer;
 use App\View\Composers\AdministrationSidebarComposer;
@@ -22,6 +23,7 @@ use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -112,6 +114,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Keep deploy/production.sql in sync whenever migrations finish successfully (local/dev).
         Event::listen(MigrationsEnded::class, function (): void {
+            SchemaProbe::reset();
+
             if (app()->environment('production')) {
                 return;
             }
@@ -121,6 +125,11 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Throwable) {
                 // Never fail a migration run because the SQL export could not write.
             }
+        });
+
+        // Schema guards are memoised per request, so each request starts fresh.
+        Event::listen(RouteMatched::class, function (): void {
+            SchemaProbe::reset();
         });
     }
 

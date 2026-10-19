@@ -32,7 +32,7 @@ class NotificationController extends Controller
         $staff = $this->portalStaff($request);
         $user = $request->user();
         $counts = $notifications->countsFor($staff, true, $user);
-        $labels = $notifications->formattedCountsFor($staff, true, $user);
+        $labels = $notifications->formattedCounts($counts);
 
         $inbox = InAppNotification::forUser((int) $user->id, 80);
         $unreadInbox = $inbox->filter(fn (InAppNotification $n) => $n->isUnread())->count();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Support\SchemaProbe;
 
 class FinanceMpesaSetting extends Model
 {
@@ -33,7 +34,7 @@ class FinanceMpesaSetting extends Model
 
     public static function current(): self
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable((new static)->getTable())) {
+        if (! SchemaProbe::hasTable((new static)->getTable())) {
             return new static([
                 'is_enabled' => false,
                 'environment' => 'sandbox',

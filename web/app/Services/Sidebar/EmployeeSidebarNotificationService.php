@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Services\Sidebar\Concerns\MergesQaTaskSidebarCounts;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class EmployeeSidebarNotificationService
 {
@@ -78,7 +78,7 @@ class EmployeeSidebarNotificationService
 
     private function pendingAppraisals(Staff $staff): int
     {
-        if (! Schema::hasTable('hr_appraisals')) {
+        if (! SchemaProbe::hasTable('hr_appraisals')) {
             return 0;
         }
 
@@ -97,7 +97,7 @@ class EmployeeSidebarNotificationService
 
     private function pendingProfileChanges(Staff $staff): int
     {
-        if (! Schema::hasTable('staff_profile_change_requests')) {
+        if (! SchemaProbe::hasTable('staff_profile_change_requests')) {
             return 0;
         }
 
@@ -118,7 +118,7 @@ class EmployeeSidebarNotificationService
 
     private function openConcerns(Staff $staff): int
     {
-        if (! Schema::hasTable('grievances')) {
+        if (! SchemaProbe::hasTable('grievances')) {
             return 0;
         }
 
@@ -130,7 +130,7 @@ class EmployeeSidebarNotificationService
 
     private function openFeedback(Staff $staff): int
     {
-        if (! Schema::hasTable('feedback')) {
+        if (! SchemaProbe::hasTable('feedback')) {
             return 0;
         }
 
@@ -142,7 +142,7 @@ class EmployeeSidebarNotificationService
 
     private function unacknowledgedPolicies(Staff $staff): int
     {
-        if (! Schema::hasTable('policy_acknowledgements')) {
+        if (! SchemaProbe::hasTable('policy_acknowledgements')) {
             return 0;
         }
 

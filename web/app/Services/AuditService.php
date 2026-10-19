@@ -6,7 +6,7 @@ use App\Models\AuditLog;
 use App\Support\ClientContextResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class AuditService
 {
@@ -92,11 +92,11 @@ class AuditService
             $payload['client_context'] = $clientContext;
         }
 
-        if (Schema::hasColumn('audit_logs', 'status')) {
+        if (SchemaProbe::hasColumn('audit_logs', 'status')) {
             $payload['status'] = $status;
         }
 
-        if (Schema::hasColumn('audit_logs', 'module')) {
+        if (SchemaProbe::hasColumn('audit_logs', 'module')) {
             $payload['module'] = $module;
         }
 
@@ -211,7 +211,7 @@ class AuditService
             $query->where('action', $filters['action']);
         }
 
-        if (! empty($filters['module']) && Schema::hasColumn('audit_logs', 'module')) {
+        if (! empty($filters['module']) && SchemaProbe::hasColumn('audit_logs', 'module')) {
             $module = $filters['module'];
             // Treat "hr" as covering leave/employee prefixes that map to HR.
             if ($module === 'hr') {
@@ -283,7 +283,7 @@ class AuditService
             });
         }
 
-        if (! empty($filters['status']) && Schema::hasColumn('audit_logs', 'status')) {
+        if (! empty($filters['status']) && SchemaProbe::hasColumn('audit_logs', 'status')) {
             $query->where('status', $filters['status']);
         }
 
@@ -392,7 +392,7 @@ class AuditService
         $configured = config('audit.modules', []);
         $fromDb = [];
 
-        if ($this->isAvailable() && Schema::hasColumn('audit_logs', 'module')) {
+        if ($this->isAvailable() && SchemaProbe::hasColumn('audit_logs', 'module')) {
             $fromDb = AuditLog::query()
                 ->whereNotNull('module')
                 ->distinct()
@@ -535,19 +535,19 @@ class AuditService
     private function supportsHashChain(): bool
     {
         return $this->isAvailable()
-            && Schema::hasColumn('audit_logs', 'record_hash')
-            && Schema::hasColumn('audit_logs', 'previous_hash');
+            && SchemaProbe::hasColumn('audit_logs', 'record_hash')
+            && SchemaProbe::hasColumn('audit_logs', 'previous_hash');
     }
 
     private function hasClientContextColumn(): bool
     {
-        return $this->isAvailable() && Schema::hasColumn('audit_logs', 'client_context');
+        return $this->isAvailable() && SchemaProbe::hasColumn('audit_logs', 'client_context');
     }
 
     private function isAvailable(): bool
     {
         try {
-            return Schema::hasTable('audit_logs');
+            return SchemaProbe::hasTable('audit_logs');
         } catch (\Throwable) {
             return false;
         }

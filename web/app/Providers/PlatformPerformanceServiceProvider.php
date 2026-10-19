@@ -24,5 +24,14 @@ class PlatformPerformanceServiceProvider extends ServiceProvider
                 // ignore
             }
         });
+
+        $this->app->terminating(function (): void {
+            PlatformPerformanceService::flushResolved();
+        });
+
+        // Console commands and queue jobs never run the HTTP terminate stage.
+        register_shutdown_function(static function (): void {
+            PlatformPerformanceService::flushResolved();
+        });
     }
 }

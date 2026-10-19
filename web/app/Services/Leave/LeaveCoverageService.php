@@ -12,7 +12,7 @@ use App\Services\RBACService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class LeaveCoverageService
 {
@@ -34,7 +34,7 @@ class LeaveCoverageService
             $ids->push((int) $staff->department_id);
         }
 
-        if ($staff->user_id && Schema::hasTable('user_roles')) {
+        if ($staff->user_id && SchemaProbe::hasTable('user_roles')) {
             $roleDeptIds = DB::table('user_roles')
                 ->where('user_id', $staff->user_id)
                 ->whereNotNull('department_id')

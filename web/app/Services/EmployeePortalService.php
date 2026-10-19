@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Support\UserType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class EmployeePortalService
 {
@@ -156,7 +156,7 @@ class EmployeePortalService
      */
     public function leaveBalancesFor(Staff $staff): Collection
     {
-        if (Schema::hasTable('leave_balances') && Schema::hasTable('leave_types')) {
+        if (SchemaProbe::hasTable('leave_balances') && SchemaProbe::hasTable('leave_types')) {
             $this->leaveAccrual->ensureBalancesForStaff($staff);
         }
 
@@ -168,7 +168,7 @@ class EmployeePortalService
      */
     private function leaveBalances(Staff $staff): Collection
     {
-        if (! Schema::hasTable('leave_balances') || ! Schema::hasTable('leave_types')) {
+        if (! SchemaProbe::hasTable('leave_balances') || ! SchemaProbe::hasTable('leave_types')) {
             return collect();
         }
 
@@ -195,7 +195,7 @@ class EmployeePortalService
      */
     private function recentLeaveRequests(Staff $staff): Collection
     {
-        if (! Schema::hasTable('leave_requests') || ! Schema::hasTable('leave_types')) {
+        if (! SchemaProbe::hasTable('leave_requests') || ! SchemaProbe::hasTable('leave_types')) {
             return collect();
         }
 
@@ -228,7 +228,7 @@ class EmployeePortalService
      */
     private function staffTrainings(Staff $staff): Collection
     {
-        if (! Schema::hasTable('professional_development')) {
+        if (! SchemaProbe::hasTable('professional_development')) {
             return collect();
         }
 

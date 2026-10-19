@@ -18,7 +18,7 @@ use App\Models\User;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class StudentSidebarNotificationService
 {
@@ -139,7 +139,7 @@ class StudentSidebarNotificationService
     private function computeCounts(Student $student): array
     {
         $notifications = 0;
-        if (Schema::hasTable('student_notifications')) {
+        if (SchemaProbe::hasTable('student_notifications')) {
             $notifications = StudentNotification::query()
                 ->where('student_id', $student->id)
                 ->whereNull('read_at')
@@ -147,7 +147,7 @@ class StudentSidebarNotificationService
         }
 
         $profile = 0;
-        if (Schema::hasTable('student_profile_change_requests')) {
+        if (SchemaProbe::hasTable('student_profile_change_requests')) {
             $profile = StudentProfileChangeRequest::query()
                 ->where('student_id', $student->id)
                 ->where('status', 'pending')
@@ -155,7 +155,7 @@ class StudentSidebarNotificationService
         }
 
         $documents = 0;
-        if (Schema::hasTable('student_document_requests')) {
+        if (SchemaProbe::hasTable('student_document_requests')) {
             $documents = StudentDocumentRequest::query()
                 ->where('student_id', $student->id)
                 ->where(function ($q) {
@@ -169,7 +169,7 @@ class StudentSidebarNotificationService
         }
 
         $requests = 0;
-        if (Schema::hasTable('student_lifecycle_requests')) {
+        if (SchemaProbe::hasTable('student_lifecycle_requests')) {
             $requests = StudentLifecycleRequest::query()
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['pending', 'processing'])
@@ -177,7 +177,7 @@ class StudentSidebarNotificationService
         }
 
         $clearance = 0;
-        if (Schema::hasTable('student_clearance_items')) {
+        if (SchemaProbe::hasTable('student_clearance_items')) {
             $clearance = StudentClearanceItem::query()
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['pending', 'blocked'])
@@ -185,7 +185,7 @@ class StudentSidebarNotificationService
         }
 
         $evaluations = 0;
-        if (Schema::hasTable('course_evaluation_windows') && Schema::hasTable('course_evaluations')) {
+        if (SchemaProbe::hasTable('course_evaluation_windows') && SchemaProbe::hasTable('course_evaluations')) {
             $openWindowIds = CourseEvaluationWindow::query()
                 ->where('is_active', true)
                 ->where('opens_at', '<=', now())
@@ -224,7 +224,7 @@ class StudentSidebarNotificationService
         }
 
         $exams = 0;
-        if (Schema::hasTable('student_transcript_requests')) {
+        if (SchemaProbe::hasTable('student_transcript_requests')) {
             $exams += StudentTranscriptRequest::query()
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['pending', 'processing'])
@@ -237,7 +237,7 @@ class StudentSidebarNotificationService
                 ->count();
         }
 
-        if (Schema::hasTable('exam_eligibility_matrix') && Schema::hasTable('exam_schedules')) {
+        if (SchemaProbe::hasTable('exam_eligibility_matrix') && SchemaProbe::hasTable('exam_schedules')) {
             $blockedUpcoming = (int) DB::table('exam_eligibility_matrix as eem')
                 ->join('exam_schedules as es', function ($join) {
                     $join->on('es.unit_id', '=', 'eem.unit_id')
@@ -253,7 +253,7 @@ class StudentSidebarNotificationService
         }
 
         $attendance = 0;
-        if (Schema::hasTable('attendance_summaries')) {
+        if (SchemaProbe::hasTable('attendance_summaries')) {
             $attendance = (int) DB::table('attendance_summaries')
                 ->where('student_id', $student->id)
                 ->where('attendance_percentage', '<', 90)
@@ -266,7 +266,7 @@ class StudentSidebarNotificationService
         }
 
         $assessments = 0;
-        if (Schema::hasTable('objective_assessments') && Schema::hasTable('objective_submissions')) {
+        if (SchemaProbe::hasTable('objective_assessments') && SchemaProbe::hasTable('objective_submissions')) {
             $now = now();
             $openAssessments = DB::table('objective_assessments as oa')
                 ->whereIn('oa.status', ['published', 'ready'])
@@ -291,7 +291,7 @@ class StudentSidebarNotificationService
         }
 
         $suggestions = 0;
-        if (Schema::hasTable('student_suggestions')) {
+        if (SchemaProbe::hasTable('student_suggestions')) {
             $suggestions = (int) DB::table('student_suggestions')
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['open', 'under_review'])
@@ -301,13 +301,13 @@ class StudentSidebarNotificationService
         }
 
         $examRequests = 0;
-        if (Schema::hasTable('special_exam_requests')) {
+        if (SchemaProbe::hasTable('special_exam_requests')) {
             $examRequests += SpecialExamRequest::query()
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['pending', 'on_hold'])
                 ->count();
         }
-        if (Schema::hasTable('supplementary_requests')) {
+        if (SchemaProbe::hasTable('supplementary_requests')) {
             $examRequests += SupplementaryExamRequest::query()
                 ->where('student_id', $student->id)
                 ->whereIn('application_status', ['pending_review', 'pending_fee', 'on_hold'])
@@ -315,7 +315,7 @@ class StudentSidebarNotificationService
         }
 
         $registeredUnitIds = collect();
-        if (Schema::hasTable('registered_units') && Schema::hasTable('student_semester_registrations')) {
+        if (SchemaProbe::hasTable('registered_units') && SchemaProbe::hasTable('student_semester_registrations')) {
             $registeredUnitIds = DB::table('registered_units as ru')
                 ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
                 ->where('ssr.student_id', $student->id)
@@ -328,12 +328,12 @@ class StudentSidebarNotificationService
         $units = 0;
         if ($registeredUnitIds->isEmpty()
             && in_array($student->enrollment_status, ['active', 'enrolled', 'registered'], true)
-            && Schema::hasTable('curriculum_version_units')) {
+            && SchemaProbe::hasTable('curriculum_version_units')) {
             $units = 1;
         }
 
         $content = 0;
-        if (Schema::hasTable('unit_contents') && $registeredUnitIds->isNotEmpty()) {
+        if (SchemaProbe::hasTable('unit_contents') && $registeredUnitIds->isNotEmpty()) {
             $content = (int) DB::table('unit_contents')
                 ->whereIn('unit_id', $registeredUnitIds)
                 ->where('status', 'published')
@@ -342,10 +342,10 @@ class StudentSidebarNotificationService
         }
 
         $progress = 0;
-        if (Schema::hasTable('exam_results')) {
+        if (SchemaProbe::hasTable('exam_results')) {
             $progressQuery = DB::table('exam_results')->where('student_id', $student->id);
 
-            if (Schema::hasColumn('exam_results', 'result_status')) {
+            if (SchemaProbe::hasColumn('exam_results', 'result_status')) {
                 $progressQuery->where(function ($q) {
                     $q->whereIn('result_status', ['failed', 'incomplete', 'supplementary']);
                 });
@@ -355,7 +355,7 @@ class StudentSidebarNotificationService
                         ->orWhere('supplementary_triggered', 1)
                         ->orWhere('clinical_supplementary_triggered', 1);
 
-                    if (Schema::hasColumn('exam_results', 'grade_letter')) {
+                    if (SchemaProbe::hasColumn('exam_results', 'grade_letter')) {
                         $q->orWhereIn('grade_letter', ['E', 'F']);
                     }
                 });
@@ -365,7 +365,7 @@ class StudentSidebarNotificationService
         }
 
         $calendar = 0;
-        if (Schema::hasTable('curriculum_version_periods') && $student->program_id) {
+        if (SchemaProbe::hasTable('curriculum_version_periods') && $student->program_id) {
             $calendar = (int) DB::table('curriculum_version_periods as cvp')
                 ->join('curriculum_versions as cv', 'cv.id', '=', 'cvp.curriculum_version_id')
                 ->where('cv.program_id', $student->program_id)
@@ -377,7 +377,7 @@ class StudentSidebarNotificationService
         }
 
         $registration = 0;
-        if (Schema::hasTable('student_semester_registrations')) {
+        if (SchemaProbe::hasTable('student_semester_registrations')) {
             $openReg = DB::table('student_semester_registrations')
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['draft', 'pending', 'returned', 'incomplete'])
@@ -391,7 +391,7 @@ class StudentSidebarNotificationService
 
         $timetableLesson = 0;
         $timetableExam = 0;
-        if (Schema::hasTable('program_timetables') && $student->program_id) {
+        if (SchemaProbe::hasTable('program_timetables') && $student->program_id) {
             $base = ProgramTimetable::query()
                 ->where('program_id', $student->program_id)
                 ->where('status', 'published');

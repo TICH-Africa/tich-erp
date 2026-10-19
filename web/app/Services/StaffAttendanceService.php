@@ -7,7 +7,7 @@ use App\Models\Staff;
 use App\Models\StaffAttendance;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class StaffAttendanceService
 {
@@ -170,7 +170,7 @@ class StaffAttendanceService
 
     protected function isPublicHoliday(string $date): bool
     {
-        if (! Schema::hasTable('public_holidays')) {
+        if (! SchemaProbe::hasTable('public_holidays')) {
             return false;
         }
 
@@ -181,7 +181,7 @@ class StaffAttendanceService
 
     protected function isOnApprovedLeave(Staff $staff, string $date): bool
     {
-        if (! Schema::hasTable('leave_requests')) {
+        if (! SchemaProbe::hasTable('leave_requests')) {
             return false;
         }
 

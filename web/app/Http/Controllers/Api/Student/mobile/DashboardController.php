@@ -10,7 +10,7 @@ use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class DashboardController extends Controller
 {
@@ -30,7 +30,7 @@ class DashboardController extends Controller
 
         $notifications = [];
         $unread = 0;
-        if (Schema::hasTable('student_notifications')) {
+        if (SchemaProbe::hasTable('student_notifications')) {
             $notifications = StudentNotification::query()
                 ->where('student_id', $student->id)
                 ->orderByDesc('created_at')

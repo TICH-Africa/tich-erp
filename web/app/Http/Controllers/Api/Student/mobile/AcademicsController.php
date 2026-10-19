@@ -12,7 +12,7 @@ use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaProbe;
 
 class AcademicsController extends Controller
 {
@@ -34,7 +34,7 @@ class AcademicsController extends Controller
         $specialExamRequests = [];
         $supplementaryExamRequests = [];
 
-        if (Schema::hasTable('student_transcript_requests')) {
+        if (SchemaProbe::hasTable('student_transcript_requests')) {
             $transcriptRequests = StudentTranscriptRequest::query()
                 ->where('student_id', $student->id)
                 ->orderByDesc('created_at')
@@ -50,7 +50,7 @@ class AcademicsController extends Controller
                 ->all();
         }
 
-        if (Schema::hasTable('special_exam_requests')) {
+        if (SchemaProbe::hasTable('special_exam_requests')) {
             $specialExamRequests = SpecialExamRequest::query()
                 ->with(['unit', 'semester'])
                 ->where('student_id', $student->id)
@@ -69,7 +69,7 @@ class AcademicsController extends Controller
                 ->all();
         }
 
-        if (Schema::hasTable('supplementary_requests')) {
+        if (SchemaProbe::hasTable('supplementary_requests')) {
             $supplementaryExamRequests = SupplementaryExamRequest::query()
                 ->with(['unit', 'semester'])
                 ->where('student_id', $student->id)
