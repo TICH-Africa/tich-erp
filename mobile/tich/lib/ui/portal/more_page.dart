@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../shell/employee_portal_menu_scope.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
@@ -32,6 +33,8 @@ class MorePage extends StatelessWidget {
         label: 'My profile',
         icon: Icons.person_outline,
         badgeCount: badge('profile-changes'),
+        showProfilePhoto: true,
+        photoUrl: EmployeePortalMenuScope.photoUrlOf(context),
         onTap: () => open(ProfilePage(api: api)),
       ),
       TichMoreItem(

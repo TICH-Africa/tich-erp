@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../bloc/auth/auth_bloc.dart';
@@ -164,10 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           Text(
                             p['full_name']?.toString() ?? '',
-                            style: GoogleFonts.merriweather(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TichTheme.display(fontSize: 18),
                           ),
                           Text(
                             '${p['employee_number']} · ${p['job_title'] ?? ''}',

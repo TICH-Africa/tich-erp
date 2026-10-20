@@ -11,6 +11,7 @@ import '../shell/portal_shell.dart';
 import '../shell/procurement_portal_shell.dart';
 import '../shell/staff_portal_shell.dart';
 import 'tich_more_drawer.dart';
+import 'tich_theme_picker_sheet.dart';
 
 enum TichPortalMenuContext { employee, staff, student, procurement }
 
@@ -123,7 +124,7 @@ List<TichMoreItem> tichMoreMenuFooter(
   ];
 }
 
-/// Choose portal (when applicable), then Settings.
+/// Choose portal (when applicable), Settings, then Theme.
 List<TichMoreItem> tichGlobalMoreFooterItems(BuildContext context) {
   final auth = context.watch<AuthBloc>().state;
   final user = auth is AuthAuthenticated ? auth.user : null;
@@ -145,6 +146,15 @@ List<TichMoreItem> tichGlobalMoreFooterItems(BuildContext context) {
       label: 'Settings',
       icon: Icons.settings_outlined,
       onTap: () => open(const SettingsHubPage()),
+    ),
+    TichMoreItem(
+      label: 'Theme',
+      icon: Icons.brightness_6_outlined,
+      onTap: () {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showTichThemePicker(context);
+        });
+      },
     ),
   ];
 }

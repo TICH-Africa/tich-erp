@@ -12,6 +12,7 @@ import '../portal/payslips_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'employee_clock_nav.dart';
+import 'employee_portal_menu_scope.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
@@ -19,6 +20,7 @@ import 'tich_logout.dart';
 /// Called after clock-in/out so the bottom nav pulse updates immediately.
 abstract final class EmployeePortalNavSignals {
   static VoidCallback? onAttendanceChanged;
+  static VoidCallback? onStaffPhotoChanged;
 }
 
 class PortalShell extends StatefulWidget {
@@ -38,6 +40,8 @@ class _PortalShellState extends State<PortalShell>
   int _clockBadge = 0;
   bool _clockPulse = false;
   int _moreDot = 0;
+  String? _profilePhotoUrl;
+  bool _staffPhotoLoaded = false;
 
   static const _moreMenuKeys = [
     'profile-changes',
@@ -51,6 +55,7 @@ class _PortalShellState extends State<PortalShell>
   void initState() {
     super.initState();
     EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
+    EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
   }
 
   @override
@@ -58,7 +63,27 @@ class _PortalShellState extends State<PortalShell>
     if (EmployeePortalNavSignals.onAttendanceChanged == refreshNavBadges) {
       EmployeePortalNavSignals.onAttendanceChanged = null;
     }
+    if (EmployeePortalNavSignals.onStaffPhotoChanged == _loadStaffPhoto) {
+      EmployeePortalNavSignals.onStaffPhotoChanged = null;
+    }
     super.dispose();
+  }
+
+  Future<void> _loadStaffPhoto() async {
+    if (!mounted) return;
+    final api = context.read<EmployeeApi>();
+    try {
+      final data = await api.dashboard();
+      if (!mounted) return;
+      final staff = Map<String, dynamic>.from(data['staff'] as Map? ?? {});
+      final url = staff['photo_url']?.toString().trim();
+      setState(() {
+        _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+        _staffPhotoLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _staffPhotoLoaded = true);
+    }
   }
 
   @override
@@ -66,6 +91,9 @@ class _PortalShellState extends State<PortalShell>
     super.didChangeDependencies();
     if (_pages != null) return;
     final api = context.read<EmployeeApi>();
+    if (!_staffPhotoLoaded) {
+      _loadStaffPhoto();
+    }
     _pages = [
       DashboardPage(api: api),
       LeavePage(api: api),
@@ -120,9 +148,11 @@ class _PortalShellState extends State<PortalShell>
     final showClockPulse = _clockPulse;
     final showClockCount = !showClockPulse && _clockBadge > 0;
 
-    return PortalNavCountsScope(
-      counts: _counts,
-      child: AdaptiveTabScaffold(
+    return EmployeePortalMenuScope(
+      profilePhotoUrl: _profilePhotoUrl,
+      child: PortalNavCountsScope(
+        counts: _counts,
+        child: AdaptiveTabScaffold(
         currentIndex: _index,
         onTap: (i) {
           setState(() => _index = i);
@@ -183,6 +213,7 @@ class _PortalShellState extends State<PortalShell>
             badgeDotOnly: true,
           ),
         ],
+        ),
       ),
     );
   }

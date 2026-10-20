@@ -59,6 +59,21 @@ class TichCard extends StatelessWidget {
   }
 }
 
+/// Human-readable status text (matches web table badges, not raw enum strings).
+String formatStatusLabel(String? raw) {
+  final text = (raw ?? '').trim();
+  if (text.isEmpty) return '';
+  return text
+      .replaceAll('_', ' ')
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) {
+        if (w.length == 1) return w.toUpperCase();
+        return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+      })
+      .join(' ');
+}
+
 class TichStatusChip extends StatelessWidget {
   const TichStatusChip(this.label, {super.key, this.tone = TichChipTone.neutral});
 
@@ -67,6 +82,9 @@ class TichStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final display = formatStatusLabel(label);
+    if (display.isEmpty) return const SizedBox.shrink();
+
     final colors = switch (tone) {
       TichChipTone.success => (TichColors.successSoft, TichColors.successText),
       TichChipTone.info => (TichColors.cautionSoft, TichColors.cautionText),
@@ -76,20 +94,24 @@ class TichStatusChip extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: colors.$1,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: TichRadius.borderRadiusSm,
+        border: tone == TichChipTone.warning
+            ? Border.all(color: TichColors.warningBorder)
+            : null,
       ),
       child: Text(
-        label.replaceAll('_', ' '),
+        display,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         softWrap: false,
         style: tichUi(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
           color: colors.$2,
+          height: 1.2,
         ),
       ),
     );
@@ -97,6 +119,58 @@ class TichStatusChip extends StatelessWidget {
 }
 
 enum TichChipTone { success, info, warning, danger, neutral }
+
+/// Step header for multi-section forms (segment ticks, not a filled progress bar).
+class TichFormStepHeader extends StatelessWidget {
+  const TichFormStepHeader({
+    super.key,
+    required this.stepIndex,
+    required this.stepCount,
+    required this.title,
+  });
+
+  final int stepIndex;
+  final int stepCount;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Section ${stepIndex + 1} of $stepCount · $title',
+          style: tichUi(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: TichColors.neutralMuted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var i = 0; i < stepCount; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: i <= stepIndex
+                        ? scheme.primary
+                        : TichColors.neutralBorder,
+                    borderRadius: TichRadius.borderRadiusSm,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
 
 /// Dropdown with [isExpanded] and ellipsized selected label (avoids overflow stripes).
 class TichDropdownFormField<T> extends StatelessWidget {
@@ -231,14 +305,31 @@ class TichErrorRefresh extends StatelessWidget {
 
 TichChipTone toneForStatus(String? status) {
   final s = (status ?? '').toLowerCase();
-  if (s.contains('approv') || s.contains('active') || s == 'accepted') {
+  if (s.contains('reject') ||
+      s.contains('cancel') ||
+      s.contains('declin') ||
+      s.contains('discrep') ||
+      s.contains('flag')) {
+    return TichChipTone.danger;
+  }
+  if (s.contains('approv') ||
+      s.contains('complete') ||
+      s.contains('verified') ||
+      s.contains('paid') ||
+      s.contains('match') ||
+      s == 'accepted' ||
+      s.contains('active')) {
     return TichChipTone.success;
   }
-  if (s.contains('pending') || s.contains('review') || s.contains('expir')) {
+  if (s.contains('pending') ||
+      s.contains('review') ||
+      s.contains('expir') ||
+      s.contains('submit') ||
+      s.contains('low stock')) {
     return TichChipTone.warning;
   }
-  if (s.contains('reject') || s.contains('cancel') || s.contains('declin')) {
-    return TichChipTone.danger;
+  if (s.contains('draft')) {
+    return TichChipTone.neutral;
   }
   return TichChipTone.info;
 }

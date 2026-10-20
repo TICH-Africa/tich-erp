@@ -23,67 +23,9 @@ class ProcurementDetailBody extends StatelessWidget {
   }
 }
 
-Color _statusBackground(String label) {
-  final s = label.toLowerCase();
-  if (s.contains('reject') ||
-      s.contains('cancel') ||
-      s.contains('flag') ||
-      s.contains('discrep')) {
-    return TichColors.error.withValues(alpha: 0.12);
-  }
-  if (s.contains('pending') ||
-      s.contains('review') ||
-      s.contains('draft') ||
-      s.contains('submitted')) {
-    return TichColors.warningSoft;
-  }
-  if (s.contains('approv') ||
-      s.contains('complete') ||
-      s.contains('match') ||
-      s.contains('verified') ||
-      s.contains('active') ||
-      s.contains('paid') ||
-      s.contains('success')) {
-    return TichColors.greenLight;
-  }
-  return TichColors.blue.withValues(alpha: 0.12);
-}
-
-Color _statusForeground(String label) {
-  final s = label.toLowerCase();
-  if (s.contains('reject') || s.contains('cancel') || s.contains('flag')) {
-    return TichColors.error;
-  }
-  if (s.contains('pending') || s.contains('review') || s.contains('draft')) {
-    return TichColors.warningText;
-  }
-  if (s.contains('approv') ||
-      s.contains('complete') ||
-      s.contains('verified') ||
-      s.contains('paid')) {
-    return TichColors.greenDark;
-  }
-  return TichColors.blue;
-}
-
 Widget procurementStatusChip(String label) {
-  if (label.isEmpty) return const SizedBox.shrink();
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: _statusBackground(label),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: _statusForeground(label).withValues(alpha: 0.25)),
-    ),
-    child: Text(
-      label,
-      style: tichUi(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: _statusForeground(label),
-      ),
-    ),
-  );
+  if (label.trim().isEmpty) return const SizedBox.shrink();
+  return TichStatusChip(label, tone: toneForStatus(label));
 }
 
 Widget procurementDetailHero({

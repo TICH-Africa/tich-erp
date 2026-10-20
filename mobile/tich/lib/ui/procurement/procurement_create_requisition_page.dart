@@ -149,22 +149,7 @@ class _ProcurementCreateRequisitionPageState
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: TichColors.blueDark.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: TichColors.blueDark),
-            ),
-            child: Text(
-              'Draft',
-              style: tichUi(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: TichColors.blueDark,
-              ),
-            ),
-          ),
+          const TichStatusChip('Draft', tone: TichChipTone.neutral),
         ],
       ),
     );
@@ -677,28 +662,10 @@ class _ProcurementCreateRequisitionPageState
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Section ${_step + 1} of 2 · ${_stepTitles[_step]}',
-                      style: tichUi(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: TichColors.neutralMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: TichRadius.borderRadiusSm,
-                      child: LinearProgressIndicator(
-                        value: (_step + 1) / 2,
-                        minHeight: 6,
-                        backgroundColor: TichColors.neutralBorder,
-                        color: TichColors.green,
-                      ),
-                    ),
-                  ],
+                child: TichFormStepHeader(
+                  stepIndex: _step,
+                  stepCount: 2,
+                  title: _stepTitles[_step],
                 ),
               ),
               if (_loadingBudgetLines)

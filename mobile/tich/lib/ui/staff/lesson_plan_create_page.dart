@@ -317,28 +317,10 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Section ${_step + 1} of 3 · ${_stepTitles[_step]}',
-                  style: tichUi(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: TichColors.neutralMuted,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: TichRadius.borderRadiusSm,
-                  child: LinearProgressIndicator(
-                    value: (_step + 1) / 3,
-                    minHeight: 6,
-                    backgroundColor: TichColors.neutralBorder,
-                    color: TichColors.green,
-                  ),
-                ),
-              ],
+            child: TichFormStepHeader(
+              stepIndex: _step,
+              stepCount: 3,
+              title: _stepTitles[_step],
             ),
           ),
           if (_loadingContext)

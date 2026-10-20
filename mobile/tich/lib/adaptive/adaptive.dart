@@ -36,13 +36,29 @@ class AdaptiveApp extends StatelessWidget {
   final CupertinoThemeData? cupertinoTheme;
   final bool debugShowCheckedModeBanner;
 
+  ThemeData _materialThemeFor(BuildContext context) {
+    final platform = MediaQuery.platformBrightnessOf(context);
+    final brightness = switch (themeMode) {
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.light => Brightness.light,
+      ThemeMode.system => platform,
+    };
+    return brightness == Brightness.dark
+        ? (materialDarkTheme ?? materialTheme)
+        : materialTheme;
+  }
+
   @override
   Widget build(BuildContext context) {
     final builder = (BuildContext ctx, Widget? child) {
       final media = MediaQuery.of(ctx);
+      final material = _materialThemeFor(ctx);
       return MediaQuery(
         data: media.copyWith(textScaler: TextScaler.linear(textScaleFactor)),
-        child: child ?? const SizedBox.shrink(),
+        child: Theme(
+          data: material,
+          child: child ?? const SizedBox.shrink(),
+        ),
       );
     };
 

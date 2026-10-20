@@ -1,7 +1,5 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
@@ -52,7 +50,10 @@ class _DocumentsPageState extends State<DocumentsPage> {
         builder: (ctx, setModal) => TichFormDialog(
           title: Text(
             'Upload document',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w700),
+            style: TichTheme.display(
+              fontSize: 16,
+              color: Theme.of(ctx).colorScheme.onSurface,
+            ),
           ),
           scrollable: true,
           content: Column(

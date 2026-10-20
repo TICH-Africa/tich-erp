@@ -61,7 +61,10 @@ class _LoginPageState extends State<LoginPage> {
           Text(
             'Sign in with your ERP account',
             textAlign: TextAlign.center,
-            style: tichUi(color: TichColors.grey, fontSize: 14),
+            style: tichUi(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/tich_theme.dart';
+import 'employee_avatar.dart';
 import 'tich_more_row_trailing.dart';
 import 'tich_nav_badge.dart';
 import 'tich_brand_logo.dart';
@@ -14,12 +15,68 @@ class TichMoreItem {
     required this.icon,
     required this.onTap,
     this.badgeCount = 0,
+    this.photoUrl,
+    this.showProfilePhoto = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
   final int badgeCount;
+
+  /// When [showProfilePhoto] is true, shows staff photo or [icon] as fallback.
+  final String? photoUrl;
+  final bool showProfilePhoto;
+}
+
+/// Sidebar / list leading: employee photo when available, otherwise the menu icon.
+class TichMoreProfileLeading extends StatelessWidget {
+  const TichMoreProfileLeading({
+    super.key,
+    required this.photoUrl,
+    required this.fallbackIcon,
+    required this.iconColor,
+    this.size = 28,
+  });
+
+  final String? photoUrl;
+  final IconData fallbackIcon;
+  final Color iconColor;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final uri = employeePhotoUri(photoUrl);
+    final icon = Icon(fallbackIcon, size: 20, color: iconColor);
+
+    if (uri == null) {
+      return SizedBox(width: size, height: size, child: Center(child: icon));
+    }
+
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final px = (size * dpr).round().clamp(48, 128);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipOval(
+        child: Image.network(
+          uri.toString(),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          cacheWidth: px,
+          cacheHeight: px,
+          filterQuality: FilterQuality.low,
+          errorBuilder: (_, __, ___) => Center(child: icon),
+          frameBuilder: (context, child, frame, wasSync) {
+            if (wasSync || frame != null) return child;
+            return Center(child: icon);
+          },
+        ),
+      ),
+    );
+  }
 }
 
 /// More slides this in instead of replacing the footer tabs: the web portal
@@ -189,11 +246,18 @@ class TichSideNavRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
         child: Row(
           children: [
-            Icon(
-              item.icon,
-              size: 20,
-              color: iconColor,
-            ),
+            if (item.showProfilePhoto)
+              TichMoreProfileLeading(
+                photoUrl: item.photoUrl,
+                fallbackIcon: item.icon,
+                iconColor: iconColor,
+              )
+            else
+              Icon(
+                item.icon,
+                size: 20,
+                color: iconColor,
+              ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -237,7 +301,13 @@ class TichMoreList extends StatelessWidget {
           onTap: item.onTap,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(item.icon, color: TichColors.greenDark),
+            leading: item.showProfilePhoto
+                ? TichMoreProfileLeading(
+                    photoUrl: item.photoUrl,
+                    fallbackIcon: item.icon,
+                    iconColor: TichColors.greenDark,
+                  )
+                : Icon(item.icon, color: TichColors.greenDark),
             title: Text(
               item.label,
               style: tichUi(

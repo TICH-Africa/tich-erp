@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../settings/app_settings.dart';
+import '../widgets/tich_theme_picker_sheet.dart';
 import '../widgets/tich_widgets.dart';
 
 class AppearanceSettingsPage extends StatelessWidget {
@@ -48,11 +49,7 @@ class AppearanceSettingsPage extends StatelessWidget {
                     for (final mode in ThemeMode.values)
                       RadioListTile<ThemeMode>(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(switch (mode) {
-                          ThemeMode.system => 'System default',
-                          ThemeMode.light => 'Light',
-                          ThemeMode.dark => 'Dark',
-                        }),
+                        title: Text(tichThemeModeLabel(mode)),
                         value: mode,
                         groupValue: settings.themeMode,
                         onChanged: (v) {

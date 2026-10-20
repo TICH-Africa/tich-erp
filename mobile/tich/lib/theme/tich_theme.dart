@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// UI font stack from CSS `--font-ui: Arial, Calibri, …` (not a Google Font).
+TextStyle? _tichBodyBase;
+
+/// Body copy — CSS `--font-body: Merriweather, Georgia, serif`.
 TextStyle tichUi({
   double? fontSize,
   FontWeight? fontWeight,
@@ -10,8 +12,37 @@ TextStyle tichUi({
   double? height,
   double? letterSpacing,
 }) {
-  return TextStyle(
+  _tichBodyBase ??= GoogleFonts.merriweather(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.45,
+  );
+  return _tichBodyBase!.copyWith(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+}
+
+TextStyle? _tichUiSansBase;
+
+/// Compact UI chrome — CSS `--font-ui` (nav labels, etc.).
+TextStyle tichUiSans({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? height,
+  double? letterSpacing,
+}) {
+  _tichUiSansBase ??= const TextStyle(
     fontFamily: 'Arial',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.2,
+  );
+  return _tichUiSansBase!.copyWith(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
@@ -66,6 +97,9 @@ abstract final class TichColors {
   static const darkSurface = Color(0xFF1C1F24);
   static const darkBorder = Color(0xFF2A2E35);
   static const darkBackground = Color(0xFF121417);
+
+  /// Primary body/title text on dark surfaces (not muted labels).
+  static const darkOnSurface = Color(0xFFEDEEF0);
 }
 
 /// --radius-sm / --radius-md / --radius-lg.
@@ -104,6 +138,7 @@ abstract final class TichTheme {
     dark();
     cupertino();
     display();
+    tichUi();
   }
 
   /// Cached Merriweather style for titles (avoids GoogleFonts work per widget).
@@ -228,7 +263,7 @@ abstract final class TichTheme {
         height: 68,
         elevation: 0,
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => tichUi(
+          (states) => tichUiSans(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: states.contains(WidgetState.selected)
@@ -291,6 +326,8 @@ abstract final class TichTheme {
       primary: TichColors.blueLight,
       secondary: TichColors.green,
       surface: TichColors.darkSurface,
+      onSurface: TichColors.darkOnSurface,
+      onSurfaceVariant: TichColors.neutralMuted,
       error: TichColors.danger,
     );
 
@@ -299,7 +336,10 @@ abstract final class TichTheme {
       brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: TichColors.darkBackground,
-      textTheme: merriweather,
+      textTheme: merriweather.apply(
+        bodyColor: colorScheme.onSurface,
+        displayColor: colorScheme.onSurface,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: TichColors.blueDark,
         foregroundColor: TichColors.white,
@@ -378,7 +418,7 @@ abstract final class TichTheme {
         height: 68,
         elevation: 0,
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => tichUi(
+          (states) => tichUiSans(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: states.contains(WidgetState.selected)
@@ -433,10 +473,9 @@ abstract final class TichTheme {
       primaryContrastingColor: TichColors.white,
       textTheme: CupertinoTextThemeData(
         primaryColor: TichColors.grey,
-        textStyle: display(
+        textStyle: tichUi(
           color: TichColors.grey,
           fontSize: 14,
-          fontWeight: FontWeight.w400,
         ),
         navTitleTextStyle: display(
           color: TichColors.white,
