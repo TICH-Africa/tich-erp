@@ -46,7 +46,7 @@
     ])
 
     @if ($approvalPackageEmail)
-        <article class="tich-card tich-mt-8">
+        <section class="tich-mt-8">
             <h2 class="tich-h3">Approval package email</h2>
             <dl class="tich-mt-4" style="display: grid; grid-template-columns: 12rem 1fr; gap: 0.75rem 1rem; margin: 0;">
                 <dt class="tich-caption">Package email</dt>
@@ -74,11 +74,11 @@
                     <button type="submit" class="tich-btn tich-btn-secondary">Resend approval package email</button>
                 </form>
             @endif
-        </article>
+        </section>
     @endif
 
     @if ($admissionConfirmationEmail)
-        <article class="tich-card tich-mt-8">
+        <section class="tich-mt-8">
             <h2 class="tich-h3">Payment & admission confirmation email</h2>
             <dl class="tich-mt-4" style="display: grid; grid-template-columns: 12rem 1fr; gap: 0.75rem 1rem; margin: 0;">
                 <dt class="tich-caption">Confirmation email</dt>
@@ -127,11 +127,11 @@
                     <button type="submit" class="tich-btn tich-btn-secondary">Resend confirmation email</button>
                 </form>
             @endif
-        </article>
+        </section>
     @endif
 
     @if (in_array($applicant->status, ['submitted_admin', 'submitted'], true))
-        <article class="tich-card tich-mt-8">
+        <section class="tich-mt-8">
             <h2 class="tich-h3">Forward to academics</h2>
             <p class="tich-text tich-mb-4">Review the application details and documents, then forward to academics for qualification review. Administration does not approve or reject applications here.</p>
             <form method="POST" action="{{ route('administration.applications.handoff-to-academics', $applicant->id) }}">
@@ -142,14 +142,10 @@
                 </div>
                 <button type="submit" class="tich-btn tich-btn-primary">Forward to academics</button>
             </form>
-        </article>
+        </section>
     @elseif ($applicant->isFinalized())
-        <div class="tich-card tich-mt-8">
-            <p class="tich-text">This application has been finalized.</p>
-        </div>
+        <p class="tich-text tich-mt-8">This application has been finalized.</p>
     @else
-        <div class="tich-card tich-mt-8">
-            <p class="tich-text">This application is with academics or awaiting applicant payment. Status updates appear here when academics complete their review.</p>
-        </div>
+        <p class="tich-text tich-mt-8">This application is with academics or awaiting applicant payment. Status updates appear here when academics complete their review.</p>
     @endif
 @endsection

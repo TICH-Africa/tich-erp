@@ -236,7 +236,10 @@
         }
 
         wrapper.classList.remove('is-open');
-        wrapper.querySelector('.tich-dropdown__menu').hidden = true;
+        var menu = wrapper.tichDropdownMenu;
+        if (menu) {
+            menu.hidden = true;
+        }
         wrapper.querySelector('.tich-dropdown__trigger').setAttribute('aria-expanded', 'false');
 
         if (openDropdown === wrapper) {
@@ -250,7 +253,7 @@
         }
 
         wrapper.classList.add('is-open');
-        var menu = wrapper.querySelector('.tich-dropdown__menu');
+        var menu = wrapper.tichDropdownMenu;
         menu.hidden = false;
         wrapper.querySelector('.tich-dropdown__trigger').setAttribute('aria-expanded', 'true');
         openDropdown = wrapper;
@@ -313,6 +316,7 @@
         select.tichDropdownWrapper = wrapper;
         select.tichDropdownLabel = label;
         select.tichDropdownTrigger = trigger;
+        wrapper.tichDropdownMenu = menu;
 
         buildMenu(select, menu);
         syncTrigger(select, label);

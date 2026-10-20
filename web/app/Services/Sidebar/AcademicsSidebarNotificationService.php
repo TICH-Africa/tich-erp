@@ -301,11 +301,14 @@ class AcademicsSidebarNotificationService
                 ->count();
         }
 
-        $allocationsPending = (int) DB::table('unit_allocations as ua')
-            ->join('units as u', 'u.id', '=', 'ua.unit_id')
-            ->where('ua.status', 'pending_approval')
-            ->whereIn('u.department_id', $departmentIds)
-            ->count();
+        $allocationsPending = 0;
+        if (Schema::hasTable('unit_allocations') && Schema::hasColumn('unit_allocations', 'status')) {
+            $allocationsPending = (int) DB::table('unit_allocations as ua')
+                ->join('units as u', 'u.id', '=', 'ua.unit_id')
+                ->where('ua.status', 'pending_approval')
+                ->whereIn('u.department_id', $departmentIds)
+                ->count();
+        }
 
         $suggestionsOpen = Schema::hasTable('student_suggestions')
             ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()

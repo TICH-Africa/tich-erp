@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-20 08:48:30 EAT
+-- Generated: 2026-10-20 20:21:21 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -13203,9 +13203,16 @@ CALL `tich_ensure_unique`('units', 'units_unit_code_unique', '`unit_code`');
 CREATE TABLE IF NOT EXISTS `unit_allocations` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `unit_id` bigint(20) unsigned NOT NULL,
+  `program_id` bigint(20) unsigned DEFAULT NULL,
   `staff_id` bigint(20) unsigned NOT NULL,
   `semester_id` bigint(20) unsigned NOT NULL,
   `campus_id` bigint(20) unsigned NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'approved',
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `approval_comments` varchar(500) DEFAULT NULL,
   `is_coordinator` tinyint(4) NOT NULL DEFAULT 0,
   `contact_hours_assigned` int(11) NOT NULL DEFAULT 0,
   `is_active` tinyint(4) NOT NULL DEFAULT 1,
@@ -13214,6 +13221,8 @@ CREATE TABLE IF NOT EXISTS `unit_allocations` (
   KEY `unit_allocations_campus_id_foreign` (`campus_id`),
   KEY `unit_allocations_unit_id_semester_id_index` (`unit_id`,`semester_id`),
   KEY `unit_allocations_staff_id_index` (`staff_id`),
+  KEY `unit_allocations_program_id_index` (`program_id`),
+  KEY `unit_allocations_status_index` (`status`),
   CONSTRAINT `unit_allocations_campus_id_foreign` FOREIGN KEY (`campus_id`) REFERENCES `campuses` (`id`),
   CONSTRAINT `unit_allocations_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`),
   CONSTRAINT `unit_allocations_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`),
@@ -13223,17 +13232,26 @@ CREATE TABLE IF NOT EXISTS `unit_allocations` (
 -- Columns for `unit_allocations` (add only if missing)
 CALL `tich_ensure_column`('unit_allocations', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('unit_allocations', 'unit_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'program_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('unit_allocations', 'staff_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('unit_allocations', 'semester_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('unit_allocations', 'campus_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'approved\\\'\'');
+CALL `tich_ensure_column`('unit_allocations', 'submitted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'submitted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'approved_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'approved_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_allocations', 'approval_comments', 'varchar(500) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('unit_allocations', 'is_coordinator', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('unit_allocations', 'contact_hours_assigned', 'int(11) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('unit_allocations', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 
 -- Indexes for `unit_allocations` (add only if missing)
 CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_campus_id_foreign', '`campus_id`');
+CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_program_id_index', '`program_id`');
 CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_semester_id_foreign', '`semester_id`');
 CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_staff_id_index', '`staff_id`');
+CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_status_index', '`status`');
 CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_unit_id_semester_id_index', '`unit_id`, `semester_id`');
 
 -- -----------------------------------------------------------------------------

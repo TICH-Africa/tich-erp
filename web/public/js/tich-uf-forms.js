@@ -16,6 +16,8 @@
         if (form.classList.contains('uf-enhanced')) return true;
         if ((form.getAttribute('method') || 'get').toLowerCase() === 'get') return true;
         if (form.closest('.tich-modal')) return true; // modals restyled via CSS
+        // Administration uses flat tich-input forms, not unified-form chrome.
+        if (form.closest('.tich-admin__main')) return true;
         if (fieldCount(form) < 2) return true;
         if (form.id === 'logout-form' || form.action.indexOf('/logout') !== -1) return true;
         return false;

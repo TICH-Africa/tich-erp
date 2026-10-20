@@ -9,7 +9,7 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <div class="tich-card tich-mt-8">
+    <section class="tich-mt-8">
         <h2 class="tich-h3">Admission letter template</h2>
         <p class="tich-text tich-mt-2">
             Upload the institution admission letter. When an application is accepted and the confirmation email is sent, this file is attached automatically.
@@ -40,7 +40,7 @@
             </div>
             <button type="submit" class="tich-btn tich-btn-primary">{{ $letterExists ? 'Replace letter' : 'Upload letter' }}</button>
         </form>
-    </div>
+    </section>
 
     <div class="tich-table-panel tich-mt-8">
         <h2 class="tich-h3">Enrolled students</h2>

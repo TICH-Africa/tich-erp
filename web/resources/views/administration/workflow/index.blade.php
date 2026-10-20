@@ -12,7 +12,7 @@
     @endif
 
     <div class="tich-grid tich-grid--2 tich-mt-8" style="gap:1.5rem;align-items:start;">
-        <article class="tich-card">
+        <section>
             <h2 class="tich-h3">1. Annual institutional plan</h2>
             <p class="tich-caption tich-mt-2">Record intakes, trimesters, holidays, graduation, and field-placement blocks.</p>
             <form method="POST" action="{{ route('administration.workflow.calendar.store') }}" class="tich-mt-4">
@@ -34,9 +34,9 @@
                     <li class="tich-caption">No annual events recorded yet.</li>
                 @endforelse
             </ul>
-        </article>
+        </section>
 
-        <article class="tich-card">
+        <section>
             <h2 class="tich-h3">2-3. Monthly to weekly task board</h2>
             <p class="tich-caption tich-mt-2">Section Heads add named owners, due dates, milestones, and budget implications.</p>
             <form method="POST" action="{{ route('administration.workflow.tasks.store') }}" class="tich-mt-4">
@@ -59,9 +59,9 @@
                     <li class="tich-caption">No weekly tasks recorded yet.</li>
                 @endforelse
             </ul>
-        </article>
+        </section>
 
-        <article class="tich-card">
+        <section>
             <h2 class="tich-h3">4. Prior-month deadline control</h2>
             <p class="tich-caption tich-mt-2">Planning cycles keep their submission deadline. Budget requests submitted after it are marked late with the deadline timestamp for review.</p>
             <ul class="tich-program-card__meta tich-mt-4">
@@ -71,9 +71,9 @@
                     <li class="tich-caption">Create a planning cycle to enable deadline control.</li>
                 @endforelse
             </ul>
-        </article>
+        </section>
 
-        <article class="tich-card">
+        <section>
             <h2 class="tich-h3">5. Monthly variance and lessons</h2>
             <p class="tich-caption tich-mt-2">Director of Administration records planned versus executed amounts and carries lessons into the next plan.</p>
             <form method="POST" action="{{ route('administration.workflow.variances.store') }}" class="tich-mt-4">
@@ -97,6 +97,6 @@
                     <li class="tich-caption">No monthly variance reviews recorded yet.</li>
                 @endforelse
             </ul>
-        </article>
+        </section>
     </div>
 @endsection

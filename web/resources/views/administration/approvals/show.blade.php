@@ -107,7 +107,7 @@
     @endif
 
     @if ($canAct)
-        <div class="tich-card tich-mt-6">
+        <section class="tich-mt-6">
             <h2 class="tich-h3">Administration actions</h2>
             <p class="tich-caption tich-mt-1">Review the request first. You can save notes, return it to the department, approve and forward it to Finance and M&E, or reject it.</p>
 
@@ -149,7 +149,7 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </section>
     @else
         <div class="tich-alert tich-alert--info tich-mt-6">
             This request is past Administration intake (status: <strong>{{ str_replace('_', ' ', $budgetRequest->status) }}</strong>). Further actions happen in Finance / Executive stages.

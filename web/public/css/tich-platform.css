@@ -693,9 +693,21 @@ select.tich-select optgroup {
     color: #1565c0;
 }
 
+.tich-dropdown.is-open {
+    position: relative;
+    z-index: 1100;
+}
+
+.tich-grid > *:has(.tich-dropdown.is-open),
+.tich-form-group:has(.tich-dropdown.is-open),
+.tich-form-row:has(.tich-dropdown.is-open) {
+    position: relative;
+    z-index: 1100;
+}
+
 .tich-dropdown__menu {
     position: absolute;
-    z-index: 120;
+    z-index: 1101;
     top: calc(100% + 0.25rem);
     left: 0;
     right: 0;
@@ -4868,6 +4880,17 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Let enhanced select menus extend over the next row without being clipped. */
+    .tich-admin__main > form,
+    .tich-admin__main section:has(form),
+    .tich-admin__main .tich-card:has(> form),
+    .tich-admin__main .tich-card:has(.tich-dropdown.is-open),
+    .tich-admin__main .tich-grid > *,
+    .tich-admin__main .tich-form-group,
+    .tich-admin__main .tich-mod-dash__panel {
+        overflow: visible;
     }
 }
 
@@ -12798,6 +12821,34 @@ a.tich-tabs__btn {
     color: #ffffff;
 }
 
+/* Forms on the administration dashboard are not boxed in panels. */
+.tich-mod-dash > div > section > .tich-h3 {
+    margin: 0;
+}
+
+.tich-mod-dash > div > section > .tich-text {
+    margin-bottom: 0;
+}
+
+[data-theme="dark"] .tich-mod-dash > div > section > .tich-h3,
+[data-theme="dark"] .tich-mod-dash > div > section > .tich-text,
+[data-theme="dark"] .tich-mod-dash > .tich-mt-8 > .tich-h3,
+[data-theme="dark"] .tich-mod-dash > .tich-mt-8 > .tich-text {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-mod-dash > div > section > .tich-caption,
+[data-theme="dark"] .tich-mod-dash > .tich-mt-8 > .tich-caption {
+    color: #94a3b8;
+}
+
+.tich-mod-dash__panel:has(form) {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
 [data-theme="dark"] .tich-mod-dash__panel,
 [data-theme="dark"] .tich-mod-dash__chart,
 [data-theme="dark"] .tich-mod-dash__nav-card,
@@ -12865,6 +12916,154 @@ a.tich-tabs__btn {
     background: transparent;
     border: none;
     box-shadow: none;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card:has(> form) .tich-h3,
+[data-theme="dark"] .tich-admin__main .tich-card:has(> form) h3.tich-h3,
+[data-theme="dark"] .tich-admin__main > form .tich-h3,
+[data-theme="dark"] .tich-admin__main > form h3.tich-h3,
+[data-theme="dark"] .tich-admin__main section .tich-h3,
+[data-theme="dark"] .tich-admin__main section h3.tich-h3 {
+    color: #e2e8f0;
+    background: none;
+    padding: 0;
+    font-size: calc(var(--text-h3) * var(--content-scale, 1));
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-label {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card > form .tich-caption,
+[data-theme="dark"] .tich-admin__main > form .tich-caption,
+[data-theme="dark"] .tich-admin__main section .tich-caption {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .tich-admin__main input[type="file"].tich-input::file-selector-button {
+    background: #3a4048;
+    color: #f1f3f5;
+    border: 1px solid #5c6370;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+/* Administration forms: same dark field treatment as HR / Finance (no light fills). */
+[data-theme="dark"] .tich-admin__main .tich-input,
+[data-theme="dark"] .tich-admin__main .tich-select,
+[data-theme="dark"] .tich-admin__main select.tich-input,
+[data-theme="dark"] .tich-admin__main textarea.tich-input,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-select,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash select.tich-input,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash textarea.tich-input,
+[data-theme="dark"] .tich-admin__main form .tich-input,
+[data-theme="dark"] .tich-admin__main form .tich-select,
+[data-theme="dark"] .tich-admin__main form textarea.tich-input {
+    color: #f8f9fa;
+    background-color: #454b54;
+    border-color: transparent;
+    -webkit-text-fill-color: #f8f9fa;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-input::placeholder,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input::placeholder,
+[data-theme="dark"] .tich-admin__main form .tich-input::placeholder {
+    color: #9aa3b0;
+    -webkit-text-fill-color: #9aa3b0;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-input:focus,
+[data-theme="dark"] .tich-admin__main .tich-select:focus,
+[data-theme="dark"] .tich-admin__main textarea.tich-input:focus,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input:focus,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-select:focus,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash textarea.tich-input:focus,
+[data-theme="dark"] .tich-admin__main form .tich-input:focus,
+[data-theme="dark"] .tich-admin__main form .tich-select:focus,
+[data-theme="dark"] .tich-admin__main form textarea.tich-input:focus {
+    color: #f8f9fa;
+    background-color: #2d3239;
+    border-color: #42a5f5;
+    box-shadow: none;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-input[type="date"],
+[data-theme="dark"] .tich-admin__main .tich-input[type="datetime-local"],
+[data-theme="dark"] .tich-admin__main .tich-input[type="time"],
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input[type="date"],
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input[type="datetime-local"],
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-input[type="time"] {
+    color-scheme: dark;
+}
+
+[data-theme="dark"] .tich-admin__main select.tich-input,
+[data-theme="dark"] .tich-admin__main .tich-mod-dash select.tich-input,
+[data-theme="dark"] .tich-admin__main .tich-form-group select:not(.tich-dropdown__native) {
+    background-color: #454b54;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown__trigger,
+[data-theme="dark"] .tich-admin__main .tich-dropdown__trigger:hover {
+    color: #f8f9fa;
+    background-color: #454b54;
+    border-color: transparent;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown.is-open .tich-dropdown__trigger,
+[data-theme="dark"] .tich-admin__main .tich-dropdown__trigger:focus-visible {
+    color: #f8f9fa;
+    background-color: #2d3239;
+    border-color: #42a5f5;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown__menu {
+    background: #2d3239;
+    border-color: #454b54;
+    color: #f8f9fa;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown__search {
+    background: #2d3239;
+    border-bottom-color: #454b54;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown__search-input {
+    background: #454b54 !important;
+    color: #f8f9fa !important;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-dropdown__search-input:focus {
+    background: #2d3239 !important;
+    border-color: #42a5f5 !important;
+}
+
+[data-theme="dark"] .tich-admin__main input[type="file"].tich-input {
+    color: #f8f9fa;
+    background-color: #454b54;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-mod-dash__panel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-mod-dash .tich-label,
+[data-theme="dark"] .tich-admin__main form .tich-label,
+[data-theme="dark"] .tich-admin__main form label.tich-label {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-form-block {
+    background: transparent;
+    border-color: #334155;
 }
 
 [data-theme="dark"] .tich-admin__main .tich-card .tich-h3,
@@ -12972,6 +13171,42 @@ form > article.tich-card:hover {
     background: transparent;
 }
 
+/* Administration: never show UF auto-wrap (white surface / amount bar / blue section bars). */
+.tich-admin__main form.uf-form-surface,
+.tich-admin__main form.uf-enhanced {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.tich-admin__main .uf-amount-bar {
+    display: none;
+}
+
+.tich-admin__main .uf-legacy-section-head {
+    background: none;
+    color: inherit;
+    padding: 0;
+    margin: 0 0 0.5rem;
+    font-size: calc(var(--text-h3) * var(--content-scale, 1));
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    border-radius: 0;
+}
+
+[data-theme="dark"] .tich-admin__main .uf-legacy-section-head {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-admin__main form.uf-form-surface,
+[data-theme="dark"] .tich-admin__main form.uf-enhanced {
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+}
+
 /* Section titles inside form cards become blue bars */
 form.tich-card > .tich-h3,
 form.tich-card > h2.tich-h3,
@@ -13037,6 +13272,32 @@ form > article.tich-card > .tich-grid:last-child,
 form > .tich-card > .tich-mt-6:last-child,
 form > article.tich-card > .tich-mt-6:last-child {
     padding-bottom: 1rem;
+}
+
+.tich-form-block {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--tich-neutral-border, #c4cad2);
+    border-radius: var(--radius-md, 0.5rem);
+    background: transparent;
+}
+
+[data-theme="dark"] .tich-form-block {
+    border-color: #334155;
+}
+
+.tich-h4 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--tich-grey, #1a1d21);
+    margin: 0 0 0.75rem;
+}
+
+[data-theme="dark"] .tich-h4,
+[data-theme="dark"] h4.tich-h4 {
+    color: #e2e8f0;
 }
 
 .tich-form-group {

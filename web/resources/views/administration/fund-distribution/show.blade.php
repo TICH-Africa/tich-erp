@@ -128,7 +128,7 @@
     @endif
 
     @if ($budgetRequest->status === 'approved')
-        <div class="tich-card tich-mt-6">
+        <section class="tich-mt-6">
             <h2 class="tich-h3">Disbursement</h2>
             <p class="tich-caption tich-mt-1">Confirm funds have been released against this approved budget.</p>
             <form method="POST" action="{{ route('administration.fund-distribution.budget.disburse', $budgetRequest->id) }}" class="tich-form-stack tich-mt-4" onsubmit="return confirm('Mark this budget request as disbursed?')">
@@ -139,7 +139,7 @@
                 </div>
                 <button type="submit" class="tich-btn tich-btn-primary">Mark as disbursed</button>
             </form>
-        </div>
+        </section>
     @elseif ($budgetRequest->status === 'disbursed')
         <div class="tich-alert tich-alert--success tich-mt-6">
             <strong>Disbursed.</strong>

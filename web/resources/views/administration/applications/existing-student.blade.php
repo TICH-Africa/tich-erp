@@ -32,8 +32,7 @@
         </div>
     @endif
 
-    <div class="tich-card tich-mt-6">
-            <form method="POST" enctype="multipart/form-data" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
+    <form method="POST" enctype="multipart/form-data" class="tich-mt-6" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
             @csrf
             @if ($editing)
                 @method('PUT')
@@ -92,12 +91,12 @@
                 };
             @endphp
 
-            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Next of kin / emergency contacts</h3>
+            <h3 class="tich-h3 tich-mt-6">Next of kin / emergency contacts</h3>
             <p class="tich-caption tich-mt-2">The first contact is required. A second contact is optional and is stored with the student record.</p>
 
             @foreach ([0, 1] as $slot)
-                <div class="tich-mt-4" style="border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
-                    <h4 class="tich-h4" style="margin:0 0 0.75rem;">Contact {{ $slot + 1 }}@if ($slot === 1) (optional)@endif</h4>
+                <div class="tich-form-block">
+                    <h4 class="tich-h4">Contact {{ $slot + 1 }}@if ($slot === 1) (optional)@endif</h4>
                     <div class="tich-grid tich-grid--3">
                         <div>
                             <label class="tich-label">Full name @if ($slot === 0)*@endif</label>
@@ -142,7 +141,7 @@
                 </div>
             @endforeach
 
-            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Profile Photo</h3>
+            <h3 class="tich-h3 tich-mt-6">Profile Photo</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
                 <div style="grid-column: 1 / -1;">
                     @if ($editing && ($student->photo_path ?? null))
@@ -163,7 +162,7 @@
                 </div>
             </div>
 
-            <h3 class="tich-h3 tich-mt-6" style="color:#ffffff;">Program Details</h3>
+            <h3 class="tich-h3 tich-mt-6">Program Details</h3>
             <div class="tich-grid tich-grid--3 tich-mt-3">
                 <div>
                     <label class="tich-label">Programme *</label>
@@ -271,8 +270,7 @@
                     <a href="{{ route('administration.applications.existing-student.show', $student) }}" class="tich-btn tich-btn-ghost">Cancel</a>
                 @endif
             </div>
-        </form>
-    </div>
+    </form>
 
     <script>
     (function () {
