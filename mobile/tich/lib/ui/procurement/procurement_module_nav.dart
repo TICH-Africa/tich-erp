@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/procurement_api.dart';
+import 'procurement_extra_pages.dart';
 import 'procurement_pages.dart';
-import 'procurement_web_handoff.dart';
 
 void openProcurementModule(
   BuildContext context, {
@@ -12,20 +12,6 @@ void openProcurementModule(
   required String webPath,
   required bool mobile,
 }) {
-  if (!mobile) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ProcurementWebPlaceholderPage(
-          title: label,
-          description:
-              'Manage $label in the procurement web module with the full desktop experience.',
-          webPath: webPath,
-        ),
-      ),
-    );
-    return;
-  }
-
   Widget page;
   switch (key) {
     case 'requisitions':
@@ -38,12 +24,20 @@ void openProcurementModule(
       page = ProcurementStockAlertsPage(api: api);
     case 'assets':
       page = ProcurementAssetsPage(api: api);
+    case 'suppliers':
+      page = ProcurementSuppliersPage(api: api);
+    case 'rfqs':
+      page = ProcurementRfqsPage(api: api);
+    case 'inventory':
+      page = ProcurementInventoryPage(api: api);
+    case 'disposals':
+      page = ProcurementDisposalsPage(api: api);
+    case 'audits':
+      page = ProcurementAuditsPage(api: api);
+    case 'payments':
+      page = ProcurementPaymentsPage(api: api);
     default:
-      page = ProcurementWebPlaceholderPage(
-        title: label,
-        description: 'Open $label on the web portal.',
-        webPath: webPath,
-      );
+      return;
   }
 
   Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -68,6 +62,14 @@ void openProcurementInboxItem(
       page = ProcurementStockIssueDetailPage(api: api, id: id);
     case 'stock_alert':
       page = ProcurementStockAlertDetailPage(api: api, id: id);
+    case 'supplier':
+      page = ProcurementSupplierDetailPage(api: api, id: id);
+    case 'rfq':
+      page = ProcurementRfqDetailPage(api: api, id: id);
+    case 'asset_disposal':
+      page = ProcurementDisposalDetailPage(api: api, id: id);
+    case 'asset_audit':
+      page = ProcurementAuditDetailPage(api: api, id: id);
     default:
       return;
   }

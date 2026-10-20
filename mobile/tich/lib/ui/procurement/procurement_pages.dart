@@ -7,7 +7,6 @@ import '../../data/procurement_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
-import 'procurement_web_handoff.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
 
@@ -87,7 +86,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _statusChip((r['status_label'] ?? '').toString()),
+                          procurementStatusChip((r['status_label'] ?? '').toString()),
                           const Spacer(),
                           Text(
                             _kes.format((r['estimated_cost'] as num?) ?? 0),
@@ -165,8 +164,6 @@ class _ProcurementRequisitionDetailPageState
           final budget = Map<String, dynamic>.from(r['budget_check'] as Map? ?? {});
           final budgetPassed = budget['passed'] == true;
           final lines = r['line_items'] as List? ?? [];
-          final webPath = (r['web_path'] ?? '').toString();
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -175,13 +172,13 @@ class _ProcurementRequisitionDetailPageState
                 style: TichTheme.display(fontSize: 20),
               ),
               const SizedBox(height: 4),
-              _statusChip((r['status_label'] ?? '').toString()),
+              procurementStatusChip((r['status_label'] ?? '').toString()),
               const SizedBox(height: 12),
-              _row('Department', r['department']),
-              _row('Estimated', _kes.format((r['estimated_cost'] as num?) ?? 0)),
-              _row('Requested', r['requested_item']),
+              procurementDetailRow('Department', r['department']),
+              procurementDetailRow('Estimated', _kes.format((r['estimated_cost'] as num?) ?? 0)),
+              procurementDetailRow('Requested', r['requested_item']),
               if ((r['justification'] ?? '').toString().isNotEmpty)
-                _row('Justification', r['justification']),
+                procurementDetailRow('Justification', r['justification']),
               if ((budget['message'] ?? '').toString().isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -247,14 +244,6 @@ class _ProcurementRequisitionDetailPageState
                   child: const Text('Reject'),
                 ),
               ],
-              if (webPath.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () => tichOpenWebHandoff(context, path: webPath),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Full details on web'),
-                ),
-              ],
             ],
           );
         },
@@ -317,7 +306,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
                       style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
                     ),
                     const SizedBox(height: 4),
-                    _statusChip((row['approval_status'] ?? '').toString()),
+                    procurementStatusChip((row['approval_status'] ?? '').toString()),
                   ],
                 ),
               );
@@ -365,7 +354,6 @@ class _ProcurementStockIssueDetailPageState
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final canApprove = r['can_approve'] == true;
-          final webPath = (r['web_path'] ?? '').toString();
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -373,10 +361,10 @@ class _ProcurementStockIssueDetailPageState
                 (r['item_name'] ?? '').toString(),
                 style: TichTheme.display(fontSize: 18),
               ),
-              _row('Department', r['department']),
-              _row('Quantity', '${r['quantity']}'),
-              _row('Total', _kes.format((r['total_cost'] as num?) ?? 0)),
-              _row('Reason', r['reason']),
+              procurementDetailRow('Department', r['department']),
+              procurementDetailRow('Quantity', '${r['quantity']}'),
+              procurementDetailRow('Total', _kes.format((r['total_cost'] as num?) ?? 0)),
+              procurementDetailRow('Reason', r['reason']),
               if (canApprove)
                 FilledButton(
                   onPressed: _busy
@@ -403,14 +391,6 @@ class _ProcurementStockIssueDetailPageState
                       ? const AdaptiveProgress()
                       : const Text('Approve issue'),
                 ),
-              if (webPath.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => tichOpenWebHandoff(context, path: webPath),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Full details on web'),
-                ),
-              ],
             ],
           );
         },
@@ -470,7 +450,7 @@ class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
                       'PO ${row['po_number']} · ${row['supplier']}',
                       style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
                     ),
-                    _statusChip((row['inspection_status'] ?? '').toString()),
+                    procurementStatusChip((row['inspection_status'] ?? '').toString()),
                   ],
                 ),
               );
@@ -512,7 +492,6 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final items = r['items'] as List? ?? [];
-          final webPath = (r['web_path'] ?? '').toString();
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -520,10 +499,10 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
                 (r['grn_number'] ?? '').toString(),
                 style: TichTheme.display(fontSize: 18),
               ),
-              _row('PO', r['po_number']),
-              _row('Supplier', r['supplier']),
-              _row('Received', r['received_date']),
-              _row('Inspection', r['inspection_status']),
+              procurementDetailRow('PO', r['po_number']),
+              procurementDetailRow('Supplier', r['supplier']),
+              procurementDetailRow('Received', r['received_date']),
+              procurementDetailRow('Inspection', r['inspection_status']),
               if (items.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text('Items received', style: TichTheme.display(fontSize: 14)),
@@ -572,14 +551,6 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
                       ? const AdaptiveProgress()
                       : const Text('Complete inspection'),
                 ),
-              if (webPath.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => tichOpenWebHandoff(context, path: webPath),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Full details on web'),
-                ),
-              ],
             ],
           );
         },
@@ -687,7 +658,6 @@ class _ProcurementStockAlertDetailPageState
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
-          final webPath = (r['web_path'] ?? '').toString();
           final reqId = (r['requisition_id'] as num?)?.toInt();
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -696,14 +666,14 @@ class _ProcurementStockAlertDetailPageState
                 (r['item_name'] ?? '').toString(),
                 style: TichTheme.display(fontSize: 18),
               ),
-              _row('Type', r['alert_type']),
-              _row('Current stock', '${r['current_stock']}'),
-              _row('Reorder level', '${r['reorder_level']}'),
-              _row('Recommended qty', '${r['recommended_quantity']}'),
+              procurementDetailRow('Type', r['alert_type']),
+              procurementDetailRow('Current stock', '${r['current_stock']}'),
+              procurementDetailRow('Reorder level', '${r['reorder_level']}'),
+              procurementDetailRow('Recommended qty', '${r['recommended_quantity']}'),
               if ((r['notes'] ?? '').toString().isNotEmpty)
-                _row('Notes', r['notes']),
+                procurementDetailRow('Notes', r['notes']),
               if (reqId != null) ...[
-                _row('Linked requisition', '#$reqId'),
+                procurementDetailRow('Linked requisition', '#$reqId'),
                 OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -748,14 +718,6 @@ class _ProcurementStockAlertDetailPageState
                       ? const AdaptiveProgress()
                       : const Text('Auto-draft requisition'),
                 ),
-              if (webPath.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => tichOpenWebHandoff(context, path: webPath),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Full details on web'),
-                ),
-              ],
             ],
           );
         },
@@ -890,7 +852,6 @@ class ProcurementAssetDetailPage extends StatelessWidget {
             return Center(child: Text(tichDescribeError(snap.error)));
           }
           final r = snap.data!;
-          final webPath = (r['web_path'] ?? '').toString();
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -898,58 +859,18 @@ class ProcurementAssetDetailPage extends StatelessWidget {
                 (r['asset_number'] ?? '').toString(),
                 style: TichTheme.display(fontSize: 20),
               ),
-              _row('Name', r['asset_name']),
-              _row('Category', r['category']),
-              _row('Status', r['status']),
-              _row('Location', r['location']),
-              _row('Custodian', r['custodian']),
-              _row('Tag', r['tag_number']),
-              _row('Serial', r['serial_number']),
-              _row('Condition', r['condition']),
-              if (webPath.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () => tichOpenWebHandoff(context, path: webPath),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Transfer & full record on web'),
-                ),
-              ],
+              procurementDetailRow('Name', r['asset_name']),
+              procurementDetailRow('Category', r['category']),
+              procurementDetailRow('Status', r['status']),
+              procurementDetailRow('Location', r['location']),
+              procurementDetailRow('Custodian', r['custodian']),
+              procurementDetailRow('Tag', r['tag_number']),
+              procurementDetailRow('Serial', r['serial_number']),
+              procurementDetailRow('Condition', r['condition']),
             ],
           );
         },
       ),
     );
   }
-}
-
-Widget _statusChip(String label) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: TichColors.blue.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      label,
-      style: tichUi(fontSize: 11, color: TichColors.blue),
-    ),
-  );
-}
-
-Widget _row(String label, dynamic value) {
-  final text = (value ?? '—').toString();
-  if (text.isEmpty || text == '—') return const SizedBox.shrink();
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: tichUi(fontSize: 11, color: TichColors.neutralMuted),
-        ),
-        Text(text, style: tichUi(fontSize: 14)),
-      ],
-    ),
-  );
 }

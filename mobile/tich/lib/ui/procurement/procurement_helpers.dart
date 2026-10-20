@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
+import '../../theme/tich_theme.dart';
 import '../shell/procurement_nav_signals.dart';
 
 void procurementNotifyCountsChanged() {
@@ -49,14 +50,35 @@ Future<String?> procurementPromptText(
   return result;
 }
 
-Widget procurementOpenWebButton({
-  required BuildContext context,
-  required String webPath,
-  required VoidCallback onOpen,
-}) {
-  return OutlinedButton.icon(
-    onPressed: onOpen,
-    icon: const Icon(Icons.open_in_browser),
-    label: const Text('Full details on web'),
+Widget procurementStatusChip(String label) {
+  if (label.isEmpty) return const SizedBox.shrink();
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: TichColors.blue.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      label,
+      style: tichUi(fontSize: 11, color: TichColors.blue),
+    ),
+  );
+}
+
+Widget procurementDetailRow(String label, dynamic value) {
+  final text = (value ?? '—').toString();
+  if (text.isEmpty || text == '—') return const SizedBox.shrink();
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: tichUi(fontSize: 11, color: TichColors.neutralMuted),
+        ),
+        Text(text, style: tichUi(fontSize: 14)),
+      ],
+    ),
   );
 }

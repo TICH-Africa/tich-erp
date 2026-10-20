@@ -264,4 +264,26 @@ Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('proc
 
     Route::get('/assets', [\App\Http\Controllers\Api\Procurement\mobile\AssetsController::class, 'index']);
     Route::get('/assets/{asset}', [\App\Http\Controllers\Api\Procurement\mobile\AssetsController::class, 'show']);
+
+    Route::get('/suppliers', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'index']);
+    Route::get('/suppliers/{supplier}', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'show']);
+    Route::post('/suppliers/{supplier}/verify', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'verify']);
+
+    Route::get('/rfqs', [\App\Http\Controllers\Api\Procurement\mobile\RfqsController::class, 'index']);
+    Route::get('/rfqs/{rfq}', [\App\Http\Controllers\Api\Procurement\mobile\RfqsController::class, 'show']);
+    Route::post('/rfqs/{rfq}/approve-award', [\App\Http\Controllers\Api\Procurement\mobile\RfqsController::class, 'approveAward']);
+    Route::post('/rfqs/{rfq}/reject-award', [\App\Http\Controllers\Api\Procurement\mobile\RfqsController::class, 'rejectAward']);
+
+    Route::get('/inventory-items', [\App\Http\Controllers\Api\Procurement\mobile\InventoryItemsController::class, 'index']);
+    Route::get('/inventory-items/{inventoryItem}', [\App\Http\Controllers\Api\Procurement\mobile\InventoryItemsController::class, 'show']);
+
+    Route::get('/asset-disposals', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'index']);
+    Route::get('/asset-disposals/{assetDisposal}', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'show']);
+    Route::post('/asset-disposals/{assetDisposal}/approve', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'approve']);
+
+    Route::get('/asset-audits', [\App\Http\Controllers\Api\Procurement\mobile\AssetAuditsController::class, 'index']);
+    Route::get('/asset-audits/{assetAudit}', [\App\Http\Controllers\Api\Procurement\mobile\AssetAuditsController::class, 'show']);
+    Route::post('/asset-audits/{assetAudit}/review', [\App\Http\Controllers\Api\Procurement\mobile\AssetAuditsController::class, 'review']);
+
+    Route::get('/payment-verification', [\App\Http\Controllers\Api\Procurement\mobile\PaymentVerificationController::class, 'index']);
 });

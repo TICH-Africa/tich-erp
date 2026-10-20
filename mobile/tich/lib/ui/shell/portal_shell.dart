@@ -9,6 +9,7 @@ import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
 import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
+import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'employee_clock_nav.dart';
 import 'portal_nav_counts_scope.dart';
@@ -135,7 +136,8 @@ class _PortalShellState extends State<PortalShell>
         moreIndex: 4,
         moreDrawer: (context) => TichMoreDrawer(
           portalName: 'Employee portal',
-          items: MorePage.items(context, context.read<EmployeeApi>()),
+          menuContext: TichPortalMenuContext.employee,
+          items: MorePage.mainItems(context, context.read<EmployeeApi>()),
         ),
         items: [
           AdaptiveTabItem(

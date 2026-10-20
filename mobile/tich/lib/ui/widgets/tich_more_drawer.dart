@@ -4,6 +4,7 @@ import '../../theme/tich_theme.dart';
 import 'tich_more_row_trailing.dart';
 import 'tich_nav_badge.dart';
 import 'tich_brand_logo.dart';
+import 'tich_global_more_footer.dart';
 import 'tich_widgets.dart';
 
 /// One link in the More menu, used by both the side bar and the iOS list.
@@ -29,22 +30,33 @@ class TichMoreDrawer extends StatelessWidget {
     super.key,
     required this.portalName,
     required this.items,
+    required this.menuContext,
+    this.footerItems,
   });
 
   final String portalName;
   final List<TichMoreItem> items;
+  final TichPortalMenuContext menuContext;
+
+  /// When null, uses [tichMoreMenuFooter] for [menuContext].
+  final List<TichMoreItem>? footerItems;
+
+  static const _darkNavMuted = Color(0xFF9AA0A6);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Material 3 may paint the drawer with a light surface in dark mode; use
-    // dark text there while keeping the branded blue panel in light mode.
-    final panelColor = isDark ? TichColors.white : TichColors.sidebar;
+    final scheme = Theme.of(context).colorScheme;
+    final panelColor = isDark ? TichColors.darkSurface : TichColors.sidebar;
+
+    final drawerWidth = MediaQuery.sizeOf(context).width * 0.8;
+    final footer =
+        footerItems ?? tichMoreMenuFooter(context, menuContext);
 
     return Drawer(
       backgroundColor: panelColor,
       surfaceTintColor: Colors.transparent,
-      width: TichLayout.railWidth,
+      width: drawerWidth,
       child: Material(
         color: panelColor,
         child: SafeArea(
@@ -68,7 +80,7 @@ class TichMoreDrawer extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                               color: isDark
-                                  ? TichColors.neutralMuted
+                                  ? _darkNavMuted
                                   : TichColors.sidebarLink,
                             ),
                           ),
@@ -79,9 +91,7 @@ class TichMoreDrawer extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TichTheme.display(
                               fontSize: 19,
-                              color: isDark
-                                  ? TichColors.blueDark
-                                  : TichColors.white,
+                              color: isDark ? scheme.onSurface : TichColors.white,
                             ),
                           ),
                         ],
@@ -92,9 +102,7 @@ class TichMoreDrawer extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(
                         Icons.close,
-                        color: isDark
-                            ? TichColors.grey
-                            : TichColors.sidebarLink,
+                        color: isDark ? _darkNavMuted : TichColors.sidebarLink,
                       ),
                     ),
                   ],
@@ -102,9 +110,7 @@ class TichMoreDrawer extends StatelessWidget {
               ),
               Divider(
                 height: 1,
-                color: isDark
-                    ? TichColors.neutralBorder
-                    : const Color(0x1FFFFFFF),
+                color: isDark ? TichColors.darkBorder : const Color(0x1FFFFFFF),
               ),
             Expanded(
               child: ListView(
@@ -121,6 +127,20 @@ class TichMoreDrawer extends StatelessWidget {
                 ],
               ),
             ),
+            if (footer.isNotEmpty) ...[
+              Divider(
+                height: 1,
+                color: isDark ? TichColors.darkBorder : const Color(0x1FFFFFFF),
+              ),
+              for (final item in footer)
+                TichSideNavRow(
+                  item: item,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    item.onTap();
+                  },
+                ),
+            ],
           ],
         ),
       ),
@@ -146,13 +166,13 @@ class TichSideNavRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor = isDark
-        ? (active ? TichColors.blueDark : TichColors.neutralMuted)
+        ? (active ? TichColors.blueLight : TichMoreDrawer._darkNavMuted)
         : (active ? TichColors.white : TichColors.sidebarMuted);
     final labelColor = isDark
-        ? (active ? TichColors.blueDark : TichColors.grey)
+        ? (active ? TichColors.blueLight : Theme.of(context).colorScheme.onSurface)
         : (active ? TichColors.sidebarActive : TichColors.sidebarLink);
     final activeBg = isDark
-        ? TichColors.blueLight.withValues(alpha: 0.45)
+        ? const Color(0xFF24384A)
         : TichColors.sidebarActiveBg;
 
     return InkWell(

@@ -3,11 +3,19 @@
 namespace App\Services\Procurement;
 
 use App\Models\Asset;
+use App\Models\AssetAudit;
+use App\Models\AssetDisposal;
+use App\Models\Discrepancy;
 use App\Models\GoodsReceivedNote;
+use App\Models\InventoryItem;
+use App\Models\ProcurementInvoice;
+use App\Models\ProcurementPayment;
 use App\Models\ProcurementRequisition;
+use App\Models\Rfq;
 use App\Models\Staff;
 use App\Models\StockAlert;
 use App\Models\StockIssue;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\RBACService;
 use Illuminate\Support\Facades\Schema;
@@ -160,12 +168,12 @@ class ProcurementMobilePortalService
             ['key' => 'stock_issues', 'label' => 'Stock issues', 'mobile' => true, 'web_path' => '/procurement/stock-issues'],
             ['key' => 'stock_alerts', 'label' => 'Stock alerts', 'mobile' => true, 'web_path' => '/procurement/stock-alerts'],
             ['key' => 'assets', 'label' => 'Assets', 'mobile' => true, 'web_path' => '/procurement/assets'],
-            ['key' => 'suppliers', 'label' => 'Suppliers', 'mobile' => false, 'web_path' => '/procurement/suppliers'],
-            ['key' => 'rfqs', 'label' => 'RFQs', 'mobile' => false, 'web_path' => '/procurement/rfqs'],
-            ['key' => 'inventory', 'label' => 'Inventory', 'mobile' => false, 'web_path' => '/procurement/inventory-items'],
-            ['key' => 'disposals', 'label' => 'Disposals', 'mobile' => false, 'web_path' => '/procurement/asset-disposals'],
-            ['key' => 'audits', 'label' => 'Audits', 'mobile' => false, 'web_path' => '/procurement/asset-audits'],
-            ['key' => 'payments', 'label' => 'Payment & verification', 'mobile' => false, 'web_path' => '/procurement/payment-verification'],
+            ['key' => 'suppliers', 'label' => 'Suppliers', 'mobile' => true, 'web_path' => '/procurement/suppliers'],
+            ['key' => 'rfqs', 'label' => 'RFQs', 'mobile' => true, 'web_path' => '/procurement/rfqs'],
+            ['key' => 'inventory', 'label' => 'Inventory', 'mobile' => true, 'web_path' => '/procurement/inventory-items'],
+            ['key' => 'disposals', 'label' => 'Disposals', 'mobile' => true, 'web_path' => '/procurement/asset-disposals'],
+            ['key' => 'audits', 'label' => 'Audits', 'mobile' => true, 'web_path' => '/procurement/asset-audits'],
+            ['key' => 'payments', 'label' => 'Payment & verification', 'mobile' => true, 'web_path' => '/procurement/payment-verification'],
         ];
     }
 
@@ -342,5 +350,171 @@ class ProcurementMobilePortalService
         }
 
         return Staff::query()->find($user->staff_id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeSupplier(Supplier $supplier): array
+    {
+        return [
+            'id' => $supplier->id,
+            'supplier_code' => $supplier->supplier_code,
+            'supplier_name' => $supplier->supplier_name,
+            'contact_person' => $supplier->contact_person,
+            'email' => $supplier->email,
+            'phone' => $supplier->phone,
+            'compliance_status' => $supplier->compliance_status,
+            'supplier_category' => $supplier->supplier_category,
+            'risk_rating' => $supplier->risk_rating,
+            'is_active' => (bool) $supplier->is_active,
+            'blacklist_status' => $supplier->blacklist_status,
+            'can_verify' => in_array($supplier->compliance_status, ['pending', 'under_review'], true),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeRfq(Rfq $rfq): array
+    {
+        $rfq->loadMissing(['requisition', 'awardedSupplier']);
+
+        return [
+            'id' => $rfq->id,
+            'rfq_number' => $rfq->rfq_number,
+            'status' => $rfq->status,
+            'item_description' => $rfq->item_description,
+            'quantity' => (float) $rfq->quantity,
+            'submission_deadline' => optional($rfq->submission_deadline)?->format('Y-m-d'),
+            'requisition_number' => $rfq->requisition?->requisition_number,
+            'awarded_supplier' => $rfq->awardedSupplier?->supplier_name,
+            'awarded_amount' => $rfq->awarded_amount !== null ? (float) $rfq->awarded_amount : null,
+            'approval_status' => $rfq->approval_status,
+            'can_approve_award' => $rfq->status === 'awarded' && $rfq->approval_status === 'pending',
+            'can_reject_award' => $rfq->status === 'awarded' && $rfq->approval_status === 'pending',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeInventoryItem(InventoryItem $item): array
+    {
+        $item->loadMissing('supplier');
+        $lowStock = $item->current_stock <= $item->reorder_level;
+
+        return [
+            'id' => $item->id,
+            'item_code' => $item->item_code,
+            'item_name' => $item->item_name,
+            'category' => $item->category,
+            'unit_of_measure' => $item->unit_of_measure,
+            'current_stock' => (int) $item->current_stock,
+            'reorder_level' => (int) $item->reorder_level,
+            'unit_cost' => (float) $item->unit_cost,
+            'store_location' => $item->store_location,
+            'supplier' => $item->supplier?->supplier_name,
+            'is_active' => (bool) $item->is_active,
+            'low_stock' => $lowStock,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeAssetDisposal(AssetDisposal $record): array
+    {
+        $record->loadMissing(['asset', 'requestedBy']);
+
+        return [
+            'id' => $record->id,
+            'disposal_type' => $record->disposal_type,
+            'approval_status' => $record->approval_status,
+            'status' => $record->status,
+            'reason' => $record->reason,
+            'disposed_value' => (float) $record->disposed_value,
+            'disposal_date' => optional($record->disposal_date)?->format('Y-m-d'),
+            'asset_number' => $record->asset?->asset_number,
+            'asset_name' => $record->asset?->asset_name,
+            'requested_by' => $record->requestedBy?->fullName(),
+            'can_approve' => $record->approval_status === 'pending',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeAssetAudit(AssetAudit $record): array
+    {
+        $record->loadMissing(['asset', 'auditor', 'reviewer']);
+
+        return [
+            'id' => $record->id,
+            'status' => $record->status,
+            'verification_status' => $record->verification_status,
+            'condition' => $record->condition,
+            'notes' => $record->notes,
+            'review_notes' => $record->review_notes,
+            'asset_number' => $record->asset?->asset_number,
+            'asset_name' => $record->asset?->asset_name,
+            'auditor' => $record->auditor?->fullName(),
+            'reviewer' => $record->reviewer?->fullName(),
+            'can_review' => in_array($record->status, ['submitted', 'pending'], true),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeInvoice(ProcurementInvoice $invoice): array
+    {
+        $invoice->loadMissing('supplier');
+
+        return [
+            'id' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+            'supplier' => $invoice->supplier?->supplier_name,
+            'total_amount' => (float) $invoice->total_amount,
+            'balance' => (float) $invoice->balance,
+            'status' => $invoice->status,
+            'invoice_date' => optional($invoice->invoice_date)?->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeDiscrepancy(Discrepancy $row): array
+    {
+        $row->loadMissing(['invoice', 'supplier']);
+
+        return [
+            'id' => $row->id,
+            'status' => $row->status,
+            'field_name' => $row->field_name,
+            'deviation_amount' => $row->deviation_amount !== null ? (float) $row->deviation_amount : null,
+            'invoice_number' => $row->invoice?->invoice_number,
+            'supplier' => $row->supplier?->supplier_name,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializePayment(ProcurementPayment $payment): array
+    {
+        $payment->loadMissing(['invoice', 'supplier']);
+
+        return [
+            'id' => $payment->id,
+            'payment_number' => $payment->payment_number,
+            'amount' => (float) $payment->amount,
+            'status' => $payment->status,
+            'payment_method' => $payment->payment_method,
+            'invoice_number' => $payment->invoice?->invoice_number,
+            'supplier' => $payment->supplier?->supplier_name,
+            'payment_date' => optional($payment->payment_date)?->format('Y-m-d'),
+        ];
     }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
-import '../settings/settings_hub_page.dart';
 import '../shell/portal_nav_counts_scope.dart';
+import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'clearance_page.dart';
 import 'documents_page.dart';
@@ -19,8 +19,7 @@ class StudentMorePage extends StatelessWidget {
 
   final StudentApi api;
 
-  /// The links the More side bar shows (and the iOS More page lists).
-  static List<TichMoreItem> items(BuildContext context, StudentApi api) {
+  static List<TichMoreItem> mainItems(BuildContext context, StudentApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
     void open(Widget page) =>
@@ -77,13 +76,13 @@ class StudentMorePage extends StatelessWidget {
         badgeCount: badge('notifications'),
         onTap: () => open(StudentNotificationsPage(api: api)),
       ),
-      TichMoreItem(
-        label: 'Settings',
-        icon: Icons.settings_outlined,
-        onTap: () => open(const SettingsHubPage()),
-      ),
     ];
   }
+
+  static List<TichMoreItem> items(BuildContext context, StudentApi api) => [
+        ...mainItems(context, api),
+        ...tichMoreMenuFooter(context, TichPortalMenuContext.student),
+      ];
 
   @override
   Widget build(BuildContext context) {

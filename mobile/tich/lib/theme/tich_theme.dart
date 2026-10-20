@@ -396,7 +396,7 @@ abstract final class TichTheme {
         ),
       ),
       drawerTheme: const DrawerThemeData(
-        backgroundColor: TichColors.white,
+        backgroundColor: TichColors.darkSurface,
         surfaceTintColor: Colors.transparent,
       ),
       listTileTheme: const ListTileThemeData(
