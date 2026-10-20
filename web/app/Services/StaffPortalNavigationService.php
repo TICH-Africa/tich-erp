@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 
 class StaffPortalNavigationService
 {
@@ -91,6 +92,53 @@ class StaffPortalNavigationService
             if (! $isTeachingStaff) {
                 $items = array_merge($items, $this->planningNavigation(true, withTechnicalPlans: false));
             }
+
+            $items = array_merge($items, $this->departmentReviewNavigation());
+        }
+
+        return $items;
+    }
+
+    /**
+     * The department reviews that live on academics pages, reached from the HOD's own menu.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function departmentReviewNavigation(): array
+    {
+        $department = app(StaffPortalService::class)->staffForUser(Auth::user())?->department;
+
+        if (! $department instanceof \App\Models\Department || ! $department->isLearningDepartment()) {
+            return [];
+        }
+
+        $params = ['learning_department' => $department->id];
+
+        $tools = [
+            // The unit catalog takes no department parameter: it scopes itself, and a parameter
+            // there sends the request back to the programme list.
+            ['route' => 'departments.academics.units.index', 'label' => 'Unit catalog', 'icon' => 'book-open', 'params' => []],
+            ['route' => 'departments.academics.clearance.index', 'label' => 'Academic clearance', 'icon' => 'check-circle'],
+            ['route' => 'departments.academics.special-exam-requests.index', 'label' => 'Special exam requests', 'icon' => 'file-text'],
+            ['route' => 'departments.academics.supplementary-requests.index', 'label' => 'Supplementary requests', 'icon' => 'refresh-cw'],
+            ['route' => 'departments.academics.suggestions.index', 'label' => 'Suggestion box', 'icon' => 'clipboard-list'],
+            ['route' => 'departments.academics.performance.index', 'label' => 'Performance terminal', 'icon' => 'bar-chart'],
+            ['route' => 'departments.academics.calendar.index', 'label' => 'Academic calendar', 'icon' => 'calendar'],
+        ];
+
+        $visible = array_values(array_filter(
+            $tools,
+            fn (array $tool) => Route::has($tool['route'])
+        ));
+
+        if ($visible === []) {
+            return [];
+        }
+
+        $items = [['type' => 'heading', 'label' => 'Department reviews']];
+
+        foreach ($visible as $tool) {
+            $items[] = array_merge(['type' => 'route', 'params' => $params], $tool);
         }
 
         return $items;

@@ -19,7 +19,7 @@
                     $routePattern = $item['activeRoute'] ?? (preg_replace('/\.(index|create)$/', '.*', $item['route']) ?? $item['route']);
                 @endphp
                 @include('partials.navigation.sidebar-link', [
-                    'href' => route($item['route']),
+                    'href' => route($item['route'], $item['params'] ?? []),
                     'label' => $item['label'],
                     'icon' => $item['icon'] ?? 'circle',
                     'active' => request()->routeIs($routePattern),

@@ -47,13 +47,8 @@ class DashboardController extends DepartmentAcademicsController
             );
         }
 
-        if ($this->access->isDepartmentHod($request->user()) && ! $request->integer('learning_department')) {
-            $learningDepartment = $this->access->primaryLearningDepartment($request->user(), $hub);
-            if ($learningDepartment) {
-                return redirect()->route('departments.academics.programs.index', [
-                    'learning_department' => $learningDepartment->id,
-                ]);
-            }
+        if ($this->access->isDepartmentHod($request->user())) {
+            return redirect()->route('staff.dashboard');
         }
 
         return view('academics.dashboard', [

@@ -103,7 +103,7 @@ class AcademicsAccessService
      */
     public function entryUrl(User $user, Department $department): string
     {
-        if ($this->isTeachingOnly($user)) {
+        if ($this->isTeachingOnly($user) || $this->isDepartmentHod($user)) {
             return route('staff.dashboard');
         }
 
@@ -119,7 +119,7 @@ class AcademicsAccessService
             ? $department
             : $this->primaryLearningDepartment($user, $hub);
 
-        if ($learningDepartment && ($this->isDepartmentHod($user) || $department->isLearningDepartment())) {
+        if ($learningDepartment && $department->isLearningDepartment()) {
             return route('departments.academics.programs.index', [
                 'learning_department' => $learningDepartment->id,
             ]);

@@ -1,3 +1,10 @@
+@php
+    // A department HOD works from their own portal menu, wherever inside academics they land.
+    $accessService = app(\App\Services\AcademicsAccessService::class);
+    $hodDepartment = auth()->user() !== null && isset($department) && $accessService->isDepartmentHod(auth()->user())
+        ? $accessService->primaryLearningDepartment(auth()->user(), $department)
+        : null;
+@endphp
 @if (request()->routeIs('departments.academics.programs.curriculum') && ! empty($curriculumSidebarNavigation) && ! empty($program))
     @include('academics.partials.program-curriculum-sidebar', [
         'program' => $program,
@@ -10,6 +17,15 @@
     @include('departments.partials.sidebar', [
         'department' => $learningDepartment,
         'sidebarNavigation' => $departmentDashboard->sidebarNavigation(auth()->user(), $learningDepartment),
+        'categoryLabel' => fn (\App\Models\Department $dept) => $departmentDashboard->categoryLabel($dept),
+    ])
+@elseif ($hodDepartment !== null)
+    @php
+        $departmentDashboard = app(\App\Services\DepartmentDashboardService::class);
+    @endphp
+    @include('departments.partials.sidebar', [
+        'department' => $hodDepartment,
+        'sidebarNavigation' => $departmentDashboard->sidebarNavigation(auth()->user(), $hodDepartment),
         'categoryLabel' => fn (\App\Models\Department $dept) => $departmentDashboard->categoryLabel($dept),
     ])
 @else

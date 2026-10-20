@@ -11,7 +11,10 @@
                 @php
                     $isActive = false;
 
-                    if (($item['route'] ?? '') === 'departments.show') {
+                    if (($item['route'] ?? '') === 'staff.dashboard') {
+                        $isActive = request()->routeIs('staff.dashboard')
+                            && request()->query('section', 'overview') === ($item['params']['section'] ?? 'overview');
+                    } elseif (($item['route'] ?? '') === 'departments.show') {
                         $currentSection = request()->query('section', 'overview');
                         $itemSection = $item['section'] ?? 'overview';
                         $targetId = $item['target_id'] ?? ($item['params']['department'] ?? null);

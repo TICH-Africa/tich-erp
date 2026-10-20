@@ -8,7 +8,6 @@ use App\Models\Department;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Route;
 
 class DepartmentDashboardService
 {
@@ -290,6 +289,10 @@ class DepartmentDashboardService
      */
     private function learningDepartmentSidebarNavigation(User $user, Department $department): array
     {
+        if (app(AcademicsAccessService::class)->isDepartmentHod($user)) {
+            return $this->hodDepartmentSidebarNavigation();
+        }
+
         $items = [
             [
                 'type' => 'link',
@@ -334,66 +337,32 @@ class DepartmentDashboardService
             }
         }
 
-        $items = array_merge($items, $this->learningDepartmentReviewNavigation($user, $department));
-
         return $items;
     }
 
     /**
-     * The academics review pages this department runs, listed next to its department tools.
+     * A department HOD works from their own portal menu, so the academics pages they review
+     * are listed there rather than behind the department's academics tools.
      *
-     * @return list<array{type: 'heading'|'link', label: string, route?: string, params?: array<string, int>, icon?: string}>
+     * @return list<array{type: 'heading'|'link', label: string, route?: string, params?: array<string, mixed>, icon?: string}>
      */
-    private function learningDepartmentReviewNavigation(User $user, Department $department): array
+    private function hodDepartmentSidebarNavigation(): array
     {
-        $params = ['learning_department' => $department->id];
-        $reviewers = ['Academic Registrar', 'HOD', 'Super Admin', 'Head of Academics'];
-        $institutionWide = ['Academic Registrar', 'Super Admin', 'Head of Academics'];
+        return collect(app(StaffPortalNavigationService::class)->sidebarNavigation())
+            ->map(function (array $item) {
+                if (($item['type'] ?? '') === 'link') {
+                    return [
+                        'type' => 'link',
+                        'label' => $item['label'],
+                        'route' => 'staff.dashboard',
+                        'params' => ['section' => $item['section']],
+                        'icon' => $item['icon'] ?? null,
+                    ];
+                }
 
-        $sections = [
-            'Assessment & Exams' => [
-                ['route' => 'departments.academics.units.index', 'label' => 'Unit catalog', 'icon' => 'book-open', 'roles' => $reviewers],
-                ['route' => 'departments.academics.performance.index', 'label' => 'Performance terminal', 'icon' => 'bar-chart', 'roles' => $reviewers],
-                ['route' => 'departments.academics.clearance.index', 'label' => 'Academic clearance', 'icon' => 'check-circle', 'roles' => $reviewers],
-                ['route' => 'departments.academics.special-exam-requests.index', 'label' => 'Special exam requests', 'icon' => 'file-text', 'roles' => $reviewers],
-                ['route' => 'departments.academics.supplementary-requests.index', 'label' => 'Supplementary requests', 'icon' => 'refresh-cw', 'roles' => $reviewers],
-                ['route' => 'departments.academics.evaluation-windows.index', 'label' => 'Course evaluations', 'icon' => 'clipboard-check', 'roles' => $institutionWide],
-            ],
-            'Student voice' => [
-                ['route' => 'departments.academics.suggestions.index', 'label' => 'Suggestion box', 'icon' => 'clipboard-list', 'roles' => ['Academic Registrar', 'Dean of Students', 'HOD', 'Super Admin', 'Head of Academics']],
-            ],
-            'Planning' => [
-                ['route' => 'departments.academics.calendar.index', 'label' => 'Academic calendar', 'icon' => 'calendar', 'roles' => $reviewers],
-                ['route' => 'departments.academics.workplans.index', 'label' => 'Workplans', 'icon' => 'file-text', 'roles' => $institutionWide],
-            ],
-        ];
-
-        $items = [];
-
-        foreach ($sections as $label => $tools) {
-            $visible = array_values(array_filter(
-                $tools,
-                fn (array $tool) => Route::has($tool['route']) && $user->hasAnyRole($tool['roles'])
-            ));
-
-            if ($visible === []) {
-                continue;
-            }
-
-            $items[] = ['type' => 'heading', 'label' => $label];
-
-            foreach ($visible as $tool) {
-                $items[] = [
-                    'type' => 'link',
-                    'label' => $tool['label'],
-                    'route' => $tool['route'],
-                    'params' => $params,
-                    'icon' => $tool['icon'],
-                ];
-            }
-        }
-
-        return $items;
+                return $item;
+            })
+            ->all();
     }
 
     /**
