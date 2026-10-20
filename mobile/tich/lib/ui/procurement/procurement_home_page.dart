@@ -7,6 +7,7 @@ import '../widgets/portal_hero.dart';
 import '../shell/procurement_nav_signals.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'procurement_helpers.dart';
 import 'procurement_module_nav.dart';
 
 class ProcurementHomePage extends StatefulWidget {
@@ -29,7 +30,13 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
   }
 
   void _reload() {
-    setState(() => _future = widget.api.dashboard());
+    procurementUpdateFuture(
+      setState,
+      (f) {
+        _future = f;
+      },
+      () => widget.api.dashboard(),
+    );
     ProcurementPortalNavSignals.onCountsChanged?.call();
   }
 

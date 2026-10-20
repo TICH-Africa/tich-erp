@@ -17,6 +17,69 @@ class ProcurementApi {
         if (status != null && status.isNotEmpty) 'status': status,
       });
 
+  Future<Map<String, dynamic>> requisitionFormOptions() =>
+      _client.get('/procurement/requisitions/form-options');
+
+  Future<Map<String, dynamic>> requisitionBudgetLines({
+    required String source,
+    required int id,
+  }) =>
+      _client.get('/procurement/requisitions/budget-lines', query: {
+        'source': source,
+        'id': '$id',
+      });
+
+  Future<Map<String, dynamic>> createRequisition({
+    required int requestingDepartmentId,
+    required String requestDate,
+    required String justification,
+    String? budgetCode,
+    required List<Map<String, dynamic>> lines,
+    List<({String path, String name, String? mimeType})> attachments = const [],
+  }) {
+    if (attachments.isEmpty) {
+      return _client.post('/procurement/requisitions', body: {
+        'requesting_department_id': requestingDepartmentId,
+        'request_date': requestDate,
+        'justification': justification,
+        if (budgetCode != null && budgetCode.isNotEmpty) 'budget_code': budgetCode,
+        'lines': lines,
+      });
+    }
+
+    final fields = <String, String>{
+      'requesting_department_id': '$requestingDepartmentId',
+      'request_date': requestDate,
+      'justification': justification,
+      if (budgetCode != null && budgetCode.isNotEmpty) 'budget_code': budgetCode,
+    };
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      fields['lines[$i][item]'] = (line['item'] ?? '').toString();
+      fields['lines[$i][quantity]'] = (line['quantity'] ?? '').toString();
+      fields['lines[$i][description]'] = (line['description'] ?? '').toString();
+      fields['lines[$i][unit_price]'] = (line['unit_price'] ?? '').toString();
+      final unit = line['unit_of_measure'];
+      if (unit != null && unit.toString().isNotEmpty) {
+        fields['lines[$i][unit_of_measure]'] = unit.toString();
+      }
+    }
+
+    return _client.multipartFiles(
+      '/procurement/requisitions',
+      fields: fields,
+      files: [
+        for (final file in attachments)
+          (
+            field: 'attachments[]',
+            path: file.path,
+            name: file.name,
+            mimeType: file.mimeType,
+          ),
+      ],
+    );
+  }
+
   Future<Map<String, dynamic>> requisition(int id) =>
       _client.get('/procurement/requisitions/$id');
 
@@ -35,6 +98,28 @@ class ProcurementApi {
 
   Future<Map<String, dynamic>> stockIssues() =>
       _client.get('/procurement/stock-issues');
+
+  Future<Map<String, dynamic>> stockIssueFormOptions({String? staffSearch}) =>
+      _client.get('/procurement/stock-issues/form-options', query: {
+        if (staffSearch != null && staffSearch.isNotEmpty) 'staff_search': staffSearch,
+      });
+
+  Future<Map<String, dynamic>> createStockIssue({
+    required int inventoryItemId,
+    required int departmentId,
+    required int requestedBy,
+    required double quantity,
+    required double unitCost,
+    required String reason,
+  }) =>
+      _client.post('/procurement/stock-issues', body: {
+        'inventory_item_id': inventoryItemId,
+        'department_id': departmentId,
+        'requested_by': requestedBy,
+        'quantity': quantity,
+        'unit_cost': unitCost,
+        'reason': reason,
+      });
 
   Future<Map<String, dynamic>> stockIssue(int id) =>
       _client.get('/procurement/stock-issues/$id');
@@ -86,6 +171,21 @@ class ProcurementApi {
   Future<Map<String, dynamic>> supplier(int id) =>
       _client.get('/procurement/suppliers/$id');
 
+  Future<Map<String, dynamic>> createSupplier({
+    required Map<String, String> fields,
+    List<({String field, String path, String name, String? mimeType})> files =
+        const [],
+  }) {
+    if (files.isEmpty) {
+      return _client.post('/procurement/suppliers', body: fields);
+    }
+    return _client.multipartFiles(
+      '/procurement/suppliers',
+      fields: fields,
+      files: files,
+    );
+  }
+
   Future<Map<String, dynamic>> verifySupplier(
     int id, {
     required String complianceStatus,
@@ -125,6 +225,25 @@ class ProcurementApi {
   Future<Map<String, dynamic>> assetDisposals({String? status}) =>
       _client.get('/procurement/asset-disposals', query: {
         if (status != null && status.isNotEmpty) 'status': status,
+      });
+
+  Future<Map<String, dynamic>> assetDisposalFormOptions() =>
+      _client.get('/procurement/asset-disposals/form-options');
+
+  Future<Map<String, dynamic>> createAssetDisposal({
+    required int assetId,
+    required String disposalType,
+    double? disposalValue,
+    String? disposalDate,
+    required String reason,
+  }) =>
+      _client.post('/procurement/asset-disposals', body: {
+        'asset_id': assetId,
+        'disposal_type': disposalType,
+        if (disposalValue != null) 'disposal_value': disposalValue,
+        if (disposalDate != null && disposalDate.isNotEmpty)
+          'disposal_date': disposalDate,
+        'reason': reason,
       });
 
   Future<Map<String, dynamic>> assetDisposal(int id) =>

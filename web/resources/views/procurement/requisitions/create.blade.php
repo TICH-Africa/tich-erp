@@ -3,7 +3,7 @@
 @section('title', 'New Requisition')
 
 @section('procurement-content')
-    <x-page-toolbar title="New Requisition" meta="Search a budget, load its line items, then edit before saving the draft">
+    <x-page-toolbar title="New Requisition" meta="Enter line items manually, or optionally link a budget to load its lines">
         <x-slot:actions>
             <a href="{{ route('procurement.requisitions.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
@@ -46,7 +46,7 @@
             <div class="uf-amount-bar">
                 <div>
                     <div class="uf-amount-bar__ref">REQ · Requisition</div>
-                    <div class="uf-amount-bar__sum">Budget-linked purchase request</div>
+                    <div class="uf-amount-bar__sum">Purchase request (budget optional)</div>
                 </div>
                 <span class="uf-badge">Draft</span>
             </div>
@@ -70,15 +70,14 @@
                         </div>
                     </div>
                     <div class="uf-field">
-                        <label for="budget_key">Budget <span class="uf-req">*</span></label>
+                        <label for="budget_key">Budget <span class="uf-hint">(optional)</span></label>
                         <select
                             id="budget_key"
                             name="budget_key"
                             data-tich-search="true"
                             data-tich-search-placeholder="Search budget code, name, or department…"
-                            required
                         >
-                            <option value="">Search and select a budget…</option>
+                            <option value="">No budget — enter line items manually</option>
                             @foreach ($budgetOptions as $option)
                                 @php $optionKey = $option['source'].':'.$option['id']; @endphp
                                 <option
@@ -91,7 +90,7 @@
                                 >{{ $option['label'] }}</option>
                             @endforeach
                         </select>
-                        <span class="uf-hint" id="budget-lines-hint">Selecting a budget loads its line items below. You can edit quantities, prices, and remove lines.</span>
+                        <span class="uf-hint" id="budget-lines-hint">Leave budget empty to add items yourself, or select a budget to load its line items below (you can still edit them).</span>
                     </div>
                     <div class="uf-field">
                         <label for="justification">Justification <span class="uf-req">*</span></label>
@@ -109,7 +108,7 @@
                 <div class="uf-section-head">Requisition Line Items</div>
                 <div class="uf-section-body">
                     <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                        <span class="uf-hint" style="margin:0;">Row total = quantity × unit price. Edit freely after loading from the budget.</span>
+                        <span class="uf-hint" style="margin:0;">Row total = quantity × unit price. Add and edit lines below.</span>
                         <button type="button" class="uf-btn uf-btn-secondary" id="requisition-add-line">+ Add line</button>
                     </div>
                     <div class="tich-table-wrap">
@@ -312,6 +311,13 @@
             var option = budgetSelect.options[budgetSelect.selectedIndex];
             if (!option || !option.value) {
                 if (budgetCodeInput) budgetCodeInput.value = '';
+                if (hintEl) {
+                    hintEl.textContent = 'No budget selected. Enter line items in the table below.';
+                }
+                if (body.querySelectorAll('.req-line').length === 0) {
+                    addRow();
+                }
+                syncHiddenTotals();
                 return;
             }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -5,8 +7,12 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
+import 'procurement_create_requisition_page.dart';
+import 'procurement_raise_stock_issue_page.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
 
@@ -22,85 +28,186 @@ class ProcurementRequisitionsPage extends StatefulWidget {
 
 class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPage> {
   late Future<Map<String, dynamic>> _future;
+  Timer? _searchDebounce;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _future = widget.api.requisitions();
+    _load();
   }
 
-  void _reload() => setState(() => _future = widget.api.requisitions());
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _load({String? search}) {
+    procurementUpdateFuture(
+      setState,
+      (f) {
+        _future = f;
+      },
+      () => widget.api.requisitions(
+        search: search != null && search.isNotEmpty ? search : null,
+      ),
+    );
+  }
+
+  void _onSearchChanged(String q) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 320), () {
+      _query = q;
+      _load(search: q);
+    });
+  }
+
+  void _reload() => _load(search: _query);
+
+  Future<void> _openCreate() async {
+    final id = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) => ProcurementCreateRequisitionPage(api: widget.api),
+      ),
+    );
+    if (!mounted) return;
+    _reload();
+    if (id != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              ProcurementRequisitionDetailPage(api: widget.api, id: id),
+        ),
+      );
+      if (mounted) _reload();
+    }
+  }
+
+  Future<void> _openDetail(int id) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProcurementRequisitionDetailPage(api: widget.api, id: id),
+      ),
+    );
+    if (mounted) _reload();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Requisitions',
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-            return const Center(child: AdaptiveProgress());
-          }
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('$snap.error'),
-                  TextButton(onPressed: _reload, child: const Text('Retry')),
-                ],
-              ),
-            );
-          }
-          final items = snap.data?['items'] as List? ?? [];
-          if (items.isEmpty) {
-            return const Center(child: Text('No requisitions.'));
-          }
-          return RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final r = Map<String, dynamic>.from(items[i] as Map);
-                final id = (r['id'] as num).toInt();
-                return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProcurementRequisitionDetailPage(api: widget.api, id: id),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (r['requisition_number'] ?? '').toString(),
-                        style: TichTheme.display(fontSize: 15),
-                      ),
-                      Text(
-                        (r['requested_item'] ?? '').toString(),
-                        style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openCreate,
+        icon: const Icon(Icons.add),
+        label: const Text('New requisition'),
+      ),
+      body: TichLiveRefreshBinder(
+        onLiveRefresh: () => _load(search: _query),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ProcurementSearchBar(
+              hint: 'Search number, item, department, budget…',
+              onQueryChanged: _onSearchChanged,
+            ),
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _future,
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const Center(child: AdaptiveProgress());
+                  }
+                  if (snap.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          procurementStatusChip((r['status_label'] ?? '').toString()),
-                          const Spacer(),
-                          Text(
-                            _kes.format((r['estimated_cost'] as num?) ?? 0),
-                            style: tichUi(fontSize: 12),
+                          Text(tichDescribeError(snap.error)),
+                          TextButton(
+                            onPressed: _reload,
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
+                    );
+                  }
+                  final items = snap.data?['items'] as List? ?? [];
+                  if (items.isEmpty) {
+                    return Center(
+                      child: Text(
+                        _query.isEmpty
+                            ? 'No requisitions yet. Tap New requisition.'
+                            : 'No matches for "$_query".',
+                        textAlign: TextAlign.center,
+                        style: tichUi(color: TichColors.neutralMuted),
+                      ),
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async => _reload(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final r = Map<String, dynamic>.from(items[i] as Map);
+                        final id = (r['id'] as num).toInt();
+                        final dept = (r['department'] ?? '').toString();
+                        final reqDate = formatDate(r['request_date']);
+                        return TichCard(
+                          onTap: () => _openDetail(id),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (r['requisition_number'] ?? '').toString(),
+                                style: TichTheme.display(fontSize: 15),
+                              ),
+                              Text(
+                                (r['requested_item'] ?? '').toString(),
+                                style: tichUi(
+                                  fontSize: 13,
+                                  color: TichColors.neutralMuted,
+                                ),
+                              ),
+                              if (dept.isNotEmpty || reqDate != '—') ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  [
+                                    if (dept.isNotEmpty) dept,
+                                    if (reqDate != '—') reqDate,
+                                  ].join(' · '),
+                                  style: tichUi(
+                                    fontSize: 12,
+                                    color: TichColors.neutralMuted,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  procurementStatusChip(
+                                    (r['status_label'] ?? '').toString(),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    _kes.format((r['estimated_cost'] as num?) ?? 0),
+                                    style: tichUi(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -137,7 +244,13 @@ class _ProcurementRequisitionDetailPageState
     try {
       await call();
       if (mounted) {
-        setState(() => _future = widget.api.requisition(widget.id));
+        procurementUpdateFuture(
+          setState,
+          (f) {
+        _future = f;
+      },
+          () => widget.api.requisition(widget.id),
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -162,88 +275,84 @@ class _ProcurementRequisitionDetailPageState
           final canSubmit = r['can_submit'] == true;
           final canReject = r['can_reject'] == true;
           final budget = Map<String, dynamic>.from(r['budget_check'] as Map? ?? {});
-          final budgetPassed = budget['passed'] == true;
           final lines = r['line_items'] as List? ?? [];
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                (r['requisition_number'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+          final actions = <Widget>[];
+          if (canSubmit) {
+            actions.add(
+              FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () => _act(() => widget.api.submitRequisition(widget.id)),
+                child: const Text('Submit for approval'),
               ),
-              const SizedBox(height: 4),
-              procurementStatusChip((r['status_label'] ?? '').toString()),
-              const SizedBox(height: 12),
-              procurementDetailRow('Department', r['department']),
-              procurementDetailRow('Estimated', _kes.format((r['estimated_cost'] as num?) ?? 0)),
-              procurementDetailRow('Requested', r['requested_item']),
-              if ((r['justification'] ?? '').toString().isNotEmpty)
-                procurementDetailRow('Justification', r['justification']),
+            );
+          }
+          if (canApprove) {
+            actions.add(
+              FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () => _act(() => widget.api.approveRequisition(widget.id)),
+                child: _busy
+                    ? const AdaptiveProgress()
+                    : const Text('Approve'),
+              ),
+            );
+          }
+          if (canReject) {
+            actions.add(
+              OutlinedButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final reason = await procurementPromptText(
+                          context,
+                          title: 'Reject requisition',
+                          hint: 'Reason for rejection',
+                        );
+                        if (reason == null || reason.isEmpty) return;
+                        await _act(() => widget.api.rejectRequisition(
+                              widget.id,
+                              comments: reason,
+                            ));
+                      },
+                child: const Text('Reject'),
+              ),
+            );
+          }
+
+          return ProcurementDetailBody(
+            children: [
+              procurementDetailHero(
+                title: (r['requisition_number'] ?? '').toString(),
+                eyebrow: (r['requested_item'] ?? '').toString(),
+                statusLabel: (r['status_label'] ?? '').toString(),
+                metricLabel: 'Estimated',
+                metricValue: _kes.format((r['estimated_cost'] as num?) ?? 0),
+              ),
+              procurementDetailSection('Details', [
+                procurementDetailField('Department', r['department']),
+                procurementDetailField('Requested item', r['requested_item']),
+                if ((r['justification'] ?? '').toString().isNotEmpty)
+                  procurementDetailNote((r['justification'] ?? '').toString()),
+              ]),
               if ((budget['message'] ?? '').toString().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    budget['message'].toString(),
-                    style: tichUi(
-                      fontSize: 13,
-                      color: budgetPassed ? TichColors.greenDark : TichColors.error,
-                    ),
-                  ),
+                procurementDetailSection('Budget check', [
+                  procurementDetailNote(budget['message'].toString()),
+                ]),
+              if (lines.isNotEmpty)
+                procurementDetailSection(
+                  'Line items',
+                  lines.map((raw) {
+                    final line = Map<String, dynamic>.from(raw as Map);
+                    return procurementLineItemTile(
+                      title: (line['item'] ?? '').toString(),
+                      subtitle: 'Qty ${line['quantity']}',
+                      trailing: _kes.format((line['unit_price'] as num?) ?? 0),
+                    );
+                  }).toList(),
                 ),
-              if (lines.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text('Line items', style: TichTheme.display(fontSize: 14)),
-                ...lines.map((raw) {
-                  final line = Map<String, dynamic>.from(raw as Map);
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '${line['item']} × ${line['quantity']} @ ${_kes.format((line['unit_price'] as num?) ?? 0)}',
-                      style: tichUi(fontSize: 13),
-                    ),
-                  );
-                }),
-              ],
-              if (canSubmit) ...[
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () => _act(() => widget.api.submitRequisition(widget.id)),
-                  child: const Text('Submit for approval'),
-                ),
-              ],
-              if (canApprove) ...[
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () => _act(() => widget.api.approveRequisition(widget.id)),
-                  child: _busy
-                      ? const AdaptiveProgress()
-                      : const Text('Approve'),
-                ),
-              ],
-              if (canReject) ...[
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final reason = await procurementPromptText(
-                            context,
-                            title: 'Reject requisition',
-                            hint: 'Reason for rejection',
-                          );
-                          if (reason == null || reason.isEmpty) return;
-                          await _act(() => widget.api.rejectRequisition(
-                                widget.id,
-                                comments: reason,
-                              ));
-                        },
-                  child: const Text('Reject'),
-                ),
-              ],
+              if (actions.isNotEmpty) procurementDetailActions(actions),
             ],
           );
         },
@@ -268,49 +377,98 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
   @override
   void initState() {
     super.initState();
-    _future = widget.api.stockIssues();
+    _reload();
+  }
+
+  void _reload() {
+    procurementUpdateFuture(
+      setState,
+      (f) {
+        _future = f;
+      },
+      () => widget.api.stockIssues(),
+    );
+  }
+
+  Future<void> _openRaise() async {
+    final id = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) => ProcurementRaiseStockIssuePage(api: widget.api),
+      ),
+    );
+    if (!mounted) return;
+    _reload();
+    if (id != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcurementStockIssueDetailPage(api: widget.api, id: id),
+        ),
+      );
+      if (mounted) _reload();
+    }
+  }
+
+  Future<void> _openDetail(int id) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProcurementStockIssueDetailPage(api: widget.api, id: id),
+      ),
+    );
+    if (mounted) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Stock issues',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openRaise,
+        icon: const Icon(Icons.add),
+        label: const Text('Raise issue'),
+      ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final items = snap.data?['items'] as List? ?? [];
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final row = Map<String, dynamic>.from(items[i] as Map);
-              final id = (row['id'] as num).toInt();
-              return TichCard(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProcurementStockIssueDetailPage(api: widget.api, id: id),
+          if (items.isEmpty) {
+            return Center(
+              child: Text(
+                'No stock issues yet. Tap Raise issue.',
+                textAlign: TextAlign.center,
+                style: tichUi(color: TichColors.neutralMuted),
+              ),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: () async => _reload(),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, i) {
+                final row = Map<String, dynamic>.from(items[i] as Map);
+                final id = (row['id'] as num).toInt();
+                return TichCard(
+                  onTap: () => _openDetail(id),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (row['item_name'] ?? 'Item').toString(),
+                        style: TichTheme.display(fontSize: 15),
+                      ),
+                      Text(
+                        '${row['department']} · Qty ${row['quantity']}',
+                        style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
+                      ),
+                      const SizedBox(height: 4),
+                      procurementStatusChip((row['approval_status'] ?? '').toString()),
+                    ],
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (row['item_name'] ?? 'Item').toString(),
-                      style: TichTheme.display(fontSize: 15),
-                    ),
-                    Text(
-                      '${row['department']} · Qty ${row['quantity']}',
-                      style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
-                    ),
-                    const SizedBox(height: 4),
-                    procurementStatusChip((row['approval_status'] ?? '').toString()),
-                  ],
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
@@ -354,43 +512,59 @@ class _ProcurementStockIssueDetailPageState
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final canApprove = r['can_approve'] == true;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          final status = (r['approval_status'] ?? '').toString();
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['item_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 18),
+              procurementDetailHero(
+                title: (r['item_name'] ?? 'Stock issue').toString(),
+                eyebrow: (r['department'] ?? '').toString(),
+                statusLabel: status,
+                metricLabel: 'Total cost',
+                metricValue: _kes.format((r['total_cost'] as num?) ?? 0),
               ),
-              procurementDetailRow('Department', r['department']),
-              procurementDetailRow('Quantity', '${r['quantity']}'),
-              procurementDetailRow('Total', _kes.format((r['total_cost'] as num?) ?? 0)),
-              procurementDetailRow('Reason', r['reason']),
-              if (canApprove)
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          setState(() => _busy = true);
-                          try {
-                            await widget.api.approveStockIssue(widget.id);
-                            if (context.mounted) {
-                              setState(
-                                () => _future = widget.api.stockIssue(widget.id),
-                              );
-                              procurementNotifyCountsChanged();
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              procurementShowError(context, e);
-                            }
-                          } finally {
-                            if (mounted) setState(() => _busy = false);
-                          }
-                        },
-                  child: _busy
-                      ? const AdaptiveProgress()
-                      : const Text('Approve issue'),
+              procurementDetailSection('Issue details', [
+                procurementDetailField('Department', r['department']),
+                procurementDetailField('Quantity', r['quantity']),
+                procurementDetailField(
+                  'Unit cost',
+                  _kes.format((r['unit_cost'] as num?) ?? 0),
                 ),
+                procurementDetailField('Reason', r['reason']),
+                procurementDetailField('Requested by', r['requested_by']),
+                procurementDetailField('Created', r['created_at']),
+              ]),
+              if (canApprove)
+                procurementDetailActions([
+                  FilledButton(
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            setState(() => _busy = true);
+                            try {
+                              await widget.api.approveStockIssue(widget.id);
+                              if (context.mounted) {
+                                procurementUpdateFuture(
+                                  setState,
+                                  (f) {
+        _future = f;
+      },
+                                  () => widget.api.stockIssue(widget.id),
+                                );
+                                procurementNotifyCountsChanged();
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                procurementShowError(context, e);
+                              }
+                            } finally {
+                              if (mounted) setState(() => _busy = false);
+                            }
+                          },
+                    child: _busy
+                        ? const AdaptiveProgress()
+                        : const Text('Approve issue'),
+                  ),
+                ]),
             ],
           );
         },
@@ -492,65 +666,75 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final items = r['items'] as List? ?? [];
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['grn_number'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 18),
+              procurementDetailHero(
+                title: (r['grn_number'] ?? '').toString(),
+                eyebrow: 'PO ${r['po_number'] ?? '—'}',
+                statusLabel: (r['inspection_status'] ?? '').toString(),
               ),
-              procurementDetailRow('PO', r['po_number']),
-              procurementDetailRow('Supplier', r['supplier']),
-              procurementDetailRow('Received', r['received_date']),
-              procurementDetailRow('Inspection', r['inspection_status']),
-              if (items.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text('Items received', style: TichTheme.display(fontSize: 14)),
-                ...items.map((raw) {
-                  final line = Map<String, dynamic>.from(raw as Map);
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '${line['item_name']} · ${line['quantity_received']} × ${_kes.format((line['unit_cost'] as num?) ?? 0)} (${line['condition']})',
-                      style: tichUi(fontSize: 13),
-                    ),
-                  );
-                }),
-              ],
-              if (r['can_complete_inspection'] == true)
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final notes = await procurementPromptText(
-                            context,
-                            title: 'Inspection notes',
-                            hint: 'Optional notes',
-                            required: false,
-                          );
-                          if (!context.mounted) return;
-                          setState(() => _busy = true);
-                          try {
-                            await widget.api.completeGrnInspection(
-                              widget.id,
-                              inspectionNotes: notes,
-                            );
-                            if (context.mounted) {
-                              setState(() => _future = widget.api.grn(widget.id));
-                              procurementNotifyCountsChanged();
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              procurementShowError(context, e);
-                            }
-                          } finally {
-                            if (mounted) setState(() => _busy = false);
-                          }
-                        },
-                  child: _busy
-                      ? const AdaptiveProgress()
-                      : const Text('Complete inspection'),
+              procurementDetailSection('Receipt', [
+                procurementDetailField('Supplier', r['supplier']),
+                procurementDetailField('Received date', r['received_date']),
+                procurementDetailField('Received by', r['received_by']),
+                if ((r['inspection_notes'] ?? '').toString().isNotEmpty)
+                  procurementDetailNote((r['inspection_notes'] ?? '').toString()),
+              ]),
+              if (items.isNotEmpty)
+                procurementDetailSection(
+                  'Items received',
+                  items.map((raw) {
+                    final line = Map<String, dynamic>.from(raw as Map);
+                    return procurementLineItemTile(
+                      title: (line['item_name'] ?? '').toString(),
+                      subtitle:
+                          'Qty ${line['quantity_received']} · ${line['condition'] ?? ''}',
+                      trailing: _kes.format((line['unit_cost'] as num?) ?? 0),
+                    );
+                  }).toList(),
                 ),
+              if (r['can_complete_inspection'] == true)
+                procurementDetailActions([
+                  FilledButton(
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            final notes = await procurementPromptText(
+                              context,
+                              title: 'Inspection notes',
+                              hint: 'Optional notes',
+                              required: false,
+                            );
+                            if (!context.mounted) return;
+                            setState(() => _busy = true);
+                            try {
+                              await widget.api.completeGrnInspection(
+                                widget.id,
+                                inspectionNotes: notes,
+                              );
+                              if (context.mounted) {
+                                procurementUpdateFuture(
+                                  setState,
+                                  (f) {
+        _future = f;
+      },
+                                  () => widget.api.grn(widget.id),
+                                );
+                                procurementNotifyCountsChanged();
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                procurementShowError(context, e);
+                              }
+                            } finally {
+                              if (mounted) setState(() => _busy = false);
+                            }
+                          },
+                    child: _busy
+                        ? const AdaptiveProgress()
+                        : const Text('Complete inspection'),
+                  ),
+                ]),
             ],
           );
         },
@@ -659,65 +843,76 @@ class _ProcurementStockAlertDetailPageState
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final reqId = (r['requisition_id'] as num?)?.toInt();
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                (r['item_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 18),
-              ),
-              procurementDetailRow('Type', r['alert_type']),
-              procurementDetailRow('Current stock', '${r['current_stock']}'),
-              procurementDetailRow('Reorder level', '${r['reorder_level']}'),
-              procurementDetailRow('Recommended qty', '${r['recommended_quantity']}'),
-              if ((r['notes'] ?? '').toString().isNotEmpty)
-                procurementDetailRow('Notes', r['notes']),
-              if (reqId != null) ...[
-                procurementDetailRow('Linked requisition', '#$reqId'),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ProcurementRequisitionDetailPage(
-                        api: widget.api,
-                        id: reqId,
-                      ),
+          final actions = <Widget>[];
+          if (reqId != null) {
+            actions.add(
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ProcurementRequisitionDetailPage(
+                      api: widget.api,
+                      id: reqId,
                     ),
                   ),
-                  child: const Text('Open requisition'),
                 ),
-                const SizedBox(height: 8),
-              ],
-              if (r['can_auto_reorder'] == true)
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          setState(() => _busy = true);
-                          try {
-                            await widget.api.autoReorderStockAlert(widget.id);
-                            if (context.mounted) {
-                              setState(
-                                () => _future = widget.api.stockAlert(widget.id),
-                              );
-                              procurementNotifyCountsChanged();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Draft requisition created.'),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              procurementShowError(context, e);
-                            }
-                          } finally {
-                            if (mounted) setState(() => _busy = false);
+                child: Text('Open requisition #$reqId'),
+              ),
+            );
+          }
+          if (r['can_auto_reorder'] == true) {
+            actions.add(
+              FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        setState(() => _busy = true);
+                        try {
+                          await widget.api.autoReorderStockAlert(widget.id);
+                          if (context.mounted) {
+                            procurementUpdateFuture(
+                              setState,
+                              (f) {
+        _future = f;
+      },
+                              () => widget.api.stockAlert(widget.id),
+                            );
+                            procurementNotifyCountsChanged();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Draft requisition created.'),
+                              ),
+                            );
                           }
-                        },
-                  child: _busy
-                      ? const AdaptiveProgress()
-                      : const Text('Auto-draft requisition'),
-                ),
+                        } catch (e) {
+                          if (context.mounted) {
+                            procurementShowError(context, e);
+                          }
+                        } finally {
+                          if (mounted) setState(() => _busy = false);
+                        }
+                      },
+                child: _busy
+                    ? const AdaptiveProgress()
+                    : const Text('Auto-draft requisition'),
+              ),
+            );
+          }
+
+          return ProcurementDetailBody(
+            children: [
+              procurementDetailHero(
+                title: (r['item_name'] ?? 'Stock alert').toString(),
+                statusLabel: (r['alert_type'] ?? '').toString(),
+                metricLabel: 'Stock / reorder',
+                metricValue:
+                    '${r['current_stock']} / ${r['reorder_level']}',
+              ),
+              procurementDetailSection('Alert', [
+                procurementDetailField('Recommended qty', r['recommended_quantity']),
+                if ((r['notes'] ?? '').toString().isNotEmpty)
+                  procurementDetailNote((r['notes'] ?? '').toString()),
+              ]),
+              if (actions.isNotEmpty) procurementDetailActions(actions),
             ],
           );
         },
@@ -746,7 +941,13 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
   }
 
   void _runSearch() {
-    setState(() => _future = widget.api.assets(search: _search.text.trim()));
+    procurementUpdateFuture(
+      setState,
+      (f) {
+        _future = f;
+      },
+      () => widget.api.assets(search: _search.text.trim()),
+    );
   }
 
   @override
@@ -852,21 +1053,21 @@ class ProcurementAssetDetailPage extends StatelessWidget {
             return Center(child: Text(tichDescribeError(snap.error)));
           }
           final r = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['asset_number'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+              procurementDetailHero(
+                title: (r['asset_number'] ?? '').toString(),
+                eyebrow: (r['asset_name'] ?? '').toString(),
+                statusLabel: (r['status'] ?? '').toString(),
               ),
-              procurementDetailRow('Name', r['asset_name']),
-              procurementDetailRow('Category', r['category']),
-              procurementDetailRow('Status', r['status']),
-              procurementDetailRow('Location', r['location']),
-              procurementDetailRow('Custodian', r['custodian']),
-              procurementDetailRow('Tag', r['tag_number']),
-              procurementDetailRow('Serial', r['serial_number']),
-              procurementDetailRow('Condition', r['condition']),
+              procurementDetailSection('Asset record', [
+                procurementDetailField('Category', r['category']),
+                procurementDetailField('Location', r['location']),
+                procurementDetailField('Custodian', r['custodian']),
+                procurementDetailField('Tag number', r['tag_number']),
+                procurementDetailField('Serial number', r['serial_number']),
+                procurementDetailField('Condition', r['condition']),
+              ]),
             ],
           );
         },

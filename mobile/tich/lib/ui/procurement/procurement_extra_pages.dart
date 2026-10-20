@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/procurement_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'procurement_add_supplier_page.dart';
 import 'procurement_helpers.dart';
+import 'procurement_request_asset_disposal_page.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
 
@@ -20,6 +25,8 @@ class ProcurementSuppliersPage extends StatefulWidget {
 
 class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
   late Future<Map<String, dynamic>> _future;
+  Timer? _searchDebounce;
+  String _query = '';
 
   @override
   void initState() {
@@ -27,65 +34,156 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
     _future = widget.api.suppliers();
   }
 
-  void _reload() => setState(() => _future = widget.api.suppliers());
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _load({String? search}) {
+    procurementUpdateFuture(
+      setState,
+      (f) {
+        _future = f;
+      },
+      () => widget.api.suppliers(
+        search: search != null && search.isNotEmpty ? search : null,
+      ),
+    );
+  }
+
+  void _onSearchChanged(String q) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 320), () {
+      _query = q;
+      _load(search: q);
+    });
+  }
+
+  Future<void> _openAdd() async {
+    final id = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) => ProcurementAddSupplierPage(api: widget.api),
+      ),
+    );
+    if (!mounted) return;
+    _load(search: _query);
+    if (id != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcurementSupplierDetailPage(api: widget.api, id: id),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openDetail(int id) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProcurementSupplierDetailPage(api: widget.api, id: id),
+      ),
+    );
+    if (mounted) _load(search: _query);
+  }
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Suppliers',
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('$snap.error'),
-                  TextButton(onPressed: _reload, child: const Text('Retry')),
-                ],
-              ),
-            );
-          }
-          final items = snap.data?['items'] as List? ?? [];
-          if (items.isEmpty) return const Center(child: Text('No suppliers.'));
-          return RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final r = Map<String, dynamic>.from(items[i] as Map);
-                final id = (r['id'] as num).toInt();
-                return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProcurementSupplierDetailPage(api: widget.api, id: id),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAdd,
+        icon: const Icon(Icons.add),
+        label: const Text('Add supplier'),
+      ),
+      body: TichLiveRefreshBinder(
+        onLiveRefresh: () => _load(search: _query),
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ProcurementSearchBar(
+            hint: 'Search name, code, email, phone…',
+            onQueryChanged: _onSearchChanged,
+          ),
+          Expanded(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: _future,
+              builder: (context, snap) {
+                if (!snap.hasData) return const Center(child: AdaptiveProgress());
+                if (snap.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$snap.error'),
+                        TextButton(
+                          onPressed: () => _load(search: _query),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (r['supplier_name'] ?? '').toString(),
-                        style: TichTheme.display(fontSize: 15),
-                      ),
-                      Text(
-                        (r['supplier_code'] ?? '').toString(),
-                        style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
-                      ),
-                      const SizedBox(height: 6),
-                      procurementStatusChip((r['compliance_status'] ?? '').toString()),
-                    ],
+                  );
+                }
+                final items = snap.data?['items'] as List? ?? [];
+                if (items.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _query.isEmpty
+                          ? 'No suppliers yet. Tap Add supplier.'
+                          : 'No matches for "$_query".',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: () async => _load(search: _query),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final r = Map<String, dynamic>.from(items[i] as Map);
+                      final id = (r['id'] as num).toInt();
+                      return TichCard(
+                        onTap: () => _openDetail(id),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              (r['supplier_name'] ?? '').toString(),
+                              style: TichTheme.display(fontSize: 15),
+                            ),
+                            Text(
+                              (r['supplier_code'] ?? '').toString(),
+                              style: tichUi(
+                                fontSize: 13,
+                                color: TichColors.neutralMuted,
+                              ),
+                            ),
+                            if ((r['email'] ?? '').toString().isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                (r['email'] ?? '').toString(),
+                                style: tichUi(
+                                  fontSize: 13,
+                                  color: TichColors.neutralMuted,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 6),
+                            procurementStatusChip(
+                              (r['compliance_status'] ?? '').toString(),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
+        ),
       ),
     );
   }
@@ -125,7 +223,13 @@ class _ProcurementSupplierDetailPageState extends State<ProcurementSupplierDetai
         riskRating: complianceStatus == 'approved' ? 'low' : null,
       );
       if (mounted) {
-        setState(() => _future = widget.api.supplier(widget.id));
+        procurementUpdateFuture(
+          setState,
+          (f) {
+        _future = f;
+      },
+          () => widget.api.supplier(widget.id),
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -145,40 +249,39 @@ class _ProcurementSupplierDetailPageState extends State<ProcurementSupplierDetai
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final canVerify = r['can_verify'] == true;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['supplier_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+              procurementDetailHero(
+                title: (r['supplier_name'] ?? '').toString(),
+                eyebrow: (r['supplier_code'] ?? '').toString(),
+                statusLabel: (r['compliance_status'] ?? '').toString(),
               ),
-              procurementStatusChip((r['compliance_status'] ?? '').toString()),
-              const SizedBox(height: 12),
-              procurementDetailRow('Code', r['supplier_code']),
-              procurementDetailRow('Contact', r['contact_person']),
-              procurementDetailRow('Email', r['email']),
-              procurementDetailRow('Phone', r['phone']),
-              procurementDetailRow('Category', r['supplier_category']),
-              procurementDetailRow('Risk', r['risk_rating']),
-              procurementDetailRow('Active', r['is_active'] == true ? 'Yes' : 'No'),
-              procurementDetailRow('Blacklist', r['blacklist_status']),
-              if (canVerify) ...[
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _busy ? null : () => _verify('approved'),
-                  child: const Text('Approve compliance'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: _busy ? null : () => _verify('under_review'),
-                  child: const Text('Mark under review'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: _busy ? null : () => _verify('rejected'),
-                  child: const Text('Reject'),
-                ),
-              ],
+              procurementDetailSection('Contact', [
+                procurementDetailField('Contact person', r['contact_person']),
+                procurementDetailField('Email', r['email']),
+                procurementDetailField('Phone', r['phone']),
+              ]),
+              procurementDetailSection('Compliance', [
+                procurementDetailField('Category', r['supplier_category']),
+                procurementDetailField('Risk rating', r['risk_rating']),
+                procurementDetailField('Active', r['is_active'] == true ? 'Yes' : 'No'),
+                procurementDetailField('Blacklist', r['blacklist_status']),
+              ]),
+              if (canVerify)
+                procurementDetailActions([
+                  FilledButton(
+                    onPressed: _busy ? null : () => _verify('approved'),
+                    child: const Text('Approve compliance'),
+                  ),
+                  OutlinedButton(
+                    onPressed: _busy ? null : () => _verify('under_review'),
+                    child: const Text('Mark under review'),
+                  ),
+                  OutlinedButton(
+                    onPressed: _busy ? null : () => _verify('rejected'),
+                    child: const Text('Reject'),
+                  ),
+                ]),
             ],
           );
         },
@@ -205,7 +308,13 @@ class _ProcurementRfqsPageState extends State<ProcurementRfqsPage> {
     _future = widget.api.rfqs();
   }
 
-  void _reload() => setState(() => _future = widget.api.rfqs());
+  void _reload() => procurementUpdateFuture(
+        setState,
+        (f) {
+        _future = f;
+      },
+        () => widget.api.rfqs(),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +404,13 @@ class _ProcurementRfqDetailPageState extends State<ProcurementRfqDetailPage> {
     try {
       await call();
       if (mounted) {
-        setState(() => _future = widget.api.rfq(widget.id));
+        procurementUpdateFuture(
+          setState,
+          (f) {
+        _future = f;
+      },
+          () => widget.api.rfq(widget.id),
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -316,62 +431,70 @@ class _ProcurementRfqDetailPageState extends State<ProcurementRfqDetailPage> {
           final r = snap.data!;
           final canApprove = r['can_approve_award'] == true;
           final canReject = r['can_reject_award'] == true;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                (r['rfq_number'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+          final actions = <Widget>[];
+          if (canApprove) {
+            actions.add(
+              FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final notes = await procurementPromptText(
+                          context,
+                          title: 'Approve award',
+                          hint: 'Optional notes',
+                          required: false,
+                        );
+                        if (notes == null) return;
+                        await _act(() => widget.api.approveRfqAward(
+                              widget.id,
+                              notes: notes.isEmpty ? null : notes,
+                            ));
+                      },
+                child: const Text('Approve award'),
               ),
-              procurementStatusChip((r['status'] ?? '').toString()),
-              const SizedBox(height: 12),
-              procurementDetailRow('Requisition', r['requisition_number']),
-              procurementDetailRow('Item', r['item_description']),
-              procurementDetailRow('Quantity', r['quantity']),
-              procurementDetailRow('Deadline', r['submission_deadline']),
-              procurementDetailRow('Awarded supplier', r['awarded_supplier']),
-              if (r['awarded_amount'] != null)
-                procurementDetailRow('Award amount', _kes.format((r['awarded_amount'] as num?) ?? 0)),
-              procurementDetailRow('Award approval', r['approval_status']),
-              if (canApprove) ...[
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final notes = await procurementPromptText(
-                            context,
-                            title: 'Approve award',
-                            hint: 'Optional notes',
-                            required: false,
-                          );
-                          if (notes == null) return;
-                          await _act(() => widget.api.approveRfqAward(
-                                widget.id,
-                                notes: notes.isEmpty ? null : notes,
-                              ));
-                        },
-                  child: const Text('Approve award'),
-                ),
-              ],
-              if (canReject) ...[
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final notes = await procurementPromptText(
-                            context,
-                            title: 'Reject award',
-                            hint: 'Reason for rejection',
-                          );
-                          if (notes == null || notes.isEmpty) return;
-                          await _act(() =>
-                              widget.api.rejectRfqAward(widget.id, notes: notes));
-                        },
-                  child: const Text('Reject award'),
-                ),
-              ],
+            );
+          }
+          if (canReject) {
+            actions.add(
+              OutlinedButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final notes = await procurementPromptText(
+                          context,
+                          title: 'Reject award',
+                          hint: 'Reason for rejection',
+                        );
+                        if (notes == null || notes.isEmpty) return;
+                        await _act(() =>
+                            widget.api.rejectRfqAward(widget.id, notes: notes));
+                      },
+                child: const Text('Reject award'),
+              ),
+            );
+          }
+
+          return ProcurementDetailBody(
+            children: [
+              procurementDetailHero(
+                title: (r['rfq_number'] ?? '').toString(),
+                eyebrow: (r['item_description'] ?? '').toString(),
+                statusLabel: (r['status'] ?? '').toString(),
+                metricLabel: 'Award approval',
+                metricValue: (r['approval_status'] ?? '—').toString(),
+              ),
+              procurementDetailSection('RFQ', [
+                procurementDetailField('Requisition', r['requisition_number']),
+                procurementDetailField('Quantity', r['quantity']),
+                procurementDetailField('Deadline', r['submission_deadline']),
+                procurementDetailField('Awarded supplier', r['awarded_supplier']),
+                if (r['awarded_amount'] != null)
+                  procurementDetailField(
+                    'Award amount',
+                    _kes.format((r['awarded_amount'] as num?) ?? 0),
+                  ),
+              ]),
+              if (actions.isNotEmpty) procurementDetailActions(actions),
             ],
           );
         },
@@ -398,7 +521,13 @@ class _ProcurementInventoryPageState extends State<ProcurementInventoryPage> {
     _future = widget.api.inventoryItems();
   }
 
-  void _reload() => setState(() => _future = widget.api.inventoryItems());
+  void _reload() => procurementUpdateFuture(
+        setState,
+        (f) {
+        _future = f;
+      },
+        () => widget.api.inventoryItems(),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -472,24 +601,27 @@ class ProcurementInventoryItemDetailPage extends StatelessWidget {
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['item_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+              procurementDetailHero(
+                title: (r['item_name'] ?? '').toString(),
+                eyebrow: (r['item_code'] ?? '').toString(),
+                statusLabel: r['low_stock'] == true ? 'Low stock' : 'In stock',
+                metricLabel: 'On hand',
+                metricValue: '${r['current_stock']}',
               ),
-              if (r['low_stock'] == true) procurementStatusChip('Low stock'),
-              const SizedBox(height: 12),
-              procurementDetailRow('Code', r['item_code']),
-              procurementDetailRow('Category', r['category']),
-              procurementDetailRow('Unit', r['unit_of_measure']),
-              procurementDetailRow('Stock', r['current_stock']),
-              procurementDetailRow('Reorder level', r['reorder_level']),
-              procurementDetailRow('Unit cost', _kes.format((r['unit_cost'] as num?) ?? 0)),
-              procurementDetailRow('Location', r['store_location']),
-              procurementDetailRow('Supplier', r['supplier']),
-              procurementDetailRow('Active', r['is_active'] == true ? 'Yes' : 'No'),
+              procurementDetailSection('Inventory', [
+                procurementDetailField('Category', r['category']),
+                procurementDetailField('Unit', r['unit_of_measure']),
+                procurementDetailField('Reorder level', r['reorder_level']),
+                procurementDetailField(
+                  'Unit cost',
+                  _kes.format((r['unit_cost'] as num?) ?? 0),
+                ),
+                procurementDetailField('Location', r['store_location']),
+                procurementDetailField('Supplier', r['supplier']),
+                procurementDetailField('Active', r['is_active'] == true ? 'Yes' : 'No'),
+              ]),
             ],
           );
         },
@@ -513,20 +645,68 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.assetDisposals();
+    _reload();
   }
 
-  void _reload() => setState(() => _future = widget.api.assetDisposals());
+  void _reload() => procurementUpdateFuture(
+        setState,
+        (f) {
+        _future = f;
+      },
+        () => widget.api.assetDisposals(),
+      );
+
+  Future<void> _openRequest() async {
+    final id = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) =>
+            ProcurementRequestAssetDisposalPage(api: widget.api),
+      ),
+    );
+    if (!mounted) return;
+    _reload();
+    if (id != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcurementDisposalDetailPage(api: widget.api, id: id),
+        ),
+      );
+      if (mounted) _reload();
+    }
+  }
+
+  Future<void> _openDetail(int id) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProcurementDisposalDetailPage(api: widget.api, id: id),
+      ),
+    );
+    if (mounted) _reload();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Disposals',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openRequest,
+        icon: const Icon(Icons.add),
+        label: const Text('Request disposal'),
+      ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final items = snap.data?['items'] as List? ?? [];
+          if (items.isEmpty) {
+            return Center(
+              child: Text(
+                'No disposal requests yet. Tap Request disposal.',
+                textAlign: TextAlign.center,
+                style: tichUi(color: TichColors.neutralMuted),
+              ),
+            );
+          }
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView.separated(
@@ -537,12 +717,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
                 final r = Map<String, dynamic>.from(items[i] as Map);
                 final id = (r['id'] as num).toInt();
                 return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProcurementDisposalDetailPage(api: widget.api, id: id),
-                    ),
-                  ),
+                  onTap: () => _openDetail(id),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -598,7 +773,13 @@ class _ProcurementDisposalDetailPageState extends State<ProcurementDisposalDetai
     try {
       await widget.api.approveAssetDisposal(widget.id);
       if (mounted) {
-        setState(() => _future = widget.api.assetDisposal(widget.id));
+        procurementUpdateFuture(
+          setState,
+          (f) {
+        _future = f;
+      },
+          () => widget.api.assetDisposal(widget.id),
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -618,29 +799,29 @@ class _ProcurementDisposalDetailPageState extends State<ProcurementDisposalDetai
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final canApprove = r['can_approve'] == true;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['asset_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+              procurementDetailHero(
+                title: (r['asset_name'] ?? 'Asset').toString(),
+                eyebrow: (r['asset_number'] ?? '').toString(),
+                statusLabel: (r['approval_status'] ?? '').toString(),
+                metricLabel: 'Disposed value',
+                metricValue: _kes.format((r['disposed_value'] as num?) ?? 0),
               ),
-              procurementStatusChip((r['approval_status'] ?? '').toString()),
-              const SizedBox(height: 12),
-              procurementDetailRow('Asset #', r['asset_number']),
-              procurementDetailRow('Type', r['disposal_type']),
-              procurementDetailRow('Status', r['status']),
-              procurementDetailRow('Reason', r['reason']),
-              procurementDetailRow('Value', _kes.format((r['disposed_value'] as num?) ?? 0)),
-              procurementDetailRow('Date', r['disposal_date']),
-              procurementDetailRow('Requested by', r['requested_by']),
-              if (canApprove) ...[
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _busy ? null : _approve,
-                  child: const Text('Approve disposal'),
-                ),
-              ],
+              procurementDetailSection('Disposal', [
+                procurementDetailField('Type', r['disposal_type']),
+                procurementDetailField('Status', r['status']),
+                procurementDetailField('Date', r['disposal_date']),
+                procurementDetailField('Requested by', r['requested_by']),
+                procurementDetailField('Reason', r['reason']),
+              ]),
+              if (canApprove)
+                procurementDetailActions([
+                  FilledButton(
+                    onPressed: _busy ? null : _approve,
+                    child: const Text('Approve disposal'),
+                  ),
+                ]),
             ],
           );
         },
@@ -667,7 +848,13 @@ class _ProcurementAuditsPageState extends State<ProcurementAuditsPage> {
     _future = widget.api.assetAudits();
   }
 
-  void _reload() => setState(() => _future = widget.api.assetAudits());
+  void _reload() => procurementUpdateFuture(
+        setState,
+        (f) {
+        _future = f;
+      },
+        () => widget.api.assetAudits(),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -760,7 +947,13 @@ class _ProcurementAuditDetailPageState extends State<ProcurementAuditDetailPage>
         reviewNotes: result['review_notes'],
       );
       if (mounted) {
-        setState(() => _future = widget.api.assetAudit(widget.id));
+        procurementUpdateFuture(
+          setState,
+          (f) {
+        _future = f;
+      },
+          () => widget.api.assetAudit(widget.id),
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -780,29 +973,30 @@ class _ProcurementAuditDetailPageState extends State<ProcurementAuditDetailPage>
           if (!snap.hasData) return const Center(child: AdaptiveProgress());
           final r = snap.data!;
           final canReview = r['can_review'] == true;
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return ProcurementDetailBody(
             children: [
-              Text(
-                (r['asset_name'] ?? '').toString(),
-                style: TichTheme.display(fontSize: 20),
+              procurementDetailHero(
+                title: (r['asset_name'] ?? 'Asset').toString(),
+                eyebrow: (r['asset_number'] ?? '').toString(),
+                statusLabel: (r['status'] ?? '').toString(),
               ),
-              procurementStatusChip((r['status'] ?? '').toString()),
-              const SizedBox(height: 12),
-              procurementDetailRow('Asset #', r['asset_number']),
-              procurementDetailRow('Verification', r['verification_status']),
-              procurementDetailRow('Condition', r['condition']),
-              procurementDetailRow('Auditor', r['auditor']),
-              procurementDetailRow('Reviewer', r['reviewer']),
-              procurementDetailRow('Notes', r['notes']),
-              procurementDetailRow('Review notes', r['review_notes']),
-              if (canReview) ...[
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _busy ? null : _submitReview,
-                  child: const Text('Submit review'),
-                ),
-              ],
+              procurementDetailSection('Verification', [
+                procurementDetailField('Verification', r['verification_status']),
+                procurementDetailField('Condition', r['condition']),
+                procurementDetailField('Auditor', r['auditor']),
+                procurementDetailField('Reviewer', r['reviewer']),
+                if ((r['notes'] ?? '').toString().isNotEmpty)
+                  procurementDetailNote((r['notes'] ?? '').toString()),
+                if ((r['review_notes'] ?? '').toString().isNotEmpty)
+                  procurementDetailNote((r['review_notes'] ?? '').toString()),
+              ]),
+              if (canReview)
+                procurementDetailActions([
+                  FilledButton(
+                    onPressed: _busy ? null : _submitReview,
+                    child: const Text('Submit review'),
+                  ),
+                ]),
             ],
           );
         },
@@ -899,7 +1093,13 @@ class _ProcurementPaymentsPageState extends State<ProcurementPaymentsPage> {
     _future = widget.api.paymentVerification();
   }
 
-  void _reload() => setState(() => _future = widget.api.paymentVerification());
+  void _reload() => procurementUpdateFuture(
+        setState,
+        (f) {
+        _future = f;
+      },
+        () => widget.api.paymentVerification(),
+      );
 
   @override
   Widget build(BuildContext context) {

@@ -59,6 +59,16 @@ class RequisitionService
             ];
         }
 
+        if (! filled($requisition->budget_code)) {
+            return [
+                'passed' => true,
+                'message' => 'No budget linked; requisition uses manually entered line items.',
+                'budget' => null,
+                'available' => null,
+                'required' => $estimatedCost,
+            ];
+        }
+
         $budget = null;
 
         if ($requisition->budget_code) {

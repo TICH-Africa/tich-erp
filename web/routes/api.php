@@ -244,12 +244,17 @@ Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('proc
     Route::get('/dashboard', \App\Http\Controllers\Api\Procurement\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Procurement\mobile\SidebarNotificationsController::class);
 
+    Route::get('/requisitions/form-options', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'formOptions']);
+    Route::get('/requisitions/budget-lines', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'budgetLines']);
+    Route::post('/requisitions', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'store']);
     Route::get('/requisitions', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'index']);
     Route::get('/requisitions/{requisition}', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'show']);
     Route::post('/requisitions/{requisition}/approve', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'approve']);
     Route::post('/requisitions/{requisition}/reject', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'reject']);
     Route::post('/requisitions/{requisition}/submit', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'submit']);
 
+    Route::get('/stock-issues/form-options', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'formOptions']);
+    Route::post('/stock-issues', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'store']);
     Route::get('/stock-issues', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'index']);
     Route::get('/stock-issues/{stockIssue}', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'show']);
     Route::post('/stock-issues/{stockIssue}/approve', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'approve']);
@@ -266,6 +271,7 @@ Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('proc
     Route::get('/assets/{asset}', [\App\Http\Controllers\Api\Procurement\mobile\AssetsController::class, 'show']);
 
     Route::get('/suppliers', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'index']);
+    Route::post('/suppliers', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'store']);
     Route::get('/suppliers/{supplier}', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'show']);
     Route::post('/suppliers/{supplier}/verify', [\App\Http\Controllers\Api\Procurement\mobile\SuppliersController::class, 'verify']);
 
@@ -277,6 +283,8 @@ Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('proc
     Route::get('/inventory-items', [\App\Http\Controllers\Api\Procurement\mobile\InventoryItemsController::class, 'index']);
     Route::get('/inventory-items/{inventoryItem}', [\App\Http\Controllers\Api\Procurement\mobile\InventoryItemsController::class, 'show']);
 
+    Route::get('/asset-disposals/form-options', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'formOptions']);
+    Route::post('/asset-disposals', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'store']);
     Route::get('/asset-disposals', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'index']);
     Route::get('/asset-disposals/{assetDisposal}', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'show']);
     Route::post('/asset-disposals/{assetDisposal}/approve', [\App\Http\Controllers\Api\Procurement\mobile\AssetDisposalsController::class, 'approve']);

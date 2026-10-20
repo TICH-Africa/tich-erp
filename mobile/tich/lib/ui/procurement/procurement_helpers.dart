@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
-import '../../theme/tich_theme.dart';
 import '../shell/procurement_nav_signals.dart';
+import 'procurement_detail_widgets.dart';
+
+export 'procurement_detail_widgets.dart';
 
 void procurementNotifyCountsChanged() {
   ProcurementPortalNavSignals.onCountsChanged?.call();
+}
+
+/// Starts a new API request and stores its [Future] in state without returning it from [setState].
+void procurementUpdateFuture(
+  void Function(VoidCallback fn) setState,
+  void Function(Future<Map<String, dynamic>> future) assign,
+  Future<Map<String, dynamic>> Function() fetch,
+) {
+  final next = fetch();
+  setState(() {
+    assign(next);
+  });
 }
 
 void procurementShowError(BuildContext context, Object error) {
@@ -50,35 +64,5 @@ Future<String?> procurementPromptText(
   return result;
 }
 
-Widget procurementStatusChip(String label) {
-  if (label.isEmpty) return const SizedBox.shrink();
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: TichColors.blue.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      label,
-      style: tichUi(fontSize: 11, color: TichColors.blue),
-    ),
-  );
-}
-
-Widget procurementDetailRow(String label, dynamic value) {
-  final text = (value ?? '—').toString();
-  if (text.isEmpty || text == '—') return const SizedBox.shrink();
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: tichUi(fontSize: 11, color: TichColors.neutralMuted),
-        ),
-        Text(text, style: tichUi(fontSize: 14)),
-      ],
-    ),
-  );
-}
+Widget procurementDetailRow(String label, dynamic value) =>
+    procurementDetailField(label, value);
