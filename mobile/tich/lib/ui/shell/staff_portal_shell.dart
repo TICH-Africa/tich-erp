@@ -11,7 +11,9 @@ import '../staff/timetable_page.dart';
 import '../staff/units_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
+import '../../notifications/tich_notification_router.dart';
 import 'portal_nav_counts_scope.dart';
+import 'staff_portal_nav.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
 
@@ -40,6 +42,32 @@ class _StaffPortalShellState extends State<StaffPortalShell>
     'documents',
     'exam-papers',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    StaffPortalNav.isStaffShellActive = true;
+    StaffPortalNav.onTabRequest = _applyPendingTab;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyPendingTab();
+      TichNotificationRouter.instance.applyPending(context);
+    });
+  }
+
+  void _applyPendingTab() {
+    if (!mounted) return;
+    final tab = StaffPortalNav.consumePendingTab();
+    if (tab != null) setState(() => _index = tab);
+  }
+
+  @override
+  void dispose() {
+    StaffPortalNav.isStaffShellActive = false;
+    if (StaffPortalNav.onTabRequest == _applyPendingTab) {
+      StaffPortalNav.onTabRequest = null;
+    }
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {

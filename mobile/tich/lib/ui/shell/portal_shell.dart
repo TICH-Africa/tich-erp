@@ -11,8 +11,10 @@ import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
+import '../../notifications/tich_notification_router.dart';
 import 'employee_clock_nav.dart';
 import 'employee_portal_menu_scope.dart';
+import 'employee_portal_nav.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
@@ -54,12 +56,31 @@ class _PortalShellState extends State<PortalShell>
   @override
   void initState() {
     super.initState();
+    EmployeePortalNav.isEmployeeShellActive = true;
+    EmployeePortalNav.onTabRequest = _applyPendingTab;
     EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyPendingTab();
+      TichNotificationRouter.instance.applyPending(context);
+    });
+  }
+
+  void _applyPendingTab() {
+    if (!mounted) return;
+    final tab = EmployeePortalNav.consumePendingTab();
+    if (tab != null) {
+      setState(() => _index = tab);
+      if (tab == 2) refreshNavBadges();
+    }
   }
 
   @override
   void dispose() {
+    EmployeePortalNav.isEmployeeShellActive = false;
+    if (EmployeePortalNav.onTabRequest == _applyPendingTab) {
+      EmployeePortalNav.onTabRequest = null;
+    }
     if (EmployeePortalNavSignals.onAttendanceChanged == refreshNavBadges) {
       EmployeePortalNavSignals.onAttendanceChanged = null;
     }

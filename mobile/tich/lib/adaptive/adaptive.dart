@@ -24,11 +24,13 @@ class AdaptiveApp extends StatelessWidget {
     this.themeMode = ThemeMode.system,
     this.textScaleFactor = 1.0,
     this.cupertinoTheme,
+    this.navigatorKey,
     this.debugShowCheckedModeBanner = false,
   });
 
   final String title;
   final Widget home;
+  final GlobalKey<NavigatorState>? navigatorKey;
   final ThemeData materialTheme;
   final ThemeData? materialDarkTheme;
   final ThemeMode themeMode;
@@ -67,6 +69,7 @@ class AdaptiveApp extends StatelessWidget {
         title: title,
         debugShowCheckedModeBanner: debugShowCheckedModeBanner,
         theme: cupertinoTheme,
+        navigatorKey: navigatorKey,
         navigatorObservers: [tichRouteObserver],
         builder: builder,
         localizationsDelegates: const [
@@ -84,6 +87,7 @@ class AdaptiveApp extends StatelessWidget {
       theme: materialTheme,
       darkTheme: materialDarkTheme ?? materialTheme,
       themeMode: themeMode,
+      navigatorKey: navigatorKey,
       navigatorObservers: [tichRouteObserver],
       builder: builder,
       home: home,

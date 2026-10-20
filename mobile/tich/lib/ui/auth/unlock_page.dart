@@ -21,6 +21,23 @@ class UnlockPage extends StatefulWidget {
 
 class _UnlockPageState extends State<UnlockPage> {
   final _password = TextEditingController();
+  bool _autoBiometricAttempted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryAutoBiometric());
+  }
+
+  void _tryAutoBiometric() {
+    if (_autoBiometricAttempted) return;
+    if (!AppSettings.instance.biometricEnabled) return;
+    if (!mounted) return;
+    final state = context.read<AuthBloc>().state;
+    if (state is AuthLoading) return;
+    _autoBiometricAttempted = true;
+    context.read<AuthBloc>().add(const AuthBiometricUnlockRequested());
+  }
 
   @override
   void dispose() {

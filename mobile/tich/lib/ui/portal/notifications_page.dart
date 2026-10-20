@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +10,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_live_refresh.dart';
+import '../../notifications/tich_notification_router.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key, required this.api});
@@ -49,6 +52,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  void _openNotification(Map<String, dynamic> n) {
+    final id = (n['id'] as num?)?.toInt();
+    if (n['is_read'] != true && id != null) {
+      unawaited(_markRead(id));
+    }
+    TichNotificationRouter.instance.navigateFromInApp(
+      context,
+      actionUrl: n['action_url']?.toString(),
+      relatedEntityType: n['related_entity_type']?.toString(),
+    );
+  }
+
+  void _openActionItem(Map<String, dynamic> a) {
+    TichNotificationRouter.instance.navigateFromInApp(
+      context,
+      sidebarKey: a['key']?.toString(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
@@ -68,7 +90,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               onRetry: _reload,
             );
           }
-          final data = merged! as Map<String, dynamic>;;
+          final data = merged! as Map<String, dynamic>;
           final items = data['items'] as List? ?? const [];
           final actions = data['action_items'] as List? ?? const [];
           final unread = (data['unread'] as num?)?.toInt() ?? 0;
@@ -129,6 +151,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
+                        onTap: () => _openActionItem(a),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
@@ -156,13 +179,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ...items.map((raw) {
                     final n = Map<String, dynamic>.from(raw as Map);
                     final unreadItem = n['is_read'] != true;
-                    final id = (n['id'] as num?)?.toInt();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
-                        onTap: unreadItem && id != null
-                            ? () => _markRead(id)
-                            : null,
+                        onTap: () => _openNotification(n),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

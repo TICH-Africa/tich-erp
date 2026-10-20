@@ -12,6 +12,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
 import '../ui/widgets/tich_brand_logo.dart';
+import 'tich_notification_router.dart';
 
 const _channelId = 'tich_alerts';
 const _channelName = 'TICH Alerts';
@@ -71,7 +72,16 @@ class TichNotifications {
       );
       await _plugin.initialize(
         settings: InitializationSettings(android: android, iOS: ios),
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationTapped,
       );
+
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp ?? false) {
+        TichNotificationRouter.instance.enqueuePayload(
+          launchDetails?.notificationResponse?.payload,
+        );
+      }
 
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -102,6 +112,15 @@ class TichNotifications {
     } catch (_) {
       _ready = true; // allow app to proceed even if notifications fail
     }
+  }
+
+  @pragma('vm:entry-point')
+  static void _onBackgroundNotificationTapped(NotificationResponse response) {
+    TichNotificationRouter.instance.enqueuePayload(response.payload);
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    TichNotificationRouter.instance.enqueuePayload(response.payload);
   }
 
   Future<void> _waitReady() async {
@@ -293,8 +312,12 @@ class TichNotifications {
           title: title,
           body: body,
           id: 7999,
-          payload: 'attendance',
-        );
+            payload: TichNotificationRouter.instance.payloadForLocal(
+              target: 'attendance',
+              actionUrl: '/employee/attendance',
+              entityType: 'attendance_clock_in',
+            ),
+          );
         await prefs.setInt(
           _lastClockInNudgeKey,
           now.millisecondsSinceEpoch,
@@ -323,7 +346,11 @@ class TichNotifications {
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             title: title,
             body: body,
-            payload: 'attendance',
+            payload: TichNotificationRouter.instance.payloadForLocal(
+              target: 'attendance',
+              actionUrl: '/employee/attendance',
+              entityType: 'attendance_clock_in',
+            ),
           );
           _clockInIds.add(id);
           id++;
@@ -498,6 +525,10 @@ class TichNotifications {
             title: n['title']?.toString() ?? 'TICH',
             body: n['body']?.toString() ?? '',
             id: 7000 + (int.tryParse(id) ?? 0) % 500,
+            payload: TichNotificationRouter.instance.payloadForLocal(
+              actionUrl: n['action_url']?.toString(),
+              entityType: n['related_entity_type']?.toString(),
+            ),
           );
           await _markShown(key);
         }

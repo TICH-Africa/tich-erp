@@ -15,6 +15,7 @@ import 'data/employee_api.dart';
 import 'data/procurement_api.dart';
 import 'data/staff_api.dart';
 import 'data/student_api.dart';
+import 'notifications/tich_notification_router.dart';
 import 'notifications/tich_notifications.dart';
 import 'settings/app_settings.dart';
 import 'theme/tich_theme.dart';
@@ -37,6 +38,8 @@ Future<void> main() async {
 
 class TichApp extends StatefulWidget {
   const TichApp({super.key});
+
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
 
   @override
   State<TichApp> createState() => _TichAppState();
@@ -70,6 +73,18 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
       },
     );
     _authBloc = AuthBloc(repository: _authRepository)..add(const AuthStarted());
+    TichNotificationRouter.instance.onPendingEnqueued = _tryApplyNotificationRoute;
+  }
+
+  void _tryApplyNotificationRoute() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = TichApp.rootNavigatorKey.currentContext;
+      if (ctx == null) return;
+      final auth = _authBloc.state;
+      if (auth is AuthAuthenticated) {
+        TichNotificationRouter.instance.applyPending(ctx);
+      }
+    });
   }
 
   @override
@@ -113,6 +128,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
           builder: (context, _) {
             return AdaptiveApp(
               title: 'TICH in Africa',
+              navigatorKey: TichApp.rootNavigatorKey,
               materialTheme: _lightTheme,
               materialDarkTheme: _darkTheme,
               themeMode: _settings.themeMode,
@@ -155,6 +171,10 @@ class _AuthGateState extends State<_AuthGate> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           _primeIfNeeded(state);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+            TichNotificationRouter.instance.applyPending(context);
+          });
         }
       },
       buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
