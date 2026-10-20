@@ -73,22 +73,20 @@ class StaffPortalNavigationService
         }
 
         if ($isHod) {
-            $items[] = ['type' => 'heading', 'label' => 'Management'];
-            $items[] = [
-                'type' => 'dropdown',
-                'label' => 'HOD management',
-                'icon' => 'users-cog',
-                'children' => [
-                    ['type' => 'link', 'label' => 'Overview', 'section' => 'hod-management', 'icon' => 'layout-grid'],
-                    ['type' => 'link', 'label' => 'Lesson plans', 'section' => 'hod-lesson-plans', 'icon' => 'notebook'],
-                    ['type' => 'link', 'label' => 'Unit allocations', 'section' => 'hod-unit-allocations', 'icon' => 'users'],
-                    ['type' => 'link', 'label' => 'Workload matrix', 'section' => 'hod-workload', 'icon' => 'bar-chart'],
-                    ['type' => 'link', 'label' => 'Semester workplans', 'section' => 'hod-workplans', 'icon' => 'file-text'],
-                    ['type' => 'link', 'label' => 'Attendance review', 'section' => 'hod-attendance', 'icon' => 'clipboard-check'],
-                    ['type' => 'link', 'label' => 'Department leave', 'section' => 'hod-leave', 'icon' => 'calendar-off'],
-                    ['type' => 'link', 'label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],
-                ],
-            ];
+            $items[] = ['type' => 'heading', 'label' => 'HOD management'];
+
+            foreach ([
+                ['label' => 'Overview', 'section' => 'hod-management', 'icon' => 'layout-grid'],
+                ['label' => 'Lesson plans', 'section' => 'hod-lesson-plans', 'icon' => 'notebook'],
+                ['label' => 'Unit allocations', 'section' => 'hod-unit-allocations', 'icon' => 'users'],
+                ['label' => 'Workload matrix', 'section' => 'hod-workload', 'icon' => 'bar-chart'],
+                ['label' => 'Semester workplans', 'section' => 'hod-workplans', 'icon' => 'file-text'],
+                ['label' => 'Attendance review', 'section' => 'hod-attendance', 'icon' => 'clipboard-check'],
+                ['label' => 'Department leave', 'section' => 'hod-leave', 'icon' => 'calendar-off'],
+                ['label' => 'Performance', 'section' => 'hod-performance', 'icon' => 'bar-chart'],
+            ] as $child) {
+                $items[] = ['type' => 'link'] + $child;
+            }
 
             if (! $isTeachingStaff) {
                 $items = array_merge($items, $this->planningNavigation(true, withTechnicalPlans: false));

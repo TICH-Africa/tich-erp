@@ -29,25 +29,6 @@
                     'learning_department' => request()->integer('learning_department') ?: null,
                 ]);
 
-                $assessmentActive = request()->routeIs(
-                    'departments.academics.attendance-ledger.*',
-                    'departments.academics.clearance.*',
-                    'departments.academics.performance.*',
-                    'departments.academics.special-exam-requests.*',
-                    'departments.academics.supplementary-requests.*'
-                );
-                $studentVoiceActive = request()->routeIs(
-                    'departments.academics.suggestions.*',
-                    'departments.academics.lifecycle-requests.*'
-                );
-                $studentServicesActive = request()->routeIs(
-                    'departments.academics.profile-changes.*',
-                    'departments.academics.transcript-requests.*',
-                    'departments.academics.lifecycle-requests.*',
-                    'departments.academics.evaluation-windows.*',
-                    'departments.academics.document-requests.*'
-                );
-                $planningActive = request()->routeIs('departments.academics.calendar.*', 'departments.academics.workplans.*', 'admin.departments.*');
                 $canReviewWorkplans = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
 
                 $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
@@ -82,8 +63,7 @@
                     @include('partials.navigation.sidebar-group', [
                         'label' => 'Assessment & Exams',
                         'icon' => 'clipboard-check',
-                        'open' => $assessmentActive,
-                        'active' => $assessmentActive,
+                        'flat' => true,
                         'badgeKey' => 'assessment',
                         'items' => [
                             [
@@ -126,8 +106,7 @@
                 @include('partials.navigation.sidebar-group', [
                     'label' => 'Student voice',
                     'icon' => 'clipboard-list',
-                    'open' => $studentVoiceActive || $suggestionsOnly,
-                    'active' => $studentVoiceActive,
+                    'flat' => true,
                     'badgeKey' => 'student-voice',
                     'items' => array_values(array_filter([
                         [
@@ -152,8 +131,7 @@
                         @include('partials.navigation.sidebar-group', [
                             'label' => 'Student services',
                             'icon' => 'users',
-                            'open' => $studentServicesActive && ! request()->routeIs('departments.academics.lifecycle-requests.*'),
-                            'active' => $studentServicesActive && ! request()->routeIs('departments.academics.lifecycle-requests.*'),
+                            'flat' => true,
                             'items' => [
                                 [
                                     'href' => route('academics.students.index'),
@@ -192,8 +170,7 @@
                     @include('partials.navigation.sidebar-group', [
                         'label' => 'Planning',
                         'icon' => 'calendar',
-                        'open' => $planningActive,
-                        'active' => $planningActive,
+                        'flat' => true,
                         'items' => array_values(array_filter([
                             [
                                 'href' => route('departments.academics.calendar.index', $hub),
@@ -210,6 +187,7 @@
                         ])),
                     ])
 
+                    @include('partials.navigation.sidebar-section', ['label' => 'Planning & budget'])
                     @include('partials.navigation.department-budgeting-link', ['module' => 'academics'])
                     @include('partials.navigation.department-technical-plan-link', ['module' => 'academics'])
                     @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'academics'])

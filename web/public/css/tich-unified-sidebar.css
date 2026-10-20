@@ -256,6 +256,13 @@
     border-top: 1px solid var(--sb-border);
 }
 
+/* A flattened group keeps its count badge on the heading row. */
+.tich-admin-sidebar__section--counted {
+    display: flex;
+    align-items: center;
+    gap: calc(0.5rem * var(--sb-scale));
+}
+
 .tich-admin-sidebar > .tich-caption {
     margin: 0 !important;
     padding: calc(0.35rem * var(--sb-scale)) calc(1rem * var(--sb-scale)) calc(0.65rem * var(--sb-scale));
