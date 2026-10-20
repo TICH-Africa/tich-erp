@@ -14,6 +14,7 @@ class StaffAttendanceService
     public function __construct(
         protected AuditService $auditService,
         protected StaffClockInLocationService $clockInLocation,
+        protected StaffClockInSiteService $clockInSite,
     ) {}
 
     public function todayRecord(Staff $staff): ?StaffAttendance
@@ -30,6 +31,7 @@ class StaffAttendanceService
     public function recentRecords(Staff $staff, int $limit = 14): Collection
     {
         return StaffAttendance::query()
+            ->with('clockInCampus')
             ->where('staff_id', $staff->id)
             ->orderByDesc('attendance_date')
             ->limit($limit)
@@ -55,6 +57,8 @@ class StaffAttendanceService
             throw new \RuntimeException('You have already completed today\'s attendance.');
         }
 
+        $data = $this->clockInSite->normalizeClockInSite($data);
+
         $location = $this->clockInLocation->resolveClockInLocation($staff, $data, $replacingUnverified);
 
         $record = StaffAttendance::query()->updateOrCreate(
@@ -67,6 +71,8 @@ class StaffAttendanceService
                 'is_present' => true,
                 'is_off_campus' => ! empty($data['is_off_campus']),
                 'field_project_name' => $data['field_project_name'] ?? null,
+                'clock_in_campus_id' => $data['clock_in_campus_id'] ?? null,
+                'clock_in_campus_other' => $data['clock_in_campus_other'] ?? null,
                 'location_lat_long' => $location['location_lat_long'],
                 'clock_in_latitude' => $location['latitude'],
                 'clock_in_longitude' => $location['longitude'],

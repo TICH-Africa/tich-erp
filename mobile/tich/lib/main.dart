@@ -84,6 +84,15 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       _authBloc.add(const AuthAppPaused());
     }
+    if (state == AppLifecycleState.resumed) {
+      final auth = _authBloc.state;
+      if (auth is AuthAuthenticated && !auth.user.isStudent) {
+        unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
+        unawaited(
+          TichNotifications.instance.syncFromServerInBackground(isStudent: false),
+        );
+      }
+    }
   }
 
   @override

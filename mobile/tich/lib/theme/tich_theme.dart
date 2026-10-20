@@ -449,7 +449,8 @@ abstract final class TichTheme {
       ),
       dividerColor: TichColors.darkBorder,
       snackBarTheme: SnackBarThemeData(
-        contentTextStyle: tichUi(fontSize: 14),
+        backgroundColor: TichColors.neutral,
+        contentTextStyle: tichUi(color: TichColors.grey, fontSize: 14),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: TichRadius.borderRadiusMd),
       ),

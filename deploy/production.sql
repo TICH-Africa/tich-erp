@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-19 18:53:35 EAT
+-- Generated: 2026-10-20 08:48:30 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -11148,6 +11148,8 @@ CREATE TABLE IF NOT EXISTS `staff_attendance` (
   `leave_request_id` bigint(20) unsigned DEFAULT NULL,
   `is_off_campus` tinyint(4) NOT NULL DEFAULT 0,
   `field_project_name` varchar(300) DEFAULT NULL,
+  `clock_in_campus_id` bigint(20) unsigned DEFAULT NULL,
+  `clock_in_campus_other` varchar(300) DEFAULT NULL,
   `location_lat_long` varchar(100) DEFAULT NULL,
   `clock_in_latitude` decimal(10,7) DEFAULT NULL,
   `clock_in_longitude` decimal(10,7) DEFAULT NULL,
@@ -11165,6 +11167,8 @@ CREATE TABLE IF NOT EXISTS `staff_attendance` (
   UNIQUE KEY `staff_attendance_staff_id_attendance_date_unique` (`staff_id`,`attendance_date`),
   KEY `staff_attendance_leave_request_id_foreign` (`leave_request_id`),
   KEY `staff_attendance_recorded_by_foreign` (`recorded_by`),
+  KEY `staff_attendance_clock_in_campus_id_foreign` (`clock_in_campus_id`),
+  CONSTRAINT `staff_attendance_clock_in_campus_id_foreign` FOREIGN KEY (`clock_in_campus_id`) REFERENCES `campuses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_attendance_leave_request_id_foreign` FOREIGN KEY (`leave_request_id`) REFERENCES `leave_requests` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_attendance_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
   CONSTRAINT `staff_attendance_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`)
@@ -11182,6 +11186,8 @@ CALL `tich_ensure_column`('staff_attendance', 'is_leave_day', 'tinyint(4) NOT NU
 CALL `tich_ensure_column`('staff_attendance', 'leave_request_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff_attendance', 'is_off_campus', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('staff_attendance', 'field_project_name', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_attendance', 'clock_in_campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('staff_attendance', 'clock_in_campus_other', 'varchar(300) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff_attendance', 'location_lat_long', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff_attendance', 'clock_in_latitude', 'decimal(10,7) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('staff_attendance', 'clock_in_longitude', 'decimal(10,7) NULL DEFAULT NULL');
@@ -11197,6 +11203,7 @@ CALL `tich_ensure_column`('staff_attendance', 'recorded_by', 'bigint(20) unsigne
 CALL `tich_ensure_column`('staff_attendance', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
 -- Indexes for `staff_attendance` (add only if missing)
+CALL `tich_ensure_index`('staff_attendance', 'staff_attendance_clock_in_campus_id_foreign', '`clock_in_campus_id`');
 CALL `tich_ensure_index`('staff_attendance', 'staff_attendance_leave_request_id_foreign', '`leave_request_id`');
 CALL `tich_ensure_index`('staff_attendance', 'staff_attendance_recorded_by_foreign', '`recorded_by`');
 CALL `tich_ensure_unique`('staff_attendance', 'staff_attendance_staff_id_attendance_date_unique', '`staff_id`, `attendance_date`');
@@ -14464,6 +14471,7 @@ CALL `tich_ensure_fk`('staff_allowances', 'staff_allowances_approved_by_foreign'
 CALL `tich_ensure_fk`('staff_allowances', 'staff_allowances_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 
 -- Foreign keys for `staff_attendance`
+CALL `tich_ensure_fk`('staff_attendance', 'staff_attendance_clock_in_campus_id_foreign', '`clock_in_campus_id`', 'campuses', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_attendance', 'staff_attendance_leave_request_id_foreign', '`leave_request_id`', 'leave_requests', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_attendance', 'staff_attendance_recorded_by_foreign', '`recorded_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('staff_attendance', 'staff_attendance_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');

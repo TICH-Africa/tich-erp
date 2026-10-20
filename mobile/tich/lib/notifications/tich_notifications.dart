@@ -16,15 +16,18 @@ import '../ui/widgets/tich_brand_logo.dart';
 const _channelId = 'tich_alerts';
 const _channelName = 'TICH Alerts';
 const _syncTask = 'tich.notification.sync';
+const _clockInRefreshTask = 'tich.clockin.refresh';
 const _deviceIdKey = 'tich_push_device_id';
 const _shownIdsKey = 'tich_shown_notification_ids';
 const _lastClockInNudgeKey = 'tich_last_clockin_nudge_ms';
+const _clockInIdsKey = 'tich_clockin_notification_ids';
+const _clockInScheduleDays = 14;
 
 @pragma('vm:entry-point')
 void tichNotificationDispatcherCallback() {
   Workmanager().executeTask((task, inputData) async {
-    if (task == _syncTask) {
-      await TichNotifications.instance.syncFromServerInBackground();
+    if (task == _syncTask || task == _clockInRefreshTask) {
+      await TichNotifications.instance.runBackgroundMaintenance();
     }
     return true;
   });
@@ -128,6 +131,13 @@ class TichNotifications {
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
         constraints: Constraints(networkType: NetworkType.connected),
       );
+      await Workmanager().registerPeriodicTask(
+        'tich-clockin-refresh',
+        _clockInRefreshTask,
+        frequency: const Duration(minutes: 30),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
     } catch (_) {}
   }
 
@@ -146,8 +156,39 @@ class TichNotifications {
   Future<void> onAuthenticated({required bool isStudent}) async {
     if (!_ready) await init();
     await registerDeviceToken();
+    if (!isStudent) {
+      unawaited(refreshClockInRemindersFromServer());
+    }
     // Sync tray popups without blocking portal UI.
     unawaited(syncFromServerInBackground(isStudent: isStudent));
+  }
+
+  /// Keeps clock-in alarms current (any signed-in staff, any portal tab).
+  Future<void> refreshClockInRemindersFromServer() async {
+    if (!_ready) await init();
+    await _ensurePermissions();
+    try {
+      final data = await _api.get('/employee/attendance');
+      final today = data['today'];
+      final clockedIn =
+          today is Map && today['clock_in_at'] != null;
+      final status = data['clock_in_status'];
+      final needsClockIn = status is Map && status['needs_clock_in'] == true;
+      final skip = clockedIn || !needsClockIn;
+      await scheduleClockInReminders(alreadyClockedIn: skip);
+    } catch (_) {
+      await scheduleClockInReminders(alreadyClockedIn: false);
+    }
+  }
+
+  /// Workmanager entry: server sync + clock-in schedule refresh while app is closed.
+  Future<void> runBackgroundMaintenance() async {
+    try {
+      if (!_ready) await init();
+      await _ensurePermissions();
+      await refreshClockInRemindersFromServer();
+      await syncFromServerInBackground(isStudent: false);
+    } catch (_) {}
   }
 
   NotificationDetails get _details => NotificationDetails(
@@ -222,10 +263,12 @@ class TichNotifications {
   Future<void> _scheduleClockInReminders(bool alreadyClockedIn) async {
     if (!_ready) await init();
     await _ensurePermissions();
+    await _loadPersistedClockInIds();
     await _cancelTracked(_clockInIds);
     if (alreadyClockedIn) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_lastClockInNudgeKey);
+      await _persistClockInIds();
       return;
     }
 
@@ -245,7 +288,7 @@ class TichNotifications {
       final prefs = await SharedPreferences.getInstance();
       final lastMs = prefs.getInt(_lastClockInNudgeKey) ?? 0;
       final last = DateTime.fromMillisecondsSinceEpoch(lastMs);
-      if (now.difference(last) >= const Duration(minutes: 25)) {
+      if (now.difference(last) >= const Duration(minutes: 30)) {
         await showPopup(
           title: title,
           body: body,
@@ -259,15 +302,19 @@ class TichNotifications {
       }
     }
 
-    // Remaining half-hour slots today (08:00–17:30), then tomorrow morning.
+    // Half-hour slots on weekdays for the next two weeks (fires without opening the app).
     var id = 8000;
-    for (var dayOffset = 0; dayOffset <= 1; dayOffset++) {
+    var scheduled = 0;
+    const maxSlots = 320;
+    for (var dayOffset = 0;
+        dayOffset < _clockInScheduleDays && scheduled < maxSlots;
+        dayOffset++) {
       final day = now.add(Duration(days: dayOffset));
       if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
         continue;
       }
       var slot = tz.TZDateTime(tz.local, day.year, day.month, day.day, 8, 0);
-      while (slot.hour < 18) {
+      while (slot.hour < 18 && scheduled < maxSlots) {
         if (slot.isAfter(now)) {
           await _plugin.zonedSchedule(
             id: id,
@@ -280,14 +327,36 @@ class TichNotifications {
           );
           _clockInIds.add(id);
           id++;
+          scheduled++;
+          if (id > 8990) break;
         }
         slot = slot.add(const Duration(minutes: 30));
       }
     }
+    await _persistClockInIds();
   }
 
   Future<void> cancelClockInReminders() async {
+    await _loadPersistedClockInIds();
     await _cancelTracked(_clockInIds);
+    await _persistClockInIds();
+  }
+
+  Future<void> _loadPersistedClockInIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_clockInIds.isNotEmpty) return;
+    final raw = prefs.getStringList(_clockInIdsKey) ?? const [];
+    _clockInIds
+      ..clear()
+      ..addAll(raw.map((e) => int.tryParse(e)).whereType<int>());
+  }
+
+  Future<void> _persistClockInIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _clockInIdsKey,
+      _clockInIds.map((e) => e.toString()).toList(),
+    );
   }
 
   Future<void> scheduleLessonReminders(
@@ -385,6 +454,9 @@ class TichNotifications {
     ids.clear();
     for (final id in copy) {
       await _plugin.cancel(id: id);
+    }
+    if (identical(ids, _clockInIds)) {
+      await _persistClockInIds();
     }
   }
 

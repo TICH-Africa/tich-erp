@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Employee\mobile\Concerns\ResolvesPortalStaff;
 use App\Services\StaffAttendanceService;
 use App\Services\StaffClockInLocationService;
+use App\Services\StaffClockInSiteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,7 @@ class AttendanceController extends Controller
     public function __construct(
         protected StaffAttendanceService $attendance,
         protected StaffClockInLocationService $locations,
+        protected StaffClockInSiteService $clockInSites,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -33,6 +35,7 @@ class AttendanceController extends Controller
             'require_location' => (bool) config('hr-attendance.require_location', true),
             'max_location_accuracy' => (int) config('hr-attendance.max_accuracy_meters', 2000),
             'geofence' => $geofence,
+            'clock_in_sites' => $this->clockInSites->optionsForPicker(),
         ]);
     }
 
@@ -46,6 +49,8 @@ class AttendanceController extends Controller
             'clock_in_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'clock_in_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'clock_in_accuracy_m' => ['nullable', 'numeric', 'min:0', 'max:50000'],
+            'clock_in_campus_id' => ['nullable'],
+            'clock_in_campus_other' => ['nullable', 'string', 'max:300'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
         $data['is_off_campus'] = $request->boolean('is_off_campus');
@@ -94,6 +99,8 @@ class AttendanceController extends Controller
             ? ($date.' '.$record->clock_out_time)
             : null;
 
+        $record->loadMissing('clockInCampus');
+
         return [
             'id' => $record->id,
             'attendance_date' => $date,
@@ -101,6 +108,9 @@ class AttendanceController extends Controller
             'clock_out_at' => $clockOut,
             'is_off_campus' => (bool) $record->is_off_campus,
             'field_project_name' => $record->field_project_name ?? null,
+            'clock_in_campus_id' => $record->clock_in_campus_id,
+            'clock_in_campus_other' => $record->clock_in_campus_other,
+            'reporting_site_label' => $record->reportingSiteLabel(),
             'location_verified' => method_exists($record, 'hasVerifiedClockInLocation')
                 ? $record->hasVerifiedClockInLocation()
                 : null,

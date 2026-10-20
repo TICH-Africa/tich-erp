@@ -5,6 +5,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../notifications/tich_notifications.dart';
+import '../../utils/tich_clock_in_messages.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
@@ -25,7 +26,9 @@ class _AttendancePageState extends State<AttendancePage> {
   Object? _dataCache;
   bool _busy = false;
   bool _offCampus = false;
-  final _project = TextEditingController();
+  final _campusOther = TextEditingController();
+  Object? _selectedCampusId;
+  List<Map<String, dynamic>> _clockInSites = const [];
 
   @override
   void initState() {
@@ -42,8 +45,42 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   void dispose() {
-    _project.dispose();
+    _campusOther.dispose();
     super.dispose();
+  }
+
+  static const _otherSiteId = 'other';
+
+  bool get _otherCampusSelected =>
+      _selectedCampusId == _otherSiteId || _selectedCampusId == 'other';
+
+  String? _validateSiteSelection() {
+    if (!_offCampus) {
+      return null;
+    }
+    if (_selectedCampusId == null) {
+      return 'Select the campus or community college you are clocking in from.';
+    }
+    if (_otherCampusSelected && _campusOther.text.trim().isEmpty) {
+      return 'Enter where you are reporting from when you select Other.';
+    }
+    return null;
+  }
+
+  List<DropdownMenuItem<Object?>> _campusDropdownItems() {
+    return _clockInSites.map((site) {
+      final id = site['id'];
+      final value = id is int ? id : id?.toString();
+      return DropdownMenuItem<Object?>(
+        value: value,
+        child: Text(
+          site['label']?.toString() ?? '',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: tichUi(fontWeight: FontWeight.w600),
+        ),
+      );
+    }).toList();
   }
 
   void _reload() => setState(() => _future = widget.api.attendance());
@@ -79,14 +116,27 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   Future<void> _clockIn() async {
+    final siteError = _validateSiteSelection();
+    if (siteError != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(siteError)));
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       final payload = <String, dynamic>{
         'is_off_campus': _offCampus,
-        if (_offCampus && _project.text.trim().isNotEmpty)
-          'field_project_name': _project.text.trim(),
         ...await _locationPayload(),
       };
+      if (_offCampus) {
+        if (_otherCampusSelected) {
+          payload['clock_in_campus_id'] = _otherSiteId;
+          payload['clock_in_campus_other'] = _campusOther.text.trim();
+        } else {
+          payload['clock_in_campus_id'] = _selectedCampusId;
+        }
+      }
       await widget.api.clockIn(payload);
       await TichNotifications.instance
           .scheduleClockInReminders(alreadyClockedIn: true);
@@ -99,7 +149,8 @@ class _AttendancePageState extends State<AttendancePage> {
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(
+              content: Text(tichFormatClockInDistanceMessage(e.message))));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -122,7 +173,8 @@ class _AttendancePageState extends State<AttendancePage> {
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(
+              content: Text(tichFormatClockInDistanceMessage(e.message))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -175,7 +227,13 @@ class _AttendancePageState extends State<AttendancePage> {
               onRetry: _reload,
             );
           }
-          final data = merged! as Map<String, dynamic>;;
+          final data = merged! as Map<String, dynamic>;
+          final sites = data['clock_in_sites'] as List? ?? const [];
+          if (!identical(sites, _clockInSites)) {
+            _clockInSites = sites
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList();
+          }
           final today = data['today'] as Map?;
           final recent = data['recent'] as List? ?? const [];
           final clockedIn = today != null && today['clock_in_at'] != null;
@@ -207,20 +265,46 @@ class _AttendancePageState extends State<AttendancePage> {
                       const SizedBox(height: 12),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Off campus / field work'),
+                        title: const Text('Off campus (not at main campus)'),
+                        subtitle: Text(
+                          'Turn on when clocking in from another campus, community college, or other site.',
+                          style: tichUi(
+                            fontSize: 12,
+                            color: TichColors.neutralMuted,
+                          ),
+                        ),
                         value: _offCampus,
                         onChanged: _busy
                             ? null
-                            : (v) => setState(() => _offCampus = v),
+                            : (v) => setState(() {
+                                  _offCampus = v;
+                                  if (!v) {
+                                    _selectedCampusId = null;
+                                    _campusOther.clear();
+                                  }
+                                }),
                       ),
-                      if (_offCampus)
-                        TextField(
-                          controller: _project,
-                          enabled: !_busy,
+                      if (_offCampus && _clockInSites.isNotEmpty) ...[
+                        TichDropdownFormField<Object?>(
+                          value: _selectedCampusId,
+                          hint: const Text('Campus / community college'),
                           decoration: const InputDecoration(
-                            labelText: 'Field / project name',
+                            labelText: 'Where you are clocking in from',
                           ),
+                          items: _campusDropdownItems(),
+                          onChanged: _busy
+                              ? null
+                              : (v) => setState(() => _selectedCampusId = v),
                         ),
+                        if (_otherCampusSelected)
+                          TextField(
+                            controller: _campusOther,
+                            enabled: !_busy,
+                            decoration: const InputDecoration(
+                              labelText: 'Other location',
+                            ),
+                          ),
+                      ],
                       const SizedBox(height: 12),
                       if (!clockedIn || clockedOut)
                         FilledButton(
@@ -269,13 +353,16 @@ class _AttendancePageState extends State<AttendancePage> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    r['is_off_campus'] == true
-                                        ? 'Field'
-                                        : 'Campus',
+                                    r['reporting_site_label']?.toString() ??
+                                        (r['is_off_campus'] == true
+                                            ? 'Field'
+                                            : 'Campus'),
                                     style: tichUi(
                                       fontSize: 12,
                                       color: TichColors.neutralMuted,
                                     ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),

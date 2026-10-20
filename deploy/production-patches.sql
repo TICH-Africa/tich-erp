@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-16
+-- Last updated: 2026-10-20
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2480,6 +2480,44 @@ CREATE TABLE IF NOT EXISTS `student_next_of_kin` (
   CONSTRAINT `student_next_of_kin_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- APPLY ON PRODUCTION: second next of kin contact on admissions
+
+-- -----------------------------------------------------------------------------
+-- 51. Staff attendance: clock-in campus / community college selection
+--     (2026_10_20_120000_add_clock_in_campus_to_staff_attendance)
+--     Employee/mobile clock-in when on campus: selected site or "Other" text.
+-- -----------------------------------------------------------------------------
+ALTER TABLE `staff_attendance`
+    ADD COLUMN IF NOT EXISTS `clock_in_campus_id` bigint(20) unsigned NULL DEFAULT NULL AFTER `field_project_name`,
+    ADD COLUMN IF NOT EXISTS `clock_in_campus_other` varchar(300) NULL DEFAULT NULL AFTER `clock_in_campus_id`;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'staff_attendance'
+              AND INDEX_NAME = 'staff_attendance_clock_in_campus_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `staff_attendance` ADD KEY `staff_attendance_clock_in_campus_id_foreign` (`clock_in_campus_id`)'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+
+SET @tich_fk_sql := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'staff_attendance'
+              AND CONSTRAINT_NAME = 'staff_attendance_clock_in_campus_id_foreign'
+        ),
+        'SELECT 1',
+        'ALTER TABLE `staff_attendance` ADD CONSTRAINT `staff_attendance_clock_in_campus_id_foreign` FOREIGN KEY (`clock_in_campus_id`) REFERENCES `campuses` (`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
+-- APPLY ON PRODUCTION: clock-in campus / community college on staff_attendance
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

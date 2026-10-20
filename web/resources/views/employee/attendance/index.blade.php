@@ -81,12 +81,45 @@
                             <div class="tich-form-row">
                                 <label class="tich-label" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer;">
                                     <input type="checkbox" name="is_off_campus" value="1" id="is_off_campus" style="width: auto; height: auto; margin: 0;">
-                                    Off-campus / field work
+                                    Off campus (not at {{ $campusGeofence['name'] }})
                                 </label>
+                                <p class="tich-caption tich-mt-2" style="margin-bottom: 0;">
+                                    Leave unchecked when you are at the main campus (GPS check). Turn on when clocking in from another campus, a community college, or another site.
+                                </p>
                             </div>
-                            <div id="field-details" hidden>
-                                <label for="field_project_name" class="tich-label">Project / site name</label>
-                                <input type="text" id="field_project_name" name="field_project_name" class="tich-input" maxlength="300" placeholder="e.g. Community outreach - Muhoroni">
+                            <div id="off-campus-site-panel" hidden>
+                                <label for="clock_in_campus_id" class="tich-label">Campus / community college <span class="tich-required">*</span></label>
+                                <select id="clock_in_campus_id" name="clock_in_campus_id" class="tich-input">
+                                    <option value="">Select where you are reporting from</option>
+                                    @php
+                                        $campusSites = collect($clockInSites ?? [])->where('group', 'campus');
+                                        $ccSites = collect($clockInSites ?? [])->where('group', 'community_college');
+                                        $otherSite = collect($clockInSites ?? [])->firstWhere('group', 'other');
+                                    @endphp
+                                    @if ($campusSites->isNotEmpty())
+                                        <optgroup label="Campuses">
+                                            @foreach ($campusSites as $site)
+                                                <option value="{{ $site['id'] }}" @selected(old('clock_in_campus_id') == $site['id'])>{{ $site['label'] }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                    @if ($ccSites->isNotEmpty())
+                                        <optgroup label="Community colleges">
+                                            @foreach ($ccSites as $site)
+                                                <option value="{{ $site['id'] }}" @selected(old('clock_in_campus_id') == $site['id'])>{{ $site['label'] }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                    @if ($otherSite)
+                                        <option value="{{ $otherSite['id'] }}" @selected(old('clock_in_campus_id') === $otherSite['id'])>{{ $otherSite['label'] }}</option>
+                                    @endif
+                                </select>
+                                @error('clock_in_campus_id')<p class="tich-field-error">{{ $message }}</p>@enderror
+                                <div id="clock-in-campus-other-wrap" class="tich-mt-4" hidden>
+                                    <label for="clock_in_campus_other" class="tich-label">Other location <span class="tich-required">*</span></label>
+                                    <input type="text" id="clock_in_campus_other" name="clock_in_campus_other" class="tich-input" maxlength="300" value="{{ old('clock_in_campus_other') }}" placeholder="Enter site name">
+                                    @error('clock_in_campus_other')<p class="tich-field-error">{{ $message }}</p>@enderror
+                                </div>
                             </div>
 
                             <input type="hidden" name="clock_in_latitude" id="clock_in_latitude">
@@ -159,8 +192,12 @@
                 }
 
                 var offCampus = document.getElementById('is_off_campus');
-                var fieldDetails = document.getElementById('field-details');
+                var offCampusSitePanel = document.getElementById('off-campus-site-panel');
+                var campusSelect = document.getElementById('clock_in_campus_id');
+                var otherWrap = document.getElementById('clock-in-campus-other-wrap');
+                var otherInput = document.getElementById('clock_in_campus_other');
                 var submitButton = document.getElementById('clock-in-submit');
+                var otherCampusValue = @json(\App\Services\StaffClockInSiteService::OTHER_VALUE);
                 var refreshButton = document.getElementById('clock-in-refresh-location');
                 var statusEl = document.getElementById('clock-in-location-status');
                 var latInput = document.getElementById('clock_in_latitude');
@@ -190,12 +227,32 @@
                     submitButton.style.cursor = ready ? '' : 'not-allowed';
                 }
 
-                if (offCampus && fieldDetails) {
-                    offCampus.addEventListener('change', function () {
-                        fieldDetails.hidden = !offCampus.checked;
-                        updateStatus();
-                    });
+                function syncSitePanels() {
+                    var off = offCampus && offCampus.checked;
+                    if (offCampusSitePanel) {
+                        offCampusSitePanel.hidden = !off;
+                    }
+                    if (campusSelect) {
+                        campusSelect.disabled = !off;
+                        campusSelect.required = off;
+                    }
+                    if (otherWrap && campusSelect) {
+                        var showOther = off && campusSelect.value === otherCampusValue;
+                        otherWrap.hidden = !showOther;
+                        if (otherInput) {
+                            otherInput.required = showOther;
+                        }
+                    }
+                    updateStatus();
                 }
+
+                if (offCampus) {
+                    offCampus.addEventListener('change', syncSitePanels);
+                }
+                if (campusSelect) {
+                    campusSelect.addEventListener('change', syncSitePanels);
+                }
+                syncSitePanels();
 
                 function toRadians(value) {
                     return value * Math.PI / 180;
@@ -266,7 +323,7 @@
                         return;
                     }
 
-                    statusEl.textContent = 'You appear to be ' + distance + ' m from ' + campusName + '. Tick "Off-campus / field work" if you are working away from campus.';
+                    statusEl.textContent = 'You appear to be ' + distance + ' m from ' + campusName + '. Turn on "Off campus" and select where you are clocking in from.';
                     setLocationReady(false);
                 }
 
@@ -287,9 +344,7 @@
 
                     if (distance > campusRadius && offCampus && !offCampus.checked) {
                         offCampus.checked = true;
-                        if (fieldDetails) {
-                            fieldDetails.hidden = false;
-                        }
+                        syncSitePanels();
                     }
 
                     updateStatus();
@@ -359,8 +414,33 @@
                     });
                 }
 
+                function siteSelectionValid() {
+                    var off = offCampus && offCampus.checked;
+                    if (!off) {
+                        return '';
+                    }
+                    if (!campusSelect || !campusSelect.value) {
+                        return 'Select the campus or community college you are clocking in from.';
+                    }
+                    if (campusSelect.value === otherCampusValue) {
+                        if (!otherInput || !otherInput.value.trim()) {
+                            return 'Enter where you are reporting from when you select Other.';
+                        }
+                    }
+                    return '';
+                }
+
                 form.addEventListener('submit', function (event) {
                     console.log('[ClockIn] Form submit, offCampus:', !!offCampus && offCampus.checked, 'lat:', latInput.value, 'lng:', lngInput.value, 'ready:', locationReady);
+                    var siteError = siteSelectionValid();
+                    if (siteError) {
+                        event.preventDefault();
+                        if (statusEl) {
+                            statusEl.textContent = siteError;
+                        }
+                        return;
+                    }
+
                     if (!navigator.geolocation) {
                         event.preventDefault();
                         locationError('Location services are required to clock in.');
@@ -394,11 +474,54 @@
         <script>
             (function () {
                 var offCampus = document.getElementById('is_off_campus');
-                var fieldDetails = document.getElementById('field-details');
+                var offCampusSitePanel = document.getElementById('off-campus-site-panel');
+                var campusSelect = document.getElementById('clock_in_campus_id');
+                var otherWrap = document.getElementById('clock-in-campus-other-wrap');
+                var otherInput = document.getElementById('clock_in_campus_other');
+                var otherCampusValue = @json(\App\Services\StaffClockInSiteService::OTHER_VALUE);
 
-                if (offCampus && fieldDetails) {
-                    offCampus.addEventListener('change', function () {
-                        fieldDetails.hidden = !offCampus.checked;
+                function syncSitePanels() {
+                    var off = offCampus && offCampus.checked;
+                    if (offCampusSitePanel) {
+                        offCampusSitePanel.hidden = !off;
+                    }
+                    if (campusSelect) {
+                        campusSelect.disabled = !off;
+                        campusSelect.required = off;
+                    }
+                    if (otherWrap && campusSelect) {
+                        var showOther = off && campusSelect.value === otherCampusValue;
+                        otherWrap.hidden = !showOther;
+                        if (otherInput) {
+                            otherInput.required = showOther;
+                        }
+                    }
+                }
+
+                if (offCampus) {
+                    offCampus.addEventListener('change', syncSitePanels);
+                }
+                if (campusSelect) {
+                    campusSelect.addEventListener('change', syncSitePanels);
+                }
+                syncSitePanels();
+
+                var form = document.getElementById('clock-in-form');
+                if (form) {
+                    form.addEventListener('submit', function (event) {
+                        var off = offCampus && offCampus.checked;
+                        if (!off) {
+                            return;
+                        }
+                        if (!campusSelect || !campusSelect.value) {
+                            event.preventDefault();
+                            alert('Select the campus or community college you are clocking in from.');
+                            return;
+                        }
+                        if (campusSelect.value === otherCampusValue && (!otherInput || !otherInput.value.trim())) {
+                            event.preventDefault();
+                            alert('Enter where you are reporting from when you select Other.');
+                        }
                     });
                 }
             })();

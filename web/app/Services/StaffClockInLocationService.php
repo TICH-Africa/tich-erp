@@ -95,8 +95,17 @@ class StaffClockInLocationService
         }
 
         throw new \RuntimeException(
-            'You are about '.round($distance).' m from '.$geofence['name'].'. Clock in on campus only when physically present, or tick "Off-campus / field work" if you are working away from campus.'
+            'You are about '.$this->formatDistanceForUser($distance).' from '.$geofence['name'].'. Turn on "Off campus" and select where you are clocking in from if you are not at the main campus.'
         );
+    }
+
+    public function formatDistanceForUser(float $distanceMeters): string
+    {
+        if ($distanceMeters > 999) {
+            return number_format($distanceMeters / 1000, 2, '.', '').' km';
+        }
+
+        return (string) round($distanceMeters).' m';
     }
 
     /**

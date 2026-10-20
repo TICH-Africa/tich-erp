@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\EmployeePortalService;
 use App\Services\StaffAttendanceService;
 use App\Services\StaffClockInLocationService;
+use App\Services\StaffClockInSiteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,6 +31,7 @@ class EmployeeAttendanceController extends Controller
             'requireLocation' => (bool) config('hr-attendance.require_location', true),
             'maxLocationAccuracy' => (int) config('hr-attendance.max_accuracy_meters', 2000),
             'promptLocation' => (bool) session('prompt_location'),
+            'clockInSites' => app(StaffClockInSiteService::class)->optionsForPicker(),
         ]);
     }
 
@@ -43,6 +45,8 @@ class EmployeeAttendanceController extends Controller
             'clock_in_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'clock_in_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'clock_in_accuracy_m' => ['nullable', 'numeric', 'min:0', 'max:50000'],
+            'clock_in_campus_id' => ['nullable'],
+            'clock_in_campus_other' => ['nullable', 'string', 'max:300'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 

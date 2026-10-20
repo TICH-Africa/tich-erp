@@ -29,6 +29,8 @@ class StaffAttendance extends Model
         'leave_request_id',
         'is_off_campus',
         'field_project_name',
+        'clock_in_campus_id',
+        'clock_in_campus_other',
         'location_lat_long',
         'clock_in_latitude',
         'clock_in_longitude',
@@ -70,6 +72,11 @@ class StaffAttendance extends Model
         return $this->belongsTo(Staff::class, 'recorded_by');
     }
 
+    public function clockInCampus(): BelongsTo
+    {
+        return $this->belongsTo(Campus::class, 'clock_in_campus_id');
+    }
+
     public function hrReviewedBy(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'hr_reviewed_by_staff_id');
@@ -107,7 +114,35 @@ class StaffAttendance extends Model
             return 'Not verified - clock in again with GPS';
         }
 
-        return app(StaffClockInLocationService::class)->statusLabel($this->location_verification_status);
+        $gps = app(StaffClockInLocationService::class)->statusLabel($this->location_verification_status);
+        $site = $this->reportingSiteLabel();
+
+        return $site !== '' ? "{$gps} · {$site}" : $gps;
+    }
+
+    public function reportingSiteLabel(): string
+    {
+        if (! $this->is_off_campus) {
+            $name = config('hr-attendance.default_geofence.name');
+
+            return is_string($name) && $name !== '' ? $name : 'Main campus';
+        }
+
+        if (filled($this->clock_in_campus_other)) {
+            return 'Other: '.$this->clock_in_campus_other;
+        }
+
+        if ($this->relationLoaded('clockInCampus') && $this->clockInCampus) {
+            return (string) $this->clockInCampus->campus_name;
+        }
+
+        if ($this->clock_in_campus_id) {
+            $this->loadMissing('clockInCampus');
+
+            return (string) ($this->clockInCampus?->campus_name ?? '');
+        }
+
+        return trim((string) ($this->field_project_name ?? '')) ?: 'Other site';
     }
 
     public function hasVerifiedClockInLocation(): bool
