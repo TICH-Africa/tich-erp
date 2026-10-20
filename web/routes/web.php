@@ -30,6 +30,7 @@ use App\Http\Controllers\Staff\StaffLessonPlanDocumentController;
 use App\Http\Controllers\Staff\StaffPortalActionController;
 use App\Http\Controllers\Staff\StaffPortalDashboardController;
 use App\Http\Controllers\Staff\StaffPortalTimetableController;
+use App\Http\Controllers\Staff\StaffUnitAllocationController;
 use App\Http\Controllers\ApplicationDocumentController;
 use App\Http\Controllers\HR\RecruitmentApplicationDocumentController;
 use App\Http\Controllers\HR\EssOnboardingController;
@@ -1489,6 +1490,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/lesson-plans/{plan}', [StaffPortalActionController::class, 'updateLessonPlan'])->name('staff.lesson-plans.update');
         Route::post('/lesson-plans/{plan}/submit', [StaffPortalActionController::class, 'submitLessonPlan'])->name('staff.lesson-plans.submit');
         Route::post('/lesson-plans/{plan}/verify', [StaffPortalActionController::class, 'verifyLessonPlan'])->name('staff.lesson-plans.verify');
+
+        Route::post('/unit-allocations/units', [StaffUnitAllocationController::class, 'mapUnit'])->name('staff.unit-allocations.map-unit');
+        Route::post('/unit-allocations', [StaffUnitAllocationController::class, 'store'])->name('staff.unit-allocations.store');
+        Route::delete('/unit-allocations/{unitAllocation}', [StaffUnitAllocationController::class, 'withdraw'])->name('staff.unit-allocations.withdraw');
 
         Route::get('/workplans', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'index'])->name('staff.workplans.index');
         Route::get('/workplans/create', [\App\Http\Controllers\Staff\StaffWorkplanController::class, 'create'])->name('staff.workplans.create');

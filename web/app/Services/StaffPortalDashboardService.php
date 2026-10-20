@@ -61,6 +61,24 @@ class StaffPortalDashboardService
     }
 
     /**
+     * Students registered on each of a lecturer's allocated units, keyed by allocation id.
+     *
+     * @param  Collection<int, UnitAllocation>  $allocations
+     * @return Collection<int, Collection<int, object>>
+     */
+    public function rostersFor(Collection $allocations): Collection
+    {
+        return $allocations->mapWithKeys(
+            fn (UnitAllocation $allocation) => [
+                (int) $allocation->id => $this->rosterForUnit(
+                    (int) $allocation->unit_id,
+                    [(int) $allocation->semester_id],
+                ),
+            ]
+        );
+    }
+
+    /**
      * @return Collection<int, ProgramTimetableSession>
      */
     public function timetableSessions(Staff $staff): Collection

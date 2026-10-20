@@ -343,7 +343,7 @@
                                                                         · <strong>Coordinator</strong>
                                                                     @endif
                                                                 </div>
-                                                                <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($hub, ['program' => $program->id, 'allocation' => $currentAllocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
+                                                                <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($hub, ['program' => $program->id, 'unitAllocation' => $currentAllocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
                                                                     @csrf
                                                                     @method('DELETE')
                                                                     <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">

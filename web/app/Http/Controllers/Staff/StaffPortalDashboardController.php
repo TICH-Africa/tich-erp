@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
-use App\Models\LessonPlan;
 use App\Models\Semester;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
@@ -13,14 +12,20 @@ use App\Services\AttendanceSessionGenerationService;
 use App\Services\AttendanceVerificationService;
 use App\Services\ContinuousAssessmentService;
 use App\Services\DepartmentPerformanceService;
+use App\Services\EmployeePortalService;
+use App\Services\ExaminationPaperService;
+use App\Services\HodUnitAllocationService;
+use App\Services\Leave\LeaveCatalogService;
+use App\Services\Leave\LeaveCoverageService;
+use App\Services\LeaveRequestService;
 use App\Services\LessonPlanApprovalService;
 use App\Services\ObjectiveAutoGradingService;
+use App\Services\StaffExamMarksService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalNavigationService;
 use App\Services\StaffPortalService;
-use App\Services\StaffExamMarksService;
 use App\Services\StaffTeachingService;
-use Illuminate\Http\RedirectResponse;
+use App\Services\UnitAllocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +45,7 @@ class StaffPortalDashboardController extends Controller
         protected LessonPlanApprovalService $lessonPlanApprovals,
         protected DepartmentPerformanceService $performance,
         protected AcademicWorkplanService $academicWorkplans,
+        protected HodUnitAllocationService $unitAllocationDesk,
     ) {}
 
     public function __invoke(Request $request): View
@@ -49,6 +55,10 @@ class StaffPortalDashboardController extends Controller
 
         $section = $this->navigation->resolveSection($request);
         $portalData = $this->dashboard->forStaff($staff);
+        if ($section === 'units') {
+            $portalData['rosters'] = $this->dashboard->rostersFor($portalData['allocations']);
+        }
+
         $attendanceSync = null;
         $upcomingAttendanceSessions = collect();
         $attendanceStep = 1;
@@ -133,6 +143,12 @@ class StaffPortalDashboardController extends Controller
             $hodWorkplans = $hodManagement['workplans'];
         }
 
+        $hodAllocationDesk = null;
+        if ($section === 'hod-unit-allocations') {
+            abort_unless($request->user()->hasAnyRole(['HOD', 'Super Admin']), 403);
+            $hodAllocationDesk = $this->unitAllocationDesk->screen($staff, $request);
+        }
+
         $staffDocuments = null;
         if ($section === 'documents') {
             $staffDocuments = $staff->documents()
@@ -148,11 +164,11 @@ class StaffPortalDashboardController extends Controller
         $eligibleCoverStaff = collect();
         $leaveTypeMeta = [];
         if ($section === 'leave') {
-            $leaveService = app(\App\Services\LeaveRequestService::class);
-            $catalog = app(\App\Services\Leave\LeaveCatalogService::class);
-            $coverageService = app(\App\Services\Leave\LeaveCoverageService::class);
+            $leaveService = app(LeaveRequestService::class);
+            $catalog = app(LeaveCatalogService::class);
+            $coverageService = app(LeaveCoverageService::class);
             $leaveTypes = $leaveService->activeLeaveTypes();
-            $leaveBalances = app(\App\Services\EmployeePortalService::class)->leaveBalancesFor($staff);
+            $leaveBalances = app(EmployeePortalService::class)->leaveBalancesFor($staff);
             $leaveRequests = $leaveService->requestsForStaff($staff);
             $familyRelations = $catalog->familyRelations();
             $coverageDepartments = $coverageService->departmentsRequiringCoverage($staff);
@@ -183,7 +199,7 @@ class StaffPortalDashboardController extends Controller
         $examPapers = collect();
         $canModerateExamPapers = false;
         if ($section === 'exam-papers') {
-            $examPaperService = app(\App\Services\ExaminationPaperService::class);
+            $examPaperService = app(ExaminationPaperService::class);
             $examPapers = $examPaperService->papersForStaff($staff);
             $canModerateExamPapers = $examPaperService->userCanModerate($staff);
         }
@@ -197,7 +213,7 @@ class StaffPortalDashboardController extends Controller
             $departmentId = (int) ($staff->department_id ?? 0);
             $semesterId = $request->integer('semester') ?: null;
             $hodWorkload = [
-                'rows' => app(\App\Services\UnitAllocationService::class)->workloadMatrix($departmentId, $semesterId ?: null),
+                'rows' => app(UnitAllocationService::class)->workloadMatrix($departmentId, $semesterId ?: null),
                 'semester_id' => $semesterId,
                 'semesters' => Semester::query()->orderByDesc('id')->limit(12)->get(),
                 'max_hours' => (int) config('tich-academics.workload_limits.max_contact_hours', 18),
@@ -225,6 +241,7 @@ class StaffPortalDashboardController extends Controller
             'objectiveTerminal' => $objectiveTerminal,
             'rostersByAllocation' => $rostersByAllocation,
             'hodManagement' => $hodManagement,
+            'hodAllocationDesk' => $hodAllocationDesk,
             'hodWorkplans' => $hodWorkplans,
             'staffDocuments' => $staffDocuments,
             'leaveBalances' => $leaveBalances,

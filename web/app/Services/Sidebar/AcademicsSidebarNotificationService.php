@@ -33,6 +33,7 @@ class AcademicsSidebarNotificationService
         'attendance-ledger.registrar' => 'Attendance ledger',
         'special-exam-requests.pending' => 'Special exam requests',
         'supplementary-requests.pending' => 'Supplementary requests',
+        'unit-allocations.pending' => 'Unit allocation approvals',
         'suggestions.open' => 'Suggestion box',
         'lifecycle.pending' => 'Deferment requests',
         'applications.pending' => 'Application review',
@@ -100,6 +101,7 @@ class AcademicsSidebarNotificationService
             str_contains($routeName, 'departments.academics.attendance-ledger.') => $this->attendanceLedgerBadgeKey(),
             str_contains($routeName, 'departments.academics.special-exam-requests.') => 'special-exam-requests.pending',
             str_contains($routeName, 'departments.academics.supplementary-requests.') => 'supplementary-requests.pending',
+            str_contains($routeName, 'departments.academics.unit-allocations.') => 'unit-allocations.pending',
             str_contains($routeName, 'departments.academics.suggestions.') => 'suggestions.open',
             str_contains($routeName, 'departments.academics.lifecycle-requests.') => 'lifecycle.pending',
             str_contains($routeName, 'departments.academics.applications.') => 'applications.pending',
@@ -204,6 +206,7 @@ class AcademicsSidebarNotificationService
                 'suggestions.open' => 0,
                 'lifecycle.pending' => 0,
                 'applications.pending' => 0,
+                'unit-allocations.pending' => 0,
                 'curriculum' => 0,
                 'assessment' => 0,
                 'student-voice' => 0,
@@ -298,6 +301,12 @@ class AcademicsSidebarNotificationService
                 ->count();
         }
 
+        $allocationsPending = (int) DB::table('unit_allocations as ua')
+            ->join('units as u', 'u.id', '=', 'ua.unit_id')
+            ->where('ua.status', 'pending_approval')
+            ->whereIn('u.department_id', $departmentIds)
+            ->count();
+
         $suggestionsOpen = Schema::hasTable('student_suggestions')
             ? (int) DB::table('student_suggestions')->whereIn('status', ['open', 'under_review'])->count()
             : 0;
@@ -316,11 +325,12 @@ class AcademicsSidebarNotificationService
             'attendance-ledger.registrar' => $attendanceRegistrar + $attendanceIncomplete,
             'special-exam-requests.pending' => $specialExamPending,
             'supplementary-requests.pending' => $supplementaryPending,
+            'unit-allocations.pending' => $allocationsPending,
             'suggestions.open' => $suggestionsOpen,
             'lifecycle.pending' => $lifecyclePending,
             'applications.pending' => $applicationsPending,
             'curriculum' => $unitsPending + $curriculumWorkflow + $lessonPlanCount,
-            'assessment' => $attendanceForUser + $specialExamPending + $supplementaryPending,
+            'assessment' => $attendanceForUser + $specialExamPending + $supplementaryPending + $allocationsPending,
             'student-voice' => $suggestionsOpen + $lifecyclePending,
         ];
     }

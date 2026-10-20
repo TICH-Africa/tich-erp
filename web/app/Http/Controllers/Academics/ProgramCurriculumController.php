@@ -982,6 +982,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $this->unitAllocations->assign([
             'unit_id' => $unit->id,
+            'program_id' => $program->id,
             'staff_id' => $lecturer->id,
             'semester_id' => $semesterId,
             'campus_id' => (int) $validated['campus_id'],
@@ -1001,14 +1002,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Lecturer assigned to unit.');
     }
 
-    public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $allocation): RedirectResponse
+    public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $unitAllocation): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless($request->user()->hasPermission('academics.write'), 403);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
 
-        $this->unitAllocations->assertAllocationInProgramDepartment($allocation, $program);
-        $this->unitAllocations->remove($allocation);
+        $this->unitAllocations->assertAllocationInProgramDepartment($unitAllocation, $program);
+        $this->unitAllocations->remove($unitAllocation);
 
         $section = $request->string('section')->toString() ?: 'catalog';
 

@@ -2519,5 +2519,30 @@ SET @tich_fk_sql := (
 PREPARE tich_fk_stmt FROM @tich_fk_sql; EXECUTE tich_fk_stmt; DEALLOCATE PREPARE tich_fk_stmt;
 -- APPLY ON PRODUCTION: clock-in campus / community college on staff_attendance
 
+-- -----------------------------------------------------------------------------
+-- 52. Unit allocations: a department HOD requests the lecturer, Academics approves
+--     Migration 2026_10_20_120000_add_approval_workflow_to_unit_allocations_table
+--     A request waits with is_active = 0, so no lecturer, timetable or attendance
+--     screen picks it up until Academics signs it off.
+-- -----------------------------------------------------------------------------
+ALTER TABLE `unit_allocations`
+    ADD COLUMN IF NOT EXISTS `program_id` bigint(20) unsigned NULL AFTER `unit_id`,
+    ADD COLUMN IF NOT EXISTS `status` varchar(30) NOT NULL DEFAULT 'approved' AFTER `campus_id`,
+    ADD COLUMN IF NOT EXISTS `submitted_by` bigint(20) unsigned NULL AFTER `status`,
+    ADD COLUMN IF NOT EXISTS `submitted_at` timestamp NULL AFTER `submitted_by`,
+    ADD COLUMN IF NOT EXISTS `approved_by` bigint(20) unsigned NULL AFTER `submitted_at`,
+    ADD COLUMN IF NOT EXISTS `approved_at` timestamp NULL AFTER `approved_by`,
+    ADD COLUMN IF NOT EXISTS `approval_comments` varchar(500) NULL AFTER `approved_at`;
+
+CREATE INDEX IF NOT EXISTS `unit_allocations_program_id_index` ON `unit_allocations` (`program_id`);
+CREATE INDEX IF NOT EXISTS `unit_allocations_status_index` ON `unit_allocations` (`status`);
+
+-- Rows already switched off with no approval trail were retired, not approved.
+UPDATE `unit_allocations`
+SET `status` = 'removed'
+WHERE `is_active` = 0
+  AND `approved_at` IS NULL
+  AND `submitted_at` IS NULL;
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

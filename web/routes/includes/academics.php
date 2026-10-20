@@ -20,6 +20,7 @@ use App\Http\Controllers\Academics\StudentProfileChangeController;
 use App\Http\Controllers\Academics\SuggestionBoxController;
 use App\Http\Controllers\Academics\SupplementaryRequestController;
 use App\Http\Controllers\Academics\TranscriptRequestController;
+use App\Http\Controllers\Academics\UnitAllocationApprovalController;
 use App\Http\Controllers\Academics\UnitController as AcademicsUnitController;
 use App\Http\Controllers\Academics\WorkplanController as AcademicsWorkplanController;
 use Illuminate\Support\Facades\Route;
@@ -90,6 +91,7 @@ return function (bool $named = true): void {
         $register('get', '/workplans', [AcademicsWorkplanController::class, 'index'], 'departments.academics.workplans.index');
         $register('get', '/workplans/{workplan}', [AcademicsWorkplanController::class, 'show'], 'departments.academics.workplans.show');
         $register('get', '/performance', [PerformanceTerminalController::class, 'index'], 'departments.academics.performance.index');
+        $register('get', '/unit-allocations', [UnitAllocationApprovalController::class, 'index'], 'departments.academics.unit-allocations.index');
     });
 
     Route::middleware('permission:academics.write')->group(function () use ($named) {
@@ -108,7 +110,9 @@ return function (bool $named = true): void {
         $register('post', '/applications/{id}/approve', [ApplicationReviewController::class, 'approve'], 'departments.academics.applications.approve', ['permission:academics.approve']);
         $register('post', '/applications/{id}/reject', [ApplicationReviewController::class, 'reject'], 'departments.academics.applications.reject', ['permission:academics.approve']);
         $register('post', '/programs/{program}/allocations', [ProgramCurriculumController::class, 'storeAllocation'], 'departments.academics.programs.allocations.store');
-        $register('delete', '/programs/{program}/allocations/{allocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');
+        $register('post', '/unit-allocations/{unitAllocation}/approve', [UnitAllocationApprovalController::class, 'approve'], 'departments.academics.unit-allocations.approve', ['permission:academics.approve']);
+        $register('post', '/unit-allocations/{unitAllocation}/reject', [UnitAllocationApprovalController::class, 'reject'], 'departments.academics.unit-allocations.reject', ['permission:academics.approve']);
+        $register('delete', '/programs/{program}/allocations/{unitAllocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');
         $register('post', '/clearance/{student}/approve', [AcademicClearanceController::class, 'approve'], 'departments.academics.clearance.approve');
         $register('post', '/clearance/{student}/reject', [AcademicClearanceController::class, 'reject'], 'departments.academics.clearance.reject');

@@ -5,14 +5,17 @@ namespace App\Services;
 use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
 use App\Models\UnitAllocation;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class UnitAllocationService
 {
     public function __construct(protected AuditService $auditService) {}
+
     /**
-     * @return \Illuminate\Support\Collection<int, UnitAllocation>
+     * @return Collection<int, UnitAllocation>
      */
     public function forDepartment(int $departmentId, ?int $semesterId = null)
     {
@@ -27,23 +30,61 @@ class UnitAllocationService
         return $query->orderBy('semester_id')->orderBy('unit_id')->get();
     }
 
-    public function assign(array $data): UnitAllocation
+    /**
+     * Assign a lecturer to a unit. Academics assignments go live at once; an HOD request waits
+     * on the Academics approval inbox and stays switched off until then, so no lecturer,
+     * timetable or attendance screen can pick it up early.
+     */
+    public function assign(array $data, bool $needsApproval = false): UnitAllocation
     {
-        UnitAllocation::query()
-            ->where('unit_id', (int) $data['unit_id'])
-            ->where('semester_id', (int) $data['semester_id'])
-            ->where('is_active', 1)
-            ->update(['is_active' => 0]);
+        $unitId = (int) $data['unit_id'];
+        $semesterId = (int) $data['semester_id'];
+
+        if ($needsApproval) {
+            $existing = $this->pendingDuplicate($data);
+
+            if ($existing) {
+                return $existing;
+            }
+        } else {
+            $this->retireRivals($unitId, $semesterId);
+        }
 
         $allocation = UnitAllocation::query()->create([
-            'unit_id' => (int) $data['unit_id'],
+            'unit_id' => $unitId,
+            'program_id' => isset($data['program_id']) ? (int) $data['program_id'] : null,
             'staff_id' => (int) $data['staff_id'],
-            'semester_id' => (int) $data['semester_id'],
+            'semester_id' => $semesterId,
             'campus_id' => (int) $data['campus_id'],
             'is_coordinator' => ! empty($data['is_coordinator']),
             'contact_hours_assigned' => (int) ($data['contact_hours_assigned'] ?? 0),
-            'is_active' => 1,
+            'status' => $needsApproval ? UnitAllocation::STATUS_PENDING : UnitAllocation::STATUS_APPROVED,
+            'submitted_by' => $needsApproval ? Auth::id() : null,
+            'submitted_at' => $needsApproval ? now() : null,
+            'approved_by' => $needsApproval ? null : Auth::id(),
+            'approved_at' => $needsApproval ? null : now(),
+            'is_active' => $needsApproval ? 0 : 1,
         ]);
+
+        if ($needsApproval) {
+            $this->auditService->log(
+                'academics.unit_allocation.requested',
+                'unit_allocations',
+                $allocation->id,
+                null,
+                [
+                    'unit_id' => $allocation->unit_id,
+                    'staff_id' => $allocation->staff_id,
+                    'semester_id' => $allocation->semester_id,
+                    'status' => UnitAllocation::STATUS_PENDING,
+                ],
+                'Lecturer allocation requested by the department HOD',
+                'success',
+                Auth::id(),
+            );
+
+            return $allocation;
+        }
 
         $this->syncTimetableStaff($allocation);
 
@@ -66,6 +107,113 @@ class UnitAllocationService
         return $allocation;
     }
 
+    /**
+     * Switch off the live allocation for the same unit and semester before a new one takes over.
+     */
+    private function retireRivals(int $unitId, int $semesterId): void
+    {
+        UnitAllocation::query()
+            ->where('unit_id', $unitId)
+            ->where('semester_id', $semesterId)
+            ->where('is_active', 1)
+            ->update(['is_active' => 0]);
+    }
+
+    /**
+     * Academics accepts an HOD request: it becomes the live allocation for that unit and semester.
+     */
+    public function approve(UnitAllocation $allocation, User $approver): UnitAllocation
+    {
+        abort_unless($allocation->awaitingApproval(), 422, 'Only a pending allocation can be approved.');
+
+        DB::transaction(function () use ($allocation, $approver): void {
+            $this->retireRivals((int) $allocation->unit_id, (int) $allocation->semester_id);
+
+            $allocation->update([
+                'status' => UnitAllocation::STATUS_APPROVED,
+                'approved_by' => $approver->id,
+                'approved_at' => now(),
+                'approval_comments' => null,
+                'is_active' => 1,
+            ]);
+
+            $this->syncTimetableStaff($allocation);
+        });
+
+        $this->auditService->log(
+            'academics.unit_allocation.approved',
+            'unit_allocations',
+            $allocation->id,
+            ['status' => UnitAllocation::STATUS_PENDING],
+            ['status' => UnitAllocation::STATUS_APPROVED, 'is_active' => 1],
+            'Lecturer allocation approved',
+            'success',
+            $approver->id,
+        );
+
+        return $allocation;
+    }
+
+    public function reject(UnitAllocation $allocation, User $approver, ?string $comments): UnitAllocation
+    {
+        abort_unless($allocation->awaitingApproval(), 422, 'Only a pending allocation can be rejected.');
+
+        $allocation->update([
+            'status' => UnitAllocation::STATUS_REJECTED,
+            'approved_by' => $approver->id,
+            'approved_at' => now(),
+            'approval_comments' => $comments,
+            'is_active' => 0,
+        ]);
+
+        $this->auditService->log(
+            'academics.unit_allocation.rejected',
+            'unit_allocations',
+            $allocation->id,
+            ['status' => UnitAllocation::STATUS_PENDING],
+            ['status' => UnitAllocation::STATUS_REJECTED],
+            'Lecturer allocation rejected',
+            'warning',
+            $approver->id,
+        );
+
+        return $allocation;
+    }
+
+    /**
+     * Drop a request the HOD no longer wants sent, or retire a live allocation.
+     */
+    public function withdraw(UnitAllocation $allocation, User $user): void
+    {
+        $before = $allocation->status;
+
+        $allocation->update(['status' => UnitAllocation::STATUS_REMOVED, 'is_active' => 0]);
+
+        $this->auditService->log(
+            'academics.unit_allocation.withdrawn',
+            'unit_allocations',
+            $allocation->id,
+            ['status' => $before],
+            ['status' => UnitAllocation::STATUS_REMOVED],
+            'Unit allocation withdrawn',
+            'success',
+            $user->id,
+        );
+    }
+
+    /**
+     * A request the HOD sent by mistake should not sit in the Academics inbox.
+     */
+    public function pendingDuplicate(array $data): ?UnitAllocation
+    {
+        return UnitAllocation::query()
+            ->where('unit_id', (int) $data['unit_id'])
+            ->where('staff_id', (int) $data['staff_id'])
+            ->where('semester_id', (int) $data['semester_id'])
+            ->where('status', UnitAllocation::STATUS_PENDING)
+            ->first();
+    }
+
     public function syncTimetableStaff(UnitAllocation $allocation): void
     {
         DB::table('program_timetable_sessions')
@@ -79,16 +227,16 @@ class UnitAllocationService
 
     public function remove(UnitAllocation $allocation): void
     {
-        $old = $allocation->only(['unit_id', 'staff_id', 'semester_id', 'is_active']);
+        $old = $allocation->only(['unit_id', 'staff_id', 'semester_id', 'is_active', 'status']);
 
-        $allocation->update(['is_active' => 0]);
+        $allocation->update(['is_active' => 0, 'status' => UnitAllocation::STATUS_REMOVED]);
 
         $this->auditService->log(
             'academics.unit_allocation.removed',
             'unit_allocations',
             $allocation->id,
             $old,
-            ['is_active' => 0],
+            ['is_active' => 0, 'status' => UnitAllocation::STATUS_REMOVED],
             'Unit allocation deactivated',
             'success',
             Auth::id(),
@@ -96,7 +244,7 @@ class UnitAllocationService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, object>
+     * @return Collection<int, object>
      */
     public function workloadSummary(int $departmentId, ?int $semesterId = null)
     {
@@ -115,7 +263,7 @@ class UnitAllocationService
     /**
      * Workload rows with unit lists and overload flags for HOD matrix.
      *
-     * @return \Illuminate\Support\Collection<int, object>
+     * @return Collection<int, object>
      */
     public function workloadMatrix(int $departmentId, ?int $semesterId = null)
     {
@@ -174,7 +322,7 @@ class UnitAllocationService
      * Active lecturer allocations for catalog units within an intake's teaching periods.
      *
      * @param  list<int>  $unitIds
-     * @return \Illuminate\Support\Collection<int, \Illuminate\Support\Collection<int, UnitAllocation>>
+     * @return Collection<int, Collection<int, UnitAllocation>>
      */
     public function forUnitsInIntake(array $unitIds, CurriculumVersion $intake, AcademicProgram $program)
     {

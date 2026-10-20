@@ -81,7 +81,7 @@
                         'icon' => 'clipboard-check',
                         'flat' => true,
                         'badgeKey' => 'assessment',
-                        'items' => [
+                        'items' => array_values(array_filter([
                             [
                                 'href' => route('departments.academics.attendance-ledger.index', $hub),
                                 'label' => 'Attendance ledger',
@@ -115,7 +115,14 @@
                                 'active' => request()->routeIs('departments.academics.supplementary-requests.*'),
                                 'badgeKey' => 'supplementary-requests.pending',
                             ],
-                        ],
+                            $accessService->canApproveRegistry(auth()->user()) ? [
+                                'href' => route('departments.academics.unit-allocations.index', $hub),
+                                'label' => 'Unit allocation approvals',
+                                'icon' => 'badge-check',
+                                'active' => request()->routeIs('departments.academics.unit-allocations.*'),
+                                'badgeKey' => 'unit-allocations.pending',
+                            ] : null,
+                        ])),
                     ])
                 @endunless
 

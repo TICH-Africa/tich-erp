@@ -150,7 +150,7 @@
                                                     @endif
                                                 </div>
                                                 @can('academics.write')
-                                                    <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($catalogHub, ['program' => $program->id, 'allocation' => $allocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
+                                                    <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($catalogHub, ['program' => $program->id, 'unitAllocation' => $allocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
                                                         @csrf
                                                         @method('DELETE')
                                                         <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
