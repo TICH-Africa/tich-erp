@@ -5,7 +5,7 @@
 @section('procurement-content')
     <x-page-toolbar title="GRN {{ $grn->grn_number }}" meta="{{ $grn->purchaseOrder?->po_number ?? '-' }}">
         <x-slot:actions>
-            @if($grn->is_complete && $grn->items->where('status', 'pending')->count() > 0)
+            @if($grn->inspection_status === 'pending')
                 <form method="POST" action="{{ route('procurement.grns.complete', $grn) }}" class="tich-inline-form">
                     @csrf
                     <button type="submit" class="tich-btn tich-btn-success">Complete inspection</button>

@@ -525,6 +525,7 @@ class AuthService
         $isStudent = $user->user_type === 'student' || (bool) $user->student_id;
         $canEmployee = ! $isStudent && (bool) $this->staffPortalStaffId($user);
         $canStaff = ! $isStudent && $this->isTeachingStaff($user);
+        $canProcurement = ! $isStudent && $this->rbacService->hasPermission($user, 'procurement.read');
 
         return [
             'id' => $user->id,
@@ -536,6 +537,7 @@ class AuthService
             'is_teaching_staff' => $canStaff,
             'can_access_employee_portal' => $canEmployee,
             'can_access_staff_portal' => $canStaff,
+            'can_access_procurement_portal' => $canProcurement,
         ];
     }
 

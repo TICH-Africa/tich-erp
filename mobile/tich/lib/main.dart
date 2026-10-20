@@ -12,6 +12,7 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/employee_api.dart';
+import 'data/procurement_api.dart';
 import 'data/staff_api.dart';
 import 'data/student_api.dart';
 import 'notifications/tich_notifications.dart';
@@ -21,6 +22,7 @@ import 'ui/auth/unlock_page.dart';
 import 'ui/login_page.dart';
 import 'ui/portal/portal_chooser_page.dart';
 import 'ui/shell/portal_shell.dart';
+import 'ui/shell/procurement_portal_shell.dart';
 import 'ui/shell/staff_portal_shell.dart';
 import 'ui/shell/student_portal_shell.dart';
 
@@ -92,6 +94,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
         RepositoryProvider.value(value: _apiClient),
         RepositoryProvider(create: (_) => EmployeeApi(_apiClient)),
         RepositoryProvider(create: (_) => StaffApi(_apiClient)),
+        RepositoryProvider(create: (_) => ProcurementApi(_apiClient)),
         RepositoryProvider(create: (_) => StudentApi(_apiClient)),
       ],
       child: BlocProvider.value(
@@ -157,8 +160,13 @@ class _AuthGateState extends State<_AuthGate> {
           }
           // Teaching staff with both portals: choose; staff-only → Staff;
           // otherwise Employee (HR) portal.
-          if (user.hasBothStaffPortals) {
+          if (user.hasMultiplePortals) {
             return PortalChooserPage(user: user);
+          }
+          if (user.canAccessProcurementPortal &&
+              !user.canAccessEmployeePortal &&
+              !user.canAccessStaffPortal) {
+            return const ProcurementPortalShell();
           }
           if (user.canAccessStaffPortal && !user.canAccessEmployeePortal) {
             return const StaffPortalShell();

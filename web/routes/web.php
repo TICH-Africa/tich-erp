@@ -839,6 +839,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             'store' => 'procurement.grns.store',
             'show' => 'procurement.grns.show',
         ]);
+        Route::post('grns/{grn}/complete', [\App\Http\Controllers\Procurement\GrnController::class, 'complete'])->name('procurement.grns.complete');
         Route::resource('inventory-items', \App\Http\Controllers\Procurement\InventoryItemController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update'])->names([
             'index' => 'procurement.inventory-items.index',
             'create' => 'procurement.inventory-items.create',

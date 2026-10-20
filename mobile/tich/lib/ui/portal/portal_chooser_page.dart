@@ -4,6 +4,7 @@ import '../../adaptive/adaptive.dart';
 import '../../models/auth_user.dart';
 import '../../theme/tich_theme.dart';
 import '../shell/portal_shell.dart';
+import '../shell/procurement_portal_shell.dart';
 import '../shell/staff_portal_shell.dart';
 import '../shell/tich_logout.dart';
 import '../widgets/portal_hero.dart';
@@ -26,7 +27,7 @@ class PortalChooserPage extends StatelessWidget {
           PortalHero(
             title: 'Hello, ${user.name}',
             subtitle:
-                'Employee Portal and Staff Portal are separate workspaces.',
+                'Pick the workspace that matches what you need to do today.',
             accent: TichColors.blue,
           ),
           const SizedBox(height: 16),
@@ -41,7 +42,22 @@ class PortalChooserPage extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const PortalShell()),
               ),
             ),
-          if (user.canAccessEmployeePortal && user.canAccessStaffPortal)
+          if (user.canAccessEmployeePortal &&
+              (user.canAccessStaffPortal || user.canAccessProcurementPortal))
+            const SizedBox(height: 12),
+          if (user.canAccessProcurementPortal)
+            _PortalCard(
+              title: 'Procurement Portal',
+              description:
+                  'Requisitions, GRNs, stock issues, alerts, and asset lookup.',
+              icon: Icons.inventory_outlined,
+              color: TichColors.blueStrong,
+              onTap: () => Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
+              ),
+            ),
+          if (user.canAccessProcurementPortal &&
+              (user.canAccessEmployeePortal || user.canAccessStaffPortal))
             const SizedBox(height: 12),
           if (user.canAccessStaffPortal)
             _PortalCard(

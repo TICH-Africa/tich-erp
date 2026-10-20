@@ -12,6 +12,7 @@ class AuthUser extends Equatable {
     this.isTeachingStaff = false,
     this.canAccessEmployeePortal = false,
     this.canAccessStaffPortal = false,
+    this.canAccessProcurementPortal = false,
   });
 
   final int id;
@@ -24,6 +25,7 @@ class AuthUser extends Equatable {
   final bool isTeachingStaff;
   final bool canAccessEmployeePortal;
   final bool canAccessStaffPortal;
+  final bool canAccessProcurementPortal;
 
   bool get isStudent =>
       userType == 'student' || studentId != null;
@@ -38,6 +40,16 @@ class AuthUser extends Equatable {
 
   bool get hasBothStaffPortals =>
       canAccessEmployeePortal && canAccessStaffPortal;
+
+  int get accessiblePortalCount {
+    var n = 0;
+    if (canAccessEmployeePortal) n++;
+    if (canAccessStaffPortal) n++;
+    if (canAccessProcurementPortal) n++;
+    return n;
+  }
+
+  bool get hasMultiplePortals => accessiblePortalCount > 1;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final rolesRaw = json['roles'];
@@ -66,6 +78,8 @@ class AuthUser extends Equatable {
     final canEmployee = json['can_access_employee_portal'] == true ||
         (json['staff_id'] != null && json['user_type'] != 'student');
     final canStaff = json['can_access_staff_portal'] == true || isTeaching;
+    final canProcurement =
+        json['can_access_procurement_portal'] == true;
 
     return AuthUser(
       id: (json['id'] as num).toInt(),
@@ -78,6 +92,8 @@ class AuthUser extends Equatable {
       isTeachingStaff: isTeaching,
       canAccessEmployeePortal: canEmployee && json['user_type'] != 'student',
       canAccessStaffPortal: canStaff && json['user_type'] != 'student',
+      canAccessProcurementPortal:
+          canProcurement && json['user_type'] != 'student',
     );
   }
 
@@ -93,5 +109,6 @@ class AuthUser extends Equatable {
         isTeachingStaff,
         canAccessEmployeePortal,
         canAccessStaffPortal,
+        canAccessProcurementPortal,
       ];
 }

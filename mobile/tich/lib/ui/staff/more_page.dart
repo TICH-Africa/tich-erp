@@ -11,6 +11,7 @@ import '../portal/portal_chooser_page.dart';
 import '../settings/settings_hub_page.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../shell/portal_shell.dart';
+import '../shell/procurement_portal_shell.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'content_page.dart';
 import 'grading_page.dart';
@@ -69,6 +70,20 @@ class StaffMorePage extends StatelessWidget {
       ),
     ];
 
+    if (user?.canAccessProcurementPortal == true) {
+      items.insert(
+        0,
+        TichMoreItem(
+          label: 'Switch to Procurement Portal',
+          icon: Icons.inventory_outlined,
+          onTap: () => Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
+            (route) => false,
+          ),
+        ),
+      );
+    }
+
     if (_canSwitchToEmployee(user)) {
       items.insert(
         0,
@@ -83,7 +98,7 @@ class StaffMorePage extends StatelessWidget {
       );
     }
 
-    if (user?.hasBothStaffPortals == true) {
+    if (user?.hasMultiplePortals == true) {
       items.insert(
         _canSwitchToEmployee(user) ? 1 : 0,
         TichMoreItem(

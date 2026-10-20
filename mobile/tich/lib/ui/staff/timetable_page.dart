@@ -158,7 +158,12 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        
+                        Text(
+                          'Days on the left, your session times across the top.',
+                          style: tichUi(
+                            fontSize: 11,
+                            color: TichColors.neutralMuted,
+                          ),
                         ),
                         if (weekendSessions > 0) ...[
                           const SizedBox(height: 20),

@@ -239,3 +239,29 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::get('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'index']);
     Route::post('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'store']);
 });
+
+Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('procurement')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Api\Procurement\mobile\DashboardController::class);
+    Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Procurement\mobile\SidebarNotificationsController::class);
+
+    Route::get('/requisitions', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'index']);
+    Route::get('/requisitions/{requisition}', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'show']);
+    Route::post('/requisitions/{requisition}/approve', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'approve']);
+    Route::post('/requisitions/{requisition}/reject', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'reject']);
+    Route::post('/requisitions/{requisition}/submit', [\App\Http\Controllers\Api\Procurement\mobile\RequisitionsController::class, 'submit']);
+
+    Route::get('/stock-issues', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'index']);
+    Route::get('/stock-issues/{stockIssue}', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'show']);
+    Route::post('/stock-issues/{stockIssue}/approve', [\App\Http\Controllers\Api\Procurement\mobile\StockIssuesController::class, 'approve']);
+
+    Route::get('/grns', [\App\Http\Controllers\Api\Procurement\mobile\GrnsController::class, 'index']);
+    Route::get('/grns/{grn}', [\App\Http\Controllers\Api\Procurement\mobile\GrnsController::class, 'show']);
+    Route::post('/grns/{grn}/complete-inspection', [\App\Http\Controllers\Api\Procurement\mobile\GrnsController::class, 'completeInspection']);
+
+    Route::get('/stock-alerts', [\App\Http\Controllers\Api\Procurement\mobile\StockAlertsController::class, 'index']);
+    Route::get('/stock-alerts/{stockAlert}', [\App\Http\Controllers\Api\Procurement\mobile\StockAlertsController::class, 'show']);
+    Route::post('/stock-alerts/{stockAlert}/auto-reorder', [\App\Http\Controllers\Api\Procurement\mobile\StockAlertsController::class, 'autoReorder']);
+
+    Route::get('/assets', [\App\Http\Controllers\Api\Procurement\mobile\AssetsController::class, 'index']);
+    Route::get('/assets/{asset}', [\App\Http\Controllers\Api\Procurement\mobile\AssetsController::class, 'show']);
+});

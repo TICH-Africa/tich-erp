@@ -7,6 +7,7 @@ import '../../bloc/auth/auth_state.dart';
 import '../../data/employee_api.dart';
 import '../settings/settings_hub_page.dart';
 import '../shell/portal_nav_counts_scope.dart';
+import '../shell/procurement_portal_shell.dart';
 import '../shell/staff_portal_shell.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'appraisals_page.dart';
@@ -36,6 +37,15 @@ class MorePage extends StatelessWidget {
     int badge(String key) => nav?.countFor(key) ?? 0;
 
     return [
+      if (user?.canAccessProcurementPortal == true)
+        TichMoreItem(
+          label: 'Switch to Procurement Portal',
+          icon: Icons.inventory_outlined,
+          onTap: () => Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
+            (route) => false,
+          ),
+        ),
       if (user?.canAccessStaffPortal == true)
         TichMoreItem(
           label: 'Switch to Staff Portal',
@@ -45,7 +55,7 @@ class MorePage extends StatelessWidget {
             (route) => false,
           ),
         ),
-      if (user?.hasBothStaffPortals == true)
+      if (user?.hasMultiplePortals == true)
         TichMoreItem(
           label: 'Choose portal',
           icon: Icons.apps_outlined,

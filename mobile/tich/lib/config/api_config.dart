@@ -21,4 +21,17 @@ class ApiConfig {
     final normalized = path.startsWith('/') ? path : '/$path';
     return Uri.parse('$baseUrl$apiPrefix$normalized');
   }
+
+  /// Web app origin (no `/api`) — opens ERP pages in the device browser.
+  static String get webOrigin {
+    final parsed = Uri.parse(baseUrl);
+    return parsed.hasPort
+        ? '${parsed.scheme}://${parsed.host}:${parsed.port}'
+        : '${parsed.scheme}://${parsed.host}';
+  }
+
+  static Uri webUri(String path) {
+    final normalized = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$webOrigin$normalized');
+  }
 }

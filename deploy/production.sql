@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-17 13:11:56 EAT
+-- Generated: 2026-10-19 18:53:35 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -522,6 +522,7 @@ CREATE TABLE IF NOT EXISTS `account_expense_entries` (
   `currency` varchar(3) NOT NULL DEFAULT 'KES',
   `exchange_rate` decimal(18,6) NOT NULL DEFAULT 1.000000,
   `amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `direction` varchar(10) NOT NULL DEFAULT 'increase',
   `vat_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
   `supplier_vat_code` varchar(50) DEFAULT NULL,
   `credit_account_code` varchar(30) DEFAULT NULL,
@@ -544,6 +545,7 @@ CALL `tich_ensure_column`('account_expense_entries', 'class', 'varchar(100) NULL
 CALL `tich_ensure_column`('account_expense_entries', 'currency', 'varchar(3) NOT NULL DEFAULT \'\\\'KES\\\'\'');
 CALL `tich_ensure_column`('account_expense_entries', 'exchange_rate', 'decimal(18,6) NOT NULL DEFAULT \'1.000000\'');
 CALL `tich_ensure_column`('account_expense_entries', 'amount', 'decimal(18,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('account_expense_entries', 'direction', 'varchar(10) NOT NULL DEFAULT \'\\\'increase\\\'\'');
 CALL `tich_ensure_column`('account_expense_entries', 'vat_amount', 'decimal(18,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('account_expense_entries', 'supplier_vat_code', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('account_expense_entries', 'credit_account_code', 'varchar(30) NULL DEFAULT NULL');
@@ -1152,6 +1154,10 @@ CREATE TABLE IF NOT EXISTS `applicants` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `created_by` bigint(20) unsigned DEFAULT NULL,
+  `next_of_kin2_name` varchar(300) DEFAULT NULL,
+  `next_of_kin2_relationship` varchar(50) DEFAULT NULL,
+  `next_of_kin2_phone` varchar(30) DEFAULT NULL,
+  `next_of_kin2_address` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `applicants_application_number_unique` (`application_number`),
   KEY `applicants_program_id_foreign` (`program_id`),
@@ -1219,6 +1225,10 @@ CALL `tich_ensure_column`('applicants', 'offline_sync_id', 'varchar(100) NULL DE
 CALL `tich_ensure_column`('applicants', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 CALL `tich_ensure_column`('applicants', 'updated_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'next_of_kin2_name', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'next_of_kin2_relationship', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'next_of_kin2_phone', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'next_of_kin2_address', 'varchar(500) NULL DEFAULT NULL');
 
 -- Indexes for `applicants` (add only if missing)
 CALL `tich_ensure_index`('applicants', 'applicants_academic_reviewer_id_foreign', '`academic_reviewer_id`');
@@ -6880,6 +6890,38 @@ CALL `tich_ensure_column`('migrations', 'batch', 'int(11) NOT NULL');
 
 -- Indexes for `migrations` (add only if missing)
 -- (no secondary indexes)
+
+-- -----------------------------------------------------------------------------
+-- Table: `mobile_web_handoffs`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mobile_web_handoffs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `token_hash` varchar(64) NOT NULL,
+  `intended_path` varchar(500) NOT NULL,
+  `expires_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `consumed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `mobile_web_handoffs_token_hash_unique` (`token_hash`),
+  KEY `mobile_web_handoffs_user_id_expires_at_index` (`user_id`,`expires_at`),
+  CONSTRAINT `mobile_web_handoffs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `mobile_web_handoffs` (add only if missing)
+CALL `tich_ensure_column`('mobile_web_handoffs', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'user_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'token_hash', 'varchar(64) NOT NULL');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'intended_path', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'expires_at', 'timestamp NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'consumed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_web_handoffs', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `mobile_web_handoffs` (add only if missing)
+CALL `tich_ensure_unique`('mobile_web_handoffs', 'mobile_web_handoffs_token_hash_unique', '`token_hash`');
+CALL `tich_ensure_index`('mobile_web_handoffs', 'mobile_web_handoffs_user_id_expires_at_index', '`user_id`, `expires_at`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `mpesa_stk_requests`
@@ -14076,6 +14118,9 @@ CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_department_id_fo
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_me_reviewed_by_foreign', '`me_reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_planning_cycle_id_foreign', '`planning_cycle_id`', 'admin_planning_cycles', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_submitted_by_foreign', '`submitted_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `mobile_web_handoffs`
+CALL `tich_ensure_fk`('mobile_web_handoffs', 'mobile_web_handoffs_user_id_foreign', '`user_id`', 'users', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `mpesa_stk_requests`
 CALL `tich_ensure_fk`('mpesa_stk_requests', 'mpesa_stk_requests_applicant_id_foreign', '`applicant_id`', 'applicants', '`id`', 'RESTRICT', 'SET NULL');
