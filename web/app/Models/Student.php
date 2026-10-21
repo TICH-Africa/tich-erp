@@ -134,13 +134,27 @@ class Student extends Model
 
     public function displayName(): string
     {
-        $this->loadMissing('applicant');
+        $own = trim(collect([$this->first_name, $this->middle_name, $this->surname])->filter()->implode(' '));
 
-        if ($this->applicant) {
-            return trim($this->applicant->first_name.' '.$this->applicant->surname);
+        if ($own !== '') {
+            return $own;
         }
 
-        return $this->registration_number ?? 'Student #'.$this->id;
+        $this->loadMissing(['applicant', 'user']);
+
+        $applicant = $this->applicant ? trim($this->applicant->fullName()) : '';
+
+        if ($applicant !== '') {
+            return $applicant;
+        }
+
+        $account = trim((string) ($this->user?->name ?? ''));
+
+        if ($account !== '') {
+            return $account;
+        }
+
+        return $this->registration_number ?: 'Student #'.$this->id;
     }
 
     public function hasActivePortalInvite(): bool

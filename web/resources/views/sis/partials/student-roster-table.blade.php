@@ -4,6 +4,11 @@
     $detailRoute = $detailRoute ?? null;
     $sisRoute = $sisRoute ?? fn ($student) => route('sis.students.show', $student);
     $emptyMessage = $emptyMessage ?? 'No students found.';
+    $groupByCampus = $groupByCampus ?? false;
+    $programLabel = $students->first()?->program?->program_code;
+    $groups = $groupByCampus
+        ? $students->groupBy(fn ($student) => $student->campus?->campus_name ?: 'Campus not set')
+        : collect([$students]);
 @endphp
 
 <div class="tich-card tich-table-panel tich-mt-4">
@@ -22,33 +27,46 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($students as $student)
-                @php($summary = $summaries->get($student->id, []))
-                <tr>
-                    <td>{{ $student->registration_number }}</td>
-                    <td>
-                        {{ $student->applicant?->fullName() ?? '-' }}<br>
-                        <span class="tich-caption">{{ $student->applicant?->email }}</span>
-                    </td>
-                    <td>{{ $student->campus?->campus_name ?? '-' }}</td>
-                    <td>{{ ucfirst($student->enrollment_status) }}</td>
-                    <td>{{ $summary['registered_units'] ?? 0 }}</td>
-                    <td>{{ $summary['cat_scores'] ?? 0 }}</td>
-                    <td>{{ $summary['exam_results'] ?? 0 }}</td>
-                    <td>{{ $summary['grades'] ?? 0 }}</td>
-                    <td style="white-space:nowrap;">
-                        @if ($detailRoute)
-                            <a href="{{ $detailRoute($student) }}#student-detail" class="tich-link">Academic record</a>
-                            ·
-                        @endif
-                        <a href="{{ $sisRoute($student) }}" class="tich-link">SIS</a>
-                    </td>
-                </tr>
-            @empty
-                @if ($emptyMessage)
-                    @include('partials.states.table-empty', ['colspan' => 9, 'title' => $emptyMessage, 'icon' => 'inbox'])
+            @foreach ($groups as $campusName => $campusStudents)
+                @if ($groupByCampus && $campusStudents->isNotEmpty())
+                    <tr>
+                        <td colspan="9">
+                            <strong>{{ $campusName }}</strong>
+                            @if ($programLabel)
+                                · {{ $programLabel }}
+                            @endif
+                            ({{ $campusStudents->count() }})
+                        </td>
+                    </tr>
                 @endif
-            @endforelse
+                @foreach ($campusStudents as $student)
+                    @php($summary = $summaries->get($student->id, []))
+                    <tr>
+                        <td>{{ $student->registration_number }}</td>
+                        <td>
+                            {{ $student->displayName() }}<br>
+                            <span class="tich-caption">{{ $student->applicant?->email ?: ($student->email ?: $student->user?->email) }}</span>
+                        </td>
+                        <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                        <td>{{ ucfirst($student->enrollment_status) }}</td>
+                        <td>{{ $summary['registered_units'] ?? 0 }}</td>
+                        <td>{{ $summary['cat_scores'] ?? 0 }}</td>
+                        <td>{{ $summary['exam_results'] ?? 0 }}</td>
+                        <td>{{ $summary['grades'] ?? 0 }}</td>
+                        <td style="white-space:nowrap;">
+                            @if ($detailRoute)
+                                <a href="{{ $detailRoute($student) }}#student-detail" class="tich-link">Academic record</a>
+                                ·
+                            @endif
+                            <a href="{{ $sisRoute($student) }}" class="tich-link">SIS</a>
+                        </td>
+                    </tr>
+                @endforeach
+            @endforeach
+
+            @if ($students->isEmpty() && $emptyMessage)
+                @include('partials.states.table-empty', ['colspan' => 9, 'title' => $emptyMessage, 'icon' => 'inbox'])
+            @endif
         </tbody>
     </table>
 </div>

@@ -41,8 +41,8 @@
                     <tr>
                         <td>{{ $student->registration_number }}</td>
                         <td>
-                            {{ $student->applicant?->fullName() ?? '-' }}<br>
-                            <span class="tich-caption">{{ $student->applicant?->email }}</span>
+                            {{ $student->displayName() }}<br>
+                            <span class="tich-caption">{{ $student->applicant?->email ?: ($student->email ?: $student->user?->email) }}</span>
                         </td>
                         <td>{{ $student->program?->program_name ?? '-' }}</td>
                         <td>{{ $student->campus?->campus_name ?? '-' }}</td>

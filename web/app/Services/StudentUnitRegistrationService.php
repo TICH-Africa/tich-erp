@@ -6,6 +6,7 @@ use App\Models\AcademicProgram;
 use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionUnit;
 use App\Models\NursingBlock;
+use App\Models\Semester;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\IntakeIdentity;
@@ -36,14 +37,13 @@ class StudentUnitRegistrationService
     {
         $mappings = $this->versions->mappedUnits($intake);
         $periodOptions = $this->periodOptions($program);
-        $selectedKey = $this->resolvePeriodKey($request, $periodOptions);
+        $students = $this->candidates($request, $program, $intake);
+        $selectedKey = $this->resolvePeriodKey($request, $program, $periodOptions, $students);
         $selected = $periodOptions->get($selectedKey);
 
         $units = $selected
             ? $this->mappingsForPeriod($mappings, $selected['semester'], $selected['block_id'])
             : collect();
-
-        $students = $this->candidates($request, $program, $intake);
 
         return [
             'periodOptions' => $periodOptions,
@@ -152,7 +152,7 @@ class StudentUnitRegistrationService
                         continue;
                     }
 
-                    DB::table('registered_units')->insert([
+                    DB::table('registered_units')->insertOrIgnore([
                         'semester_registration_id' => $registrationId,
                         'unit_id' => $unitId,
                         'is_additional' => 0,
@@ -282,8 +282,9 @@ class StudentUnitRegistrationService
 
     /**
      * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
+     * @param  Collection<int, Student>  $students
      */
-    private function resolvePeriodKey(Request $request, Collection $periodOptions): string
+    private function resolvePeriodKey(Request $request, AcademicProgram $program, Collection $periodOptions, Collection $students): string
     {
         $requested = $request->string('registration_period')->toString();
 
@@ -291,7 +292,58 @@ class StudentUnitRegistrationService
             return $requested;
         }
 
-        return $periodOptions->keys()->first() ?? 'sem-1';
+        return $this->cohortPeriodKey($program, $periodOptions, $students);
+    }
+
+    /**
+     * Open the desk on the semester the listed students are actually sitting, so the
+     * units they are due for are the ones already on screen.
+     *
+     * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
+     * @param  Collection<int, Student>  $students
+     */
+    private function cohortPeriodKey(AcademicProgram $program, Collection $periodOptions, Collection $students): string
+    {
+        $fallback = $periodOptions->keys()->first() ?? 'sem-1';
+
+        if ($students->isEmpty()) {
+            return $fallback;
+        }
+
+        $semesterNumbers = Semester::query()
+            ->whereIn('id', $students->pluck('current_semester_id')->filter()->unique()->all())
+            ->pluck('semester_number', 'id');
+
+        $keys = $students
+            ->map(fn (Student $student) => $this->studentPeriodKey($program, $student, $semesterNumbers))
+            ->filter()
+            ->values();
+
+        if ($keys->isEmpty()) {
+            return $fallback;
+        }
+
+        $key = $keys->countBy()->sortDesc()->keys()->first();
+
+        return $periodOptions->has($key) ? $key : $fallback;
+    }
+
+    /**
+     * @param  Collection<int, int>  $semesterNumbers
+     */
+    private function studentPeriodKey(AcademicProgram $program, Student $student, Collection $semesterNumbers): ?string
+    {
+        if ($program->usesBlocks()) {
+            return $student->current_nursing_block_id ? 'block-'.$student->current_nursing_block_id : null;
+        }
+
+        $period = $student->current_semester_id ? $semesterNumbers[$student->current_semester_id] ?? null : null;
+
+        if (! $period && $student->current_year) {
+            $period = ((int) $student->current_year - 1) * $program->termsPerYear() + 1;
+        }
+
+        return $period ? 'sem-'.(int) $period : null;
     }
 
     /**

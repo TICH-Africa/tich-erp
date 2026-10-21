@@ -185,9 +185,10 @@
                                                         <input type="checkbox" name="students[]" value="{{ $student->id }}" class="tich-checkbox" data-reg-student>
                                                     </td>
                                                     <td>
-                                                        <strong>{{ $student->applicant?->fullName() ?? $student->registration_number }}</strong>
+                                                        <strong>{{ $student->displayName() }}</strong>
                                                         <span class="tich-caption" style="display:block;">
                                                             {{ $student->registration_number }}
+                                                            · {{ $student->campus?->campus_name ?? 'campus not set' }}
                                                             · {{ $student->cohort_intake ?: 'no cohort' }}
                                                             · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
                                                             · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
@@ -245,7 +246,10 @@
     <article class="tich-card tich-mt-6">
         <div class="tich-dept-panel__head">
             <h2 class="tich-h3">Student records</h2>
-            <p class="tich-text">Registered units, CAT marks, exam results and grades per student.</p>
+            <p class="tich-text">
+                Registered units, CAT marks, exam results and grades per student, grouped by the campus they are enrolled at.
+                Everyone listed is on {{ $program->program_code }} under {{ $program->department?->dept_name }}.
+            </p>
         </div>
 
         @if ($otherStudents->isNotEmpty())
@@ -258,12 +262,18 @@
             </div>
         @endif
 
+        @php
+            $rosterDetailRoute = fn ($student) => route('departments.academics.programs.curriculum', array_merge($filterParams, ['student' => $student->id]));
+            $rosterSisRoute = fn ($student) => route('sis.students.show', $student).'#academic-record';
+        @endphp
+
         @include('sis.partials.student-roster-table', [
             'students' => $matchedStudents,
             'summaries' => $enrolledSummaries,
+            'groupByCampus' => true,
             'emptyMessage' => 'No enrolled students for this intake yet. Students appear here after applications are approved and enrollment is created.',
-            'detailRoute' => fn ($student) => route('departments.academics.programs.curriculum', array_merge($filterParams, ['student' => $student->id])),
-            'sisRoute' => fn ($student) => route('sis.students.show', $student).'#academic-record',
+            'detailRoute' => $rosterDetailRoute,
+            'sisRoute' => $rosterSisRoute,
         ])
 
         @if ($otherStudents->isNotEmpty())
@@ -272,9 +282,10 @@
                 @include('sis.partials.student-roster-table', [
                     'students' => $otherStudents,
                     'summaries' => $enrolledSummaries,
+                    'groupByCampus' => true,
                     'emptyMessage' => '',
-                    'detailRoute' => fn ($student) => route('departments.academics.programs.curriculum', array_merge($filterParams, ['student' => $student->id])),
-                    'sisRoute' => fn ($student) => route('sis.students.show', $student).'#academic-record',
+                    'detailRoute' => $rosterDetailRoute,
+                    'sisRoute' => $rosterSisRoute,
                 ])
             </div>
         @endif
@@ -284,7 +295,7 @@
         <article class="tich-card tich-mt-6" id="student-detail">
             <div class="tich-dept-panel__head">
                 <h2 class="tich-h3">
-                    {{ $expandedStudentRecord['student']->applicant?->fullName() ?? $expandedStudentRecord['student']->registration_number }}
+                    {{ $expandedStudentRecord['student']->displayName() }}
                 </h2>
                 <p class="tich-text">
                     {{ $expandedStudentRecord['student']->registration_number }}
