@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../navigation/tich_root_nav.dart';
 import '../shell/portal_nav_counts_scope.dart';
+import '../shell/student_portal_menu_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'clearance_page.dart';
@@ -22,8 +24,7 @@ class StudentMorePage extends StatelessWidget {
   static List<TichMoreItem> mainItems(BuildContext context, StudentApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    void open(Widget page) =>
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    void open(Widget page) => TichRootNav.push(page);
 
     int badge(String key) => nav?.countFor(key) ?? 0;
 
@@ -32,6 +33,8 @@ class StudentMorePage extends StatelessWidget {
         label: 'My profile',
         icon: Icons.person_outline,
         badgeCount: badge('profile'),
+        showProfilePhoto: true,
+        photoUrl: StudentPortalMenuScope.photoUrlOf(context),
         onTap: () => open(StudentProfilePage(api: api)),
       ),
       TichMoreItem(

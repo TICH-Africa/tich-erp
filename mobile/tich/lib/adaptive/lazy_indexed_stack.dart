@@ -52,10 +52,12 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       children: [
         for (var i = 0; i < widget.children.length; i++)
           _activated[i]
-              ? TichTabActiveScope(
-                  activeIndex: widget.index,
-                  tabIndex: i,
-                  child: widget.children[i],
+              ? RepaintBoundary(
+                  child: TichTabActiveScope(
+                    activeIndex: widget.index,
+                    tabIndex: i,
+                    child: widget.children[i],
+                  ),
                 )
               : const SizedBox.shrink(),
       ],

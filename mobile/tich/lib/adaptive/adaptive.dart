@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/tich_theme.dart';
+import '../ui/shell/portal_nav_counts_scope.dart';
 import '../ui/widgets/tich_form_dialog.dart';
 import '../ui/widgets/tich_live_refresh.dart';
 import '../ui/widgets/tich_nav_badge.dart';
@@ -344,8 +345,9 @@ abstract final class TichPortal {
 class AdaptiveTabScaffold extends StatefulWidget {
   const AdaptiveTabScaffold({
     super.key,
-    required this.currentIndex,
-    required this.onTap,
+    this.currentIndex,
+    this.onTap,
+    this.onTabSelected,
     required this.pages,
     required this.items,
     this.portalName,
@@ -354,8 +356,11 @@ class AdaptiveTabScaffold extends StatefulWidget {
     this.onSignOut,
   });
 
-  final int currentIndex;
-  final ValueChanged<int> onTap;
+  /// When set, the parent drives the selected tab (tests). Otherwise tabs are
+  /// managed internally so badge polls do not rebuild every page.
+  final int? currentIndex;
+  final ValueChanged<int>? onTap;
+  final ValueChanged<int>? onTabSelected;
   final List<Widget> pages;
   final List<AdaptiveTabItem> items;
   final String? portalName;
@@ -364,21 +369,34 @@ class AdaptiveTabScaffold extends StatefulWidget {
   final VoidCallback? onSignOut;
 
   @override
-  State<AdaptiveTabScaffold> createState() => _AdaptiveTabScaffoldState();
+  State<AdaptiveTabScaffold> createState() => AdaptiveTabScaffoldState();
 }
 
-class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
+class AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final PortalNavCountsModel _navCounts = PortalNavCountsModel();
+  int _internalIndex = 0;
+  late List<AdaptiveTabItem> _navItems;
+
+  int get _selectedIndex => widget.currentIndex ?? _internalIndex;
 
   @override
   void initState() {
     super.initState();
+    _navItems = widget.items;
+    _internalIndex = widget.currentIndex ?? 0;
     _publishPortal();
   }
 
   @override
   void didUpdateWidget(AdaptiveTabScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.currentIndex != null) {
+      _internalIndex = widget.currentIndex!;
+    }
+    if (widget.items != oldWidget.items && widget.currentIndex != null) {
+      _navItems = widget.items;
+    }
     _publishPortal();
   }
 
@@ -389,7 +407,30 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
       TichPortal.name = null;
       TichPortal.onSignOut = null;
     }
+    _navCounts.dispose();
     super.dispose();
+  }
+
+  /// Refresh bottom-nav badges without rebuilding from the portal shell.
+  void updateNavItems(List<AdaptiveTabItem> items) {
+    if (!mounted || _navItemsVisualEquals(_navItems, items)) return;
+    setState(() => _navItems = items);
+  }
+
+  void updateNavCounts(Map<String, int> counts) {
+    _navCounts.update(counts);
+  }
+
+  void selectTab(int index) {
+    if (index < 0 || index >= widget.pages.length) return;
+    if (widget.currentIndex != null) {
+      widget.onTap?.call(index);
+      return;
+    }
+    if (_internalIndex == index) return;
+    setState(() => _internalIndex = index);
+    widget.onTap?.call(index);
+    widget.onTabSelected?.call(index);
   }
 
   void _publishPortal() {
@@ -403,20 +444,31 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
       _scaffoldKey.currentState?.openDrawer();
       return;
     }
-    widget.onTap(index);
+    selectTab(index);
+  }
+
+  Widget? _buildDrawer(BuildContext context) {
+    if (widget.moreDrawer == null) return null;
+    return ListenableBuilder(
+      listenable: _navCounts,
+      builder: (ctx, _) => PortalNavCountsScope(
+        counts: _navCounts.counts,
+        child: Builder(builder: widget.moreDrawer!),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    assert(widget.pages.length == widget.items.length);
+    assert(widget.pages.length == _navItems.length);
 
     if (usesCupertino) {
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
-          currentIndex: widget.currentIndex,
-          onTap: widget.onTap,
+          currentIndex: _selectedIndex,
+          onTap: _handleTap,
           items: [
-            for (final item in widget.items)
+            for (final item in _navItems)
               BottomNavigationBarItem(
                 icon: item._cupertinoIcon(active: false),
                 activeIcon: item._cupertinoIcon(active: true),
@@ -425,7 +477,7 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
           ],
         ),
         tabBuilder: (context, index) => TichTabActiveScope(
-          activeIndex: widget.currentIndex,
+          activeIndex: _selectedIndex,
           tabIndex: index,
           child: widget.pages[index],
         ),
@@ -434,21 +486,19 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: widget.moreDrawer == null
-          ? null
-          : Builder(builder: widget.moreDrawer!),
+      drawer: _buildDrawer(context),
       body: LazyIndexedStack(
-        index: widget.currentIndex,
+        index: _selectedIndex,
         children: widget.pages,
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarTheme.of(context).copyWith(height: 68),
         child: NavigationBar(
-          selectedIndex: widget.currentIndex,
+          selectedIndex: _selectedIndex,
           onDestinationSelected: _handleTap,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
-            for (final item in widget.items)
+            for (final item in _navItems)
               NavigationDestination(
                 icon: item._materialIcon(active: false),
                 selectedIcon: item._materialIcon(active: true),
@@ -459,6 +509,24 @@ class _AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
       ),
     );
   }
+}
+
+bool _navItemsVisualEquals(
+  List<AdaptiveTabItem> a,
+  List<AdaptiveTabItem> b,
+) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    final x = a[i];
+    final y = b[i];
+    if (x.label != y.label ||
+        x.badgeCount != y.badgeCount ||
+        x.badgeDotOnly != y.badgeDotOnly ||
+        x.badgePulse != y.badgePulse) {
+      return false;
+    }
+  }
+  return true;
 }
 
 class AdaptiveTabItem {

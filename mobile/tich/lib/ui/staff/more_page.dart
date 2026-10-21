@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../adaptive/adaptive.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
 import '../../data/staff_api.dart';
+import '../../navigation/tich_root_nav.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
@@ -20,8 +17,7 @@ class StaffMorePage extends StatelessWidget {
   static List<TichMoreItem> mainItems(BuildContext context, StaffApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    void open(Widget page) =>
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    void open(Widget page) => TichRootNav.push(page);
 
     int badge(String key) => nav?.countFor(key) ?? 0;
 
@@ -42,11 +38,6 @@ class StaffMorePage extends StatelessWidget {
         label: 'Learning content',
         icon: Icons.layers_outlined,
         onTap: () => open(StaffContentPage(api: api)),
-      ),
-      TichMoreItem(
-        label: 'Sign out',
-        icon: Icons.logout,
-        onTap: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
       ),
     ];
 

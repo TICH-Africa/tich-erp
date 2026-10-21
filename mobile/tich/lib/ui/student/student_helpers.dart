@@ -19,6 +19,33 @@ String money(dynamic value) {
   return 'KES ${n.toStringAsFixed(2)}';
 }
 
+/// Human-readable attendance band for student portal (matches mobile API labels).
+String studentAttendanceStatusLabel(Map<String, dynamic> row) {
+  final fromApi = row['status_label']?.toString().trim();
+  if (fromApi != null && fromApi.isNotEmpty) return fromApi;
+
+  final pct = row['attendance_percentage'] is num
+      ? (row['attendance_percentage'] as num).toDouble()
+      : double.tryParse('${row['attendance_percentage']}') ?? 0;
+  if (pct >= 90) return 'Excellent';
+  if (pct >= 75) return 'Good';
+  if (pct >= 60) return 'Average';
+
+  final flag = row['status_flag']?.toString().toLowerCase();
+  if (flag == 'amber') return 'Needs improvement';
+  return 'At risk';
+}
+
+TichChipTone studentAttendanceTone(Map<String, dynamic> row) {
+  final pct = row['attendance_percentage'] is num
+      ? (row['attendance_percentage'] as num).toDouble()
+      : double.tryParse('${row['attendance_percentage']}') ?? 0;
+  if (pct >= 90) return TichChipTone.success;
+  if (pct >= 75) return TichChipTone.info;
+  if (pct >= 60) return TichChipTone.warning;
+  return TichChipTone.danger;
+}
+
 String dayName(int? day, Map? labels) {
   if (day == null) return '—';
   if (labels != null && labels['$day'] != null) return labels['$day'].toString();

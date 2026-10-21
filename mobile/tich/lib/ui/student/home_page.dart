@@ -33,6 +33,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
   late Future<Map<String, dynamic>> _future;
   int _unread = 0;
   Map<String, dynamic>? _nextLesson;
+  DateTime? _lastTimetablePrime;
 
   @override
   void initState() {
@@ -73,12 +74,19 @@ class _StudentHomePageState extends State<StudentHomePage> {
           _future = Future.value(data);
           _unread = unread;
         });
-        unawaited(_primeLessonReminders());
       }).catchError((_) {}),
     );
   }
 
-  Future<void> _primeLessonReminders() async {
+  Future<void> _primeLessonReminders({bool force = false}) async {
+    final now = DateTime.now();
+    if (!force &&
+        _lastTimetablePrime != null &&
+        now.difference(_lastTimetablePrime!) <
+            const Duration(minutes: 20)) {
+      return;
+    }
+    _lastTimetablePrime = now;
     try {
       final tt = await widget.api.timetable();
       final sessions = lessonSessionsFromTimetablePayload(tt);

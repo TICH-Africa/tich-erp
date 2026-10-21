@@ -73,7 +73,7 @@ trait SerializesStudentPortal
             'grades' => $this->mapRows($a['grades'] ?? []),
             'cat_scores' => $this->mapRows($a['cat_scores'] ?? []),
             'exam_results' => $this->mapRows($a['exam_results'] ?? []),
-            'attendance' => $this->mapRows($a['attendance'] ?? []),
+            'attendance' => $this->serializeAttendance($a['attendance'] ?? []),
             'registrations' => $this->mapRows($a['registrations'] ?? []),
             'periods' => collect($a['periods'] ?? [])->map(fn ($p) => [
                 'id' => $p->id ?? null,
@@ -109,7 +109,7 @@ trait SerializesStudentPortal
                     ] : null,
                 ];
             })->values()->all(),
-            'exam_portal' => $a['exam_portal'] ?? null,
+            'exam_portal' => $this->serializeExamPortal($a['exam_portal'] ?? null),
             'transcript' => $portalData['transcript'] ?? ['available' => false, 'units_completed' => 0],
         ];
     }
@@ -199,5 +199,74 @@ trait SerializesStudentPortal
 
             return ['value' => $row];
         })->values()->all();
+    }
+
+    /**
+     * @param  iterable<int, mixed>  $rows
+     * @return list<array<string, mixed>>
+     */
+    protected function serializeAttendance(iterable $rows): array
+    {
+        return collect($rows)->map(function ($row) {
+            $arr = $this->mapRows([$row])[0] ?? [];
+            $pct = (float) ($arr['attendance_percentage'] ?? 0);
+            $arr['status_label'] = $this->attendanceStatusLabel(
+                $arr['status_flag'] ?? null,
+                $pct,
+            );
+
+            return $arr;
+        })->values()->all();
+    }
+
+    protected function attendanceStatusLabel(?string $flag, float $percentage): string
+    {
+        if ($percentage >= 90) {
+            return 'Excellent';
+        }
+        if ($percentage >= 75) {
+            return 'Good';
+        }
+        if ($percentage >= 60) {
+            return 'Average';
+        }
+
+        return match ($flag) {
+            'red' => 'At risk',
+            'amber' => 'Needs improvement',
+            default => 'At risk',
+        };
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function serializeExamPortal(mixed $portal): ?array
+    {
+        if (! is_array($portal)) {
+            return null;
+        }
+
+        $card = $portal['exam_card'] ?? null;
+
+        return [
+            'semester_id' => $portal['semester_id'] ?? null,
+            'semester_label' => $portal['semester_label'] ?? null,
+            'can_view_exam_card' => (bool) ($portal['can_view_exam_card'] ?? false),
+            'exam_card' => $card ? [
+                'exam_card_number' => $card->exam_card_number ?? null,
+                'examination_number' => $card->examination_number ?? null,
+            ] : null,
+            'upcoming_exams' => collect($portal['upcoming_exams'] ?? [])->map(fn ($exam) => [
+                'unit_code' => $exam->unit_code ?? null,
+                'unit_name' => $exam->unit_name ?? null,
+                'exam_date' => $exam->exam_date ?? null,
+                'start_time' => $exam->start_time ?? null,
+                'end_time' => $exam->end_time ?? null,
+                'venue' => $exam->venue ?? null,
+                'exam_type' => $exam->exam_type ?? null,
+                'eligible_for_exams' => (bool) ($exam->eligible_for_exams ?? false),
+            ])->values()->all(),
+        ];
     }
 }

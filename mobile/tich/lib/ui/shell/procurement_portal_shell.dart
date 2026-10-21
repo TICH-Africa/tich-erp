@@ -26,14 +26,10 @@ class ProcurementPortalShell extends StatefulWidget {
 
 class _ProcurementPortalShellState extends State<ProcurementPortalShell>
     with WidgetsBindingObserver, ShellNavBadgeMixin {
-  int _index = 0;
+  final GlobalKey<AdaptiveTabScaffoldState> _scaffoldKey =
+      GlobalKey<AdaptiveTabScaffoldState>();
   List<Widget>? _pages;
-  Map<String, int> _counts = const {};
-  int _homeBadge = 0;
-  int _requisitionsBadge = 0;
-  int _stockIssuesBadge = 0;
-  int _suppliersBadge = 0;
-  int _moreDot = 0;
+  Widget? _root;
 
   @override
   void initState() {
@@ -52,7 +48,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_pages != null) return;
+    if (_root != null) return;
     final api = context.read<ProcurementApi>();
     _pages = [
       ProcurementHomePage(api: api),
@@ -61,9 +57,25 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       ProcurementSuppliersPage(api: api),
       ProcurementMorePage(api: api),
     ];
+    _root = AdaptiveTabScaffold(
+      key: _scaffoldKey,
+      pages: _pages!,
+      portalName: 'Procurement',
+      onSignOut: tichLogout(context),
+      moreIndex: 4,
+      onTabSelected: (i) {
+        if (i <= 3) refreshNavBadges();
+      },
+      moreDrawer: (context) => TichMoreDrawer(
+        portalName: 'Procurement',
+        menuContext: TichPortalMenuContext.procurement,
+        items: ProcurementMorePage.mainItems(context, api),
+      ),
+      items: _tabItems(const {}),
+    );
   }
 
-  void _applyCounts(Map<String, int> counts) {
+  List<AdaptiveTabItem> _tabItems(Map<String, int> counts) {
     var home = 0;
     for (final key in procurementHomeBadgeKeys) {
       home += counts[key] ?? 0;
@@ -76,14 +88,50 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
         moreDot += counts[countKey] ?? 0;
       }
     }
-    setState(() {
-      _counts = counts;
-      _homeBadge = home;
-      _requisitionsBadge = counts['requisitions.pending'] ?? 0;
-      _stockIssuesBadge = counts['stock-issues.pending'] ?? 0;
-      _suppliersBadge = counts['suppliers.pending'] ?? 0;
-      _moreDot = moreDot > 0 ? 1 : 0;
-    });
+
+    return [
+      AdaptiveTabItem(
+        label: 'Home',
+        materialIcon: Icons.home_outlined,
+        materialActiveIcon: Icons.home,
+        cupertinoIcon: CupertinoIcons.house,
+        cupertinoActiveIcon: CupertinoIcons.house_fill,
+        badgeCount: home,
+      ),
+      AdaptiveTabItem(
+        label: 'Requisitions',
+        materialIcon: Icons.assignment_outlined,
+        materialActiveIcon: Icons.assignment,
+        cupertinoIcon: CupertinoIcons.doc_text,
+        cupertinoActiveIcon: CupertinoIcons.doc_text_fill,
+        badgeCount: counts['requisitions.pending'] ?? 0,
+      ),
+      AdaptiveTabItem(
+        label: 'Stock issues',
+        materialIcon: Icons.output_outlined,
+        materialActiveIcon: Icons.output,
+        cupertinoIcon: CupertinoIcons.arrow_up_doc,
+        cupertinoActiveIcon: CupertinoIcons.arrow_up_doc_fill,
+        badgeCount: counts['stock-issues.pending'] ?? 0,
+      ),
+      AdaptiveTabItem(
+        label: 'Suppliers',
+        materialIcon: Icons.storefront_outlined,
+        materialActiveIcon: Icons.storefront,
+        cupertinoIcon: CupertinoIcons.building_2_fill,
+        cupertinoActiveIcon: CupertinoIcons.building_2_fill,
+        badgeCount: counts['suppliers.pending'] ?? 0,
+      ),
+      AdaptiveTabItem(
+        label: 'More',
+        materialIcon: Icons.menu,
+        materialActiveIcon: Icons.menu_open,
+        cupertinoIcon: CupertinoIcons.ellipsis_circle,
+        cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
+        badgeCount: moreDot > 0 ? 1 : 0,
+        badgeDotOnly: true,
+      ),
+    ];
   }
 
   @override
@@ -94,7 +142,9 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       try {
         final data = await api.sidebarNotifications();
         if (!mounted) return;
-        _applyCounts(parseSidebarCounts(data['counts']));
+        final counts = parseSidebarCounts(data['counts']);
+        _scaffoldKey.currentState?.updateNavCounts(counts);
+        _scaffoldKey.currentState?.updateNavItems(_tabItems(counts));
       } catch (_) {}
     });
     return Future.value();
@@ -102,70 +152,6 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
 
   @override
   Widget build(BuildContext context) {
-    return PortalNavCountsScope(
-      counts: _counts,
-      child: AdaptiveTabScaffold(
-        currentIndex: _index,
-        onTap: (i) {
-          setState(() => _index = i);
-          if (i <= 3) refreshNavBadges();
-        },
-        pages: _pages!,
-        portalName: 'Procurement',
-        onSignOut: tichLogout(context),
-        moreIndex: 4,
-        moreDrawer: (context) => TichMoreDrawer(
-          portalName: 'Procurement',
-          menuContext: TichPortalMenuContext.procurement,
-          items: ProcurementMorePage.mainItems(
-            context,
-            context.read<ProcurementApi>(),
-          ),
-        ),
-        items: [
-          AdaptiveTabItem(
-            label: 'Home',
-            materialIcon: Icons.home_outlined,
-            materialActiveIcon: Icons.home,
-            cupertinoIcon: CupertinoIcons.house,
-            cupertinoActiveIcon: CupertinoIcons.house_fill,
-            badgeCount: _homeBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Requisitions',
-            materialIcon: Icons.assignment_outlined,
-            materialActiveIcon: Icons.assignment,
-            cupertinoIcon: CupertinoIcons.doc_text,
-            cupertinoActiveIcon: CupertinoIcons.doc_text_fill,
-            badgeCount: _requisitionsBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Stock issues',
-            materialIcon: Icons.output_outlined,
-            materialActiveIcon: Icons.output,
-            cupertinoIcon: CupertinoIcons.arrow_up_doc,
-            cupertinoActiveIcon: CupertinoIcons.arrow_up_doc_fill,
-            badgeCount: _stockIssuesBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Suppliers',
-            materialIcon: Icons.storefront_outlined,
-            materialActiveIcon: Icons.storefront,
-            cupertinoIcon: CupertinoIcons.building_2_fill,
-            cupertinoActiveIcon: CupertinoIcons.building_2_fill,
-            badgeCount: _suppliersBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'More',
-            materialIcon: Icons.menu,
-            materialActiveIcon: Icons.menu_open,
-            cupertinoIcon: CupertinoIcons.ellipsis_circle,
-            cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
-            badgeCount: _moreDot,
-            badgeDotOnly: true,
-          ),
-        ],
-      ),
-    );
+    return _root ?? const SizedBox.shrink();
   }
 }

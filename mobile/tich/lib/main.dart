@@ -25,6 +25,7 @@ import 'ui/portal/portal_chooser_page.dart';
 import 'ui/shell/portal_shell.dart';
 import 'ui/shell/procurement_portal_shell.dart';
 import 'ui/shell/staff_portal_shell.dart';
+import 'navigation/tich_root_nav.dart';
 import 'ui/shell/student_portal_shell.dart';
 
 Future<void> main() async {
@@ -38,8 +39,6 @@ Future<void> main() async {
 
 class TichApp extends StatefulWidget {
   const TichApp({super.key});
-
-  static final rootNavigatorKey = GlobalKey<NavigatorState>();
 
   @override
   State<TichApp> createState() => _TichAppState();
@@ -78,7 +77,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
 
   void _tryApplyNotificationRoute() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = TichApp.rootNavigatorKey.currentContext;
+      final ctx = TichRootNav.navigatorKey.currentContext;
       if (ctx == null) return;
       final auth = _authBloc.state;
       if (auth is AuthAuthenticated) {
@@ -128,7 +127,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
           builder: (context, _) {
             return AdaptiveApp(
               title: 'TICH in Africa',
-              navigatorKey: TichApp.rootNavigatorKey,
+              navigatorKey: TichRootNav.navigatorKey,
               materialTheme: _lightTheme,
               materialDarkTheme: _darkTheme,
               themeMode: _settings.themeMode,

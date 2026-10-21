@@ -12,7 +12,7 @@ final RouteObserver<ModalRoute<void>> tichRouteObserver =
     RouteObserver<ModalRoute<void>>();
 
 /// Default background poll interval while a screen is visible (WhatsApp-style).
-const Duration tichLiveRefreshInterval = Duration(seconds: 25);
+const Duration tichLiveRefreshInterval = Duration(seconds: 60);
 
 /// Hook for [TichLiveRefreshBinder] → [TichLiveData] silent updates (no [FutureBuilder] swap).
 class TichAsyncRefreshHandle {

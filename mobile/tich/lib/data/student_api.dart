@@ -9,6 +9,12 @@ class StudentApi {
 
   Future<Map<String, dynamic>> academics() => _client.get('/student/academics');
 
+  Future<List<int>> downloadExamCardPdf({required int semesterId}) =>
+      _client.getBytes(
+        '/student/academics/exam-card/pdf',
+        query: {'semester': '$semesterId'},
+      );
+
   Future<Map<String, dynamic>> timetable() => _client.get('/student/timetable');
 
   Future<Map<String, dynamic>> finance() => _client.get('/student/finance');
