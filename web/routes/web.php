@@ -982,6 +982,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'index'])->name('ict.registration-invites.index');
         Route::post('/registration-invites', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'store'])->name('ict.registration-invites.store');
         Route::post('/registration-invites/{invitation}/resend', [\App\Http\Controllers\Ict\RegistrationInviteController::class, 'resend'])->name('ict.registration-invites.resend');
+        Route::get('/student-invites', [\App\Http\Controllers\Ict\StudentInviteController::class, 'index'])->name('ict.student-invites.index');
+        Route::post('/student-invites', [\App\Http\Controllers\Ict\StudentInviteController::class, 'store'])->name('ict.student-invites.store');
+        Route::post('/student-invites/{student}/resend', [\App\Http\Controllers\Ict\StudentInviteController::class, 'resend'])->name('ict.student-invites.resend');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');

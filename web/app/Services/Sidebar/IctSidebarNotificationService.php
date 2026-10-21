@@ -5,6 +5,7 @@ namespace App\Services\Sidebar;
 use App\Events\IctSidebarCountsUpdated;
 use App\Models\ErpRegistrationInvitation;
 use App\Models\Portal\CmsPage;
+use App\Models\Student;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use App\Support\SafelyBroadcasts;
 use Illuminate\Support\Facades\Cache;
@@ -22,11 +23,12 @@ class IctSidebarNotificationService
     /** @var array<string, string> */
     public const MENU_KEYS = [
         'invites' => 'ERP registration invites',
+        'student_invites' => 'Student portal invites',
         'pages' => 'Legal pages',
     ];
 
     /** @var list<string> */
-    public const DASHBOARD_LEAF_KEYS = ['invites', 'pages'];
+    public const DASHBOARD_LEAF_KEYS = ['invites', 'student_invites', 'pages'];
 
     /**
      * @return array<string, int>
@@ -84,8 +86,18 @@ class IctSidebarNotificationService
             $pages = CmsPage::query()->where('status', 'draft')->count();
         }
 
+        $studentInvites = 0;
+        if (Schema::hasTable('students')) {
+            $studentInvites = Student::query()
+                ->where('is_active', 1)
+                ->whereNull('user_id')
+                ->whereNull('portal_activated_at')
+                ->count();
+        }
+
         return [
             'invites' => $invites,
+            'student_invites' => $studentInvites,
             'pages' => $pages,
         ];
     }

@@ -35,25 +35,30 @@
                 <h3 class="tich-mod-dash__nav-title">Registration invites</h3>
                 <p class="tich-mod-dash__nav-text">Invite staff to create ERP portal accounts.</p>
             </a>
+            <a href="{{ route('ict.student-invites.index') }}" class="tich-mod-dash__nav-card">
+                <span class="tich-mod-dash__nav-index">03</span>
+                <h3 class="tich-mod-dash__nav-title">Student portal invites</h3>
+                <p class="tich-mod-dash__nav-text">Send enrolled students their portal activation link.</p>
+            </a>
             @can('users.access.manage')
                 <a href="{{ route('ict.users.index') }}" class="tich-mod-dash__nav-card">
-                    <span class="tich-mod-dash__nav-index">03</span>
+                    <span class="tich-mod-dash__nav-index">04</span>
                     <h3 class="tich-mod-dash__nav-title">Users &amp; access</h3>
                     <p class="tich-mod-dash__nav-text">Manage user accounts and module access.</p>
                 </a>
                 <a href="{{ route('ict.roles.index') }}" class="tich-mod-dash__nav-card">
-                    <span class="tich-mod-dash__nav-index">04</span>
+                    <span class="tich-mod-dash__nav-index">05</span>
                     <h3 class="tich-mod-dash__nav-title">User roles</h3>
                     <p class="tich-mod-dash__nav-text">Configure roles and permission categories.</p>
                 </a>
             @endcan
             <a href="{{ route('ict.content.blogs.index') }}" class="tich-mod-dash__nav-card">
-                <span class="tich-mod-dash__nav-index">05</span>
+                <span class="tich-mod-dash__nav-index">06</span>
                 <h3 class="tich-mod-dash__nav-title">Website content</h3>
                 <p class="tich-mod-dash__nav-text">Blogs, events, courses, and legal pages.</p>
             </a>
             <a href="{{ route('ict.content.about.index') }}" class="tich-mod-dash__nav-card">
-                <span class="tich-mod-dash__nav-index">06</span>
+                <span class="tich-mod-dash__nav-index">07</span>
                 <h3 class="tich-mod-dash__nav-title">About Us</h3>
                 <p class="tich-mod-dash__nav-text">Edit public About Us content blocks.</p>
             </a>

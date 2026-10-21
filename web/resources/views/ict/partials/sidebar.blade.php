@@ -24,6 +24,7 @@
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.courses.index'), 'label' => 'Courses', 'icon' => 'graduation-cap', 'active' => request()->routeIs('ict.content.courses.*')])
 
         @include('partials.navigation.sidebar-link', ['href' => route('ict.registration-invites.index'), 'label' => 'ERP registration invites', 'icon' => 'mail', 'active' => request()->routeIs('ict.registration-invites.*'), 'badgeKey' => 'invites'])
+        @include('partials.navigation.sidebar-link', ['href' => route('ict.student-invites.index'), 'label' => 'Student portal invites', 'icon' => 'mail', 'active' => request()->routeIs('ict.student-invites.*'), 'badgeKey' => 'student_invites'])
         @can('users.access.manage')
             @include('partials.navigation.sidebar-link', ['href' => route('ict.users.index'), 'label' => 'Users & access', 'icon' => 'users', 'active' => request()->routeIs('ict.users.*')])
             @include('partials.navigation.sidebar-link', ['href' => route('ict.roles.index'), 'label' => 'User roles', 'icon' => 'shield', 'active' => request()->routeIs('ict.roles.*', 'ict.role-categories.*')])
