@@ -28,7 +28,7 @@ abstract final class TichRootNav {
   static void pushAndRemoveUntil(Widget page) {
     navigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => page),
-      (route) => false,
+      (route) => route.isFirst,
     );
   }
 }

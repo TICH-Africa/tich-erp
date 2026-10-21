@@ -65,9 +65,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   bool _canSwitchToEmployee(AuthUser? user) {
     if (user == null || user.isStudent) return false;
-    return user.canAccessEmployeePortal ||
-        user.hasBothStaffPortals ||
-        (user.staffId != null && user.isTeachingStaff);
+    return user.canAccessEmployeePortal;
   }
 
   @override

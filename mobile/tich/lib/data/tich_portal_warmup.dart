@@ -15,11 +15,10 @@ abstract final class TichPortalWarmup {
   static void studentShellOpened(StudentApi api) {
     _cancelDeferred();
     TichScreenCache.warm('student.home', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 4), () {
+    _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('student.academics', () => api.academics()),
         () => TichScreenCache.warm('student.timetable', () => api.timetable()),
-        () => TichScreenCache.warm('student.finance', () => api.finance()),
+        () => TichScreenCache.warm('student.academics', () => api.academics()),
       ]);
     });
   }
@@ -40,26 +39,15 @@ abstract final class TichPortalWarmup {
   }
 
   /// More drawer links — warm only when the user opens the menu.
-  static void studentMoreOpened(StudentApi api) {
-    unawaited(_runDeferred([
-      () => TichScreenCache.warm('student.profile', () => api.profile()),
-      () => TichScreenCache.warm('student.documents', () => api.documents()),
-      () => TichScreenCache.warm('student.enrolment', () => api.profile()),
-      () => TichScreenCache.warm('student.clearance', () => api.clearance()),
-      () => TichScreenCache.warm('student.evaluations', () => api.evaluations()),
-      () => TichScreenCache.warm('student.lifecycle', () => api.lifecycleRequests()),
-      () => TichScreenCache.warm('student.notifications', () => api.notifications()),
-    ]));
-  }
+  static void studentMoreOpened(StudentApi api) {}
 
   static void staffShellOpened(StaffApi api) {
     _cancelDeferred();
     TichScreenCache.warm('staff.home', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 4), () {
+    _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('staff.units', () => api.units()),
         () => TichScreenCache.warm('staff.timetable', () => api.timetable()),
-        () => TichScreenCache.warm('staff.attendance', () => api.attendance()),
+        () => TichScreenCache.warm('staff.units', () => api.units()),
       ]);
     });
   }
@@ -79,29 +67,15 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  static void staffMoreOpened(StaffApi api) {
-    unawaited(_runDeferred([
-      () => TichScreenCache.warm('staff.grading', () => api.grading()),
-      () => TichScreenCache.warm('staff.content', () => api.content()),
-      () => TichScreenCache.warm('staff.lesson_plans', () => api.lessonPlans()),
-    ]));
-  }
+  static void staffMoreOpened(StaffApi api) {}
 
   static void employeeShellOpened(EmployeeApi api) {
     _cancelDeferred();
-    TichScreenCache.warm('portal.dashboard', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 4), () {
+    // Home tab owns `portal.dashboard`; prefetch other tabs only after idle.
+    _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('portal.attendance', () => api.attendance()),
         () => TichScreenCache.warm('portal.leave', () => api.leave()),
-        () => TichScreenCache.warm('portal.payslips_bundle', () async {
-            final payslips = await api.payslips();
-            final dashboard = await api.dashboard();
-            return {
-              'payslips': payslips['payslips'],
-              'compensation': dashboard['compensation'],
-            };
-          }),
+        () => TichScreenCache.warm('portal.attendance', () => api.attendance()),
       ]);
     });
   }
@@ -121,19 +95,8 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  static void employeeMoreOpened(EmployeeApi api) {
-    unawaited(_runDeferred([
-      () => TichScreenCache.warm('portal.profile', () => api.profile()),
-      () => TichScreenCache.warm('portal.documents', () => api.documents()),
-      () => TichScreenCache.warm('portal.notifications', () => api.notifications()),
-      () => TichScreenCache.warm('portal.time_logs', () => api.timeLogs()),
-      () => TichScreenCache.warm('portal.policies', () => api.policies()),
-      () => TichScreenCache.warm('portal.concerns', () => api.concerns()),
-      () => TichScreenCache.warm('portal.feedback', () => api.feedback()),
-      () => TichScreenCache.warm('portal.wfh', () => api.wfh()),
-      () => TichScreenCache.warm('portal.appraisals', () => api.appraisals()),
-    ]));
-  }
+  /// Drawer open — avoid blasting the API; screens warm on navigation.
+  static void employeeMoreOpened(EmployeeApi api) {}
 
   static void procurementShellOpened(ProcurementApi api) {
     TichScreenCache.warm('procurement.home', () => api.dashboard());

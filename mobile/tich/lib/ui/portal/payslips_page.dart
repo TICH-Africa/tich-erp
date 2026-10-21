@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
@@ -25,12 +26,11 @@ class _PayslipsPageState extends State<PayslipsPage> {
   bool _showCompensation = false;
 
   Future<Map<String, dynamic>> _fetchAll() async {
-    final results = await Future.wait([
-      widget.api.payslips(),
-      widget.api.dashboard(),
-    ]);
-    final payslips = results[0] as Map<String, dynamic>;
-    final dashboard = results[1] as Map<String, dynamic>;
+    final payslips = await widget.api.payslips();
+    final dashboard = await TichScreenCache.ensure<Map<String, dynamic>>(
+      'portal.dashboard',
+      () => widget.api.dashboard(),
+    );
     return {
       'payslips': payslips['payslips'],
       'compensation': dashboard['compensation'],

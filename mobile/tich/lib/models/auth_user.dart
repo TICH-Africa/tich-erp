@@ -28,7 +28,7 @@ class AuthUser extends Equatable {
   final bool canAccessProcurementPortal;
 
   bool get isStudent =>
-      userType == 'student' || studentId != null;
+      userType.toLowerCase() == 'student' || studentId != null;
 
   /// Linked institutional employee (HR / My Employee Portal).
   bool get isStaffLike =>
@@ -50,6 +50,12 @@ class AuthUser extends Equatable {
   }
 
   bool get hasMultiplePortals => accessiblePortalCount > 1;
+
+  static int? _idFromJson(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final rolesRaw = json['roles'];
@@ -87,8 +93,8 @@ class AuthUser extends Equatable {
       name: (json['name'] ?? json['email'] ?? 'User').toString(),
       userType: (json['user_type'] ?? '').toString(),
       roles: roles,
-      staffId: (json['staff_id'] as num?)?.toInt(),
-      studentId: (json['student_id'] as num?)?.toInt(),
+      staffId: _idFromJson(json['staff_id']),
+      studentId: _idFromJson(json['student_id']),
       isTeachingStaff: isTeaching,
       canAccessEmployeePortal: canEmployee && json['user_type'] != 'student',
       canAccessStaffPortal: canStaff && json['user_type'] != 'student',

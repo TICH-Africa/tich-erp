@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
 import '../../data/tich_portal_warmup.dart';
+import '../../data/tich_screen_cache.dart';
 import '../portal/attendance_page.dart';
 import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
@@ -97,7 +98,10 @@ class _PortalShellState extends State<PortalShell>
     if (!mounted) return;
     final api = context.read<EmployeeApi>();
     try {
-      final data = await api.dashboard();
+      final data = await TichScreenCache.ensure<Map<String, dynamic>>(
+        'portal.dashboard',
+        () => api.dashboard(),
+      );
       if (!mounted) return;
       final staff = Map<String, dynamic>.from(data['staff'] as Map? ?? {});
       final url = staff['photo_url']?.toString().trim();

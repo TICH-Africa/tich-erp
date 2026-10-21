@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
@@ -121,9 +120,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           children: [
                             Text(
                               'Inbox',
-                              style: GoogleFonts.merriweather(
+                              style: TichTheme.display(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
                                 fontSize: 18,
                               ),
                             ),

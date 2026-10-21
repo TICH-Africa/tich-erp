@@ -36,8 +36,15 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
     _future = TichScreenCache.ensure('portal.dashboard', () => widget.api.dashboard());
-    _loadNotifications();
-    _syncAttendanceReminders();
+    // One dashboard request first; badge + reminders after the UI paints.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future<void>.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted) return;
+        _loadNotifications();
+        _syncAttendanceReminders();
+      });
+    });
   }
 
   Future<void> _loadNotifications() async {

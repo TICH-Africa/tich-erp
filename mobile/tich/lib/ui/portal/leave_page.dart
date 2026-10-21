@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
@@ -129,9 +128,8 @@ class _LeavePageState extends State<LeavePage> {
                             const SizedBox(height: 4),
                             Text(
                               '${b['balance_days']}',
-                              style: GoogleFonts.merriweather(
+                              style: TichTheme.display(
                                 fontSize: 22,
-                                fontWeight: FontWeight.w700,
                                 color: scheme.primary,
                               ),
                             ),

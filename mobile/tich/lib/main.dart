@@ -27,6 +27,7 @@ import 'ui/shell/procurement_portal_shell.dart';
 import 'ui/shell/staff_portal_shell.dart';
 import 'navigation/tich_root_nav.dart';
 import 'ui/shell/student_portal_shell.dart';
+import 'ui/shell/tich_logout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,8 +36,11 @@ Future<void> main() async {
   await AppSettings.instance.load();
   TichTheme.warmCache();
   runApp(const TichApp());
-  Future<void>.delayed(const Duration(seconds: 3), () {
-    unawaited(TichNotifications.instance.init());
+  // Defer heavy notification setup until after first frame (faster cold start).
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future<void>.delayed(const Duration(seconds: 5), () {
+      unawaited(TichNotifications.instance.init());
+    });
   });
 }
 
@@ -126,15 +130,42 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
         child: ListenableBuilder(
           listenable: _settings,
           builder: (context, _) {
-            return AdaptiveApp(
-              title: 'TICH in Africa',
-              navigatorKey: TichRootNav.navigatorKey,
-              materialTheme: _lightTheme,
-              materialDarkTheme: _darkTheme,
-              themeMode: _settings.themeMode,
-              textScaleFactor: _settings.textScaleFactor,
-              cupertinoTheme: _cupertinoTheme,
-              home: const _AuthGate(),
+            return BlocBuilder<AuthBloc, AuthState>(
+              buildWhen: (prev, next) {
+                if (prev.runtimeType != next.runtimeType) return true;
+                if (next is AuthAuthenticated && prev is AuthAuthenticated) {
+                  return next.user != prev.user;
+                }
+                if (next is AuthLocked && prev is AuthLocked) {
+                  return next.user != prev.user;
+                }
+                return false;
+              },
+              builder: (context, authState) {
+                final app = AdaptiveApp(
+                  title: 'TICH in Africa',
+                  navigatorKey: TichRootNav.navigatorKey,
+                  materialTheme: _lightTheme,
+                  materialDarkTheme: _darkTheme,
+                  themeMode: _settings.themeMode,
+                  textScaleFactor: _settings.textScaleFactor,
+                  cupertinoTheme: _cupertinoTheme,
+                  home: const _AuthGate(),
+                );
+                final AuthUser? scopedUser = switch (authState) {
+                  AuthAuthenticated(:final user) => user,
+                  AuthLocked(:final user) => user,
+                  _ => null,
+                };
+                if (scopedUser != null) {
+                  return TichApiScope(
+                    key: tichApiScopeKey(scopedUser),
+                    user: scopedUser,
+                    child: app,
+                  );
+                }
+                return app;
+              },
             );
           },
         ),
@@ -164,7 +195,34 @@ class _PortalForUser extends StatelessWidget {
     if (user.canAccessStaffPortal && !user.canAccessEmployeePortal) {
       return const StaffPortalShell();
     }
-    return const PortalShell();
+    if (user.canAccessEmployeePortal) {
+      return const PortalShell();
+    }
+    return const _NoPortalAccessPage();
+  }
+}
+
+/// Signed-in user with no mobile portal mapping (misconfigured account).
+class _NoPortalAccessPage extends StatelessWidget {
+  const _NoPortalAccessPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptiveScaffold(
+      title: 'TICH',
+      onLogout: tichLogout(context),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'This account is not set up for a mobile portal yet. '
+            'Try the web app or contact ICT if you should have access.',
+            textAlign: TextAlign.center,
+            style: tichUi(color: TichColors.neutralMuted),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -216,11 +274,7 @@ class _AuthGateState extends State<_AuthGate> {
           next is AuthLocked,
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          final user = state.user;
-          return TichApiScope(
-            user: user,
-            child: _PortalForUser(user: user),
-          );
+          return _PortalForUser(user: state.user);
         }
         if (state is AuthLocked) {
           _primedUserKey = null;
