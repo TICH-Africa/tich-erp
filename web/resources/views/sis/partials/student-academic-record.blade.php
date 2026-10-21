@@ -1,9 +1,133 @@
 @php
     $academics = $academics ?? [];
     $compact = $compact ?? false;
+    $performance = $performance ?? [];
+    $recordStudent = $student ?? null;
 @endphp
 
 <div @class(['tich-student-academic-record', 'tich-student-academic-record--compact' => $compact])>
+    @if ($recordStudent)
+        @php
+            $recordStudent->loadMissing(['applicant', 'program.department', 'campus', 'currentSemester']);
+            $recordApplicant = $recordStudent->applicant;
+            $profileRows = array_filter([
+                'Programme' => $recordStudent->program?->program_name,
+                'Campus' => $recordStudent->campus?->campus_name,
+                'Intake' => $recordStudent->cohort_intake,
+                'Entry pathway' => $recordStudent->entry_pathway ? str_replace('_', ' ', $recordStudent->entry_pathway) : null,
+                'Admitted' => $recordStudent->date_of_admission ? \Illuminate\Support\Carbon::parse($recordStudent->date_of_admission)->format('d M Y') : null,
+                'Standing' => $recordStudent->enrollment_status ? ucfirst($recordStudent->enrollment_status) : null,
+                'Currently on' => $recordStudent->currentSemester?->semester_label
+                    ?: ($recordStudent->current_year ? 'Year '.$recordStudent->current_year : null),
+                'Email' => $recordStudent->email ?: $recordApplicant?->email,
+                'Phone' => $recordStudent->phone_number ?: $recordApplicant?->phone_number,
+                'Date of birth' => $recordApplicant?->date_of_birth ? \Illuminate\Support\Carbon::parse($recordApplicant->date_of_birth)->format('d M Y') : null,
+            ], fn ($value) => filled($value));
+        @endphp
+
+        <section class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:flex-start;">
+            @if ($photoUrl = $recordStudent->photoUrl())
+                <img src="{{ $photoUrl }}" alt="{{ $recordStudent->displayName() }}" style="width:88px; height:88px; object-fit:cover; border-radius:0.5rem; border:1px solid var(--tich-border, #e2e8f0);">
+            @endif
+            <div style="flex:1 1 20rem;">
+                <h3 class="tich-h3" style="margin:0;">{{ $recordStudent->displayName() }}</h3>
+                <p class="tich-caption" style="margin:0.25rem 0 0;">
+                    {{ $recordStudent->registration_number }}
+                    @if ($recordStudent->portal_activated_at || $recordStudent->user_id)
+                        · portal active
+                    @elseif ($recordStudent->hasActivePortalInvite())
+                        · invite pending
+                    @else
+                        · no portal account
+                    @endif
+                </p>
+                <dl style="display:grid; grid-template-columns:repeat(auto-fit, minmax(11rem, 1fr)); gap:0.4rem 1.25rem; margin:0.9rem 0 0;">
+                    @foreach ($profileRows as $label => $value)
+                        <div>
+                            <dt class="tich-caption">{{ $label }}</dt>
+                            <dd style="margin:0;">{{ $value }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </div>
+        </section>
+    @endif
+
+    @if ($performance !== [])
+        <section class="tich-mt-6">
+            <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; justify-content:space-between;">
+                <div>
+                    <h3 class="tich-h3" style="margin:0;">Semester by semester</h3>
+                    <p class="tich-caption">Units taken since enrolment with the marks recorded for each one. Download a term transcript for any semester.</p>
+                </div>
+                @if ($recordStudent)
+                    <div class="tich-flex-wrap" style="gap:0.5rem;">
+                        <a class="tich-btn tich-btn-secondary tich-btn-sm" href="{{ route('sis.students.transcript', $recordStudent->id) }}" target="_blank">Open transcript</a>
+                        <a class="tich-btn tich-btn-primary tich-btn-sm" href="{{ route('sis.students.transcript.pdf', $recordStudent->id) }}">Download full transcript (PDF)</a>
+                    </div>
+                @endif
+            </div>
+
+            @foreach ($performance as $semesterBlock)
+                <article class="tich-inset-panel tich-mt-4">
+                    <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:baseline; justify-content:space-between;">
+                        <h4 class="tich-h4" style="margin:0;">
+                            {{ $semesterBlock['label'] }}
+                            @if ($semesterBlock['year_label'])
+                                <span class="tich-caption">· {{ $semesterBlock['year_label'] }}</span>
+                            @endif
+                            @if ($semesterBlock['is_current'])
+                                <span class="tich-badge tich-badge--pending">Current</span>
+                            @endif
+                        </h4>
+                        <p class="tich-caption" style="margin:0;">
+                            {{ $semesterBlock['graded_units'] }} graded
+                            @if ($semesterBlock['in_progress_units'] > 0)
+                                · {{ $semesterBlock['in_progress_units'] }} in progress
+                            @endif
+                            · {{ number_format((float) $semesterBlock['credits'], 2) }} credit hours
+                            · GPA {{ $semesterBlock['gpa'] === null ? 'not yet computed' : number_format($semesterBlock['gpa'], 2) }}
+                            @if ($recordStudent)
+                                · <a class="tich-link" href="{{ route('sis.students.transcript.term.pdf', ['student' => $recordStudent->id, 'semester' => $semesterBlock['semester_id']]) }}">Term transcript</a>
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="tich-table-wrap tich-mt-3" style="max-height:24rem; overflow:auto;">
+                        <table class="tich-admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Unit</th>
+                                    <th>Lecturer</th>
+                                    <th>Credits</th>
+                                    <th>CAT</th>
+                                    <th>Exam</th>
+                                    <th>Total</th>
+                                    <th>Grade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($semesterBlock['units'] as $row)
+                                    <tr>
+                                        <td>{{ $row['unit_code'] }} - {{ $row['unit_name'] }}</td>
+                                        <td>{{ $row['lecturer'] ?: 'Not yet allocated' }}</td>
+                                        <td>{{ number_format((float) $row['credit_hours'], 2) }}</td>
+                                        <td>{{ $row['cat'] === null ? '-' : number_format((float) $row['cat'], 1) }}</td>
+                                        <td>{{ $row['exam'] === null ? '-' : number_format((float) $row['exam'], 1) }}</td>
+                                        <td>{{ $row['total'] === null ? '-' : number_format((float) $row['total'], 1) }}</td>
+                                        <td>{{ $row['grade'] ?: '-' }}</td>
+                                        <td>{{ $row['status'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            @endforeach
+        </section>
+    @endif
+
     @if (! empty($academics['current_period']))
         <section class="tich-mt-4">
             <h3 class="tich-h3">Current semester</h3>

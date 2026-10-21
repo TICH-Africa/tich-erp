@@ -88,9 +88,11 @@ class TranscriptService
     }
 
     /**
+     * Graded units with their exam marks, ordered for transcript blocks.
+     *
      * @return Collection<int, object>
      */
-    private function transcriptRows(Student $student): Collection
+    public function transcriptRows(Student $student): Collection
     {
         return DB::table('grade_records as gr')
             ->join('units as u', 'u.id', '=', 'gr.unit_id')
@@ -175,9 +177,11 @@ class TranscriptService
     }
 
     /**
+     * Credit-weighted GPA over transcript rows (units with no credits score are ignored).
+     *
      * @param  Collection<int, object>  $rows
      */
-    private function calculateGpa(Collection $rows): float
+    public function calculateGpa(Collection $rows): float
     {
         $credits = (float) $rows->sum('credit_hours');
         if ($credits <= 0) {

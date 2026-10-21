@@ -140,30 +140,33 @@
                             <div>
                                 <h3 class="tich-h4">Units in {{ $deskPeriod['label'] }}</h3>
                                 <p class="tich-caption">Lecturers shown are the ones Academics has approved for that unit this semester.</p>
-                                <ul class="tich-catalog-alloc-list" style="list-style:none; margin:0; padding:0;">
-                                    @foreach ($deskUnits as $mapping)
-                                        @php
-                                            $unit = $mapping->unit;
-                                            $lecturer = $desk['lecturersByUnit'][(int) $mapping->unit_id] ?? null;
-                                            $alreadyOn = $registeredByStudent->filter(fn ($ids) => collect($ids)->contains((int) $mapping->unit_id))->count();
-                                        @endphp
-                                        <li class="tich-catalog-alloc-card">
-                                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:flex-start;">
-                                                <input type="checkbox" name="unit_ids[]" value="{{ $mapping->unit_id }}" class="tich-checkbox" data-reg-unit checked>
-                                                <span>
-                                                    <strong>{{ $unit?->unit_code }}</strong> · {{ $unit?->unit_name }}
-                                                    <span class="tich-caption" style="display:block;">
-                                                        {{ (int) ($mapping->credit_hours ?: $unit?->credit_hours) }} credit hours
-                                                        · {{ $lecturer ? 'Lecturer: '.$lecturer : 'No lecturer allocated yet' }}
-                                                        @if ($alreadyOn > 0)
-                                                            · {{ $alreadyOn }} already registered
-                                                        @endif
+                                <div style="max-height:24rem; overflow:auto; border:1px solid var(--tich-border, #e2e8f0); border-radius:0.5rem;">
+                                    <ul class="tich-catalog-alloc-list" style="list-style:none; margin:0; padding:0;">
+                                        @foreach ($deskUnits as $mapping)
+                                            @php
+                                                $unit = $mapping->unit;
+                                                $lecturer = $desk['lecturersByUnit'][(int) $mapping->unit_id] ?? null;
+                                                $creditHours = (float) ($mapping->credit_hours ?: $unit?->credit_hours);
+                                                $alreadyOn = $registeredByStudent->filter(fn ($ids) => collect($ids)->contains((int) $mapping->unit_id))->count();
+                                            @endphp
+                                            <li class="tich-catalog-alloc-card">
+                                                <label class="tich-label" style="display:flex; gap:0.5rem; align-items:flex-start;">
+                                                    <input type="checkbox" name="unit_ids[]" value="{{ $mapping->unit_id }}" class="tich-checkbox" data-reg-unit checked>
+                                                    <span>
+                                                        <strong>{{ $unit?->unit_code }}</strong> · {{ $unit?->unit_name }}
+                                                        <span class="tich-caption" style="display:block;">
+                                                            {{ $creditHours > 0 ? $creditHours.' credit hours' : 'credit hours not set' }}
+                                                            · {{ $lecturer ? 'Lecturer: '.$lecturer : 'No lecturer allocated yet' }}
+                                                            @if ($alreadyOn > 0)
+                                                                · {{ $alreadyOn }} already registered
+                                                            @endif
+                                                        </span>
                                                     </span>
-                                                </span>
-                                            </label>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                                </label>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
                             </div>
 
                             <div>
@@ -305,7 +308,9 @@
             </div>
 
             @include('sis.partials.student-academic-record', [
+                'student' => $expandedStudentRecord['student'],
                 'academics' => $expandedStudentRecord['academics'],
+                'performance' => $expandedStudentRecord['performance'],
                 'compact' => false,
             ])
         </article>

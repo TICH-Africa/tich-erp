@@ -173,9 +173,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                     ?? $enrolledStudents['other']->firstWhere('id', $expandedStudentId);
 
                 if ($expandedStudent) {
+                    $expandedAcademics = $this->studentAcademicRecords->forStudent($expandedStudent);
                     $expandedStudentRecord = [
                         'student' => $expandedStudent,
-                        'academics' => $this->studentAcademicRecords->forStudent($expandedStudent),
+                        'academics' => $expandedAcademics,
+                        'performance' => $this->studentAcademicRecords->semesterPerformance($expandedStudent, $expandedAcademics),
                     ];
                 }
             }

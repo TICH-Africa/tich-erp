@@ -28,11 +28,13 @@ class StudentController extends Controller
     public function show(int $student): View
     {
         $record = $this->studentRecords->findForHub($student);
+        $academics = $this->academicRecords->forStudent($record);
 
         return view('sis.students.show', [
             'student' => $record,
             'biodata' => $this->studentRecords->biodata360($record),
-            'academics' => $this->academicRecords->forStudent($record),
+            'academics' => $academics,
+            'performance' => $this->academicRecords->semesterPerformance($record, $academics),
         ]);
     }
 }

@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\DB;
 
 class StudentAcademicRecordService
 {
-    public function __construct(protected CurriculumVersionService $curriculumVersions) {}
+    public function __construct(
+        protected CurriculumVersionService $curriculumVersions,
+        protected TranscriptService $transcripts,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -132,6 +135,90 @@ class StudentAcademicRecordService
             'assessments' => $assessments,
             'my_submissions' => $mySubmissions,
             'unit_content' => $unitContent,
+        ];
+    }
+
+    /**
+     * Every semester since enrolment: units taken, marks, semester GPA, and what is still in progress.
+     * Rows come from the transcript builder so the screen and the downloaded PDF always agree.
+     *
+     * @param  array<string, mixed>  $academics
+     * @return list<array<string, mixed>>
+     */
+    public function semesterPerformance(Student $student, array $academics): array
+    {
+        $graded = $this->transcripts->transcriptRows($student)->groupBy('semester_id');
+        $registered = $academics['registered_units']->groupBy(fn ($row) => (int) $row->semester_id);
+
+        $semesterIds = $graded->keys()->merge($registered->keys())->filter()->unique();
+
+        if ($semesterIds->isEmpty()) {
+            return [];
+        }
+
+        $currentSemesterId = $academics['current_semester']->id ?? null;
+
+        return Semester::query()
+            ->leftJoin('academic_years as ay', 'ay.id', '=', 'semesters.academic_year_id')
+            ->whereIn('semesters.id', $semesterIds->all())
+            ->orderBy('ay.year_label')
+            ->orderBy('semesters.semester_number')
+            ->get(['semesters.id', 'semesters.semester_label', 'semesters.semester_number', 'ay.year_label'])
+            ->map(function (Semester $semester) use ($graded, $registered, $currentSemesterId) {
+                $id = (int) $semester->id;
+                $gradedRows = collect($graded->get($id, collect()))->values();
+                $registeredRows = collect($registered->get($id, collect()))->values();
+
+                $units = $registeredRows
+                    ->map(fn (object $unit) => $this->performanceRow(
+                        $unit,
+                        $gradedRows->first(fn (object $row) => (int) $row->unit_id === (int) $unit->unit_id),
+                    ))
+                    ->concat($gradedRows
+                        ->reject(fn (object $row) => $registeredRows->contains(
+                            fn (object $unit) => (int) $unit->unit_id === (int) $row->unit_id
+                        ))
+                        ->map(fn (object $row) => $this->performanceRow(null, $row))
+                    )
+                    ->values()
+                    ->all();
+
+                return [
+                    'semester_id' => $id,
+                    'label' => Semester::normalizeLabel($semester->semester_label, (int) $semester->semester_number),
+                    'year_label' => $semester->year_label,
+                    'registered_on' => $registeredRows->first()?->registration_date,
+                    'units' => $units,
+                    'graded_units' => $gradedRows->count(),
+                    'in_progress_units' => count($units) - $gradedRows->count(),
+                    'credits' => round((float) $gradedRows->sum('credit_hours'), 2),
+                    'gpa' => $gradedRows->isEmpty() ? null : $this->transcripts->calculateGpa($gradedRows),
+                    'is_current' => $currentSemesterId !== null && (int) $currentSemesterId === $id,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function performanceRow(?object $unit, ?object $grade): array
+    {
+        return [
+            'unit_code' => $grade->unit_code ?? $unit->unit_code,
+            'unit_name' => $grade->unit_name ?? $unit->unit_name,
+            'lecturer' => $unit->lecturer_names ?? null,
+            'credit_hours' => (float) ($grade->credit_hours ?? $unit->credit_hours ?? 0),
+            'cat' => $grade->cat_total ?? null,
+            'exam' => $grade->exam_score ?? null,
+            'total' => $grade->final_score ?? null,
+            'grade' => $grade->grade_letter ?? null,
+            'points' => $grade->grade_points ?? null,
+            'status' => match (true) {
+                $grade === null => 'Registered - no marks yet',
+                ! $grade->has_exam_result => 'Grade recorded - exam marks pending',
+                default => 'Graded',
+            },
         ];
     }
 
@@ -304,6 +391,8 @@ class StudentAcademicRecordService
             ->orderByDesc('gr.recorded_at')
             ->select([
                 'gr.student_id',
+                'gr.unit_id',
+                'gr.semester_id',
                 'gr.final_score',
                 'gr.grade_letter',
                 'gr.grade_points',
@@ -333,6 +422,8 @@ class StudentAcademicRecordService
             ->orderByDesc('cs.recorded_at')
             ->select([
                 'cs.student_id',
+                'cs.unit_id',
+                'cs.semester_id',
                 'cs.assessment_type',
                 'cs.assessment_name',
                 'cs.max_score',
