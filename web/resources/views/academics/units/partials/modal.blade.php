@@ -54,21 +54,27 @@
 
             <div class="uf-form-grid-2">
                 <div class="uf-field">
+                    <label>Credit hours</label>
+                    <input type="number" name="credit_hours" min="0" step="0.5" value="{{ old('credit_hours', (float) ($unit?->credit_hours ?? 0)) }}" placeholder="e.g. 3">
+                    <p class="tich-caption">What the enrolled desk, fee structure and transcript count. Contact hours are timetabling only.</p>
+                </div>
+                <div class="uf-field">
                     <label>Total learning hours</label>
                     <input type="number" name="total_learning_hours" min="0" value="{{ old('total_learning_hours', $unit?->total_learning_hours ?? 0) }}" placeholder="0">
                 </div>
-                <div class="uf-field">
-                    <label>Type</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.25rem; align-items: center;">
-                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 400;">
-                            <input type="checkbox" name="is_core" value="1" class="tich-checkbox" @checked(old('is_core', $unit?->is_core ?? true))>
-                            <span>Core unit</span>
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 400;">
-                            <input type="checkbox" name="is_practical" value="1" class="tich-checkbox" @checked(old('is_practical', $unit?->is_practical ?? false))>
-                            <span>Practical</span>
-                        </label>
-                    </div>
+            </div>
+
+            <div class="uf-field">
+                <label>Type</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.25rem; align-items: center;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 400;">
+                        <input type="checkbox" name="is_core" value="1" class="tich-checkbox" @checked(old('is_core', $unit?->is_core ?? true))>
+                        <span>Core unit</span>
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 400;">
+                        <input type="checkbox" name="is_practical" value="1" class="tich-checkbox" @checked(old('is_practical', $unit?->is_practical ?? false))>
+                        <span>Practical</span>
+                    </label>
                 </div>
             </div>
 

@@ -39,8 +39,20 @@ class StudentUnitRegistrationService
     {
         $mappings = $this->versions->mappedUnits($intake);
         $periodOptions = $this->periodOptions($program);
+        $unitsByPeriod = $this->unitsByPeriod($mappings, $periodOptions);
         $students = $this->candidates($request, $program, $intake);
-        $selectedKey = $this->resolvePeriodKey($request, $program, $periodOptions, $students);
+        $yearsByStudent = $this->yearsForRoster($students, $program, $intake);
+
+        // A cohort that spans admission years is only useful split by the year each student
+        // actually sits, so the filter reads the derived year rather than the admission date.
+        $studyYear = $request->integer('study_year');
+
+        if ($studyYear > 0) {
+            $students = $students->filter(fn (Student $student) => (int) ($yearsByStudent[$student->id]['year'] ?? 0) === $studyYear)->values();
+            $yearsByStudent = $yearsByStudent->only($students->pluck('id')->all());
+        }
+
+        $selectedKey = $this->resolvePeriodKey($request, $periodOptions, $yearsByStudent, $unitsByPeriod);
         $selected = $periodOptions->get($selectedKey);
 
         $units = $selected
@@ -53,11 +65,12 @@ class StudentUnitRegistrationService
             'selectedPeriod' => $selected,
             'semesterId' => $selected ? $this->schedule->resolveSemesterId($intake, $selected['semester']) : null,
             'periodUnits' => $units,
+            'unitsByPeriod' => $unitsByPeriod,
             'lecturersByUnit' => $this->lecturersByUnit($units, $intake),
             'students' => $students,
-            'yearsByStudent' => $students->mapWithKeys(fn (Student $student) => [
-                $student->id => $this->yearOfStudy($student, $program, $intake),
-            ]),
+            'yearsByStudent' => $yearsByStudent,
+            'studyYearFilter' => $studyYear > 0 ? $studyYear : null,
+            'studyYears' => $this->sortedUnique($yearsByStudent->filter()->map(fn (array $year) => $year['year'])->values()->all()),
             'pathways' => $this->distinctValues($program, 'entry_pathway'),
             'admissionYears' => $this->admissionYears($program),
             'pathwayFilter' => $request->string('entry_pathway')->toString() ?: null,
@@ -68,6 +81,42 @@ class StudentUnitRegistrationService
                 $units->pluck('unit_id')->filter()->all(),
             ),
         ];
+    }
+
+    /**
+     * How many units each teaching period carries for this intake, in period order. The desk
+     * opens on a period that has units instead of an empty one.
+     *
+     * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
+     * @return Collection<string, int>
+     */
+    private function unitsByPeriod(Collection $mappings, Collection $periodOptions): Collection
+    {
+        return $periodOptions->map(
+            fn (array $option) => $this->mappingsForPeriod($mappings, $option['semester'], $option['block_id'])->count()
+        );
+    }
+
+    /**
+     * The year of study for every student on a list, so the roster can group by it.
+     *
+     * @param  Collection<int, Student>  $students
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function yearsForRoster(Collection $students, AcademicProgram $program, ?CurriculumVersion $intake = null): Collection
+    {
+        return $students->mapWithKeys(fn (Student $student) => [
+            $student->id => $this->yearOfStudy($student, $program, $intake),
+        ])->filter();
+    }
+
+    /**
+     * @param  Collection<int, int>  $values
+     * @return list<int>
+     */
+    private function sortedUnique(array $values): array
+    {
+        return collect($values)->filter()->unique()->sort()->values()->all();
     }
 
     /**
@@ -645,10 +694,18 @@ class StudentUnitRegistrationService
     }
 
     /**
+     * Open the desk on a period that actually carries units.
+     *
+     * The cohort's own year comes first, but the desk used to stop there and show an empty
+     * list whenever the intake had not been mapped onto that period yet - which read as
+     * "only Year 1 units ever load". Falling back to the first mapped period keeps the
+     * screen usable, and the panel says which periods hold units either way.
+     *
      * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
-     * @param  Collection<int, Student>  $students
+     * @param  Collection<int, array<string, mixed>|null>  $yearsByStudent
+     * @param  Collection<string, int>  $unitsByPeriod
      */
-    private function resolvePeriodKey(Request $request, AcademicProgram $program, Collection $periodOptions, Collection $students): string
+    private function resolvePeriodKey(Request $request, Collection $periodOptions, Collection $yearsByStudent, Collection $unitsByPeriod): string
     {
         $requested = $request->string('registration_period')->toString();
 
@@ -656,61 +713,25 @@ class StudentUnitRegistrationService
             return $requested;
         }
 
-        return $this->cohortPeriodKey($program, $periodOptions, $students);
-    }
-
-    /**
-     * Open the desk on the semester the listed students are actually sitting, so the
-     * units they are due for are the ones already on screen.
-     *
-     * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
-     * @param  Collection<int, Student>  $students
-     */
-    private function cohortPeriodKey(AcademicProgram $program, Collection $periodOptions, Collection $students): string
-    {
-        $fallback = $periodOptions->keys()->first() ?? 'sem-1';
-
-        if ($students->isEmpty()) {
-            return $fallback;
-        }
-
-        $semesterNumbers = Semester::query()
-            ->whereIn('id', $students->pluck('current_semester_id')->filter()->unique()->all())
-            ->pluck('semester_number', 'id');
-
-        $keys = $students
-            ->map(fn (Student $student) => $this->studentPeriodKey($program, $student, $semesterNumbers))
+        $own = $yearsByStudent
             ->filter()
-            ->values();
+            ->map(fn (array $year) => $year['period_key'])
+            ->countBy()
+            ->sortDesc()
+            ->keys()
+            ->first();
 
-        if ($keys->isEmpty()) {
-            return $fallback;
+        if ($own !== null && $periodOptions->has($own) && (int) ($unitsByPeriod[$own] ?? 0) > 0) {
+            return (string) $own;
         }
 
-        $key = $keys->countBy()->sortDesc()->keys()->first();
+        $populated = $unitsByPeriod->search(fn (int $count) => $count > 0);
 
-        return $periodOptions->has($key) ? $key : $fallback;
-    }
-
-    /**
-     * @param  Collection<int, int>  $semesterNumbers
-     */
-    private function studentPeriodKey(AcademicProgram $program, Student $student, Collection $semesterNumbers): ?string
-    {
-        if ($program->usesBlocks()) {
-            return $student->current_nursing_block_id ? 'block-'.$student->current_nursing_block_id : null;
+        if ($populated !== false) {
+            return (string) $populated;
         }
 
-        $period = $student->current_semester_id ? $semesterNumbers[$student->current_semester_id] ?? null : null;
-
-        if (! $period) {
-            // Nothing is recorded yet, so the admission year decides where they sit.
-            $year = $this->yearOfStudy($student, $program);
-
-            return $year ? $year['period_key'] : null;
-        }
-
-        return 'sem-'.(int) $period;
+        return (string) ($own ?? $periodOptions->keys()->first() ?? 'sem-1');
     }
 
     /**

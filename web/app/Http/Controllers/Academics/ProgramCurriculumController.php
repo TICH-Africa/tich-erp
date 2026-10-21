@@ -148,6 +148,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $enrolledStudents = ['matched' => collect(), 'other' => collect()];
         $enrolledSummaries = collect();
+        $enrolledYears = collect();
         $expandedStudentRecord = null;
         $studentRegistration = null;
         $studentCorrections = null;
@@ -168,6 +169,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 ->all();
 
             $enrolledSummaries = $this->studentAcademicRecords->rosterSummaries($studentIds);
+            $enrolledYears = $this->studentRegistrations->yearsForRoster(
+                $enrolledStudents['matched']->merge($enrolledStudents['other']),
+                $program,
+                $selectedIntake
+            );
 
             $expandedStudentId = $request->integer('student') ?: null;
             if ($expandedStudentId) {
@@ -239,6 +245,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 : ['matched' => collect(), 'unassigned' => collect()],
             'enrolledStudents' => $enrolledStudents,
             'enrolledSummaries' => $enrolledSummaries,
+            'enrolledYears' => $enrolledYears,
             'studentRegistration' => $studentRegistration,
             'studentCorrections' => $studentCorrections,
             'expandedStudentRecord' => $expandedStudentRecord,
@@ -1016,14 +1023,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $section = $request->string('section')->toString() ?: 'catalog';
 
+        $target = route('departments.academics.programs.curriculum', array_filter([
+            'program' => $program->id,
+            'learning_department' => $validated['learning_department'] ?? null,
+            'intake' => $intake->id,
+            'section' => $section,
+        ])).'#unit-row-'.$unit->id;
+
         return redirect()
-            ->route('departments.academics.programs.curriculum', array_filter([
-                'program' => $program->id,
-                'learning_department' => $validated['learning_department'] ?? null,
-                'intake' => $intake->id,
-                'section' => $section,
-            ]))
-            ->with('status', 'Lecturer assigned to unit.');
+            ->to($target)
+            ->with('status', $lecturer->fullName().' assigned to '.$unit->displayLabel().' for '
+                .$program->periodLabel((int) $validated['teaching_period']).'.');
     }
 
     public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $unitAllocation): RedirectResponse
