@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../config/api_config.dart';
 import '../../data/auth_api.dart';
 import '../../data/auth_repository.dart';
 import '../../settings/app_settings.dart';
@@ -71,7 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthUnauthenticated(
         message:
-            'Could not reach the server. Check API_BASE_URL and that Laravel is serving on 0.0.0.0:8000.\n$e',
+            'Could not reach the API at ${ApiConfig.baseUrl}. Check your network connection or configure API_BASE_URL for your environment.\n$e',
       ));
     }
   }

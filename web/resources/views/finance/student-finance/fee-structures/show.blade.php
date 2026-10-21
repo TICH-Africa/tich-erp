@@ -6,6 +6,7 @@
     <x-page-toolbar title="Fee Structure" meta="Fee structure details">
         <x-slot:actions>
             <a href="{{ route('finance.fee-structures.pdf', ['feeStructure' => $feeStructure->id]) }}" class="tich-btn tich-btn-primary">Download PDF</a>
+            <a href="{{ route('finance.fee-structures.edit', ['feeStructure' => $feeStructure->id]) }}" class="tich-btn tich-btn-ghost">Edit</a>
             <a href="{{ route('finance.student-finance.fee-structures.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>

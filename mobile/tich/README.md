@@ -13,6 +13,8 @@ Flutter client for the TICH ERP Laravel API — **My Employee Portal**.
 - Documents (list + upload)
 - HR policies (acknowledge)
 - WFH, time logs, appraisals, concerns
+- Feedback (submit, review status, and read HR responses)
+- Notifications (available from the dashboard bell)
 
 Design tokens match `web/public/css/tich-platform.css` (green `#6cab33`, blue `#1669a6`, Merriweather / Arial).
 
@@ -37,14 +39,19 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://192.168.0.102:8000
 ```
 
-Android emulator: `http://10.0.2.2:8000`  
-Do **not** use `127.0.0.1` on a physical phone.
+The app defaults to the production API (`https://tich.africa`). For local development, pass your PC's current LAN IP with `--dart-define` as shown above.
+
+**Do not use `http://127.0.0.1:8000` on a physical device** — that points at the phone, not the PC.
+
+Android emulator alternative: `http://10.0.2.2:8000`.
 
 ## Production
 
 ```bash
 flutter run --dart-define=API_BASE_URL=https://tich.africa
 ```
+
+The release build can omit the define when connecting to production because the production URL is the default.
 
 ## API
 

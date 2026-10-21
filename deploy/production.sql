@@ -8678,6 +8678,7 @@ CALL `tich_ensure_column`('procurement_requisitions', 'ceo_approved_by', 'bigint
 CALL `tich_ensure_column`('procurement_requisitions', 'ceo_approved_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'audit_trail', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('procurement_requisitions', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('procurement_requisitions', 'requisition_type', 'varchar(50) NOT NULL DEFAULT \'goods\'');
 
 -- Indexes for `procurement_requisitions` (add only if missing)
 CALL `tich_ensure_index`('procurement_requisitions', 'procurement_requisitions_ceo_approved_by_foreign', '`ceo_approved_by`');
@@ -13065,6 +13066,29 @@ CALL `tich_ensure_column`('three_way_matches', 'matched_at', 'datetime NOT NULL'
 CALL `tich_ensure_column`('three_way_matches', 'is_accepted', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('three_way_matches', 'accepted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('three_way_matches', 'accepted_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('three_way_matches', 'arithmetic_match', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'created_at', 'timestamp NULL');
+CALL `tich_ensure_column`('three_way_matches', 'delivery_match', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'description_match', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'deviation_amount', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'discrepancy_count', 'int NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'invoice_id', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('three_way_matches', 'matching_certificate', 'text NULL');
+CALL `tich_ensure_column`('three_way_matches', 'notes', 'text NULL');
+CALL `tich_ensure_column`('three_way_matches', 'price_match', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'quantity_invoiced', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'quantity_match', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('three_way_matches', 'quantity_po', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'quantity_quotation', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'quantity_tolerance_percent', 'decimal(5,2) NOT NULL DEFAULT \'5.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'rfq_quotation_id', 'bigint unsigned NULL');
+CALL `tich_ensure_column`('three_way_matches', 'status', 'varchar(50) NOT NULL DEFAULT \'pending\'');
+CALL `tich_ensure_column`('three_way_matches', 'total_calculated', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'total_invoiced', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'unit_price_invoiced', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'unit_price_po', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'unit_price_quotation', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('three_way_matches', 'updated_at', 'timestamp NULL');
 
 -- Indexes for `three_way_matches` (add only if missing)
 CALL `tich_ensure_index`('three_way_matches', 'three_way_matches_accepted_by_foreign', '`accepted_by`');
