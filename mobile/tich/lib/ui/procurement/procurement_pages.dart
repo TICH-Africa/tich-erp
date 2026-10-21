@@ -35,8 +35,12 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
   @override
   void initState() {
     super.initState();
-    _cache = procurementReadCache('procurement.requisitions');
-    _future = widget.api.requisitions();
+    procurementPrimeScreen(
+      persistKey: 'procurement.requisitions',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.requisitions(),
+    );
   }
 
   @override
@@ -243,10 +247,17 @@ class _ProcurementRequisitionDetailPageState
   Object? _cache;
   bool _busy = false;
 
+  String get _cacheKey => 'procurement.requisition.${widget.id}';
+
   @override
   void initState() {
     super.initState();
-    _future = widget.api.requisition(widget.id);
+    procurementPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.requisition(widget.id),
+    );
   }
 
   Future<void> _act(Future<Map<String, dynamic>> Function() call) async {
@@ -260,9 +271,10 @@ class _ProcurementRequisitionDetailPageState
         _future = f;
       },
           () => widget.api.requisition(widget.id),
-      mounted: () => mounted,
-      onData: (d) => _cache = d,
-    );
+          mounted: () => mounted,
+          onData: (d) => _cache = d,
+          persistKey: _cacheKey,
+        );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -279,10 +291,18 @@ class _ProcurementRequisitionDetailPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) {
+          final merged = tichMergeSnapshot(
+            snap,
+            _cache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
             return procurementLoadingBody();
           }
-          final r = snap.data!;
+          if (merged == null && snap.hasError) {
+            return Center(child: Text(tichDescribeError(snap.error)));
+          }
+          final r = merged! as Map<String, dynamic>;
           final canApprove = r['can_approve'] == true;
           final canSubmit = r['can_submit'] == true;
           final canReject = r['can_reject'] == true;
@@ -384,26 +404,29 @@ class ProcurementStockIssuesPage extends StatefulWidget {
 }
 
 class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage> {
+  static const _cacheKey = 'procurement.stock_issues';
+
   late Future<Map<String, dynamic>> _future;
   Object? _cache;
 
   @override
   void initState() {
     super.initState();
-    _reload();
-  }
-
-  void _reload() {
-    procurementUpdateFuture(
-      setState,
-      (f) {
-        _future = f;
-      },
-      () => widget.api.stockIssues(),
-      mounted: () => mounted,
-      onData: (d) => _cache = d,
+    procurementPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.stockIssues(),
     );
   }
+
+  Future<void> _reload() => procurementCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.stockIssues(),
+        onData: (d) => _cache = d,
+        persistKey: _cacheKey,
+      );
 
   Future<void> _openRaise() async {
     final id = await Navigator.of(context).push<int>(
@@ -444,8 +467,18 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final items = snap.data?['items'] as List? ?? [];
+          final merged = tichMergeSnapshot(
+            snap,
+            _cache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return procurementLoadingBody(onRefresh: () async => _reload());
+          }
+          if (merged == null && snap.hasError) {
+            return Center(child: Text(tichDescribeError(snap.error)));
+          }
+          final items = (merged as Map<String, dynamic>)['items'] as List? ?? [];
           if (items.isEmpty) {
             return Center(
               child: Text(
@@ -515,7 +548,12 @@ class _ProcurementStockIssueDetailPageState
   @override
   void initState() {
     super.initState();
-    _future = widget.api.stockIssue(widget.id);
+    procurementPrimeScreen(
+      persistKey: 'procurement.stockIssue.${widget.id}',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.stockIssue(widget.id),
+    );
   }
 
   @override
@@ -525,8 +563,19 @@ class _ProcurementStockIssueDetailPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final r = snap.data!;
+          final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.stockIssue.${widget.id}',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return procurementLoadingBody();
+                }
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+          final r = data;
           final canApprove = r['can_approve'] == true;
           final status = (r['approval_status'] ?? '').toString();
           return ProcurementDetailBody(
@@ -607,7 +656,12 @@ class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.grns();
+    procurementPrimeScreen(
+      persistKey: 'procurement.grns',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.grns(),
+    );
   }
 
   @override
@@ -617,8 +671,19 @@ class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final items = snap.data?['items'] as List? ?? [];
+          final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.grns',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return procurementLoadingBody();
+                }
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+          final items = data['items'] as List? ?? [];
           return ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: items.length,
@@ -673,7 +738,12 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.grn(widget.id);
+    procurementPrimeScreen(
+      persistKey: 'procurement.grn.${widget.id}',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.grn(widget.id),
+    );
   }
 
   @override
@@ -683,8 +753,19 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final r = snap.data!;
+          final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.grn.${widget.id}',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return procurementLoadingBody();
+                }
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+          final r = data;
           final items = r['items'] as List? ?? [];
           return ProcurementDetailBody(
             children: [
@@ -782,7 +863,12 @@ class _ProcurementStockAlertsPageState extends State<ProcurementStockAlertsPage>
   @override
   void initState() {
     super.initState();
-    _future = widget.api.stockAlerts();
+    procurementPrimeScreen(
+      persistKey: 'procurement.stock_alerts',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.stockAlerts(),
+    );
   }
 
   @override
@@ -792,8 +878,19 @@ class _ProcurementStockAlertsPageState extends State<ProcurementStockAlertsPage>
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final items = snap.data?['items'] as List? ?? [];
+          final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.stock_alerts',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return procurementLoadingBody();
+                }
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+          final items = data['items'] as List? ?? [];
           return ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: items.length,
@@ -854,7 +951,12 @@ class _ProcurementStockAlertDetailPageState
   @override
   void initState() {
     super.initState();
-    _future = widget.api.stockAlert(widget.id);
+    procurementPrimeScreen(
+      persistKey: 'procurement.stockAlert.${widget.id}',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.stockAlert(widget.id),
+    );
   }
 
   @override
@@ -864,8 +966,19 @@ class _ProcurementStockAlertDetailPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final r = snap.data!;
+          final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.stockAlert.${widget.id}',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return procurementLoadingBody();
+                }
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+          final r = data;
           final reqId = (r['requisition_id'] as num?)?.toInt();
           final actions = <Widget>[];
           if (reqId != null) {
@@ -964,7 +1077,12 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.assets();
+    procurementPrimeScreen(
+      persistKey: 'procurement.assets',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.assets(),
+    );
   }
 
   void _runSearch() {
@@ -1009,10 +1127,19 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
             child: FutureBuilder<Map<String, dynamic>>(
               future: _future,
               builder: (context, snap) {
-                if (!snap.hasData) {
+                final merged = tichMergeSnapshot(
+                  snap,
+                  _cache as dynamic,
+                  persistKey: 'procurement.assets',
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
                   return procurementLoadingBody();
                 }
-                final items = snap.data?['items'] as List? ?? [];
+                if (merged == null && snap.hasError) {
+                  return Center(child: Text(tichDescribeError(snap.error)));
+                }
+                final data = merged! as Map<String, dynamic>;
+                final items = data['items'] as List? ?? [];
                 return ListView.separated(
                   padding: const EdgeInsets.all(12),
                   itemCount: items.length,

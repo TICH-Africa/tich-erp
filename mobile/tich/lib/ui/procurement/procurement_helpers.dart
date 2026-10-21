@@ -69,6 +69,26 @@ void procurementSilentLoad({
 Map<String, dynamic>? procurementReadCache(String key) =>
     TichScreenCache.read<Map<String, dynamic>>(key);
 
+Future<Map<String, dynamic>> procurementEnsure(
+  String key,
+  Future<Map<String, dynamic>> Function() fetch,
+) =>
+    TichScreenCache.ensure(key, fetch);
+
+void procurementPrimeScreen({
+  required String persistKey,
+  required void Function(Object? cache) setCache,
+  required void Function(Future<Map<String, dynamic>> future) setFuture,
+  required Future<Map<String, dynamic>> Function() fetch,
+}) {
+  TichScreenCache.primeMapScreen(
+    persistKey: persistKey,
+    applyCache: setCache,
+    applyFuture: setFuture,
+    fetch: fetch,
+  );
+}
+
 void procurementShowError(BuildContext context, Object error) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(tichDescribeError(error))),

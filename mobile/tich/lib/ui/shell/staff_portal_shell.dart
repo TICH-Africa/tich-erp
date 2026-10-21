@@ -80,13 +80,15 @@ class _StaffPortalShellState extends State<StaffPortalShell>
       StaffAttendancePage(api: api),
       StaffMorePage(api: api),
     ];
-    TichPortalWarmup.staff(api);
+    TichPortalWarmup.staffShellOpened(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,
       portalName: 'Staff portal',
       onSignOut: tichLogout(context),
       moreIndex: 4,
+      onTabSelected: (i) => TichPortalWarmup.staffTabSelected(api, i),
+      onMoreOpen: () => TichPortalWarmup.staffMoreOpened(api),
       moreDrawer: (context) => TichMoreDrawer(
         portalName: 'Staff portal',
         menuContext: TichPortalMenuContext.staff,

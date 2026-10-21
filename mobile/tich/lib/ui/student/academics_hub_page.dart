@@ -54,6 +54,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       setState: setState,
       fetch: () => widget.api.academics(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.academics',
     );
   }
 

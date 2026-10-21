@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'portal_helpers.dart';
 
 class PayslipsPage extends StatefulWidget {
   const PayslipsPage({super.key, required this.api});
@@ -17,6 +18,8 @@ class PayslipsPage extends StatefulWidget {
 }
 
 class _PayslipsPageState extends State<PayslipsPage> {
+  static const _cacheKey = 'portal.payslips_bundle';
+
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   bool _showCompensation = false;
@@ -37,10 +40,21 @@ class _PayslipsPageState extends State<PayslipsPage> {
   @override
   void initState() {
     super.initState();
-    _future = _fetchAll();
+    portalPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: _fetchAll,
+    );
   }
 
-  void _reload() => setState(() => _future = _fetchAll());
+  Future<void> _reload() => portalCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: _fetchAll,
+        onData: (data) => _dataCache = data,
+        persistKey: _cacheKey,
+      );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -48,6 +62,7 @@ class _PayslipsPageState extends State<PayslipsPage> {
       setState: setState,
       fetch: _fetchAll,
       onData: (data) => _dataCache = data,
+      persistKey: _cacheKey,
     );
   }
 
@@ -70,7 +85,11 @@ class _PayslipsPageState extends State<PayslipsPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+            final merged = tichMergeSnapshot(
+              snap,
+              _dataCache as dynamic,
+              persistKey: _cacheKey,
+            );
             if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return TichErrorRefresh(

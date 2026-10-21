@@ -46,6 +46,7 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
       setState: setState,
       fetch: () => widget.api.timetable(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.timetable',
     );
   }
 

@@ -58,6 +58,7 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
       setState: setState,
       fetch: () => widget.api.lifecycleRequests(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.lifecycle',
     );
   }
 

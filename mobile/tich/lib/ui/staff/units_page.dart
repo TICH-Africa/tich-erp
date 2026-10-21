@@ -45,6 +45,7 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
       setState: setState,
       fetch: () => widget.api.units(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.units',
     );
   }
 

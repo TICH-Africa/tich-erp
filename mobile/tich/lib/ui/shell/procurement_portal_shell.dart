@@ -58,7 +58,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       ProcurementSuppliersPage(api: api),
       ProcurementMorePage(api: api),
     ];
-    TichPortalWarmup.procurement(api);
+    TichPortalWarmup.procurementShellOpened(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,

@@ -44,6 +44,7 @@ class _WfhPageState extends State<WfhPage> {
       setState: setState,
       fetch: () => widget.api.wfh(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.wfh',
     );
   }
 

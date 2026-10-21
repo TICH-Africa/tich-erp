@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'portal_helpers.dart';
 
 class TimeLogDetailPage extends StatefulWidget {
   const TimeLogDetailPage({
@@ -28,10 +29,24 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
   final _dayEditors = <String, _DayEditor>{};
   bool _busy = false;
 
+  String get _cacheKey => 'portal.time_log.${widget.timeLogId}';
+
   @override
   void initState() {
     super.initState();
-    _future = _load();
+    portalPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) {
+        _dataCache = c;
+        final log = (c as Map<String, dynamic>?)?['log'] as Map?;
+        if (log != null) _hydrateDays(Map<String, dynamic>.from(log));
+      },
+      setFuture: (f) => _future = f.then((res) {
+        _hydrateDays(res['log'] as Map? ?? {});
+        return res;
+      }),
+      fetch: _load,
+    );
   }
 
   Future<Map<String, dynamic>> _load() {
@@ -41,14 +56,27 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
     });
   }
 
-  void _reload() => setState(() => _future = _load());
+  Future<void> _reload() => portalCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: _load,
+        onData: (data) {
+          _dataCache = data;
+          _hydrateDays(data['log'] as Map? ?? {});
+        },
+        persistKey: _cacheKey,
+      );
 
   void _liveRefresh() {
     tichSilentReload(
       mounted: () => mounted,
       setState: setState,
       fetch: _load,
-      onData: (data) => _dataCache = data,
+      onData: (data) {
+        _dataCache = data;
+        _hydrateDays(data['log'] as Map? ?? {});
+      },
+      persistKey: _cacheKey,
     );
   }
 
@@ -146,7 +174,11 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
+            final merged = tichMergeSnapshot(
+              snap,
+              _dataCache as dynamic,
+              persistKey: _cacheKey,
+            );
             if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return TichErrorRefresh(

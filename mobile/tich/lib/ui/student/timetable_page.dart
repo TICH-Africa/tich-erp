@@ -61,6 +61,7 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
       setState: setState,
       fetch: () => widget.api.timetable(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.timetable',
     );
   }
 

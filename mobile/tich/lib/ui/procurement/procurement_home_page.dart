@@ -51,6 +51,7 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
       setState: setState,
       fetch: () => widget.api.dashboard(),
       onData: (d) => _cache = d,
+      persistKey: 'procurement.home',
     );
   }
 

@@ -48,6 +48,7 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
       setState: setState,
       fetch: () => widget.api.documents(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.documents',
     );
   }
 

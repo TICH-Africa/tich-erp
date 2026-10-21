@@ -125,7 +125,7 @@ class _PortalShellState extends State<PortalShell>
       PayslipsPage(api: api),
       MorePage(api: api),
     ];
-    TichPortalWarmup.employee(api);
+    TichPortalWarmup.employeeShellOpened(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,
@@ -133,8 +133,10 @@ class _PortalShellState extends State<PortalShell>
       onSignOut: tichLogout(context),
       moreIndex: 4,
       onTabSelected: (i) {
+        TichPortalWarmup.employeeTabSelected(api, i);
         if (i == 2) refreshNavBadges();
       },
+      onMoreOpen: () => TichPortalWarmup.employeeMoreOpened(api),
       moreDrawer: (context) => TichMoreDrawer(
         portalName: 'Employee portal',
         menuContext: TichPortalMenuContext.employee,

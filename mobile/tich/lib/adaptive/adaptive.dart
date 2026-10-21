@@ -354,6 +354,7 @@ class AdaptiveTabScaffold extends StatefulWidget {
     this.moreIndex,
     this.moreDrawer,
     this.onSignOut,
+    this.onMoreOpen,
   });
 
   /// When set, the parent drives the selected tab (tests). Otherwise tabs are
@@ -367,6 +368,9 @@ class AdaptiveTabScaffold extends StatefulWidget {
   final int? moreIndex;
   final WidgetBuilder? moreDrawer;
   final VoidCallback? onSignOut;
+
+  /// Fired when the More tab opens the drawer (cache warm, analytics, etc.).
+  final VoidCallback? onMoreOpen;
 
   @override
   State<AdaptiveTabScaffold> createState() => AdaptiveTabScaffoldState();
@@ -441,6 +445,7 @@ class AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
 
   void _handleTap(int index) {
     if (widget.moreDrawer != null && index == widget.moreIndex) {
+      widget.onMoreOpen?.call();
       _scaffoldKey.currentState?.openDrawer();
       return;
     }

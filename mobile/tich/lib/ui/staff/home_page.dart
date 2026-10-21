@@ -6,6 +6,7 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../../data/staff_api.dart';
 import '../../models/auth_user.dart';
+import '../../data/tich_api_scope.dart';
 import '../shell/portal_shell.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
@@ -58,6 +59,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       setState: setState,
       fetch: () => widget.api.dashboard(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.home',
     );
   }
 
@@ -76,10 +78,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
         ? [
             IconButton(
               tooltip: 'My Employee Portal',
-              onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const PortalShell()),
-                (route) => false,
-              ),
+              onPressed: () {
+                if (user == null) return;
+                tichOpenPortalRoot(user, const PortalShell());
+              },
               icon: const Icon(Icons.badge_outlined),
             ),
           ]

@@ -49,6 +49,7 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
       setState: setState,
       fetch: () => widget.api.notifications(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.notifications',
     );
   }
 

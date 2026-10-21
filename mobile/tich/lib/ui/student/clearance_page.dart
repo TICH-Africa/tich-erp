@@ -46,6 +46,7 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
       setState: setState,
       fetch: () => widget.api.clearance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.clearance',
     );
   }
 

@@ -48,6 +48,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
       setState: setState,
       fetch: () => widget.api.lessonPlans(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.lesson_plans',
     );
   }
 

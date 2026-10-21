@@ -43,6 +43,7 @@ class _PoliciesPageState extends State<PoliciesPage> {
       setState: setState,
       fetch: () => widget.api.policies(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.policies',
     );
   }
 

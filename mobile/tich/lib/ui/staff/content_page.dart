@@ -47,6 +47,7 @@ class _StaffContentPageState extends State<StaffContentPage> {
       setState: setState,
       fetch: () => widget.api.content(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.content',
     );
   }
 

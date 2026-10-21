@@ -2,21 +2,16 @@ import 'package:flutter/widgets.dart';
 
 import '../ui/widgets/tich_tab_active_scope.dart';
 
-/// Like [IndexedStack], but only mounts a child the first time it is selected.
-/// Avoids parallel API loads from every tab on cold start.
+/// Only mounts the **selected** tab (inactive tabs are torn down to save memory).
 class LazyIndexedStack extends StatefulWidget {
   const LazyIndexedStack({
     super.key,
     required this.index,
     required this.children,
-    this.preloadAllAfter = const Duration(milliseconds: 350),
   });
 
   final int index;
   final List<Widget> children;
-
-  /// Mount every tab in the background so the first switch feels instant.
-  final Duration preloadAllAfter;
 
   @override
   State<LazyIndexedStack> createState() => _LazyIndexedStackState();
@@ -32,18 +27,11 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       widget.children.length,
       (i) => i == widget.index,
     );
-    if (widget.preloadAllAfter > Duration.zero) {
-      Future<void>.delayed(widget.preloadAllAfter, () {
-        if (!mounted) return;
-        var changed = false;
-        for (var i = 0; i < _activated.length; i++) {
-          if (!_activated[i]) {
-            _activated[i] = true;
-            changed = true;
-          }
-        }
-        if (changed) setState(() {});
-      });
+  }
+
+  void _syncActiveTab() {
+    for (var i = 0; i < _activated.length; i++) {
+      _activated[i] = i == widget.index;
     }
   }
 
@@ -53,11 +41,10 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
     if (oldWidget.children.length != widget.children.length) {
       _activated = List<bool>.generate(
         widget.children.length,
-        (i) =>
-            (i < _activated.length && _activated[i]) || i == widget.index,
+        (i) => i == widget.index,
       );
-    } else if (!_activated[widget.index]) {
-      _activated[widget.index] = true;
+    } else if (oldWidget.index != widget.index) {
+      _syncActiveTab();
     }
   }
 

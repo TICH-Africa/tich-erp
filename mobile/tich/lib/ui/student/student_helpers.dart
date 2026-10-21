@@ -40,8 +40,12 @@ void studentPrimeScreen({
   required void Function(Future<Map<String, dynamic>> future) setFuture,
   required Future<Map<String, dynamic>> Function() fetch,
 }) {
-  setCache(studentReadCache(persistKey));
-  setFuture(studentEnsure(persistKey, fetch));
+  TichScreenCache.primeMapScreen(
+    persistKey: persistKey,
+    applyCache: setCache,
+    applyFuture: setFuture,
+    fetch: fetch,
+  );
 }
 
 Widget studentErrorBody(Object? error, VoidCallback onRetry) {

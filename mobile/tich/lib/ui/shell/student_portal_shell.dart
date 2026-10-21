@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
 import '../../data/tich_portal_warmup.dart';
+import '../../data/tich_screen_cache.dart';
 import '../student/academics_hub_page.dart';
 import '../student/finance_page.dart';
 import '../student/home_page.dart';
@@ -75,13 +76,16 @@ class _StudentPortalShellState extends State<StudentPortalShell>
       StudentFinancePage(api: api),
       StudentMorePage(api: api),
     ];
-    TichPortalWarmup.student(api);
+    TichPortalWarmup.studentShellOpened(api);
+    _seedProfilePhotoFromCache();
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,
       portalName: 'Student portal',
       onSignOut: tichLogout(context),
       moreIndex: 4,
+      onTabSelected: (i) => TichPortalWarmup.studentTabSelected(api, i),
+      onMoreOpen: () => TichPortalWarmup.studentMoreOpened(api),
       moreDrawer: (context) => TichMoreDrawer(
         portalName: 'Student portal',
         menuContext: TichPortalMenuContext.student,
@@ -149,9 +153,22 @@ class _StudentPortalShellState extends State<StudentPortalShell>
     ];
   }
 
+  void _seedProfilePhotoFromCache() {
+    final data = TichScreenCache.read<Map<String, dynamic>>('student.home');
+    if (data == null) return;
+    final student = Map<String, dynamic>.from(data['student'] as Map? ?? {});
+    final url = student['photo_url']?.toString().trim();
+    _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+    _profilePhotoLoaded = url != null;
+  }
+
   Future<void> _loadProfilePhoto(StudentApi api) async {
+    if (_profilePhotoLoaded && _profilePhotoUrl != null) return;
     try {
-      final data = await api.dashboard();
+      final data = await TichScreenCache.ensure(
+        'student.home',
+        () => api.dashboard(),
+      );
       if (!mounted) return;
       final student =
           Map<String, dynamic>.from(data['student'] as Map? ?? {});

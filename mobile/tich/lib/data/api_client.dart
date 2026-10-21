@@ -74,6 +74,9 @@ String? tichDescribeHttpStatus(int? status) {
   };
 }
 
+/// HTTPS JSON API transport for mobile (lists, mutations, file uploads).
+///
+/// Live server push uses [TichRealtime] (WebSocket / Laravel Reverb), not this client.
 class ApiClient {
   ApiClient({
     AuthTokenStore? tokenStore,

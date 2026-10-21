@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../bloc/auth/auth_bloc.dart';
+import '../../data/tich_api_scope.dart';
 import '../../navigation/tich_root_nav.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../../models/auth_user.dart';
@@ -42,6 +43,11 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
   final auth = context.watch<AuthBloc>().state;
   final user = auth is AuthAuthenticated ? auth.user : null;
 
+  void switchPortal(Widget shell) {
+    if (user == null) return;
+    tichOpenPortalRoot(user, shell);
+  }
+
   switch (portal) {
     case TichPortalMenuContext.employee:
       return [
@@ -49,15 +55,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Procurement Portal',
             icon: Icons.inventory_outlined,
-            onTap: () =>
-                TichRootNav.pushAndRemoveUntil(const ProcurementPortalShell()),
+            onTap: () => switchPortal(const ProcurementPortalShell()),
           ),
         if (user?.canAccessStaffPortal == true)
           TichMoreItem(
             label: 'Switch to Staff Portal',
             icon: Icons.school_outlined,
-            onTap: () =>
-                TichRootNav.pushAndRemoveUntil(const StaffPortalShell()),
+            onTap: () => switchPortal(const StaffPortalShell()),
           ),
       ];
     case TichPortalMenuContext.staff:
@@ -66,14 +70,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Procurement Portal',
             icon: Icons.inventory_outlined,
-            onTap: () =>
-                TichRootNav.pushAndRemoveUntil(const ProcurementPortalShell()),
+            onTap: () => switchPortal(const ProcurementPortalShell()),
           ),
         if (_canSwitchToEmployee(user))
           TichMoreItem(
             label: 'Switch to My Employee Portal',
             icon: Icons.badge_outlined,
-            onTap: () => TichRootNav.pushAndRemoveUntil(const PortalShell()),
+            onTap: () => switchPortal(const PortalShell()),
           ),
       ];
     case TichPortalMenuContext.procurement:
@@ -87,14 +90,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Employee Portal',
             icon: Icons.badge_outlined,
-            onTap: () => TichRootNav.pushAndRemoveUntil(const PortalShell()),
+            onTap: () => switchPortal(const PortalShell()),
           ),
         if (user?.canAccessStaffPortal == true)
           TichMoreItem(
             label: 'Switch to Staff Portal',
             icon: Icons.school_outlined,
-            onTap: () =>
-                TichRootNav.pushAndRemoveUntil(const StaffPortalShell()),
+            onTap: () => switchPortal(const StaffPortalShell()),
           ),
       ];
     case TichPortalMenuContext.student:
@@ -135,8 +137,9 @@ List<TichMoreItem> tichGlobalMoreFooterItems(BuildContext context) {
       TichMoreItem(
         label: 'Choose portal',
         icon: Icons.apps_outlined,
-        onTap: () => TichRootNav.pushAndRemoveUntil(
-          PortalChooserPage(user: user!),
+        onTap: () => tichOpenPortalRoot(
+          user!,
+          PortalChooserPage(user: user),
         ),
       ),
     TichMoreItem(

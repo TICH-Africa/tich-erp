@@ -44,6 +44,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
       setState: setState,
       fetch: () => widget.api.concerns(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.concerns',
     );
   }
 

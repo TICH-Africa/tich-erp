@@ -84,6 +84,7 @@ class _DashboardPageState extends State<DashboardPage> {
       setState: setState,
       fetch: () => widget.api.dashboard(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.dashboard',
     );
     _loadNotifications();
     _syncAttendanceReminders();

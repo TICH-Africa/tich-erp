@@ -43,6 +43,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       setState: setState,
       fetch: () => widget.api.documents(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.documents',
     );
   }
 

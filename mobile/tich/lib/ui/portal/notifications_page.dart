@@ -47,6 +47,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       setState: setState,
       fetch: () => widget.api.notifications(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.notifications',
     );
   }
 

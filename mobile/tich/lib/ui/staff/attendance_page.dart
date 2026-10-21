@@ -49,6 +49,7 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
       setState: setState,
       fetch: () => widget.api.attendance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.attendance',
     );
   }
 

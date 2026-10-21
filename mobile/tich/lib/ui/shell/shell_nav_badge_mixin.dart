@@ -2,20 +2,36 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../data/tich_realtime_signals.dart';
+
 /// Polls nav badge counts; kept slower than per-screen live refresh to reduce load.
-const Duration shellNavBadgeInterval = Duration(seconds: 90);
+const Duration shellNavBadgeInterval = Duration(seconds: 120);
+
+/// Wait after shell paint before the first badge poll (avoids stacking on tab load).
+const Duration shellNavBadgeInitialDelay = Duration(seconds: 8);
 
 /// Polls a fetcher on an interval and when the app resumes.
 mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserver {
   Timer? _badgeTimer;
   bool _badgeFetchScheduled = false;
+  VoidCallback? _realtimeBadgeListener;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => refreshNavBadges());
-    _badgeTimer = Timer.periodic(shellNavBadgeInterval, (_) => refreshNavBadges());
+    _realtimeBadgeListener = () => refreshNavBadges();
+    final previous = TichRealtimeSignals.onSidebarCountsUpdated;
+    TichRealtimeSignals.onSidebarCountsUpdated = () {
+      previous?.call();
+      _realtimeBadgeListener?.call();
+    };
+    Future<void>.delayed(shellNavBadgeInitialDelay, () {
+      if (!mounted) return;
+      refreshNavBadges();
+      _badgeTimer?.cancel();
+      _badgeTimer = Timer.periodic(shellNavBadgeInterval, (_) => refreshNavBadges());
+    });
   }
 
   @override

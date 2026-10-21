@@ -45,6 +45,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
       setState: setState,
       fetch: () => widget.api.timeLogs(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.time_logs',
     );
   }
 

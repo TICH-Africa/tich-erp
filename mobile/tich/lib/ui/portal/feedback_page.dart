@@ -43,6 +43,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       setState: setState,
       fetch: () => widget.api.feedback(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.feedback',
     );
   }
 

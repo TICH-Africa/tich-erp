@@ -14,7 +14,7 @@ final RouteObserver<ModalRoute<void>> tichRouteObserver =
     RouteObserver<ModalRoute<void>>();
 
 /// Default background poll interval while a screen is visible (WhatsApp-style).
-const Duration tichLiveRefreshInterval = Duration(seconds: 60);
+const Duration tichLiveRefreshInterval = Duration(seconds: 90);
 
 /// Minimum gap between automatic background refreshes (avoids flicker on tab/back).
 const Duration tichLiveRefreshMinGap = Duration(seconds: 8);

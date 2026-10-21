@@ -47,6 +47,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       setState: setState,
       fetch: () => widget.api.grading(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.grading',
     );
   }
 

@@ -44,6 +44,7 @@ class _LeavePageState extends State<LeavePage> {
       setState: setState,
       fetch: () => widget.api.leave(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.leave',
     );
   }
 

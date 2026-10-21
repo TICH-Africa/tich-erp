@@ -48,6 +48,7 @@ class _StudentEvaluationsPageState extends State<StudentEvaluationsPage> {
       setState: setState,
       fetch: () => widget.api.evaluations(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.evaluations',
     );
   }
 

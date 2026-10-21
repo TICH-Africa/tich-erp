@@ -40,8 +40,12 @@ void staffPrimeScreen({
   required void Function(Future<Map<String, dynamic>> future) setFuture,
   required Future<Map<String, dynamic>> Function() fetch,
 }) {
-  setCache(staffReadCache(persistKey));
-  setFuture(staffEnsure(persistKey, fetch));
+  TichScreenCache.primeMapScreen(
+    persistKey: persistKey,
+    applyCache: setCache,
+    applyFuture: setFuture,
+    fetch: fetch,
+  );
 }
 
 Widget staffErrorBody(Object? error, VoidCallback onRetry) {

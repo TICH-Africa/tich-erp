@@ -46,6 +46,7 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
       setState: setState,
       fetch: () => widget.api.profile(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.enrolment',
     );
   }
 

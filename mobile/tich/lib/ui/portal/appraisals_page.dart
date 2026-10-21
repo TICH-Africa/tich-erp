@@ -42,6 +42,7 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
       setState: setState,
       fetch: () => widget.api.appraisals(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.appraisals',
     );
   }
 

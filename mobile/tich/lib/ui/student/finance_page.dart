@@ -49,6 +49,7 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       setState: setState,
       fetch: () => widget.api.finance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.finance',
     );
   }
 

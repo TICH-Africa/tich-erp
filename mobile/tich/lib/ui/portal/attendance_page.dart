@@ -102,6 +102,7 @@ class _AttendancePageState extends State<AttendancePage> {
       setState: setState,
       fetch: () => widget.api.attendance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.attendance',
     );
   }
 

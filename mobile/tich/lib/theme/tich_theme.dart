@@ -1,8 +1,24 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 TextStyle? _tichBodyBase;
+
+TextStyle _mobileBodyBase() => const TextStyle(
+      fontFamily: 'Georgia',
+      fontFamilyFallback: ['serif'],
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+      height: 1.45,
+    );
+
+TextTheme _tichMerriweatherTextTheme(TextTheme base) {
+  if (kIsWeb) {
+    return GoogleFonts.merriweatherTextTheme(base);
+  }
+  return base.apply(fontFamily: 'Georgia', fontFamilyFallback: ['serif']);
+}
 
 /// Body copy — CSS `--font-body: Merriweather, Georgia, serif`.
 TextStyle tichUi({
@@ -12,11 +28,8 @@ TextStyle tichUi({
   double? height,
   double? letterSpacing,
 }) {
-  _tichBodyBase ??= GoogleFonts.merriweather(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 1.45,
-  );
+  _tichBodyBase ??=
+      kIsWeb ? GoogleFonts.merriweather(fontSize: 14, fontWeight: FontWeight.w400, height: 1.45) : _mobileBodyBase();
   return _tichBodyBase!.copyWith(
     fontSize: fontSize,
     fontWeight: fontWeight,
@@ -148,10 +161,14 @@ abstract final class TichTheme {
     Color? color,
     double? height,
   }) {
-    _displayBase ??= GoogleFonts.merriweather(
-      fontWeight: FontWeight.w700,
-      fontSize: 16,
-    );
+    _displayBase ??= kIsWeb
+        ? GoogleFonts.merriweather(fontWeight: FontWeight.w700, fontSize: 16)
+        : const TextStyle(
+            fontFamily: 'Georgia',
+            fontFamilyFallback: ['serif'],
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          );
     return _displayBase!.copyWith(
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -162,7 +179,7 @@ abstract final class TichTheme {
 
   static ThemeData light() {
     if (_light != null) return _light!;
-    final merriweather = GoogleFonts.merriweatherTextTheme();
+    final merriweather = _tichMerriweatherTextTheme(ThemeData.light().textTheme);
     final colorScheme = ColorScheme.fromSeed(
       seedColor: TichColors.blue,
       primary: TichColors.blue,
@@ -319,7 +336,7 @@ abstract final class TichTheme {
 
   static ThemeData dark() {
     if (_dark != null) return _dark!;
-    final merriweather = GoogleFonts.merriweatherTextTheme(ThemeData.dark().textTheme);
+    final merriweather = _tichMerriweatherTextTheme(ThemeData.dark().textTheme);
     final colorScheme = ColorScheme.fromSeed(
       seedColor: TichColors.blue,
       brightness: Brightness.dark,
