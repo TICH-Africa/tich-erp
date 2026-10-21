@@ -31,7 +31,10 @@
     @endif
 >
     @if ($editable)
-        <p class="tich-caption tich-mb-3">Drag sessions to another day or time slot. Drop onto another session to swap.</p>
+        <p class="tich-caption tich-mb-3">
+            Drag sessions to another day or time slot. Drop onto another session to swap.
+            For anything else - the unit, lecturer, venue, mode, week or month - use <strong>Edit timetable</strong> below the grid.
+        </p>
         <div class="tich-timetable-drag-status" hidden role="status"></div>
     @endif
     @if ($canEditInvigilator)
@@ -86,6 +89,9 @@
                                             <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
                                         @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
+                                        @if ($session->isOnline())
+                                            <span class="tich-caption tich-timetable-session__mode"><strong>Online</strong></span>
+                                        @endif
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
                                         @elseif ($session->venue)
@@ -96,7 +102,10 @@
                                         @elseif ($canEditInvigilator)
                                             <span class="tich-caption">Invigilator: unassigned</span>
                                         @endif
-                                        <span class="tich-caption">{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
+                                        <span class="tich-caption">{{ ($sessionTypes ?? $segmentTypes)[$session->session_type] ?? ucfirst($session->session_type) }}</span>
+                                        @if (in_array($session->session_type, ['break', 'lunch'], true) === false)
+                                            <span class="tich-caption">{{ $session->recurrenceLabel() }}@if ($session->cycleLabel()) · {{ $session->cycleLabel() }} @endif</span>
+                                        @endif
                                         @if ($canEditInvigilator)
                                             <button
                                                 type="button"

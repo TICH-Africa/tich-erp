@@ -15,8 +15,10 @@ class ProgramTimetable extends Model
 
     protected $fillable = [
         'program_id', 'curriculum_version_id', 'teaching_period', 'title', 'timetable_kind',
-        'template_id', 'campus_id', 'status', 'generation_notes', 'published_at', 'published_by',
+        'template_id', 'campus_id', 'status', 'generation_notes', 'progress_note', 'week_span',
+        'published_at', 'published_by',
         'created_at', 'updated_at',
+        'source', 'source_file', 'source_name', 'source_uploaded_at', 'source_uploaded_by',
     ];
 
     /**
@@ -58,6 +60,8 @@ class ProgramTimetable extends Model
         'published_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'source_uploaded_at' => 'datetime',
+        'week_span' => 'integer',
     ];
 
     public function program(): BelongsTo
