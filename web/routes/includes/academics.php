@@ -114,6 +114,10 @@ return function (bool $named = true): void {
         $register('post', '/unit-allocations/{unitAllocation}/reject', [UnitAllocationApprovalController::class, 'reject'], 'departments.academics.unit-allocations.reject', ['permission:academics.approve']);
         $register('delete', '/programs/{program}/allocations/{unitAllocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');
         $register('post', '/programs/{program}/student-unit-registrations', [ProgramCurriculumController::class, 'registerUnits'], 'departments.academics.programs.student-registrations.store');
+        $register('post', '/programs/{program}/student-unit-registrations/by-year', [ProgramCurriculumController::class, 'registerUnitsByYear'], 'departments.academics.programs.student-registrations.by-year');
+        $register('post', '/programs/{program}/students/{student}/units', [ProgramCurriculumController::class, 'addStudentUnit'], 'departments.academics.programs.student-units.add');
+        $register('post', '/programs/{program}/students/{student}/units/remove', [ProgramCurriculumController::class, 'removeStudentUnit'], 'departments.academics.programs.student-units.remove');
+        $register('post', '/programs/{program}/students/{student}/year', [ProgramCurriculumController::class, 'pinStudentYear'], 'departments.academics.programs.student-units.year');
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');
         $register('post', '/clearance/{student}/approve', [AcademicClearanceController::class, 'approve'], 'departments.academics.clearance.approve');
         $register('post', '/clearance/{student}/reject', [AcademicClearanceController::class, 'reject'], 'departments.academics.clearance.reject');

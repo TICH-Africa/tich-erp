@@ -127,9 +127,12 @@
                             No units are mapped to {{ $deskPeriod['label'] }} for {{ $selectedIntake->intakeLabel() }} yet.
                             <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, ['section' => 'semesters']))) }}">
                                 Map units in the Semesters tab</a> first, then come back to register students.
+                            The "own year" button below still works: it reads the units mapped to each student's own year.
                         </p>
                     </div>
-                @elseif ($deskStudents->isEmpty())
+                @endif
+
+                @if ($deskStudents->isEmpty())
                     <p class="tich-caption tich-mt-4">No students match these filters for this intake. Widen the filters above, or admit the students first.</p>
                 @else
                     <form method="POST" action="{{ route('departments.academics.programs.student-registrations.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
@@ -143,7 +146,12 @@
                         <div class="tich-grid" style="display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit, minmax(20rem, 1fr));">
                             <div>
                                 <h3 class="tich-h4">Units in {{ $deskPeriod['label'] }}</h3>
-                                <p class="tich-caption">Lecturers shown are the ones Academics has approved for that unit this semester.</p>
+                                @if ($deskUnits->isEmpty())
+                                    <p class="tich-caption">Nothing is mapped to this teaching period yet, so tick the students and use the "own year" button.</p>
+                                @else
+                                    <p class="tich-caption">Lecturers shown are the ones Academics has approved for that unit this semester.</p>
+                                @endif
+                                @if ($deskUnits->isNotEmpty())
                                 <div style="max-height:24rem; overflow:auto; border:1px solid var(--tich-border, #e2e8f0); border-radius:0.5rem;">
                                     <ul class="tich-catalog-alloc-list" style="list-style:none; margin:0; padding:0;">
                                         @foreach ($deskUnits as $mapping)
@@ -171,6 +179,7 @@
                                         @endforeach
                                     </ul>
                                 </div>
+                                @endif
                             </div>
 
                             <div>
@@ -186,6 +195,7 @@
                                                 @php
                                                     $unitIds = $registeredByStudent->get($student->id, collect());
                                                     $inIntake = \App\Support\IntakeIdentity::studentMatchesIntake($student, $selectedIntake);
+                                                    $yearInfo = ($desk['yearsByStudent'] ?? collect())->get($student->id);
                                                 @endphp
                                                 <tr>
                                                     <td style="width:2.25rem;">
@@ -193,19 +203,29 @@
                                                     </td>
                                                     <td>
                                                         <strong>{{ $student->displayName() }}</strong>
+                                                        @if ($yearInfo)
+                                                            <span class="tich-badge">{{ $yearInfo['period_label'] }}{{ $yearInfo['overridden'] ? ' (pinned)' : '' }}</span>
+                                                        @endif
                                                         <span class="tich-caption" style="display:block;">
                                                             {{ $student->registration_number }}
                                                             · {{ $student->campus?->campus_name ?? 'campus not set' }}
                                                             · {{ $student->cohort_intake ?: 'no cohort' }}
                                                             · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
                                                             · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
+                                                            @if ($yearInfo)
+                                                                · {{ $yearInfo['basis'] }}
+                                                            @endif
                                                             @if (! $inIntake)
                                                                 · <span class="tich-badge">other intake</span>
                                                             @endif
                                                         </span>
                                                     </td>
                                                     <td class="tich-text-right" style="white-space:nowrap;">
-                                                        {{ $unitIds->count() }}/{{ $deskUnits->count() }} registered
+                                                        @if ($deskUnits->isNotEmpty())
+                                                            {{ $unitIds->count() }}/{{ $deskUnits->count() }} registered
+                                                        @else
+                                                            no units in this period
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -216,9 +236,18 @@
                         </div>
 
                         <div class="tich-flex-wrap tich-mt-4" style="gap:0.75rem;">
-                            <button type="submit" class="tich-btn tich-btn-primary">Register selected students</button>
+                            @if ($deskUnits->isNotEmpty())
+                                <button type="submit" class="tich-btn tich-btn-primary">Register selected students</button>
+                            @endif
+                            <button type="submit" class="tich-btn {{ $deskUnits->isEmpty() ? 'tich-btn-primary' : 'tich-btn-secondary' }}"
+                                formaction="{{ route('departments.academics.programs.student-registrations.by-year', array_merge($hub, ['program' => $program->id])) }}"
+                                formnovalidate>
+                                Register each student on their own year
+                            </button>
                             <p class="tich-text" style="margin:0; font-size:0.8125rem;">
                                 Students see these units on their portal straight away, with the lecturer Academics has approved.
+                                The "own year" button ignores the period above and places each student on the units mapped to the
+                                year their admission date gives them, so a mixed cohort registers in one go.
                             </p>
                         </div>
                     </form>
@@ -313,7 +342,8 @@
                     · <a href="{{ route('departments.academics.programs.curriculum', $filterParams) }}" class="tich-link">Close</a>
                 </p>
                 <p class="tich-caption" style="margin:0.35rem 0 0;">
-                    Showing this student's profile and performance only. Close the record to use the intake registration desk.
+                    This record shows the student's own profile and performance only - not the intake desk or the other cohorts.
+                    Unit corrections below act on this student alone. Close the record to use the intake registration desk.
                 </p>
             </div>
 
@@ -323,6 +353,12 @@
                 'performance' => $expandedStudentRecord['performance'],
                 'compact' => false,
             ])
+
+            @can('academics.write')
+                @if ($studentCorrections && $selectedIntake)
+                    @include('academics.programs.partials.student-unit-corrections')
+                @endif
+            @endcan
         </article>
     @endif
 @endif

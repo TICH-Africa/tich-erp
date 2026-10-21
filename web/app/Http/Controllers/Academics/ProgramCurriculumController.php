@@ -12,6 +12,7 @@ use App\Models\ProgramTimetable;
 use App\Models\ProgramTimetableSession;
 use App\Models\Room;
 use App\Models\Staff;
+use App\Models\Student;
 use App\Models\Unit;
 use App\Models\UnitAllocation;
 use App\Services\AcademicsAccessService;
@@ -149,6 +150,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $enrolledSummaries = collect();
         $expandedStudentRecord = null;
         $studentRegistration = null;
+        $studentCorrections = null;
         $enrollmentStatusFilter = $request->string('enrollment_status')->toString() ?: null;
 
         if ($section === 'enrolled') {
@@ -179,6 +181,16 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                         'academics' => $expandedAcademics,
                         'performance' => $this->studentAcademicRecords->semesterPerformance($expandedStudent, $expandedAcademics),
                     ];
+
+                    // Corrections are per student, so they ride with the record rather than
+                    // with the intake desk above it.
+                    if ($selectedIntake && $request->user()->hasPermission('academics.write')) {
+                        $studentCorrections = $this->studentRegistrations->corrections(
+                            $expandedStudent,
+                            $program,
+                            $selectedIntake
+                        );
+                    }
                 }
             }
 
@@ -228,6 +240,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'enrolledStudents' => $enrolledStudents,
             'enrolledSummaries' => $enrolledSummaries,
             'studentRegistration' => $studentRegistration,
+            'studentCorrections' => $studentCorrections,
             'expandedStudentRecord' => $expandedStudentRecord,
             'enrollmentStatusFilter' => $enrollmentStatusFilter,
             'canViewApplications' => $request->user()->hasPermission('academics.read'),
@@ -1089,6 +1102,192 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'admission_year' => $request->integer('admission_year') ?: null,
             ]))
             ->with('status', "Registered {$result['students']} ".str('student')->plural($result['students'])." onto {$result['units']} unit ".str('place')->plural($result['units']).'.');
+    }
+
+    /**
+     * Register each ticked student onto the units for the year the app works out for them,
+     * from their admission year against the running academic year.
+     */
+    public function registerUnitsByYear(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'students' => ['required', 'array', 'min:1'],
+            'students.*' => ['integer'],
+            'learning_department' => ['nullable', 'integer'],
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $result = $this->studentRegistrations->registerByYear(
+            $request->user(),
+            $program,
+            $intake,
+            $validated['students'],
+        );
+
+        $redirect = redirect()->route(
+            'departments.academics.programs.curriculum',
+            $this->enrolledReturn($request, $program, $intake),
+        );
+
+        if ($result['students'] > 0) {
+            $nothingToAdd = $result['units'] === 0;
+            $redirect = $redirect->with('status', ($nothingToAdd ? 'Checked ' : 'Registered ').$result['students'].' '
+                .str('student')->plural($result['students']).' against their own year ('.implode('; ', $result['groups']).')'
+                .($nothingToAdd ? ' — they already hold every unit for that year, so nothing was added' : '')
+                .'.');
+
+            if ($result['skipped'] !== []) {
+                $skippedCount = count($result['skipped']);
+                $redirect = $redirect->with('warning', 'Skipped '.$skippedCount.' '.str('student')->plural($skippedCount).': '.implode(' ', $result['skipped']));
+            }
+        } else {
+            $redirect = $redirect->with('error', 'No student was registered: '
+                .($result['skipped'] !== [] ? implode(' ', $result['skipped']) : 'check each student has an admission year and that units are mapped to their year.'));
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Put one extra unit on a single student, limited to the units their own year is due for.
+     */
+    public function addStudentUnit(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'unit_id' => ['required', 'integer'],
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $this->studentRegistrations->addUnit(
+            $request->user(),
+            $student,
+            $program,
+            $intake,
+            (int) $validated['unit_id'],
+        );
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', 'Unit added to '.$student->registration_number.'.');
+    }
+
+    /**
+     * Take a unit off a student. Deliberately the slowest control on the record: it needs a
+     * written reason and a ticked confirmation, and it is audited.
+     */
+    public function removeStudentUnit(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'registered_unit_id' => ['required', 'integer'],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+            'confirm_removal' => ['accepted'],
+        ], [
+            'reason.required' => 'Say why this unit is being removed - the correction is auditable and cannot be left blank.',
+            'reason.min' => 'Say why this unit is being removed (at least 8 characters) so the correction is auditable.',
+            'confirm_removal.accepted' => 'Tick "I confirm" - un-assigning a student who is already registered is a deliberate change.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $result = $this->studentRegistrations->removeUnit(
+            $request->user(),
+            $student,
+            (int) $validated['registered_unit_id'],
+            $validated['reason'],
+        );
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', $result['unit_code'].' removed from '.$student->registration_number.'. '.$result['unit_count'].' unit '.str('place')->plural($result['unit_count']).' remain on that registration.');
+    }
+
+    /**
+     * Pin the student's year of study, overriding the admission arithmetic for them alone.
+     */
+    public function pinStudentYear(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'current_year' => ['required', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+        ], [
+            'reason.required' => 'Say why this student sits a different year - the change is auditable and cannot be left blank.',
+            'reason.min' => 'Say why this student sits a different year (at least 8 characters) so the change is auditable.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $year = $this->studentRegistrations->pinYear(
+            $request->user(),
+            $student,
+            $program,
+            (int) $validated['current_year'],
+            $validated['reason'],
+        );
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', $student->registration_number.' now sits Year '.$year.'.');
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function enrolledReturn(Request $request, AcademicProgram $program, CurriculumVersion $intake): array
+    {
+        return array_filter([
+            'program' => $program->id,
+            'learning_department' => $request->integer('learning_department') ?: null,
+            'intake' => $intake->id,
+            'section' => 'enrolled',
+            'enrollment_status' => $request->string('enrollment_status')->toString() ?: null,
+            'entry_pathway' => $request->string('entry_pathway')->toString() ?: null,
+            'admission_year' => $request->integer('admission_year') ?: null,
+            'student_search' => trim($request->string('student_search')->toString()) ?: null,
+        ]);
+    }
+
+    /**
+     * The student's own record, scrolled back to the corrections panel.
+     */
+    private function studentRecordUrl(Request $request, AcademicProgram $program, CurriculumVersion $intake, Student $student): string
+    {
+        return route('departments.academics.programs.curriculum', array_merge(
+            $this->enrolledReturn($request, $program, $intake),
+            ['student' => $student->id],
+        )).'#unit-corrections';
     }
 
     /**

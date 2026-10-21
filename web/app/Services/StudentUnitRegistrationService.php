@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AcademicProgram;
+use App\Models\AcademicYear;
 use App\Models\CurriculumVersion;
 use App\Models\CurriculumVersionUnit;
 use App\Models\NursingBlock;
@@ -28,6 +29,7 @@ class StudentUnitRegistrationService
     public function __construct(
         protected CurriculumVersionService $versions,
         protected ExamScheduleSyncService $schedule,
+        protected AuditService $audits,
     ) {}
 
     /**
@@ -53,6 +55,9 @@ class StudentUnitRegistrationService
             'periodUnits' => $units,
             'lecturersByUnit' => $this->lecturersByUnit($units, $intake),
             'students' => $students,
+            'yearsByStudent' => $students->mapWithKeys(fn (Student $student) => [
+                $student->id => $this->yearOfStudy($student, $program, $intake),
+            ]),
             'pathways' => $this->distinctValues($program, 'entry_pathway'),
             'admissionYears' => $this->admissionYears($program),
             'pathwayFilter' => $request->string('entry_pathway')->toString() ?: null,
@@ -173,6 +178,365 @@ class StudentUnitRegistrationService
         });
 
         return ['students' => $registered, 'units' => $unitsWritten];
+    }
+
+    /**
+     * The year of study a student is sitting, and the teaching period that goes with it.
+     *
+     * The desk used to open every cohort on semester 1, so a 2025 intake was still being
+     * handed first-year units. Counting the admission year against the academic year now
+     * running gives the year; the year gives the period whose units they are due for.
+     * An officer can pin the year on the student record (students.current_year) and that
+     * wins, because re-admits, repeats and transfers do not follow the arithmetic.
+     *
+     * @return array{year: int, period: int, period_key: string, period_label: string, basis: string, overridden: bool}|null
+     */
+    public function yearOfStudy(Student $student, AcademicProgram $program, ?CurriculumVersion $intake = null): ?array
+    {
+        if ($program->usesBlocks()) {
+            return null;
+        }
+
+        $terms = max(1, (int) $program->termsPerYear());
+        $periods = max(1, (int) $program->totalTeachingPeriods());
+        $years = max(1, intdiv($periods, $terms));
+
+        $pinned = $student->current_year ? (int) $student->current_year : null;
+
+        if ($pinned !== null && $pinned >= 1 && $pinned <= $years) {
+            $year = $pinned;
+            $basis = 'year pinned on the student record';
+        } else {
+            $admissionYear = $this->admissionYear($student, $intake);
+            $runningYear = $this->currentAcademicYearStart();
+
+            if (! $admissionYear || ! $runningYear) {
+                return null;
+            }
+
+            $year = min(max($runningYear - $admissionYear + 1, 1), $years);
+            $basis = 'admitted '.$admissionYear.', academic year '.$runningYear.'/'.($runningYear + 1);
+        }
+
+        $first = (($year - 1) * $terms) + 1;
+        $last = min($first + $terms - 1, $periods);
+        $period = $first;
+
+        // A student already sitting a semester inside their own year stays on it.
+        if ($student->current_semester_id) {
+            $sitting = Semester::query()->whereKey($student->current_semester_id)->value('semester_number');
+
+            if ($sitting && (int) $sitting >= $first && (int) $sitting <= $last) {
+                $period = (int) $sitting;
+            }
+        }
+
+        return [
+            'year' => $year,
+            'period' => $period,
+            'period_key' => 'sem-'.$period,
+            'period_label' => $program->periodLabel($period),
+            'basis' => $basis,
+            'overridden' => $pinned !== null,
+        ];
+    }
+
+    /**
+     * Register each student onto the units mapped to their own year of study.
+     *
+     * @param  list<int>  $studentIds
+     * @return array{students: int, units: int, groups: list<string>, skipped: list<string>}
+     */
+    public function registerByYear(User $registrar, AcademicProgram $program, CurriculumVersion $intake, array $studentIds): array
+    {
+        $mappings = $this->versions->mappedUnits($intake);
+        $groups = [];
+        $skipped = [];
+
+        $students = Student::query()
+            ->where('program_id', $program->id)
+            ->whereIn('id', collect($studentIds)->map(fn ($id) => (int) $id)->filter()->all())
+            ->with('applicant')
+            ->get();
+
+        foreach ($students as $student) {
+            $year = $this->yearOfStudy($student, $program, $intake);
+
+            if (! $year) {
+                $skipped[] = $student->registration_number.': no admission year on record.';
+
+                continue;
+            }
+
+            $unitIds = $this->mappingsForPeriod($mappings, $year['period'], null)
+                ->pluck('unit_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($unitIds === []) {
+                $skipped[] = $student->registration_number.': no units mapped to '.$year['period_label'].' yet.';
+
+                continue;
+            }
+
+            $semesterId = $this->schedule->resolveSemesterId($intake, $year['period']);
+
+            if (! $semesterId) {
+                $skipped[] = $student->registration_number.': this intake has no calendar semester for '.$year['period_label'].'.';
+
+                continue;
+            }
+
+            $groups[$year['period']]['semester_id'] = (int) $semesterId;
+            $groups[$year['period']]['label'] = $year['period_label'];
+            $groups[$year['period']]['students'][] = (int) $student->id;
+            $groups[$year['period']]['units'] = $unitIds;
+        }
+
+        $registered = 0;
+        $unitsWritten = 0;
+        $written = [];
+
+        foreach ($groups as $period => $group) {
+            $result = $this->register(
+                $registrar,
+                $program,
+                $intake,
+                $group['semester_id'],
+                $group['students'],
+                $group['units'],
+            );
+
+            $registered += $result['students'];
+            $unitsWritten += $result['units'];
+            $written[] = $group['label'].': '.$result['students'].' '.str('student')->plural($result['students']).', '.$result['units'].' unit '.str('place')->plural($result['units']);
+        }
+
+        return [
+            'students' => $registered,
+            'units' => $unitsWritten,
+            'groups' => $written,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * Everything the corrections panel for one student needs: the year they sit, the units
+     * they hold, and the units their year is due for that they do not hold yet.
+     *
+     * @return array<string, mixed>
+     */
+    public function corrections(Student $student, AcademicProgram $program, CurriculumVersion $intake): array
+    {
+        $year = $this->yearOfStudy($student, $program, $intake);
+        $mappings = $this->versions->mappedUnits($intake);
+
+        $rows = DB::table('registered_units as ru')
+            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
+            ->join('units as u', 'u.id', '=', 'ru.unit_id')
+            ->where('ssr.student_id', $student->id)
+            ->orderBy('s.semester_number')
+            ->get([
+                'ru.id',
+                'ru.unit_id',
+                'ru.is_additional',
+                'ssr.id as registration_id',
+                'ssr.semester_id',
+                's.semester_number',
+                's.semester_label',
+                'u.unit_code',
+                'u.unit_name',
+            ]);
+
+        $unitIds = $rows->pluck('unit_id')->filter()->unique()->all();
+        $graded = $unitIds === []
+            ? collect()
+            : DB::table('grade_records')
+                ->where('student_id', $student->id)
+                ->whereIn('unit_id', $unitIds)
+                ->pluck('grade_letter', 'unit_id');
+        $assessed = $unitIds === []
+            ? collect()
+            : DB::table('cat_scores')
+                ->where('student_id', $student->id)
+                ->whereIn('unit_id', $unitIds)
+                ->pluck('score_obtained', 'unit_id');
+
+        $duePeriod = $year['period'] ?? null;
+        $dueUnits = $duePeriod
+            ? $this->mappingsForPeriod($mappings, (int) $duePeriod, null)
+            : collect();
+        $heldUnitIds = $rows->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
+
+        return [
+            'year' => $year,
+            'semesterId' => $duePeriod ? $this->schedule->resolveSemesterId($intake, (int) $duePeriod) : null,
+            'registered' => $rows->map(function ($row) use ($graded, $assessed, $duePeriod) {
+                $unitId = (int) $row->unit_id;
+
+                return [
+                    'id' => (int) $row->id,
+                    'unit_id' => $unitId,
+                    'unit_code' => (string) $row->unit_code,
+                    'unit_name' => (string) $row->unit_name,
+                    'semester_id' => (int) $row->semester_id,
+                    'semester_label' => (string) $row->semester_label,
+                    'outside_their_year' => $duePeriod !== null && (int) $row->semester_number !== (int) $duePeriod,
+                    'grade' => $graded[$unitId] ?? null,
+                    'has_marks' => $graded->has($unitId) || $assessed->has($unitId),
+                ];
+            }),
+            'missing' => $dueUnits
+                ->reject(fn (CurriculumVersionUnit $mapping) => in_array((int) $mapping->unit_id, $heldUnitIds, true))
+                ->map(function (CurriculumVersionUnit $mapping) {
+                    $unit = $mapping->unit;
+
+                    return [
+                        'unit_id' => (int) $mapping->unit_id,
+                        'unit_code' => (string) ($unit?->unit_code ?? ''),
+                        'unit_name' => (string) ($unit?->unit_name ?? ''),
+                    ];
+                })
+                ->values(),
+            'dueUnits' => $dueUnits,
+            'maxYear' => max(1, intdiv(max(1, (int) $program->totalTeachingPeriods()), max(1, (int) $program->termsPerYear()))),
+        ];
+    }
+
+    /**
+     * Add one unit to the student's registration for their own year.
+     *
+     * @return array{students: int, units: int}
+     */
+    public function addUnit(User $officer, Student $student, AcademicProgram $program, CurriculumVersion $intake, int $unitId): array
+    {
+        $corrections = $this->corrections($student, $program, $intake);
+        $semesterId = $corrections['semesterId'];
+
+        if (! $semesterId) {
+            throw ValidationException::withMessages([
+                'unit_id' => 'This intake has no calendar semester for the student\'s teaching period yet. Set the period dates on the Semesters tab.',
+            ]);
+        }
+
+        $due = collect($corrections['dueUnits'])
+            ->first(fn (CurriculumVersionUnit $mapping) => (int) $mapping->unit_id === $unitId);
+
+        if (! $due) {
+            throw ValidationException::withMessages([
+                'unit_id' => 'Only units mapped into this intake for the student\'s own teaching period can be added here.',
+            ]);
+        }
+
+        return $this->register($officer, $program, $intake, (int) $semesterId, [$student->id], [$unitId]);
+    }
+
+    /**
+     * Take a unit off a student.
+     *
+     * This is deliberately the slowest action on the panel: it needs a written reason, it
+     * refuses while marks exist for the unit, and it is audited, so a registered student
+     * cannot be un-assigned on a casual click.
+     */
+    public function removeUnit(User $officer, Student $student, int $registeredUnitId, string $reason): array
+    {
+        $row = DB::table('registered_units as ru')
+            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->join('units as u', 'u.id', '=', 'ru.unit_id')
+            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
+            ->where('ru.id', $registeredUnitId)
+            ->where('ssr.student_id', $student->id)
+            ->first(['ru.id', 'ru.unit_id', 'ssr.id as registration_id', 's.semester_label', 'u.unit_code', 'u.unit_name']);
+
+        if (! $row) {
+            throw ValidationException::withMessages([
+                'unit' => 'That unit is not on this student\'s registration any more. Reload the page.',
+            ]);
+        }
+
+        $grade = DB::table('grade_records')
+            ->where('student_id', $student->id)
+            ->where('unit_id', $row->unit_id)
+            ->value('grade_letter');
+
+        if ($grade) {
+            throw ValidationException::withMessages([
+                'unit' => $row->unit_code.' already carries a grade ('.$grade.'). Amend or clear the result before removing the unit.',
+            ]);
+        }
+
+        $catCount = DB::table('cat_scores')
+            ->where('student_id', $student->id)
+            ->where('unit_id', $row->unit_id)
+            ->count();
+
+        if ($catCount > 0) {
+            throw ValidationException::withMessages([
+                'unit' => $row->unit_code.' has '.$catCount.' CAT '.str('entry')->plural($catCount).' recorded. Clear those marks before removing the unit.',
+            ]);
+        }
+
+        DB::table('registered_units')->where('id', $row->id)->delete();
+
+        $remaining = DB::table('registered_units')
+            ->where('semester_registration_id', $row->registration_id)
+            ->count();
+
+        DB::table('student_semester_registrations')
+            ->where('id', $row->registration_id)
+            ->update(['unit_count' => $remaining]);
+
+        $this->audits->log(
+            action: 'academics.student_unit_removed',
+            entityType: 'students',
+            entityId: $student->id,
+            oldValue: [
+                'unit_code' => $row->unit_code,
+                'unit_name' => $row->unit_name,
+                'semester_label' => $row->semester_label,
+            ],
+            newValue: ['unit_count' => $remaining],
+            reason: $reason,
+            userId: $officer->id,
+        );
+
+        return [
+            'unit_code' => (string) $row->unit_code,
+            'unit_count' => $remaining,
+        ];
+    }
+
+    /**
+     * Pin the year of study on the student record, overriding the admission arithmetic.
+     */
+    public function pinYear(User $officer, Student $student, AcademicProgram $program, ?int $year, string $reason): int
+    {
+        $years = max(1, intdiv(max(1, (int) $program->totalTeachingPeriods()), max(1, (int) $program->termsPerYear())));
+
+        if ($year === null || $year < 1 || $year > $years) {
+            throw ValidationException::withMessages([
+                'current_year' => 'Year of study must be between 1 and '.$years.' for '.($program->program_code ?: 'this programme').'.',
+            ]);
+        }
+
+        $before = $student->current_year;
+
+        $student->forceFill(['current_year' => $year])->save();
+
+        $this->audits->log(
+            action: 'academics.student_year_of_study_pinned',
+            entityType: 'students',
+            entityId: $student->id,
+            oldValue: ['current_year' => $before],
+            newValue: ['current_year' => $year],
+            reason: $reason,
+            userId: $officer->id,
+        );
+
+        return $year;
     }
 
     /**
@@ -339,11 +703,64 @@ class StudentUnitRegistrationService
 
         $period = $student->current_semester_id ? $semesterNumbers[$student->current_semester_id] ?? null : null;
 
-        if (! $period && $student->current_year) {
-            $period = ((int) $student->current_year - 1) * $program->termsPerYear() + 1;
+        if (! $period) {
+            // Nothing is recorded yet, so the admission year decides where they sit.
+            $year = $this->yearOfStudy($student, $program);
+
+            return $year ? $year['period_key'] : null;
         }
 
-        return $period ? 'sem-'.(int) $period : null;
+        return 'sem-'.(int) $period;
+    }
+
+    /**
+     * The year the student started the programme, from the first field that carries it.
+     */
+    private function admissionYear(Student $student, ?CurriculumVersion $intake): ?int
+    {
+        $admitted = $student->date_of_admission ? (int) substr((string) $student->date_of_admission, 0, 4) : null;
+
+        if ($admitted && $admitted > 1990) {
+            return $admitted;
+        }
+
+        if (preg_match('/(19|20)\d{2}/', (string) $student->cohort_intake, $cohort)) {
+            return (int) $cohort[0];
+        }
+
+        $applicantYear = $student->applicant?->intake_year;
+
+        if ($applicantYear) {
+            return (int) $applicantYear;
+        }
+
+        return $intake?->intake_year ? (int) $intake->intake_year : null;
+    }
+
+    /**
+     * The academic year now running, taken from its start date so a Sep start is read as
+     * the year it opens in rather than the calendar year it ends in.
+     */
+    private function currentAcademicYearStart(): ?int
+    {
+        $year = AcademicYear::query()
+            ->where('is_current', 1)
+            ->orderByDesc('start_date')
+            ->first();
+
+        if ($year) {
+            if ($year->start_date) {
+                return (int) $year->start_date->format('Y');
+            }
+
+            if (preg_match('/(19|20)\d{2}/', (string) $year->year_label, $label)) {
+                return (int) $label[0];
+            }
+        }
+
+        $fallback = (int) now()->format('Y');
+
+        return $fallback > 1990 ? $fallback : null;
     }
 
     /**
