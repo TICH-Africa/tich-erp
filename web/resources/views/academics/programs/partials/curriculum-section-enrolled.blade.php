@@ -14,6 +14,9 @@
         $deskUnits = $desk['periodUnits'] ?? collect();
         $deskPeriod = $desk['selectedPeriod'] ?? null;
         $registeredByStudent = $desk['registeredUnitIds'] ?? collect();
+        // Opening a student's record is a read-up: the intake desk and the other cohorts
+        // belong to the programme view, not to that one student.
+        $recordOpen = (bool) ($expandedStudentRecord ?? null);
     @endphp
 
     <article class="tich-card">
@@ -77,6 +80,7 @@
     </article>
 
     @can('academics.write')
+        @unless ($recordOpen)
         <article class="tich-card tich-mt-6" id="unit-registration">
             <div class="tich-dept-panel__head">
                 <h2 class="tich-h3">Register units for this intake</h2>
@@ -244,6 +248,7 @@
                 </p>
             @endif
         </article>
+        @endunless
     @endcan
 
     <article class="tich-card tich-mt-6">
@@ -255,15 +260,17 @@
             </p>
         </div>
 
-        @if ($otherStudents->isNotEmpty())
-            <div class="tich-card tich-mt-4" style="border-left: 3px solid #ca8a04; padding: 1rem 1.25rem;">
-                <p class="tich-text" style="margin:0;">
-                    <strong>{{ $otherStudents->count() }}</strong>
-                    {{ str('student')->plural($otherStudents->count()) }}
-                    on this programme {{ $otherStudents->count() === 1 ? 'is' : 'are' }} assigned to a different intake than {{ $selectedIntake->intakeLabel() }}.
-                </p>
-            </div>
-        @endif
+        @unless ($recordOpen)
+            @if ($otherStudents->isNotEmpty())
+                <div class="tich-card tich-mt-4" style="border-left: 3px solid #ca8a04; padding: 1rem 1.25rem;">
+                    <p class="tich-text" style="margin:0;">
+                        <strong>{{ $otherStudents->count() }}</strong>
+                        {{ str('student')->plural($otherStudents->count()) }}
+                        on this programme {{ $otherStudents->count() === 1 ? 'is' : 'are' }} assigned to a different intake than {{ $selectedIntake->intakeLabel() }}.
+                    </p>
+                </div>
+            @endif
+        @endunless
 
         @php
             $rosterDetailRoute = fn ($student) => route('departments.academics.programs.curriculum', array_merge($filterParams, ['student' => $student->id]));
@@ -279,7 +286,7 @@
             'sisRoute' => $rosterSisRoute,
         ])
 
-        @if ($otherStudents->isNotEmpty())
+        @if ($otherStudents->isNotEmpty() && ! $recordOpen)
             <div class="tich-mt-8">
                 <h3 class="tich-h3">Other intakes on this programme</h3>
                 @include('sis.partials.student-roster-table', [
@@ -304,6 +311,9 @@
                     {{ $expandedStudentRecord['student']->registration_number }}
                     · <a href="{{ route('sis.students.show', $expandedStudentRecord['student']) }}" class="tich-link">Full 360° record</a>
                     · <a href="{{ route('departments.academics.programs.curriculum', $filterParams) }}" class="tich-link">Close</a>
+                </p>
+                <p class="tich-caption" style="margin:0.35rem 0 0;">
+                    Showing this student's profile and performance only. Close the record to use the intake registration desk.
                 </p>
             </div>
 
