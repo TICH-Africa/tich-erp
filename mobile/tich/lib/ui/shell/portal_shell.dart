@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../../data/tich_portal_warmup.dart';
 import '../portal/attendance_page.dart';
 import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
@@ -124,6 +125,7 @@ class _PortalShellState extends State<PortalShell>
       PayslipsPage(api: api),
       MorePage(api: api),
     ];
+    TichPortalWarmup.employee(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,

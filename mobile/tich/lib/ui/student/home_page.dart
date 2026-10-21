@@ -30,7 +30,10 @@ class StudentHomePage extends StatefulWidget {
 }
 
 class _StudentHomePageState extends State<StudentHomePage> {
+  static const _cacheKey = 'student.home';
+
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   int _unread = 0;
   Map<String, dynamic>? _nextLesson;
   DateTime? _lastTimetablePrime;
@@ -38,7 +41,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.dashboard().then((data) {
+    _dataCache = studentReadCache(_cacheKey);
+    _future = studentEnsure(_cacheKey, () => widget.api.dashboard()).then((data) {
       final unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
       // Paint home first; timetable + reminders run in the background.
       scheduleMicrotask(() {
@@ -50,31 +54,33 @@ class _StudentHomePageState extends State<StudentHomePage> {
     });
   }
 
-  void _reload() {
-    setState(() {
-      _future = widget.api.dashboard().then((data) {
-        final unread =
-            (data['unread_notifications'] as num?)?.toInt() ?? 0;
-        scheduleMicrotask(() {
-          if (!mounted) return;
-          setState(() => _unread = unread);
-          unawaited(_primeLessonReminders());
-        });
-        return data;
-      });
-    });
-  }
+  Future<void> _reload() => studentCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.dashboard().then((data) {
+          final unread =
+              (data['unread_notifications'] as num?)?.toInt() ?? 0;
+          scheduleMicrotask(() {
+            if (!mounted) return;
+            setState(() => _unread = unread);
+            unawaited(_primeLessonReminders());
+          });
+          return data;
+        }),
+        onData: (data) => _dataCache = data,
+        persistKey: _cacheKey,
+      );
 
   void _liveRefresh() {
-    unawaited(
-      widget.api.dashboard().then((data) {
-        if (!mounted) return;
-        final unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
-        setState(() {
-          _future = Future.value(data);
-          _unread = unread;
-        });
-      }).catchError((_) {}),
+    tichSilentReload<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      onData: (data) {
+        _dataCache = data;
+        _unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
+      },
+      persistKey: _cacheKey,
     );
   }
 
@@ -153,13 +159,18 @@ class _StudentHomePageState extends State<StudentHomePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
+          final merged = tichMergeSnapshot(
+            snap,
+            _dataCache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return studentLoadingBody(onRefresh: () async => _reload());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
-          final data = snap.data!;
+          final data = merged! as Map<String, dynamic>;
           final student =
               Map<String, dynamic>.from(data['student'] as Map? ?? {});
           final stats =

@@ -147,9 +147,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
           future: _future,
           builder: (context, snap) {
             final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (tichShowLoadingSpinner(snap, merged)) {
-              return const Center(child: AdaptiveProgress());
-            }
+            if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error.toString(),

@@ -5,6 +5,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../widgets/tich_widgets.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class AppraisalsPage extends StatefulWidget {
@@ -23,10 +24,17 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.appraisals();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.appraisals');
+    _future = TichScreenCache.ensure('portal.appraisals', () => widget.api.appraisals());
   }
 
-  void _reload() => setState(() => _future = widget.api.appraisals());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.appraisals(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.appraisals',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -46,10 +54,8 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.appraisals');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }

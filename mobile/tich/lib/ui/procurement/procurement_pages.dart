@@ -28,13 +28,15 @@ class ProcurementRequisitionsPage extends StatefulWidget {
 
 class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
   Timer? _searchDebounce;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _cache = procurementReadCache('procurement.requisitions');
+    _future = widget.api.requisitions();
   }
 
   @override
@@ -52,6 +54,8 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
       () => widget.api.requisitions(
         search: search != null && search.isNotEmpty ? search : null,
       ),
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
     );
   }
 
@@ -115,10 +119,15 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
               child: FutureBuilder<Map<String, dynamic>>(
                 future: _future,
                 builder: (context, snap) {
-                  if (!snap.hasData) {
-                    return const Center(child: AdaptiveProgress());
+                  final merged = tichMergeSnapshot(
+                    snap,
+                    _cache as dynamic,
+                    persistKey: 'procurement.requisitions',
+                  );
+                  if (tichShowLoadingSpinner(snap, merged)) {
+                    return procurementLoadingBody(onRefresh: () async => _reload());
                   }
-                  if (snap.hasError) {
+                  if (merged == null && snap.hasError) {
                     return Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -132,7 +141,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
                       ),
                     );
                   }
-                  final items = snap.data?['items'] as List? ?? [];
+                  final items = (merged as Map<String, dynamic>)['items'] as List? ?? [];
                   if (items.isEmpty) {
                     return Center(
                       child: Text(
@@ -231,6 +240,7 @@ class ProcurementRequisitionDetailPage extends StatefulWidget {
 class _ProcurementRequisitionDetailPageState
     extends State<ProcurementRequisitionDetailPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
   bool _busy = false;
 
   @override
@@ -250,7 +260,9 @@ class _ProcurementRequisitionDetailPageState
         _future = f;
       },
           () => widget.api.requisition(widget.id),
-        );
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
+    );
         procurementNotifyCountsChanged();
       }
     } catch (e) {
@@ -268,7 +280,7 @@ class _ProcurementRequisitionDetailPageState
         future: _future,
         builder: (context, snap) {
           if (!snap.hasData) {
-            return const Center(child: AdaptiveProgress());
+            return procurementLoadingBody();
           }
           final r = snap.data!;
           final canApprove = r['can_approve'] == true;
@@ -373,6 +385,7 @@ class ProcurementStockIssuesPage extends StatefulWidget {
 
 class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
 
   @override
   void initState() {
@@ -387,6 +400,8 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
         _future = f;
       },
       () => widget.api.stockIssues(),
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
     );
   }
 
@@ -429,7 +444,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final items = snap.data?['items'] as List? ?? [];
           if (items.isEmpty) {
             return Center(
@@ -494,6 +509,7 @@ class ProcurementStockIssueDetailPage extends StatefulWidget {
 class _ProcurementStockIssueDetailPageState
     extends State<ProcurementStockIssueDetailPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
   bool _busy = false;
 
   @override
@@ -509,7 +525,7 @@ class _ProcurementStockIssueDetailPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final r = snap.data!;
           final canApprove = r['can_approve'] == true;
           final status = (r['approval_status'] ?? '').toString();
@@ -549,7 +565,9 @@ class _ProcurementStockIssueDetailPageState
         _future = f;
       },
                                   () => widget.api.stockIssue(widget.id),
-                                );
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
+    );
                                 procurementNotifyCountsChanged();
                               }
                             } catch (e) {
@@ -584,6 +602,7 @@ class ProcurementGrnsPage extends StatefulWidget {
 
 class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
 
   @override
   void initState() {
@@ -598,7 +617,7 @@ class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final items = snap.data?['items'] as List? ?? [];
           return ListView.separated(
             padding: const EdgeInsets.all(12),
@@ -648,6 +667,7 @@ class ProcurementGrnDetailPage extends StatefulWidget {
 
 class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
   bool _busy = false;
 
   @override
@@ -663,7 +683,7 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final r = snap.data!;
           final items = r['items'] as List? ?? [];
           return ProcurementDetailBody(
@@ -719,7 +739,9 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
         _future = f;
       },
                                   () => widget.api.grn(widget.id),
-                                );
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
+    );
                                 procurementNotifyCountsChanged();
                               }
                             } catch (e) {
@@ -755,6 +777,7 @@ class ProcurementStockAlertsPage extends StatefulWidget {
 
 class _ProcurementStockAlertsPageState extends State<ProcurementStockAlertsPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
 
   @override
   void initState() {
@@ -769,7 +792,7 @@ class _ProcurementStockAlertsPageState extends State<ProcurementStockAlertsPage>
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final items = snap.data?['items'] as List? ?? [];
           return ListView.separated(
             padding: const EdgeInsets.all(12),
@@ -825,6 +848,7 @@ class ProcurementStockAlertDetailPage extends StatefulWidget {
 class _ProcurementStockAlertDetailPageState
     extends State<ProcurementStockAlertDetailPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
   bool _busy = false;
 
   @override
@@ -840,7 +864,7 @@ class _ProcurementStockAlertDetailPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           final r = snap.data!;
           final reqId = (r['requisition_id'] as num?)?.toInt();
           final actions = <Widget>[];
@@ -875,7 +899,9 @@ class _ProcurementStockAlertDetailPageState
         _future = f;
       },
                               () => widget.api.stockAlert(widget.id),
-                            );
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
+    );
                             procurementNotifyCountsChanged();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -933,6 +959,7 @@ class ProcurementAssetsPage extends StatefulWidget {
 class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
   final _search = TextEditingController();
   late Future<Map<String, dynamic>> _future;
+  Object? _cache;
 
   @override
   void initState() {
@@ -947,6 +974,8 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
         _future = f;
       },
       () => widget.api.assets(search: _search.text.trim()),
+      mounted: () => mounted,
+      onData: (d) => _cache = d,
     );
   }
 
@@ -981,7 +1010,7 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
               future: _future,
               builder: (context, snap) {
                 if (!snap.hasData) {
-                  return const Center(child: AdaptiveProgress());
+                  return procurementLoadingBody();
                 }
                 final items = snap.data?['items'] as List? ?? [];
                 return ListView.separated(
@@ -1048,7 +1077,7 @@ class ProcurementAssetDetailPage extends StatelessWidget {
       body: FutureBuilder<Map<String, dynamic>>(
         future: api.asset(id),
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: AdaptiveProgress());
+          if (!snap.hasData) return procurementLoadingBody();
           if (snap.hasError) {
             return Center(child: Text(tichDescribeError(snap.error)));
           }

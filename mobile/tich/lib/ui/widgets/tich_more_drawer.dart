@@ -8,10 +8,13 @@ import 'tich_brand_logo.dart';
 import 'tich_global_more_footer.dart';
 import 'tich_widgets.dart';
 
-/// Close the More drawer, then run [action] on the root navigator stack.
+/// Run [action] immediately (root nav push), then close the More drawer.
 void runTichMoreDrawerAction(BuildContext context, VoidCallback action) {
-  Navigator.of(context).pop();
-  WidgetsBinding.instance.addPostFrameCallback((_) => action());
+  action();
+  final root = Navigator.of(context);
+  if (root.canPop()) {
+    root.pop();
+  }
 }
 
 /// One link in the More menu, used by both the side bar and the iOS list.

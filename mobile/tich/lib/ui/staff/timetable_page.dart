@@ -24,10 +24,21 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.timetable();
+    staffPrimeScreen(
+      persistKey: 'staff.timetable',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.timetable(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.timetable());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timetable(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.timetable',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -85,10 +96,8 @@ class _StaffTimetablePageState extends State<StaffTimetablePage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (merged == null && snap.connectionState != ConnectionState.done) {
-              return staffLoadingBody();
-            }
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.timetable');
+            if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return staffErrorBody(snap.error, _reload);
             }

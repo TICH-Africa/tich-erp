@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/procurement_api.dart';
+import '../../data/tich_portal_warmup.dart';
 import '../procurement/procurement_badge_keys.dart';
 import '../procurement/procurement_extra_pages.dart';
 import '../procurement/procurement_home_page.dart';
@@ -57,6 +58,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       ProcurementSuppliersPage(api: api),
       ProcurementMorePage(api: api),
     ];
+    TichPortalWarmup.procurement(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,

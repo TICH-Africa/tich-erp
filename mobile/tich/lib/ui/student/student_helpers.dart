@@ -3,9 +3,46 @@ import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../theme/tich_theme.dart';
+import '../../data/tich_screen_cache.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 
-Widget studentLoadingBody() => const Center(child: AdaptiveProgress());
+Widget studentLoadingBody({Future<void> Function()? onRefresh}) =>
+    tichInstantWaitBody(onRefresh: onRefresh);
+
+Future<void> studentCachedReload({
+  required bool Function() mounted,
+  required void Function(VoidCallback fn) setState,
+  required Future<Map<String, dynamic>> Function() fetch,
+  required void Function(Map<String, dynamic> data) onData,
+  String? persistKey,
+}) =>
+    tichRefreshCached<Map<String, dynamic>>(
+      mounted: mounted,
+      setState: setState,
+      fetch: fetch,
+      onData: onData,
+      persistKey: persistKey,
+    );
+
+Map<String, dynamic>? studentReadCache(String key) =>
+    TichScreenCache.read<Map<String, dynamic>>(key);
+
+Future<Map<String, dynamic>> studentEnsure(
+  String key,
+  Future<Map<String, dynamic>> Function() fetch,
+) =>
+    TichScreenCache.ensure(key, fetch);
+
+void studentPrimeScreen({
+  required String persistKey,
+  required void Function(Object? cache) setCache,
+  required void Function(Future<Map<String, dynamic>> future) setFuture,
+  required Future<Map<String, dynamic>> Function() fetch,
+}) {
+  setCache(studentReadCache(persistKey));
+  setFuture(studentEnsure(persistKey, fetch));
+}
 
 Widget studentErrorBody(Object? error, VoidCallback onRetry) {
   return TichErrorRefresh(

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_portal_warmup.dart';
 import '../student/academics_hub_page.dart';
 import '../student/finance_page.dart';
 import '../student/home_page.dart';
@@ -74,6 +75,7 @@ class _StudentPortalShellState extends State<StudentPortalShell>
       StudentFinancePage(api: api),
       StudentMorePage(api: api),
     ];
+    TichPortalWarmup.student(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,

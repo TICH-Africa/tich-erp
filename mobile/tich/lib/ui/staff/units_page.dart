@@ -23,10 +23,21 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.units();
+    staffPrimeScreen(
+      persistKey: 'staff.units',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.units(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.units());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.units(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.units',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -46,10 +57,8 @@ class _StaffUnitsPageState extends State<StaffUnitsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return staffLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.units');
+          if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }

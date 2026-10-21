@@ -27,10 +27,21 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.finance();
+    studentPrimeScreen(
+      persistKey: 'student.finance',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.finance(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.finance());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.finance(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.finance',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -137,10 +148,8 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.finance');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }

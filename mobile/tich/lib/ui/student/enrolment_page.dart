@@ -24,10 +24,21 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.profile();
+    studentPrimeScreen(
+      persistKey: 'student.enrolment',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.profile(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.profile());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.profile(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.enrolment',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -69,10 +80,8 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.enrolment');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }

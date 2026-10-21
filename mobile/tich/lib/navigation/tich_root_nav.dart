@@ -8,7 +8,20 @@ abstract final class TichRootNav {
 
   static Future<T?>? push<T>(Widget page) {
     return navigatorKey.currentState?.push<T>(
-      MaterialPageRoute(builder: (_) => page),
+      PageRouteBuilder<T>(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 180),
+        reverseTransitionDuration: const Duration(milliseconds: 160),
+      ),
     );
   }
 

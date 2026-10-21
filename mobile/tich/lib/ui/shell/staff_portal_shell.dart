@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/staff_api.dart';
+import '../../data/tich_portal_warmup.dart';
 import '../staff/attendance_page.dart';
 import '../staff/home_page.dart';
 import '../staff/more_page.dart';
@@ -79,6 +80,7 @@ class _StaffPortalShellState extends State<StaffPortalShell>
       StaffAttendancePage(api: api),
       StaffMorePage(api: api),
     ];
+    TichPortalWarmup.staff(api);
     _root = AdaptiveTabScaffold(
       key: _scaffoldKey,
       pages: _pages!,

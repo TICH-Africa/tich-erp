@@ -303,6 +303,49 @@ class TichErrorRefresh extends StatelessWidget {
   }
 }
 
+/// Label + value row for read-only profile and detail screens.
+class TichReadOnlyRow extends StatelessWidget {
+  const TichReadOnlyRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final dynamic value;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = tichDisplayValue(value);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 128,
+            child: Text(
+              label,
+              style: tichUi(color: TichColors.neutralMuted, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: tichUi(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String tichDisplayValue(dynamic value) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? '—' : text;
+}
+
 TichChipTone toneForStatus(String? status) {
   final s = (status ?? '').toLowerCase();
   if (s.contains('reject') ||

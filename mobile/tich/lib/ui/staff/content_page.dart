@@ -25,10 +25,21 @@ class _StaffContentPageState extends State<StaffContentPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.content();
+    staffPrimeScreen(
+      persistKey: 'staff.content',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.content(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.content());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.content(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.content',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -72,7 +83,7 @@ class _StaffContentPageState extends State<StaffContentPage> {
         floatingActionButton: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic)
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.content')
                 as Map<String, dynamic>?;
             final allocations = ((merged?['allocations'] as List?) ??
                     (snap.data?['allocations'] as List?) ??
@@ -89,10 +100,8 @@ class _StaffContentPageState extends State<StaffContentPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (merged == null && snap.connectionState != ConnectionState.done) {
-              return staffLoadingBody();
-            }
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.content');
+            if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return staffErrorBody(snap.error, _reload);
             }

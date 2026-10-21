@@ -23,11 +23,14 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   Object? _dataCache;
   late TabController _tabs;
 
+  static const _cacheKey = 'student.timetable';
+
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
-    _future = widget.api.timetable().then((data) {
+    _dataCache = studentReadCache(_cacheKey);
+    _future = studentEnsure(_cacheKey, () => widget.api.timetable()).then((data) {
       final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
       final timetables = tt['timetables'] as List? ?? const [];
       // Fire-and-forget so opening Timetable stays responsive.
@@ -44,7 +47,13 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
     super.dispose();
   }
 
-  void _reload() => setState(() => _future = widget.api.timetable());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timetable(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.timetable',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -139,14 +148,19 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
             child: FutureBuilder<Map<String, dynamic>>(
               future: _future,
               builder: (context, snap) {
-                if (snap.connectionState != ConnectionState.done) {
-                  return studentLoadingBody();
+                final merged = tichMergeSnapshot(
+                  snap,
+                  _dataCache as dynamic,
+                  persistKey: _cacheKey,
+                );
+                if (tichShowLoadingSpinner(snap, merged)) {
+                  return studentLoadingBody(onRefresh: () async => _reload());
                 }
-                if (snap.hasError) {
+                if (merged == null && snap.hasError) {
                   return studentErrorBody(snap.error, _reload);
                 }
                 final tt = Map<String, dynamic>.from(
-                  snap.data!['timetable'] as Map? ?? {},
+                  (merged! as Map<String, dynamic>)['timetable'] as Map? ?? {},
                 );
                 final timetables = tt['timetables'] as List? ?? const [];
                 final dayLabels =

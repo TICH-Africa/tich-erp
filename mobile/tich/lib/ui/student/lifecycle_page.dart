@@ -30,7 +30,12 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.lifecycleRequests();
+    studentPrimeScreen(
+      persistKey: 'student.lifecycle',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.lifecycleRequests(),
+    );
   }
 
   @override
@@ -39,7 +44,13 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
     super.dispose();
   }
 
-  void _reload() => setState(() => _future = widget.api.lifecycleRequests());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.lifecycleRequests(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.lifecycle',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -109,10 +120,8 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.lifecycle');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }

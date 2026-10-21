@@ -9,10 +9,14 @@ class LazyIndexedStack extends StatefulWidget {
     super.key,
     required this.index,
     required this.children,
+    this.preloadAllAfter = const Duration(milliseconds: 350),
   });
 
   final int index;
   final List<Widget> children;
+
+  /// Mount every tab in the background so the first switch feels instant.
+  final Duration preloadAllAfter;
 
   @override
   State<LazyIndexedStack> createState() => _LazyIndexedStackState();
@@ -28,6 +32,19 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       widget.children.length,
       (i) => i == widget.index,
     );
+    if (widget.preloadAllAfter > Duration.zero) {
+      Future<void>.delayed(widget.preloadAllAfter, () {
+        if (!mounted) return;
+        var changed = false;
+        for (var i = 0; i < _activated.length; i++) {
+          if (!_activated[i]) {
+            _activated[i] = true;
+            changed = true;
+          }
+        }
+        if (changed) setState(() {});
+      });
+    }
   }
 
   @override

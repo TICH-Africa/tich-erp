@@ -32,10 +32,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.academics();
+    studentPrimeScreen(
+      persistKey: 'student.academics',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.academics(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.academics());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.academics(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.academics',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -466,10 +477,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.academics');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }

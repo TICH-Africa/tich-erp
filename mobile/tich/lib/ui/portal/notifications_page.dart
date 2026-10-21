@@ -9,6 +9,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../../notifications/tich_notification_router.dart';
 
@@ -28,10 +29,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.notifications();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.notifications');
+    _future = TichScreenCache.ensure('portal.notifications', () => widget.api.notifications());
   }
 
-  void _reload() => setState(() => _future = widget.api.notifications());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.notifications(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.notifications',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -80,10 +88,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.notifications');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),

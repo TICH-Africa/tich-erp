@@ -9,6 +9,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/employee_avatar.dart';
 import '../widgets/portal_hero.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'attendance_page.dart';
@@ -33,7 +34,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.dashboard();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
+    _future = TichScreenCache.ensure('portal.dashboard', () => widget.api.dashboard());
     _loadNotifications();
     _syncAttendanceReminders();
   }
@@ -64,8 +66,14 @@ class _DashboardPageState extends State<DashboardPage> {
     } catch (_) {}
   }
 
-  void _reload() {
-    setState(() => _future = widget.api.dashboard());
+  Future<void> _reload() async {
+    await tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.dashboard',
+    );
     _loadNotifications();
     _syncAttendanceReminders();
   }
@@ -138,10 +146,8 @@ class _DashboardPageState extends State<DashboardPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (tichShowLoadingSpinner(snap, merged)) {
-              return const Center(child: AdaptiveProgress());
-            }
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.dashboard');
+            if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error is ApiException

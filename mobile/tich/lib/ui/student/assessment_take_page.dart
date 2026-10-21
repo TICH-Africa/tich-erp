@@ -31,12 +31,23 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
   bool _busy = false;
   DateTime? _startedAt;
 
+  String get _cacheKey => 'student.assessment.${widget.assessmentId}';
+
   @override
   void initState() {
     super.initState();
+    _dataCache = studentReadCache(_cacheKey);
     _future = widget.api.assessment(widget.assessmentId);
     _startedAt = DateTime.now();
   }
+
+  Future<void> _reload() => studentCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.assessment(widget.assessmentId),
+        onData: (data) => _dataCache = data,
+        persistKey: _cacheKey,
+      );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -44,6 +55,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
       setState: setState,
       fetch: () => widget.api.assessment(widget.assessmentId),
       onData: (data) => _dataCache = data,
+      persistKey: _cacheKey,
     );
   }
 
@@ -166,20 +178,21 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
+          final merged = tichMergeSnapshot(
+            snap,
+            _dataCache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return studentLoadingBody(onRefresh: () async => _reload());
           }
-          if (snap.hasError) {
-            return studentErrorBody(
-              snap.error,
-              () => setState(
-                () => _future = widget.api.assessment(widget.assessmentId),
-              ),
-            );
+          if (merged == null && snap.hasError) {
+            return studentErrorBody(snap.error, _reload);
           }
+          final payload = merged! as Map<String, dynamic>;
           final assessment =
-              Map<String, dynamic>.from(snap.data!['assessment'] as Map? ?? {});
-          final submission = snap.data!['submission'];
+              Map<String, dynamic>.from(payload['assessment'] as Map? ?? {});
+          final submission = payload['submission'];
           final canTake = assessment['can_take'] == true;
           final questions = assessment['questions'] as List? ?? const [];
 
