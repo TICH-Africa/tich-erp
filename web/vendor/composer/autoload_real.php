@@ -35,6 +35,11 @@ class ComposerAutoloaderInit53b5d56b3b7e3cbac1713e68c8850f6c
 
         $filesToLoad = \Composer\Autoload\ComposerStaticInit53b5d56b3b7e3cbac1713e68c8850f6c::$files;
         $requireFile = \Closure::bind(static function ($fileIdentifier, $file) {
+            // Local patch: a --no-dev deploy has no dev-package files, so skip rather than fatal.
+            if (!\is_file($file)) {
+                return;
+            }
+
             if (empty($GLOBALS['__composer_autoload_files'][$fileIdentifier])) {
                 $GLOBALS['__composer_autoload_files'][$fileIdentifier] = true;
 
