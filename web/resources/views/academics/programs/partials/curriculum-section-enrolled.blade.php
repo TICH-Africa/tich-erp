@@ -59,6 +59,16 @@
             </div>
 
             <div class="tich-form-group" style="margin:0; min-width:11rem;">
+                <label for="study_year" class="tich-label">Year of study</label>
+                <select id="study_year" name="study_year" class="tich-input">
+                    <option value="">All years</option>
+                    @foreach (($desk['studyYears'] ?? []) as $year)
+                        <option value="{{ $year }}" @selected((int) ($desk['studyYearFilter'] ?? 0) === (int) $year)>Year {{ $year }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tich-form-group" style="margin:0; min-width:11rem;">
                 <label for="entry_pathway" class="tich-label">Admission pathway</label>
                 <select id="entry_pathway" name="entry_pathway" class="tich-input">
                     <option value="">All pathways</option>
@@ -98,6 +108,7 @@
                         'learning_department' => $learningDepartment?->id,
                         'enrollment_status' => $enrollmentStatusFilter,
                         'admission_year' => $desk['yearFilter'],
+                        'study_year' => $desk['studyYearFilter'],
                         'entry_pathway' => $desk['pathwayFilter'],
                         'student_search' => $desk['search'],
                     ]) as $key => $value)
@@ -106,9 +117,11 @@
 
                     <div class="tich-form-group" style="margin:0; min-width:14rem;">
                         <label for="registration_period" class="tich-label">Teaching period</label>
-                        <select id="registration_period" name="registration_period" class="tich-select">
+                        <select id="registration_period" name="registration_period" class="tich-select" onchange="this.form.submit()">
                             @foreach ($desk['periodOptions'] as $key => $option)
-                                <option value="{{ $key }}" @selected($key === $desk['selectedPeriodKey'])>{{ $option['label'] }}</option>
+                                <option value="{{ $key }}" @selected($key === $desk['selectedPeriodKey'])>
+                                    {{ $option['label'] }}{{ (($desk['unitsByPeriod'][$key] ?? 0) > 0) ? ' ('.$desk['unitsByPeriod'][$key].' units)' : '' }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -117,16 +130,40 @@
 
                     <p class="tich-text" style="margin:0 0 0.2rem auto; font-size:0.8125rem;">
                         {{ $deskStudents->count() }} {{ str('student')->plural($deskStudents->count()) }} match the filters
-                        · semester {{ $desk['semesterId'] }}
+                        · {{ collect($desk['unitsByPeriod'] ?? [])->filter()->count() }} of {{ $desk['periodOptions']->count() }}
+                        teaching periods carry units for this intake
                     </p>
                 </form>
 
                 @if ($deskUnits->isEmpty())
+                    @php
+                        $populatedPeriods = collect($desk['unitsByPeriod'] ?? [])
+                            ->filter(fn (int $count) => $count > 0)
+                            ->map(fn (int $count, string $key) => [
+                                'key' => $key,
+                                'label' => $desk['periodOptions'][$key]['label'] ?? $key,
+                                'count' => $count,
+                            ]);
+                    @endphp
+
                     <div class="tich-inset-panel tich-mt-4">
                         <p class="tich-text" style="margin:0;">
-                            No units are mapped to {{ $deskPeriod['label'] }} for {{ $selectedIntake->intakeLabel() }} yet.
-                            <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, ['section' => 'semesters']))) }}">
-                                Map units in the Semesters tab</a> first, then come back to register students.
+                            {{ $deskPeriod['label'] }} has no units mapped for {{ $selectedIntake->intakeLabel() }}.
+                            @if ($populatedPeriods->isNotEmpty())
+                                These periods do have units, so pick one of them above:
+                                @foreach ($populatedPeriods as $periodLink)
+                                    <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, [
+                                        'section' => 'enrolled',
+                                        'intake' => $selectedIntake->id,
+                                        'registration_period' => $periodLink['key'],
+                                        'enrollment_status' => $enrollmentStatusFilter,
+                                        'study_year' => $desk['studyYearFilter'],
+                                    ]))) }}">{{ $periodLink['label'] }} ({{ $periodLink['count'] }})</a>@if(! $loop->last) · @endif
+                                @endforeach
+                            @else
+                                <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, ['section' => 'semesters']))) }}">
+                                    Map units in the Semesters tab</a> first, then come back to register students.
+                            @endif
                             The "own year" button below still works: it reads the units mapped to each student's own year.
                         </p>
                     </div>
@@ -191,43 +228,51 @@
                                 <div style="max-height:24rem; overflow:auto; border:1px solid var(--tich-border, #e2e8f0); border-radius:0.5rem;">
                                     <table class="tich-admin-table">
                                         <tbody>
-                                            @foreach ($deskStudents as $student)
-                                                @php
-                                                    $unitIds = $registeredByStudent->get($student->id, collect());
-                                                    $inIntake = \App\Support\IntakeIdentity::studentMatchesIntake($student, $selectedIntake);
-                                                    $yearInfo = ($desk['yearsByStudent'] ?? collect())->get($student->id);
-                                                @endphp
-                                                <tr>
-                                                    <td style="width:2.25rem;">
-                                                        <input type="checkbox" name="students[]" value="{{ $student->id }}" class="tich-checkbox" data-reg-student>
-                                                    </td>
-                                                    <td>
-                                                        <strong>{{ $student->displayName() }}</strong>
-                                                        @if ($yearInfo)
-                                                            <span class="tich-badge">{{ $yearInfo['period_label'] }}{{ $yearInfo['overridden'] ? ' (pinned)' : '' }}</span>
-                                                        @endif
-                                                        <span class="tich-caption" style="display:block;">
-                                                            {{ $student->registration_number }}
-                                                            · {{ $student->campus?->campus_name ?? 'campus not set' }}
-                                                            · {{ $student->cohort_intake ?: 'no cohort' }}
-                                                            · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
-                                                            · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
-                                                            @if ($yearInfo)
-                                                                · {{ $yearInfo['basis'] }}
-                                                            @endif
-                                                            @if (! $inIntake)
-                                                                · <span class="tich-badge">other intake</span>
-                                                            @endif
-                                                        </span>
-                                                    </td>
-                                                    <td class="tich-text-right" style="white-space:nowrap;">
-                                                        @if ($deskUnits->isNotEmpty())
-                                                            {{ $unitIds->count() }}/{{ $deskUnits->count() }} registered
-                                                        @else
-                                                            no units in this period
-                                                        @endif
+                                            @foreach ($deskStudents->groupBy(fn ($student) => (int) ($desk['yearsByStudent'][$student->id]['year'] ?? 0))->sortKeys(SORT_NUMERIC) as $deskYear => $yearStudents)
+                                                <tr style="background:var(--tich-surface-hover, #f1f5f9);">
+                                                    <td colspan="3">
+                                                        <strong>{{ $deskYear > 0 ? 'Year '.$deskYear : 'Year of study not derived' }}</strong>
+                                                        <span class="tich-caption"> · tick the students to register them on {{ $deskPeriod['label'] }}</span>
                                                     </td>
                                                 </tr>
+                                                @foreach ($yearStudents as $student)
+                                                    @php
+                                                        $unitIds = $registeredByStudent->get($student->id, collect());
+                                                        $inIntake = \App\Support\IntakeIdentity::studentMatchesIntake($student, $selectedIntake);
+                                                        $yearInfo = ($desk['yearsByStudent'] ?? collect())->get($student->id);
+                                                    @endphp
+                                                    <tr>
+                                                        <td style="width:2.25rem;">
+                                                            <input type="checkbox" name="students[]" value="{{ $student->id }}" class="tich-checkbox" data-reg-student>
+                                                        </td>
+                                                        <td>
+                                                            <strong>{{ $student->displayName() }}</strong>
+                                                            @if ($yearInfo)
+                                                                <span class="tich-badge">{{ $yearInfo['period_label'] }}{{ $yearInfo['overridden'] ? ' (pinned)' : '' }}</span>
+                                                            @endif
+                                                            <span class="tich-caption" style="display:block;">
+                                                                {{ $student->registration_number }}
+                                                                · {{ $student->campus?->campus_name ?? 'campus not set' }}
+                                                                · {{ $student->cohort_intake ?: 'no cohort' }}
+                                                                · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
+                                                                · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
+                                                                @if ($yearInfo)
+                                                                    · {{ $yearInfo['basis'] }}
+                                                                @endif
+                                                                @if (! $inIntake)
+                                                                    · <span class="tich-badge">other intake</span>
+                                                                @endif
+                                                            </span>
+                                                        </td>
+                                                        <td class="tich-text-right" style="white-space:nowrap;">
+                                                            @if ($deskUnits->isNotEmpty())
+                                                                {{ $unitIds->count() }}/{{ $deskUnits->count() }} registered
+                                                            @else
+                                                                no units in this period
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -284,7 +329,8 @@
         <div class="tich-dept-panel__head">
             <h2 class="tich-h3">Student records</h2>
             <p class="tich-text">
-                Registered units, CAT marks, exam results and grades per student, grouped by the campus they are enrolled at.
+                Registered units, CAT marks, exam results and grades per student, grouped by the year of study they are
+                sitting and then by the campus they are enrolled at.
                 Everyone listed is on {{ $program->program_code }} under {{ $program->department?->dept_name }}.
             </p>
         </div>
@@ -309,6 +355,7 @@
         @include('sis.partials.student-roster-table', [
             'students' => $matchedStudents,
             'summaries' => $enrolledSummaries,
+            'yearsByStudent' => $enrolledYears ?? collect(),
             'groupByCampus' => true,
             'emptyMessage' => 'No enrolled students for this intake yet. Students appear here after applications are approved and enrollment is created.',
             'detailRoute' => $rosterDetailRoute,
@@ -321,6 +368,7 @@
                 @include('sis.partials.student-roster-table', [
                     'students' => $otherStudents,
                     'summaries' => $enrolledSummaries,
+                    'yearsByStudent' => $enrolledYears ?? collect(),
                     'groupByCampus' => true,
                     'emptyMessage' => '',
                     'detailRoute' => $rosterDetailRoute,

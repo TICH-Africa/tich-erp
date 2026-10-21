@@ -11,12 +11,18 @@
         ?? ($selectedIntake?->intake_year ? (string) $selectedIntake->intake_year : null);
 
     $unitScheduleMap = [];
+    // The period the unit is timetabled in for this intake, so "Assign lecturer" can open on it
+    // instead of always defaulting to the first period in the list.
+    $unitIntakePeriod = [];
+
     foreach ($mappings as $mapping) {
         $unitScheduleMap[$mapping->unit_id][] = [
             'period' => $program->periodLabel((int) $mapping->semester),
             'year' => $intakeYearLabel,
             'source' => 'intake',
         ];
+
+        $unitIntakePeriod[(int) $mapping->unit_id] ??= (int) $mapping->semester;
     }
 
     foreach ($catalogAllocations as $unitId => $unitAllocations) {
@@ -91,6 +97,8 @@
                         $unitAllocations = ($catalogAllocations[$unit->id] ?? collect());
                         $schedules = collect($unitScheduleMap[$unit->id] ?? []);
                         $statusClass = 'tich-catalog-status--'.str_replace('-', '_', $unit->status);
+                        $ownPeriod = (int) ($unitIntakePeriod[$unit->id] ?? $unit->semester ?: 1);
+
                         if ($schedules->isEmpty() && $unit->semester) {
                             $schedules = collect([[
                                 'period' => $program->periodLabel((int) $unit->semester),
@@ -98,15 +106,31 @@
                                 'source' => 'catalog',
                             ]]);
                         }
+
+                        // The catalog form edits units.semester; the chips above come from the intake
+                        // mapping. Show both when they disagree so an edit is visibly reflected.
+                        $onFile = $program->periodLabel((int) $unit->semester);
+
+                        if ($unit->semester && $schedules->every(fn ($row) => $row['period'] !== $onFile)) {
+                            $schedules = $schedules->push([
+                                'period' => $onFile,
+                                'year' => 'on file',
+                                'source' => 'unit',
+                            ]);
+                        }
                     @endphp
-                    <tr>
+                    <tr id="unit-row-{{ $unit->id }}">
                         <td style="min-width:14rem;">
                             <div class="tich-catalog-unit-code">{{ $unit->unit_code }}</div>
                             <div class="tich-catalog-unit-name">{{ $unit->unit_name }}</div>
+                            @if ($unit->description)
+                                <div class="tich-caption">{{ Str::limit($unit->description, 90) }}</div>
+                            @endif
                         </td>
                         <td class="tich-catalog-hours">
                             <div>{{ $unit->contact_hours ?? '-' }} contact</div>
                             <div class="tich-caption">{{ $unit->total_learning_hours ?? '-' }} learning</div>
+                            <div class="tich-caption">{{ (float) $unit->credit_hours > 0 ? (float) $unit->credit_hours.' credit' : 'no credit hours' }}</div>
                         </td>
                         <td>
                             <span class="tich-catalog-status {{ $statusClass }}">
@@ -170,8 +194,8 @@
                                 @endif
 
                                 @can('academics.write')
-                                    <details class="tich-catalog-assign">
-                                        <summary>+ Assign lecturer</summary>
+                                    <details class="tich-catalog-assign" id="unit-assign-{{ $unit->id }}">
+                                        <summary>+ Assign lecturer to {{ $unit->unit_code }}</summary>
                                         <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($catalogHub, ['program' => $program->id])) }}" class="tich-catalog-assign__body">
                                             @csrf
                                             <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
@@ -183,7 +207,7 @@
                                                 <label class="tich-label">Teaching period</label>
                                                 <select name="teaching_period" class="tich-input" required>
                                                     @foreach ($periods as $period)
-                                                        <option value="{{ $period['semester'] }}">{{ $period['label'] }}</option>
+                                                        <option value="{{ $period['semester'] }}" @selected((int) $period['semester'] === $ownPeriod)>{{ $period['label'] }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>

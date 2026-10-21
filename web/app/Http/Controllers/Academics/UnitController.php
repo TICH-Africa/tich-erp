@@ -78,9 +78,13 @@ class UnitController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         $validated = $this->validateUnit($request, $unit);
-        $this->units->update($request->user(), $hub, $unit, $validated, $request);
+        $result = $this->units->update($request->user(), $hub, $unit, $validated, $request);
 
-        return $this->redirectAfterUnitAction($request, $hub, 'Unit updated.');
+        $message = $result['changes'] === []
+            ? 'Unit '.$result['unit']->unit_code.' saved - nothing on the form had changed.'
+            : 'Unit '.$result['unit']->unit_code.' updated: '.implode(', ', $result['changes']).' saved.';
+
+        return $this->redirectAfterUnitAction($request, $hub, $message);
     }
 
     public function submit(Request $request, Department $department, Unit $unit): RedirectResponse
