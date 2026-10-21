@@ -9,6 +9,11 @@
         $filterParams = array_filter(array_merge($curriculumParams, [
             'enrollment_status' => $enrollmentStatusFilter,
         ]));
+        $desk = $studentRegistration ?? null;
+        $deskStudents = $desk['students'] ?? collect();
+        $deskUnits = $desk['periodUnits'] ?? collect();
+        $deskPeriod = $desk['selectedPeriod'] ?? null;
+        $registeredByStudent = $desk['registeredUnitIds'] ?? collect();
     @endphp
 
     <article class="tich-card">
@@ -21,6 +26,15 @@
         </div>
 
         <form method="GET" action="{{ route('departments.academics.programs.curriculum', $curriculumParams) }}" class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+            <input type="hidden" name="section" value="enrolled">
+            <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+            @if ($learningDepartment)
+                <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+            @endif
+            @if ($deskPeriod ?? null)
+                <input type="hidden" name="registration_period" value="{{ $desk['selectedPeriodKey'] }}">
+            @endif
+
             <div class="tich-form-group" style="margin:0; min-width:12rem;">
                 <label for="enrollment_status" class="tich-label">Enrollment status</label>
                 <select id="enrollment_status" name="enrollment_status" class="tich-input">
@@ -30,10 +44,209 @@
                     @endforeach
                 </select>
             </div>
+
+            <div class="tich-form-group" style="margin:0; min-width:10rem;">
+                <label for="admission_year" class="tich-label">Admitted year</label>
+                <select id="admission_year" name="admission_year" class="tich-input">
+                    <option value="">All years</option>
+                    @foreach ($desk['admissionYears'] ?? [] as $year)
+                        <option value="{{ $year }}" @selected((int) ($desk['yearFilter'] ?? 0) === $year)>{{ $year }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tich-form-group" style="margin:0; min-width:11rem;">
+                <label for="entry_pathway" class="tich-label">Admission pathway</label>
+                <select id="entry_pathway" name="entry_pathway" class="tich-input">
+                    <option value="">All pathways</option>
+                    @foreach ($desk['pathways'] ?? [] as $pathway)
+                        <option value="{{ $pathway }}" @selected(($desk['pathwayFilter'] ?? null) === $pathway)>{{ ucfirst(str_replace('_', ' ', $pathway)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tich-form-group" style="margin:0; min-width:12rem;">
+                <label for="student_search" class="tich-label">Reg number or name</label>
+                <input id="student_search" type="search" name="student_search" class="tich-input" value="{{ $desk['search'] ?? '' }}" placeholder="e.g. REG-2026">
+            </div>
+
             <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
             <a href="{{ route('departments.academics.programs.curriculum', $curriculumParams) }}" class="tich-btn tich-btn-secondary">Reset</a>
             <a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-link" style="margin-left:auto;">Open in SIS</a>
         </form>
+    </article>
+
+    @can('academics.write')
+        <article class="tich-card tich-mt-6" id="unit-registration">
+            <div class="tich-dept-panel__head">
+                <h2 class="tich-h3">Register units for this intake</h2>
+                <p class="tich-text">
+                    Pick the teaching period, tick the units the students are due to do, then tick the students.
+                    Each student keeps one registration per semester, so re-running this only adds what is missing.
+                </p>
+            </div>
+
+            @if ($deskPeriod && $desk['semesterId'])
+                <form method="GET" action="{{ route('departments.academics.programs.curriculum', $curriculumParams) }}" class="tich-flex-wrap tich-mt-4" style="gap:0.75rem; align-items:flex-end;">
+                    @foreach (array_filter([
+                        'section' => 'enrolled',
+                        'intake' => $selectedIntake->id,
+                        'learning_department' => $learningDepartment?->id,
+                        'enrollment_status' => $enrollmentStatusFilter,
+                        'admission_year' => $desk['yearFilter'],
+                        'entry_pathway' => $desk['pathwayFilter'],
+                        'student_search' => $desk['search'],
+                    ]) as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
+
+                    <div class="tich-form-group" style="margin:0; min-width:14rem;">
+                        <label for="registration_period" class="tich-label">Teaching period</label>
+                        <select id="registration_period" name="registration_period" class="tich-select">
+                            @foreach ($desk['periodOptions'] as $key => $option)
+                                <option value="{{ $key }}" @selected($key === $desk['selectedPeriodKey'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit" class="tich-btn tich-btn-secondary">Show units</button>
+
+                    <p class="tich-text" style="margin:0 0 0.2rem auto; font-size:0.8125rem;">
+                        {{ $deskStudents->count() }} {{ str('student')->plural($deskStudents->count()) }} match the filters
+                        · semester {{ $desk['semesterId'] }}
+                    </p>
+                </form>
+
+                @if ($deskUnits->isEmpty())
+                    <div class="tich-inset-panel tich-mt-4">
+                        <p class="tich-text" style="margin:0;">
+                            No units are mapped to {{ $deskPeriod['label'] }} for {{ $selectedIntake->intakeLabel() }} yet.
+                            <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, ['section' => 'semesters']))) }}">
+                                Map units in the Semesters tab</a> first, then come back to register students.
+                        </p>
+                    </div>
+                @elseif ($deskStudents->isEmpty())
+                    <p class="tich-caption tich-mt-4">No students match these filters for this intake. Widen the filters above, or admit the students first.</p>
+                @else
+                    <form method="POST" action="{{ route('departments.academics.programs.student-registrations.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
+                        @csrf
+                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                        <input type="hidden" name="registration_period" value="{{ $desk['selectedPeriodKey'] }}">
+                        @if ($learningDepartment)
+                            <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                        @endif
+
+                        <div class="tich-grid" style="display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit, minmax(20rem, 1fr));">
+                            <div>
+                                <h3 class="tich-h4">Units in {{ $deskPeriod['label'] }}</h3>
+                                <p class="tich-caption">Lecturers shown are the ones Academics has approved for that unit this semester.</p>
+                                <ul class="tich-catalog-alloc-list" style="list-style:none; margin:0; padding:0;">
+                                    @foreach ($deskUnits as $mapping)
+                                        @php
+                                            $unit = $mapping->unit;
+                                            $lecturer = $desk['lecturersByUnit'][(int) $mapping->unit_id] ?? null;
+                                            $alreadyOn = $registeredByStudent->filter(fn ($ids) => collect($ids)->contains((int) $mapping->unit_id))->count();
+                                        @endphp
+                                        <li class="tich-catalog-alloc-card">
+                                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:flex-start;">
+                                                <input type="checkbox" name="unit_ids[]" value="{{ $mapping->unit_id }}" class="tich-checkbox" data-reg-unit checked>
+                                                <span>
+                                                    <strong>{{ $unit?->unit_code }}</strong> · {{ $unit?->unit_name }}
+                                                    <span class="tich-caption" style="display:block;">
+                                                        {{ (int) ($mapping->credit_hours ?: $unit?->credit_hours) }} credit hours
+                                                        · {{ $lecturer ? 'Lecturer: '.$lecturer : 'No lecturer allocated yet' }}
+                                                        @if ($alreadyOn > 0)
+                                                            · {{ $alreadyOn }} already registered
+                                                        @endif
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="tich-h4">Students</h3>
+                                <p class="tich-caption">
+                                    <button type="button" class="tich-link" data-reg-toggle="students">Select all</button>
+                                    · {{ $deskStudents->count() }} listed, intake {{ $selectedIntake->intakeLabel() }} first
+                                </p>
+                                <div style="max-height:24rem; overflow:auto; border:1px solid var(--tich-border, #e2e8f0); border-radius:0.5rem;">
+                                    <table class="tich-admin-table">
+                                        <tbody>
+                                            @foreach ($deskStudents as $student)
+                                                @php
+                                                    $unitIds = $registeredByStudent->get($student->id, collect());
+                                                    $inIntake = \App\Support\IntakeIdentity::studentMatchesIntake($student, $selectedIntake);
+                                                @endphp
+                                                <tr>
+                                                    <td style="width:2.25rem;">
+                                                        <input type="checkbox" name="students[]" value="{{ $student->id }}" class="tich-checkbox" data-reg-student>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ $student->applicant?->fullName() ?? $student->registration_number }}</strong>
+                                                        <span class="tich-caption" style="display:block;">
+                                                            {{ $student->registration_number }}
+                                                            · {{ $student->cohort_intake ?: 'no cohort' }}
+                                                            · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
+                                                            · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
+                                                            @if (! $inIntake)
+                                                                · <span class="tich-badge">other intake</span>
+                                                            @endif
+                                                        </span>
+                                                    </td>
+                                                    <td class="tich-text-right" style="white-space:nowrap;">
+                                                        {{ $unitIds->count() }}/{{ $deskUnits->count() }} registered
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tich-flex-wrap tich-mt-4" style="gap:0.75rem;">
+                            <button type="submit" class="tich-btn tich-btn-primary">Register selected students</button>
+                            <p class="tich-text" style="margin:0; font-size:0.8125rem;">
+                                Students see these units on their portal straight away, with the lecturer Academics has approved.
+                            </p>
+                        </div>
+                    </form>
+
+                    <script>
+                        (function () {
+                            const toggle = document.querySelector('[data-reg-toggle="students"]');
+
+                            if (! toggle) {
+                                return;
+                            }
+
+                            toggle.addEventListener('click', function () {
+                                const boxes = document.querySelectorAll('[data-reg-student]');
+                                const checkAll = Array.from(boxes).some((box) => ! box.checked);
+
+                                boxes.forEach((box) => { box.checked = checkAll; });
+                                toggle.textContent = checkAll ? 'Clear selection' : 'Select all';
+                            });
+                        })();
+                    </script>
+                @endif
+            @else
+                <p class="tich-caption tich-mt-4">
+                    This intake has no calendar semester for the selected teaching period yet. Set the period dates in the
+                    <a class="tich-link" href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($curriculumParams, ['section' => 'semesters']))) }}">Semesters tab</a>.
+                </p>
+            @endif
+        </article>
+    @endcan
+
+    <article class="tich-card tich-mt-6">
+        <div class="tich-dept-panel__head">
+            <h2 class="tich-h3">Student records</h2>
+            <p class="tich-text">Registered units, CAT marks, exam results and grades per student.</p>
+        </div>
 
         @if ($otherStudents->isNotEmpty())
             <div class="tich-card tich-mt-4" style="border-left: 3px solid #ca8a04; padding: 1rem 1.25rem;">

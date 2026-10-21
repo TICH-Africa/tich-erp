@@ -72,6 +72,38 @@
                 </div>
             </div>
 
+            @if ($unit)
+                @php
+                    $offeredPeriod = (int) old('semester', $unit->semester ?: 1);
+
+                    $periodOptions = ! empty($periods) && collect($periods)->isNotEmpty()
+                        ? collect($periods)->mapWithKeys(fn ($period) => [(int) $period['semester'] => $period['label']])
+                        : ($unit->program
+                            ? collect(range(1, $unit->program->totalTeachingPeriods()))
+                                ->mapWithKeys(fn (int $number) => [$number => $unit->program->periodLabel($number)])
+                            : collect());
+
+                    if ($offeredPeriod >= 1 && ! $periodOptions->has($offeredPeriod)) {
+                        $periodOptions = $periodOptions->prepend(
+                            $unit->program?->periodLabel($offeredPeriod) ?? "Semester {$offeredPeriod}",
+                            $offeredPeriod
+                        )->sortKeys();
+                    }
+                @endphp
+
+                @if ($periodOptions->isNotEmpty())
+                    <div class="uf-field">
+                        <label>Year and semester offered</label>
+                        <select name="semester">
+                            @foreach ($periodOptions as $periodNumber => $periodLabel)
+                                <option value="{{ $periodNumber }}" @selected($offeredPeriod === $periodNumber)>{{ $periodLabel }}</option>
+                            @endforeach
+                        </select>
+                        <p class="tich-caption">When this unit is timetabled. Mapping it into an intake under Semesters still controls the plan students follow.</p>
+                    </div>
+                @endif
+            @endif
+
             @if (! $unit && ! empty($selectedIntake) && $selectedIntake->status === 'draft' && ! empty($periods) && $periods->isNotEmpty())
                 <div class="uf-field">
                     <label>Assign to semester after creating (optional)</label>

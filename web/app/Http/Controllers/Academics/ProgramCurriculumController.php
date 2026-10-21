@@ -22,6 +22,7 @@ use App\Services\PrintDocumentService;
 use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
+use App\Services\StudentUnitRegistrationService;
 use App\Services\WorkingIntakeService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
@@ -32,6 +33,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class ProgramCurriculumController extends DepartmentAcademicsController
@@ -48,6 +50,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected PrintDocumentService $printDocuments,
         protected UnitAllocationService $unitAllocations,
         protected ExamScheduleSyncService $examScheduleSync,
+        protected StudentUnitRegistrationService $studentRegistrations,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
     ) {
@@ -107,6 +110,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $intakes = $this->versions->intakesForProgram($program->id);
         $section = $this->curriculum->resolveSection($request);
+        $lecturerCampusId = $this->lecturerCampusFilterId($request);
 
         if (in_array($section, ['intakes', 'semesters'], true)) {
             $intakes->load(['items.unit']);
@@ -144,6 +148,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $enrolledStudents = ['matched' => collect(), 'other' => collect()];
         $enrolledSummaries = collect();
         $expandedStudentRecord = null;
+        $studentRegistration = null;
         $enrollmentStatusFilter = $request->string('enrollment_status')->toString() ?: null;
 
         if ($section === 'enrolled') {
@@ -173,6 +178,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                         'academics' => $this->studentAcademicRecords->forStudent($expandedStudent),
                     ];
                 }
+            }
+
+            if ($selectedIntake) {
+                $studentRegistration = $this->studentRegistrations->desk($request, $program, $selectedIntake);
             }
         }
 
@@ -216,6 +225,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 : ['matched' => collect(), 'unassigned' => collect()],
             'enrolledStudents' => $enrolledStudents,
             'enrolledSummaries' => $enrolledSummaries,
+            'studentRegistration' => $studentRegistration,
             'expandedStudentRecord' => $expandedStudentRecord,
             'enrollmentStatusFilter' => $enrollmentStatusFilter,
             'canViewApplications' => $request->user()->hasPermission('academics.read'),
@@ -284,14 +294,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 )
                 : collect(),
             'allocationStaffList' => in_array($section, ['catalog', 'semesters'], true)
-                ? $this->staffChoices($request, $program)
-                    ->where('is_teaching_staff', 1)
-                    ->where('employment_status', 'active')
-                    ->get()
+                ? $this->lecturerChoices($request, $program, $lecturerCampusId)
                 : collect(),
             'allocationCampuses' => in_array($section, ['catalog', 'semesters'], true)
                 ? Campus::query()->where('is_active', 1)->orderBy('campus_name')->get()
                 : collect(),
+            'lecturerCampusId' => in_array($section, ['catalog', 'semesters'], true)
+                ? $lecturerCampusId
+                : null,
         ]);
     }
 
@@ -971,11 +981,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->firstWhere('id', (int) $validated['unit_id']);
         abort_unless($unit, 404);
 
-        $lecturer = $this->staffChoices($request, $program)
-            ->where('is_teaching_staff', 1)
-            ->where('employment_status', 'active')
-            ->find((int) $validated['staff_id']);
-        abort_unless($lecturer, 422, 'Assign a lecturer who belongs to this department.');
+        $lecturer = $this->lecturerQuery($request, $program)
+            ->whereKey((int) $validated['staff_id'])
+            ->first();
+        abort_unless($lecturer, 422, 'Assign an active lecturer who belongs to this department.');
 
         $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period']);
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
@@ -1024,6 +1033,63 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     }
 
     /**
+     * Put the ticked students onto the units their intake carries for one teaching period.
+     */
+    public function registerUnits(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'registration_period' => ['required', 'string'],
+            'unit_ids' => ['required', 'array', 'min:1'],
+            'unit_ids.*' => ['integer'],
+            'students' => ['required', 'array', 'min:1'],
+            'students.*' => ['integer'],
+            'learning_department' => ['nullable', 'integer'],
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $desk = $this->studentRegistrations->desk($request, $program, $intake);
+        $period = $desk['periodOptions']->get($validated['registration_period']);
+        abort_unless($period, 422, 'Choose the teaching period to register.');
+
+        $semesterId = $desk['semesterId'];
+        abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
+
+        // Only units mapped into the period the desk is showing may be registered.
+        $allowedUnitIds = $desk['periodUnits']->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
+        $unitIds = array_values(array_intersect($validated['unit_ids'], $allowedUnitIds));
+
+        $result = $this->studentRegistrations->register(
+            $request->user(),
+            $program,
+            $intake,
+            (int) $semesterId,
+            $validated['students'],
+            $unitIds,
+        );
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $validated['learning_department'] ?? null,
+                'intake' => $intake->id,
+                'section' => 'enrolled',
+                'registration_period' => $validated['registration_period'],
+                'enrollment_status' => $request->string('enrollment_status')->toString() ?: null,
+                'entry_pathway' => $request->string('entry_pathway')->toString() ?: null,
+                'admission_year' => $request->integer('admission_year') ?: null,
+            ]))
+            ->with('status', "Registered {$result['students']} ".str('student')->plural($result['students'])." onto {$result['units']} unit ".str('place')->plural($result['units']).'.');
+    }
+
+    /**
      * Staff a user may schedule: an HOD is limited to their own department, registry roles see everyone.
      */
     private function staffChoices(Request $request, AcademicProgram $program): Builder
@@ -1034,6 +1100,42 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 fn (Builder $query) => $query->where('department_id', $program->department_id)
             )
             ->orderBy('surname');
+    }
+
+    /**
+     * @return Builder<Staff>
+     */
+    private function lecturerQuery(Request $request, AcademicProgram $program): Builder
+    {
+        return $this->staffChoices($request, $program)->teaching();
+    }
+
+    /**
+     * Lecturers offered in the Assign lecturer forms.
+     *
+     * A campus filter keeps unassigned profiles (campus_id NULL) visible: HR does not
+     * fill that column, so filtering it strictly would empty the list again.
+     *
+     * @return Collection<int, Staff>
+     */
+    private function lecturerChoices(Request $request, AcademicProgram $program, ?int $campusId = null): Collection
+    {
+        return $this->lecturerQuery($request, $program)
+            ->when(
+                $campusId,
+                fn (Builder $query) => $query->where(
+                    fn (Builder $campus) => $campus->where('campus_id', $campusId)->orWhereNull('campus_id')
+                )
+            )
+            ->with('campus:id,campus_name')
+            ->get(['id', 'title', 'first_name', 'middle_name', 'surname', 'employee_number', 'campus_id', 'department_id']);
+    }
+
+    private function lecturerCampusFilterId(Request $request): ?int
+    {
+        $campusId = $request->integer('lecturer_campus');
+
+        return $campusId > 0 ? $campusId : null;
     }
 
     /**

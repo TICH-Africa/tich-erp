@@ -113,6 +113,7 @@ return function (bool $named = true): void {
         $register('post', '/unit-allocations/{unitAllocation}/approve', [UnitAllocationApprovalController::class, 'approve'], 'departments.academics.unit-allocations.approve', ['permission:academics.approve']);
         $register('post', '/unit-allocations/{unitAllocation}/reject', [UnitAllocationApprovalController::class, 'reject'], 'departments.academics.unit-allocations.reject', ['permission:academics.approve']);
         $register('delete', '/programs/{program}/allocations/{unitAllocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');
+        $register('post', '/programs/{program}/student-unit-registrations', [ProgramCurriculumController::class, 'registerUnits'], 'departments.academics.programs.student-registrations.store');
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');
         $register('post', '/clearance/{student}/approve', [AcademicClearanceController::class, 'approve'], 'departments.academics.clearance.approve');
         $register('post', '/clearance/{student}/reject', [AcademicClearanceController::class, 'reject'], 'departments.academics.clearance.reject');

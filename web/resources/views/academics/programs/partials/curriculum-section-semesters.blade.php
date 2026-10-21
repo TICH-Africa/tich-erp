@@ -69,7 +69,7 @@
         ];
         $expandedSemester = request()->integer('semester') ?: null;
         $expandedBlockId = request()->has('block_id') ? request()->integer('block_id') : null;
-        $defaultCampusId = $allocationCampuses->first()?->id;
+        $defaultCampusId = $lecturerCampusId ?? $allocationCampuses->first()?->id;
     @endphp
 
     <style>
@@ -121,6 +121,8 @@
         @error('unit_ids')
             <p class="tich-text tich-mt-4" style="color: var(--tich-danger, #b91c1c);">{{ $message }}</p>
         @enderror
+
+        @include('academics.programs.partials.lecturer-campus-filter')
 
         @if (! $intakeEditable)
             @can('academics.write')
@@ -370,9 +372,11 @@
                                                                     <label class="tich-label">Lecturer</label>
                                                                     <select name="staff_id" class="tich-input" required>
                                                                         @forelse ($allocationStaffList as $member)
-                                                                            <option value="{{ $member->id }}" @selected($currentAllocation?->staff_id === $member->id)>{{ $member->fullName() }}</option>
+                                                                            <option value="{{ $member->id }}" @selected($currentAllocation?->staff_id === $member->id)>
+                                                                                {{ $member->fullName() }} · {{ $member->campus?->campus_name ?? 'Campus not set' }}
+                                                                            </option>
                                                                         @empty
-                                                                            <option value="" disabled>No teaching staff found</option>
+                                                                            <option value="" disabled>No active lecturers in this department</option>
                                                                         @endforelse
                                                                     </select>
                                                                 </div>
@@ -380,7 +384,7 @@
                                                                     <label class="tich-label">Campus</label>
                                                                     <select name="campus_id" class="tich-input" required>
                                                                         @foreach ($allocationCampuses as $campus)
-                                                                            <option value="{{ $campus->id }}" @selected($defaultCampusId == $campus->id)>{{ $campus->campus_name }}</option>
+                                                                            <option value="{{ $campus->id }}" @selected(($currentAllocation?->campus_id ?? $defaultCampusId) == $campus->id)>{{ $campus->campus_name }}</option>
                                                                         @endforeach
                                                                     </select>
                                                                 </div>

@@ -223,7 +223,7 @@ class StudentAcademicRecordService
             return collect();
         }
 
-        return DB::table('registered_units as ru')
+        $rows = DB::table('registered_units as ru')
             ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
             ->join('units as u', 'u.id', '=', 'ru.unit_id')
             ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
@@ -236,14 +236,55 @@ class StudentAcademicRecordService
                 'ru.is_additional',
                 'u.unit_code',
                 'u.unit_name',
+                'u.credit_hours',
                 'ssr.semester_id',
                 's.semester_label',
                 's.semester_number',
                 'ssr.status as registration_status',
                 'ssr.registration_date',
             ])
-            ->get()
-            ->groupBy('student_id');
+            ->get();
+
+        $lecturers = $this->lecturersByUnitSemester($rows);
+
+        return $rows->map(function (object $row) use ($lecturers) {
+            $row->lecturer_names = $lecturers->get(((int) $row->unit_id).'-'.((int) $row->semester_id));
+
+            return $row;
+        })->groupBy('student_id');
+    }
+
+    /**
+     * Approved lecturers on each registered unit for the semester the student registered into.
+     *
+     * @param  Collection<int, object>  $rows
+     * @return Collection<string, string>
+     */
+    private function lecturersByUnitSemester(Collection $rows): Collection
+    {
+        $unitIds = $rows->pluck('unit_id')->filter()->unique()->all();
+        $semesterIds = $rows->pluck('semester_id')->filter()->unique()->all();
+
+        if ($unitIds === [] || $semesterIds === []) {
+            return collect();
+        }
+
+        $allocations = DB::table('unit_allocations as ua')
+            ->join('staff as s', 's.id', '=', 'ua.staff_id')
+            ->whereIn('ua.unit_id', $unitIds)
+            ->whereIn('ua.semester_id', $semesterIds)
+            ->where('ua.is_active', 1)
+            ->where('ua.status', UnitAllocation::STATUS_APPROVED)
+            ->orderBy('s.surname')
+            ->get(['ua.unit_id', 'ua.semester_id', 's.first_name', 's.surname']);
+
+        return $allocations
+            ->groupBy(fn (object $allocation) => ((int) $allocation->unit_id).'-'.((int) $allocation->semester_id))
+            ->map(fn (Collection $group) => $group
+                ->map(fn (object $allocation) => trim($allocation->first_name.' '.$allocation->surname))
+                ->filter()
+                ->unique()
+                ->implode(', '));
     }
 
     /**

@@ -6,7 +6,7 @@
         'return_intake' => $selectedIntake?->id,
         'return_section' => $section ?? 'catalog',
     ];
-    $defaultCampusId = $allocationCampuses->first()?->id;
+    $defaultCampusId = $lecturerCampusId ?? $allocationCampuses->first()?->id;
     $intakeYearLabel = $selectedIntake?->academicYear?->year_label
         ?? ($selectedIntake?->intake_year ? (string) $selectedIntake->intake_year : null);
 
@@ -68,6 +68,8 @@
             @endif
         </p>
     @endunless
+
+    @include('academics.programs.partials.lecturer-campus-filter')
 
     <div class="tich-table-wrap">
         <table class="tich-admin-table">
@@ -189,9 +191,11 @@
                                                 <label class="tich-label">Lecturer</label>
                                                 <select name="staff_id" class="tich-input" required>
                                                     @forelse ($allocationStaffList as $member)
-                                                        <option value="{{ $member->id }}">{{ $member->fullName() }}</option>
+                                                        <option value="{{ $member->id }}">
+                                                            {{ $member->fullName() }} · {{ $member->campus?->campus_name ?? 'Campus not set' }}
+                                                        </option>
                                                     @empty
-                                                        <option value="" disabled>No teaching staff found</option>
+                                                        <option value="" disabled>No active lecturers in this department</option>
                                                     @endforelse
                                                 </select>
                                             </div>

@@ -26,6 +26,7 @@
                         <th>Code</th>
                         <th>Unit</th>
                         <th>Credits</th>
+                        <th>Lecturer</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -35,11 +36,12 @@
                             <td><strong>{{ $unit->unit_code ?? $unit->code ?? '-' }}</strong></td>
                             <td>{{ $unit->unit_name ?? $unit->name ?? '-' }}</td>
                             <td>{{ $unit->credit_hours ?? $unit->credits ?? '-' }}</td>
+                            <td>{{ $unit->lecturer_names ?: 'Not yet allocated' }}</td>
                             <td><span class="tich-badge tich-badge--success">Registered</span></td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="tich-table-empty">
+                            <td colspan="5" class="tich-table-empty">
                                 No units registered yet for this semester. Contact your HOD or Academic Registrar if the registration window is open.
                             </td>
                         </tr>

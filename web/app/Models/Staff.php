@@ -301,6 +301,15 @@ class Staff extends Model
 
     public const ERP_EMAIL_ORGANISATION = 'organisation';
 
+    /** @var list<string> */
+    public const TEACHING_ROLE_NAMES = [
+        'Lecturer/Tutor',
+        'HOD',
+        'Head of Academics',
+        'Dean of Students',
+        'Academic Registrar',
+    ];
+
     /**
      * Resolve the address for outbound ERP mail based on staff preference.
      * Default preference is personal (primary). Falls back to the other address, then $fallback.
@@ -398,6 +407,33 @@ class Staff extends Model
     public function scopeOnboarding($query)
     {
         return $query->where('employment_status', 'onboarding');
+    }
+
+    /**
+     * Staff the institution can put in front of a unit.
+     *
+     * HR profiles arrive with is_teaching_staff = 0 because nobody ticks it during
+     * onboarding, so the linked account's role is the reliable signal. Reading the
+     * flag alone leaves the Academics and HOD allocation pickers empty.
+     */
+    public function scopeTeaching($query)
+    {
+        return $query
+            ->where('employment_status', 'active')
+            ->where(function ($inner) {
+                $inner->where('is_teaching_staff', 1)
+                    ->orWhereExists(function ($sub) {
+                        $sub->selectRaw('1')
+                            ->from('users')
+                            ->join('user_roles', 'user_roles.user_id', '=', 'users.id')
+                            ->join('roles', 'roles.id', '=', 'user_roles.role_id')
+                            ->where(function ($identity) {
+                                $identity->whereColumn('users.staff_id', 'staff.id')
+                                    ->orWhereColumn('users.id', 'staff.user_id');
+                            })
+                            ->whereIn('roles.role_name', self::TEACHING_ROLE_NAMES);
+                    });
+            });
     }
 
     /**

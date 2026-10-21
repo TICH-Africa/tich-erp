@@ -137,11 +137,10 @@ class HodUnitAllocationService
     {
         return Staff::query()
             ->where('department_id', $departmentId)
-            ->where('is_teaching_staff', 1)
-            ->where('employment_status', 'active')
+            ->teaching()
             ->orderBy('surname')
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'surname', 'employee_number']);
+            ->get(['id', 'first_name', 'middle_name', 'surname', 'employee_number']);
     }
 
     /**
@@ -289,8 +288,7 @@ class HodUnitAllocationService
         $lecturer = Staff::query()
             ->where('id', $lecturerId)
             ->where('department_id', (int) $staff->department_id)
-            ->where('is_teaching_staff', 1)
-            ->where('employment_status', 'active')
+            ->teaching()
             ->first();
 
         abort_unless($lecturer, 403, 'Assign a lecturer who belongs to your department.');
