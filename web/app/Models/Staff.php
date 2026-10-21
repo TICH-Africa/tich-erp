@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Staff extends Model
@@ -311,6 +312,17 @@ class Staff extends Model
     ];
 
     /**
+     * Employment statuses still allowed to carry a unit.
+     *
+     * @var list<string>
+     */
+    public const TEACHING_EMPLOYMENT_STATUSES = [
+        'active',
+        'onboarding',
+        'probation',
+    ];
+
+    /**
      * Resolve the address for outbound ERP mail based on staff preference.
      * Default preference is personal (primary). Falls back to the other address, then $fallback.
      */
@@ -412,14 +424,23 @@ class Staff extends Model
     /**
      * Staff the institution can put in front of a unit.
      *
-     * HR profiles arrive with is_teaching_staff = 0 because nobody ticks it during
-     * onboarding, so the linked account's role is the reliable signal. Reading the
-     * flag alone leaves the Academics and HOD allocation pickers empty.
+     * Three signals are read because none of them is reliable on its own:
+     * - HR profiles arrive with is_teaching_staff = 0, nobody ticks it during onboarding.
+     * - staff.job_title is what the HR import actually carries ('Lecturer', 'Senior Lecturer').
+     * - the linked account's role name is the portal's own definition, and it arrives with
+     *   inconsistent spacing ('Lecturer/Tutor' vs 'Lecturer / Tutor').
+     *
+     * Lecturers also stay assignable while their profile is still onboarding: a unit needs a
+     * name before the paperwork catches up, and requiring 'active' left the pickers empty.
      */
     public function scopeTeaching($query)
     {
         return $query
-            ->where('employment_status', 'active')
+            ->where(function ($status) {
+                $status->whereIn('employment_status', self::TEACHING_EMPLOYMENT_STATUSES)
+                    ->orWhereNull('employment_status')
+                    ->orWhere('employment_status', '');
+            })
             ->where(function ($inner) {
                 $inner->where('is_teaching_staff', 1)
                     ->orWhereExists(function ($sub) {
@@ -431,8 +452,16 @@ class Staff extends Model
                                 $identity->whereColumn('users.staff_id', 'staff.id')
                                     ->orWhereColumn('users.id', 'staff.user_id');
                             })
-                            ->whereIn('roles.role_name', self::TEACHING_ROLE_NAMES);
-                    });
+                            ->whereIn(
+                                DB::raw("REPLACE(LOWER(roles.role_name), ' ', '')"),
+                                array_map(
+                                    fn (string $role) => strtolower(str_replace(' ', '', $role)),
+                                    self::TEACHING_ROLE_NAMES
+                                )
+                            );
+                    })
+                    ->orWhere('job_title', 'like', '%ecturer%')
+                    ->orWhere('job_title', 'like', '%utor%');
             });
     }
 

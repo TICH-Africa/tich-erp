@@ -131,16 +131,22 @@ class HodUnitAllocationService
     }
 
     /**
+     * Lecturers the HOD can request for their units.
+     *
+     * A lecturer can teach in any campus or department, so the list is institution-wide and
+     * only the order favours the HOD's own department: HR has not mapped staff.department_id
+     * for every teaching profile, and filtering on it left the picker empty.
+     *
      * @return Collection<int, Staff>
      */
     public function lecturers(int $departmentId): Collection
     {
         return Staff::query()
-            ->where('department_id', $departmentId)
             ->teaching()
+            ->orderByRaw('staff.department_id = ? DESC', [$departmentId])
             ->orderBy('surname')
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'middle_name', 'surname', 'employee_number']);
+            ->get(['id', 'first_name', 'middle_name', 'surname', 'employee_number', 'department_id', 'campus_id']);
     }
 
     /**
@@ -220,7 +226,7 @@ class HodUnitAllocationService
         $program = $this->assertProgramInDepartment($staff, $request->integer('program'));
         $intake = $this->assertIntakeOfProgram($program, $request->integer('intake'));
         $unit = $this->assertUnitInDepartment($staff, $request->integer('unit_id'));
-        $lecturer = $this->assertLecturerInDepartment($staff, $request->integer('staff_id'));
+        $lecturer = $this->assertAssignableLecturer($request->integer('staff_id'));
         $campus = Campus::query()->findOrFail($request->integer('campus_id'));
 
         $period = (int) ($request->integer('period') ?: $unit->semester ?: 1);
@@ -283,15 +289,14 @@ class HodUnitAllocationService
         return $unit;
     }
 
-    private function assertLecturerInDepartment(Staff $staff, int $lecturerId): Staff
+    private function assertAssignableLecturer(int $lecturerId): Staff
     {
         $lecturer = Staff::query()
             ->where('id', $lecturerId)
-            ->where('department_id', (int) $staff->department_id)
             ->teaching()
             ->first();
 
-        abort_unless($lecturer, 403, 'Assign a lecturer who belongs to your department.');
+        abort_unless($lecturer, 403, 'Assign a lecturer on the staff register.');
 
         return $lecturer;
     }

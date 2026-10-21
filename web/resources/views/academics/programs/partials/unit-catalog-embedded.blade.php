@@ -192,10 +192,10 @@
                                                 <select name="staff_id" class="tich-input" required>
                                                     @forelse ($allocationStaffList as $member)
                                                         <option value="{{ $member->id }}">
-                                                            {{ $member->fullName() }} · {{ $member->campus?->campus_name ?? 'Campus not set' }}
+                                                            {{ $member->fullName() }} · {{ $member->department?->dept_name ?? 'Department not set' }} · {{ $member->campus?->campus_name ?? 'Any campus' }}
                                                         </option>
                                                     @empty
-                                                        <option value="" disabled>No active lecturers in this department</option>
+                                                        <option value="" disabled>No lecturers on the staff register — add them under HR &gt; Staff with a Lecturer job title or the Lecturer/Tutor role</option>
                                                     @endforelse
                                                 </select>
                                             </div>

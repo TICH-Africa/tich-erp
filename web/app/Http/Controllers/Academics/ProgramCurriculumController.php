@@ -296,7 +296,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 )
                 : collect(),
             'allocationStaffList' => in_array($section, ['catalog', 'semesters'], true)
-                ? $this->lecturerChoices($request, $program, $lecturerCampusId)
+                ? $this->lecturerChoices($program, $lecturerCampusId)
                 : collect(),
             'allocationCampuses' => in_array($section, ['catalog', 'semesters'], true)
                 ? Campus::query()->where('is_active', 1)->orderBy('campus_name')->get()
@@ -983,10 +983,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->firstWhere('id', (int) $validated['unit_id']);
         abort_unless($unit, 404);
 
-        $lecturer = $this->lecturerQuery($request, $program)
+        $lecturer = $this->lecturerQuery()
             ->whereKey((int) $validated['staff_id'])
             ->first();
-        abort_unless($lecturer, 422, 'Assign an active lecturer who belongs to this department.');
+        abort_unless($lecturer, 422, 'Assign a lecturer on the staff register.');
 
         $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period']);
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
@@ -1093,6 +1093,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
     /**
      * Staff a user may schedule: an HOD is limited to their own department, registry roles see everyone.
+     *
+     * @return Builder<Staff>
      */
     private function staffChoices(Request $request, AcademicProgram $program): Builder
     {
@@ -1105,32 +1107,41 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     }
 
     /**
+     * Anyone the institution can put in front of a unit.
+     *
+     * Lecturers move between campuses and departments freely, so this list is
+     * institution-wide even for an HOD: HR has not finished mapping
+     * staff.department_id for every teaching profile, and scoping it here simply
+     * emptied the picker.
+     *
      * @return Builder<Staff>
      */
-    private function lecturerQuery(Request $request, AcademicProgram $program): Builder
+    private function lecturerQuery(): Builder
     {
-        return $this->staffChoices($request, $program)->teaching();
+        return Staff::query()->teaching();
     }
 
     /**
      * Lecturers offered in the Assign lecturer forms.
      *
-     * A campus filter keeps unassigned profiles (campus_id NULL) visible: HR does not
-     * fill that column, so filtering it strictly would empty the list again.
+     * The campus control prioritises a campus instead of filtering one: every lecturer can
+     * teach at any campus, so narrowing here hid assignable staff.
      *
      * @return Collection<int, Staff>
      */
-    private function lecturerChoices(Request $request, AcademicProgram $program, ?int $campusId = null): Collection
+    private function lecturerChoices(AcademicProgram $program, ?int $campusId = null): Collection
     {
-        return $this->lecturerQuery($request, $program)
+        return $this->lecturerQuery()
+            ->reorder()
+            ->orderByRaw('staff.department_id = ? DESC', [$program->department_id])
             ->when(
                 $campusId,
-                fn (Builder $query) => $query->where(
-                    fn (Builder $campus) => $campus->where('campus_id', $campusId)->orWhereNull('campus_id')
-                )
+                fn (Builder $query) => $query->orderByRaw('staff.campus_id = ? DESC', [$campusId])
             )
-            ->with('campus:id,campus_name')
-            ->get(['id', 'title', 'first_name', 'middle_name', 'surname', 'employee_number', 'campus_id', 'department_id']);
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->with(['campus:id,campus_name', 'department:id,dept_name'])
+            ->get(['id', 'title', 'first_name', 'middle_name', 'surname', 'employee_number', 'campus_id', 'department_id', 'employment_status', 'job_title']);
     }
 
     private function lecturerCampusFilterId(Request $request): ?int

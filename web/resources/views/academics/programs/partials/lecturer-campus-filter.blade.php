@@ -12,7 +12,7 @@
         @endforeach
 
         <div class="tich-form-group" style="margin:0; min-width:13rem;">
-            <label for="lecturer_campus" class="tich-label">Lecturers from</label>
+            <label for="lecturer_campus" class="tich-label">Lecturer campus</label>
             <select id="lecturer_campus" name="lecturer_campus" class="tich-select">
                 <option value="">All campuses</option>
                 @foreach ($allocationCampuses as $campus)
@@ -29,6 +29,7 @@
 
         <p class="tich-text" style="margin:0 0 0.15rem auto; font-size:0.8125rem;">
             {{ $allocationStaffList->count() }} {{ str('lecturer')->plural($allocationStaffList->count()) }} to choose from
+            · a lecturer can teach at any campus, so a campus here only lists theirs first
             @if ($allocationStaffList->whereNull('campus_id')->isNotEmpty())
                 · {{ $allocationStaffList->whereNull('campus_id')->count() }} have no campus on their staff profile
             @endif
