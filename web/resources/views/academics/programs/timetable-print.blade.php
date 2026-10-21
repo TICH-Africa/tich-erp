@@ -4,6 +4,12 @@
     @php
         $sessions = $sessions ?? collect();
     @endphp
+    @if ($timetable->progress_note || $timetable->week_span)
+        <p class="tich-doc-note">
+            Semester {{ $timetable->teaching_period }} · {{ $timetable->progress_note ?: 'Posted up to week or month '.$timetable->week_span }}
+            @if ($timetable->week_span) (of {{ $timetable->week_span }} in this semester) @endif
+        </p>
+    @endif
     @if ($sessions->isEmpty())
         <p>No sessions are scheduled on this timetable yet.</p>
     @else
@@ -34,7 +40,7 @@
                     <tr>
                         <td>{{ $dayLabels[$session->day_of_week] ?? $session->day_of_week }}</td>
                         <td>{{ substr((string) $session->start_time, 0, 5) }}-{{ substr((string) $session->end_time, 0, 5) }}</td>
-                        <td>{{ $session->displayTitle() }}</td>
+                        <td>{{ $session->displayTitle() }}@if ($session->isOnline()) (Online)@endif @if (! in_array($session->session_type, ['break', 'lunch'], true)) - {{ $session->recurrenceLabel() }}@if ($session->cycleLabel()), {{ strtolower($session->cycleLabel()) }} @endif @endif</td>
                         <td>{{ $session->staff ? trim($session->staff->first_name.' '.$session->staff->surname) : '-' }}</td>
                         <td>{{ $session->room?->room_code ?? $session->venue ?? '-' }}</td>
                         <td>{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</td>

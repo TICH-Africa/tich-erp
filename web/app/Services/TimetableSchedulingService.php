@@ -262,6 +262,70 @@ class TimetableSchedulingService
 
 
 
+    /**
+     * Open an empty timetable for a programme, intake, semester and kind. The officer then adds
+     * the classes the school actually runs - the system fills nothing in.
+     */
+    public function startDraft(
+        User $user,
+        AcademicProgram $program,
+        CurriculumVersion $intake,
+        int $teachingPeriod,
+        string $timetableKind = 'lesson',
+        ?string $title = null,
+        ?Request $request = null
+    ): ProgramTimetable {
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        $existing = $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind);
+
+        if ($existing && $existing->status !== 'archived') {
+            return $existing;
+        }
+
+        $template = $this->templates->templateForProgram($program->id);
+
+        if (in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            $this->templates->ensureKindSegments($template, $timetableKind);
+            $template->load('segments');
+        }
+
+        $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
+
+        $timetable = ProgramTimetable::query()->create([
+            'program_id' => $program->id,
+            'curriculum_version_id' => $intake->id,
+            'teaching_period' => $teachingPeriod,
+            'title' => $title ?: $kindLabel.' - Semester '.$teachingPeriod,
+            'timetable_kind' => $timetableKind,
+            'template_id' => $template->id,
+            'status' => 'draft',
+            'source' => 'manual',
+            'generation_notes' => 'Started empty on the timetable page. Classes are added as the school runs them.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'academics.timetable.started',
+            'program_timetables',
+            $timetable->id,
+            null,
+            [
+                'program_id' => $program->id,
+                'intake' => $intake->id,
+                'teaching_period' => $teachingPeriod,
+                'timetable_kind' => $timetableKind,
+            ],
+            'Empty timetable started for manual classes',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $timetable->load(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
+    }
+
     public function generate(
 
         User $user,
@@ -505,8 +569,8 @@ class TimetableSchedulingService
     public function addSession(User $user, ProgramTimetable $timetable, array $data, ?Request $request = null): ProgramTimetableSession
 
     {
-
-        abort_unless($timetable->status === 'draft', 422, 'Only draft timetables can be edited.');
+        // A semester timetable moves every week or two, so a published one stays editable.
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
 
 
 
@@ -527,6 +591,14 @@ class TimetableSchedulingService
             'end_time' => $data['end_time'],
 
             'session_type' => $data['session_type'] ?? 'lesson',
+
+            'delivery_mode' => $data['delivery_mode'] ?? 'physical',
+
+            'recurrence' => $data['recurrence'] ?? 'weekly',
+
+            'week_no' => (($data['recurrence'] ?? 'weekly') === 'semester') ? null : ($data['week_no'] ?? null),
+
+            'contact_hours' => $data['contact_hours'] ?? null,
 
             'title' => array_key_exists('title', $data) ? UiText::normalizeDash($data['title']) : null,
 
@@ -583,6 +655,211 @@ class TimetableSchedulingService
 
     }
 
+    public function updateSession(
+        User $user,
+        ProgramTimetable $timetable,
+        ProgramTimetableSession $session,
+        array $data,
+        ?Request $request = null
+    ): ProgramTimetableSession {
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
+        abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $original = $session->only([
+            'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time',
+            'session_type', 'delivery_mode', 'recurrence', 'week_no', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
+        ]);
+
+        $payload = [
+            'unit_id' => $data['unit_id'] ?? null,
+            'staff_id' => $data['staff_id'] ?? null,
+            'room_id' => $data['room_id'] ?? $session->room_id,
+            'day_of_week' => (int) $data['day_of_week'],
+            'start_time' => $data['start_time'],
+            'end_time' => $data['end_time'],
+            'session_type' => $data['session_type'] ?? $session->session_type,
+            'delivery_mode' => $data['delivery_mode'] ?? $session->delivery_mode ?? 'physical',
+            'recurrence' => $data['recurrence'] ?? $session->recurrence ?? 'weekly',
+            'week_no' => array_key_exists('week_no', $data)
+                ? ((($data['recurrence'] ?? $session->recurrence ?? 'weekly') === 'semester' || $data['week_no'] === '' || $data['week_no'] === null) ? null : (int) $data['week_no'])
+                : $session->week_no,
+            'contact_hours' => array_key_exists('contact_hours', $data)
+                ? ($data['contact_hours'] === '' || $data['contact_hours'] === null ? null : (float) $data['contact_hours'])
+                : $session->contact_hours,
+            'title' => array_key_exists('title', $data) ? UiText::normalizeDash($data['title']) : $session->title,
+            'venue' => $data['venue'] ?? $session->venue,
+            'class_group' => $data['class_group'] ?? $session->class_group,
+        ];
+
+        // Moving onto a slot keeps the session inside the template's own hours.
+        if ((int) $original['day_of_week'] !== $payload['day_of_week']
+            || $this->normalizeTime($original['start_time']) !== $this->normalizeTime($payload['start_time'])) {
+            $session->update($payload + ['segment_id' => null]);
+        } else {
+            $session->update($payload);
+        }
+
+        $conflicts = $this->detectConflicts(
+            $timetable->sessions()->with(['unit', 'staff', 'room'])->get()
+        );
+
+        if ($conflicts->isNotEmpty()) {
+            $session->update($original);
+            $session->refresh();
+
+            throw ValidationException::withMessages(['session' => $conflicts->first()['message']]);
+        }
+
+        $changed = collect($payload)->filter(fn ($value, $key) => (string) ($original[$key] ?? '') !== (string) ($value ?? ''))->keys()->all();
+
+        $this->auditService->log(
+            'academics.timetable.session_updated',
+            'program_timetable_sessions',
+            $session->id,
+            $original,
+            $payload + ['changed' => $changed],
+            'Timetable session edited'.($changed === [] ? '' : ': '.implode(', ', $changed)),
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $session->fresh(['unit', 'staff', 'room']);
+    }
+
+    public function removeSession(
+        User $user,
+        ProgramTimetable $timetable,
+        ProgramTimetableSession $session,
+        ?Request $request = null
+    ): void {
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
+        abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $removed = $session->only(['unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time', 'session_type', 'title']);
+
+        $session->loadMissing(['unit', 'staff']);
+
+        DB::table('exam_schedules')->where('program_timetable_session_id', $session->id)->delete();
+        $session->delete();
+
+        $this->auditService->log(
+            'academics.timetable.session_removed',
+            'program_timetable_sessions',
+            $session->id,
+            $removed,
+            null,
+            'Timetable session removed: '.($removed['unit_id'] ? 'unit '.$removed['unit_id'] : ($removed['title'] ?: 'slot')),
+            'success',
+            $user->id,
+            $request
+        );
+    }
+
+    /**
+     * Save a semester timetable in one go: every class the editor holds is written, every class
+     * ticked Remove is dropped, and the whole save is rejected if the result clashes. A weekly or
+     * monthly class is only one posting of many in the semester, so it carries its week/month number
+     * and the timetable itself carries the "working up to" note the team reads.
+     *
+     * @param  array{sessions?: array<int, array<string, mixed>>, progress_note?: string|null, week_span?: int|null}  $data
+     */
+    public function saveTimetable(User $user, ProgramTimetable $timetable, array $data, ?Request $request = null): ProgramTimetable
+    {
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
+
+        return DB::transaction(function () use ($user, $timetable, $data, $request): ProgramTimetable {
+            $added = 0;
+            $updated = 0;
+            $removed = 0;
+
+            foreach ($data['sessions'] ?? [] as $row) {
+                $session = empty($row['id']) ? null : $timetable->sessions()->whereKey((int) $row['id'])->first();
+
+                if (! empty($row['_remove'])) {
+                    if ($session) {
+                        DB::table('exam_schedules')->where('program_timetable_session_id', $session->id)->delete();
+                        $session->delete();
+                        $removed++;
+                    }
+
+                    continue;
+                }
+
+                $previous = $session ? $session->getAttributes() : [];
+                $keep = fn (string $key, mixed $fallback = null) => array_key_exists($key, $row)
+                    ? ($row[$key] === '' ? $fallback : $row[$key])
+                    : ($previous[$key] ?? $fallback);
+
+                $recurrence = $row['recurrence'] ?? 'weekly';
+                $weekNo = $keep('week_no');
+
+                $payload = [
+                    'unit_id' => $keep('unit_id') ?: null,
+                    'staff_id' => $keep('staff_id') ?: null,
+                    'day_of_week' => (int) $row['day_of_week'],
+                    'start_time' => $row['start_time'],
+                    'end_time' => $row['end_time'],
+                    'session_type' => $row['session_type'] ?? 'lesson',
+                    'delivery_mode' => $row['delivery_mode'] ?? 'physical',
+                    'recurrence' => $recurrence,
+                    'week_no' => $recurrence === 'semester' ? null : ($weekNo ? (int) $weekNo : null),
+                    'contact_hours' => $keep('contact_hours') === null ? null : (float) $keep('contact_hours'),
+                    'venue' => $keep('venue') ?: null,
+                ];
+
+                if ($session) {
+                    $session->update($payload);
+                    $updated++;
+
+                    continue;
+                }
+
+                ProgramTimetableSession::create($payload + ['program_timetable_id' => $timetable->id]);
+                $added++;
+            }
+
+            $conflicts = $this->detectConflicts(
+                $timetable->sessions()->with(['unit', 'staff', 'room'])->get()
+            );
+
+            if ($conflicts->isNotEmpty()) {
+                throw ValidationException::withMessages(['sessions' => $conflicts->first()['message']]);
+            }
+
+            $timetable->update([
+                'progress_note' => array_key_exists('progress_note', $data)
+                    ? UiText::normalizeDash($data['progress_note'])
+                    : $timetable->progress_note,
+                'week_span' => array_key_exists('week_span', $data)
+                    ? ($data['week_span'] === '' || $data['week_span'] === null ? null : (int) $data['week_span'])
+                    : $timetable->week_span,
+            ]);
+
+            $this->auditService->log(
+                'academics.timetable.saved',
+                'program_timetables',
+                $timetable->id,
+                null,
+                [
+                    'added' => $added,
+                    'updated' => $updated,
+                    'removed' => $removed,
+                    'progress_note' => $timetable->progress_note,
+                    'week_span' => $timetable->week_span,
+                ],
+                'Timetable saved for semester '.$timetable->teaching_period
+                   .': '.$added.' added, '.$updated.' changed, '.$removed.' removed'
+                   .($timetable->progress_note ? ', '.$timetable->progress_note : ''),
+                'success',
+                $user->id,
+                $request
+            );
+
+            return $timetable->load(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments']);
+        });
+    }
+
     public function moveSession(
         User $user,
         ProgramTimetable $timetable,
@@ -592,7 +869,7 @@ class TimetableSchedulingService
         ?int $swapSessionId = null,
         ?Request $request = null
     ): array {
-        abort_unless($timetable->status === 'draft', 422, 'Only draft timetables can be edited.');
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
         abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
 
         $timetable->loadMissing('template.segments');

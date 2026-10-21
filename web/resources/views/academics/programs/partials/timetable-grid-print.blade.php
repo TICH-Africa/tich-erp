@@ -41,6 +41,9 @@
                             @forelse ($cellSessions as $session)
                                 <div class="tich-doc-session">
                                     <strong>{{ $session->displayTitle() }}</strong>
+                                    @if ($session->isOnline())
+                                        <span>Online</span>
+                                    @endif
                                     @if ($session->room)
                                         <span>{{ $session->room->room_code }}</span>
                                     @elseif ($session->venue)
@@ -50,6 +53,9 @@
                                         <span>{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
                                     @endif
                                     <span>{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
+                                    @if (! in_array($session->session_type, ['break', 'lunch'], true))
+                                        <span>{{ $session->recurrenceLabel() }}@if ($session->cycleLabel()) · {{ $session->cycleLabel() }} @endif</span>
+                                    @endif
                                 </div>
                             @empty
                                 <span style="color:#94a3b8;">-</span>

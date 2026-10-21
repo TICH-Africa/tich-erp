@@ -161,7 +161,11 @@ return function (bool $named = true): void {
         $register('put', '/programs/{program}/timetable/template', [ProgramCurriculumController::class, 'syncTimetableTemplate'], 'departments.academics.programs.timetable.sync-template');
         $register('put', '/programs/{program}/timetable/slots', [ProgramCurriculumController::class, 'syncTimetableKindSlots'], 'departments.academics.programs.timetable.sync-kind-slots');
         $register('post', '/programs/{program}/intakes/{version}/timetable/generate', [ProgramCurriculumController::class, 'generateTimetable'], 'departments.academics.programs.timetable.generate');
+        $register('post', '/programs/{program}/intakes/{version}/timetable/start', [ProgramCurriculumController::class, 'startTimetable'], 'departments.academics.programs.timetable.start');
         $register('post', '/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'], 'departments.academics.programs.timetable.add-session');
+        $register('put', '/programs/{program}/timetables/{timetable}/progress', [ProgramCurriculumController::class, 'saveTimetableProgress'], 'departments.academics.programs.timetable.save-progress');
+        $register('put', '/programs/{program}/timetables/{timetable}/sessions/{session}', [ProgramCurriculumController::class, 'updateTimetableSession'], 'departments.academics.programs.timetable.update-session');
+        $register('delete', '/programs/{program}/timetables/{timetable}/sessions/{session}', [ProgramCurriculumController::class, 'removeTimetableSession'], 'departments.academics.programs.timetable.remove-session');
         $register('patch', '/programs/{program}/timetables/{timetable}/sessions/{session}/move', [ProgramCurriculumController::class, 'moveTimetableSession'], 'departments.academics.programs.timetable.move-session');
         $register('put', '/programs/{program}/timetables/{timetable}/sessions/{session}/invigilator', [ProgramCurriculumController::class, 'updateTimetableSessionInvigilator'], 'departments.academics.programs.timetable.update-invigilator');
         $register('post', '/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'], 'departments.academics.programs.timetable.publish');

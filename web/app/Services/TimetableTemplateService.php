@@ -23,6 +23,7 @@ class TimetableTemplateService
         return [
             'lesson' => 'Lesson',
             'break' => 'Break',
+            'lunch' => 'Lunch',
             'exam' => 'Exam',
             'supplementary' => 'Supplementary exam',
             'special_exam' => 'Special exam',
