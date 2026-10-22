@@ -4,12 +4,26 @@ namespace App\Http\Controllers\Academics;
 
 use App\Models\Department;
 use App\Models\StudentTranscriptRequest;
+use App\Services\AcademicsAccessService;
+use App\Services\DepartmentDashboardService;
+use App\Services\StudentRecordService;
+use App\Services\TranscriptDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TranscriptRequestController extends DepartmentAcademicsController
 {
+    public function __construct(
+        AcademicsAccessService $access,
+        DepartmentDashboardService $departmentDashboard,
+        protected StudentRecordService $studentRecords,
+        protected TranscriptDocumentService $documents,
+    ) {
+        parent::__construct($access, $departmentDashboard);
+    }
+
     protected function authorizeRegistrar(Request $request, Department $department): Department
     {
         $hub = $this->authorizeHub($request, $department);
@@ -50,6 +64,47 @@ class TranscriptRequestController extends DepartmentAcademicsController
             'department' => $hub,
             'transcriptRequest' => $transcriptRequest,
         ]);
+    }
+
+    /**
+     * The transcript a request is asking for, on the same official document the student can collect.
+     */
+    protected function transcriptData(Request $request, StudentTranscriptRequest $transcriptRequest): array
+    {
+        abort_if($transcriptRequest->student_id === null, 404, 'That request has no student attached.');
+
+        return $this->documents->forStudent($this->studentRecords->findForHub($transcriptRequest->student_id));
+    }
+
+    public function transcript(Request $request, Department $department, StudentTranscriptRequest $transcriptRequest): View
+    {
+        $hub = $this->authorizeRegistrar($request, $department);
+        $backUrl = $this->requestUrl($request, $hub, $transcriptRequest);
+
+        return $this->documents->screen(
+            $this->transcriptData($request, $transcriptRequest),
+            $backUrl,
+            $backUrl.'/transcript/pdf',
+        );
+    }
+
+    public function transcriptPdf(Request $request, Department $department, StudentTranscriptRequest $transcriptRequest): StreamedResponse
+    {
+        $this->authorizeRegistrar($request, $department);
+        $transcript = $this->transcriptData($request, $transcriptRequest);
+
+        return $this->documents->download(
+            $transcript,
+            $this->documents->filename($transcript['student']),
+        );
+    }
+
+    protected function requestUrl(Request $request, Department $hub, StudentTranscriptRequest $transcriptRequest): string
+    {
+        return route('departments.academics.transcript-requests.show', array_merge(
+            \App\Support\AcademicsRouteParams::fromRequest($request),
+            ['transcriptRequest' => $transcriptRequest->id]
+        ));
     }
 
     public function issue(Request $request, Department $department, StudentTranscriptRequest $transcriptRequest): RedirectResponse

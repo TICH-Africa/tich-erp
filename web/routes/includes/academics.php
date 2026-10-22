@@ -70,6 +70,8 @@ return function (bool $named = true): void {
         $register('get', '/profile-changes/{profileChange}', [StudentProfileChangeController::class, 'show'], 'departments.academics.profile-changes.show');
         $register('get', '/transcript-requests', [TranscriptRequestController::class, 'index'], 'departments.academics.transcript-requests.index');
         $register('get', '/transcript-requests/{transcriptRequest}', [TranscriptRequestController::class, 'show'], 'departments.academics.transcript-requests.show');
+        $register('get', '/transcript-requests/{transcriptRequest}/transcript', [TranscriptRequestController::class, 'transcript'], 'departments.academics.transcript-requests.transcript');
+        $register('get', '/transcript-requests/{transcriptRequest}/transcript/pdf', [TranscriptRequestController::class, 'transcriptPdf'], 'departments.academics.transcript-requests.transcript-pdf');
         $register('get', '/lifecycle-requests', [LifecycleRequestController::class, 'index'], 'departments.academics.lifecycle-requests.index');
         $register('get', '/lifecycle-requests/{lifecycleRequest}', [LifecycleRequestController::class, 'show'], 'departments.academics.lifecycle-requests.show');
         $register('get', '/lifecycle-requests/{lifecycleRequest}/attachments/{index}', [LifecycleRequestController::class, 'downloadAttachment'], 'departments.academics.lifecycle-requests.attachment');

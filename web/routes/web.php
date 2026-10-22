@@ -479,6 +479,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/students/create', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'create'])->name('academics.students.create');
         Route::get('/students/{student}', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'show'])->name('academics.students.show');
         Route::post('/students', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'store'])->name('academics.students.store');
+        Route::get('/students/{student}/transcript', [\App\Http\Controllers\Academics\AcademicsTranscriptController::class, 'show'])->name('academics.students.transcript');
+        Route::get('/students/{student}/transcript/pdf', [\App\Http\Controllers\Academics\AcademicsTranscriptController::class, 'pdf'])->name('academics.students.transcript.pdf');
+        Route::get('/students/{student}/transcript/{semester}/pdf', [\App\Http\Controllers\Academics\AcademicsTranscriptController::class, 'termPdf'])->name('academics.students.transcript.term.pdf');
     });
 
     Route::prefix('finance')->middleware(['permission:finance.read'])->group(function () use ($registerModuleBudgeting, $registerModuleMeReports) {

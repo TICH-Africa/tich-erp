@@ -220,8 +220,8 @@ class SiteSettingsService
     {
         $absolute = $this->logoAbsolutePath();
 
-        if (! $absolute && $forPdf) {
-            $absolute = public_path('images/logo.png');
+        if (! $absolute) {
+            $absolute = is_file(public_path('images/logo.png')) ? public_path('images/logo.png') : null;
         }
 
         if (! $absolute || ! is_file($absolute) || filesize($absolute) === 0) {
@@ -233,6 +233,10 @@ class SiteSettingsService
             $encoded = base64_encode((string) file_get_contents($absolute));
 
             return 'data:'.$mime.';base64,'.$encoded;
+        }
+
+        if ($this->logoAbsolutePath() === null) {
+            return \App\Support\PublicAsset::url('images/logo.png');
         }
 
         return $this->publicAssetUrl($this->get('site.logo_path'));

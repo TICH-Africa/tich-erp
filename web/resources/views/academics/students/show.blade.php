@@ -37,8 +37,8 @@
         <article class="tich-card">
             <h3 class="tich-h4">Transcript</h3>
             <div class="tich-mt-3">
-                <a href="{{ route('sis.students.transcript.pdf', $student->id) }}" class="tich-btn tich-btn-primary tich-btn--sm" download>Download Transcript PDF</a>
-                <a href="{{ route('sis.students.transcript', $student->id) }}" class="tich-btn tich-btn-secondary tich-btn--sm tich-mt-2">View Transcript</a>
+                <a href="{{ route('academics.students.transcript.pdf', $student->id) }}" class="tich-btn tich-btn-primary tich-btn--sm" download>Download Transcript PDF</a>
+                <a href="{{ route('academics.students.transcript', $student->id) }}" class="tich-btn tich-btn-secondary tich-btn--sm tich-mt-2">View Transcript</a>
             </div>
         </article>
     </div>
@@ -55,7 +55,7 @@
                         <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
                             <h4 class="tich-h4 tich-mt-0" style="color:#1e3a5f;">{{ $yearLabel }}</h4>
                             @if($semesterId)
-                                <a href="{{ route('sis.students.transcript.term.pdf', [$student->id, $semesterId]) }}" class="tich-btn tich-btn-primary tich-btn--sm" download>Download Term Transcript</a>
+                                <a href="{{ route('academics.students.transcript.term.pdf', [$student->id, $semesterId]) }}" class="tich-btn tich-btn-primary tich-btn--sm" download>Download Term Transcript</a>
                             @endif
                         </div>
                         @foreach ($records as $record)

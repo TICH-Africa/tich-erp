@@ -47,6 +47,9 @@
                             <td class="tich-caption">{{ $item->created_at?->format('d M Y H:i') }}</td>
                             <td>
                                 <a href="{{ route('departments.academics.transcript-requests.show', array_merge($hub, ['transcriptRequest' => $item->id])) }}" class="tich-btn tich-btn-ghost">View</a>
+                                @if ($item->student)
+                                    <a href="{{ route('departments.academics.transcript-requests.transcript-pdf', array_merge($hub, ['transcriptRequest' => $item->id])) }}" class="tich-btn tich-btn-secondary">Transcript</a>
+                                @endif
                             </td>
                         </tr>
                     @empty

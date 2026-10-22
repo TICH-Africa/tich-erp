@@ -31,9 +31,9 @@
             </dl>
             @if ($transcriptRequest->student)
                 <p class="tich-mt-4">
-                    <a href="{{ route('portal.transcript.print') }}" class="tich-link tich-caption" style="pointer-events:none; opacity:0.5;">Portal print is student-scoped</a>
-                    ·
-                    <a href="{{ route('sis.students.show', $transcriptRequest->student) }}" class="tich-link">Open SIS record</a>
+                    <a href="{{ route('departments.academics.transcript-requests.transcript', array_merge($hub, ['transcriptRequest' => $transcriptRequest->id])) }}" class="tich-btn tich-btn-secondary">View transcript</a>
+                    <a href="{{ route('departments.academics.transcript-requests.transcript-pdf', array_merge($hub, ['transcriptRequest' => $transcriptRequest->id])) }}" class="tich-btn tich-btn-primary">Download transcript (PDF)</a>
+                    <a href="{{ route('sis.students.show', $transcriptRequest->student) }}" class="tich-link" style="margin-left:0.75rem;">Open SIS record</a>
                 </p>
             @endif
         </article>

@@ -625,3 +625,153 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
+
+/* Official academic transcript */
+.tich-doc--transcript .tich-doc-letterhead {
+    grid-template-columns: auto 1fr;
+    border-bottom-width: 3px;
+    border-bottom-style: solid;
+    border-bottom-color: var(--tich-doc-navy);
+    padding-bottom: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.tich-doc--transcript .tich-doc-letterhead__logo {
+    max-height: 4rem;
+    max-width: 9.5rem;
+}
+
+.tich-doc--transcript .tich-doc-title-block {
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--tich-doc-border);
+    border-bottom: 1px solid var(--tich-doc-border);
+    background: #f8fafc;
+}
+
+.tich-doc--transcript .tich-doc-title-block h1 {
+    font-size: 1.2rem;
+}
+
+.tich-transcript-panel {
+    margin: 0 0 1.4rem;
+    break-inside: avoid;
+}
+
+.tich-transcript-panel__title {
+    margin: 0 0 0.45rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid var(--tich-doc-navy);
+    font-family: system-ui, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tich-doc-navy);
+}
+
+.tich-transcript-identity {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.tich-transcript-identity th {
+    width: 17%;
+    padding: 0.38rem 0.5rem;
+    border: 1px solid var(--tich-doc-border);
+    background: #f1f5f9;
+    color: var(--tich-doc-navy-light);
+    font-family: system-ui, sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    vertical-align: top;
+}
+
+.tich-transcript-identity td {
+    width: 33%;
+    padding: 0.38rem 0.5rem;
+    border: 1px solid var(--tich-doc-border);
+    vertical-align: top;
+}
+
+.tich-transcript-identity td.gpa {
+    font-weight: 700;
+    color: var(--tich-doc-navy);
+}
+
+.tich-transcript-results {
+    margin: 0 0 0.85rem;
+    font-size: 0.78rem;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.tich-transcript-term {
+    margin: 0;
+    padding: 0.32rem 0.55rem;
+    background: var(--tich-doc-navy);
+    color: #fff;
+    font-family: system-ui, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.tich-transcript-results .col-code { width: 12%; }
+.tich-transcript-results .col-unit { width: 28%; }
+.tich-transcript-results .col-credits { width: 8%; }
+.tich-transcript-results .col-mark { width: 12%; }
+.tich-transcript-results .col-grade { width: 8%; }
+
+.tich-transcript-results .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+}
+
+.tich-transcript-results .grade {
+    text-align: center;
+    font-weight: 700;
+    color: var(--tich-doc-navy);
+}
+
+.tich-transcript-results tfoot td {
+    background: #eef2f7;
+}
+
+.tich-transcript-scale {
+    width: 60%;
+    font-size: 0.78rem;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.tich-transcript-scale .col-grade {
+    width: 22%;
+}
+
+.tich-transcript-scale .grade {
+    text-align: center;
+    font-weight: 700;
+    color: var(--tich-doc-navy);
+}
+
+.tich-transcript-note {
+    margin: 0.4rem 0 0;
+    font-size: 0.7rem;
+    color: var(--tich-doc-muted);
+    line-height: 1.5;
+}
+
+.tich-transcript-cert {
+    margin: 1.5rem 0 0;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--tich-doc-border);
+    background: #f8fafc;
+    font-size: 0.74rem;
+    color: #1f2937;
+    line-height: 1.55;
+}
