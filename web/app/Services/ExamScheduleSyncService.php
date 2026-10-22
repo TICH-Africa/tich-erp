@@ -41,11 +41,7 @@ class ExamScheduleSyncService
             return 0;
         }
 
-        $period = CurriculumVersionPeriod::query()
-            ->where('curriculum_version_id', $intake->id)
-            ->where('semester', $teachingPeriod)
-            ->whereNull('block_id')
-            ->first();
+        $period = CurriculumVersionPeriod::resolveFor((int) $intake->id, $teachingPeriod);
 
         $synced = 0;
 

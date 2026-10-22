@@ -330,11 +330,40 @@ class CurriculumVersionService
      */
     public function periodsKeyed(CurriculumVersion $version): Collection
     {
-        return CurriculumVersionPeriod::query()
+        $periods = CurriculumVersionPeriod::query()
             ->where('curriculum_version_id', $version->id)
             ->orderBy('semester')
-            ->get()
-            ->keyBy(fn (CurriculumVersionPeriod $period) => $this->periodKey($period->semester, $period->block_id));
+            ->get();
+
+        $keyed = $periods->keyBy(fn (CurriculumVersionPeriod $period) => $this->periodKey($period->semester, $period->block_id));
+
+        $version->loadMissing('program');
+
+        if (! $version->program || $version->program->usesBlocks()) {
+            return $keyed;
+        }
+
+        // Year 2, 3 and 4 run in the same rooms at the same time as Year 1, so a period that has no
+        // dates of its own borrows the semester the intake is actually in.
+        $running = CurriculumVersionPeriod::runningPeriod(
+            $periods->whereNull('block_id')->values()
+        );
+
+        if (! $running) {
+            return $keyed;
+        }
+
+        foreach (range(1, max(1, (int) $version->program->totalTeachingPeriods())) as $semester) {
+            $key = $this->periodKey($semester, null);
+
+            if ($keyed->has($key)) {
+                continue;
+            }
+
+            $keyed->put($key, CurriculumVersionPeriod::borrowFrom($running, $semester));
+        }
+
+        return $keyed;
     }
 
     /**
@@ -588,6 +617,10 @@ class CurriculumVersionService
                 'block_id' => $period->block_id,
                 'start_date' => $period->start_date,
                 'end_date' => $period->end_date,
+                'learning_start_date' => $period->learning_start_date,
+                'learning_end_date' => $period->learning_end_date,
+                'exam_start_date' => $period->exam_start_date,
+                'exam_end_date' => $period->exam_end_date,
             ]);
         }
     }

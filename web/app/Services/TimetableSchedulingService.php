@@ -1651,15 +1651,7 @@ class TimetableSchedulingService
 
     {
 
-        return CurriculumVersionPeriod::query()
-
-            ->where('curriculum_version_id', $curriculumVersionId)
-
-            ->where('semester', $teachingPeriod)
-
-            ->whereNull('block_id')
-
-            ->first();
+        return CurriculumVersionPeriod::resolveFor($curriculumVersionId, $teachingPeriod);
 
     }
 

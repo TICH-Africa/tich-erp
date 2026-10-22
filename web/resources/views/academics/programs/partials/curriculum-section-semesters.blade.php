@@ -190,12 +190,15 @@
                     $periodKey = $period['semester'].':'.($period['block_id'] ?? '');
                     $periodDate = $periodDates->get($periodKey);
                     $periodIndex++;
-                    $semesterStart = old('periods.'.$periodIndex.'.start_date', $periodDate?->start_date?->format('Y-m-d'));
-                    $semesterEnd = old('periods.'.$periodIndex.'.end_date', $periodDate?->end_date?->format('Y-m-d'));
-                    $learningStart = old('periods.'.$periodIndex.'.learning_start_date', $periodDate?->learning_start_date?->format('Y-m-d') ?: $semesterStart);
-                    $learningEnd = old('periods.'.$periodIndex.'.learning_end_date', $periodDate?->learning_end_date?->format('Y-m-d'));
-                    $examStart = old('periods.'.$periodIndex.'.exam_start_date', $periodDate?->exam_start_date?->format('Y-m-d'));
-                    $examEnd = old('periods.'.$periodIndex.'.exam_end_date', $periodDate?->exam_end_date?->format('Y-m-d') ?: $semesterEnd);
+                    // Inherited dates are shown but never pushed into the boxes, so saving this
+                    // period cannot quietly pin a year to a copy of another year's calendar.
+                    $ownDates = $periodDate && ! $periodDate->isInherited() ? $periodDate : null;
+                    $semesterStart = old('periods.'.$periodIndex.'.start_date', $ownDates?->start_date?->format('Y-m-d'));
+                    $semesterEnd = old('periods.'.$periodIndex.'.end_date', $ownDates?->end_date?->format('Y-m-d'));
+                    $learningStart = old('periods.'.$periodIndex.'.learning_start_date', $ownDates?->learning_start_date?->format('Y-m-d') ?: $semesterStart);
+                    $learningEnd = old('periods.'.$periodIndex.'.learning_end_date', $ownDates?->learning_end_date?->format('Y-m-d'));
+                    $examStart = old('periods.'.$periodIndex.'.exam_start_date', $ownDates?->exam_start_date?->format('Y-m-d'));
+                    $examEnd = old('periods.'.$periodIndex.'.exam_end_date', $ownDates?->exam_end_date?->format('Y-m-d') ?: $semesterEnd);
                     $isExpanded = $expandedSemester
                         ? ((int) $period['semester'] === $expandedSemester && (int) ($period['block_id'] ?? 0) === (int) ($expandedBlockId ?? 0))
                         : $loop->first;
@@ -217,6 +220,9 @@
                         <span class="tich-semester-accordion__summary">
                             @if ($periodDate?->scheduleLabel())
                                 <span class="tich-semester-accordion__meta">{{ $periodDate->scheduleLabel() }}</span>
+                                @if ($periodDate->isInherited())
+                                    <span class="tich-badge">Running on {{ $program->periodLabel((int) $periodDate->borrowedFrom->semester) }}</span>
+                                @endif
                             @else
                                 <span class="tich-semester-accordion__meta">Dates not set</span>
                             @endif
@@ -231,7 +237,17 @@
                                 <form method="POST" action="{{ route('departments.academics.programs.intakes.sync-periods', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-inset-panel tich-mb-6">
                                     @csrf
                                     <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
-                                    <p class="tich-text" style="margin:0 0 1rem;">Semester, learning, and exam dates. Learning start defaults to semester start; exam end defaults to semester end.</p>
+                                    @if ($periodDate?->isInherited())
+                                        <p class="tich-text" style="margin:0 0 1rem;">
+                                            This year keeps the calendar the intake is already running on
+                                            (<strong>{{ $periodDate->borrowedFrom->scheduleLabel() }}</strong>, from
+                                            {{ $program->periodLabel((int) $periodDate->borrowedFrom->semester) }}), so its
+                                            timetable, exams and attendance fall in the same window. Leave the boxes empty to
+                                            keep following that semester, or set dates here if this year really runs differently.
+                                        </p>
+                                    @else
+                                        <p class="tich-text" style="margin:0 0 1rem;">Semester, learning, and exam dates. Learning start defaults to semester start; exam end defaults to semester end.</p>
+                                    @endif
                                     <input type="hidden" name="periods[1][semester]" value="{{ $period['semester'] }}">
                                     @if ($period['block_id'])
                                         <input type="hidden" name="periods[1][block_id]" value="{{ $period['block_id'] }}">

@@ -78,11 +78,10 @@ class AttendanceSessionGenerationService
             return [];
         }
 
-        $period = CurriculumVersionPeriod::query()
-            ->where('curriculum_version_id', $timetable->curriculum_version_id)
-            ->where('semester', $timetable->teaching_period)
-            ->whereNull('block_id')
-            ->first();
+        $period = CurriculumVersionPeriod::resolveFor(
+            (int) $timetable->curriculum_version_id,
+            (int) $timetable->teaching_period
+        );
 
         $rangeStart = $period?->effectiveLearningStart();
         $rangeEnd = $period?->learning_end_date ?? $period?->end_date;

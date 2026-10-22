@@ -205,7 +205,7 @@
 
         @if ($semesterPeriod?->scheduleLabel())
             <div class="tich-inset-panel tich-mt-4">
-                <p class="tich-text" style="margin:0 0 0.35rem;"><strong>Semester {{ $timetableTeachingPeriod }}</strong> · {{ $semesterPeriod->scheduleLabel() }}</p>
+                <p class="tich-text" style="margin:0 0 0.35rem;"><strong>Semester {{ $timetableTeachingPeriod }}</strong> · {{ $semesterPeriod->scheduleLabel() }}@if ($semesterPeriod->isInherited()) · same as {{ $program->periodLabel((int) $semesterPeriod->borrowedFrom->semester) }} @endif</p>
                 @if ($semesterPeriod->effectiveLearningStart() || $semesterPeriod->learning_end_date)
                     <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->effectiveLearningStart()?->format('d M Y') ?? '-' }} - {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '-' }}</p>
                 @endif
