@@ -1,6 +1,6 @@
 # TICH mobile (`mobile/tich`)
 
-Flutter client for the TICH ERP Laravel API — **My Employee Portal**.
+Flutter client for the TICH ERP Laravel API - **My Employee Portal**.
 
 ## Features
 
@@ -41,7 +41,7 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.102:8000
 
 The app defaults to the production API (`https://tich.africa`). For local development, pass your PC's current LAN IP with `--dart-define` as shown above.
 
-**Do not use `http://127.0.0.1:8000` on a physical device** — that points at the phone, not the PC.
+**Do not use `http://127.0.0.1:8000` on a physical device** - that points at the phone, not the PC.
 
 Android emulator alternative: `http://10.0.2.2:8000`.
 

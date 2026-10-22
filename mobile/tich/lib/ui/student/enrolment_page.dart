@@ -63,7 +63,7 @@ class _StudentEnrolmentPageState extends State<StudentEnrolmentPage> {
           ),
           Expanded(
             child: Text(
-              value?.toString().isNotEmpty == true ? value.toString() : '—',
+              value?.toString().isNotEmpty == true ? value.toString() : '-',
               style: tichUi(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),

@@ -451,7 +451,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
             hintText: '08:00 - 10:00',
             helperText: _sessionTimeEdited
                 ? null
-                : 'From your timetable — edit if needed',
+                : 'From your timetable - edit if needed',
             helperMaxLines: 2,
           ),
         ),

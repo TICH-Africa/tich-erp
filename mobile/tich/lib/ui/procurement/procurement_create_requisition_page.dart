@@ -399,7 +399,7 @@ class _ProcurementCreateRequisitionPageState
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
-                    child: Text('No budget — enter line items manually'),
+                    child: Text('No budget - enter line items manually'),
                   ),
                   for (final b in _budgets)
                     DropdownMenuItem<String>(

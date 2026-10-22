@@ -20,7 +20,7 @@ String staffTimetableSessionTimeRange(Map<String, dynamic> session) {
   return start;
 }
 
-/// Days down the left, time slots across the top — sized to the screen width.
+/// Days down the left, time slots across the top - sized to the screen width.
 class StaffTimetableGrid extends StatelessWidget {
   const StaffTimetableGrid({
     super.key,
@@ -277,7 +277,7 @@ class _SessionCell extends StatelessWidget {
         color: isDark ? TichColors.darkBackground : TichColors.neutral,
         padding: EdgeInsets.all(compact ? 4 : 6),
         child: Text(
-          '—',
+          '-',
           textAlign: TextAlign.center,
           style: tichUi(
             fontSize: 10,

@@ -100,7 +100,7 @@ class AuthApi {
         userMap['roles'] = body['roles'];
       }
       if (userMap['name'] == null || userMap['name'].toString().isEmpty) {
-        // /me may return raw User without name — fall back to email local-part.
+        // /me may return raw User without name - fall back to email local-part.
         userMap['name'] = userMap['email']?.toString().split('@').first ?? 'User';
       }
       return AuthUser.fromJson(userMap);

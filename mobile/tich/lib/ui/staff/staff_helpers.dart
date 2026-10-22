@@ -86,7 +86,7 @@ String staffUnitCohortYearLine(Map<String, dynamic> unit) {
 }
 
 String dayLabel(int? day, Map? labels) {
-  if (day == null) return '—';
+  if (day == null) return '-';
   if (labels != null && labels['$day'] != null) return labels['$day'].toString();
   const fallback = {
     1: 'Mon',

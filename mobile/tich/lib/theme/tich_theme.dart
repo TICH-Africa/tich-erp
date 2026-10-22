@@ -20,7 +20,7 @@ TextTheme _tichMerriweatherTextTheme(TextTheme base) {
   return base.apply(fontFamily: 'Georgia', fontFamilyFallback: ['serif']);
 }
 
-/// Body copy — CSS `--font-body: Merriweather, Georgia, serif`.
+/// Body copy - CSS `--font-body: Merriweather, Georgia, serif`.
 TextStyle tichUi({
   double? fontSize,
   FontWeight? fontWeight,
@@ -41,7 +41,7 @@ TextStyle tichUi({
 
 TextStyle? _tichUiSansBase;
 
-/// Compact UI chrome — CSS `--font-ui` (nav labels, etc.).
+/// Compact UI chrome - CSS `--font-ui` (nav labels, etc.).
 TextStyle tichUiSans({
   double? fontSize,
   FontWeight? fontWeight,

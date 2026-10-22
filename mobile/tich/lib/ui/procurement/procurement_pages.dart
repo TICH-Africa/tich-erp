@@ -184,12 +184,12 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
                                   color: TichColors.neutralMuted,
                                 ),
                               ),
-                              if (dept.isNotEmpty || reqDate != '—') ...[
+                              if (dept.isNotEmpty || reqDate != '-') ...[
                                 const SizedBox(height: 4),
                                 Text(
                                   [
                                     if (dept.isNotEmpty) dept,
-                                    if (reqDate != '—') reqDate,
+                                    if (reqDate != '-') reqDate,
                                   ].join(' · '),
                                   style: tichUi(
                                     fontSize: 12,
@@ -771,7 +771,7 @@ class _ProcurementGrnDetailPageState extends State<ProcurementGrnDetailPage> {
             children: [
               procurementDetailHero(
                 title: (r['grn_number'] ?? '').toString(),
-                eyebrow: 'PO ${r['po_number'] ?? '—'}',
+                eyebrow: 'PO ${r['po_number'] ?? '-'}',
                 statusLabel: (r['inspection_status'] ?? '').toString(),
               ),
               procurementDetailSection('Receipt', [

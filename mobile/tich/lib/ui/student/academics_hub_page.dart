@@ -191,7 +191,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           [
                             a['unit_code'],
                             '${a['question_count'] ?? 0} questions',
-                            if (sub != null) 'Score: ${sub['score'] ?? '—'}',
+                            if (sub != null) 'Score: ${sub['score'] ?? '-'}',
                             if (canTake) 'Tap to take',
                           ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
                         ),
@@ -260,8 +260,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                                 style: tichUi(fontWeight: FontWeight.w600),
                               ),
                               subtitle: Text(
-                                '${g['semester_label'] ?? ''} · ${g['grade_letter'] ?? '—'}'
-                                ' (${g['final_score'] ?? '—'})',
+                                '${g['semester_label'] ?? ''} · ${g['grade_letter'] ?? '-'}'
+                                ' (${g['final_score'] ?? '-'})',
                               ),
                             ),
                           ),
@@ -279,7 +279,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           child: TichCard(
                             child: Text(
                               '${c['unit_code']} · ${c['assessment_name'] ?? c['assessment_type']}'
-                              ' — ${c['score_obtained']}/${c['max_score']}',
+                              ' - ${c['score_obtained']}/${c['max_score']}',
                               style: tichUi(fontSize: 13),
                             ),
                           ),
@@ -296,7 +296,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: TichCard(
                             child: Text(
-                              '${e['unit_code']} · ${e['score_obtained'] ?? e['marks'] ?? '—'}'
+                              '${e['unit_code']} · ${e['score_obtained'] ?? e['marks'] ?? '-'}'
                               ' (${e['semester_label'] ?? ''})',
                               style: tichUi(fontSize: 13),
                             ),
@@ -409,7 +409,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                       child: Text(
                         'Registered units: ${academics['registered_unit_count'] ?? 0}\n'
                         'Curriculum units: ${curriculum.length}\n'
-                        'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '—' : '—'}',
+                        'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '-' : '-'}',
                         style: tichUi(fontSize: 13, height: 1.5),
                       ),
                     ),

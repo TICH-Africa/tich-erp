@@ -204,7 +204,7 @@ class _AttendancePageState extends State<AttendancePage> {
           ),
           Expanded(
             child: Text(
-              hasValue ? formatDate(value) : '—',
+              hasValue ? formatDate(value) : '-',
               style: tichUi(fontWeight: FontWeight.w600),
             ),
           ),
@@ -344,10 +344,10 @@ class _AttendancePageState extends State<AttendancePage> {
                     );
                     final inTime = r['clock_in_at'] != null
                         ? formatTime(r['clock_in_at'])
-                        : '—';
+                        : '-';
                     final outTime = r['clock_out_at'] != null
                         ? formatTime(r['clock_out_at'])
-                        : '—';
+                        : '-';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(

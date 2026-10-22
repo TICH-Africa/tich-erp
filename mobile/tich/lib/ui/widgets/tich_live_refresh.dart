@@ -19,7 +19,7 @@ const Duration tichLiveRefreshInterval = Duration(seconds: 90);
 /// Minimum gap between automatic background refreshes (avoids flicker on tab/back).
 const Duration tichLiveRefreshMinGap = Duration(seconds: 8);
 
-/// Scrollable skeleton while the first payload arrives — paints on frame 1.
+/// Scrollable skeleton while the first payload arrives - paints on frame 1.
 Widget tichInstantWaitBody({Future<void> Function()? onRefresh}) {
   return RefreshIndicator(
     onRefresh: onRefresh ?? () async {},

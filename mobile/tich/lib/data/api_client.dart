@@ -20,8 +20,8 @@ class ApiException implements Exception {
 
 /// Plain words for a failure a screen shows.
 ///
-/// A tab used to print the Dart object text straight to the user — "TimeoutException
-/// after 0:00:20.000000: Future not completed" — which names nothing they can act on.
+/// A tab used to print the Dart object text straight to the user - "TimeoutException
+/// after 0:00:20.000000: Future not completed" - which names nothing they can act on.
 /// Network, timeout and server failures are mapped to what happened and what to do,
 /// and a message the backend wrote on purpose is passed through as written.
 String tichDescribeError(Object? error) {
