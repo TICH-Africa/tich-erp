@@ -97,6 +97,9 @@
                 <p class="tich-text">
                     Pick the teaching period, tick the units the students are due to do, then tick the students.
                     Each student keeps one registration per semester, so re-running this only adds what is missing.
+                    The list holds the students sitting the year of that period, read from their admission details,
+                    and a cohort moves to the next semester by itself when that semester's dates start - anyone
+                    owed a failed unit is held on their current semester instead.
                 </p>
             </div>
 
@@ -240,6 +243,7 @@
                                                         $unitIds = $registeredByStudent->get($student->id, collect());
                                                         $inIntake = \App\Support\IntakeIdentity::studentMatchesIntake($student, $selectedIntake);
                                                         $yearInfo = ($desk['yearsByStudent'] ?? collect())->get($student->id);
+                                                        $hold = ($desk['holds'] ?? [])[$student->id] ?? null;
                                                     @endphp
                                                     <tr>
                                                         <td style="width:2.25rem;">
@@ -249,6 +253,9 @@
                                                             <strong>{{ $student->displayName() }}</strong>
                                                             @if ($yearInfo)
                                                                 <span class="tich-badge">{{ $yearInfo['period_label'] }}{{ $yearInfo['overridden'] ? ' (pinned)' : '' }}</span>
+                                                            @endif
+                                                            @if ($hold && $hold['held'])
+                                                                <span class="tich-badge">held on {{ $program->periodLabel($hold['sitting']) }} - owes {{ implode(', ', $hold['owed']) }}</span>
                                                             @endif
                                                             <span class="tich-caption" style="display:block;">
                                                                 {{ $student->registration_number }}

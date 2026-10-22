@@ -94,7 +94,7 @@ class TranscriptService
      */
     public function transcriptRows(Student $student): Collection
     {
-        return DB::table('grade_records as gr')
+        $rows = DB::table('grade_records as gr')
             ->join('units as u', 'u.id', '=', 'gr.unit_id')
             ->join('semesters as s', 's.id', '=', 'gr.semester_id')
             ->leftJoin('academic_years as ay', 'ay.id', '=', 's.academic_year_id')
@@ -115,18 +115,27 @@ class TranscriptService
                 'gr.grade_points',
                 'gr.credit_hours',
                 'gr.gpa_at_time',
+                'gr.is_supplementary_pass',
                 'u.unit_code',
                 'u.unit_name',
                 's.semester_label',
                 's.semester_number',
                 'ay.year_label',
+                'er.id as exam_result_row_id',
+                'er.is_supplementary as exam_is_supplementary',
                 'er.cat_total',
                 'er.practical_total',
                 'er.final_exam_score',
                 'er.final_total_score as exam_final_score',
                 'er.grade_letter as exam_grade_letter',
+                'er.grade_points as exam_grade_points',
             ])
-            ->get()
+            ->get();
+
+        return $rows
+            ->groupBy('grade_record_id')
+            ->map(fn (Collection $sittings) => $this->preferredSitting($sittings))
+            ->values()
             ->map(function ($row) {
                 $continuous = (float) $row->continuous_score;
                 $examFinal = $row->exam_final_score !== null ? (float) $row->exam_final_score : null;
@@ -149,10 +158,29 @@ class TranscriptService
                     'exam_score' => $row->final_exam_score !== null ? (float) $row->final_exam_score : null,
                     'final_score' => $displayScore,
                     'grade_letter' => $displayGrade,
-                    'grade_points' => (float) $row->grade_points,
+                    'grade_points' => (float) ($row->exam_grade_points ?? $row->grade_points),
                     'has_exam_result' => $examFinal !== null,
+                    'is_supplementary' => (int) ($row->exam_is_supplementary ?? 0) === 1,
                 ];
             });
+    }
+
+    /**
+     * A unit whose exam was re-sat arrives on the join twice - the sitting that failed and the
+     * supplementary that replaced it. Only one row may survive: the repeat carries the mark the
+     * school stands by, and dropping the fail is what stops its credits counting twice in the GPA.
+     */
+    private function preferredSitting(Collection $sittings): object
+    {
+        if ($sittings->count() === 1) {
+            return $sittings->first();
+        }
+
+        return $sittings->sortByDesc(function ($sitting) {
+            $isSupplementary = (int) ($sitting->exam_is_supplementary ?? 0) === 1 ? 1000000 : 0;
+
+            return $isSupplementary + (int) ($sitting->exam_result_row_id ?? 0);
+        })->first();
     }
 
     /**

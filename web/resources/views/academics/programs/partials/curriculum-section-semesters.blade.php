@@ -180,7 +180,7 @@
         @endif
 
         <div class="tich-semester-accordion tich-mt-6" data-semester-accordion>
-            @php $periodIndex = 0; @endphp
+            @php $periodIndex = 0; $mappingIndex = 0; @endphp
             @foreach ($periods as $period)
                 @php
                     $periodMappings = $program->usesBlocks()
@@ -316,19 +316,21 @@
                                         </tr>
                                     </thead>
                                     <tbody @if ($intakeEditable) data-unit-sortable @endif>
-                                        @php $mappingIndex = -1; @endphp
                                         @foreach ($periodMappings as $map)
-                                            @php $mappingIndex++; @endphp
+                                            {{-- One numbering across the whole intake: every panel's rows post into
+                                 the same form, so restarting the index per semester would let a later semester
+                                 overwrite - and so delete - the units of an earlier one on save. --}}
+                                            @php $rowKey = $mappingIndex++; @endphp
                                             <tr @if ($intakeEditable) data-sortable-row @endif>
                                                 @if ($intakeEditable)
                                                     <td class="tich-drag-handle" title="Drag to reorder">⋮⋮</td>
                                                     <td>
-                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][unit_id]" value="{{ $map->unit_id }}">
-                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][semester]" value="{{ $period['semester'] ?? $map->semester }}">
-                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][block_id]" value="{{ $period['block_id'] }}">
-                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][display_order]" value="{{ $map->display_order ?? $loop->iteration }}" data-sort-order-field>
-                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $mappingIndex }}][priority]" value="{{ $map->priority ?? $loop->iteration }}" data-sort-order-field>
-                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $mappingIndex }}][include]" value="1" checked>
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $rowKey }}][unit_id]" value="{{ $map->unit_id }}">
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $rowKey }}][semester]" value="{{ $period['semester'] ?? $map->semester }}">
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $rowKey }}][block_id]" value="{{ $period['block_id'] }}">
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $rowKey }}][display_order]" value="{{ $map->display_order ?? $loop->iteration }}" data-sort-order-field>
+                                                        <input form="intake-sync-form" type="hidden" name="mappings[{{ $rowKey }}][priority]" value="{{ $map->priority ?? $loop->iteration }}" data-sort-order-field>
+                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $rowKey }}][include]" value="1" checked>
                                                     </td>
                                                 @endif
                                                 <td>
@@ -339,21 +341,21 @@
                                                 </td>
                                                 <td>
                                                     @if ($intakeEditable)
-                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $mappingIndex }}][contact_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->contact_hours ?? 0 }}">
+                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $rowKey }}][contact_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->contact_hours ?? 0 }}">
                                                     @else
                                                         {{ $map->contact_hours ?? 0 }}
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if ($intakeEditable)
-                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $mappingIndex }}][total_learning_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->total_learning_hours ?? 0 }}">
+                                                        <input form="intake-sync-form" type="number" name="mappings[{{ $rowKey }}][total_learning_hours]" class="tich-input" style="width:5rem;" min="0" value="{{ $map->total_learning_hours ?? 0 }}">
                                                     @else
                                                         {{ $map->total_learning_hours ?? 0 }}
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if ($intakeEditable)
-                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $mappingIndex }}][is_compulsory]" value="1" @checked($map->is_compulsory)>
+                                                        <input form="intake-sync-form" type="checkbox" name="mappings[{{ $rowKey }}][is_compulsory]" value="1" @checked($map->is_compulsory)>
                                                     @else
                                                         {{ $map->is_compulsory ? 'Yes' : 'No' }}
                                                     @endif

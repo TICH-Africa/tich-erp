@@ -31,6 +31,46 @@
         @endif
     </div>
 
+    @if ($corrections['hold']['held'] ?? false)
+        <div class="tich-mt-4">
+            <h4 class="tich-h4">Held back until the repeat is passed</h4>
+            <p class="tich-text">
+                This student is not moved to <strong>{{ $corrections['year']['period_label'] }}</strong> while
+                <strong>{{ implode(', ', $corrections['hold']['owed']) }}</strong> still carries an F. They stay on
+                {{ $program->periodLabel($corrections['hold']['sitting']) }}; the passing supplementary mark releases them on its own.
+                Release the hold here only if the office is sending them forward with the repeat outstanding.
+            </p>
+            <form method="POST" action="{{ route('departments.academics.programs.student-units.hold', $actionBase) }}" class="tich-flex-wrap tich-mt-2" style="gap:0.75rem; align-items:flex-end;">
+                @csrf
+                @foreach ($keepFilters as $key => $value)
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                @endforeach
+                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+
+                <div class="tich-form-group" style="margin:0; min-width:20rem; flex:1;">
+                    <label class="tich-label" for="hold_reason">Why is this student released while {{ implode(', ', $corrections['hold']['owed']) }} is still owed?</label>
+                    <input id="hold_reason" type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
+                        placeholder="e.g. supplementary board approved, carrying the repeat">
+                </div>
+
+                <button type="submit" class="tich-btn tich-btn-secondary">Release hold and move up</button>
+                @error('student')
+                    <p class="tich-field-error">{{ $message }}</p>
+                @enderror
+            </form>
+        </div>
+    @elseif ($corrections['hold']['cleared'] ?? null)
+        <p class="tich-caption tich-mt-4">
+            Academics released this student to go forward on {{ $corrections['hold']['cleared'] }} while owing
+            {{ implode(', ', $corrections['hold']['owed']) }}. The next semester is read from the marks again.
+        </p>
+    @elseif ($corrections['hold']['owed'] ?? []) !== []
+        <p class="tich-caption tich-mt-4">
+            Carrying an F in {{ implode(', ', $corrections['hold']['owed']) }} - this student will be held back when
+            the next semester starts, unless the repeat is passed before then.
+        </p>
+    @endif
+
     <div class="tich-mt-4">
         <h4 class="tich-h4">Units on this student</h4>
         @if ($corrections['registered']->isEmpty())
@@ -174,6 +214,29 @@
                     <p class="tich-field-error">{{ $message }}</p>
                 @enderror
             </form>
+
+            @if ($corrections['year']['overridden'] ?? false)
+                <form method="POST" action="{{ route('departments.academics.programs.student-units.year-release', $actionBase) }}" class="tich-flex-wrap tich-mt-4" style="gap:0.75rem; align-items:flex-end;">
+                    @csrf
+                    @foreach ($keepFilters as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
+                    <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+
+                    <p class="tich-caption" style="margin:0; width:100%;">
+                        This student is pinned to {{ $corrections['year']['period_label'] }}, so they repeat that year's semesters
+                        until the pin is lifted. Let them follow their admission year when the repeat is finished.
+                    </p>
+
+                    <div class="tich-form-group" style="margin:0; min-width:18rem; flex:1;">
+                        <label class="tich-label" for="release_reason">Why is the pinned year lifted?</label>
+                        <input id="release_reason" type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
+                            placeholder="e.g. repeat year done, back with the class they entered with">
+                    </div>
+
+                    <button type="submit" class="tich-btn tich-btn-secondary">Follow their admission year</button>
+                </form>
+            @endif
         </div>
     @endif
 </article>

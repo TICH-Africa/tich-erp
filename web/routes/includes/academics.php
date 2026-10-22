@@ -120,6 +120,8 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/students/{student}/units', [ProgramCurriculumController::class, 'addStudentUnit'], 'departments.academics.programs.student-units.add');
         $register('post', '/programs/{program}/students/{student}/units/remove', [ProgramCurriculumController::class, 'removeStudentUnit'], 'departments.academics.programs.student-units.remove');
         $register('post', '/programs/{program}/students/{student}/year', [ProgramCurriculumController::class, 'pinStudentYear'], 'departments.academics.programs.student-units.year');
+        $register('post', '/programs/{program}/students/{student}/year/release', [ProgramCurriculumController::class, 'releaseStudentYear'], 'departments.academics.programs.student-units.year-release');
+        $register('post', '/programs/{program}/students/{student}/hold', [ProgramCurriculumController::class, 'clearCohortHold'], 'departments.academics.programs.student-units.hold');
         $register('post', '/attendance-ledger/{session}/verify-hod', [AttendanceLedgerController::class, 'verifyHod'], 'departments.academics.attendance-ledger.verify-hod');
         $register('post', '/clearance/{student}/approve', [AcademicClearanceController::class, 'approve'], 'departments.academics.clearance.approve');
         $register('post', '/clearance/{student}/reject', [AcademicClearanceController::class, 'reject'], 'departments.academics.clearance.reject');
@@ -173,6 +175,7 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'], 'departments.academics.programs.timetable.publish');
         $register('put', '/programs/{program}/exam-schedules/{schedule}', [ProgramCurriculumController::class, 'updateExamSchedule'], 'departments.academics.programs.exam-schedules.update');
         $register('put', '/programs/{program}/units/{unit}/assessment-weights', [ProgramCurriculumController::class, 'updateUnitAssessmentWeights'], 'departments.academics.programs.units.assessment-weights.update');
+        $register('post', '/programs/{program}/supplementary-marks', [ProgramCurriculumController::class, 'recordSupplementaryMarks'], 'departments.academics.programs.supplementary-marks.store');
         $register('post', '/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'], 'departments.academics.programs.intakes.add-unit');
         $register('post', '/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'], 'departments.academics.programs.versions.create');
         $register('post', '/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'], 'departments.academics.versions.submit');

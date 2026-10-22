@@ -172,7 +172,10 @@ class StaffExamMarksService
         );
     }
 
-    private function ensureExamCard(int $studentId, int $semesterId): int
+    /**
+     * Every sitting needs an exam card, including one Academics records themselves.
+     */
+    public function ensureExamCard(int $studentId, int $semesterId): int
     {
         $existing = DB::table('exam_cards')
             ->where('student_id', $studentId)

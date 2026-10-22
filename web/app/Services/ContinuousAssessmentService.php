@@ -290,19 +290,36 @@ class ContinuousAssessmentService
      */
     public function continuousBreakdown(int $studentId, UnitAllocation $allocation): array
     {
+        return $this->continuousBreakdownFor(
+            $studentId,
+            (int) $allocation->unit_id,
+            (int) $allocation->semester_id,
+            $allocation->unit,
+        );
+    }
+
+    /**
+     * The same weighted continuous score, read straight off the unit and semester - for the marks
+     * Academics records themselves (a supplementary, for example), where no lecturer allocation is
+     * in play.
+     *
+     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
+     */
+    public function continuousBreakdownFor(int $studentId, int $unitId, int $semesterId, ?Unit $unit): array
+    {
         $scores = CatScore::query()
             ->where('student_id', $studentId)
-            ->where('unit_id', $allocation->unit_id)
-            ->where('semester_id', $allocation->semester_id)
+            ->where('unit_id', $unitId)
+            ->where('semester_id', $semesterId)
             ->get();
 
         $attendancePct = (float) (DB::table('attendance_summaries')
             ->where('student_id', $studentId)
-            ->where('unit_id', $allocation->unit_id)
-            ->where('semester_id', $allocation->semester_id)
+            ->where('unit_id', $unitId)
+            ->where('semester_id', $semesterId)
             ->value('attendance_percentage') ?? 0);
 
-        return $this->buildWeightedBreakdown($scores, $attendancePct, $this->weightProfile($allocation->unit));
+        return $this->buildWeightedBreakdown($scores, $attendancePct, $this->weightProfile($unit));
     }
 
     public function finalScoreWithExam(float $continuousCumulative, float $examScore, ?Unit $unit): float
@@ -412,7 +429,7 @@ class ContinuousAssessmentService
         return 'F';
     }
 
-    private function gradePoints(string $letter): float
+    public function gradePoints(string $letter): float
     {
         return match ($letter) {
             'A' => 4.0,

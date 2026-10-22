@@ -248,7 +248,7 @@
                                 <td>{{ $row->semester_label }}</td>
                                 <td>{{ number_format((float) $row->cat_total, 1) }}</td>
                                 <td>{{ number_format((float) $row->practical_total, 1) }}</td>
-                                <td>{{ number_format((float) $row->final_exam_score, 1) }}</td>
+                                <td>{{ number_format((float) $row->final_exam_score, 1) }}@if ($row->is_supplementary)<sup>Supp</sup>@endif</td>
                                 <td>{{ number_format((float) $row->final_total_score, 1) }}</td>
                                 <td>{{ $row->grade_letter ?? '-' }}</td>
                                 <td>

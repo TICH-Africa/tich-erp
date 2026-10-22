@@ -24,6 +24,7 @@ use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
 use App\Services\StudentUnitRegistrationService;
+use App\Services\SupplementaryExamService;
 use App\Services\WorkingIntakeService;
 use App\Services\TimetableSchedulingService;
 use App\Services\TimetableTemplateService;
@@ -48,6 +49,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected StudentAcademicRecordService $studentAcademicRecords,
         protected WorkingIntakeService $workingIntake,
         protected ProgramExamService $programExams,
+        protected SupplementaryExamService $supplementaryMarks,
         protected PrintDocumentService $printDocuments,
         protected UnitAllocationService $unitAllocations,
         protected ExamScheduleSyncService $examScheduleSync,
@@ -217,6 +219,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 ->sortKeys();
         }
 
+        // One resolution of the exams tab: it picks both the hub payload and the highlighted tab.
+        $examTab = $section === 'exams'
+            ? $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview')
+            : 'overview';
+
         return view('academics.programs.curriculum', [
             'department' => $hub,
             'learningDepartment' => $learningDepartment,
@@ -333,12 +340,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                         $selectedIntake,
                         $request->integer('teaching_period') ?: null
                     ),
-                    $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview') === 'schedule'
+                    'schedule' === $examTab,
+                    'supplementary' === $examTab,
                 )
                 : null,
-            'examTab' => $section === 'exams'
-                ? $this->programExams->resolveTab($request->string('exam_tab')->toString() ?: 'overview')
-                : 'overview',
+            'examTab' => $examTab,
             'examStaff' => $section === 'exams'
                 ? $this->staffChoices($request, $program)->limit(200)->get()
                 : collect(),
@@ -1202,6 +1208,55 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Unit assessment weights updated.');
     }
 
+    public function recordSupplementaryMarks(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $intakeId = $request->integer('intake');
+        $intake = $intakeId
+            ? CurriculumVersion::query()->where('program_id', $program->id)->findOrFail($intakeId)
+            : null;
+
+        abort_unless($intake, 404);
+
+        $teachingPeriod = $this->programExams->resolveTeachingPeriod(
+            $intake,
+            $request->integer('teaching_period') ?: null
+        );
+
+        $validated = $request->validate([
+            'marks' => ['required', 'array', 'min:1'],
+            'marks.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ], [
+            'marks.required' => 'Type the supplementary mark next to the student it belongs to before saving.',
+            'marks.*.numeric' => 'A supplementary mark must be a number out of 100.',
+            'marks.*.min' => 'A supplementary mark cannot be below 0.',
+            'marks.*.max' => 'A supplementary mark cannot be above 100.',
+        ]);
+
+        $saved = $this->supplementaryMarks->record($request->user(), $program, $validated['marks']);
+
+        $summary = collect($saved)->map(function (array $row) {
+            $row['exam_score'] = number_format((float) $row['exam_score'], 1);
+            $row['grade_letter'] ??= '';
+
+            return $row['registration_number'].' '.$row['unit_code'].' → '.$row['exam_score'].' ('.$row['grade_letter'].')';
+        })->implode(', ');
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $intake->id,
+                'section' => 'exams',
+                'exam_tab' => 'supplementary',
+                'teaching_period' => $teachingPeriod,
+            ]))
+            ->with('status', 'Supplementary marks recorded: '.$summary.'. The failed grade is replaced on the transcript.');
+    }
+
     public function storeAllocation(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
@@ -1504,6 +1559,75 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return redirect()
             ->to($this->studentRecordUrl($request, $program, $intake, $student))
             ->with('status', $student->registration_number.' now sits '.$pinned['period_label'].'.');
+    }
+
+    /**
+     * Lift the year pinned on a student, so their admission date works the year out again.
+     */
+    public function releaseStudentYear(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+        ], [
+            'reason.required' => 'Say why the pinned year is being lifted - the change is auditable and cannot be left blank.',
+            'reason.min' => 'Say why the pinned year is being lifted (at least 8 characters) so the change is auditable.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $this->studentRegistrations->releaseYearPin($request->user(), $student, $validated['reason']);
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', $student->registration_number.' now takes their year from their admission date again.');
+    }
+
+    /**
+     * Lift the hold the cohort roll put on a student who owes a repeat unit and move them onto the
+     * semester they are due for. The roll itself clears a hold as soon as the repeat is passed; this
+     * is the officer's override, and it needs a written reason because the student goes forward
+     * carrying a fail.
+     */
+    public function clearCohortHold(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+        ], [
+            'reason.required' => 'Say why this student goes forward while owing a repeat - the change is auditable and cannot be left blank.',
+            'reason.min' => 'Say why this student goes forward while owing a repeat (at least 8 characters) so the change is auditable.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $cleared = $this->studentRegistrations->clearHold(
+            $request->user(),
+            $program,
+            $intake,
+            $student,
+            $validated['reason'],
+        );
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', $student->registration_number.' released from the hold and registered on '
+                .$cleared['period_label'].' ('.$cleared['units'].' unit '.str('place')->plural($cleared['units']).' written; '
+                .'still owes '.implode(', ', $cleared['owed']).').');
     }
 
     /**

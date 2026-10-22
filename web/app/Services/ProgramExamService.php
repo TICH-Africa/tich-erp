@@ -23,12 +23,13 @@ class ProgramExamService
         protected AuditService $auditService,
         protected TimetableSchedulingService $timetableScheduling,
         protected PlatformNotificationService $notifications,
+        protected SupplementaryExamService $supplementaryMarks,
     ) {}
 
     /**
      * @return array<string, mixed>
      */
-    public function hubData(AcademicProgram $program, ?CurriculumVersion $intake, array $periodDates, int $teachingPeriod = 1, bool $syncFromTimetable = false): array
+    public function hubData(AcademicProgram $program, ?CurriculumVersion $intake, array $periodDates, int $teachingPeriod = 1, bool $syncFromTimetable = false, bool $withSupplementary = false): array
     {
         if (! $intake) {
             return [
@@ -47,6 +48,7 @@ class ProgramExamService
                 'exam_results' => collect(),
                 'eligibility' => [],
                 'at_risk_students' => collect(),
+                'supplementary' => collect(),
                 'eligible_roster' => ['semester_id' => null, 'semester_label' => null, 'eligible' => collect(), 'blocked' => collect(), 'pending' => collect()],
                 'timetable_synced' => 0,
             ];
@@ -86,6 +88,9 @@ class ProgramExamService
             'exam_results' => $this->examResults($semesterUnitIds, $studentIds),
             'eligibility' => $this->eligibilitySummary($semesterUnitIds, $studentIds),
             'at_risk_students' => $this->atRiskStudents($semesterUnitIds, $studentIds),
+            'supplementary' => $withSupplementary
+                ? $this->supplementaryMarks->outstanding($semesterUnitIds, $studentIds)
+                : collect(),
             'eligible_roster' => $this->semesterEligibleRoster($students, $semesterUnitIds, $semesterUnits, $semesterId),
             'timetable_synced' => $timetableSynced,
         ];
@@ -721,7 +726,7 @@ class ProgramExamService
 
     public function resolveTab(string $tab): string
     {
-        $tabs = ['overview', 'grading', 'schedule', 'papers', 'results'];
+        $tabs = ['overview', 'grading', 'schedule', 'papers', 'results', 'supplementary'];
 
         return in_array($tab, $tabs, true) ? $tab : 'overview';
     }

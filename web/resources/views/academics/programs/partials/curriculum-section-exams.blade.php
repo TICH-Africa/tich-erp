@@ -57,6 +57,7 @@
             'schedule' => 'Exam schedule',
             'papers' => 'Exam papers',
             'results' => 'Results & transcripts',
+            'supplementary' => 'Supplementary marks',
         ] as $tabKey => $tabLabel)
             <a href="{{ route('departments.academics.programs.curriculum', $examParams($tabKey)) }}"
                @class(['tich-btn', 'tich-btn-secondary', 'is-active' => ($examTab ?? 'overview') === $tabKey])
@@ -728,6 +729,90 @@
                     </tbody>
                 </table>
             </div>
+        </article>
+    @elseif ($examTab === 'supplementary')
+        @php
+            $supplementaryRows = collect($examHub['supplementary'] ?? []);
+            $supplementaryAction = route('departments.academics.programs.supplementary-marks.store', array_merge($hub, ['program' => $program->id]));
+        @endphp
+
+        <article class="tich-card">
+            <h2 class="tich-h3">Supplementary marks - Semester {{ $examTeachingPeriod }}</h2>
+            <p class="tich-caption">
+                Every failing grade this cohort still carries on the units taught in Semester {{ $examTeachingPeriod }}.
+                Type the mark the student scored on the repeat beside their name and save: the new mark replaces the fail on
+                the transcript, the GPA, and any year the student is being held back for.
+            </p>
+
+            <form method="POST" action="{{ $supplementaryAction }}" class="tich-mt-4">
+                @csrf
+                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                <input type="hidden" name="teaching_period" value="{{ $examTeachingPeriod }}">
+                @if ($learningDepartment?->id)
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                @endif
+
+                <div class="tich-table-wrap tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Registration</th>
+                                <th>Unit</th>
+                                <th>Semester sat</th>
+                                <th>Failed total</th>
+                                <th>Exam sat</th>
+                                <th>Continuous banked</th>
+                                <th>Mark needed to pass</th>
+                                <th>Supplementary mark</th>
+                                <th>Recorded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($supplementaryRows as $row)
+                                @php $recordedSupp = $row->supplementary; @endphp
+                                <tr>
+                                    <td>{{ $row->student_name }}</td>
+                                    <td>{{ $row->registration_number }}</td>
+                                    <td>{{ $row->unit_code }}</td>
+                                    <td>{{ $row->semester_label }}</td>
+                                    <td style="color:#b42318;">{{ number_format($row->failed_total, 1) }}</td>
+                                    <td>{{ $row->failed_exam_score === null ? '-' : number_format($row->failed_exam_score, 1) }}</td>
+                                    <td>{{ number_format((float) $row->continuous_cumulative, 1) }}</td>
+                                    <td>{{ $row->pass_exam_score === null ? 'No exam weight' : number_format($row->pass_exam_score, 1) }}</td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" max="100" class="tich-input tich-input--compact"
+                                            name="marks[{{ $row->grade_record_id }}]"
+                                            value="{{ $recordedSupp?->final_exam_score !== null ? rtrim(rtrim(number_format((float) $recordedSupp->final_exam_score, 2, '.', ''), '0'), '.') : '' }}"
+                                            placeholder="Out of 100">
+                                    </td>
+                                    <td>
+                                        @if ($recordedSupp)
+                                            <strong>{{ number_format((float) $recordedSupp->final_total_score, 1) }}</strong> · {{ $recordedSupp->grade_letter }}
+                                            @if (strtoupper((string) $recordedSupp->grade_letter) !== 'F')
+                                                <br><span class="tich-caption">Passed {{ \Illuminate\Support\Carbon::parse($recordedSupp->updated_at)->format('d M Y') }}</span>
+                                            @else
+                                                <br><span class="tich-caption">Still a fail</span>
+                                            @endif
+                                        @else
+                                            <span class="tich-caption">Not sat yet</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="10">No student on this cohort carries a failing grade for a Semester {{ $examTeachingPeriod }} unit - nothing is owed.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($supplementaryRows->isNotEmpty())
+                    <div class="tich-flex-wrap tich-mt-4" style="gap:0.75rem; align-items:center;">
+                        <button type="submit" class="tich-btn tich-btn-primary">Save supplementary marks</button>
+                        <p class="tich-caption">An empty box changes nothing for that student, and the sitting that failed stays on record.</p>
+                    </div>
+                @endif
+            </form>
         </article>
     @endif
 

@@ -64,7 +64,7 @@
                             <td>{{ $row->unit_name }}</td>
                             <td class="num">{{ number_format((float) $row->credit_hours, 1) }}</td>
                             <td class="num">{{ $row->continuous_score !== null ? number_format((float) $row->continuous_score, 1) : '-' }}</td>
-                            <td class="num">{{ $row->exam_score !== null ? number_format((float) $row->exam_score, 1) : '-' }}</td>
+                            <td class="num">{{ $row->exam_score !== null ? number_format((float) $row->exam_score, 1) : '-' }}@if (! empty($row->is_supplementary))<sup>Supp</sup>@endif</td>
                             <td class="num"><strong>{{ $row->final_score !== null ? number_format((float) $row->final_score, 1) : '-' }}</strong></td>
                             <td class="grade">{{ $row->grade_letter ?: '-' }}</td>
                             <td class="num">{{ $row->grade_letter ? number_format((float) $row->grade_points, 1) : '-' }}</td>
@@ -86,6 +86,13 @@
                 lecturer submits and the exam office approves the assessment for each unit.
             </p>
         @endforelse
+
+        @if (collect($blocks)->flatMap(fn (array $block) => $block['rows'])->contains(fn ($row) => ! empty($row->is_supplementary)))
+            <p class="tich-transcript-note">
+                Supp marks a unit carried by a supplementary examination that replaced the failed sitting.
+                The unit counts once towards the credits and the GPA.
+            </p>
+        @endif
     </section>
 
     <section class="tich-transcript-panel">

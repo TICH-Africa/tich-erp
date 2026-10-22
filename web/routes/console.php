@@ -219,3 +219,8 @@ Schedule::command('attendance:remind-clock-in')
 Schedule::command('academics:remind-upcoming-lessons')
     ->everyFiveMinutes()
     ->timezone('Africa/Nairobi');
+// The cohort roll runs before the first class of the day, so a semester that starts on Monday
+// finds its students already moved onto it and holding the units mapped there.
+Schedule::command('academics:advance-cohorts')
+    ->dailyAt('01:10')
+    ->timezone('Africa/Nairobi');
