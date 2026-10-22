@@ -8,6 +8,7 @@ use App\Services\StudentExamCardService;
 use App\Services\StudentPortalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -27,7 +28,7 @@ class PortalExamCardController extends Controller
         );
     }
 
-    public function pdf(Request $request): Response
+    public function pdf(Request $request): StreamedResponse
     {
         $data = $this->documentData($request, includeActions: false);
         $student = $data['student'];

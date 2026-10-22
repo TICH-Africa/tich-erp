@@ -655,10 +655,10 @@ class _StudentExamEligibilitySectionState
           ),
         );
       }
-    } on ApiException catch (e) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(tichDescribeError(e))),
       );
     } finally {
       if (mounted) setState(() => _downloading = false);
