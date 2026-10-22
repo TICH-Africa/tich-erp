@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../adaptive/adaptive.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
-import '../widgets/employee_avatar.dart';
+import '../shell/tich_logout.dart';
 import '../widgets/tich_live_refresh.dart';
+import '../widgets/tich_profile_identity_card.dart';
 import '../widgets/tich_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -173,33 +170,14 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
         const SizedBox(height: 12),
-        TichCard(
-          child: Row(
-            children: [
-              EmployeeAvatar(
-                name: p['full_name']?.toString() ?? '',
-                radius: 30,
-                photoUrl: p['photo_url']?.toString(),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      p['full_name']?.toString() ?? '',
-                      style: TichTheme.display(fontSize: 18),
-                    ),
-                    Text(
-                      '${p['employee_number']} · ${p['job_title'] ?? ''}',
-                    ),
-                    Text(p['department']?.toString() ?? ''),
-                    Text(p['primary_email']?.toString() ?? ''),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        TichProfileIdentityCard(
+          name: p['full_name']?.toString() ?? '',
+          photoUrl: p['photo_url']?.toString(),
+          lines: [
+            '${p['employee_number'] ?? ''} · ${p['job_title'] ?? ''}'.trim(),
+            p['department']?.toString() ?? '',
+            p['primary_email']?.toString() ?? '',
+          ],
         ),
         const SizedBox(height: 16),
         if (data['must_complete'] != true)
@@ -236,8 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
           TichReadOnlyRow(label: 'Phone', value: nok['phone_number']),
         ]),
         OutlinedButton.icon(
-          onPressed: () =>
-              context.read<AuthBloc>().add(const AuthLogoutRequested()),
+          onPressed: () => tichPerformLogout(context),
           icon: const Icon(Icons.logout),
           label: const Text('Sign out'),
         ),
@@ -246,10 +223,18 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildEditForm() {
+  Widget _buildEditForm(Map<String, dynamic> p) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        TichProfileIdentityCard(
+          name: p['full_name']?.toString() ?? '',
+          photoUrl: p['photo_url']?.toString(),
+          lines: [
+            '${p['employee_number'] ?? ''} · ${p['job_title'] ?? ''}'.trim(),
+          ],
+        ),
+        const SizedBox(height: 16),
         const TichSectionHeader('Contact'),
         TextField(
           controller: _phone,
@@ -349,7 +334,7 @@ class _ProfilePageState extends State<ProfilePage> {
             final prompt = data['profile_update_prompt'] as Map?;
             final missing = data['missing_fields'] as List? ?? const [];
 
-            if (_editing) return _buildEditForm();
+            if (_editing) return _buildEditForm(p);
             return _buildReadView(data, p, prompt, missing);
           },
         ),

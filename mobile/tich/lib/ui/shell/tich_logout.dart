@@ -3,6 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
+import '../../navigation/tich_root_nav.dart';
+
+/// Resets navigation and requests sign-out (portal chrome, profile, unlock).
+void tichPerformLogout(BuildContext context) {
+  TichRootNav.popToRoot();
+  context.read<AuthBloc>().add(const AuthLogoutRequested());
+}
 
 /// Sign-out callback for portal chrome (header button, More side bar).
 ///
@@ -10,5 +17,8 @@ import '../../bloc/auth/auth_event.dart';
 /// built it is gone.
 VoidCallback tichLogout(BuildContext context) {
   final auth = context.read<AuthBloc>();
-  return () => auth.add(const AuthLogoutRequested());
+  return () {
+    TichRootNav.popToRoot();
+    auth.add(const AuthLogoutRequested());
+  };
 }

@@ -31,4 +31,9 @@ abstract final class TichRootNav {
       (route) => route.isFirst,
     );
   }
+
+  /// Clears pushed routes (e.g. before sign-out) while keeping the portal shell.
+  static void popToRoot() {
+    navigatorKey.currentState?.popUntil((route) => route.isFirst);
+  }
 }

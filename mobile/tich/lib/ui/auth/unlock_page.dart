@@ -7,6 +7,7 @@ import '../../bloc/auth/auth_state.dart';
 import '../../models/auth_user.dart';
 import '../../settings/app_settings.dart';
 import '../../theme/tich_theme.dart';
+import '../shell/tich_logout.dart';
 import '../widgets/tich_brand_logo.dart';
 
 class UnlockPage extends StatefulWidget {
@@ -69,7 +70,9 @@ class _UnlockPageState extends State<UnlockPage> {
               Text(
                 'Unlock to continue',
                 textAlign: TextAlign.center,
-                style: tichUi(color: TichColors.neutralMuted),
+                style: tichUi(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               if (widget.message != null && widget.message!.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -113,8 +116,7 @@ class _UnlockPageState extends State<UnlockPage> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () =>
-                    context.read<AuthBloc>().add(const AuthLogoutRequested()),
+                onPressed: () => tichPerformLogout(context),
                 child: const Text('Sign out'),
               ),
             ],

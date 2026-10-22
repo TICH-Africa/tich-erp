@@ -56,7 +56,7 @@ class TichBrandLogo extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TichTheme.display(
               fontSize: wordmarkFontSize,
-              color: TichColors.green,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ),
         ],
