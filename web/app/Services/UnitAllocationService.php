@@ -39,6 +39,7 @@ class UnitAllocationService
     {
         $unitId = (int) $data['unit_id'];
         $semesterId = (int) $data['semester_id'];
+        $replacedStaffIds = [];
 
         if ($needsApproval) {
             $existing = $this->pendingDuplicate($data);
@@ -47,7 +48,7 @@ class UnitAllocationService
                 return $existing;
             }
         } else {
-            $this->retireRivals($unitId, $semesterId);
+            $replacedStaffIds = $this->retireRivals($unitId, $semesterId);
         }
 
         $allocation = UnitAllocation::query()->create([
@@ -86,7 +87,7 @@ class UnitAllocationService
             return $allocation;
         }
 
-        $this->syncTimetableStaff($allocation);
+        $this->syncTimetableStaff($allocation, $replacedStaffIds);
 
         $this->auditService->log(
             'academics.unit_allocation.assigned',
@@ -109,14 +110,23 @@ class UnitAllocationService
 
     /**
      * Switch off the live allocation for the same unit and semester before a new one takes over.
+     *
+     * @return list<int> the lecturers who were teaching the unit
      */
-    private function retireRivals(int $unitId, int $semesterId): void
+    private function retireRivals(int $unitId, int $semesterId): array
     {
-        UnitAllocation::query()
+        $rivals = UnitAllocation::query()
             ->where('unit_id', $unitId)
             ->where('semester_id', $semesterId)
-            ->where('is_active', 1)
-            ->update(['is_active' => 0]);
+            ->where('is_active', 1);
+
+        $staffIds = $rivals->pluck('staff_id')->map(fn ($id) => (int) $id)->all();
+
+        if ($staffIds !== []) {
+            $rivals->update(['is_active' => 0]);
+        }
+
+        return $staffIds;
     }
 
     /**
@@ -127,7 +137,7 @@ class UnitAllocationService
         abort_unless($allocation->awaitingApproval(), 422, 'Only a pending allocation can be approved.');
 
         DB::transaction(function () use ($allocation, $approver): void {
-            $this->retireRivals((int) $allocation->unit_id, (int) $allocation->semester_id);
+            $replacedStaffIds = $this->retireRivals((int) $allocation->unit_id, (int) $allocation->semester_id);
 
             $allocation->update([
                 'status' => UnitAllocation::STATUS_APPROVED,
@@ -137,7 +147,7 @@ class UnitAllocationService
                 'is_active' => 1,
             ]);
 
-            $this->syncTimetableStaff($allocation);
+            $this->syncTimetableStaff($allocation, $replacedStaffIds);
         });
 
         $this->auditService->log(
@@ -214,13 +224,22 @@ class UnitAllocationService
             ->first();
     }
 
-    public function syncTimetableStaff(UnitAllocation $allocation): void
+    /**
+     * @param list<int> $replacedStaffIds lecturers who were teaching this unit and are now switched off
+     */
+    public function syncTimetableStaff(UnitAllocation $allocation, array $replacedStaffIds = []): void
     {
+        // A class already on the timetable keeps the lecturer it was built with, so when somebody
+        // takes the unit over his classes have to move with it - not only the empty slots.
         DB::table('program_timetable_sessions')
             ->where('unit_id', $allocation->unit_id)
-            ->where(function ($query) use ($allocation) {
+            ->where(function ($query) use ($allocation, $replacedStaffIds) {
                 $query->whereNull('staff_id')
                     ->orWhere('staff_id', $allocation->staff_id);
+
+                if ($replacedStaffIds !== []) {
+                    $query->orWhereIn('staff_id', $replacedStaffIds);
+                }
             })
             ->update(['staff_id' => $allocation->staff_id]);
     }

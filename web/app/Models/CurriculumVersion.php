@@ -64,6 +64,15 @@ class CurriculumVersion extends Model
         return $this->status === 'published';
     }
 
+    /**
+     * A published intake stays open to the office that runs it - units are added and moved as the
+     * semester actually unfolds. Only an intake sitting in somebody's approval queue is frozen.
+     */
+    public function isEditable(): bool
+    {
+        return in_array($this->status, ['draft', 'published'], true);
+    }
+
     public function intakeLabel(): string
     {
         if ($this->intake_year && $this->intake_month) {

@@ -66,9 +66,11 @@ class Unit extends Model
             ->withPivot(['semester', 'block_id', 'is_compulsory', 'display_order', 'priority', 'contact_hours', 'total_learning_hours']);
     }
 
+    // An approved unit stays editable: teaching needs to correct a code, name or hours after
+    // approval without re-running the whole sign-off. Only a retired unit is closed.
     public function isEditable(): bool
     {
-        return in_array($this->status, ['draft', 'pending_registry'], true);
+        return in_array($this->status, ['draft', 'pending_registry', 'active'], true);
     }
 
     public function displayLabel(): string

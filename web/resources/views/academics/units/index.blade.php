@@ -70,7 +70,7 @@
                         <td>{{ $statusLabels[$unit->status] ?? ucfirst($unit->status) }}</td>
                         <td style="white-space:nowrap;">
                             @can('academics.write')
-                                @if (in_array($unit->status, ['draft', 'pending_registry']))
+                                @if ($unit->isEditable())
                                     <button type="button" class="tich-link" data-open-modal="unit-edit-{{ $unit->id }}">Edit</button>
                                 @endif
                                 @if ($unit->status === 'draft')
@@ -98,7 +98,7 @@
     @can('academics.write')
         @include('academics.units.partials.modal', ['modalId' => 'unit-create', 'unit' => null, 'departments' => $learningDepartments, 'hub' => $hub])
         @foreach ($units as $unit)
-            @if (in_array($unit->status, ['draft', 'pending_registry']))
+            @if ($unit->isEditable())
                 @include('academics.units.partials.modal', ['modalId' => 'unit-edit-'.$unit->id, 'unit' => $unit, 'departments' => $learningDepartments, 'hub' => $hub])
             @endif
         @endforeach

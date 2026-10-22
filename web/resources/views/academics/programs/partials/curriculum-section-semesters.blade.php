@@ -60,7 +60,7 @@
     </article>
 @else
     @php
-        $intakeEditable = $selectedIntake->isDraft();
+        $intakeEditable = $selectedIntake->isEditable();
         $returnFields = [
             'return_program' => $program->id,
             'return_learning_department' => $learningDepartment?->id,
@@ -138,6 +138,19 @@
                 </div>
             @else
                 <p class="tich-caption tich-mt-4">This intake is locked. Contact an academic officer to make changes.</p>
+            @endcan
+        @elseif ($selectedIntake->isPublished())
+            @can('academics.write')
+                <div class="tich-inset-panel tich-mt-4">
+                    <p class="tich-text" style="margin:0 0 0.75rem;">
+                        This intake is published and live. Units you add, move or remove here apply to it straight away
+                        and every change is recorded. Return it to draft when it has to go through approval again.
+                    </p>
+                    <form method="POST" action="{{ route('departments.academics.versions.reopen', array_merge($hub, ['version' => $selectedIntake->id])) }}" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="tich-btn tich-btn-secondary">Return to draft</button>
+                    </form>
+                </div>
             @endcan
         @endif
 

@@ -3,6 +3,29 @@
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
         fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5)
     );
+
+    // The printed page must show the same classes the screen shows, including any timed outside the
+    // bell slots, so those get their own row here too.
+    $printRows = collect($segments ?? []);
+    $rowStarts = $printRows->map(fn ($row) => substr((string) $row->start_time, 0, 5));
+
+    foreach ($sessions ?? [] as $session) {
+        $start = substr((string) $session->start_time, 0, 5);
+
+        if ($rowStarts->contains($start)) {
+            continue;
+        }
+
+        $printRows->push((object) [
+            'label' => $session->timeLabel(),
+            'start_time' => $start,
+            'end_time' => $session->end_time,
+            'segment_type' => $session->session_type,
+        ]);
+        $rowStarts->push($start);
+    }
+
+    $printRows = $printRows->sortBy(fn ($row) => substr((string) $row->start_time, 0, 5))->values();
 @endphp
 
 <table class="tich-doc-timetable-grid">
@@ -17,17 +40,17 @@
         </tr>
     </thead>
     <tbody>
-        @foreach ($segments as $segment)
+        @foreach ($printRows as $segment)
             @if ($segment->segment_type === 'break')
                 <tr class="tich-doc-timetable-grid__break">
-                    <td>{{ $segment->timeLabel() ?? $segment->label }}</td>
+                    <td>{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : $segment->label }}</td>
                     <td colspan="{{ count($activeDayList) }}">{{ $segment->label }}</td>
                 </tr>
             @else
                 <tr>
                     <td class="tich-doc-timetable-grid__time">
                         {{ $segment->label ?? 'Slot' }}<br>
-                        <span style="font-weight:normal;color:#64748b;">{{ $segment->timeLabel() ?? '' }}</span>
+                        <span style="font-weight:normal;color:#64748b;">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : '' }}</span>
                     </td>
                     @foreach ($dayLabels as $dayNum => $dayLabel)
                         @if (! in_array($dayNum, $activeDayList, true))

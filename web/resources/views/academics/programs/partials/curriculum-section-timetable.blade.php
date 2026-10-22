@@ -496,11 +496,12 @@
                         $manualTypes = match ($timetableKind) {
                             'exam' => ['exam'],
                             'supplementary' => ['supplementary', 'special_exam'],
-                            default => ['lesson', 'break', 'lunch'],
+                            default => ['lesson', 'orientation', 'break', 'lunch'],
                         };
                         $staffLabel = in_array($timetableKind, ['exam', 'supplementary'], true) ? 'Invigilator' : 'Lecturer';
                         $addSessionUrl = route('departments.academics.programs.timetable.add-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id]));
-                        $cycleLabel = $timetableKind === 'lesson' ? 'Week or month of the semester' : 'Sitting number';
+                        $cycleLabel = $timetableKind === 'lesson' ? 'Week or month it starts' : 'Sitting number';
+                        $cycleToLabel = 'Week or month it ends';
                         $panelSessions = $timetableDraft->sessions->sortBy([['day_of_week', 'asc'], ['start_time', 'asc']]);
                     @endphp
                     <details class="tich-mt-6 tich-inset-panel" id="timetable-session-panel">
@@ -526,6 +527,7 @@
                                                     'delivery_mode' => $session->delivery_mode ?? 'physical',
                                                     'recurrence' => $session->recurrence ?? 'weekly',
                                                     'week_no' => $session->week_no,
+                                                    'week_to' => $session->week_to,
                                                     'contact_hours' => $session->contact_hours,
                                                     'staff_id' => $session->staff_id,
                                                     'day_of_week' => $session->day_of_week,
@@ -589,13 +591,27 @@
                                             <option value="{{ $recurrenceKey }}">{{ $recurrenceLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <p class="tich-caption">Weekly and monthly classes are only one posting of many in the semester, so give the week or month it belongs to below.</p>
+                                    <p class="tich-caption">Weekly and monthly classes are only one posting of many in the semester, so say which week or month they start and, when they only run for a stretch of the semester, which one they end.</p>
                                 </div>
                                 <div class="tich-form-group" id="timetable-session-cycle-group">
-                                    <label class="tich-label" for="timetable-session-cycle">{{ $cycleLabel }}</label>
-                                    <input type="number" id="timetable-session-cycle" name="week_no" class="tich-input" min="1" max="60" placeholder="e.g. 3">
+                                    <label class="tich-label" for="timetable-session-cycle" id="timetable-session-cycle-label">{{ $cycleLabel }}</label>
+                                    <input type="number" id="timetable-session-cycle" name="week_no" class="tich-input" min="1" max="60" placeholder="e.g. 1">
                                     <p class="tich-caption">Leave empty when the same slots run for the whole semester.</p>
                                 </div>
+                                @if ($timetableKind === 'lesson')
+                                    <div class="tich-form-group" id="timetable-session-cycle-to-group">
+                                        <label class="tich-label" for="timetable-session-cycle-to" id="timetable-session-cycle-to-label">{{ $cycleToLabel }}</label>
+                                        <input type="number" id="timetable-session-cycle-to" name="week_to" class="tich-input" min="1" max="60" placeholder="e.g. 5">
+                                        <p class="tich-caption">Fill both to say the class runs from week 1 to week 5, or month 1 to month 3. Leave empty when it is only the one week or month.</p>
+                                    </div>
+                                    <div class="tich-form-group" id="timetable-session-every-day-group">
+                                        <label class="tich-label">
+                                            <input type="checkbox" id="timetable-session-every-day" name="every_day" value="1">
+                                            Same slot on every teaching day
+                                        </label>
+                                        <p class="tich-caption">Lunch, break and orientation run the same all week - tick this once and the class is posted on every teaching day at once.</p>
+                                    </div>
+                                @endif
                                 <div class="tich-form-group">
                                     <label class="tich-label" for="timetable-session-staff">{{ $staffLabel }}</label>
                                     <select name="staff_id" id="timetable-session-staff" class="tich-input">
@@ -626,6 +642,8 @@
                             </div>
                             @error('session')<p class="tich-field-error">{{ $message }}</p>@enderror
                             @error('unit_id')<p class="tich-field-error">{{ $message }}</p>@enderror
+                            @error('week_no')<p class="tich-field-error">{{ $message }}</p>@enderror
+                            @error('week_to')<p class="tich-field-error">{{ $message }}</p>@enderror
                             <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;" class="tich-mt-4">
                                 <button type="submit" class="tich-btn tich-btn-secondary" id="timetable-session-submit">Add session</button>
                                 <button type="button" class="tich-link" id="timetable-session-remove" hidden>Remove this class</button>
@@ -684,6 +702,7 @@
                             delivery_mode: 'timetable-session-mode',
                             recurrence: 'timetable-session-recurrence',
                             week_no: 'timetable-session-cycle',
+                            week_to: 'timetable-session-cycle-to',
                             contact_hours: 'timetable-session-hours'
                         };
                         var type = document.getElementById(fields.session_type);
@@ -692,20 +711,51 @@
                         var recurrence = document.getElementById(fields.recurrence);
                         var cycle = document.getElementById(fields.week_no);
                         var cycleGroup = document.getElementById('timetable-session-cycle-group');
+                        var cycleTo = document.getElementById(fields.week_to);
+                        var cycleToGroup = document.getElementById('timetable-session-cycle-to-group');
+                        var cycleLabel = document.getElementById('timetable-session-cycle-label');
+                        var cycleToLabel = document.getElementById('timetable-session-cycle-to-label');
+                        var isLesson = @json($timetableKind === 'lesson');
+                        var everyDay = document.getElementById('timetable-session-every-day');
+                        var everyDayGroup = document.getElementById('timetable-session-every-day-group');
+                        var sharedTypes = ['break', 'lunch', 'orientation'];
 
-                        // Break and Lunch belong to everybody at once, so they carry no unit.
+                        // Break, Lunch and Orientation belong to everybody at once, so they carry no unit.
                         function unitNeeded() {
-                            return ['break', 'lunch', 'other'].indexOf(type ? type.value : '') === -1;
+                            return sharedTypes.indexOf(type ? type.value : '') === -1 && (type ? type.value : '') !== 'other';
                         }
 
                         function syncUnit() {
                             if (unit) unit.required = unitNeeded();
                         }
 
+                        // Rest periods and orientation are the same Monday to Friday, so the box comes
+                        // pre-ticked for them and one entry fills the week.
+                        function syncEveryDay() {
+                            if (!everyDay) return;
+
+                            everyDay.checked = sharedTypes.indexOf(type ? type.value : '') > -1;
+                        }
+
                         function syncCycle() {
                             if (!recurrence || !cycleGroup) return;
-                            cycleGroup.hidden = recurrence.value === 'semester';
-                            if (cycleGroup.hidden && cycle) cycle.value = '';
+
+                            var whole = recurrence.value === 'semester';
+                            var word = recurrence.value === 'monthly' ? 'Month' : 'Week';
+
+                            cycleGroup.hidden = whole;
+
+                            if (cycleToGroup) cycleToGroup.hidden = whole;
+
+                            if (whole) {
+                                if (cycle) cycle.value = '';
+                                if (cycleTo) cycleTo.value = '';
+
+                                return;
+                            }
+
+                            if (isLesson && cycleLabel) cycleLabel.textContent = word+' it starts';
+                            if (isLesson && cycleToLabel) cycleToLabel.textContent = word+' it ends';
                         }
 
                         // The hours live on the unit already - pull them across instead of asking twice.
@@ -732,6 +782,8 @@
                             if (removeBtn) removeBtn.hidden = true;
                             if (removeForm) removeForm.hidden = true;
                             if (pick) pick.value = '';
+                            if (everyDayGroup) everyDayGroup.hidden = false;
+                            syncEveryDay();
                         }
 
                         function loadSession(data) {
@@ -746,6 +798,10 @@
 
                             syncUnit();
                             syncCycle();
+
+                            // One class on one day is what an edit changes, even for a rest period.
+                            if (everyDay) everyDay.checked = false;
+                            if (everyDayGroup) everyDayGroup.hidden = true;
 
                             Object.keys(fields).forEach(function (name) {
                                 var el = document.getElementById(fields[name]);
@@ -829,12 +885,14 @@
                         if (type) type.addEventListener('change', function () {
                             syncUnit();
                             if (unit && !unitNeeded()) unit.selectedIndex = 0;
+                            syncEveryDay();
                             syncHours();
                         });
                         if (unit) unit.addEventListener('change', function () { syncHours(); });
                         if (recurrence) recurrence.addEventListener('change', syncCycle);
                         syncUnit();
                         syncCycle();
+                        syncEveryDay();
                         syncHours();
 
                         var openBtn = document.getElementById('timetable-editor-open');
@@ -846,7 +904,6 @@
                         }
                         form.addEventListener('submit', function () {
                             if (unit && unit.disabled) unit.disabled = false;
-                            if (cycle && cycleGroup && cycleGroup.hidden) cycle.disabled = true;
                         });
                     })();
                     </script>

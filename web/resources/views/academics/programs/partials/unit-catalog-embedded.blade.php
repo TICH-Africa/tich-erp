@@ -200,6 +200,9 @@
                                             @csrf
                                             <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
                                             <input type="hidden" name="unit_id" value="{{ $unit->id }}">
+                                            <p class="tich-caption" style="margin:0 0 0.35rem;">
+                                                Assigning to <strong>{{ $unit->unit_code }} - {{ $unit->unit_name }}</strong>
+                                            </p>
                                             @if ($learningDepartment)
                                                 <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
                                             @endif
@@ -233,7 +236,8 @@
                                             </div>
                                             <div class="tich-form-group" style="margin:0;">
                                                 <label class="tich-label">Contact hours</label>
-                                                <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ $unit->contact_hours ?: 4 }}" min="0">
+                                                <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ (float) ($unit->contact_hours ?? 0) > 0 ? (int) $unit->contact_hours : '' }}" min="0" readonly>
+                                                <p class="tich-caption">Taken from {{ $unit->unit_code }}'s contact hours - change them on the unit, not here.</p>
                                             </div>
                                             <label class="tich-label"><input type="checkbox" name="is_coordinator" value="1"> Unit coordinator</label>
                                             <button type="submit" class="tich-btn tich-btn-primary" @disabled($allocationStaffList->isEmpty())>Save allocation</button>
@@ -245,7 +249,7 @@
                         <td>
                             <div class="tich-catalog-actions">
                                 @can('academics.write')
-                                    @if (in_array($unit->status, ['draft', 'pending_registry']))
+                                    @if ($unit->isEditable())
                                         <button type="button" class="tich-link" data-open-modal="unit-edit-{{ $unit->id }}">Edit</button>
                                     @endif
                                     @if ($unit->status === 'draft')
@@ -271,7 +275,7 @@
                                         <button type="submit" class="tich-link">Approve</button>
                                     </form>
                                 @endif
-                                @if ($selectedIntake && $selectedIntake->status === 'draft' && ! in_array($unit->id, $assignedUnitIds, true))
+                                @if ($selectedIntake && $selectedIntake->isEditable() && ! in_array($unit->id, $assignedUnitIds, true))
                                     @can('academics.write')
                                         <div class="tich-catalog-actions__group">
                                             <span class="tich-catalog-actions__label">Map to intake:</span>
@@ -318,7 +322,7 @@
         'selectedIntake' => $selectedIntake,
     ])
     @foreach ($catalogUnits as $unit)
-        @if (in_array($unit->status, ['draft', 'pending_registry']))
+        @if ($unit->isEditable())
             @include('academics.units.partials.modal', [
                 'modalId' => 'unit-edit-'.$unit->id,
                 'unit' => $unit,

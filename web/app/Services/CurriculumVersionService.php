@@ -119,7 +119,7 @@ class CurriculumVersionService
     ): void {
         $version->loadMissing('program');
         abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
-        abort_unless($version->status === 'draft', 422, 'Only draft intakes can be edited.');
+        abort_unless($version->isEditable(), 422, 'Only a draft or published intake can be edited.');
 
         $program = $version->program;
         $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
@@ -195,7 +195,7 @@ class CurriculumVersionService
     ): CurriculumVersionUnit {
         $version->loadMissing('program');
         abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
-        abort_unless($version->status === 'draft', 422);
+        abort_unless($version->isEditable(), 422);
 
         $unit = Unit::query()
             ->where('id', $unitId)

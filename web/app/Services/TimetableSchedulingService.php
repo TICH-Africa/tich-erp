@@ -566,72 +566,115 @@ class TimetableSchedulingService
 
 
 
-    public function addSession(User $user, ProgramTimetable $timetable, array $data, ?Request $request = null): ProgramTimetableSession
+    /**
+     * Which posting of the semester a class sits in. A whole-semester class has no number, and a
+     * blank box means "every posting", so both store as null rather than as zero.
+     */
+    private function cycleNumber(mixed $value, ?string $recurrence): ?int
+    {
+        if ($recurrence === 'semester' || $value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
 
+        return (int) $value;
+    }
+
+    /**
+     * A blank picker box means "nothing on this slot", and an empty string must never be written into
+     * a foreign key or an hours column - it lands as zero and the class looks unassigned.
+     */
+    private function referenceOrNull(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || ! is_numeric($value) || (int) $value === 0) {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    private function hoursOrNull(mixed $value): ?float
+    {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    private function textOrNull(mixed $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : $value;
+
+        return $value === null || $value === '' ? null : (string) $value;
+    }
+
+    /**
+     * The days a timetable actually teaches on, straight from its bell schedule template.
+     *
+     * @return list<int>
+     */
+    private function teachingDays(ProgramTimetable $timetable): array
+    {
+        $days = $timetable->template?->days
+            ?->where('is_active', 1)
+            ?->pluck('day_of_week')
+            ?->map(fn ($day) => (int) $day)
+            ?->values()
+            ?->all() ?? [];
+
+        return $days === [] ? range(1, 5) : $days;
+    }
+
+
+
+    public function addSession(User $user, ProgramTimetable $timetable, array $data, ?Request $request = null): ProgramTimetableSession
     {
         // A semester timetable moves every week or two, so a published one stays editable.
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
 
-
-
-        $session = ProgramTimetableSession::create([
-
+        $payload = [
             'program_timetable_id' => $timetable->id,
-
-            'unit_id' => $data['unit_id'] ?? null,
-
-            'staff_id' => $data['staff_id'] ?? null,
-
-            'room_id' => $data['room_id'] ?? null,
-
-            'day_of_week' => (int) $data['day_of_week'],
-
+            'unit_id' => $this->referenceOrNull($data['unit_id'] ?? null),
+            'staff_id' => $this->referenceOrNull($data['staff_id'] ?? null),
+            'room_id' => $this->referenceOrNull($data['room_id'] ?? null),
             'start_time' => $data['start_time'],
-
             'end_time' => $data['end_time'],
-
             'session_type' => $data['session_type'] ?? 'lesson',
-
             'delivery_mode' => $data['delivery_mode'] ?? 'physical',
-
             'recurrence' => $data['recurrence'] ?? 'weekly',
-
-            'week_no' => (($data['recurrence'] ?? 'weekly') === 'semester') ? null : ($data['week_no'] ?? null),
-
-            'contact_hours' => $data['contact_hours'] ?? null,
-
+            'week_no' => $this->cycleNumber($data['week_no'] ?? null, $data['recurrence'] ?? 'weekly'),
+            'week_to' => $this->cycleNumber($data['week_to'] ?? null, $data['recurrence'] ?? 'weekly'),
+            'contact_hours' => $this->hoursOrNull($data['contact_hours'] ?? null),
             'title' => array_key_exists('title', $data) ? UiText::normalizeDash($data['title']) : null,
+            'venue' => $this->textOrNull($data['venue'] ?? null),
+            'class_group' => $this->textOrNull($data['class_group'] ?? null),
+        ];
 
-            'venue' => $data['venue'] ?? null,
+        // Lunch and break are the same on every day, so one entry can post the slot across the whole
+        // teaching week instead of asking for it five times.
+        $days = empty($data['every_day'])
+            ? [(int) $data['day_of_week']]
+            : $this->teachingDays($timetable);
 
-            'class_group' => $data['class_group'] ?? null,
-
-        ]);
-
-
-
-        $session->load(['unit', 'staff', 'room']);
-
-
-
-        $conflicts = $this->detectConflicts(
-
-            $timetable->sessions()->with(['unit', 'staff', 'room'])->get()
-
+        $sessions = collect($days)->map(
+            fn (int $day) => ProgramTimetableSession::create($payload + ['day_of_week' => $day])
         );
 
+        $session = $sessions->first();
+        $session->load(['unit', 'staff', 'room']);
 
+        $conflicts = $this->detectConflicts(
+            $timetable->sessions()->with(['unit', 'staff', 'room'])->get()
+        );
 
         if ($conflicts->isNotEmpty()) {
-
-            $session->delete();
+            $sessions->each(function (ProgramTimetableSession $created) {
+                $created->delete();
+            });
 
             throw ValidationException::withMessages([
-
                 'session' => $conflicts->first()['message'],
-
             ]);
-
         }
 
         $this->auditService->log(
@@ -645,14 +688,13 @@ class TimetableSchedulingService
                 'day_of_week' => (int) $data['day_of_week'],
                 'session_type' => $data['session_type'] ?? 'lesson',
             ],
-            'Timetable session added',
+            'Timetable session added'.(count($days) > 1 ? ' on '.count($days).' teaching days' : ''),
             'success',
             $user->id,
             $request
         );
 
         return $session->load(['unit', 'staff', 'room']);
-
     }
 
     public function updateSession(
@@ -667,13 +709,13 @@ class TimetableSchedulingService
 
         $original = $session->only([
             'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time',
-            'session_type', 'delivery_mode', 'recurrence', 'week_no', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
+            'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
         ]);
 
         $payload = [
-            'unit_id' => $data['unit_id'] ?? null,
-            'staff_id' => $data['staff_id'] ?? null,
-            'room_id' => $data['room_id'] ?? $session->room_id,
+            'unit_id' => array_key_exists('unit_id', $data) ? $this->referenceOrNull($data['unit_id']) : $session->unit_id,
+            'staff_id' => array_key_exists('staff_id', $data) ? $this->referenceOrNull($data['staff_id']) : $session->staff_id,
+            'room_id' => array_key_exists('room_id', $data) ? $this->referenceOrNull($data['room_id']) : $session->room_id,
             'day_of_week' => (int) $data['day_of_week'],
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
@@ -681,14 +723,17 @@ class TimetableSchedulingService
             'delivery_mode' => $data['delivery_mode'] ?? $session->delivery_mode ?? 'physical',
             'recurrence' => $data['recurrence'] ?? $session->recurrence ?? 'weekly',
             'week_no' => array_key_exists('week_no', $data)
-                ? ((($data['recurrence'] ?? $session->recurrence ?? 'weekly') === 'semester' || $data['week_no'] === '' || $data['week_no'] === null) ? null : (int) $data['week_no'])
+                ? $this->cycleNumber($data['week_no'], $data['recurrence'] ?? $session->recurrence ?? 'weekly')
                 : $session->week_no,
+            'week_to' => array_key_exists('week_to', $data)
+                ? $this->cycleNumber($data['week_to'], $data['recurrence'] ?? $session->recurrence ?? 'weekly')
+                : $session->week_to,
             'contact_hours' => array_key_exists('contact_hours', $data)
-                ? ($data['contact_hours'] === '' || $data['contact_hours'] === null ? null : (float) $data['contact_hours'])
+                ? $this->hoursOrNull($data['contact_hours'])
                 : $session->contact_hours,
             'title' => array_key_exists('title', $data) ? UiText::normalizeDash($data['title']) : $session->title,
-            'venue' => $data['venue'] ?? $session->venue,
-            'class_group' => $data['class_group'] ?? $session->class_group,
+            'venue' => array_key_exists('venue', $data) ? $this->textOrNull($data['venue']) : $session->venue,
+            'class_group' => array_key_exists('class_group', $data) ? $this->textOrNull($data['class_group']) : $session->class_group,
         ];
 
         // Moving onto a slot keeps the session inside the template's own hours.
@@ -792,7 +837,8 @@ class TimetableSchedulingService
                     : ($previous[$key] ?? $fallback);
 
                 $recurrence = $row['recurrence'] ?? 'weekly';
-                $weekNo = $keep('week_no');
+                $weekNo = $this->cycleNumber($keep('week_no'), $recurrence);
+                $weekTo = $this->cycleNumber($keep('week_to'), $recurrence);
 
                 $payload = [
                     'unit_id' => $keep('unit_id') ?: null,
@@ -803,8 +849,9 @@ class TimetableSchedulingService
                     'session_type' => $row['session_type'] ?? 'lesson',
                     'delivery_mode' => $row['delivery_mode'] ?? 'physical',
                     'recurrence' => $recurrence,
-                    'week_no' => $recurrence === 'semester' ? null : ($weekNo ? (int) $weekNo : null),
-                    'contact_hours' => $keep('contact_hours') === null ? null : (float) $keep('contact_hours'),
+                    'week_no' => $weekNo,
+                    'week_to' => ($weekNo && $weekTo > $weekNo) ? $weekTo : null,
+                    'contact_hours' => $this->hoursOrNull($keep('contact_hours')),
                     'venue' => $keep('venue') ?: null,
                 ];
 
@@ -1169,6 +1216,16 @@ class TimetableSchedulingService
 
 
                 if (! $this->timesOverlap($session->start_time, $session->end_time, $other->start_time, $other->end_time)) {
+
+                    continue;
+
+                }
+
+
+
+                // The same slot in a different week or month is a different class, not a clash, so a
+                // week 2 timetable can be added on top of the week 1 one.
+                if (! $this->cyclesOverlap($session, $other)) {
 
                     continue;
 
@@ -1635,6 +1692,39 @@ class TimetableSchedulingService
     }
 
 
+
+    /**
+     * Which postings of the semester a class occupies. A class that names no week or month runs the
+     * whole semester and so meets every other posting; a dated class only meets its own date.
+     */
+    private function cyclesOverlap(ProgramTimetableSession $session, ProgramTimetableSession $other): bool
+    {
+        if ($session->session_date && $other->session_date
+            && $session->session_date->ne($other->session_date)) {
+            return false;
+        }
+
+        $fromA = $this->cycleFrom($session);
+        $toA = $this->cycleTo($session);
+        $fromB = $this->cycleFrom($other);
+        $toB = $this->cycleTo($other);
+
+        return $fromA <= $toB && $fromB <= $toA;
+    }
+
+    private function cycleFrom(ProgramTimetableSession $session): int
+    {
+        return $session->week_no ? (int) $session->week_no : 1;
+    }
+
+    private function cycleTo(ProgramTimetableSession $session): int
+    {
+        if (! $session->week_no) {
+            return PHP_INT_MAX;
+        }
+
+        return $session->week_to ? max((int) $session->week_to, (int) $session->week_no) : (int) $session->week_no;
+    }
 
     private function timesOverlap(mixed $startA, mixed $endA, mixed $startB, mixed $endB): bool
 

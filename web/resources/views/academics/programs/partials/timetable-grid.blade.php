@@ -11,6 +11,29 @@
             'end_time' => $session->end_time,
             'segment_type' => 'slot',
         ])->unique(fn ($row) => $row->start_time.'-'.$row->end_time)->sortBy('start_time')->values();
+    } else {
+        // A class timed outside the bell slots - an 08:00 start or a lecture that runs to 17:00 - is
+        // still a class somebody has to see, so it gets its own row instead of vanishing.
+        $rowStarts = $rows->map(fn ($row) => substr((string) $row->start_time, 0, 5));
+
+        foreach ($sessions ?? [] as $session) {
+            $start = substr((string) $session->start_time, 0, 5);
+
+            if ($rowStarts->contains($start)) {
+                continue;
+            }
+
+            $rows->push((object) [
+                'label' => $start.' - '.substr((string) $session->end_time, 0, 5),
+                'start_time' => $start,
+                'end_time' => $session->end_time,
+                'segment_type' => 'slot',
+                'id' => null,
+            ]);
+            $rowStarts->push($start);
+        }
+
+        $rows = $rows->sortBy(fn ($row) => substr((string) $row->start_time, 0, 5))->values();
     }
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5));
     $typeClasses = [
@@ -61,7 +84,7 @@
                     </tr>
                 @else
                     <tr>
-                        <td class="tich-timetable-grid__time">{{ $segment->label }}<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span></td>
+                        <td class="tich-timetable-grid__time">{{ $segment->label }}@if (($segment->segment_type ?? '') !== 'slot')<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span>@endif</td>
                         @foreach ($dayLabels as $dayNum => $dayLabel)
                             @if (! in_array($dayNum, $activeDayList, true))
                                 @continue
@@ -69,12 +92,16 @@
                             @php
                                 $key = $dayNum.'|'.substr((string) $segment->start_time, 0, 5);
                                 $cellSessions = $sessionsByDayAndTime->get($key, collect());
+                                // Only a bell slot has a template segment to snap a dropped class onto, so
+                                // a row for a class timed outside the bell schedule shows but does not receive.
+                                $slotSegmentId = $segment->id ?? null;
+                                $isDropzone = $editable && $slotSegmentId;
                             @endphp
                             <td
-                                class="tich-timetable-grid__cell @if ($editable) tich-timetable-grid__dropzone @endif"
-                                @if ($editable)
+                                class="tich-timetable-grid__cell @if ($isDropzone) tich-timetable-grid__dropzone @endif"
+                                @if ($isDropzone)
                                     data-drop-day="{{ $dayNum }}"
-                                    data-segment-id="{{ $segment->id }}"
+                                    data-segment-id="{{ $slotSegmentId }}"
                                 @endif
                             >
                                 @forelse ($cellSessions as $session)
@@ -113,7 +140,7 @@
                                                 data-open-invigilator-modal
                                                 data-session-id="{{ $session->id }}"
                                                 data-staff-id="{{ $session->staff_id ?? '' }}"
-                                                data-session-label="{{ $session->displayTitle() }} · {{ $dayLabel }} · {{ $segment->timeLabel() }}"
+                                                data-session-label="{{ $session->displayTitle() }} · {{ $dayLabel }} · {{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : ($segment->label ?? '') }}"
                                             >{{ $session->staff_id ? 'Change invigilator' : 'Assign invigilator' }}</button>
                                         @endif
                                     </div>

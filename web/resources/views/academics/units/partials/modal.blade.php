@@ -110,7 +110,7 @@
                 @endif
             @endif
 
-            @if (! $unit && ! empty($selectedIntake) && $selectedIntake->status === 'draft' && ! empty($periods) && $periods->isNotEmpty())
+            @if (! $unit && ! empty($selectedIntake) && $selectedIntake->isEditable() && ! empty($periods) && $periods->isNotEmpty())
                 <div class="uf-field">
                     <label>Assign to semester after creating (optional)</label>
                     <select name="assign_semester">

@@ -22,6 +22,7 @@ class TimetableTemplateService
     {
         return [
             'lesson' => 'Lesson',
+            'orientation' => 'Orientation',
             'break' => 'Break',
             'lunch' => 'Lunch',
             'exam' => 'Exam',

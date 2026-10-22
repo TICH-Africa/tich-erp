@@ -17,7 +17,7 @@ class ProgramTimetableSession extends Model
         'start_time', 'end_time', 'session_type', 'delivery_mode', 'recurrence', 'contact_hours',
         'title', 'venue', 'class_group', 'segment_id',
         'lesson_plan_cleared', 'lesson_plan_id',
-        'session_date', 'week_no', 'source', 'external_ref',
+        'session_date', 'week_no', 'week_to', 'source', 'external_ref',
     ];
 
     protected $casts = [
@@ -74,6 +74,7 @@ class ProgramTimetableSession extends Model
     {
         return [
             'lesson' => 'Lesson',
+            'orientation' => 'Orientation',
             'break' => 'Break',
             'lunch' => 'Lunch',
             'exam' => 'Exam',
@@ -84,11 +85,12 @@ class ProgramTimetableSession extends Model
     }
 
     /**
-     * A rest period belongs to everybody at once, so it never needs a unit on the form.
+     * A rest period or a cohort event such as orientation belongs to everybody at once, so it never
+     * needs a unit on the form.
      */
     public static function needsUnit(string $sessionType): bool
     {
-        return ! in_array($sessionType, ['break', 'lunch', 'other'], true);
+        return ! in_array($sessionType, ['break', 'lunch', 'orientation', 'other'], true);
     }
 
     public function timeLabel(): string
@@ -139,7 +141,8 @@ class ProgramTimetableSession extends Model
 
     /**
      * A weekly or monthly class belongs to one posting of many in the semester, so it needs to say
-     * which one. Whole-semester classes carry no number.
+     * which one - or which run of them when the class only covers part of the semester.
+     * Whole-semester classes carry no number.
      */
     public function cycleLabel(): ?string
     {
@@ -147,6 +150,10 @@ class ProgramTimetableSession extends Model
             return null;
         }
 
-        return ($this->recurrence === 'monthly' ? 'Month ' : 'Week ').(int) $this->week_no;
+        $word = $this->recurrence === 'monthly' ? 'Month' : 'Week';
+        $from = (int) $this->week_no;
+        $to = (int) $this->week_to;
+
+        return $to > $from ? $word.'s '.$from.'-'.$to : $word.' '.$from;
     }
 }
