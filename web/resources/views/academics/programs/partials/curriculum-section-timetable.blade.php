@@ -15,6 +15,7 @@
             'section' => 'timetable',
             'teaching_period' => $period ?? $timetableTeachingPeriod,
             'timetable_kind' => $kind ?? $timetableKind,
+            'timetable' => $timetableDraft?->id,
         ]));
         $slotsForKind = $schedulingService->scheduleSegmentsForKind($timetableTemplate, $timetableKind);
         $kindSlotRows = $slotsForKind->map(fn ($s) => [
@@ -192,20 +193,58 @@
         <h2 class="tich-h3">2. Timetables by type</h2>
         <p class="tich-text tich-mt-2">Create lesson, exam, and supplementary/special exam timetables independently. Each type has its own time slots and is published separately.</p>
 
-        <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:18rem;">
-            <div class="tich-form-group" style="margin:0;">
-                <label class="tich-label">Teaching period</label>
-                <select name="teaching_period" class="tich-input" onchange="this.form.submit()">
-                    @foreach (range(1, $totalTeachingPeriods) as $periodNumber)
-                        <option value="{{ $periodNumber }}" @selected($timetableTeachingPeriod === $periodNumber)>Semester {{ $periodNumber }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </form>
+        @php
+            $ttTerms = max(1, (int) $termsPerYear);
+        @endphp
+
+        @if ($program->usesBlocks())
+            <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:22rem;">
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label">Block</label>
+                    <select name="teaching_period" class="tich-input" onchange="this.form.submit()">
+                        @foreach (range(1, $timetablePeriods ?? $totalTeachingPeriods) as $periodNumber)
+                            <option value="{{ $periodNumber }}" @selected($timetableTeachingPeriod === $periodNumber)>{{ $program->periodLabel($periodNumber) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
+        @else
+            @php
+                // The years come from the admission records: Year 2 here means the students the
+                // intake actually has sitting Year 2, not a guess from the programme duration.
+                $ttYearCounts = collect($timetableYearCounts ?? [])->mapWithKeys(fn ($count, $year) => [(int) $year => (int) $count]);
+                $ttYearsToShow = max(
+                    (int) $program->studyYears(),
+                    (int) $ttYearCounts->keys()->max(),
+                    $program->yearOfPeriod($timetableTeachingPeriod),
+                    (int) ceil(($timetablePeriods ?? $totalTeachingPeriods) / $ttTerms),
+                );
+            @endphp
+
+            <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:22rem;">
+                <div class="tich-form-group" style="margin:0;">
+                    <label class="tich-label" for="tt-year-semester">Year and semester</label>
+                    <select id="tt-year-semester" name="teaching_period" class="tich-input" onchange="this.form.submit()">
+                        @foreach (range(1, $ttYearsToShow) as $yearNumber)
+                            @php $yearStudents = (int) ($ttYearCounts[$yearNumber] ?? 0); @endphp
+                            <optgroup label="Year {{ $yearNumber }} - {{ $yearStudents > 0 ? $yearStudents.' student'.($yearStudents === 1 ? '' : 's') : 'no students yet' }}">
+                                @foreach (range(1, $ttTerms) as $termNumber)
+                                    @php $periodNumber = (($yearNumber - 1) * $ttTerms) + $termNumber; @endphp
+                                    <option value="{{ $periodNumber }}" @selected($timetableTeachingPeriod === $periodNumber)>
+                                        Year {{ $yearNumber }} · Semester {{ $termNumber }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
+            <p class="tich-caption tich-mt-2">Now building {{ $program->periodLabel($timetableTeachingPeriod) }} - the timetable you add here belongs to this year and semester only.</p>
+        @endif
 
         @if ($semesterPeriod?->scheduleLabel())
             <div class="tich-inset-panel tich-mt-4">
-                <p class="tich-text" style="margin:0 0 0.35rem;"><strong>Semester {{ $timetableTeachingPeriod }}</strong> · {{ $semesterPeriod->scheduleLabel() }}@if ($semesterPeriod->isInherited()) · same as {{ $program->periodLabel((int) $semesterPeriod->borrowedFrom->semester) }} @endif</p>
+                <p class="tich-text" style="margin:0 0 0.35rem;"><strong>{{ $program->periodLabel($timetableTeachingPeriod) }}</strong> · {{ $semesterPeriod->scheduleLabel() }}@if ($semesterPeriod->isInherited()) · same as {{ $program->periodLabel((int) $semesterPeriod->borrowedFrom->semester) }} @endif</p>
                 @if ($semesterPeriod->effectiveLearningStart() || $semesterPeriod->learning_end_date)
                     <p class="tich-caption" style="margin:0 0 0.25rem;">Learning: {{ $semesterPeriod->effectiveLearningStart()?->format('d M Y') ?? '-' }} - {{ $semesterPeriod->learning_end_date?->format('d M Y') ?? '-' }}</p>
                 @endif
@@ -236,6 +275,30 @@
                 </a>
             @endforeach
         </nav>
+
+        @if ($timetableChoices->isNotEmpty())
+            <div class="tich-form-group tich-mt-4" style="max-width:26rem;">
+                <label class="tich-label" for="timetable-pick">Timetable to view</label>
+                <select id="timetable-pick" class="tich-input" onchange="if (this.value) window.location.href = this.value;">
+                    <option value="">Select a timetable - {{ $timetableChoices->count() }} added for this intake</option>
+                    @foreach ($timetableChoices->groupBy('teaching_period') as $choicePeriod => $choiceGroup)
+                        <optgroup label="{{ $program->periodLabel((int) $choicePeriod) }}">
+                            @foreach ($choiceGroup as $choice)
+                                <option value="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, array_filter([
+                                    'section' => 'timetable',
+                                    'teaching_period' => $choicePeriod,
+                                    'timetable_kind' => $choice->timetable_kind,
+                                    'timetable' => $choice->id,
+                                ]))) }}" @selected((int) $timetableDraft?->id === (int) $choice->id)>
+                                    {{ $choice->displayTitle() }}
+                                    ({{ $choice->sessions_count }} class{{ $choice->sessions_count === 1 ? '' : 'es' }}, {{ $choice->status }}, {{ $choice->created_at?->format('d M Y') ?: 'no date' }})
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+            </div>
+        @endif
 
         <div class="tich-mt-6">
             <h3 class="tich-h3">{{ $timetableKinds[$timetableKind] ?? 'Timetable' }}</h3>
@@ -321,23 +384,91 @@
                 @endcan
             @endif
 
+            @php
+                $timetablesInScope = $timetablesInScope ?? collect();
+                $cycleTypes = \App\Models\ProgramTimetable::cycleTypes();
+                $startFormAction = route('departments.academics.programs.timetable.start', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id]));
+                $draftCycle = $timetableDraft && in_array($timetableDraft->cycle_type, ['weekly', 'monthly'], true);
+            @endphp
+
+            @if ($timetablesInScope->count() > 1)
+                <nav class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    @foreach ($timetablesInScope as $scopedTimetable)
+                        <a href="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, array_filter([
+                            'section' => 'timetable',
+                            'teaching_period' => $timetableTeachingPeriod,
+                            'timetable_kind' => $timetableKind,
+                            'timetable' => $scopedTimetable->id,
+                        ]))) }}"
+                            class="tich-btn {{ (int) $timetableDraft?->id === (int) $scopedTimetable->id ? 'tich-btn-primary' : 'tich-btn-secondary' }}"
+                            style="font-size:0.8125rem;">
+                            {{ $scopedTimetable->displayTitle() }}
+                            <span class="tich-caption" style="display:block; font-size:0.72rem; opacity:0.85;">
+                                {{ $scopedTimetable->sessions->count() }} class(es) · {{ ucfirst($scopedTimetable->status) }}
+                            </span>
+                        </a>
+                    @endforeach
+                </nav>
+            @endif
+
             @can('academics.write')
-                @if (! $timetableDraft)
-                    <form method="POST" action="{{ route('departments.academics.programs.timetable.start', array_merge($hub, ['program' => $program->id, 'version' => $selectedIntake->id])) }}" class="tich-mt-4" data-scroll-target="timetable-display">
+                @if ($timetableDraft)
+                    <p class="tich-caption tich-mt-4">This timetable is built by hand. Use <strong>Edit timetable</strong> below the grid to add a class, change one, or remove one.</p>
+                @endif
+
+                @if ($draftCycle)
+                    <form method="POST" action="{{ $startFormAction }}" class="tich-inset-panel tich-mt-4" data-scroll-target="timetable-display">
                         @csrf
                         <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
                         <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
                         <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
-                        <div class="tich-form-group" style="max-width:28rem;">
-                            <label class="tich-label">Timetable title</label>
-                            <input type="text" name="title" class="tich-input" value="{{ old('title') }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - Semester {{ $timetableTeachingPeriod }}" maxlength="200">
-                        </div>
-                        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Start an empty {{ strtolower($timetableKinds[$timetableKind] ?? 'timetable') }}</button>
-                        <p class="tich-caption tich-mt-2">Opens a blank timetable for this semester. Nothing is filled in for you - add each class yourself below.</p>
+                        <input type="hidden" name="cycle_type" value="{{ $timetableDraft->cycle_type }}">
+                        <input type="hidden" name="cycle_no" value="{{ $timetableDraft->nextCycleNo() }}">
+                        <input type="hidden" name="copy_from" value="{{ $timetableDraft->id }}">
+                        <button type="submit" class="tich-btn tich-btn-primary">Add {{ ucfirst($timetableDraft->cycleWord()) }} {{ $timetableDraft->nextCycleNo() }} timetable</button>
+                        <p class="tich-caption tich-mt-2">
+                            Opens {{ $timetableDraft->cycleWord() }} {{ $timetableDraft->nextCycleNo() }} for {{ $program->periodLabel($timetableTeachingPeriod) }} with these classes copied in -
+                            change only what moved. Anything you add there is stamped {{ ucfirst($timetableDraft->cycleWord()) }} {{ $timetableDraft->nextCycleNo() }}, so it never mixes with
+                            {{ $timetableDraft->cycleWord() }} {{ $timetableDraft->cycle_no }}.
+                        </p>
                     </form>
-                @else
-                    <p class="tich-caption tich-mt-4">This timetable is built by hand. Use <strong>Edit timetable</strong> below the grid to add a class, change one, or remove one.</p>
                 @endif
+
+                <form method="POST" action="{{ $startFormAction }}" class="tich-inset-panel tich-mt-4" data-scroll-target="timetable-display">
+                    @csrf
+                    <input type="hidden" name="teaching_period" value="{{ $timetableTeachingPeriod }}">
+                    <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
+
+                    <h3 class="tich-h3">{{ $timetableDraft ? 'Add another timetable' : 'Start a timetable' }} for {{ $program->periodLabel($timetableTeachingPeriod) }}</h3>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
+                        <div class="tich-form-group" style="margin:0; max-width:20rem; flex:1 1 14rem;">
+                            <label class="tich-label">Timetable title</label>
+                            <input type="text" name="title" class="tich-input" value="{{ old('title') }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - {{ $program->periodLabel($timetableTeachingPeriod) }}" maxlength="200">
+                        </div>
+                        <div class="tich-form-group" style="margin:0; max-width:20rem; flex:1 1 14rem;">
+                            <label class="tich-label">How often it is posted</label>
+                            <select name="cycle_type" class="tich-input">
+                                <option value="">Whole {{ $program->usesBlocks() ? 'block' : 'semester' }} - one timetable covers it all</option>
+                                @foreach ($cycleTypes as $cycleKey => $cycleLabel)
+                                    <option value="{{ $cycleKey }}" @selected(old('cycle_type') === $cycleKey)>{{ $cycleLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="tich-form-group" style="margin:0; max-width:11rem; flex:1 1 8rem;">
+                            <label class="tich-label">Which week or month</label>
+                            <input type="number" name="cycle_no" class="tich-input" value="{{ old('cycle_no') }}" min="1" max="60" placeholder="1">
+                        </div>
+                        <button type="submit" class="tich-btn {{ $timetableDraft ? 'tich-btn-secondary' : 'tich-btn-primary' }}">
+                            {{ $timetableDraft ? 'Open this timetable' : 'Start an empty '.strtolower($timetableKinds[$timetableKind] ?? 'timetable') }}
+                        </button>
+                    </div>
+                    @error('cycle_no')<p class="tich-field-error tich-mt-2">{{ $message }}</p>@enderror
+                    <p class="tich-caption tich-mt-2">
+                        Choose weekly or monthly to run one timetable per {{ $program->usesBlocks() ? 'block' : 'semester' }} week or month - each posting stays separate, so classes added to
+                        week 2 never appear on week 1. Leave it as the whole {{ $program->usesBlocks() ? 'block' : 'semester' }} for a single timetable. Nothing is filled in for you.
+                    </p>
+                </form>
             @endcan
             @error('timetable')<p class="tich-field-error tich-mt-4">{{ $message }}</p>@enderror
         </div>
@@ -350,7 +481,7 @@
                     <h2 class="tich-h3">3. {{ $timetableKinds[$timetableKind] ?? 'Timetable' }} display</h2>
                     <p class="tich-text tich-mt-2">
                         <strong>{{ $timetableDraft->displayTitle() }}</strong><br>
-                        Semester {{ $timetableDraft->teaching_period }} · {{ ucfirst($timetableDraft->status) }}
+                        {{ $program->periodLabel((int) $timetableDraft->teaching_period) }} · {{ ucfirst($timetableDraft->status) }}
                         @if ($timetableDraft->generation_notes)
                             · {{ $timetableDraft->generation_notes }}
                         @endif
@@ -371,7 +502,8 @@
                 <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
                     @if ($timetableEditable)
                         @can('academics.write')
-                                <button type="button" class="tich-btn tich-btn-primary" id="timetable-editor-open">Edit timetable</button>
+                            <button type="button" class="tich-btn tich-btn-primary" id="timetable-editor-open">Edit timetable</button>
+                            <button type="button" class="tich-btn tich-btn-primary" id="timetable-session-open">Add session manually</button>
                         @endcan
                     @endif
                     @if ($timetableDraft->status === 'draft')
@@ -502,6 +634,9 @@
                         $addSessionUrl = route('departments.academics.programs.timetable.add-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id]));
                         $cycleLabel = $timetableKind === 'lesson' ? 'Week or month it starts' : 'Sitting number';
                         $cycleToLabel = 'Week or month it ends';
+                        // A posting already names its week or month, so the class form keeps to it.
+                        $draftCycleType = in_array($timetableDraft->cycle_type, ['weekly', 'monthly'], true) ? $timetableDraft->cycle_type : null;
+                        $draftCycleNo = $draftCycleType ? $timetableDraft->cycle_no : null;
                         $panelSessions = $timetableDraft->sessions->sortBy([['day_of_week', 'asc'], ['start_time', 'asc']]);
                     @endphp
                     <details class="tich-mt-6 tich-inset-panel" id="timetable-session-panel">
@@ -533,6 +668,7 @@
                                                     'day_of_week' => $session->day_of_week,
                                                     'start_time' => substr((string) $session->start_time, 0, 5),
                                                     'end_time' => substr((string) $session->end_time, 0, 5),
+                                                    'session_date' => $session->session_date?->format('Y-m-d'),
                                                     'venue' => $session->venue,
                                                 ], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) }}"
                                             >{{ $session->displayTitle() }} - {{ $timetableDayLabels[$session->day_of_week] ?? $session->day_of_week }} {{ substr((string) $session->start_time, 0, 5) }}@if ($session->cycleLabel()) ({{ $session->cycleLabel() }}) @endif</option>
@@ -584,22 +720,30 @@
                                     <label class="tich-label" for="timetable-session-end">End</label>
                                     <input type="time" id="timetable-session-end" name="end_time" class="tich-input" required>
                                 </div>
+                                @if ($timetableKind === 'lesson')
+                                    <div class="tich-form-group">
+                                        <label class="tich-label" for="timetable-session-date">Date of this class</label>
+                                        <input type="date" id="timetable-session-date" name="session_date" class="tich-input">
+                                        <p class="tich-caption">Give the exact day this class sits on - useful for a one-off lecture, a make-up class or an orientation. Leave it empty for a class that repeats every week or month.</p>
+                                    </div>
+                                @endif
                                 <div class="tich-form-group">
                                     <label class="tich-label" for="timetable-session-recurrence">Repeats</label>
                                     <select name="recurrence" id="timetable-session-recurrence" class="tich-input" required>
                                         @foreach (\App\Models\ProgramTimetableSession::recurrences() as $recurrenceKey => $recurrenceLabel)
-                                            <option value="{{ $recurrenceKey }}">{{ $recurrenceLabel }}</option>
+                                            <option value="{{ $recurrenceKey }}" @selected($draftCycleType === $recurrenceKey)>{{ $recurrenceLabel }}</option>
                                         @endforeach
                                     </select>
                                     <p class="tich-caption">Weekly and monthly classes are only one posting of many in the semester, so say which week or month they start and, when they only run for a stretch of the semester, which one they end.</p>
                                 </div>
                                 <div class="tich-form-group" id="timetable-session-cycle-group">
                                     <label class="tich-label" for="timetable-session-cycle" id="timetable-session-cycle-label">{{ $cycleLabel }}</label>
-                                    <input type="number" id="timetable-session-cycle" name="week_no" class="tich-input" min="1" max="60" placeholder="e.g. 1">
-                                    <p class="tich-caption">Leave empty when the same slots run for the whole semester.</p>
+                                    <input type="number" id="timetable-session-cycle" name="week_no" class="tich-input" min="1" max="60" placeholder="e.g. 1"
+                                        value="{{ $draftCycleNo }}" @if ($draftCycleType) readonly @endif>
+                                    <p class="tich-caption">{{ $draftCycleType ? 'Locked to this timetable - every class you add here belongs to '.$cycleLabel.' '.$draftCycleNo.', so nothing lands on another posting.' : 'Leave empty when the same slots run for the whole semester.' }}</p>
                                 </div>
                                 @if ($timetableKind === 'lesson')
-                                    <div class="tich-form-group" id="timetable-session-cycle-to-group">
+                                    <div class="tich-form-group" id="timetable-session-cycle-to-group" @if ($draftCycleType) style="display:none;" @endif>
                                         <label class="tich-label" for="timetable-session-cycle-to" id="timetable-session-cycle-to-label">{{ $cycleToLabel }}</label>
                                         <input type="number" id="timetable-session-cycle-to" name="week_to" class="tich-input" min="1" max="60" placeholder="e.g. 5">
                                         <p class="tich-caption">Fill both to say the class runs from week 1 to week 5, or month 1 to month 3. Leave empty when it is only the one week or month.</p>
@@ -703,6 +847,7 @@
                             recurrence: 'timetable-session-recurrence',
                             week_no: 'timetable-session-cycle',
                             week_to: 'timetable-session-cycle-to',
+                            session_date: 'timetable-session-date',
                             contact_hours: 'timetable-session-hours'
                         };
                         var type = document.getElementById(fields.session_type);
@@ -716,6 +861,7 @@
                         var cycleLabel = document.getElementById('timetable-session-cycle-label');
                         var cycleToLabel = document.getElementById('timetable-session-cycle-to-label');
                         var isLesson = @json($timetableKind === 'lesson');
+                        var dateField = document.getElementById('timetable-session-date');
                         var everyDay = document.getElementById('timetable-session-every-day');
                         var everyDayGroup = document.getElementById('timetable-session-every-day-group');
                         var sharedTypes = ['break', 'lunch', 'orientation'];
@@ -735,6 +881,10 @@
                             if (!everyDay) return;
 
                             everyDay.checked = sharedTypes.indexOf(type ? type.value : '') > -1;
+
+                            // One date cannot cover five days, so the box only counts when the class
+                            // is posted on a single day.
+                            if (dateField) dateField.disabled = !!everyDay.checked;
                         }
 
                         function syncCycle() {
@@ -900,6 +1050,18 @@
                             openBtn.addEventListener('click', function () {
                                 panel.open = true;
                                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            });
+                        }
+
+                        // The header button is how most officers reach the form, so it has to land on a
+                        // blank add - not on whichever class was last picked for editing.
+                        var addBtn = document.getElementById('timetable-session-open');
+                        if (addBtn) {
+                            addBtn.addEventListener('click', function () {
+                                panel.open = true;
+                                resetToAdd();
+                                panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                if (unit) unit.focus();
                             });
                         }
                         form.addEventListener('submit', function () {

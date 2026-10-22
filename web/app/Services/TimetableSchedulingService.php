@@ -122,6 +122,81 @@ class TimetableSchedulingService
         return array_key_exists($kind, self::timetableKinds()) ? $kind : 'lesson';
     }
 
+    /**
+     * The timetables an officer can switch between for one year and semester of an intake. A year
+     * runs more than one posting - week 1, week 2, a month, the whole semester - so each keeps its
+     * own row instead of replacing the last one.
+     *
+     * @return Collection<int, ProgramTimetable>
+     */
+    public function timetablesInScope(
+        int $programId,
+        ?int $curriculumVersionId,
+        int $teachingPeriod,
+        string $timetableKind = 'lesson'
+    ): Collection {
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        return ProgramTimetable::query()
+            ->where('program_id', $programId)
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('teaching_period', $teachingPeriod)
+            ->whereIn('timetable_kind', $timetableKind === 'supplementary' ? ['supplementary', 'special_exam'] : [$timetableKind])
+            ->where('status', '!=', 'archived')
+            ->orderByRaw('cycle_no is null')
+            ->orderBy('cycle_no')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * Every timetable this intake has, whichever year, semester, kind, week or month it covers -
+     * including archived ones, so nothing the officer built is lost to them.
+     *
+     * @return Collection<int, ProgramTimetable>
+     */
+    public function timetablesForPicker(int $programId, ?int $curriculumVersionId): Collection
+    {
+        return ProgramTimetable::query()
+            ->withCount('sessions')
+            ->where('program_id', $programId)
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->orderBy('teaching_period')
+            ->orderBy('timetable_kind')
+            ->orderByRaw('cycle_no is null')
+            ->orderBy('cycle_no')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * The timetable to show: the one the officer picked, when it belongs to this year and semester,
+     * otherwise the newest one in scope.
+     */
+    public function timetableForDisplay(
+        int $programId,
+        ?int $curriculumVersionId,
+        int $teachingPeriod,
+        string $timetableKind = 'lesson',
+        ?int $timetableId = null
+    ): ?ProgramTimetable {
+        if ($timetableId) {
+            $picked = ProgramTimetable::query()
+                ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
+                ->whereKey($timetableId)
+                ->where('program_id', $programId)
+                ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+                ->where('teaching_period', $teachingPeriod)
+                ->first();
+
+            if ($picked) {
+                return $picked;
+            }
+        }
+
+        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
+    }
+
     public function latestTimetable(
 
         int $programId,
@@ -236,6 +311,9 @@ class TimetableSchedulingService
 
     ): Collection {
 
+        // Every posting of the semester is returned - week 1, week 2, month 1 and the
+        // whole-semester timetable all stay separate so each group sees what applies to them.
+
         return ProgramTimetable::query()
 
             ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
@@ -250,13 +328,13 @@ class TimetableSchedulingService
 
             ->orderBy('timetable_kind')
 
+            ->orderByRaw('cycle_no is null')
+
+            ->orderBy('cycle_no')
+
             ->orderByDesc('published_at')
 
-            ->get()
-
-            ->unique('timetable_kind')
-
-            ->values();
+            ->get();
 
     }
 
@@ -273,14 +351,32 @@ class TimetableSchedulingService
         int $teachingPeriod,
         string $timetableKind = 'lesson',
         ?string $title = null,
-        ?Request $request = null
+        ?Request $request = null,
+        ?string $cycleType = null,
+        ?int $cycleNo = null,
+        ?int $copyFromTimetableId = null
     ): ProgramTimetable {
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
+        $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
+        $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
 
-        $existing = $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind);
+        // A cycle is its own timetable, so week 2 does not overwrite week 1. Without a cycle the
+        // officer is simply reopening the timetable this semester already has.
+        $existing = $cycleType
+            ? ProgramTimetable::query()
+                ->where('program_id', $program->id)
+                ->where('curriculum_version_id', $intake->id)
+                ->where('teaching_period', $teachingPeriod)
+                ->where('timetable_kind', $timetableKind)
+                ->where('cycle_type', $cycleType)
+                ->when($cycleNo, fn ($query) => $query->where('cycle_no', $cycleNo))
+                ->where('status', '!=', 'archived')
+                ->orderByDesc('id')
+                ->first()
+            : $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind);
 
         if ($existing && $existing->status !== 'archived') {
-            return $existing;
+            return $existing->loadMissing(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
         }
 
         $template = $this->templates->templateForProgram($program->id);
@@ -291,13 +387,20 @@ class TimetableSchedulingService
         }
 
         $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
+        $defaultTitle = $kindLabel.' - '.$program->periodLabel($teachingPeriod);
+
+        if ($cycleNo) {
+            $defaultTitle .= ' - '.($cycleType === 'monthly' ? 'Month' : 'Week').' '.$cycleNo;
+        }
 
         $timetable = ProgramTimetable::query()->create([
             'program_id' => $program->id,
             'curriculum_version_id' => $intake->id,
             'teaching_period' => $teachingPeriod,
-            'title' => $title ?: $kindLabel.' - Semester '.$teachingPeriod,
+            'title' => $title ?: $defaultTitle,
             'timetable_kind' => $timetableKind,
+            'cycle_type' => $cycleType,
+            'cycle_no' => $cycleNo,
             'template_id' => $template->id,
             'status' => 'draft',
             'source' => 'manual',
@@ -305,6 +408,14 @@ class TimetableSchedulingService
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        $copied = $copyFromTimetableId
+            ? $this->copySessions($timetable, $copyFromTimetableId, $program->id, $teachingPeriod, $cycleNo)
+            : 0;
+
+        if ($copied > 0) {
+            $timetable->update(['generation_notes' => 'Copied '.$copied.' class(es) from the previous '.$timetable->cycleWord().' timetable.']);
+        }
 
         $this->auditService->log(
             'academics.timetable.started',
@@ -324,6 +435,59 @@ class TimetableSchedulingService
         );
 
         return $timetable->load(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
+    }
+
+    /**
+     * Carry the classes of one posting into the next one - the same rooms, lecturers and hours,
+     * only moved to the new week or month.
+     *
+     * @return int how many classes were carried over
+     */
+    private function copySessions(
+        ProgramTimetable $timetable,
+        int $copyFromTimetableId,
+        int $programId,
+        int $teachingPeriod,
+        ?int $cycleNo
+    ): int {
+        $source = ProgramTimetable::query()
+            ->whereKey($copyFromTimetableId)
+            ->where('program_id', $programId)
+            ->where('teaching_period', $teachingPeriod)
+            ->first();
+
+        if (! $source) {
+            return 0;
+        }
+
+        $count = 0;
+
+        foreach ($source->sessions as $row) {
+            ProgramTimetableSession::query()->create([
+                'program_timetable_id' => $timetable->id,
+                'unit_id' => $row->unit_id,
+                'staff_id' => $row->staff_id,
+                'room_id' => $row->room_id,
+                'day_of_week' => $row->day_of_week,
+                'start_time' => $row->start_time,
+                'end_time' => $row->end_time,
+                'session_type' => $row->session_type,
+                'title' => $row->title,
+                'venue' => $row->venue,
+                'class_group' => $row->class_group,
+                'segment_id' => $row->segment_id,
+                'delivery_mode' => $row->delivery_mode,
+                'recurrence' => $row->recurrence,
+                'week_no' => $cycleNo ?: $row->week_no,
+                'week_to' => $cycleNo ? null : $row->week_to,
+                'contact_hours' => $row->contact_hours,
+                'source' => $row->source,
+            ]);
+
+            $count++;
+        }
+
+        return $count;
     }
 
     public function generate(
@@ -632,6 +796,19 @@ class TimetableSchedulingService
         // A semester timetable moves every week or two, so a published one stays editable.
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
 
+        // A timetable that names its own week or month stamps the classes inside it, so a class
+        // cannot be posted into the wrong cycle by accident.
+        if (in_array($timetable->cycle_type, ['weekly', 'monthly'], true) && $timetable->cycle_no) {
+            if (($data['recurrence'] ?? null) === null || $data['recurrence'] === 'weekly') {
+                $data['recurrence'] = $timetable->cycle_type;
+            }
+
+            if (empty($data['week_no'])) {
+                $data['week_no'] = $timetable->cycle_no;
+                $data['week_to'] = null;
+            }
+        }
+
         $payload = [
             'program_timetable_id' => $timetable->id,
             'unit_id' => $this->referenceOrNull($data['unit_id'] ?? null),
@@ -639,6 +816,7 @@ class TimetableSchedulingService
             'room_id' => $this->referenceOrNull($data['room_id'] ?? null),
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
+            'session_date' => empty($data['session_date']) ? null : $data['session_date'],
             'session_type' => $data['session_type'] ?? 'lesson',
             'delivery_mode' => $data['delivery_mode'] ?? 'physical',
             'recurrence' => $data['recurrence'] ?? 'weekly',
@@ -655,6 +833,11 @@ class TimetableSchedulingService
         $days = empty($data['every_day'])
             ? [(int) $data['day_of_week']]
             : $this->teachingDays($timetable);
+
+        // One date belongs to one day, so a slot posted across the week carries none of them.
+        if (count($days) > 1) {
+            $payload['session_date'] = null;
+        }
 
         $sessions = collect($days)->map(
             fn (int $day) => ProgramTimetableSession::create($payload + ['day_of_week' => $day])
@@ -708,7 +891,7 @@ class TimetableSchedulingService
         abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
 
         $original = $session->only([
-            'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time',
+            'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time', 'session_date',
             'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
         ]);
 
@@ -719,6 +902,9 @@ class TimetableSchedulingService
             'day_of_week' => (int) $data['day_of_week'],
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
+            'session_date' => array_key_exists('session_date', $data)
+                ? (empty($data['session_date']) ? null : $data['session_date'])
+                : $session->session_date,
             'session_type' => $data['session_type'] ?? $session->session_type,
             'delivery_mode' => $data['delivery_mode'] ?? $session->delivery_mode ?? 'physical',
             'recurrence' => $data['recurrence'] ?? $session->recurrence ?? 'weekly',

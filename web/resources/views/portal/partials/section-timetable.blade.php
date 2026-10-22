@@ -16,7 +16,7 @@
     })->values();
 @endphp
 
-<x-page-toolbar :title="$tabTitles[$timetableTab] ?? 'Timetable'" :meta="'Semester '.$timetableData['teaching_period']" />
+<x-page-toolbar :title="$tabTitles[$timetableTab] ?? 'Timetable'" :meta="$timetableData['period_label'] ?? ('Semester '.$timetableData['teaching_period'])" />
 
 @if ($timetableData['is_provisional'])
     <div class="tich-notice tich-notice--info tich-mt-4">
@@ -50,8 +50,16 @@
         <article class="tich-card tich-mt-8">
             <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:start;">
                 <div>
-                    <h2 class="tich-h3">{{ $timetable->displayTitle() }}</h2>
-                    <p class="tich-caption tich-mt-2">{{ ucfirst($timetable->status) }}</p>
+                    <h2 class="tich-h3">
+                        {{ $timetable->displayTitle() }}
+                        @if ($timetable->cycleLabel() && $visibleTimetables->count() > 1)
+                            <span class="tich-badge tich-badge--info" style="font-size:0.72rem;">{{ $timetable->cycleLabel() }}</span>
+                        @endif
+                        @if ((int) $timetableData['timetable']?->id === (int) $timetable->id)
+                            <span class="tich-badge tich-badge--success" style="font-size:0.72rem;">Applies now</span>
+                        @endif
+                    </h2>
+                    <p class="tich-caption tich-mt-2">{{ $timetableData['period_label'] ?? ('Semester '.$timetableData['teaching_period']) }} · {{ ucfirst($timetable->status) }}</p>
                 </div>
                 @if ($timetable->sessions->isNotEmpty())
                     <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">

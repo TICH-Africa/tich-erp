@@ -103,7 +103,7 @@
             <div>
                 <h2 class="tich-h3">{{ $selectedIntake->intakeLabel() }} - units by {{ $program->usesBlocks() ? 'block' : 'semester' }}</h2>
                 <p class="tich-text">
-                    {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} for this intake.
+                    {{ $scheduledPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} for this intake.
                     @if ($intakeEditable)
                         Expand a {{ $program->usesBlocks() ? 'block' : 'semester' }} to set dates and manage units, then save.
                     @else
@@ -214,7 +214,7 @@
                         <span class="tich-semester-accordion__heading">
                             <span class="tich-semester-accordion__title">{{ $period['label'] }}</span>
                             @if (! $program->usesBlocks())
-                                <span class="tich-semester-accordion__meta">Semester {{ $period['semester'] }} of {{ $totalTeachingPeriods }}</span>
+                                <span class="tich-semester-accordion__meta">{{ $program->periodLabel((int) $period['semester']) }} · semester {{ $period['semester'] }} of {{ $scheduledPeriods }}</span>
                             @endif
                         </span>
                         <span class="tich-semester-accordion__summary">
@@ -370,6 +370,7 @@
                                                                 <div class="tich-catalog-alloc-card__meta">
                                                                     {{ $currentAllocation->semester?->displayLabel() }}
                                                                     · {{ $currentAllocation->campus?->campus_name }}
+                                                                    · {{ $currentAllocation->contact_hours_assigned ?: 0 }} contact hours
                                                                     @if ($currentAllocation->is_coordinator)
                                                                         · <strong>Coordinator</strong>
                                                                     @endif
@@ -387,11 +388,10 @@
                                                             <span class="tich-caption">No lecturer assigned</span>
                                                         @endif
                                                         <details class="tich-catalog-assign">
-                                                            <summary>{{ $currentAllocation ? 'Change lecturer' : '+ Assign lecturer' }}</summary>
-                                                            <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($hub, ['program' => $program->id])) }}" class="tich-catalog-assign__body">
+                                                            <summary>{{ ($currentAllocation ? 'Change lecturer on ' : 'Assign lecturer to ').($map->unit?->unit_code ?? 'unit') }}</summary>
+                                                            <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($hub, ['program' => $program->id, 'unit' => $map->unit_id])) }}" class="tich-catalog-assign__body">
                                                                 @csrf
                                                                 <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
-                                                                <input type="hidden" name="unit_id" value="{{ $map->unit_id }}">
                                                                 <input type="hidden" name="teaching_period" value="{{ $period['semester'] ?? $map->semester }}">
                                                                 <input type="hidden" name="section" value="semesters">
                                                                 @if ($learningDepartment)
@@ -419,7 +419,8 @@
                                                                 </div>
                                                                 <div class="tich-form-group" style="margin:0;">
                                                                     <label class="tich-label">Contact hours</label>
-                                                                    <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ $map->contact_hours ?: 4 }}" min="0">
+                                                                    <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ $map->contact_hours ?: ($map->unit?->contact_hours ?: 0) }}" min="0">
+                                                                    <p class="tich-caption">Fetched from {{ $map->unit?->unit_code }}'s hours on this intake - edit if this lecturer carries a different load.</p>
                                                                 </div>
                                                                 <label class="tich-label"><input type="checkbox" name="is_coordinator" value="1" @checked($currentAllocation?->is_coordinator)> Unit coordinator</label>
                                                                 <button type="submit" class="tich-btn tich-btn-primary" @disabled($allocationStaffList->isEmpty())>Save allocation</button>

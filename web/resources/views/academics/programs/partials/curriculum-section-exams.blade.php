@@ -29,7 +29,7 @@
         <x-slot:filters>
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-page-toolbar__filters-form">
                 <select name="teaching_period" class="tich-input tich-input--compact" onchange="this.form.submit()">
-                    @foreach (range(1, $totalTeachingPeriods) as $periodNumber)
+                    @foreach (range(1, $scheduledPeriods) as $periodNumber)
                         @php
                             $periodUnitCount = $mappings->where('semester', $periodNumber)->count();
                         @endphp

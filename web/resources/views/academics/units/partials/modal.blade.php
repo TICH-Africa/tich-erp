@@ -85,7 +85,7 @@
                     $periodOptions = ! empty($periods) && collect($periods)->isNotEmpty()
                         ? collect($periods)->mapWithKeys(fn ($period) => [(int) $period['semester'] => $period['label']])
                         : ($unit->program
-                            ? collect(range(1, $unit->program->totalTeachingPeriods()))
+                            ? collect(range(1, $unit->program->scheduledPeriods()))
                                 ->mapWithKeys(fn (int $number) => [$number => $unit->program->periodLabel($number)])
                             : collect());
 

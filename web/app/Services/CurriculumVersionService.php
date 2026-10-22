@@ -353,7 +353,7 @@ class CurriculumVersionService
             return $keyed;
         }
 
-        foreach (range(1, max(1, (int) $version->program->totalTeachingPeriods())) as $semester) {
+        foreach (range(1, max(1, (int) $version->program->scheduledPeriods())) as $semester) {
             $key = $this->periodKey($semester, null);
 
             if ($keyed->has($key)) {

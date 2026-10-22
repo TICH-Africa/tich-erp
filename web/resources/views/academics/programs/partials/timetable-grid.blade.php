@@ -3,7 +3,35 @@
     $editable = $editable ?? false;
     $canEditInvigilator = $canEditInvigilator ?? false;
     $moveSessionUrl = $moveSessionUrl ?? null;
+    $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5));
+    // A dated class is read by date, so each row names the dates it carries under the time.
+    $datesByRowStart = collect($sessions ?? [])
+        ->filter(fn ($session) => ! empty($session->session_date))
+        ->groupBy(fn ($session) => substr((string) $session->start_time, 0, 5))
+        ->map(fn ($group) => $group
+            ->map(fn ($session) => $session->session_date->format('d M'))
+            ->unique()
+            ->values());
     $rows = collect($segments ?? [])->filter(fn ($segment) => $segment->segment_type !== 'break');
+
+    // A bell row that carries neither a time nor a class is noise on a hand-built timetable, so it
+    // is dropped; rows that hold a class always stay.
+    $rows = $rows->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList) {
+        $start = substr((string) $row->start_time, 0, 5);
+
+        if ($start !== '' && $start !== '00:00') {
+            return true;
+        }
+
+        foreach ($activeDayList as $dayNum) {
+            if ($sessionsByDayAndTime->has($dayNum.'|'.$start)) {
+                return true;
+            }
+        }
+
+        return false;
+    })->values();
+
     if ($rows->isEmpty()) {
         $rows = collect($sessions ?? [])->map(fn ($session) => (object) [
             'label' => $session->timeLabel(),
@@ -35,13 +63,15 @@
 
         $rows = $rows->sortBy(fn ($row) => substr((string) $row->start_time, 0, 5))->values();
     }
-    $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5));
     $typeClasses = [
         'lesson' => 'is-lesson',
         'exam' => 'is-exam',
         'supplementary' => 'is-supplementary',
         'special_exam' => 'is-special-exam',
         'break' => 'is-break',
+        // Lunch rest belongs to everybody at the same hour, so it reads like a break rather than
+        // as an unclassified block.
+        'lunch' => 'is-break',
         'other' => 'is-other',
     ];
 @endphp
@@ -84,7 +114,12 @@
                     </tr>
                 @else
                     <tr>
-                        <td class="tich-timetable-grid__time">{{ $segment->label }}@if (($segment->segment_type ?? '') !== 'slot')<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span>@endif</td>
+                        <td class="tich-timetable-grid__time">{{ $segment->label }}@if (($segment->segment_type ?? '') !== 'slot')<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span>@endif
+                            @php $rowDates = $datesByRowStart->get(substr((string) $segment->start_time, 0, 5), collect()); @endphp
+                            @if ($rowDates->isNotEmpty())
+                                <br><span class="tich-caption tich-timetable-grid__dates">{{ $rowDates->implode(' · ') }}</span>
+                            @endif
+                        </td>
                         @foreach ($dayLabels as $dayNum => $dayLabel)
                             @if (! in_array($dayNum, $activeDayList, true))
                                 @continue
@@ -123,6 +158,9 @@
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
                                         @elseif ($session->venue)
                                             <span class="tich-caption">{{ $session->venue }}</span>
+                                        @endif
+                                        @if ($session->session_date)
+                                            <span class="tich-caption">{{ $session->session_date->format('d M Y') }}</span>
                                         @endif
                                         @if ($session->staff)
                                             <span class="tich-caption">{{ $canEditInvigilator ? 'Invigilator: ' : '' }}{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>

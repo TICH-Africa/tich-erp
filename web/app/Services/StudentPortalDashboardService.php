@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
 use App\Models\MpesaStkRequest;
 use App\Models\Student;
 use App\Services\Finance\MpesaSettingsService;
@@ -214,8 +215,17 @@ class StudentPortalDashboardService
         $period = $academics['current_period'] ?? null;
         $currentSemester = $academics['current_semester'] ?? null;
         $registrations = collect($academics['registrations'] ?? []);
+        $program = $student->program;
+
+        // The year of study decides which semesters belong to this student, so a second-year is
+        // never handed the first-year schedule that shares the same intake.
+        $yearOfStudy = $program
+            ? app(StudentUnitRegistrationService::class)->yearOfStudy($student, $program, $curriculum)
+            : null;
+        $yearPeriods = $this->yearPeriodRange($program, $yearOfStudy['year'] ?? null);
 
         $candidatePeriods = collect([
+            $yearOfStudy['period'] ?? null,
             $period?->semester,
             $currentSemester?->semester_number ?? null,
             $registrations->first()?->semester_number ?? null,
@@ -247,8 +257,9 @@ class StudentPortalDashboardService
             }
 
             if ($timetables->isEmpty()) {
-                $timetables = $this->resolveLatestPublishedTimetables($programId, $curriculumId, $campusId);
-                if ($timetables->isNotEmpty()) {
+                $found = $this->resolveLatestPublishedTimetables($programId, $curriculumId, $campusId, $yearPeriods);
+                if ($found->isNotEmpty()) {
+                    $timetables = $found;
                     $teachingPeriod = (int) ($timetables->first()->teaching_period ?: $teachingPeriod);
                 }
             }
@@ -262,7 +273,7 @@ class StudentPortalDashboardService
             }
         }
 
-        $primary = $timetables->firstWhere('timetable_kind', 'lesson') ?? $timetables->first();
+        $primary = $this->currentPosting($timetables, $period, $teachingPeriod);
         $template = $primary?->template?->load(['segments', 'days']);
 
         return [
@@ -274,8 +285,70 @@ class StudentPortalDashboardService
             'segment_types' => TimetableTemplateService::segmentTypes(),
             'active_days' => $template?->activeDayNumbers() ?? [1, 2, 3, 4, 5],
             'teaching_period' => $teachingPeriod,
+            'period_label' => $program ? $program->periodLabel($teachingPeriod) : 'Semester '.$teachingPeriod,
+            'year_of_study' => $yearOfStudy['year'] ?? null,
             'is_provisional' => $isProvisional,
         ];
+    }
+
+    /**
+     * The teaching periods that belong to one year of study.
+     *
+     * @return array{first: int, last: int}|null
+     */
+    private function yearPeriodRange(?AcademicProgram $program, ?int $year = null): ?array
+    {
+        if (! $program || ! $year) {
+            return null;
+        }
+
+        $terms = max(1, (int) $program->termsPerYear());
+        $first = (($year - 1) * $terms) + 1;
+
+        // The year, not the programme's configured duration, bounds the range - a cohort pushed on
+        // to Year 2 of a one-year programme record still has that year's semesters.
+        return [
+            'first' => $first,
+            'last' => $first + $terms - 1,
+        ];
+    }
+
+    /**
+     * The posting that applies today: this week's timetable when the semester runs one per week,
+     * otherwise this month's, otherwise the timetable that covers the whole semester.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>  $timetables
+     */
+    private function currentPosting(Collection $timetables, mixed $period, int $teachingPeriod): ?\App\Models\ProgramTimetable
+    {
+        $lessons = $timetables->filter(fn ($timetable) => $timetable->timetable_kind === 'lesson')->values();
+        $candidate = $lessons->isNotEmpty() ? $lessons : $timetables->values();
+
+        $start = $period && (int) $period->semester === $teachingPeriod && method_exists($period, 'effectiveLearningStart')
+            ? $period->effectiveLearningStart()
+            : null;
+
+        if ($start) {
+            $elapsedDays = max(0, (int) floor($start->diffInDays(now(), false)));
+            $week = intdiv($elapsedDays, 7) + 1;
+            $month = $start->diffInMonths(now()) + 1;
+
+            $byWeek = $candidate->first(fn ($timetable) => $timetable->cycle_type === 'weekly' && (int) $timetable->cycle_no === $week);
+
+            if ($byWeek) {
+                return $byWeek;
+            }
+
+            $byMonth = $candidate->first(fn ($timetable) => $timetable->cycle_type === 'monthly' && (int) $timetable->cycle_no === $month);
+
+            if ($byMonth) {
+                return $byMonth;
+            }
+        }
+
+        return $candidate->first(fn ($timetable) => in_array($timetable->cycle_type, [null, '', 'semester'], true))
+            ?? $candidate->first(fn ($timetable) => $timetable->sessions->isNotEmpty())
+            ?? $candidate->first();
     }
 
     /**
@@ -283,29 +356,10 @@ class StudentPortalDashboardService
      */
     private function resolvePublishedTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
     {
-        $kinds = array_keys(TimetableSchedulingService::timetableKinds());
-        $found = collect();
+        $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, $curriculumId, $teachingPeriod);
 
-        foreach ($kinds as $kind) {
-            $published = $this->timetableScheduling->publishedTimetable(
-                $programId,
-                $curriculumId,
-                $teachingPeriod,
-                $kind
-            );
-
-            if (! $published && $curriculumId) {
-                $published = $this->timetableScheduling->publishedTimetable(
-                    $programId,
-                    null,
-                    $teachingPeriod,
-                    $kind
-                );
-            }
-
-            if ($published) {
-                $found->push($published);
-            }
+        if ($found->isEmpty() && $curriculumId) {
+            $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, null, $teachingPeriod);
         }
 
         if ($campusId && $found->isNotEmpty()) {
@@ -321,12 +375,13 @@ class StudentPortalDashboardService
     /**
      * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
      */
-    private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId): Collection
+    private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId, ?array $yearPeriods = null): Collection
     {
         $query = \App\Models\ProgramTimetable::query()
             ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
             ->where('program_id', $programId)
             ->where('status', 'published')
+            ->when($yearPeriods, fn ($q) => $q->whereBetween('teaching_period', [$yearPeriods['first'], $yearPeriods['last']]))
             ->orderByDesc('teaching_period')
             ->orderByDesc('published_at');
 
@@ -341,8 +396,14 @@ class StudentPortalDashboardService
             $query->orderByRaw('CASE WHEN campus_id = ? THEN 0 ELSE 1 END', [$campusId]);
         }
 
-        return $query->get()
-            ->unique('timetable_kind')
+        // Only the newest semester's postings carry over - all of them, so each week or month the
+        // office published stays visible.
+        $all = $query->get();
+        $newestPeriod = $all->max('teaching_period');
+
+        return $all
+            ->filter(fn ($timetable) => (int) $timetable->teaching_period === (int) $newestPeriod)
+            ->sortBy([['timetable_kind', 'asc'], ['cycle_no', 'asc']])
             ->values();
     }
 
@@ -356,6 +417,9 @@ class StudentPortalDashboardService
             ->where('program_id', $programId)
             ->whereIn('status', ['draft'])
             ->where('teaching_period', $teachingPeriod)
+            ->orderBy('timetable_kind')
+            ->orderByRaw('cycle_no is null')
+            ->orderBy('cycle_no')
             ->orderByDesc('updated_at');
 
         if ($curriculumId) {
@@ -369,9 +433,7 @@ class StudentPortalDashboardService
             $query->orderByRaw('CASE WHEN campus_id = ? THEN 0 ELSE 1 END', [$campusId]);
         }
 
-        return $query->get()
-            ->unique('timetable_kind')
-            ->values();
+        return $query->get()->values();
     }
 
     private function mayViewProvisionalCurriculum(Student $student): bool

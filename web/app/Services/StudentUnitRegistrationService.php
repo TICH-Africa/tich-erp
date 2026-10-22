@@ -238,7 +238,7 @@ class StudentUnitRegistrationService
      * An officer can pin the year on the student record (students.current_year) and that
      * wins, because re-admits, repeats and transfers do not follow the arithmetic.
      *
-     * @return array{year: int, period: int, period_key: string, period_label: string, basis: string, overridden: bool}|null
+     * @return array{year: int, period: int, period_key: string, period_label: string, term: int, terms: int, basis: string, overridden: bool}|null
      */
     public function yearOfStudy(Student $student, AcademicProgram $program, ?CurriculumVersion $intake = null): ?array
     {
@@ -247,8 +247,7 @@ class StudentUnitRegistrationService
         }
 
         $terms = max(1, (int) $program->termsPerYear());
-        $periods = max(1, (int) $program->totalTeachingPeriods());
-        $years = max(1, intdiv($periods, $terms));
+        $years = $program->studyYears();
 
         $pinned = $student->current_year ? (int) $student->current_year : null;
 
@@ -268,7 +267,7 @@ class StudentUnitRegistrationService
         }
 
         $first = (($year - 1) * $terms) + 1;
-        $last = min($first + $terms - 1, $periods);
+        $last = $first + $terms - 1;
         $period = $first;
 
         // A student already sitting a semester inside their own year stays on it.
@@ -285,6 +284,8 @@ class StudentUnitRegistrationService
             'period' => $period,
             'period_key' => 'sem-'.$period,
             'period_label' => $program->periodLabel($period),
+            'term' => (($period - 1) % $terms) + 1,
+            'terms' => $terms,
             'basis' => $basis,
             'overridden' => $pinned !== null,
         ];
@@ -451,7 +452,7 @@ class StudentUnitRegistrationService
                 })
                 ->values(),
             'dueUnits' => $dueUnits,
-            'maxYear' => max(1, intdiv(max(1, (int) $program->totalTeachingPeriods()), max(1, (int) $program->termsPerYear()))),
+            'maxYear' => $program->studyYears(),
         ];
     }
 
@@ -559,33 +560,70 @@ class StudentUnitRegistrationService
     }
 
     /**
-     * Pin the year of study on the student record, overriding the admission arithmetic.
+     * Pin the year and semester of study on the student record, overriding the admission arithmetic.
+     *
+     * The year decides which units the student is due for; the semester decides which one inside
+     * that year they are sitting, so both are written together and the period is auditable.
+     *
+     * @return array{year: int, term: int, period: int, period_label: string, semester_id: int|null}
      */
-    public function pinYear(User $officer, Student $student, AcademicProgram $program, ?int $year, string $reason): int
-    {
-        $years = max(1, intdiv(max(1, (int) $program->totalTeachingPeriods()), max(1, (int) $program->termsPerYear())));
+    public function pinYear(
+        User $officer,
+        Student $student,
+        AcademicProgram $program,
+        CurriculumVersion $intake,
+        int $year,
+        int $term,
+        string $reason,
+    ): array {
+        $years = $program->studyYears();
+        $terms = max(1, (int) $program->termsPerYear());
 
-        if ($year === null || $year < 1 || $year > $years) {
+        if ($year < 1 || $year > $years) {
             throw ValidationException::withMessages([
                 'current_year' => 'Year of study must be between 1 and '.$years.' for '.($program->program_code ?: 'this programme').'.',
             ]);
         }
 
-        $before = $student->current_year;
+        if ($term < 1 || $term > $terms) {
+            throw ValidationException::withMessages([
+                'current_term' => $program->program_code.' runs '.$terms.' semester'.($terms === 1 ? '' : 's').' a year, so the semester must be between 1 and '.$terms.'.',
+            ]);
+        }
 
-        $student->forceFill(['current_year' => $year])->save();
+        $period = (($year - 1) * $terms) + $term;
+        $semesterId = $this->schedule->resolveSemesterId($intake, $period);
+
+        if (! $semesterId) {
+            throw ValidationException::withMessages([
+                'current_term' => 'This intake has no calendar semester for '.$program->periodLabel($period).'. Add it on the Semester units tab first.',
+            ]);
+        }
+
+        $before = ['current_year' => $student->current_year, 'current_semester_id' => $student->current_semester_id];
+
+        $student->forceFill([
+            'current_year' => $year,
+            'current_semester_id' => $semesterId,
+        ])->save();
 
         $this->audits->log(
             action: 'academics.student_year_of_study_pinned',
             entityType: 'students',
             entityId: $student->id,
-            oldValue: ['current_year' => $before],
-            newValue: ['current_year' => $year],
+            oldValue: $before,
+            newValue: ['current_year' => $year, 'current_semester_id' => $semesterId, 'teaching_period' => $period],
             reason: $reason,
             userId: $officer->id,
         );
 
-        return $year;
+        return [
+            'year' => $year,
+            'term' => $term,
+            'period' => $period,
+            'period_label' => $program->periodLabel($period),
+            'semester_id' => (int) $semesterId,
+        ];
     }
 
     /**
@@ -663,7 +701,7 @@ class StudentUnitRegistrationService
      */
     private function periodOptions(AcademicProgram $program): Collection
     {
-        $numbers = range(1, max(1, $program->totalTeachingPeriods()));
+        $numbers = range(1, max(1, $program->scheduledPeriods()));
 
         if ($program->usesBlocks()) {
             $blocks = NursingBlock::query()

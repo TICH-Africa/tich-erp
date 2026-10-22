@@ -125,15 +125,23 @@ trait SerializesStudentPortal
 
         return [
             'teaching_period' => $t['teaching_period'] ?? null,
+            'period_label' => $t['period_label'] ?? null,
+            'year_of_study' => $t['year_of_study'] ?? null,
             'is_provisional' => (bool) ($t['is_provisional'] ?? false),
+            'current_timetable_id' => $t['timetable']?->id ?? null,
             'day_labels' => $t['day_labels'] ?? [],
             'active_days' => $t['active_days'] ?? [1, 2, 3, 4, 5],
-            'timetables' => $timetables->map(function ($tt) {
+            'timetables' => $timetables->map(function ($tt) use ($t) {
                 return [
                     'id' => $tt->id,
                     'kind' => $tt->timetable_kind,
                     'status' => $tt->status,
                     'title' => $tt->title ?? ucfirst((string) $tt->timetable_kind).' timetable',
+                    'display_title' => $tt->displayTitle(),
+                    'cycle_type' => $tt->cycle_type,
+                    'cycle_no' => $tt->cycle_no,
+                    'cycle_label' => $tt->cycleLabel(),
+                    'is_current' => (int) $tt->id === (int) ($t['timetable']?->id ?? 0),
                     'teaching_period' => $tt->teaching_period,
                     'sessions' => collect($tt->sessions ?? [])->map(fn ($s) => [
                         'id' => $s->id,
@@ -145,6 +153,10 @@ trait SerializesStudentPortal
                         'staff_name' => $s->staff?->fullName(),
                         'room' => $s->room?->room_name ?? $s->room?->name,
                         'session_type' => $s->session_type,
+                        'session_date' => $s->session_date?->format('Y-m-d'),
+                        'week_no' => $s->week_no,
+                        'week_to' => $s->week_to,
+                        'recurrence' => $s->recurrence,
                     ])->values()->all(),
                 ];
             })->values()->all(),

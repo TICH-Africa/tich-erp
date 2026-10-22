@@ -14,6 +14,9 @@
     // The period the unit is timetabled in for this intake, so "Assign lecturer" can open on it
     // instead of always defaulting to the first period in the list.
     $unitIntakePeriod = [];
+    // Hours carried on this intake win over the unit's own hours: the same unit can be taught
+    // with a different load on two intakes.
+    $unitIntakeHours = [];
 
     foreach ($mappings as $mapping) {
         $unitScheduleMap[$mapping->unit_id][] = [
@@ -23,6 +26,10 @@
         ];
 
         $unitIntakePeriod[(int) $mapping->unit_id] ??= (int) $mapping->semester;
+
+        if ((float) ($mapping->contact_hours ?? 0) > 0) {
+            $unitIntakeHours[(int) $mapping->unit_id] = (int) $mapping->contact_hours;
+        }
     }
 
     foreach ($catalogAllocations as $unitId => $unitAllocations) {
@@ -174,6 +181,7 @@
                                                     @if ($allocation->is_coordinator)
                                                         · <strong>Coordinator</strong>
                                                     @endif
+                                                    · {{ $allocation->contact_hours_assigned ?: 0 }} contact hours
                                                 </div>
                                                 @can('academics.write')
                                                     <form method="POST" action="{{ route('departments.academics.programs.allocations.destroy', array_merge($catalogHub, ['program' => $program->id, 'unitAllocation' => $allocation->id])) }}" class="tich-mt-2" onsubmit="return confirm('Remove this lecturer allocation?')">
@@ -196,10 +204,9 @@
                                 @can('academics.write')
                                     <details class="tich-catalog-assign" id="unit-assign-{{ $unit->id }}">
                                         <summary>+ Assign lecturer to {{ $unit->unit_code }}</summary>
-                                        <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($catalogHub, ['program' => $program->id])) }}" class="tich-catalog-assign__body">
+                                        <form method="POST" action="{{ route('departments.academics.programs.allocations.store', array_merge($catalogHub, ['program' => $program->id, 'unit' => $unit->id])) }}" class="tich-catalog-assign__body">
                                             @csrf
                                             <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
-                                            <input type="hidden" name="unit_id" value="{{ $unit->id }}">
                                             <p class="tich-caption" style="margin:0 0 0.35rem;">
                                                 Assigning to <strong>{{ $unit->unit_code }} - {{ $unit->unit_name }}</strong>
                                             </p>
@@ -236,8 +243,9 @@
                                             </div>
                                             <div class="tich-form-group" style="margin:0;">
                                                 <label class="tich-label">Contact hours</label>
-                                                <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ (float) ($unit->contact_hours ?? 0) > 0 ? (int) $unit->contact_hours : '' }}" min="0" readonly>
-                                                <p class="tich-caption">Taken from {{ $unit->unit_code }}'s contact hours - change them on the unit, not here.</p>
+                                                @php $fetchHours = $unitIntakeHours[$unit->id] ?? ((float) ($unit->contact_hours ?? 0) > 0 ? (int) $unit->contact_hours : null); @endphp
+                                                <input type="number" name="contact_hours_assigned" class="tich-input" value="{{ $fetchHours }}" min="0">
+                                                <p class="tich-caption">Fetched from {{ $unit->unit_code }}'s {{ isset($unitIntakeHours[$unit->id]) ? 'hours on this intake' : 'contact hours' }} - edit them here if this lecturer carries a different load.</p>
                                             </div>
                                             <label class="tich-label"><input type="checkbox" name="is_coordinator" value="1"> Unit coordinator</label>
                                             <button type="submit" class="tich-btn tich-btn-primary" @disabled($allocationStaffList->isEmpty())>Save allocation</button>

@@ -1434,7 +1434,7 @@ select.tich-select:focus {
 }
 
 .tich-timetable-session.is-break {
-    background: var(--tich-surface-muted);
+    background: var(--tich-surface, #fff);
     border-left-color: var(--tich-neutral-muted);
 }
 

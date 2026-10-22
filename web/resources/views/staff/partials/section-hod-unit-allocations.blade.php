@@ -169,8 +169,8 @@
                                                     @endforeach
                                                 </select>
                                                 <label class="tich-label" for="hours-{{ $mapping->id }}">Contact hours</label>
-                                                <input id="hours-{{ $mapping->id }}" class="tich-input" type="number" min="0" name="contact_hours_assigned" value="{{ $mapping->contact_hours ?: $mapping->unit?->contact_hours }}" readonly>
-                                                <p class="tich-caption">Taken from {{ $mapping->unit?->unit_code }}'s contact hours on this intake.</p>
+                                                <input id="hours-{{ $mapping->id }}" class="tich-input" type="number" min="0" name="contact_hours_assigned" value="{{ $mapping->contact_hours ?: $mapping->unit?->contact_hours }}">
+                                                <p class="tich-caption">Fetched from {{ $mapping->unit?->unit_code }}'s contact hours on this intake - edit them here if this lecturer carries a different load.</p>
                                                 <label><input type="checkbox" name="is_coordinator" value="1"> Unit coordinator</label>
                                                 <button type="submit" class="tich-btn tich-btn-primary">Send for approval</button>
                                             </form>

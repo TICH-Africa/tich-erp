@@ -3,10 +3,31 @@
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
         fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5)
     );
+    $datesByRowStart = collect($sessions ?? [])
+        ->filter(fn ($session) => ! empty($session->session_date))
+        ->groupBy(fn ($session) => substr((string) $session->start_time, 0, 5))
+        ->map(fn ($group) => $group
+            ->map(fn ($session) => $session->session_date->format('d M'))
+            ->unique()
+            ->values());
 
     // The printed page must show the same classes the screen shows, including any timed outside the
     // bell slots, so those get their own row here too.
-    $printRows = collect($segments ?? []);
+    $printRows = collect($segments ?? [])->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList) {
+        $start = substr((string) $row->start_time, 0, 5);
+
+        if ($start !== '' && $start !== '00:00') {
+            return true;
+        }
+
+        foreach ($activeDayList as $dayNum) {
+            if ($sessionsByDayAndTime->has($dayNum.'|'.$start)) {
+                return true;
+            }
+        }
+
+        return false;
+    });
     $rowStarts = $printRows->map(fn ($row) => substr((string) $row->start_time, 0, 5));
 
     foreach ($sessions ?? [] as $session) {
@@ -51,6 +72,10 @@
                     <td class="tich-doc-timetable-grid__time">
                         {{ $segment->label ?? 'Slot' }}<br>
                         <span style="font-weight:normal;color:#64748b;">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : '' }}</span>
+                        @php $printRowDates = $datesByRowStart->get(substr((string) $segment->start_time, 0, 5), collect()); @endphp
+                        @if ($printRowDates->isNotEmpty())
+                            <br><span style="font-weight:normal;color:#64748b;">{{ $printRowDates->implode(' · ') }}</span>
+                        @endif
                     </td>
                     @foreach ($dayLabels as $dayNum => $dayLabel)
                         @if (! in_array($dayNum, $activeDayList, true))
@@ -71,6 +96,9 @@
                                         <span>{{ $session->room->room_code }}</span>
                                     @elseif ($session->venue)
                                         <span>{{ $session->venue }}</span>
+                                    @endif
+                                    @if ($session->session_date)
+                                        <span>{{ $session->session_date->format('d M Y') }}</span>
                                     @endif
                                     @if ($session->staff)
                                         <span>{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>

@@ -34,7 +34,7 @@
                     <div class="tich-form-group">
                         <label class="tich-label">Total teaching periods</label>
                         <input type="text" class="tich-input" value="{{ $totalTeachingPeriods }}" disabled>
-                        <p class="tich-caption tich-mt-2">{{ $programYears }} year(s) × {{ $termsPerYear }} term(s)/year</p>
+                        <p class="tich-caption tich-mt-2">{{ $programYears }} year(s) × {{ $termsPerYear }} term(s)/year. The curriculum, semester and timetable screens list {{ $scheduledPeriods }} semesters - Years 1 to {{ $program->studyYears() }} - so a cohort moving up still has its own year.</p>
                     </div>
                 @endif
             </div>
@@ -56,7 +56,7 @@
             <p class="tich-caption tich-mt-4">No published intake curriculum yet.</p>
         @endif
 
-        <p class="tich-caption tich-mt-4">Each intake gets the same {{ $totalTeachingPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} because cohorts overlap.</p>
+        <p class="tich-caption tich-mt-4">Each intake gets the same {{ $scheduledPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} - Years 1 to {{ $program->studyYears() }} - because cohorts overlap.</p>
 
         <p class="tich-mt-4">
             <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'timetable', 'intake' => $selectedIntake?->id])) }}" class="tich-btn tich-btn-secondary">Open timetable builder</a>

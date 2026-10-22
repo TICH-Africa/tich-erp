@@ -349,7 +349,7 @@ class UnitAllocationService
             return collect();
         }
 
-        $semesterIds = collect(range(1, $program->totalTeachingPeriods()))
+        $semesterIds = collect(range(1, $program->scheduledPeriods()))
             ->map(fn (int $period) => app(ExamScheduleSyncService::class)->resolveSemesterId($intake, $period))
             ->filter()
             ->unique()

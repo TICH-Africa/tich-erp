@@ -139,7 +139,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'semester' => $block->block_order,
                 'block_id' => $block->id,
             ])
-            : collect(range(1, $program->totalTeachingPeriods()))->map(fn (int $number) => [
+            : collect(range(1, $program->scheduledPeriods()))->map(fn (int $number) => [
                 'key' => 'sem-'.$number,
                 'label' => $program->periodLabel($number),
                 'semester' => $number,
@@ -149,6 +149,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $enrolledStudents = ['matched' => collect(), 'other' => collect()];
         $enrolledSummaries = collect();
         $enrolledYears = collect();
+        $timetableYearCounts = collect();
         $expandedStudentRecord = null;
         $studentRegistration = null;
         $studentCorrections = null;
@@ -205,14 +206,28 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             }
         }
 
+        if ($section === 'timetable' && $selectedIntake) {
+            // The years offered on the timetable page come from the admission records, so Year 2
+            // means the students actually sitting Year 2 rather than a guess from the intake label.
+            $timetableRoster = $this->studentAcademicRecords->enrolledForProgram($program, $selectedIntake);
+
+            $timetableYearCounts = $this->studentRegistrations
+                ->yearsForRoster($timetableRoster['matched']->merge($timetableRoster['other']), $program, $selectedIntake)
+                ->countBy(fn (array $year) => (int) $year['year'])
+                ->sortKeys();
+        }
+
         return view('academics.programs.curriculum', [
             'department' => $hub,
             'learningDepartment' => $learningDepartment,
             'program' => $program,
             'periods' => $periods,
             'totalTeachingPeriods' => $program->totalTeachingPeriods(),
+            'scheduledPeriods' => $program->scheduledPeriods(),
             'termsPerYear' => $program->termsPerYear(),
             'programYears' => $program->programYears(),
+            'timetablePeriods' => $this->timetablePeriodSpan($program, $mappings, $selectedIntake, $timetableYearCounts),
+            'timetableYearCounts' => $timetableYearCounts,
             'intakes' => $intakes,
             'selectedIntake' => $selectedIntake,
             'mappings' => $mappings,
@@ -275,7 +290,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 )
                 : collect(),
             'timetableDraft' => ($section === 'timetable' && $selectedIntake)
-                ? $this->timetableScheduling->latestTimetable(
+                ? $this->timetableScheduling->timetableForDisplay(
+                    $program->id,
+                    $selectedIntake->id,
+                    $request->integer('teaching_period') ?: 1,
+                    $this->timetableScheduling->normalizeTimetableKind(
+                        in_array($request->string('timetable_kind')->toString(), array_merge(array_keys(TimetableSchedulingService::timetableKinds()), ['special_exam']), true)
+                            ? $request->string('timetable_kind')->toString()
+                            : 'lesson'
+                    ),
+                    $request->integer('timetable') ?: null
+                )
+                : null,
+            'timetablesInScope' => ($section === 'timetable' && $selectedIntake)
+                ? $this->timetableScheduling->timetablesInScope(
                     $program->id,
                     $selectedIntake->id,
                     $request->integer('teaching_period') ?: 1,
@@ -285,7 +313,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                             : 'lesson'
                     )
                 )
-                : null,
+                : collect(),
+            'timetableChoices' => $section === 'timetable'
+                ? $this->timetableScheduling->timetablesForPicker($program->id, $selectedIntake?->id)
+                : collect(),
             'timetableKinds' => TimetableSchedulingService::timetableKinds(),
             'timetableRooms' => $section === 'timetable'
                 ? Room::query()->with('campus')->where('is_active', 1)->orderBy('room_code')->get()
@@ -561,6 +592,17 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:200'],
             'timetable_kind' => ['nullable', 'in:'.implode(',', array_keys(TimetableSchedulingService::timetableKinds()))],
+            'cycle_type' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetable::cycleTypes()))],
+            'cycle_no' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => in_array($request->string('cycle_type')->toString(), ['weekly', 'monthly'], true)),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:60',
+            ],
+            'copy_from' => ['nullable', 'integer'],
+        ], [
+            'cycle_no.required_with' => 'Say which week or month this timetable covers.',
         ]);
 
         $teachingPeriod = $request->integer('teaching_period') ?: 1;
@@ -573,10 +615,21 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $teachingPeriod,
             $timetableKind,
             $validated['title'] ?? null,
-            $request
+            $request,
+            $validated['cycle_type'] ?? null,
+            isset($validated['cycle_no']) ? (int) $validated['cycle_no'] : null,
+            isset($validated['copy_from']) ? (int) $validated['copy_from'] : null
         );
 
-        return $this->timetableRedirect($request, $timetable, 'Timetable opened empty - add the classes as the school runs them.');
+        $cycle = $timetable->cycleLabel();
+
+        return $this->timetableRedirect(
+            $request,
+            $timetable,
+            $cycle
+                ? 'Opened the '.$cycle.' timetable - its classes are stamped with it, so nothing lands on another week.'
+                : 'Timetable opened empty - add the classes as the school runs them.'
+        );
     }
 
     public function generateTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
@@ -675,6 +728,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
             'every_day' => ['nullable', 'boolean'],
+            'session_date' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -725,6 +779,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'recurrence' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetableSession::recurrences()))],
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
+            'session_date' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -800,6 +855,30 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     /**
      * Every timetable write lands back on the same tab, scrolled to the grid it just changed.
      */
+    /**
+     * How far the timetable page offers years and semesters. The programme's own duration sets the
+     * floor, but a unit mapped - or a timetable already posted - for a later semester must never
+     * hide the year it belongs to.
+     */
+    private function timetablePeriodSpan(AcademicProgram $program, Collection $mappings, ?CurriculumVersion $intake, Collection $yearCounts = new Collection): int
+    {
+        $span = max(1, (int) $program->scheduledPeriods());
+        $mapped = (int) $mappings->max('semester');
+
+        $posted = $intake
+            ? (int) ProgramTimetable::query()
+                ->where('program_id', $program->id)
+                ->where('curriculum_version_id', $intake->id)
+                ->max('teaching_period')
+            : 0;
+
+        // A student admitted into Year 3 must have that year on the timetable page even when the
+        // programme is only configured to run one year.
+        $enrolled = ((int) $yearCounts->keys()->max()) * max(1, (int) $program->termsPerYear());
+
+        return max($span, $mapped, $posted, $enrolled);
+    }
+
     private function timetableRedirect(Request $request, ProgramTimetable $timetable, string $status): RedirectResponse
     {
         return redirect()
@@ -810,6 +889,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'section' => 'timetable',
                 'teaching_period' => $timetable->teaching_period,
                 'timetable_kind' => $timetable->timetable_kind,
+                'timetable' => $timetable->id,
             ]))
             ->withFragment('timetable-display')
             ->with('status', $status);
@@ -1122,7 +1202,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Unit assessment weights updated.');
     }
 
-    public function storeAllocation(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    public function storeAllocation(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
         abort_unless($request->user()->hasPermission('academics.write'), 403);
@@ -1130,7 +1210,6 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $validated = $request->validate([
             'intake' => ['required', 'integer'],
-            'unit_id' => ['required', 'integer'],
             'staff_id' => ['required', 'integer'],
             'teaching_period' => ['required', 'integer', 'min:1'],
             'campus_id' => ['required', 'integer'],
@@ -1143,8 +1222,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->where('program_id', $program->id)
             ->findOrFail((int) $validated['intake']);
 
-        $unit = $this->access->unitsInScope($hub, $program->department_id)
-            ->firstWhere('id', (int) $validated['unit_id']);
+        // The unit comes from the address on the form, so a lecturer can never land on a
+        // different unit from the one the row names.
+        abort_unless((int) $unit->department_id === (int) $program->department_id, 404);
+        $unit = $this->access->unitsInScope($hub, $program->department_id)->firstWhere('id', $unit->id);
         abort_unless($unit, 404);
 
         $lecturer = $this->lecturerQuery()
@@ -1161,7 +1242,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'staff_id' => $lecturer->id,
             'semester_id' => $semesterId,
             'campus_id' => (int) $validated['campus_id'],
-            'contact_hours_assigned' => empty($validated['contact_hours_assigned'])
+            'contact_hours_assigned' => ($validated['contact_hours_assigned'] ?? null) === null
                 ? (int) ($unit->contact_hours ?? 0)
                 : (int) $validated['contact_hours_assigned'],
             'is_coordinator' => ! empty($validated['is_coordinator']),
@@ -1176,10 +1257,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'section' => $section,
         ])).'#unit-row-'.$unit->id;
 
+        $hours = ($validated['contact_hours_assigned'] ?? null) === null
+            ? (int) ($unit->contact_hours ?? 0)
+            : (int) $validated['contact_hours_assigned'];
+
         return redirect()
             ->to($target)
             ->with('status', $lecturer->fullName().' assigned to '.$unit->displayLabel().' for '
-                .$program->periodLabel((int) $validated['teaching_period']).'.');
+                .$program->periodLabel((int) $validated['teaching_period']).' with '.$hours.' contact hours.');
     }
 
     public function destroyAllocation(Request $request, Department $department, AcademicProgram $program, UnitAllocation $unitAllocation): RedirectResponse
@@ -1383,7 +1468,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     }
 
     /**
-     * Pin the student's year of study, overriding the admission arithmetic for them alone.
+     * Pin the student's year and semester of study, overriding the admission arithmetic for them alone.
      */
     public function pinStudentYear(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
     {
@@ -1395,6 +1480,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $validated = $request->validate([
             'intake' => ['required', 'integer'],
             'current_year' => ['required', 'integer', 'min:1'],
+            'current_term' => ['required', 'integer', 'min:1'],
             'reason' => ['required', 'string', 'min:8', 'max:500'],
         ], [
             'reason.required' => 'Say why this student sits a different year - the change is auditable and cannot be left blank.',
@@ -1405,17 +1491,19 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->where('program_id', $program->id)
             ->findOrFail((int) $validated['intake']);
 
-        $year = $this->studentRegistrations->pinYear(
+        $pinned = $this->studentRegistrations->pinYear(
             $request->user(),
             $student,
             $program,
+            $intake,
             (int) $validated['current_year'],
+            (int) $validated['current_term'],
             $validated['reason'],
         );
 
         return redirect()
             ->to($this->studentRecordUrl($request, $program, $intake, $student))
-            ->with('status', $student->registration_number.' now sits Year '.$year.'.');
+            ->with('status', $student->registration_number.' now sits '.$pinned['period_label'].'.');
     }
 
     /**

@@ -154,7 +154,7 @@ class HodUnitAllocationService
      */
     public function periods(AcademicProgram $program): array
     {
-        return collect(range(1, max(1, $program->totalTeachingPeriods())))
+        return collect(range(1, max(1, $program->scheduledPeriods())))
             ->map(fn (int $period) => ['period' => $period, 'label' => $program->periodLabel($period)])
             ->all();
     }
@@ -170,7 +170,7 @@ class HodUnitAllocationService
             return [];
         }
 
-        $numbers = range(1, max(1, $program->totalTeachingPeriods()));
+        $numbers = range(1, max(1, $program->scheduledPeriods()));
 
         $ownYear = $intake->academic_year_id
             ? Semester::query()

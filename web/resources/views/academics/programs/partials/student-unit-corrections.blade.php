@@ -129,10 +129,11 @@
         </div>
 
         <div class="tich-mt-6">
-            <h4 class="tich-h4">Correct the year of study</h4>
+            <h4 class="tich-h4">Correct the year and semester of study</h4>
             <p class="tich-caption">
                 Use this when the admission arithmetic is wrong for this student alone, for example after a deferment or a transfer.
-                Pinning a year changes which units the "Register each student on their own year" button gives them.
+                Pinning the year and semester changes which units the "Register each student on their own year" button gives them,
+                and which timetable they see.
             </p>
             <form method="POST" action="{{ route('departments.academics.programs.student-units.year', $actionBase) }}" class="tich-flex-wrap" style="gap:0.75rem; align-items:flex-end;">
                 @csrf
@@ -150,14 +151,26 @@
                     </select>
                 </div>
 
+                <div class="tich-form-group" style="margin:0; min-width:11rem;">
+                    <label class="tich-label" for="current_term">Semester in that year</label>
+                    <select id="current_term" name="current_term" class="tich-input" required>
+                        @for ($term = 1; $term <= ($corrections['year']['terms'] ?? 1); $term++)
+                            <option value="{{ $term }}" @selected(($corrections['year']['term'] ?? null) === $term)>Semester {{ $term }}</option>
+                        @endfor
+                    </select>
+                </div>
+
                 <div class="tich-form-group" style="margin:0; min-width:18rem; flex:1;">
-                    <label class="tich-label" for="year_reason">Why does this student sit that year?</label>
+                    <label class="tich-label" for="year_reason">Why does this student sit that year and semester?</label>
                     <input id="year_reason" type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
                         placeholder="e.g. deferred a year, admitted 2025">
                 </div>
 
-                <button type="submit" class="tich-btn tich-btn-secondary">Save year of study</button>
+                <button type="submit" class="tich-btn tich-btn-secondary">Save year and semester</button>
                 @error('current_year')
+                    <p class="tich-field-error">{{ $message }}</p>
+                @enderror
+                @error('current_term')
                     <p class="tich-field-error">{{ $message }}</p>
                 @enderror
             </form>

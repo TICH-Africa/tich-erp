@@ -111,7 +111,7 @@ return function (bool $named = true): void {
 
         $register('post', '/applications/{id}/approve', [ApplicationReviewController::class, 'approve'], 'departments.academics.applications.approve', ['permission:academics.approve']);
         $register('post', '/applications/{id}/reject', [ApplicationReviewController::class, 'reject'], 'departments.academics.applications.reject', ['permission:academics.approve']);
-        $register('post', '/programs/{program}/allocations', [ProgramCurriculumController::class, 'storeAllocation'], 'departments.academics.programs.allocations.store');
+        $register('post', '/programs/{program}/units/{unit}/allocations', [ProgramCurriculumController::class, 'storeAllocation'], 'departments.academics.programs.allocations.store');
         $register('post', '/unit-allocations/{unitAllocation}/approve', [UnitAllocationApprovalController::class, 'approve'], 'departments.academics.unit-allocations.approve', ['permission:academics.approve']);
         $register('post', '/unit-allocations/{unitAllocation}/reject', [UnitAllocationApprovalController::class, 'reject'], 'departments.academics.unit-allocations.reject', ['permission:academics.approve']);
         $register('delete', '/programs/{program}/allocations/{unitAllocation}', [ProgramCurriculumController::class, 'destroyAllocation'], 'departments.academics.programs.allocations.destroy');

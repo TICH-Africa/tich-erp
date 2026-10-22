@@ -109,6 +109,33 @@ class AcademicProgram extends Model
         return $this->programYears() * $this->termsPerYear();
     }
 
+    /**
+     * How many years of study this programme actually runs. The record can be configured for fewer
+     * months than the degree takes while the cohort is still pushed on to their final year, so the
+     * four years on the calendar are the floor - that is what makes Year 2, 3 and 4 reachable.
+     */
+    public function studyYears(): int
+    {
+        if ($this->usesBlocks()) {
+            return 1;
+        }
+
+        return max(4, $this->programYears());
+    }
+
+    /**
+     * The teaching periods the curriculum, semester and timetable screens offer: every year the
+     * students sit, not only the years the programme record currently counts.
+     */
+    public function scheduledPeriods(): int
+    {
+        if ($this->usesBlocks()) {
+            return $this->totalTeachingPeriods();
+        }
+
+        return $this->studyYears() * $this->termsPerYear();
+    }
+
     public function periodLabel(int $periodNumber): string
     {
         if ($this->usesBlocks()) {
@@ -118,10 +145,22 @@ class AcademicProgram extends Model
         }
 
         $termsPerYear = $this->termsPerYear();
-        $year = (int) ceil($periodNumber / $termsPerYear);
+        $year = $this->yearOfPeriod($periodNumber);
         $termInYear = (($periodNumber - 1) % $termsPerYear) + 1;
 
         return "Year {$year} · Semester {$termInYear}";
+    }
+
+    /**
+     * The year of study a teaching period falls in - block programmes keep every block in one group.
+     */
+    public function yearOfPeriod(int $periodNumber): int
+    {
+        if ($this->usesBlocks()) {
+            return 1;
+        }
+
+        return max(1, (int) ceil($periodNumber / $this->termsPerYear()));
     }
 
     public function coverImageUrl(): ?string
