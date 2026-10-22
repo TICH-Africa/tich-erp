@@ -74,6 +74,9 @@ String? tichDescribeHttpStatus(int? status) {
   };
 }
 
+/// HTTPS JSON API transport for mobile (lists, mutations, file uploads).
+///
+/// Live server push uses [TichRealtime] (WebSocket / Laravel Reverb), not this client.
 class ApiClient {
   ApiClient({
     AuthTokenStore? tokenStore,
@@ -115,6 +118,27 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $token';
     }
     return headers;
+  }
+
+  Future<List<int>> getBytes(
+    String path, {
+    Map<String, String>? query,
+    String accept = 'application/pdf',
+  }) async {
+    var uri = ApiConfig.uri(path);
+    if (query != null && query.isNotEmpty) {
+      uri = uri.replace(queryParameters: query);
+    }
+    final headers = await _headers(json: false);
+    headers['Accept'] = accept;
+    final response = await _client.get(uri, headers: headers).timeout(timeout);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+    throw ApiException(
+      'Request failed (${response.statusCode})',
+      statusCode: response.statusCode,
+    );
   }
 
   Future<Map<String, dynamic>> get(

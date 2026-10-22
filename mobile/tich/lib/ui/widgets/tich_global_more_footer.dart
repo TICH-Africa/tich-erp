@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../adaptive/adaptive.dart';
 import '../../bloc/auth/auth_bloc.dart';
+import '../../data/tich_api_scope.dart';
+import '../../navigation/tich_root_nav.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../../models/auth_user.dart';
 import '../portal/portal_chooser_page.dart';
+import '../shell/tich_logout.dart';
 import '../procurement/procurement_web_handoff.dart';
 import '../settings/settings_hub_page.dart';
 import '../shell/portal_shell.dart';
@@ -26,9 +30,7 @@ bool tichShowChoosePortal(AuthUser? user) {
 
 bool _canSwitchToEmployee(AuthUser? user) {
   if (user == null || user.isStudent) return false;
-  return user.canAccessEmployeePortal ||
-      user.hasBothStaffPortals ||
-      (user.staffId != null && user.isTeachingStaff);
+  return user.canAccessEmployeePortal;
 }
 
 /// Quick portal switches and portal-specific web links (pinned above Choose portal).
@@ -39,6 +41,11 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
   final auth = context.watch<AuthBloc>().state;
   final user = auth is AuthAuthenticated ? auth.user : null;
 
+  void switchPortal(Widget shell) {
+    if (user == null) return;
+    tichOpenPortalRoot(user, shell);
+  }
+
   switch (portal) {
     case TichPortalMenuContext.employee:
       return [
@@ -46,19 +53,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Procurement Portal',
             icon: Icons.inventory_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const ProcurementPortalShell()),
           ),
         if (user?.canAccessStaffPortal == true)
           TichMoreItem(
             label: 'Switch to Staff Portal',
             icon: Icons.school_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const StaffPortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const StaffPortalShell()),
           ),
       ];
     case TichPortalMenuContext.staff:
@@ -67,19 +68,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Procurement Portal',
             icon: Icons.inventory_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const ProcurementPortalShell()),
           ),
         if (_canSwitchToEmployee(user))
           TichMoreItem(
             label: 'Switch to My Employee Portal',
             icon: Icons.badge_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const PortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const PortalShell()),
           ),
       ];
     case TichPortalMenuContext.procurement:
@@ -93,19 +88,13 @@ List<TichMoreItem> tichPortalSwitchFooterItems(
           TichMoreItem(
             label: 'Switch to Employee Portal',
             icon: Icons.badge_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const PortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const PortalShell()),
           ),
         if (user?.canAccessStaffPortal == true)
           TichMoreItem(
             label: 'Switch to Staff Portal',
             icon: Icons.school_outlined,
-            onTap: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const StaffPortalShell()),
-              (route) => false,
-            ),
+            onTap: () => switchPortal(const StaffPortalShell()),
           ),
       ];
     case TichPortalMenuContext.student:
@@ -128,18 +117,27 @@ List<TichMoreItem> tichMoreMenuFooter(
 List<TichMoreItem> tichGlobalMoreFooterItems(BuildContext context) {
   final auth = context.watch<AuthBloc>().state;
   final user = auth is AuthAuthenticated ? auth.user : null;
+  final fallbackSignOut = tichLogout(context);
 
-  void open(Widget page) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  void open(Widget page) => TichRootNav.push(page);
+
+  void signOut() {
+    final shell = TichPortal.onSignOut;
+    if (shell != null) {
+      shell();
+    } else {
+      fallbackSignOut();
+    }
+  }
 
   return [
     if (tichShowChoosePortal(user))
       TichMoreItem(
         label: 'Choose portal',
         icon: Icons.apps_outlined,
-        onTap: () => Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => PortalChooserPage(user: user!)),
-          (route) => false,
+        onTap: () => tichOpenPortalRoot(
+          user!,
+          PortalChooserPage(user: user),
         ),
       ),
     TichMoreItem(
@@ -152,9 +150,15 @@ List<TichMoreItem> tichGlobalMoreFooterItems(BuildContext context) {
       icon: Icons.brightness_6_outlined,
       onTap: () {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          showTichThemePicker(context);
+          final ctx = TichRootNav.navigatorKey.currentContext;
+          if (ctx != null) showTichThemePicker(ctx);
         });
       },
+    ),
+    TichMoreItem(
+      label: 'Sign out',
+      icon: Icons.logout,
+      onTap: signOut,
     ),
   ];
 }

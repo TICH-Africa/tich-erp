@@ -24,10 +24,21 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.clearance();
+    studentPrimeScreen(
+      persistKey: 'student.clearance',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.clearance(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.clearance());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.clearance(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.clearance',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -35,6 +46,7 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
       setState: setState,
       fetch: () => widget.api.clearance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.clearance',
     );
   }
 
@@ -47,10 +59,8 @@ class _StudentClearancePageState extends State<StudentClearancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.clearance');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }

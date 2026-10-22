@@ -35,12 +35,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   final _emergencyPhone = TextEditingController();
   final _emergencyRel = TextEditingController();
   bool _busy = false;
-  bool _hydrated = false;
+  bool _editing = false;
+
+  static const _cacheKey = 'student.profile';
 
   @override
   void initState() {
     super.initState();
-    _future = widget.api.profile();
+    _dataCache = studentReadCache(_cacheKey);
+    _future = studentEnsure(_cacheKey, () => widget.api.profile());
   }
 
   @override
@@ -58,8 +61,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     super.dispose();
   }
 
-  void _hydrate(Map<String, dynamic> data) {
-    if (_hydrated) return;
+  void _fillControllers(Map<String, dynamic> data) {
     final biodata = Map<String, dynamic>.from(data['biodata'] as Map? ?? {});
     final contact = Map<String, dynamic>.from(biodata['contact'] as Map? ?? {});
     final nok = Map<String, dynamic>.from(biodata['next_of_kin'] as Map? ?? {});
@@ -75,8 +77,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     _emergencyName.text = emergency['name']?.toString() ?? '';
     _emergencyPhone.text = emergency['phone']?.toString() ?? '';
     _emergencyRel.text = emergency['relationship']?.toString() ?? '';
-    _hydrated = true;
   }
+
+  void _startEdit(Map<String, dynamic> payload) {
+    _fillControllers(payload);
+    setState(() => _editing = true);
+  }
+
+  void _cancelEdit() => setState(() => _editing = false);
 
   Future<void> _save() async {
     setState(() => _busy = true);
@@ -97,10 +105,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['message']?.toString() ?? 'Saved')),
       );
-      setState(() {
-        _hydrated = false;
-        _future = widget.api.profile();
-      });
+      await studentCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.profile(),
+        onData: (data) => _dataCache = data,
+        persistKey: _cacheKey,
+      );
+      if (mounted) setState(() => _editing = false);
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -109,12 +121,204 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
+  Future<void> _reloadProfile() async {
+    await studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.profile(),
+      onData: (data) => _dataCache = data,
+      persistKey: _cacheKey,
+    );
+  }
+
   void _liveRefresh() {
+    if (_editing) return;
     tichSilentReload(
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.profile(),
       onData: (data) => _dataCache = data,
+      persistKey: _cacheKey,
+    );
+  }
+
+  Widget _readSection(String title, List<Widget> rows) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TichSectionHeader(title),
+        TichCard(child: Column(children: rows)),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildReadView(
+    Map<String, dynamic> payload,
+    Map<String, dynamic> student,
+    List<dynamic> changes,
+  ) {
+    final biodata = Map<String, dynamic>.from(payload['biodata'] as Map? ?? {});
+    final contact = Map<String, dynamic>.from(biodata['contact'] as Map? ?? {});
+    final nok = Map<String, dynamic>.from(biodata['next_of_kin'] as Map? ?? {});
+    final emergency =
+        Map<String, dynamic>.from(biodata['emergency'] as Map? ?? {});
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        TichCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                student['full_name']?.toString() ?? 'Student',
+                style: tichUi(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                [
+                  student['registration_number'],
+                  student['program'],
+                  student['campus'],
+                ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
+                style: tichUi(color: TichColors.neutralMuted, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : () => _startEdit(payload),
+          icon: const Icon(Icons.edit_outlined),
+          label: const Text('Edit profile'),
+        ),
+        const SizedBox(height: 16),
+        _readSection('Contact', [
+          TichReadOnlyRow(label: 'Phone', value: contact['phone_number']),
+          TichReadOnlyRow(label: 'Email', value: contact['email']),
+          TichReadOnlyRow(label: 'Home county', value: contact['home_county']),
+          TichReadOnlyRow(label: 'Postal address', value: contact['postal_address']),
+        ]),
+        _readSection('Next of kin', [
+          TichReadOnlyRow(label: 'Full name', value: nok['name']),
+          TichReadOnlyRow(label: 'Relationship', value: nok['relationship']),
+          TichReadOnlyRow(label: 'Phone', value: nok['phone']),
+        ]),
+        _readSection('Emergency contact', [
+          TichReadOnlyRow(label: 'Full name', value: emergency['name']),
+          TichReadOnlyRow(label: 'Relationship', value: emergency['relationship']),
+          TichReadOnlyRow(label: 'Phone', value: emergency['phone']),
+        ]),
+        if (changes.isNotEmpty) ...[
+          const TichSectionHeader('Change requests'),
+          ...changes.map((raw) {
+            final r = Map<String, dynamic>.from(raw as Map);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Request #${r['id']}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(formatDateTime(r['created_at'])),
+                  trailing: TichStatusChip(
+                    r['status']?.toString() ?? 'pending',
+                    tone: toneForStatus(r['status']?.toString()),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ],
+        OutlinedButton.icon(
+          onPressed: () =>
+              context.read<AuthBloc>().add(const AuthLogoutRequested()),
+          icon: const Icon(Icons.logout),
+          label: const Text('Sign out'),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildEditForm() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const TichSectionHeader('Edit contact'),
+        TextField(
+          controller: _phone,
+          decoration: const InputDecoration(labelText: 'Phone'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _email,
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _county,
+          decoration: const InputDecoration(labelText: 'Home county'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _address,
+          decoration: const InputDecoration(labelText: 'Postal address'),
+        ),
+        const SizedBox(height: 16),
+        const TichSectionHeader('Next of kin'),
+        TextField(
+          controller: _nokName,
+          decoration: const InputDecoration(labelText: 'Full name'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _nokRel,
+          decoration: const InputDecoration(labelText: 'Relationship'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _nokPhone,
+          decoration: const InputDecoration(labelText: 'Phone'),
+        ),
+        const SizedBox(height: 16),
+        const TichSectionHeader('Emergency contact'),
+        TextField(
+          controller: _emergencyName,
+          decoration: const InputDecoration(labelText: 'Full name'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _emergencyRel,
+          decoration: const InputDecoration(labelText: 'Relationship'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _emergencyPhone,
+          decoration: const InputDecoration(labelText: 'Phone'),
+        ),
+        const SizedBox(height: 20),
+        AdaptiveFilledButton(
+          onPressed: _busy ? null : _save,
+          child: _busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: AdaptiveProgress(color: Colors.white),
+                )
+              : const Text('Save changes'),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: _busy ? null : _cancelEdit,
+          child: const Text('Cancel'),
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -122,150 +326,38 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
-      enabled: !_busy,
+      enabled: !_busy && !_editing,
       child: AdaptiveScaffold(
-      title: 'My profile',
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
-          if (snap.hasError) {
-            return studentErrorBody(snap.error, () {
-              setState(() {
-                _hydrated = false;
-                _future = widget.api.profile();
-              });
-            });
-          }
-          _hydrate(snap.data!);
-          final student =
-              Map<String, dynamic>.from(snap.data!['student'] as Map? ?? {});
-          final changes = snap.data!['change_requests'] as List? ?? const [];
+        title: _editing ? 'Edit profile' : 'My profile',
+        leading: _editing
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _busy ? null : _cancelEdit,
+              )
+            : null,
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snap) {
+            final merged = tichMergeSnapshot(
+              snap,
+              _dataCache as dynamic,
+              persistKey: _cacheKey,
+            );
+            if (tichShowLoadingSpinner(snap, merged)) {
+              return studentLoadingBody(onRefresh: () async => _reloadProfile());
+            }
+            if (merged == null && snap.hasError) {
+              return studentErrorBody(snap.error, _reloadProfile);
+            }
+            final payload = merged! as Map<String, dynamic>;
+            final student =
+                Map<String, dynamic>.from(payload['student'] as Map? ?? {});
+            final changes = payload['change_requests'] as List? ?? const [];
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TichCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      student['full_name']?.toString() ?? 'Student',
-                      style: tichUi(fontSize: 18, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      [
-                        student['registration_number'],
-                        student['program'],
-                        student['campus'],
-                      ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
-                      style: tichUi(color: TichColors.neutralMuted, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const TichSectionHeader('Contact'),
-              TextField(
-                controller: _phone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _email,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _county,
-                decoration: const InputDecoration(labelText: 'Home county'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _address,
-                decoration: const InputDecoration(labelText: 'Postal address'),
-              ),
-              const SizedBox(height: 16),
-              const TichSectionHeader('Next of kin'),
-              TextField(
-                controller: _nokName,
-                decoration: const InputDecoration(labelText: 'Full name'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _nokRel,
-                decoration: const InputDecoration(labelText: 'Relationship'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _nokPhone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-              ),
-              const SizedBox(height: 16),
-              const TichSectionHeader('Emergency contact'),
-              TextField(
-                controller: _emergencyName,
-                decoration: const InputDecoration(labelText: 'Full name'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _emergencyRel,
-                decoration: const InputDecoration(labelText: 'Relationship'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _emergencyPhone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-              ),
-              const SizedBox(height: 20),
-              AdaptiveFilledButton(
-                onPressed: _busy ? null : _save,
-                child: _busy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: AdaptiveProgress(color: Colors.white),
-                      )
-                    : const Text('Save profile updates'),
-              ),
-              if (changes.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                const TichSectionHeader('Change requests'),
-                ...changes.map((raw) {
-                  final r = Map<String, dynamic>.from(raw as Map);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TichCard(
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          'Request #${r['id']}',
-                          style: tichUi(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(formatDateTime(r['created_at'])),
-                        trailing: TichStatusChip(
-                          r['status']?.toString() ?? 'pending',
-                          tone: toneForStatus(r['status']?.toString()),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    context.read<AuthBloc>().add(const AuthLogoutRequested()),
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign out'),
-              ),
-            ],
-          );
-        },
-      ),
+            if (_editing) return _buildEditForm();
+            return _buildReadView(payload, student, changes);
+          },
+        ),
       ),
     );
   }

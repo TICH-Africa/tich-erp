@@ -6,6 +6,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
 import '../../theme/tich_theme.dart';
+import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
 
@@ -147,8 +148,8 @@ class _ProcurementRequestAssetDisposalPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _optionsFuture,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: AdaptiveProgress());
+          if (tichShowLoadingSpinner(snap, snap.hasData ? snap.data : null)) {
+            return procurementLoadingBody();
           }
           if (snap.hasError) {
             return Center(

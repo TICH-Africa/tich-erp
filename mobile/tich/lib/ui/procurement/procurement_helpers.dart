@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
+import '../../data/tich_screen_cache.dart';
 import '../shell/procurement_nav_signals.dart';
+import '../widgets/tich_live_refresh.dart';
 import 'procurement_detail_widgets.dart';
 
 export 'procurement_detail_widgets.dart';
@@ -10,16 +14,79 @@ void procurementNotifyCountsChanged() {
   ProcurementPortalNavSignals.onCountsChanged?.call();
 }
 
-/// Starts a new API request and stores its [Future] in state without returning it from [setState].
+/// Refreshes procurement data without swapping the [FutureBuilder] future (no flicker).
 void procurementUpdateFuture(
   void Function(VoidCallback fn) setState,
   void Function(Future<Map<String, dynamic>> future) assign,
+  Future<Map<String, dynamic>> Function() fetch, {
+  required bool Function() mounted,
+  required void Function(Map<String, dynamic> data) onData,
+  String? persistKey,
+}) {
+  procurementSilentLoad(
+    mounted: mounted,
+    setState: setState,
+    fetch: fetch,
+    onData: onData,
+    persistKey: persistKey,
+  );
+}
+
+Widget procurementLoadingBody({Future<void> Function()? onRefresh}) =>
+    tichInstantWaitBody(onRefresh: onRefresh);
+
+Future<void> procurementCachedReload({
+  required bool Function() mounted,
+  required void Function(VoidCallback fn) setState,
+  required Future<Map<String, dynamic>> Function() fetch,
+  required void Function(Map<String, dynamic> data) onData,
+  String? persistKey,
+}) =>
+    tichRefreshCached<Map<String, dynamic>>(
+      mounted: mounted,
+      setState: setState,
+      fetch: fetch,
+      onData: onData,
+      persistKey: persistKey,
+    );
+
+void procurementSilentLoad({
+  required bool Function() mounted,
+  required void Function(VoidCallback fn) setState,
+  required Future<Map<String, dynamic>> Function() fetch,
+  required void Function(Map<String, dynamic> data) onData,
+  String? persistKey,
+}) {
+  tichSilentReload<Map<String, dynamic>>(
+    mounted: mounted,
+    setState: setState,
+    fetch: fetch,
+    onData: onData,
+    persistKey: persistKey,
+  );
+}
+
+Map<String, dynamic>? procurementReadCache(String key) =>
+    TichScreenCache.read<Map<String, dynamic>>(key);
+
+Future<Map<String, dynamic>> procurementEnsure(
+  String key,
   Future<Map<String, dynamic>> Function() fetch,
-) {
-  final next = fetch();
-  setState(() {
-    assign(next);
-  });
+) =>
+    TichScreenCache.ensure(key, fetch);
+
+void procurementPrimeScreen({
+  required String persistKey,
+  required void Function(Object? cache) setCache,
+  required void Function(Future<Map<String, dynamic>> future) setFuture,
+  required Future<Map<String, dynamic>> Function() fetch,
+}) {
+  TichScreenCache.primeMapScreen(
+    persistKey: persistKey,
+    applyCache: setCache,
+    applyFuture: setFuture,
+    fetch: fetch,
+  );
 }
 
 void procurementShowError(BuildContext context, Object error) {

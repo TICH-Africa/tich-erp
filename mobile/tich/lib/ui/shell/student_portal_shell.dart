@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_portal_warmup.dart';
+import '../../data/tich_screen_cache.dart';
 import '../student/academics_hub_page.dart';
 import '../student/finance_page.dart';
 import '../student/home_page.dart';
@@ -13,6 +17,7 @@ import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
+import 'student_portal_menu_scope.dart';
 import 'tich_logout.dart';
 
 class StudentPortalShell extends StatefulWidget {
@@ -24,14 +29,12 @@ class StudentPortalShell extends StatefulWidget {
 
 class _StudentPortalShellState extends State<StudentPortalShell>
     with WidgetsBindingObserver, ShellNavBadgeMixin {
-  int _index = 0;
+  final GlobalKey<AdaptiveTabScaffoldState> _scaffoldKey =
+      GlobalKey<AdaptiveTabScaffoldState>();
   List<Widget>? _pages;
-  Map<String, int> _counts = const {};
-  int _homeBadge = 0;
-  int _academicsBadge = 0;
-  int _timetableBadge = 0;
-  int _financeBadge = 0;
-  int _moreDot = 0;
+  Widget? _root;
+  String? _profilePhotoUrl;
+  bool _profilePhotoLoaded = false;
 
   static const _moreMenuKeys = [
     'profile',
@@ -61,8 +64,11 @@ class _StudentPortalShellState extends State<StudentPortalShell>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_pages != null) return;
+    if (_root != null) return;
     final api = context.read<StudentApi>();
+    if (!_profilePhotoLoaded) {
+      unawaited(_loadProfilePhoto(api));
+    }
     _pages = [
       StudentHomePage(api: api),
       StudentAcademicsHubPage(api: api),
@@ -70,6 +76,110 @@ class _StudentPortalShellState extends State<StudentPortalShell>
       StudentFinancePage(api: api),
       StudentMorePage(api: api),
     ];
+    TichPortalWarmup.studentShellOpened(api);
+    _seedProfilePhotoFromCache();
+    _root = AdaptiveTabScaffold(
+      key: _scaffoldKey,
+      pages: _pages!,
+      portalName: 'Student portal',
+      onSignOut: tichLogout(context),
+      moreIndex: 4,
+      onTabSelected: (i) => TichPortalWarmup.studentTabSelected(api, i),
+      onMoreOpen: () => TichPortalWarmup.studentMoreOpened(api),
+      moreDrawer: (context) => TichMoreDrawer(
+        portalName: 'Student portal',
+        menuContext: TichPortalMenuContext.student,
+        items: StudentMorePage.mainItems(context, api),
+      ),
+      items: _tabItems(counts: const {}),
+    );
+  }
+
+  List<AdaptiveTabItem> _tabItems({required Map<String, int> counts}) {
+    var academics = 0;
+    for (final key in _academicsKeys) {
+      academics += counts[key] ?? 0;
+    }
+    var moreDot = 0;
+    for (final key in _moreMenuKeys) {
+      moreDot += counts[key] ?? 0;
+    }
+    final timetable = (counts['timetable'] ?? 0) +
+        (counts['timetable.lesson'] ?? 0) +
+        (counts['timetable.exam'] ?? 0);
+
+    return [
+      AdaptiveTabItem(
+        label: 'Home',
+        materialIcon: Icons.home_outlined,
+        materialActiveIcon: Icons.home,
+        cupertinoIcon: CupertinoIcons.house,
+        cupertinoActiveIcon: CupertinoIcons.house_fill,
+        badgeCount: counts['overview'] ?? counts['notifications'] ?? 0,
+      ),
+      AdaptiveTabItem(
+        label: 'Academics',
+        materialIcon: Icons.school_outlined,
+        materialActiveIcon: Icons.school,
+        cupertinoIcon: CupertinoIcons.book,
+        cupertinoActiveIcon: CupertinoIcons.book_fill,
+        badgeCount: academics,
+      ),
+      AdaptiveTabItem(
+        label: 'Timetable',
+        materialIcon: Icons.calendar_month_outlined,
+        materialActiveIcon: Icons.calendar_month,
+        cupertinoIcon: CupertinoIcons.calendar,
+        cupertinoActiveIcon: CupertinoIcons.calendar_today,
+        badgeCount: timetable,
+      ),
+      AdaptiveTabItem(
+        label: 'Finance',
+        materialIcon: Icons.account_balance_wallet_outlined,
+        materialActiveIcon: Icons.account_balance_wallet,
+        cupertinoIcon: CupertinoIcons.money_dollar,
+        cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
+        badgeCount: counts['finance'] ?? 0,
+      ),
+      AdaptiveTabItem(
+        label: 'More',
+        materialIcon: Icons.menu,
+        materialActiveIcon: Icons.menu_open,
+        cupertinoIcon: CupertinoIcons.ellipsis_circle,
+        cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
+        badgeCount: moreDot,
+        badgeDotOnly: true,
+      ),
+    ];
+  }
+
+  void _seedProfilePhotoFromCache() {
+    final data = TichScreenCache.read<Map<String, dynamic>>('student.home');
+    if (data == null) return;
+    final student = Map<String, dynamic>.from(data['student'] as Map? ?? {});
+    final url = student['photo_url']?.toString().trim();
+    _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+    _profilePhotoLoaded = url != null;
+  }
+
+  Future<void> _loadProfilePhoto(StudentApi api) async {
+    if (_profilePhotoLoaded && _profilePhotoUrl != null) return;
+    try {
+      final data = await TichScreenCache.ensure(
+        'student.home',
+        () => api.dashboard(),
+      );
+      if (!mounted) return;
+      final student =
+          Map<String, dynamic>.from(data['student'] as Map? ?? {});
+      final url = student['photo_url']?.toString().trim();
+      setState(() {
+        _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+        _profilePhotoLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _profilePhotoLoaded = true);
+    }
   }
 
   @override
@@ -81,25 +191,8 @@ class _StudentPortalShellState extends State<StudentPortalShell>
         final data = await api.sidebarNotifications();
         if (!mounted) return;
         final counts = parseSidebarCounts(data['counts']);
-        var academics = 0;
-        for (final key in _academicsKeys) {
-          academics += counts[key] ?? 0;
-        }
-        var moreDot = 0;
-        for (final key in _moreMenuKeys) {
-          moreDot += counts[key] ?? 0;
-        }
-        final timetable = (counts['timetable'] ?? 0) +
-            (counts['timetable.lesson'] ?? 0) +
-            (counts['timetable.exam'] ?? 0);
-        setState(() {
-          _counts = counts;
-          _homeBadge = counts['overview'] ?? counts['notifications'] ?? 0;
-          _academicsBadge = academics;
-          _timetableBadge = timetable;
-          _financeBadge = counts['finance'] ?? 0;
-          _moreDot = moreDot;
-        });
+        _scaffoldKey.currentState?.updateNavCounts(counts);
+        _scaffoldKey.currentState?.updateNavItems(_tabItems(counts: counts));
       } catch (_) {}
     });
     return Future.value();
@@ -107,64 +200,9 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   @override
   Widget build(BuildContext context) {
-    return PortalNavCountsScope(
-      counts: _counts,
-      child: AdaptiveTabScaffold(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
-        pages: _pages!,
-        portalName: 'Student portal',
-        onSignOut: tichLogout(context),
-        moreIndex: 4,
-        moreDrawer: (context) => TichMoreDrawer(
-          portalName: 'Student portal',
-          menuContext: TichPortalMenuContext.student,
-          items: StudentMorePage.mainItems(context, context.read<StudentApi>()),
-        ),
-        items: [
-          AdaptiveTabItem(
-            label: 'Home',
-            materialIcon: Icons.home_outlined,
-            materialActiveIcon: Icons.home,
-            cupertinoIcon: CupertinoIcons.house,
-            cupertinoActiveIcon: CupertinoIcons.house_fill,
-            badgeCount: _homeBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Academics',
-            materialIcon: Icons.school_outlined,
-            materialActiveIcon: Icons.school,
-            cupertinoIcon: CupertinoIcons.book,
-            cupertinoActiveIcon: CupertinoIcons.book_fill,
-            badgeCount: _academicsBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Timetable',
-            materialIcon: Icons.calendar_month_outlined,
-            materialActiveIcon: Icons.calendar_month,
-            cupertinoIcon: CupertinoIcons.calendar,
-            cupertinoActiveIcon: CupertinoIcons.calendar_today,
-            badgeCount: _timetableBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Finance',
-            materialIcon: Icons.account_balance_wallet_outlined,
-            materialActiveIcon: Icons.account_balance_wallet,
-            cupertinoIcon: CupertinoIcons.money_dollar,
-            cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
-            badgeCount: _financeBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'More',
-            materialIcon: Icons.menu,
-            materialActiveIcon: Icons.menu_open,
-            cupertinoIcon: CupertinoIcons.ellipsis_circle,
-            cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
-            badgeCount: _moreDot,
-            badgeDotOnly: true,
-          ),
-        ],
-      ),
+    return StudentPortalMenuScope(
+      profilePhotoUrl: _profilePhotoUrl,
+      child: _root ?? const SizedBox.shrink(),
     );
   }
 }

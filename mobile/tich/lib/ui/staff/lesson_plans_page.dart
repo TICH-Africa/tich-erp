@@ -26,10 +26,21 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.lessonPlans();
+    staffPrimeScreen(
+      persistKey: 'staff.lesson_plans',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.lessonPlans(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.lessonPlans());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.lessonPlans(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.lesson_plans',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -37,6 +48,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
       setState: setState,
       fetch: () => widget.api.lessonPlans(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.lesson_plans',
     );
   }
 
@@ -69,7 +81,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
         floatingActionButton: FutureBuilder(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic)
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.lesson_plans')
                 as Map<String, dynamic>?;
             final allocations = (merged?['allocations'] as List?) ??
                 (snap.data?['allocations'] as List?) ??
@@ -84,10 +96,8 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (merged == null && snap.connectionState != ConnectionState.done) {
-              return staffLoadingBody();
-            }
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.lesson_plans');
+            if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return staffErrorBody(snap.error, _reload);
             }

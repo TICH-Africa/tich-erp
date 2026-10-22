@@ -30,13 +30,17 @@ class StaffAttendanceSessionPage extends StatefulWidget {
 class _StaffAttendanceSessionPageState
     extends State<StaffAttendanceSessionPage> {
   late Future<Map<String, dynamic>> _future;
+  Object? _dataCache;
   final Set<int> _present = {};
   bool _busy = false;
   bool _locked = false;
 
+  String get _cacheKey => 'staff.attendance_session.${widget.sessionId}';
+
   @override
   void initState() {
     super.initState();
+    _dataCache = staffReadCache(_cacheKey);
     _future = _fetchSession();
   }
 
@@ -58,17 +62,22 @@ class _StaffAttendanceSessionPageState
     });
   }
 
-  void _reload() {
-    setState(() => _future = _fetchSession());
-  }
+  Future<void> _reload() => staffCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: _fetchSession,
+        onData: (data) => _dataCache = data,
+        persistKey: _cacheKey,
+      );
 
   void _liveRefresh() {
     if (_busy) return;
-    unawaited(
-      _fetchSession().then((data) {
-        if (!mounted) return;
-        setState(() => _future = Future.value(data));
-      }).catchError((_) {}),
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: _fetchSession,
+      onData: (data) => _dataCache = data,
+      persistKey: _cacheKey,
     );
   }
 
@@ -146,15 +155,21 @@ class _StaffAttendanceSessionPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return staffLoadingBody();
+          final merged = tichMergeSnapshot(
+            snap,
+            _dataCache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return staffLoadingBody(onRefresh: () async => _reload());
           }
-          if (snap.hasError) {
+          if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }
+          final payload = merged! as Map<String, dynamic>;
           final session =
-              Map<String, dynamic>.from(snap.data!['session'] as Map? ?? {});
-          final records = snap.data!['records'] as List? ?? const [];
+              Map<String, dynamic>.from(payload['session'] as Map? ?? {});
+          final records = payload['records'] as List? ?? const [];
 
           final hasSheet = session['has_signed_sheet'] == true;
           final hasPhoto = session['has_class_photo'] == true;

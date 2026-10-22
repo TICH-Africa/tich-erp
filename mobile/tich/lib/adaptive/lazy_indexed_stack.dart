@@ -2,8 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../ui/widgets/tich_tab_active_scope.dart';
 
-/// Like [IndexedStack], but only mounts a child the first time it is selected.
-/// Avoids parallel API loads from every tab on cold start.
+/// Only mounts the **selected** tab (inactive tabs are torn down to save memory).
 class LazyIndexedStack extends StatefulWidget {
   const LazyIndexedStack({
     super.key,
@@ -30,17 +29,22 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
     );
   }
 
+  void _syncActiveTab() {
+    for (var i = 0; i < _activated.length; i++) {
+      _activated[i] = i == widget.index;
+    }
+  }
+
   @override
   void didUpdateWidget(covariant LazyIndexedStack oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.children.length != widget.children.length) {
       _activated = List<bool>.generate(
         widget.children.length,
-        (i) =>
-            (i < _activated.length && _activated[i]) || i == widget.index,
+        (i) => i == widget.index,
       );
-    } else if (!_activated[widget.index]) {
-      _activated[widget.index] = true;
+    } else if (oldWidget.index != widget.index) {
+      _syncActiveTab();
     }
   }
 
@@ -52,10 +56,12 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       children: [
         for (var i = 0; i < widget.children.length; i++)
           _activated[i]
-              ? TichTabActiveScope(
-                  activeIndex: widget.index,
-                  tabIndex: i,
-                  child: widget.children[i],
+              ? RepaintBoundary(
+                  child: TichTabActiveScope(
+                    activeIndex: widget.index,
+                    tabIndex: i,
+                    child: widget.children[i],
+                  ),
                 )
               : const SizedBox.shrink(),
       ],

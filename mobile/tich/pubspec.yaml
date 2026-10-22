@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^1.2.2
+  laravel_reverb: ^0.3.0
   flutter_bloc: ^9.1.0
   equatable: ^2.0.7
   flutter_secure_storage: ^9.2.4
@@ -29,6 +30,8 @@ dependencies:
   uuid: ^4.6.0
   cunning_document_scanner: ^3.0.3
   image_picker: ^1.2.4
+  path_provider: ^2.1.5
+  open_file: ^3.5.10
 
 dev_dependencies:
   flutter_test:

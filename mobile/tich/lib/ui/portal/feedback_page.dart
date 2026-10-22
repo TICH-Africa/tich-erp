@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class FeedbackPage extends StatefulWidget {
@@ -24,10 +25,17 @@ class _FeedbackPageState extends State<FeedbackPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.feedback();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.feedback');
+    _future = TichScreenCache.ensure('portal.feedback', () => widget.api.feedback());
   }
 
-  void _reload() => setState(() => _future = widget.api.feedback());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.feedback(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.feedback',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -35,6 +43,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       setState: setState,
       fetch: () => widget.api.feedback(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.feedback',
     );
   }
 
@@ -68,10 +77,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.feedback');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),

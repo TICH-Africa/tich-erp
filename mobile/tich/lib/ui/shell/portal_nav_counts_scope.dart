@@ -1,4 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+/// Updates [PortalNavCountsScope] for the More drawer without rebuilding tabs.
+class PortalNavCountsModel extends ChangeNotifier {
+  Map<String, int> counts = const {};
+
+  void update(Map<String, int> next) {
+    if (mapEquals(counts, next)) return;
+    counts = Map.unmodifiable(next);
+    notifyListeners();
+  }
+}
 
 /// Sidebar-style notification counts keyed like the web portal (`profile-changes`, …).
 class PortalNavCountsScope extends InheritedWidget {
@@ -26,7 +38,7 @@ class PortalNavCountsScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(PortalNavCountsScope oldWidget) {
-    return oldWidget.counts != counts;
+    return !mapEquals(oldWidget.counts, counts);
   }
 }
 

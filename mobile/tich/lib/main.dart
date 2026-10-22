@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/painting.dart';
 
 import 'adaptive/adaptive.dart';
 import 'bloc/auth/auth_bloc.dart';
@@ -11,10 +12,9 @@ import 'bloc/auth/auth_state.dart';
 import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
-import 'data/employee_api.dart';
-import 'data/procurement_api.dart';
-import 'data/staff_api.dart';
-import 'data/student_api.dart';
+import 'data/tich_api_scope.dart';
+import 'data/tich_realtime.dart';
+import 'models/auth_user.dart';
 import 'notifications/tich_notification_router.dart';
 import 'notifications/tich_notifications.dart';
 import 'settings/app_settings.dart';
@@ -25,21 +25,27 @@ import 'ui/portal/portal_chooser_page.dart';
 import 'ui/shell/portal_shell.dart';
 import 'ui/shell/procurement_portal_shell.dart';
 import 'ui/shell/staff_portal_shell.dart';
+import 'navigation/tich_root_nav.dart';
 import 'ui/shell/student_portal_shell.dart';
+import 'ui/shell/tich_logout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 80;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
   await AppSettings.instance.load();
   TichTheme.warmCache();
   runApp(const TichApp());
-  // Defer timezone / Workmanager / permission work off the first frame.
-  unawaited(TichNotifications.instance.init());
+  // Defer heavy notification setup until after first frame (faster cold start).
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future<void>.delayed(const Duration(seconds: 5), () {
+      unawaited(TichNotifications.instance.init());
+    });
+  });
 }
 
 class TichApp extends StatefulWidget {
   const TichApp({super.key});
-
-  static final rootNavigatorKey = GlobalKey<NavigatorState>();
 
   @override
   State<TichApp> createState() => _TichAppState();
@@ -78,7 +84,7 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
 
   void _tryApplyNotificationRoute() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = TichApp.rootNavigatorKey.currentContext;
+      final ctx = TichRootNav.navigatorKey.currentContext;
       if (ctx == null) return;
       final auth = _authBloc.state;
       if (auth is AuthAuthenticated) {
@@ -101,7 +107,9 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
     }
     if (state == AppLifecycleState.resumed) {
       final auth = _authBloc.state;
-      if (auth is AuthAuthenticated && !auth.user.isStudent) {
+      if (auth is AuthAuthenticated &&
+          !auth.user.isStudent &&
+          TichNotifications.instance.isReady) {
         unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
         unawaited(
           TichNotifications.instance.syncFromServerInBackground(isStudent: false),
@@ -116,27 +124,102 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
       providers: [
         RepositoryProvider.value(value: _authRepository),
         RepositoryProvider.value(value: _apiClient),
-        RepositoryProvider(create: (_) => EmployeeApi(_apiClient)),
-        RepositoryProvider(create: (_) => StaffApi(_apiClient)),
-        RepositoryProvider(create: (_) => ProcurementApi(_apiClient)),
-        RepositoryProvider(create: (_) => StudentApi(_apiClient)),
       ],
       child: BlocProvider.value(
         value: _authBloc,
         child: ListenableBuilder(
           listenable: _settings,
           builder: (context, _) {
-            return AdaptiveApp(
-              title: 'TICH in Africa',
-              navigatorKey: TichApp.rootNavigatorKey,
-              materialTheme: _lightTheme,
-              materialDarkTheme: _darkTheme,
-              themeMode: _settings.themeMode,
-              textScaleFactor: _settings.textScaleFactor,
-              cupertinoTheme: _cupertinoTheme,
-              home: const _AuthGate(),
+            return BlocBuilder<AuthBloc, AuthState>(
+              buildWhen: (prev, next) {
+                if (prev.runtimeType != next.runtimeType) return true;
+                if (next is AuthAuthenticated && prev is AuthAuthenticated) {
+                  return next.user != prev.user;
+                }
+                if (next is AuthLocked && prev is AuthLocked) {
+                  return next.user != prev.user;
+                }
+                return false;
+              },
+              builder: (context, authState) {
+                final app = AdaptiveApp(
+                  title: 'TICH in Africa',
+                  navigatorKey: TichRootNav.navigatorKey,
+                  materialTheme: _lightTheme,
+                  materialDarkTheme: _darkTheme,
+                  themeMode: _settings.themeMode,
+                  textScaleFactor: _settings.textScaleFactor,
+                  cupertinoTheme: _cupertinoTheme,
+                  home: const _AuthGate(),
+                );
+                final AuthUser? scopedUser = switch (authState) {
+                  AuthAuthenticated(:final user) => user,
+                  AuthLocked(:final user) => user,
+                  _ => null,
+                };
+                if (scopedUser != null) {
+                  return TichApiScope(
+                    key: tichApiScopeKey(scopedUser),
+                    user: scopedUser,
+                    child: app,
+                  );
+                }
+                return app;
+              },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _PortalForUser extends StatelessWidget {
+  const _PortalForUser({required this.user});
+
+  final AuthUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    if (user.isStudent) {
+      return const StudentPortalShell();
+    }
+    if (user.hasMultiplePortals) {
+      return PortalChooserPage(user: user);
+    }
+    if (user.canAccessProcurementPortal &&
+        !user.canAccessEmployeePortal &&
+        !user.canAccessStaffPortal) {
+      return const ProcurementPortalShell();
+    }
+    if (user.canAccessStaffPortal && !user.canAccessEmployeePortal) {
+      return const StaffPortalShell();
+    }
+    if (user.canAccessEmployeePortal) {
+      return const PortalShell();
+    }
+    return const _NoPortalAccessPage();
+  }
+}
+
+/// Signed-in user with no mobile portal mapping (misconfigured account).
+class _NoPortalAccessPage extends StatelessWidget {
+  const _NoPortalAccessPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptiveScaffold(
+      title: 'TICH',
+      onLogout: tichLogout(context),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'This account is not set up for a mobile portal yet. '
+            'Try the web app or contact ICT if you should have access.',
+            textAlign: TextAlign.center,
+            style: tichUi(color: TichColors.neutralMuted),
+          ),
         ),
       ),
     );
@@ -167,14 +250,22 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (prev, next) => next is AuthAuthenticated,
+      listenWhen: (prev, next) =>
+          next is AuthAuthenticated ||
+          next is AuthUnauthenticated ||
+          next is AuthLocked,
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           _primeIfNeeded(state);
+          unawaited(
+            TichRealtime.connect(context.read<ApiClient>()),
+          );
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
             TichNotificationRouter.instance.applyPending(context);
           });
+        } else {
+          unawaited(TichRealtime.disconnect());
         }
       },
       buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
@@ -183,24 +274,7 @@ class _AuthGateState extends State<_AuthGate> {
           next is AuthLocked,
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          final user = state.user;
-          if (user.isStudent) {
-            return const StudentPortalShell();
-          }
-          // Teaching staff with both portals: choose; staff-only → Staff;
-          // otherwise Employee (HR) portal.
-          if (user.hasMultiplePortals) {
-            return PortalChooserPage(user: user);
-          }
-          if (user.canAccessProcurementPortal &&
-              !user.canAccessEmployeePortal &&
-              !user.canAccessStaffPortal) {
-            return const ProcurementPortalShell();
-          }
-          if (user.canAccessStaffPortal && !user.canAccessEmployeePortal) {
-            return const StaffPortalShell();
-          }
-          return const PortalShell();
+          return _PortalForUser(user: state.user);
         }
         if (state is AuthLocked) {
           _primedUserKey = null;

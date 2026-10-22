@@ -10,6 +10,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import '../shell/portal_shell.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class AttendancePage extends StatefulWidget {
@@ -33,7 +34,11 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.attendance().then((data) {
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.attendance');
+    _future = TichScreenCache.ensure(
+      'portal.attendance',
+      () => widget.api.attendance(),
+    ).then((data) {
       final today = data['today'] as Map?;
       final clockedIn = today != null && today['clock_in_at'] != null;
       // ignore: unawaited_futures
@@ -83,7 +88,13 @@ class _AttendancePageState extends State<AttendancePage> {
     }).toList();
   }
 
-  void _reload() => setState(() => _future = widget.api.attendance());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.attendance(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.attendance',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -91,6 +102,7 @@ class _AttendancePageState extends State<AttendancePage> {
       setState: setState,
       fetch: () => widget.api.attendance(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.attendance',
     );
   }
 
@@ -217,10 +229,8 @@ class _AttendancePageState extends State<AttendancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.attendance');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),

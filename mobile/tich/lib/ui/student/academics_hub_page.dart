@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
@@ -28,10 +32,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.academics();
+    studentPrimeScreen(
+      persistKey: 'student.academics',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.academics(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.academics());
+  Future<void> _reload() => studentCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.academics(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'student.academics',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -39,6 +54,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       setState: setState,
       fetch: () => widget.api.academics(),
       onData: (data) => _dataCache = data,
+      persistKey: 'student.academics',
     );
   }
 
@@ -87,26 +103,10 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               (data) {
                 final academics =
                     Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final units = academics['registered_units'] as List? ?? const [];
-                return _listSection(
-                  empty: 'No registered units yet.',
-                  items: units,
-                  tile: (u) => TichCard(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        '${u['unit_code'] ?? ''} · ${u['unit_name'] ?? ''}',
-                        style: tichUi(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        [
-                          u['semester_label'],
-                          u['registration_status'],
-                        ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
-                      ),
-                    ),
-                  ),
-                );
+                final units = (academics['registered_units'] as List? ?? const [])
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList();
+                return _StudentUnitsSection(units: units);
               },
             ),
       ),
@@ -370,8 +370,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                         '${a['total_present'] ?? 0}/${a['total_sessions'] ?? 0} sessions',
                       ),
                       trailing: TichStatusChip(
-                        a['status_flag']?.toString() ?? 'ok',
-                        tone: toneForStatus(a['status_flag']?.toString()),
+                        studentAttendanceStatusLabel(a),
+                        tone: studentAttendanceTone(a),
                       ),
                     ),
                   ),
@@ -434,38 +434,13 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               (data) {
                 final academics =
                     Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final items = academics['attendance'] as List? ?? const [];
-                return _listSection(
-                  empty: 'No eligibility data yet.',
-                  items: items,
-                  tile: (a) {
-                    final eligible = a['eligible_for_exams'] == true ||
-                        a['eligible_for_exams'] == 1;
-                    final blocked = a['exam_eligibility_blocked'] == true ||
-                        a['exam_eligibility_blocked'] == 1;
-                    return TichCard(
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
-                          style: tichUi(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          'Attendance ${a['attendance_percentage'] ?? 0}%',
-                        ),
-                        trailing: TichStatusChip(
-                          blocked
-                              ? 'Blocked'
-                              : (eligible ? 'Eligible' : 'Pending'),
-                          tone: blocked
-                              ? TichChipTone.danger
-                              : (eligible
-                                  ? TichChipTone.success
-                                  : TichChipTone.warning),
-                        ),
-                      ),
-                    );
-                  },
+                final student =
+                    Map<String, dynamic>.from(data['student'] as Map? ?? {});
+                return _StudentExamEligibilitySection(
+                  api: widget.api,
+                  academics: academics,
+                  feeClearanceStatus:
+                      student['fee_clearance_status']?.toString(),
                 );
               },
             ),
@@ -503,10 +478,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return studentLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.academics');
+          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return studentErrorBody(snap.error, _reload);
           }
@@ -535,6 +508,301 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         },
       ),
       ),
+    );
+  }
+}
+
+class _StudentUnitsSection extends StatefulWidget {
+  const _StudentUnitsSection({required this.units});
+
+  final List<Map<String, dynamic>> units;
+
+  @override
+  State<_StudentUnitsSection> createState() => _StudentUnitsSectionState();
+}
+
+class _StudentUnitsSectionState extends State<_StudentUnitsSection> {
+  int? _semesterId;
+
+  List<({int id, String label})> get _semesters {
+    final seen = <int>{};
+    final out = <({int id, String label})>[];
+    for (final u in widget.units) {
+      final id = (u['semester_id'] as num?)?.toInt();
+      if (id == null || seen.contains(id)) continue;
+      seen.add(id);
+      final label = u['semester_label']?.toString().trim();
+      out.add((id: id, label: label?.isNotEmpty == true ? label! : 'Semester $id'));
+    }
+    out.sort((a, b) => b.id.compareTo(a.id));
+    return out;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final semesters = _semesters;
+    if (semesters.isNotEmpty) {
+      _semesterId = semesters.first.id;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final semesters = _semesters;
+    if (widget.units.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [TichCard(child: TichEmpty('No registered units yet.'))],
+      );
+    }
+
+    final filtered = widget.units.where((u) {
+      if (_semesterId == null) return true;
+      return (u['semester_id'] as num?)?.toInt() == _semesterId;
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (semesters.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TichDropdownFormField<int>(
+              value: _semesterId,
+              decoration: const InputDecoration(labelText: 'Semester'),
+              items: [
+                for (final s in semesters)
+                  DropdownMenuItem(value: s.id, child: Text(s.label)),
+              ],
+              onChanged: (v) => setState(() => _semesterId = v),
+            ),
+          )
+        else if (semesters.length == 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              semesters.first.label,
+              style: tichUi(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+        if (filtered.isEmpty)
+          const TichCard(child: TichEmpty('No units for this semester.'))
+        else
+          ...filtered.map(
+            (u) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${u['unit_code'] ?? ''} · ${u['unit_name'] ?? ''}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    [
+                      u['registration_status'],
+                      if (u['credit_hours'] != null) '${u['credit_hours']} CH',
+                    ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StudentExamEligibilitySection extends StatefulWidget {
+  const _StudentExamEligibilitySection({
+    required this.api,
+    required this.academics,
+    required this.feeClearanceStatus,
+  });
+
+  final StudentApi api;
+  final Map<String, dynamic> academics;
+  final String? feeClearanceStatus;
+
+  @override
+  State<_StudentExamEligibilitySection> createState() =>
+      _StudentExamEligibilitySectionState();
+}
+
+class _StudentExamEligibilitySectionState
+    extends State<_StudentExamEligibilitySection> {
+  bool _downloading = false;
+
+  Future<void> _downloadExamCard(int semesterId) async {
+    setState(() => _downloading = true);
+    try {
+      final bytes =
+          await widget.api.downloadExamCardPdf(semesterId: semesterId);
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/exam-card-$semesterId.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      final result = await OpenFile.open(file.path);
+      if (!mounted) return;
+      if (result.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message.isNotEmpty
+                  ? result.message
+                  : 'Exam card saved. Open it from your files app if needed.',
+            ),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final portal = widget.academics['exam_portal'] is Map
+        ? Map<String, dynamic>.from(widget.academics['exam_portal'] as Map)
+        : null;
+    final attendance = (widget.academics['attendance'] as List? ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final upcoming = (portal?['upcoming_exams'] as List? ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final semesterId = (portal?['semester_id'] as num?)?.toInt();
+    final canDownload = portal?['can_view_exam_card'] == true && semesterId != null;
+    final feeCleared =
+        (widget.feeClearanceStatus ?? '').toLowerCase() == 'cleared';
+    final examCard = portal?['exam_card'] is Map
+        ? Map<String, dynamic>.from(portal!['exam_card'] as Map)
+        : null;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        TichCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Fee clearance',
+                style: tichUi(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              TichStatusChip(
+                feeCleared ? 'Cleared' : (widget.feeClearanceStatus ?? 'Pending'),
+                tone: feeCleared ? TichChipTone.success : TichChipTone.warning,
+              ),
+              if (canDownload) ...[
+                const SizedBox(height: 16),
+                AdaptiveFilledButton(
+                  onPressed: _downloading
+                      ? null
+                      : () => _downloadExamCard(semesterId),
+                  child: _downloading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: AdaptiveProgress(color: Colors.white),
+                        )
+                      : const Text('Download examination card'),
+                ),
+                if (examCard?['exam_card_number'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Card no. ${examCard!['exam_card_number']}',
+                      style: tichUi(fontSize: 12, color: TichColors.neutralMuted),
+                    ),
+                  ),
+              ] else if (portal != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    'Clear fees and meet attendance requirements (≥90%) to download your exam card.',
+                    style: tichUi(fontSize: 13, height: 1.4),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (upcoming.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const TichSectionHeader('Upcoming examinations'),
+          ...upcoming.map((exam) {
+            final eligible = exam['eligible_for_exams'] == true ||
+                exam['eligible_for_exams'] == 1;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${exam['unit_code'] ?? ''} · ${exam['unit_name'] ?? ''}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    [
+                      formatDateTime(exam['exam_date']),
+                      if (exam['start_time'] != null && exam['end_time'] != null)
+                        '${exam['start_time']} – ${exam['end_time']}',
+                      exam['venue'],
+                    ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
+                  ),
+                  trailing: TichStatusChip(
+                    eligible ? 'Eligible' : 'Not cleared',
+                    tone: eligible ? TichChipTone.success : TichChipTone.warning,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+        const SizedBox(height: 16),
+        const TichSectionHeader('Unit attendance & eligibility'),
+        if (attendance.isEmpty)
+          const TichCard(child: TichEmpty('No eligibility data yet.'))
+        else
+          ...attendance.map((a) {
+            final eligible = a['eligible_for_exams'] == true ||
+                a['eligible_for_exams'] == 1;
+            final blocked = a['exam_eligibility_blocked'] == true ||
+                a['exam_eligibility_blocked'] == 1;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TichCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
+                    style: tichUi(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'Attendance ${a['attendance_percentage'] ?? 0}% · '
+                    '${studentAttendanceStatusLabel(a)}',
+                  ),
+                  trailing: TichStatusChip(
+                    blocked
+                        ? 'Blocked'
+                        : (eligible ? 'Eligible' : 'Pending'),
+                    tone: blocked
+                        ? TichChipTone.danger
+                        : (eligible
+                            ? TichChipTone.success
+                            : TichChipTone.warning),
+                  ),
+                ),
+              ),
+            );
+          }),
+      ],
     );
   }
 }

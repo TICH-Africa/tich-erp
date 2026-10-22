@@ -8,6 +8,15 @@ import 'tich_brand_logo.dart';
 import 'tich_global_more_footer.dart';
 import 'tich_widgets.dart';
 
+/// Run [action] immediately (root nav push), then close the More drawer.
+void runTichMoreDrawerAction(BuildContext context, VoidCallback action) {
+  action();
+  final root = Navigator.of(context);
+  if (root.canPop()) {
+    root.pop();
+  }
+}
+
 /// One link in the More menu, used by both the side bar and the iOS list.
 class TichMoreItem {
   const TichMoreItem({
@@ -176,10 +185,8 @@ class TichMoreDrawer extends StatelessWidget {
                   for (final item in items)
                     TichSideNavRow(
                       item: item,
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        item.onTap();
-                      },
+                      onTap: () =>
+                          runTichMoreDrawerAction(context, item.onTap),
                     ),
                 ],
               ),
@@ -192,10 +199,8 @@ class TichMoreDrawer extends StatelessWidget {
               for (final item in footer)
                 TichSideNavRow(
                   item: item,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    item.onTap();
-                  },
+                  onTap: () =>
+                      runTichMoreDrawerAction(context, item.onTap),
                 ),
             ],
           ],
@@ -298,8 +303,8 @@ class TichMoreList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         return TichCard(
-          onTap: item.onTap,
           child: ListTile(
+            onTap: item.onTap,
             contentPadding: EdgeInsets.zero,
             leading: item.showProfilePhoto
                 ? TichMoreProfileLeading(

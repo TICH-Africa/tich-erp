@@ -10,8 +10,15 @@ use App\Http\Controllers\HR\OnboardingController;
 use App\Http\Controllers\HR\StaffController;
 use App\Http\Controllers\HR\StatusHistoryController;
 use App\Http\Controllers\HR\VacancyController;
+use App\Http\Controllers\Api\MobileRealtimeController;
 use App\Http\Controllers\RBACController;
+use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/realtime/config', MobileRealtimeController::class);
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
+});
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -179,6 +186,7 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
+    Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
 
     Route::get('/finance', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'show']);

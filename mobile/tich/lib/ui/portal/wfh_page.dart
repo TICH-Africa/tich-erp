@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_form_dialog.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class WfhPage extends StatefulWidget {
@@ -25,10 +26,17 @@ class _WfhPageState extends State<WfhPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.wfh();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.wfh');
+    _future = TichScreenCache.ensure('portal.wfh', () => widget.api.wfh());
   }
 
-  void _reload() => setState(() => _future = widget.api.wfh());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.wfh(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.wfh',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -36,6 +44,7 @@ class _WfhPageState extends State<WfhPage> {
       setState: setState,
       fetch: () => widget.api.wfh(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.wfh',
     );
   }
 
@@ -124,10 +133,8 @@ class _WfhPageState extends State<WfhPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.wfh');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }

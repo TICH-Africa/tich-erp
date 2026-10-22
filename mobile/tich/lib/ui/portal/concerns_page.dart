@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_form_dialog.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class ConcernsPage extends StatefulWidget {
@@ -25,10 +26,17 @@ class _ConcernsPageState extends State<ConcernsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.concerns();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.concerns');
+    _future = TichScreenCache.ensure('portal.concerns', () => widget.api.concerns());
   }
 
-  void _reload() => setState(() => _future = widget.api.concerns());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.concerns(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.concerns',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -36,6 +44,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
       setState: setState,
       fetch: () => widget.api.concerns(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.concerns',
     );
   }
 
@@ -105,10 +114,8 @@ class _ConcernsPageState extends State<ConcernsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.concerns');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(message: snap.error.toString(), onRetry: _reload);
           }

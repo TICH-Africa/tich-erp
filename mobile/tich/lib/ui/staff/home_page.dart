@@ -6,6 +6,7 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../../data/staff_api.dart';
 import '../../models/auth_user.dart';
+import '../../data/tich_api_scope.dart';
 import '../shell/portal_shell.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
@@ -36,10 +37,21 @@ class _StaffHomePageState extends State<StaffHomePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.dashboard();
+    staffPrimeScreen(
+      persistKey: 'staff.home',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.dashboard(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.dashboard());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.home',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -47,14 +59,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
       setState: setState,
       fetch: () => widget.api.dashboard(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.home',
     );
   }
 
   bool _canSwitchToEmployee(AuthUser? user) {
     if (user == null || user.isStudent) return false;
-    return user.canAccessEmployeePortal ||
-        user.hasBothStaffPortals ||
-        (user.staffId != null && user.isTeachingStaff);
+    return user.canAccessEmployeePortal;
   }
 
   @override
@@ -65,10 +76,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
         ? [
             IconButton(
               tooltip: 'My Employee Portal',
-              onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const PortalShell()),
-                (route) => false,
-              ),
+              onPressed: () {
+                if (user == null) return;
+                tichOpenPortalRoot(user, const PortalShell());
+              },
               icon: const Icon(Icons.badge_outlined),
             ),
           ]
@@ -82,10 +93,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return staffLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.home');
+          if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }

@@ -20,7 +20,8 @@ class TichTabActiveScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant TichTabActiveScope oldWidget) {
-    return oldWidget.activeIndex != activeIndex ||
-        oldWidget.tabIndex != tabIndex;
+    final wasActive = oldWidget.activeIndex == oldWidget.tabIndex;
+    final nowActive = activeIndex == tabIndex;
+    return wasActive != nowActive;
   }
 }

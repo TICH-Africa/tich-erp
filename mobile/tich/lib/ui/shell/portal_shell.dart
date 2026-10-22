@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../../data/tich_portal_warmup.dart';
+import '../../data/tich_screen_cache.dart';
 import '../portal/attendance_page.dart';
 import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
@@ -34,8 +36,10 @@ class PortalShell extends StatefulWidget {
 
 class _PortalShellState extends State<PortalShell>
     with WidgetsBindingObserver, ShellNavBadgeMixin {
-  int _index = 0;
+  final GlobalKey<AdaptiveTabScaffoldState> _scaffoldKey =
+      GlobalKey<AdaptiveTabScaffoldState>();
   List<Widget>? _pages;
+  Widget? _root;
   Map<String, int> _counts = const {};
   int _homeBadge = 0;
   int _leaveBadge = 0;
@@ -70,7 +74,7 @@ class _PortalShellState extends State<PortalShell>
     if (!mounted) return;
     final tab = EmployeePortalNav.consumePendingTab();
     if (tab != null) {
-      setState(() => _index = tab);
+      _scaffoldKey.currentState?.selectTab(tab);
       if (tab == 2) refreshNavBadges();
     }
   }
@@ -94,7 +98,10 @@ class _PortalShellState extends State<PortalShell>
     if (!mounted) return;
     final api = context.read<EmployeeApi>();
     try {
-      final data = await api.dashboard();
+      final data = await TichScreenCache.ensure<Map<String, dynamic>>(
+        'portal.dashboard',
+        () => api.dashboard(),
+      );
       if (!mounted) return;
       final staff = Map<String, dynamic>.from(data['staff'] as Map? ?? {});
       final url = staff['photo_url']?.toString().trim();
@@ -110,7 +117,7 @@ class _PortalShellState extends State<PortalShell>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_pages != null) return;
+    if (_root != null) return;
     final api = context.read<EmployeeApi>();
     if (!_staffPhotoLoaded) {
       _loadStaffPhoto();
@@ -122,6 +129,79 @@ class _PortalShellState extends State<PortalShell>
       PayslipsPage(api: api),
       MorePage(api: api),
     ];
+    TichPortalWarmup.employeeShellOpened(api);
+    _root = AdaptiveTabScaffold(
+      key: _scaffoldKey,
+      pages: _pages!,
+      portalName: 'Employee portal',
+      onSignOut: tichLogout(context),
+      moreIndex: 4,
+      onTabSelected: (i) {
+        TichPortalWarmup.employeeTabSelected(api, i);
+        if (i == 2) refreshNavBadges();
+      },
+      onMoreOpen: () => TichPortalWarmup.employeeMoreOpened(api),
+      moreDrawer: (context) => TichMoreDrawer(
+        portalName: 'Employee portal',
+        menuContext: TichPortalMenuContext.employee,
+        items: MorePage.mainItems(context, api),
+      ),
+      items: _tabItems(),
+    );
+  }
+
+  List<AdaptiveTabItem> _tabItems() {
+    final showClockPulse = _clockPulse;
+    final showClockCount = !showClockPulse && _clockBadge > 0;
+    return [
+      AdaptiveTabItem(
+        label: 'Home',
+        materialIcon: Icons.home_outlined,
+        materialActiveIcon: Icons.home,
+        cupertinoIcon: CupertinoIcons.house,
+        cupertinoActiveIcon: CupertinoIcons.house_fill,
+        badgeCount: _homeBadge,
+      ),
+      AdaptiveTabItem(
+        label: 'Leave',
+        materialIcon: Icons.event_available_outlined,
+        materialActiveIcon: Icons.event_available,
+        cupertinoIcon: CupertinoIcons.calendar,
+        cupertinoActiveIcon: CupertinoIcons.calendar_today,
+        badgeCount: _leaveBadge,
+      ),
+      AdaptiveTabItem(
+        label: 'Clock in',
+        materialIcon: Icons.fingerprint_outlined,
+        materialActiveIcon: Icons.fingerprint,
+        cupertinoIcon: CupertinoIcons.clock,
+        cupertinoActiveIcon: CupertinoIcons.clock_fill,
+        badgeCount: showClockPulse ? 1 : (showClockCount ? _clockBadge : 0),
+        badgeDotOnly: showClockPulse,
+        badgePulse: showClockPulse,
+      ),
+      const AdaptiveTabItem(
+        label: 'Payslips',
+        materialIcon: Icons.payments_outlined,
+        materialActiveIcon: Icons.payments,
+        cupertinoIcon: CupertinoIcons.money_dollar,
+        cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
+      ),
+      AdaptiveTabItem(
+        label: 'More',
+        materialIcon: Icons.menu,
+        materialActiveIcon: Icons.menu_open,
+        cupertinoIcon: CupertinoIcons.ellipsis_circle,
+        cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
+        badgeCount: _moreDot,
+        badgeDotOnly: true,
+      ),
+    ];
+  }
+
+  void _pushNavBadgesToScaffold() {
+    _scaffoldKey.currentState?.updateNavCounts(_counts);
+    _scaffoldKey.currentState?.updateNavItems(_tabItems());
   }
 
   @override
@@ -147,17 +227,17 @@ class _PortalShellState extends State<PortalShell>
         for (final key in _moreMenuKeys) {
           moreDot += counts[key] ?? 0;
         }
-        setState(() {
-          _counts = counts;
-          _homeBadge = total;
-          _leaveBadge = counts['leave.returned'] ?? 0;
-          _clockBadge = counts['attendance_clock_in'] ?? 0;
-          _clockPulse = clockPulse;
-          _moreDot = moreDot;
-        });
+        _counts = counts;
+        _homeBadge = total;
+        _leaveBadge = counts['leave.returned'] ?? 0;
+        _clockBadge = counts['attendance_clock_in'] ?? 0;
+        _clockPulse = clockPulse;
+        _moreDot = moreDot;
+        _pushNavBadgesToScaffold();
       } catch (_) {
         if (mounted) {
-          setState(() => _clockPulse = clockPulse);
+          _clockPulse = clockPulse;
+          _pushNavBadgesToScaffold();
         }
       }
     });
@@ -166,76 +246,9 @@ class _PortalShellState extends State<PortalShell>
 
   @override
   Widget build(BuildContext context) {
-    final showClockPulse = _clockPulse;
-    final showClockCount = !showClockPulse && _clockBadge > 0;
-
     return EmployeePortalMenuScope(
       profilePhotoUrl: _profilePhotoUrl,
-      child: PortalNavCountsScope(
-        counts: _counts,
-        child: AdaptiveTabScaffold(
-        currentIndex: _index,
-        onTap: (i) {
-          setState(() => _index = i);
-          if (i == 2) {
-            refreshNavBadges();
-          }
-        },
-        pages: _pages!,
-        portalName: 'Employee portal',
-        onSignOut: tichLogout(context),
-        moreIndex: 4,
-        moreDrawer: (context) => TichMoreDrawer(
-          portalName: 'Employee portal',
-          menuContext: TichPortalMenuContext.employee,
-          items: MorePage.mainItems(context, context.read<EmployeeApi>()),
-        ),
-        items: [
-          AdaptiveTabItem(
-            label: 'Home',
-            materialIcon: Icons.home_outlined,
-            materialActiveIcon: Icons.home,
-            cupertinoIcon: CupertinoIcons.house,
-            cupertinoActiveIcon: CupertinoIcons.house_fill,
-            badgeCount: _homeBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Leave',
-            materialIcon: Icons.event_available_outlined,
-            materialActiveIcon: Icons.event_available,
-            cupertinoIcon: CupertinoIcons.calendar,
-            cupertinoActiveIcon: CupertinoIcons.calendar_today,
-            badgeCount: _leaveBadge,
-          ),
-          AdaptiveTabItem(
-            label: 'Clock in',
-            materialIcon: Icons.fingerprint_outlined,
-            materialActiveIcon: Icons.fingerprint,
-            cupertinoIcon: CupertinoIcons.clock,
-            cupertinoActiveIcon: CupertinoIcons.clock_fill,
-            badgeCount: showClockPulse ? 1 : (showClockCount ? _clockBadge : 0),
-            badgeDotOnly: showClockPulse,
-            badgePulse: showClockPulse,
-          ),
-          const AdaptiveTabItem(
-            label: 'Payslips',
-            materialIcon: Icons.payments_outlined,
-            materialActiveIcon: Icons.payments,
-            cupertinoIcon: CupertinoIcons.money_dollar,
-            cupertinoActiveIcon: CupertinoIcons.money_dollar_circle_fill,
-          ),
-          AdaptiveTabItem(
-            label: 'More',
-            materialIcon: Icons.menu,
-            materialActiveIcon: Icons.menu_open,
-            cupertinoIcon: CupertinoIcons.ellipsis_circle,
-            cupertinoActiveIcon: CupertinoIcons.ellipsis_circle_fill,
-            badgeCount: _moreDot,
-            badgeDotOnly: true,
-          ),
-        ],
-        ),
-      ),
+      child: _root ?? const SizedBox.shrink(),
     );
   }
 }

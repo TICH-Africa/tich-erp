@@ -6,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_form_dialog.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'time_log_detail_page.dart';
@@ -26,10 +27,17 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.timeLogs();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.time_logs');
+    _future = TichScreenCache.ensure('portal.time_logs', () => widget.api.timeLogs());
   }
 
-  void _reload() => setState(() => _future = widget.api.timeLogs());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.timeLogs(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.time_logs',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -37,6 +45,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
       setState: setState,
       fetch: () => widget.api.timeLogs(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.time_logs',
     );
   }
 
@@ -225,10 +234,8 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-            if (tichShowLoadingSpinner(snap, merged)) {
-              return const Center(child: AdaptiveProgress());
-            }
+            final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.time_logs');
+            if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
               return TichErrorRefresh(
                 message: snap.error.toString(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../data/tich_api_scope.dart';
 import '../../models/auth_user.dart';
 import '../../theme/tich_theme.dart';
 import '../shell/portal_shell.dart';
@@ -38,9 +39,7 @@ class PortalChooserPage extends StatelessWidget {
                   'Leave, clock in/out, payslips, documents, and HR self-service.',
               icon: Icons.badge_outlined,
               color: TichColors.blue,
-              onTap: () => Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const PortalShell()),
-              ),
+              onTap: () => tichOpenPortalRoot(user, const PortalShell()),
             ),
           if (user.canAccessEmployeePortal &&
               (user.canAccessStaffPortal || user.canAccessProcurementPortal))
@@ -52,9 +51,7 @@ class PortalChooserPage extends StatelessWidget {
                   'Requisitions, GRNs, stock issues, alerts, and asset lookup.',
               icon: Icons.inventory_outlined,
               color: TichColors.blueStrong,
-              onTap: () => Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const ProcurementPortalShell()),
-              ),
+              onTap: () => tichOpenPortalRoot(user, const ProcurementPortalShell()),
             ),
           if (user.canAccessProcurementPortal &&
               (user.canAccessEmployeePortal || user.canAccessStaffPortal))
@@ -66,9 +63,7 @@ class PortalChooserPage extends StatelessWidget {
                   'Teaching units, class attendance, timetable, marks, and lesson plans.',
               icon: Icons.school_outlined,
               color: TichColors.greenDark,
-              onTap: () => Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const StaffPortalShell()),
-              ),
+              onTap: () => tichOpenPortalRoot(user, const StaffPortalShell()),
             ),
           const SizedBox(height: 20),
           Text(

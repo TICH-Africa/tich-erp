@@ -25,10 +25,21 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.grading();
+    staffPrimeScreen(
+      persistKey: 'staff.grading',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.grading(),
+    );
   }
 
-  void _reload() => setState(() => _future = widget.api.grading());
+  Future<void> _reload() => staffCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.grading(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'staff.grading',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -36,6 +47,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       setState: setState,
       fetch: () => widget.api.grading(),
       onData: (data) => _dataCache = data,
+      persistKey: 'staff.grading',
     );
   }
 
@@ -163,10 +175,8 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (merged == null && snap.connectionState != ConnectionState.done) {
-            return staffLoadingBody();
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'staff.grading');
+          if (tichShowLoadingSpinner(snap, merged)) { return staffLoadingBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return staffErrorBody(snap.error, _reload);
           }

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
@@ -43,6 +43,8 @@ class TichNotifications {
   ApiClient _api = ApiClient();
   bool _ready = false;
   bool _initStarted = false;
+
+  bool get isReady => _ready;
   String? _deviceId;
   Future<void>? _clockInInflight;
   Future<void>? _lessonInflight;

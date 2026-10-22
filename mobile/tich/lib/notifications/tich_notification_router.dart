@@ -7,6 +7,7 @@ import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_state.dart';
 import '../data/employee_api.dart';
 import '../data/staff_api.dart';
+import '../data/tich_api_scope.dart';
 import '../models/auth_user.dart';
 import '../ui/portal/appraisals_page.dart';
 import '../ui/portal/attendance_page.dart';
@@ -110,8 +111,8 @@ class TichNotificationRouter {
   void _navigate(BuildContext context, AuthUser user, TichDeepLink link) {
     if (user.isStudent) return;
 
-    final employeeApi = context.read<EmployeeApi>();
-    final staffApi = context.read<StaffApi>();
+    final employeeApi = tichTryRead<EmployeeApi>(context);
+    final staffApi = tichTryRead<StaffApi>(context);
 
     void push(Widget page) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -119,7 +120,7 @@ class TichNotificationRouter {
 
     switch (link.target) {
       case TichDeepLinkTarget.employeeAttendance:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           if (EmployeePortalNav.isEmployeeShellActive) {
             EmployeePortalNav.requestTab(2);
           } else {
@@ -128,7 +129,7 @@ class TichNotificationRouter {
         }
         break;
       case TichDeepLinkTarget.employeeLeave:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           if (EmployeePortalNav.isEmployeeShellActive) {
             EmployeePortalNav.requestTab(1);
           } else {
@@ -142,42 +143,42 @@ class TichNotificationRouter {
         }
         break;
       case TichDeepLinkTarget.employeeNotifications:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(NotificationsPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeeProfile:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(ProfilePage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeeDocuments:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(DocumentsPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeePolicies:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(PoliciesPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeeConcerns:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(ConcernsPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeeFeedback:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(FeedbackPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.employeeAppraisals:
-        if (user.canAccessEmployeePortal) {
+        if (user.canAccessEmployeePortal && employeeApi != null) {
           push(AppraisalsPage(api: employeeApi));
         }
         break;
       case TichDeepLinkTarget.staffTimetable:
-        if (user.canAccessStaffPortal) {
+        if (user.canAccessStaffPortal && staffApi != null) {
           if (StaffPortalNav.isStaffShellActive) {
             StaffPortalNav.requestTab(2);
           } else {

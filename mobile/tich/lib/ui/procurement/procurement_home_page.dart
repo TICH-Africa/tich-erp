@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/procurement_api.dart';
+import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/portal_hero.dart';
 import '../shell/procurement_nav_signals.dart';
@@ -26,16 +27,20 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.dashboard();
+    _cache = procurementReadCache('procurement.home');
+    _future = TichScreenCache.ensure(
+      'procurement.home',
+      () => widget.api.dashboard(),
+    );
   }
 
-  void _reload() {
-    procurementUpdateFuture(
-      setState,
-      (f) {
-        _future = f;
-      },
-      () => widget.api.dashboard(),
+  Future<void> _reload() async {
+    await procurementCachedReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.dashboard(),
+      onData: (d) => _cache = d,
+      persistKey: 'procurement.home',
     );
     ProcurementPortalNavSignals.onCountsChanged?.call();
   }
@@ -46,6 +51,7 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
       setState: setState,
       fetch: () => widget.api.dashboard(),
       onData: (d) => _cache = d,
+      persistKey: 'procurement.home',
     );
   }
 
@@ -61,9 +67,13 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(snap, _cache as dynamic);
-            if (merged == null && snap.connectionState != ConnectionState.done) {
-              return const Center(child: AdaptiveProgress());
+            final merged = tichMergeSnapshot(
+              snap,
+              _cache as dynamic,
+              persistKey: 'procurement.home',
+            );
+            if (tichShowLoadingSpinner(snap, merged)) {
+              return procurementLoadingBody(onRefresh: () async => _reload());
             }
             if (merged == null && snap.hasError) {
               return Center(

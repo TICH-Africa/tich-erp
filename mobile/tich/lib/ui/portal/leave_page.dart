@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
@@ -7,6 +6,7 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 
 class LeavePage extends StatefulWidget {
@@ -25,10 +25,17 @@ class _LeavePageState extends State<LeavePage> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.leave();
+    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.leave');
+    _future = TichScreenCache.ensure('portal.leave', () => widget.api.leave());
   }
 
-  void _reload() => setState(() => _future = widget.api.leave());
+  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: () => widget.api.leave(),
+      onData: (data) => _dataCache = data,
+      persistKey: 'portal.leave',
+    );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -36,6 +43,7 @@ class _LeavePageState extends State<LeavePage> {
       setState: setState,
       fetch: () => widget.api.leave(),
       onData: (data) => _dataCache = data,
+      persistKey: 'portal.leave',
     );
   }
 
@@ -69,10 +77,8 @@ class _LeavePageState extends State<LeavePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic);
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return const Center(child: AdaptiveProgress());
-          }
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.leave');
+          if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(
               message: snap.error.toString(),
@@ -122,9 +128,8 @@ class _LeavePageState extends State<LeavePage> {
                             const SizedBox(height: 4),
                             Text(
                               '${b['balance_days']}',
-                              style: GoogleFonts.merriweather(
+                              style: TichTheme.display(
                                 fontSize: 22,
-                                fontWeight: FontWeight.w700,
                                 color: scheme.primary,
                               ),
                             ),

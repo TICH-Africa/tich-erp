@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
+import '../../data/tich_screen_cache.dart';
+import 'tich_page_skeleton.dart';
 import 'tich_tab_active_scope.dart';
 import 'tich_widgets.dart';
 
@@ -12,7 +14,18 @@ final RouteObserver<ModalRoute<void>> tichRouteObserver =
     RouteObserver<ModalRoute<void>>();
 
 /// Default background poll interval while a screen is visible (WhatsApp-style).
-const Duration tichLiveRefreshInterval = Duration(seconds: 25);
+const Duration tichLiveRefreshInterval = Duration(seconds: 90);
+
+/// Minimum gap between automatic background refreshes (avoids flicker on tab/back).
+const Duration tichLiveRefreshMinGap = Duration(seconds: 8);
+
+/// Scrollable skeleton while the first payload arrives — paints on frame 1.
+Widget tichInstantWaitBody({Future<void> Function()? onRefresh}) {
+  return RefreshIndicator(
+    onRefresh: onRefresh ?? () async {},
+    child: const TichPageSkeleton(),
+  );
+}
 
 /// Hook for [TichLiveRefreshBinder] → [TichLiveData] silent updates (no [FutureBuilder] swap).
 class TichAsyncRefreshHandle {
@@ -101,7 +114,7 @@ class _TichLiveDataState<T> extends State<TichLiveData<T>> {
   @override
   Widget build(BuildContext context) {
     if (_data == null && _error == null) {
-      return const Center(child: AdaptiveProgress());
+      return tichInstantWaitBody(onRefresh: _reload);
     }
     if (_data == null && _error != null) {
       return TichErrorRefresh(
@@ -113,33 +126,64 @@ class _TichLiveDataState<T> extends State<TichLiveData<T>> {
   }
 }
 
-/// Merge [AsyncSnapshot] with [_dataCache] so background refresh does not flash loading.
-T? tichMergeSnapshot<T>(AsyncSnapshot<T> snap, T? cache) {
-  if (snap.hasData) return snap.data;
-  return cache;
+/// Merge [AsyncSnapshot] with in-memory cache so background refresh never flashes loading.
+T? tichMergeSnapshot<T>(
+  AsyncSnapshot<T> snap,
+  T? cache, {
+  String? persistKey,
+}) {
+  if (cache != null) return cache;
+  if (snap.hasData) {
+    final data = snap.data;
+    if (persistKey != null && data != null) {
+      TichScreenCache.write(persistKey, data as Object);
+    }
+    return data;
+  }
+  if (persistKey != null) return TichScreenCache.read<T>(persistKey);
+  return null;
 }
 
+/// Prefer [tichInstantWaitBody] over a spinner when [merged] is still null.
 bool tichShowLoadingSpinner<T>(AsyncSnapshot<T> snap, T? merged) {
-  return merged == null && snap.connectionState != ConnectionState.done;
+  return merged == null && !snap.hasError;
 }
 
-/// Background refresh: pass [onData] only (no new [Future]) to avoid [FutureBuilder] flicker.
+/// Network refresh without replacing the [FutureBuilder]'s future (prevents flicker).
 void tichSilentReload<T>({
   required bool Function() mounted,
   required void Function(VoidCallback fn) setState,
   required Future<T> Function() fetch,
   void Function(T data)? onData,
-  void Function(Future<T> future)? apply,
+  String? persistKey,
 }) {
   unawaited(
     fetch().then((data) {
       if (!mounted()) return;
-      setState(() {
-        onData?.call(data);
-        apply?.call(Future.value(data));
-      });
+      if (persistKey != null) {
+        TichScreenCache.write(persistKey, data as Object);
+      }
+      setState(() => onData?.call(data));
     }).catchError((_) {}),
   );
+}
+
+/// Pull-to-refresh / retry: same as [tichSilentReload] but awaits completion.
+Future<void> tichRefreshCached<T>({
+  required bool Function() mounted,
+  required void Function(VoidCallback fn) setState,
+  required Future<T> Function() fetch,
+  required void Function(T data) onData,
+  String? persistKey,
+}) async {
+  try {
+    final data = await fetch();
+    if (!mounted()) return;
+    if (persistKey != null) {
+      TichScreenCache.write(persistKey, data as Object);
+    }
+    setState(() => onData(data));
+  } catch (_) {}
 }
 
 /// Wraps portal screens so lists and dashboards stay up to date without pull-to-refresh.
@@ -167,6 +211,7 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
   bool _routeVisible = true;
   bool _tabVisible = true;
   bool _appActive = true;
+  DateTime? _lastAutoRefresh;
 
   bool get _shouldRun =>
       widget.enabled && _routeVisible && _tabVisible && _appActive;
@@ -201,19 +246,25 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
     final tabVisible = scope?.isActive ?? true;
     if (tabVisible == _tabVisible) return;
     _tabVisible = tabVisible;
-    if (_tabVisible && _shouldRun) {
-      widget.onLiveRefresh();
-    }
     _syncTimer();
+  }
+
+  void _maybeAutoRefresh() {
+    if (!_shouldRun) return;
+    final now = DateTime.now();
+    if (_lastAutoRefresh != null &&
+        now.difference(_lastAutoRefresh!) < tichLiveRefreshMinGap) {
+      return;
+    }
+    _lastAutoRefresh = now;
+    widget.onLiveRefresh();
   }
 
   void _syncTimer() {
     _timer?.cancel();
     _timer = null;
     if (!_shouldRun) return;
-    _timer = Timer.periodic(widget.interval, (_) {
-      if (_shouldRun) widget.onLiveRefresh();
-    });
+    _timer = Timer.periodic(widget.interval, (_) => _maybeAutoRefresh());
   }
 
   @override
@@ -221,16 +272,13 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
     final active = state == AppLifecycleState.resumed;
     if (active == _appActive) return;
     _appActive = active;
-    if (_appActive && _shouldRun) {
-      widget.onLiveRefresh();
-    }
+    if (_appActive) _maybeAutoRefresh();
     _syncTimer();
   }
 
   @override
   void didPopNext() {
     _routeVisible = true;
-    if (_shouldRun) widget.onLiveRefresh();
     _syncTimer();
   }
 
