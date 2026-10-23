@@ -15,6 +15,7 @@
             'program' => $program->id,
             'intake' => $selectedIntake?->id,
             'section' => $section,
+            'teaching_period' => request()->integer('teaching_period') ?: null,
         ]));
     @endphp
 

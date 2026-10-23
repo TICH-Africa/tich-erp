@@ -199,6 +199,12 @@
 
         @if ($program->usesBlocks())
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:22rem;">
+                <input type="hidden" name="section" value="timetable">
+                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                @if ($learningDepartment)
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                @endif
                 <div class="tich-form-group" style="margin:0;">
                     <label class="tich-label">Block</label>
                     <select name="teaching_period" class="tich-input" onchange="this.form.submit()">
@@ -222,6 +228,12 @@
             @endphp
 
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'timetable', 'timetable_kind' => $timetableKind])) }}" class="tich-mt-4" style="max-width:22rem;">
+                <input type="hidden" name="section" value="timetable">
+                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                @if ($learningDepartment)
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                @endif
                 <div class="tich-form-group" style="margin:0;">
                     <label class="tich-label" for="tt-year-semester">Year and semester</label>
                     <select id="tt-year-semester" name="teaching_period" class="tich-input" onchange="this.form.submit()">

@@ -247,11 +247,14 @@ class ProgramCurriculumService
         AcademicProgram $program,
         ?CurriculumVersion $selectedIntake,
         User $user,
+        ?int $teachingPeriod = null,
     ): array {
         $programParams = array_filter([
             'program' => $program->id,
             'learning_department' => $learningDepartment?->id,
             'intake' => $selectedIntake?->id,
+            // The year and semester the officer is working on survives the trip to another page.
+            'teaching_period' => $teachingPeriod,
         ]);
 
         $listParams = array_filter([

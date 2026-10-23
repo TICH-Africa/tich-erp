@@ -260,7 +260,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 $learningDepartment,
                 $program,
                 $selectedIntake,
-                $request->user()
+                $request->user(),
+                $request->integer('teaching_period') ?: null,
             ),
             'applications' => $section === 'applications'
                 ? $this->curriculum->applicationsForIntake($program, $selectedIntake)

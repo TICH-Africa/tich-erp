@@ -59,7 +59,7 @@
         <p class="tich-caption tich-mt-4">Each intake gets the same {{ $scheduledPeriods }} {{ $program->usesBlocks() ? 'blocks' : 'semesters' }} - Years 1 to {{ $program->studyYears() }} - because cohorts overlap.</p>
 
         <p class="tich-mt-4">
-            <a href="{{ route('departments.academics.programs.curriculum', array_merge($hub, ['program' => $program->id, 'section' => 'timetable', 'intake' => $selectedIntake?->id])) }}" class="tich-btn tich-btn-secondary">Open timetable builder</a>
+            <a href="{{ route('departments.academics.programs.curriculum', array_filter(array_merge($hub, ['program' => $program->id, 'section' => 'timetable', 'intake' => $selectedIntake?->id, 'teaching_period' => request()->integer('teaching_period') ?: null]))) }}" class="tich-btn tich-btn-secondary">Open timetable builder</a>
         </p>
     </article>
 </div>

@@ -28,6 +28,12 @@
     <x-page-toolbar title="Exams &amp; grading - {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
         <x-slot:filters>
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-page-toolbar__filters-form">
+                <input type="hidden" name="section" value="exams">
+                <input type="hidden" name="exam_tab" value="{{ $examTab ?? 'overview' }}">
+                <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                @if ($learningDepartment)
+                    <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                @endif
                 <select name="teaching_period" class="tich-input tich-input--compact" onchange="this.form.submit()">
                     @foreach (range(1, $scheduledPeriods) as $periodNumber)
                         @php
