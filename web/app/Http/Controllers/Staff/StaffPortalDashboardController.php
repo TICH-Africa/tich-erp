@@ -114,7 +114,17 @@ class StaffPortalDashboardController extends Controller
                     ]);
                 }
             }
-            $attendanceSession->refresh()->load(['records.student.applicant', 'records.student']);
+            $attendanceSession = AttendanceSession::query()
+                ->with([
+                    'records.student.applicant',
+                    'records.student',
+                    'allocation.unit',
+                    'allocation.semester.academicYear',
+                    'allocation.staff',
+                    'timetableSession.timetable.curriculumVersion',
+                    'timetableSession.timetable.program',
+                ])
+                ->find($attendanceSession->id);
             $attendanceSession->update(['total_expected_attendees' => $attendanceSession->records->count()]);
 
             $attendanceStep = 1;
