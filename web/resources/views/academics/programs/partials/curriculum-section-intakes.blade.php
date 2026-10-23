@@ -65,7 +65,7 @@
                                             <span class="tich-caption">Add units first</span>
                                         @elseif ($hasInactiveUnits)
                                             <span class="tich-caption">Approve mapped units</span>
-                                        @else
+                                        @elseif (! $canApproveRegistry)
                                             <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Submit for approval</button>

@@ -398,7 +398,7 @@ class StaffPortalDashboardService
             ->select([
                 'st.id as student_id',
                 'st.registration_number',
-                DB::raw("TRIM(CONCAT(COALESCE(a.first_name,''), ' ', COALESCE(a.surname,''))) as student_name"),
+                DB::raw("TRIM(CONCAT(COALESCE(NULLIF(st.first_name,''), a.first_name, ''), ' ', COALESCE(NULLIF(st.surname,''), a.surname, ''))) as student_name"),
             ])
             ->distinct()
             ->get();
@@ -420,7 +420,7 @@ class StaffPortalDashboardService
             ->select([
                 'st.id as student_id',
                 'st.registration_number',
-                DB::raw("TRIM(CONCAT(COALESCE(a.first_name,''), ' ', COALESCE(a.surname,''))) as student_name"),
+                DB::raw("TRIM(CONCAT(COALESCE(NULLIF(st.first_name,''), a.first_name, ''), ' ', COALESCE(NULLIF(st.surname,''), a.surname, ''))) as student_name"),
             ])
             ->distinct()
             ->get();

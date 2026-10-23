@@ -96,6 +96,30 @@ class AttendanceVerificationService
         $intakeLabel = $session->timetableSession?->timetable?->curriculumVersion?->intakeLabel()
             ?: app(StaffPortalDashboardService::class)->intakeLabelForSemester($allocation?->semester);
 
+        // Sync roster: ensure any students enrolled after the session was created
+        // are added to the attendance records.
+        $programId = $allocation?->unit?->program_id;
+        $teachingPeriod = $allocation?->semester?->semester_number;
+        $roster = app(StaffPortalDashboardService::class)->rosterForAllocation(
+            $allocation->id,
+            $programId ? (int) $programId : null,
+            $teachingPeriod ? (int) $teachingPeriod : null,
+        );
+        $existingStudentIds = $session->records->pluck('student_id')->map(fn ($id) => (int) $id)->all();
+        foreach ($roster as $student) {
+            if (! in_array((int) $student->student_id, $existingStudentIds, true)) {
+                AttendanceRecord::query()->create([
+                    'session_id' => $session->id,
+                    'student_id' => $student->student_id,
+                    'is_present' => 0,
+                    'recorded_by_tutor' => 1,
+                    'created_at' => now(),
+                ]);
+            }
+        }
+        $session->refresh()->load(['records.student.applicant']);
+        $session->update(['total_expected_attendees' => $session->records->count()]);
+
         return [
             'session' => $session,
             'allocation' => $allocation,

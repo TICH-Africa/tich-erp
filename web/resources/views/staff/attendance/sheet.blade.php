@@ -55,7 +55,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $record->student?->registration_number }}</td>
-                    <td>{{ $record->student?->applicant?->fullName() ?? '-' }}</td>
+                    <td>{{ $record->student?->displayName() ?? '-' }}</td>
                     <td></td>
                 </tr>
             @endforeach
