@@ -51,10 +51,11 @@ class StudentUnitRegistrationService
         // A cohort that spans admission years is only useful split by the year each student
         // actually sits, so the filter reads the derived year rather than the admission date. It
         // opens on the year of the teaching period on screen: working Year 1 Semester 2 means the
-        // Year 1 class, not every intake on the programme. "All years" is still one choice away.
+        // Year 1 class, not every intake on the programme. Only a deliberate "All years" widens
+        // the list, and an empty choice straight off the filter form is not that.
         $studyYear = $request->integer('study_year');
 
-        if ($selected && ! $request->has('study_year')) {
+        if ($selected && $studyYear <= 0 && $request->string('study_year')->toString() !== 'all') {
             $studyYear = $program->yearOfPeriod((int) $selected['semester']);
         }
 
@@ -78,6 +79,7 @@ class StudentUnitRegistrationService
             'students' => $students,
             'yearsByStudent' => $yearsByStudent,
             'studyYearFilter' => $studyYear > 0 ? $studyYear : null,
+            'studyYearChoice' => $studyYear > 0 ? (string) $studyYear : ($request->string('study_year')->toString() === 'all' ? 'all' : null),
             'studyYears' => $this->sortedUnique($allYearsByStudent->filter()->map(fn (array $year) => $year['year'])->values()->all()),
             'pathways' => $this->distinctValues($program, 'entry_pathway'),
             'admissionYears' => $this->admissionYears($program),
@@ -1169,12 +1171,12 @@ class StudentUnitRegistrationService
     }
 
     /**
-     * Open the desk on a period that actually carries units.
+     * Open the desk on the teaching period the roster actually sits.
      *
-     * The cohort's own year comes first, but the desk used to stop there and show an empty
-     * list whenever the intake had not been mapped onto that period yet - which read as
-     * "only Year 1 units ever load". Falling back to the first mapped period keeps the
-     * screen usable, and the panel says which periods hold units either way.
+     * The cohort's own year comes first. When that year has no units mapped yet the desk used to
+     * jump to the first period that does - normally Year 1 Semester 1 - and the officer ended up
+     * registering Year 1 units onto Year 2 students. It now stays on the year in front of them and
+     * the panel names the periods that do carry units.
      *
      * @param  Collection<string, array{semester: int, block_id: int|null}>  $periodOptions
      * @param  Collection<int, array<string, mixed>|null>  $yearsByStudent
@@ -1196,7 +1198,7 @@ class StudentUnitRegistrationService
             ->keys()
             ->first();
 
-        if ($own !== null && $periodOptions->has($own) && (int) ($unitsByPeriod[$own] ?? 0) > 0) {
+        if ($own !== null && $periodOptions->has($own)) {
             return (string) $own;
         }
 

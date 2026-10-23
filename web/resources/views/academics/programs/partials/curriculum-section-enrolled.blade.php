@@ -61,7 +61,7 @@
             <div class="tich-form-group" style="margin:0; min-width:11rem;">
                 <label for="study_year" class="tich-label">Year of study</label>
                 <select id="study_year" name="study_year" class="tich-input">
-                    <option value="">All years</option>
+                    <option value="all" @selected(($desk['studyYearChoice'] ?? null) === 'all')>All years</option>
                     @foreach (($desk['studyYears'] ?? []) as $year)
                         <option value="{{ $year }}" @selected((int) ($desk['studyYearFilter'] ?? 0) === (int) $year)>Year {{ $year }}</option>
                     @endforeach
@@ -111,7 +111,7 @@
                         'learning_department' => $learningDepartment?->id,
                         'enrollment_status' => $enrollmentStatusFilter,
                         'admission_year' => $desk['yearFilter'],
-                        'study_year' => $desk['studyYearFilter'],
+                        'study_year' => $desk['studyYearChoice'],
                         'entry_pathway' => $desk['pathwayFilter'],
                         'student_search' => $desk['search'],
                     ]) as $key => $value)
@@ -160,7 +160,7 @@
                                         'intake' => $selectedIntake->id,
                                         'registration_period' => $periodLink['key'],
                                         'enrollment_status' => $enrollmentStatusFilter,
-                                        'study_year' => $desk['studyYearFilter'],
+                                        'study_year' => $desk['studyYearChoice'],
                                     ]))) }}">{{ $periodLink['label'] }} ({{ $periodLink['count'] }})</a>@if(! $loop->last) · @endif
                                 @endforeach
                             @else
