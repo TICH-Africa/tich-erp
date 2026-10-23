@@ -15,6 +15,7 @@ use App\Services\TranscriptDocumentService;
 use App\Services\TranscriptService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 /**
@@ -391,6 +392,71 @@ class SupplementaryExamMarksTest extends TestCase
      *
      * @return array{0: int, 1: int}
      */
+    public function test_a_lecturer_cannot_mark_a_student_who_is_not_on_their_unit(): void
+    {
+        [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0004', 'roll@test.africa');
+        $allocation = UnitAllocation::query()->findOrFail($allocationId);
+        $staff = Staff::query()->findOrFail($staffId);
+
+        // A classmate in the same programme who never registered this unit.
+        $outsiderId = (int) DB::table('students')->insertGetId([
+            'registration_number' => 'REG-TEST-9',
+            'first_name' => '',
+            'surname' => '',
+            'application_id' => DB::table('applicants')->insertGetId([
+                'application_number' => 'APP-TEST-9',
+                'program_id' => $this->program->id,
+                'first_name' => 'Zawadi',
+                'surname' => 'Otuoma',
+                'date_of_birth' => '2004-02-02',
+                'gender' => 'Female',
+                'email' => 'zawadi@test.africa',
+                'phone_number' => '0700000009',
+                'status' => 'admitted',
+            ]),
+            'program_id' => $this->program->id,
+            'enrollment_campus_id' => $this->student->enrollment_campus_id,
+            'cohort_intake' => '2026/01',
+            'date_of_admission' => '2026-01-05',
+            'enrollment_status' => 'active',
+        ]);
+
+        $this->assertSame([(int) $this->student->id], app(StaffPortalDashboardService::class)->markableStudentIds($allocation));
+
+        $mainSitting = DB::table('exam_results')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'is_supplementary' => 0])
+            ->first();
+
+        // The lecturer's sheet only ever carries their own roll, so a payload naming someone
+        // else is a tampered form - and it must save nothing, not even the legitimate row.
+        try {
+            app(StaffExamMarksService::class)->save($allocation, $staff, [(int) $this->student->id => 44, $outsiderId => 80]);
+            $this->fail('A lecturer posted marks for a student outside their allocated unit.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
+
+        $this->assertSame(0, DB::table('exam_results')->where('student_id', $outsiderId)->count());
+        $this->assertSame(
+            (float) $mainSitting->final_exam_score,
+            (float) DB::table('exam_results')->where('id', $mainSitting->id)->value('final_exam_score'),
+        );
+
+        try {
+            app(ContinuousAssessmentService::class)->saveGrid(
+                $allocation,
+                $staff,
+                [['key' => 'cat1', 'name' => 'CAT 1', 'type' => 'cat', 'max' => 20]],
+                [$outsiderId => ['cat1' => 18]],
+            );
+            $this->fail('A lecturer posted continuous marks for a student outside their allocated unit.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
+
+        $this->assertSame(0, DB::table('cat_scores')->where('student_id', $outsiderId)->count());
+    }
+
     private function allocateLecturer(string $employeeNumber, string $email): array
     {
         $staffId = (int) DB::table('staff')->insertGetId([

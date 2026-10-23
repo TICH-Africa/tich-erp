@@ -325,6 +325,49 @@ class StaffPortalDashboardService
     }
 
     /**
+     * The students a lecturer may write marks for: the same roll the marks sheet shows them.
+     *
+     * @return list<int>
+     */
+    public function markableStudentIds(UnitAllocation $allocation): array
+    {
+        $allocation->loadMissing(['unit', 'semester']);
+
+        return $this->rosterForAllocation(
+            $allocation->id,
+            $allocation->unit?->program_id ? (int) $allocation->unit->program_id : null,
+            $allocation->semester?->semester_number,
+        )
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  iterable<int|string, mixed>  $claimedStudentIds
+     */
+    public function assertStudentsAreOnRoll(UnitAllocation $allocation, iterable $claimedStudentIds): void
+    {
+        $allowed = $this->markableStudentIds($allocation);
+        $outsiders = collect($claimedStudentIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->reject(fn (int $id) => in_array($id, $allowed, true))
+            ->values()
+            ->all();
+
+        if ($outsiders === []) {
+            return;
+        }
+
+        $registrations = DB::table('students')->whereIn('id', $outsiders)->pluck('registration_number')->all();
+
+        abort(403, 'Only students on this unit\'s roll can be marked: '.implode(', ', $registrations ?: array_map('strval', $outsiders)));
+    }
+
+    /**
      * @param  list<int>  $semesterIds
      * @return Collection<int, object>
      */

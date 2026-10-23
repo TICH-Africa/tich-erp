@@ -123,6 +123,13 @@ class ContinuousAssessmentService
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
+        app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll(
+            $allocation,
+            collect($gridScores)
+                ->filter(fn ($cells) => is_array($cells) && collect($cells)->contains(fn ($cell) => $cell !== null && $cell !== ''))
+                ->keys(),
+        );
+
         foreach ($gridScores as $studentId => $cells) {
             foreach ($columns as $column) {
                 $key = $column['key'];

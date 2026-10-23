@@ -89,6 +89,12 @@ class StaffExamMarksService
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
+        // Own unit is not enough: a lecturer marks the students registered on it, nobody else's.
+        $this->dashboard->assertStudentsAreOnRoll(
+            $allocation,
+            collect($examScores)->filter(fn ($raw) => $raw !== null && $raw !== '')->keys(),
+        );
+
         $examMax = max(1, $examMax);
         $passMark = $this->passMarkForAllocation($allocation);
         $saved = 0;

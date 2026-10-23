@@ -284,6 +284,8 @@ class StaffTeachingService
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
+        app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [(int) $data['student_id']]);
+
         $max = (float) $data['max_score'];
         $obtained = (float) $data['score_obtained'];
 

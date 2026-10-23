@@ -15,6 +15,7 @@ use App\Services\LessonPlanContextService;
 use App\Services\LessonPlanDocumentService;
 use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffExamMarksService;
+use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
 use App\Services\StoredFileService;
@@ -460,6 +461,12 @@ class StaffPortalActionController extends Controller
             'score_obtained' => ['required', 'numeric', 'min:0'],
             'feedback' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        // A paper belongs to the unit the lecturer teaches, and the student to that unit's roll.
+        abort_unless($staff, 403);
+        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless((int) $assessment->unit_id === (int) $allocation->unit_id, 403);
+        app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [(int) $validated['student_id']]);
 
         $submission = \App\Models\ObjectiveSubmission::query()
             ->where('id', $validated['submission_id'])
