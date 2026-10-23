@@ -898,6 +898,17 @@ class StudentUnitRegistrationService
             ]);
         }
 
+        // Guard: prevent cross-year enrollment
+        $studentYear = (int) ($corrections['year']['year'] ?? 0);
+        $unitSemester = (int) ($due->unit?->semester ?? 0);
+        $termsPerYear = max(1, (int) $program->termsPerYear());
+        $unitYear = $unitSemester > 0 ? (int) ceil($unitSemester / $termsPerYear) : 0;
+        if ($studentYear > 0 && $unitYear > 0 && $studentYear !== $unitYear) {
+            throw ValidationException::withMessages([
+                'unit_id' => 'This unit belongs to Year '.$unitYear.', but the student is in Year '.$studentYear.'. Cross-year enrollment is not allowed.',
+            ]);
+        }
+
         return $this->register($officer, $program, $intake, (int) $semesterId, [$student->id], [$unitId]);
     }
 
