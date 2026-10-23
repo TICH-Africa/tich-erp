@@ -3,21 +3,57 @@
     $editable = $editable ?? false;
     $canEditInvigilator = $canEditInvigilator ?? false;
     $moveSessionUrl = $moveSessionUrl ?? null;
-    $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5));
+    $bellRows = collect($segments ?? [])->reject(fn ($segment) => $segment->segment_type === 'break')->values();
+    $rowStart = fn ($row): string => substr((string) $row->start_time, 0, 5);
+    $toMinutes = fn ($time): int => (int) substr((string) $time, 0, 2) * 60 + (int) substr((string) $time, 3, 2);
+
+    // A class added by hand seldom starts on the exact minute a bell slot opens, and forcing a
+    // second row for the same hour left the timetable full of gaps. A class now sits on the bell
+    // slot it overlaps most; only a break keeps its own row.
+    $placement = collect($sessions ?? [])->mapWithKeys(function ($session) use ($bellRows, $rowStart, $toMinutes): array {
+        $own = $rowStart($session);
+
+        if ($bellRows->contains(fn ($row) => $rowStart($row) === $own)
+            || in_array($session->session_type, ['break', 'lunch'], true)) {
+            return [(int) $session->id => $own];
+        }
+
+        $start = $toMinutes($session->start_time);
+        $end = max($start, $toMinutes($session->end_time));
+        $best = null;
+        $bestOverlap = 0;
+
+        foreach ($bellRows as $row) {
+            $rowStartMinutes = $toMinutes($row->start_time);
+            $rowEndMinutes = max($rowStartMinutes, $toMinutes($row->end_time));
+            $overlap = min($end, $rowEndMinutes) - max($start, $rowStartMinutes);
+
+            if ($overlap > $bestOverlap) {
+                $bestOverlap = $overlap;
+                $best = $rowStart($row);
+            }
+        }
+
+        return [(int) $session->id => $best ?? $own];
+    });
     // A dated class is read by date, so each row names the dates it carries under the time.
     $datesByRowStart = collect($sessions ?? [])
         ->filter(fn ($session) => ! empty($session->session_date))
-        ->groupBy(fn ($session) => substr((string) $session->start_time, 0, 5))
+        ->groupBy(fn ($session) => $placement[(int) $session->id] ?? $rowStart($session))
         ->map(fn ($group) => $group
             ->map(fn ($session) => $session->session_date->format('d M'))
             ->unique()
             ->values());
-    $rows = collect($segments ?? [])->filter(fn ($segment) => $segment->segment_type !== 'break');
+    $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
+        fn ($session) => $session->day_of_week.'|'.($placement[(int) $session->id] ?? $rowStart($session))
+    );
+
+    $rows = $bellRows;
 
     // A bell row that carries neither a time nor a class is noise on a hand-built timetable, so it
     // is dropped; rows that hold a class always stay.
-    $rows = $rows->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList) {
-        $start = substr((string) $row->start_time, 0, 5);
+    $rows = $rows->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList, $rowStart) {
+        $start = $rowStart($row);
 
         if ($start !== '' && $start !== '00:00') {
             return true;
@@ -42,10 +78,10 @@
     } else {
         // A class timed outside the bell slots - an 08:00 start or a lecture that runs to 17:00 - is
         // still a class somebody has to see, so it gets its own row instead of vanishing.
-        $rowStarts = $rows->map(fn ($row) => substr((string) $row->start_time, 0, 5));
+        $rowStarts = $rows->map($rowStart);
 
         foreach ($sessions ?? [] as $session) {
-            $start = substr((string) $session->start_time, 0, 5);
+            $start = $placement[(int) $session->id] ?? $rowStart($session);
 
             if ($rowStarts->contains($start)) {
                 continue;
@@ -151,6 +187,9 @@
                                             <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
                                         @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
+                                        @if (($placement[(int) $session->id] ?? $rowStart($session)) !== $rowStart($session))
+                                            <span class="tich-caption">{{ $session->timeLabel() }}</span>
+                                        @endif
                                         @if ($session->isOnline())
                                             <span class="tich-caption tich-timetable-session__mode"><strong>Online</strong></span>
                                         @endif
