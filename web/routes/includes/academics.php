@@ -180,6 +180,7 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'], 'departments.academics.programs.versions.create');
         $register('post', '/versions/{version}/submit', [ProgramCurriculumController::class, 'submitVersion'], 'departments.academics.versions.submit');
         $register('post', '/versions/{version}/reopen', [ProgramCurriculumController::class, 'reopenVersion'], 'departments.academics.versions.reopen');
+        $register('post', '/versions/{version}/publish', [ProgramCurriculumController::class, 'publishVersion'], 'departments.academics.versions.publish');
     });
 
     $approveUnit = Route::post('/units/{unit}/approve', [AcademicsUnitController::class, 'approve'])

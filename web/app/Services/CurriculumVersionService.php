@@ -586,6 +586,53 @@ class CurriculumVersionService
         return $version->fresh('items.unit');
     }
 
+    /**
+     * Bring an intake live from the Academics hub. The CEO step only ever holds an intake whose
+     * programme is still awaiting CEO approval, so the officer who verifies the registry can
+     * publish it themselves.
+     */
+    public function publishAsAcademics(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
+    {
+        abort_unless($this->access->canApproveRegistry($user), 403);
+
+        $version->loadMissing('program');
+        abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
+
+        if (! in_array($version->status, ['pending_registry', 'pending_ceo'], true)) {
+            throw ValidationException::withMessages([
+                'intake' => 'Submit the intake for approval before publishing it.',
+            ]);
+        }
+
+        $previousStatus = $version->status;
+
+        $version->update([
+            'status' => 'published',
+            'submitted_at' => $version->submitted_at ?? now(),
+            'registrar_approved_at' => $version->registrar_approved_at ?? now(),
+            'registrar_approved_by' => $version->registrar_approved_by ?? $user->id,
+            'published_at' => now(),
+            'published_by' => $user->id,
+            'updated_at' => now(),
+        ]);
+
+        $this->mirrorToProgramTemplate($version);
+
+        $this->auditService->log(
+            'academics.curriculum_version.published',
+            'curriculum_versions',
+            $version->id,
+            ['status' => $previousStatus],
+            ['status' => 'published'],
+            'Intake curriculum published by Academics',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $version->fresh('items.unit');
+    }
+
     private function copyUnits(CurriculumVersion $source, CurriculumVersion $target): void
     {
         $source->loadMissing('items');

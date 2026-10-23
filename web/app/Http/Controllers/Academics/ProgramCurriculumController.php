@@ -1123,6 +1123,14 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         return back()->with('status', 'Curriculum version published.');
     }
 
+    public function publishVersion(Request $request, Department $department, CurriculumVersion $version): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $this->versions->publishAsAcademics($request->user(), $hub, $version, $request);
+
+        return back()->with('status', 'Intake published. Units, timetables and enrolled students now read this curriculum.');
+    }
+
     public function updateExamSchedule(Request $request, Department $department, AcademicProgram $program, int $schedule): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);
