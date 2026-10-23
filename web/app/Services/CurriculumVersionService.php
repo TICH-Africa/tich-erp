@@ -282,6 +282,57 @@ class CurriculumVersionService
         return $added;
     }
 
+    /**
+     * Follow a lecturer assignment onto the intake calendar. When an officer puts a unit on a
+     * different year or semester than the intake maps it for, the corrected period wins so the
+     * unit stops being listed on the wrong one beside the right one.
+     */
+    public function moveUnitPeriod(
+        User $user,
+        CurriculumVersion $version,
+        int $unitId,
+        int $semester,
+        ?Request $request = null
+    ): bool {
+        $mapping = CurriculumVersionUnit::query()
+            ->where('curriculum_version_id', $version->id)
+            ->where('unit_id', $unitId)
+            ->first();
+
+        if (! $mapping || (int) $mapping->semester === $semester) {
+            return false;
+        }
+
+        $previousPeriod = (int) $mapping->semester;
+        $mapping->update(['semester' => $semester]);
+
+        $this->auditService->log(
+            'academics.curriculum_version.unit_period_moved',
+            'curriculum_versions',
+            $version->id,
+            ['unit_id' => $unitId, 'semester' => $previousPeriod],
+            ['unit_id' => $unitId, 'semester' => $semester],
+            'Unit moved to the teaching period its lecturer was assigned on',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return true;
+    }
+
+    /**
+     * Keep the catalog's own period in step with an intake mapping, so a unit corrected on one
+     * screen is not offered back on the wrong year from the other.
+     */
+    public function syncCatalogUnitPeriod(int $unitId, int $semester): void
+    {
+        Unit::query()->where('id', $unitId)->where('semester', '!=', $semester)->update([
+            'semester' => $semester,
+            'updated_at' => now(),
+        ]);
+    }
+
     public function reopenDraft(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
     {
         $version->loadMissing('program');

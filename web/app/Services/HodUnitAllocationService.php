@@ -230,7 +230,7 @@ class HodUnitAllocationService
         $campus = Campus::query()->findOrFail($request->integer('campus_id'));
 
         $period = (int) ($request->integer('period') ?: $unit->semester ?: 1);
-        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, $period);
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, $period, true);
 
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
 

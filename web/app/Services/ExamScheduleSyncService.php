@@ -129,7 +129,11 @@ class ExamScheduleSyncService
         return $synced;
     }
 
-    public function resolveSemesterId(CurriculumVersion $intake, int $teachingPeriod): ?int
+    /**
+     * The calendar semester a teaching period of this intake runs in. Only a write should open a
+     * missing term, so browsing an intake never invents calendar rows of its own.
+     */
+    public function resolveSemesterId(CurriculumVersion $intake, int $teachingPeriod, bool $openMissing = false): ?int
     {
         if ($intake->academic_year_id) {
             $semester = Semester::query()
@@ -142,10 +146,92 @@ class ExamScheduleSyncService
             }
         }
 
-        return Semester::query()
+        $semester = Semester::query()
             ->where('semester_number', $teachingPeriod)
             ->orderByDesc('id')
-            ->value('id');
+            ->first();
+
+        if ($semester) {
+            return (int) $semester->id;
+        }
+
+        return $openMissing ? $this->openSemesterForPeriod($intake, $teachingPeriod) : null;
+    }
+
+    /**
+     * A year of study beyond the terms the calendar was seeded with still needs a semester row
+     * before its units can carry a lecturer, a cohort or an exam sitting. The dates come from the
+     * dates the office saved for that period, or run on from the last term on the calendar.
+     */
+    private function openSemesterForPeriod(CurriculumVersion $intake, int $teachingPeriod): ?int
+    {
+        $yearId = $intake->academic_year_id
+            ?: DB::table('academic_years')->where('is_current', 1)->orderByDesc('id')->value('id')
+            ?: DB::table('academic_years')->orderByDesc('id')->value('id');
+
+        if (! $yearId) {
+            return null;
+        }
+
+        $dates = $this->periodDates($intake, $teachingPeriod, (int) $yearId);
+
+        if (! $dates) {
+            return null;
+        }
+
+        $semester = Semester::create([
+            'academic_year_id' => $yearId,
+            'semester_label' => "Semester {$teachingPeriod}",
+            'semester_number' => $teachingPeriod,
+            'start_date' => $dates[0],
+            'end_date' => $dates[1],
+            'is_current' => 0,
+            'created_by' => Auth::id(),
+        ]);
+
+        $this->auditService->log(
+            'academics.semester.period_opened',
+            'semesters',
+            (int) $semester->id,
+            null,
+            [
+                'semester_number' => $teachingPeriod,
+                'curriculum_version_id' => $intake->id,
+                'start_date' => $dates[0],
+                'end_date' => $dates[1],
+            ],
+            'Semester opened so a later year of study can be scheduled',
+            'success',
+            Auth::id(),
+        );
+
+        return (int) $semester->id;
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     */
+    private function periodDates(CurriculumVersion $intake, int $teachingPeriod, int $yearId): ?array
+    {
+        $planned = CurriculumVersionPeriod::query()
+            ->where('curriculum_version_id', $intake->id)
+            ->where('semester', $teachingPeriod)
+            ->first();
+
+        if ($planned?->start_date && $planned->end_date) {
+            return [$planned->start_date->toDateString(), $planned->end_date->toDateString()];
+        }
+
+        $last = Semester::query()->where('academic_year_id', $yearId)->orderByDesc('end_date')->first();
+
+        if (! $last?->start_date || ! $last->end_date) {
+            return null;
+        }
+
+        $length = max(1, (int) $last->start_date->diffInDays($last->end_date));
+        $start = $last->end_date->copy()->addDay();
+
+        return [$start->toDateString(), $start->copy()->addDays($length)->toDateString()];
     }
 
     private function resolveExamDate(?CurriculumVersionPeriod $period, int $dayOfWeek): ?Carbon

@@ -1299,7 +1299,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->first();
         abort_unless($lecturer, 422, 'Assign a lecturer on the staff register.');
 
-        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period']);
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['teaching_period'], true);
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
 
         $this->unitAllocations->assign([
@@ -1313,6 +1313,12 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 : (int) $validated['contact_hours_assigned'],
             'is_coordinator' => ! empty($validated['is_coordinator']),
         ]);
+
+        // The period on this form is the correction: move the intake mapping so the unit is not
+        // left listed on the year it was wrongly placed.
+        if ($this->versions->moveUnitPeriod($request->user(), $intake, (int) $unit->id, (int) $validated['teaching_period'], $request)) {
+            $this->versions->syncCatalogUnitPeriod((int) $unit->id, (int) $validated['teaching_period']);
+        }
 
         $section = $request->string('section')->toString() ?: 'catalog';
 
@@ -1381,7 +1387,9 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $period = $desk['periodOptions']->get($validated['registration_period']);
         abort_unless($period, 422, 'Choose the teaching period to register.');
 
-        $semesterId = $desk['semesterId'];
+        // Registering a year the calendar has no term for yet opens that term rather than stopping.
+        $semesterId = $desk['semesterId']
+            ?? $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['registration_period'], true);
         abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
 
         // Only units mapped into the period the desk is showing may be registered.

@@ -490,7 +490,7 @@ class StudentUnitRegistrationService
                 continue;
             }
 
-            $semesterId = $this->schedule->resolveSemesterId($intake, $due['period']);
+            $semesterId = $this->schedule->resolveSemesterId($intake, $due['period'], true);
 
             if (! $semesterId) {
                 $result['waiting'][] = $student->registration_number
@@ -579,7 +579,7 @@ class StudentUnitRegistrationService
             ]);
         }
 
-        $semesterId = $this->schedule->resolveSemesterId($intake, $due['period']);
+        $semesterId = $this->schedule->resolveSemesterId($intake, $due['period'], true);
 
         if (! $semesterId) {
             throw ValidationException::withMessages([
@@ -745,7 +745,7 @@ class StudentUnitRegistrationService
                 continue;
             }
 
-            $semesterId = $this->schedule->resolveSemesterId($intake, $year['period']);
+            $semesterId = $this->schedule->resolveSemesterId($intake, $year['period'], true);
 
             if (! $semesterId) {
                 $skipped[] = $student->registration_number.': this intake has no calendar semester for '.$year['period_label'].'.';
@@ -1007,7 +1007,7 @@ class StudentUnitRegistrationService
         }
 
         $period = (($year - 1) * $terms) + $term;
-        $semesterId = $this->schedule->resolveSemesterId($intake, $period);
+        $semesterId = $this->schedule->resolveSemesterId($intake, $period, true);
 
         if (! $semesterId) {
             throw ValidationException::withMessages([

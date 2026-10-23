@@ -48,7 +48,11 @@ class UnitAllocationService
                 return $existing;
             }
         } else {
-            $replacedStaffIds = $this->retireRivals($unitId, $semesterId);
+            $replacedStaffIds = $this->retireRivals(
+                $unitId,
+                $semesterId,
+                isset($data['program_id']) ? (int) $data['program_id'] : null,
+            );
         }
 
         $allocation = UnitAllocation::query()->create([
@@ -109,16 +113,22 @@ class UnitAllocationService
     }
 
     /**
-     * Switch off the live allocation for the same unit and semester before a new one takes over.
+     * Switch off the live allocation for the unit before a new one takes over. A unit belongs to one
+     * teaching period of a programme, so correcting the year it was put on also retires the
+     * allocation left behind on the wrong year instead of running beside it.
      *
      * @return list<int> the lecturers who were teaching the unit
      */
-    private function retireRivals(int $unitId, int $semesterId): array
+    private function retireRivals(int $unitId, int $semesterId, ?int $programId = null): array
     {
         $rivals = UnitAllocation::query()
             ->where('unit_id', $unitId)
-            ->where('semester_id', $semesterId)
-            ->where('is_active', 1);
+            ->where('is_active', 1)
+            ->when(
+                $programId,
+                fn ($query) => $query->where('program_id', $programId),
+                fn ($query) => $query->where('semester_id', $semesterId),
+            );
 
         $staffIds = $rivals->pluck('staff_id')->map(fn ($id) => (int) $id)->all();
 
@@ -137,7 +147,11 @@ class UnitAllocationService
         abort_unless($allocation->awaitingApproval(), 422, 'Only a pending allocation can be approved.');
 
         DB::transaction(function () use ($allocation, $approver): void {
-            $replacedStaffIds = $this->retireRivals((int) $allocation->unit_id, (int) $allocation->semester_id);
+            $replacedStaffIds = $this->retireRivals(
+                (int) $allocation->unit_id,
+                (int) $allocation->semester_id,
+                $allocation->program_id ? (int) $allocation->program_id : null,
+            );
 
             $allocation->update([
                 'status' => UnitAllocation::STATUS_APPROVED,
