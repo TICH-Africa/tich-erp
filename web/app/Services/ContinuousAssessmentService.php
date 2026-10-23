@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\AcademicProgram;
 use App\Models\CatScore;
 use App\Models\Staff;
 use App\Models\Unit;
@@ -304,75 +303,6 @@ class ContinuousAssessmentService
             'grade_letter' => $letter,
             'grade_points' => $points,
             'exam_result_id' => $sitting?->id,
-        ];
-    }
-
-    /**
-     * Re-letter every mark a programme has already recorded against the pass mark it now carries.
-     * The numbers stay exactly as they were sat - only the letter, its points and the pass check move.
-     *
-     * @return array{exam_results: int, grade_records: int}
-     */
-    public function regradeProgram(AcademicProgram $program): array
-    {
-        $passMark = (float) ($program->theory_pass_mark ?? 40);
-        $clinicalMark = (float) ($program->clinical_pass_mark ?? 50);
-        $unitIds = Unit::query()->where('program_id', $program->id)->pluck('id')->all();
-
-        if ($unitIds === []) {
-            return ['exam_results' => 0, 'grade_records' => 0];
-        }
-
-        $sittings = DB::table('exam_results')
-            ->whereIn('unit_id', $unitIds)
-            ->get(['id', 'final_total_score', 'practical_total'])
-            ->map(function (object $row) use ($passMark, $clinicalMark) {
-                $row->letter = $this->gradeLetterForScore((float) $row->final_total_score, $passMark);
-                $row->clinical = (float) $row->practical_total >= $clinicalMark ? 1 : 0;
-
-                return $row;
-            });
-
-        foreach ($sittings->groupBy(fn (object $row) => $row->letter.'|'.$row->clinical) as $key => $group) {
-            [$letter, $clinical] = explode('|', $key);
-
-            DB::table('exam_results')
-                ->whereIn('id', $group->pluck('id')->all())
-                ->update([
-                    'grade_letter' => $letter,
-                    'grade_points' => $this->gradePoints($letter),
-                    'theory_pass_check' => $letter === 'F' ? 0 : 1,
-                    'clinical_pass_check' => (int) $clinical,
-                    'updated_at' => now(),
-                ]);
-        }
-
-        $grades = DB::table('grade_records as gr')
-            ->leftJoin('exam_results as er', 'er.id', '=', 'gr.exam_result_id')
-            ->whereIn('gr.unit_id', $unitIds)
-            ->get(['gr.id', 'gr.final_score', 'er.is_supplementary'])
-            ->map(function (object $row) use ($passMark) {
-                $row->letter = $this->gradeLetterForScore((float) $row->final_score, $passMark);
-                $row->supplementary_pass = (int) ($row->is_supplementary ?? 0) === 1 && $row->letter !== 'F' ? 1 : 0;
-
-                return $row;
-            });
-
-        foreach ($grades->groupBy(fn (object $row) => $row->letter.'|'.$row->supplementary_pass) as $key => $group) {
-            [$letter, $supplementaryPass] = explode('|', $key);
-
-            DB::table('grade_records')
-                ->whereIn('id', $group->pluck('id')->all())
-                ->update([
-                    'grade_letter' => $letter,
-                    'grade_points' => $this->gradePoints($letter),
-                    'is_supplementary_pass' => (int) $supplementaryPass,
-                ]);
-        }
-
-        return [
-            'exam_results' => $sittings->count(),
-            'grade_records' => $grades->count(),
         ];
     }
 

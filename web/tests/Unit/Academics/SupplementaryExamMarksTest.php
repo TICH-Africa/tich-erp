@@ -350,48 +350,6 @@ class SupplementaryExamMarksTest extends TestCase
         $this->assertSame(1, (int) $grade->is_supplementary_pass);
     }
 
-    public function test_the_pass_mark_a_programme_sets_re_letters_the_grades_already_recorded(): void
-    {
-        app(SupplementaryExamService::class)
-            ->record($this->officer, $this->program, [$this->gradeRecordId => 75]);
-
-        // The board raises this programme's pass mark after the papers are back.
-        $this->program->update(['theory_pass_mark' => 60, 'clinical_pass_mark' => 10]);
-        $regraded = app(ContinuousAssessmentService::class)->regradeProgram($this->program->fresh());
-
-        $this->assertSame(1, $regraded['grade_records']);
-        $this->assertSame(2, $regraded['exam_results']);
-
-        $grade = DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
-        $this->assertSame(55.5, (float) $grade->final_score);
-        // 55.5 still reads as a C on the band scale, but it is under the new 60, so it is a fail.
-        $this->assertSame('F', $grade->grade_letter);
-        $this->assertSame(0.0, (float) $grade->grade_points);
-        $this->assertSame(0, (int) $grade->is_supplementary_pass);
-
-        $sittings = DB::table('exam_results')
-            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'semester_id' => $this->semesterId])
-            ->orderBy('is_supplementary')
-            ->get();
-
-        // The marks stay exactly as they were sat - only the letters follow the new pass mark.
-        $this->assertSame(28.0, (float) $sittings[0]->final_total_score);
-        $this->assertSame(55.5, (float) $sittings[1]->final_total_score);
-        $this->assertSame('F', $sittings[1]->grade_letter);
-        $this->assertSame(0, (int) $sittings[1]->theory_pass_check);
-        // The 12 practical on the fail clears the 10 clinical mark; the repeat carries no practical.
-        $this->assertSame(1, (int) $sittings[0]->clinical_pass_check);
-        $this->assertSame(0, (int) $sittings[1]->clinical_pass_check);
-
-        $transcript = app(TranscriptService::class)->build($this->student);
-        $this->assertSame(0.0, $transcript['cumulative_gpa']);
-    }
-
-    /**
-     * A lecturer's allocation for the unit, with the student sitting on its roster.
-     *
-     * @return array{0: int, 1: int}
-     */
     public function test_a_lecturer_cannot_mark_a_student_who_is_not_on_their_unit(): void
     {
         [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0004', 'roll@test.africa');
@@ -457,6 +415,11 @@ class SupplementaryExamMarksTest extends TestCase
         $this->assertSame(0, DB::table('cat_scores')->where('student_id', $outsiderId)->count());
     }
 
+    /**
+     * A lecturer's allocation for the unit, with the student sitting on its roster.
+     *
+     * @return array{0: int, 1: int}
+     */
     private function allocateLecturer(string $employeeNumber, string $email): array
     {
         $staffId = (int) DB::table('staff')->insertGetId([

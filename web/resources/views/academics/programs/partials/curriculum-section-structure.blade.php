@@ -45,36 +45,6 @@
     </article>
 
     <article class="tich-card">
-        <h2 class="tich-h3">Pass marks</h2>
-        <p class="tich-text tich-mt-2">The mark a student needs to pass a unit in this programme. Every other programme keeps its own mark, and the grades, transcripts and holds are worked out from the mark set here.</p>
-
-        <form method="POST" action="{{ route('departments.academics.programs.pass-marks.update', array_merge($hub, ['program' => $program->id])) }}" class="tich-mt-4">
-            @csrf
-            @method('PUT')
-            <div class="tich-grid tich-grid--2" style="gap:1rem;">
-                <div class="tich-form-group">
-                    <label class="tich-label">Theory pass mark (%)</label>
-                    <input type="number" name="theory_pass_mark" class="tich-input" min="1" max="100" step="0.5" value="{{ old('theory_pass_mark', $program->theory_pass_mark ?? 40) }}" required>
-                    <p class="tich-caption tich-mt-2">Used for the final grade, the letter, the GPA and the supplementary mark needed to pass.</p>
-                </div>
-                <div class="tich-form-group">
-                    <label class="tich-label">Clinical / practical pass mark (%)</label>
-                    <input type="number" name="clinical_pass_mark" class="tich-input" min="1" max="100" step="0.5" value="{{ old('clinical_pass_mark', $program->clinical_pass_mark ?? 50) }}" required>
-                    <p class="tich-caption tich-mt-2">The mark the practical side of a sitting must reach to be checked off as passed.</p>
-                </div>
-            </div>
-            <label class="tich-mt-4" style="display: flex; gap: 0.5rem; align-items: flex-start;">
-                <input type="hidden" name="recompute" value="0">
-                <input type="checkbox" name="recompute" value="1" @checked(old('recompute', '1') === '1')>
-                <span class="tich-text">Recompute the final grades already recorded for this programme against the new mark. Only the letter changes - every mark stays exactly as it was sat, and a supplementary repeat keeps its own sitting.</span>
-            </label>
-            @can('academics.write')
-                <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save pass marks</button>
-            @endcan
-        </form>
-    </article>
-
-    <article class="tich-card">
         <h2 class="tich-h3">Published intake</h2>
         @if ($publishedVersion)
             <p class="tich-text tich-mt-4">

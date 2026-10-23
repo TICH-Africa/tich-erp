@@ -158,7 +158,6 @@ return function (bool $named = true): void {
         $register('put', '/units/{unit}', [AcademicsUnitController::class, 'update'], 'departments.academics.units.update');
         $register('post', '/units/{unit}/submit', [AcademicsUnitController::class, 'submit'], 'departments.academics.units.submit');
         $register('put', '/programs/{program}/format', [ProgramCurriculumController::class, 'updateFormat'], 'departments.academics.programs.update-format');
-        $register('put', '/programs/{program}/pass-marks', [ProgramCurriculumController::class, 'updatePassMarks'], 'departments.academics.programs.pass-marks.update');
         $register('post', '/programs/{program}/units', [ProgramCurriculumController::class, 'syncUnits'], 'departments.academics.programs.sync-units');
         $register('post', '/programs/{program}/intakes', [ProgramCurriculumController::class, 'createVersion'], 'departments.academics.programs.intakes.store');
         $register('post', '/programs/{program}/intakes/{version}/units', [ProgramCurriculumController::class, 'syncIntakeUnits'], 'departments.academics.programs.intakes.sync-units');
