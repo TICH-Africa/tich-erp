@@ -23,10 +23,20 @@ class StaffPortalDashboardService
     public function forStaff(Staff $staff): array
     {
         $allocations = $this->allocations($staff);
-        $allocations->each(fn (UnitAllocation $allocation) => $allocation->setAttribute(
-            'intake_label',
-            $this->intakeLabelForSemester($allocation->semester),
-        ));
+        $allocations->each(function (UnitAllocation $allocation): void {
+            $allocation->setAttribute('intake_label', $this->intakeLabelForSemester($allocation->semester));
+
+            // A calendar semester carries the teaching period number, which is what places the
+            // unit on a year of study - Year 2 means the second year the cohort is sitting.
+            $program = $allocation->program ?? $allocation->unit?->program;
+            $period = (int) ($allocation->semester?->semester_number ?? 0);
+            $allocation->setAttribute('teaching_period', $period > 0 ? $period : null);
+            $allocation->setAttribute('year_of_study', $program && $period > 0 ? $program->yearOfPeriod($period) : null);
+            $allocation->setAttribute(
+                'period_label',
+                $program && $period > 0 ? $program->periodLabel($period) : ($allocation->semester?->semester_label ?? '-'),
+            );
+        });
         $allocationIds = $allocations->pluck('id')->all();
         $unitIds = $allocations->pluck('unit_id')->unique()->all();
         $semesterIds = $allocations->pluck('semester_id')->unique()->all();
@@ -53,10 +63,10 @@ class StaffPortalDashboardService
     public function allocations(Staff $staff): Collection
     {
         return UnitAllocation::query()
-            ->with(['unit', 'semester.academicYear', 'campus'])
+            ->with(['unit.program', 'semester.academicYear', 'campus', 'program'])
             ->where('staff_id', $staff->id)
             ->where('is_active', 1)
-            ->orderByDesc('semester_id')
+            ->orderBy('semester_id')
             ->get();
     }
 

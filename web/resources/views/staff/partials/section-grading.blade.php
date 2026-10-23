@@ -7,12 +7,17 @@
             <label class="tich-label">Unit</label>
             <select name="allocation" class="tich-input" onchange="if (this.value) this.form.submit()">
                 <option value="">Select a unit…</option>
-                @foreach ($portalData['allocations'] as $allocation)
-                    <option value="{{ $allocation->id }}" @selected(request('allocation') == $allocation->id)>
-                        {{ $allocation->unit?->unit_code }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}
-                    </option>
+                @foreach ($portalData['allocations']->groupBy(fn ($row) => $row->year_of_study ? 'Year '.$row->year_of_study : 'Year not set') as $yearLabel => $yearAllocations)
+                    <optgroup label="{{ $yearLabel }}">
+                        @foreach ($yearAllocations as $allocation)
+                            <option value="{{ $allocation->id }}" @selected(request('allocation') == $allocation->id)>
+                                {{ $allocation->unit?->unit_code }} · {{ $allocation->period_label }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
+            <p class="tich-caption" style="margin:0.35rem 0 0;">Pick the year and semester you are marking - the grid then lists only the students registered on that unit.</p>
         </div>
     </form>
 </article>
