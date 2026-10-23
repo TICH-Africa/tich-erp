@@ -70,6 +70,12 @@
                                                     @csrf
                                                     <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Submit for approval</button>
                                                 </form>
+                                                @if ($canApproveRegistry)
+                                                    <form method="POST" action="{{ route('departments.academics.versions.publish', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline; margin-left:0.35rem;">
+                                                        @csrf
+                                                        <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Publish intake</button>
+                                                    </form>
+                                                @endif
                                             @endif
                                         @else
                                             <span class="tich-caption">Draft</span>

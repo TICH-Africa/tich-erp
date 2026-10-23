@@ -640,7 +640,7 @@ class CurriculumVersionService
     /**
      * Bring an intake live from the Academics hub. The CEO step only ever holds an intake whose
      * programme is still awaiting CEO approval, so the officer who verifies the registry can
-     * publish it themselves.
+     * publish it themselves. An intake still in draft is submitted and published in the same step.
      */
     public function publishAsAcademics(User $user, Department $hub, CurriculumVersion $version, ?Request $request = null): CurriculumVersion
     {
@@ -649,9 +649,12 @@ class CurriculumVersionService
         $version->loadMissing('program');
         abort_unless($this->access->userCanAccessProgramInHub($user, $hub, $version->program), 403);
 
-        if (! in_array($version->status, ['pending_registry', 'pending_ceo'], true)) {
+        if ($version->status === 'draft') {
+            $this->submit($user, $hub, $version, $request);
+            $version->refresh();
+        } elseif (! in_array($version->status, ['pending_registry', 'pending_ceo'], true)) {
             throw ValidationException::withMessages([
-                'intake' => 'Submit the intake for approval before publishing it.',
+                'intake' => 'This intake is not waiting to be published.',
             ]);
         }
 
