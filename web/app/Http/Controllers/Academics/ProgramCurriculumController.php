@@ -1190,8 +1190,11 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'practical_weight' => ['required', 'numeric', 'min:0', 'max:100'],
             'attendance_weight' => ['required', 'numeric', 'min:0', 'max:100'],
             'exam_weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'pass_mark' => ['nullable', 'numeric', 'min:1', 'max:100'],
             'teaching_period' => ['nullable', 'integer', 'min:1'],
             'intake' => ['nullable', 'integer'],
+        ], [
+            'pass_mark.numeric' => 'Type the mark a student needs to pass this unit, or leave it empty to use the programme mark.',
         ]);
 
         $this->programExams->updateUnitAssessmentWeights($unit, $validated);

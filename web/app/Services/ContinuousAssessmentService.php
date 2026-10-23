@@ -221,10 +221,12 @@ class ContinuousAssessmentService
 
             $breakdown = $this->buildWeightedBreakdown($scores, $attendancePct, $weights);
             $cumulative = $breakdown['cumulative'];
-            $passMark = (float) (DB::table('academic_programs')
+            $programMark = DB::table('academic_programs')
                 ->join('students', 'students.program_id', '=', 'academic_programs.id')
                 ->where('students.id', $studentId)
-                ->value('theory_pass_mark') ?? 40);
+                ->value('theory_pass_mark');
+
+            $passMark = $this->passMarkForUnit($unit, $programMark === null ? null : (float) $programMark);
 
             $rows[] = [
                 'student_id' => $studentId,
@@ -397,6 +399,28 @@ class ContinuousAssessmentService
             ($examScore * $weights['exam'] / 100),
             2
         );
+    }
+
+    /**
+     * The mark a student needs on this unit. An officer can set it on the unit itself; until they
+     * do, the unit grades on the mark its programme carries.
+     *
+     * @param  float|null  $programMark  a programme mark already looked up, to skip the query
+     */
+    public function passMarkForUnit(?Unit $unit, ?float $programMark = null): float
+    {
+        if ($unit?->pass_mark !== null) {
+            return (float) $unit->pass_mark;
+        }
+
+        if ($programMark === null) {
+            $programMark = $unit?->program_id
+                ? (DB::table('academic_programs')->where('id', $unit->program_id)->value('theory_pass_mark'))
+                : null;
+            $programMark = $programMark === null ? null : (float) $programMark;
+        }
+
+        return $programMark ?? 40;
     }
 
     public function gradeLetterForScore(float $score, float $passMark = 40): string

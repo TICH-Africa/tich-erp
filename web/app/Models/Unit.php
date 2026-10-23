@@ -21,12 +21,14 @@ class Unit extends Model
         'prerequisite_unit_id', 'co_requisite_unit_id',
         'assessment_weight_attendance_pct', 'assessment_weight_cat_pct',
         'assessment_weight_practical_pct', 'assessment_weight_exam_pct',
+        'pass_mark',
         'status', 'submitted_at', 'submitted_by',
         'registrar_approved_at', 'registrar_approved_by', 'created_by',
     ];
 
     protected $casts = [
         'credit_hours' => 'decimal:2',
+        'pass_mark' => 'decimal:2',
         'is_core' => 'boolean',
         'is_practical' => 'boolean',
         'submitted_at' => 'datetime',

@@ -99,7 +99,7 @@ class SupplementaryExamService
             $key = $row->student_id.'-'.$row->unit_id.'-'.$row->semester_id;
             $unit = $units->get($row->unit_id);
             $weights = $this->assessments->weightProfile($unit);
-            $passMark = (float) ($passMarks[$row->program_id] ?? 40);
+            $passMark = $this->assessments->passMarkForUnit($unit, (float) ($passMarks[$row->program_id] ?? 40));
             $continuous = $this->assessments->continuousBreakdownFor(
                 (int) $row->student_id,
                 (int) $row->unit_id,
@@ -183,7 +183,7 @@ class SupplementaryExamService
     {
         $unit = Unit::query()->with('program')->findOrFail($record->unit_id);
         $weights = $this->assessments->weightProfile($unit);
-        $passMark = (float) ($unit->program?->theory_pass_mark ?? 40);
+        $passMark = $this->assessments->passMarkForUnit($unit);
         $examScore = min(max(0, $examScore), 100);
 
         $continuous = $this->assessments->continuousBreakdownFor(

@@ -415,6 +415,43 @@ class SupplementaryExamMarksTest extends TestCase
         $this->assertSame(0, DB::table('cat_scores')->where('student_id', $outsiderId)->count());
     }
 
+    public function test_a_unit_pass_mark_overrides_the_mark_the_programme_carries(): void
+    {
+        [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0005', 'unitmark@test.africa');
+        $allocation = UnitAllocation::query()->findOrFail($allocationId);
+        $staff = Staff::query()->findOrFail($staffId);
+
+        $mark = function () use ($allocation, $staff): object {
+            app(StaffExamMarksService::class)->save($allocation, $staff, [(int) $this->student->id => 46]);
+
+            return DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
+        };
+
+        // 36 continuous plus a 46 exam on 50/50 weights is 41, which clears the programme's 40.
+        $grade = $mark();
+        $this->assertSame(41.0, (float) $grade->final_score);
+        $this->assertSame('D', $grade->grade_letter);
+
+        // The officer raises this unit above the programme and the same mark no longer passes.
+        DB::table('units')->where('id', $this->unitId)->update(['pass_mark' => 45]);
+        $allocation->load('unit');
+        $grade = $mark();
+        $this->assertSame(41.0, (float) $grade->final_score);
+        $this->assertSame('F', $grade->grade_letter);
+        $this->assertSame(0.0, (float) $grade->grade_points);
+
+        // Clearing the unit's mark hands it back to the mark the programme carries.
+        DB::table('units')->where('id', $this->unitId)->update(['pass_mark' => null]);
+        $allocation->load('unit');
+        $grade = $mark();
+        $this->assertSame('D', $grade->grade_letter);
+
+        $sitting = DB::table('exam_results')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'is_supplementary' => 0])
+            ->first();
+        $this->assertSame('D', $sitting->grade_letter);
+    }
+
     /**
      * A lecturer's allocation for the unit, with the student sitting on its roster.
      *

@@ -200,10 +200,7 @@ class StaffExamMarksService
 
     private function passMarkForAllocation(UnitAllocation $allocation): float
     {
-        return (float) (DB::table('academic_programs')
-            ->join('units', 'units.program_id', '=', 'academic_programs.id')
-            ->where('units.id', $allocation->unit_id)
-            ->value('theory_pass_mark') ?? 40);
+        return $this->assessments->passMarkForUnit($allocation->unit);
     }
 
     private function gradePoints(string $letter): float

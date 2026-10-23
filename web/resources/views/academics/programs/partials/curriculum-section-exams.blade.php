@@ -180,6 +180,7 @@
                             <th>Practical %</th>
                             <th>Attendance %</th>
                             <th>Exam %</th>
+                            <th>Pass mark</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -192,6 +193,7 @@
                                 <td>{{ $unit->practical_weight }}%</td>
                                 <td>{{ $unit->attendance_weight }}%</td>
                                 <td>{{ $unit->exam_weight }}%</td>
+                                <td>{{ number_format($unit->pass_mark ?? $unit->program_pass_mark, 1) }}%<br><span class="tich-caption">{{ $unit->pass_mark === null ? 'programme mark' : 'this unit' }}</span></td>
                                 <td>
                                     @can('academics.write')
                                         <button
@@ -204,12 +206,14 @@
                                             data-practical-weight="{{ $unit->practical_weight }}"
                                             data-attendance-weight="{{ $unit->attendance_weight }}"
                                             data-exam-weight="{{ $unit->exam_weight }}"
+                                            data-pass-mark="{{ $unit->pass_mark }}"
+                                            data-program-pass-mark="{{ $unit->program_pass_mark }}"
                                         >Edit</button>
                                     @endcan
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
+                            <tr><td colspan="8">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -247,6 +251,11 @@
                             <div class="tich-form-group">
                                 <label class="tich-label">Exam %</label>
                                 <input type="number" name="exam_weight" id="unit-assessment-exam" class="tich-input" min="0" max="100" step="0.01" required>
+                            </div>
+                            <div class="tich-form-group">
+                                <label class="tich-label">Pass mark %</label>
+                                <input type="number" name="pass_mark" id="unit-assessment-pass-mark" class="tich-input" min="1" max="100" step="0.5">
+                                <p class="tich-caption tich-mt-2">The mark a student needs to pass this unit. Leave it empty to grade on the mark the programme carries (<span id="unit-assessment-program-mark">40</span>%).</p>
                             </div>
                         </div>
                         @error('weights')<p class="tich-field-error">{{ $message }}</p>@enderror
@@ -852,6 +861,12 @@
                     document.getElementById('unit-assessment-practical').value = button.getAttribute('data-practical-weight') || '';
                     document.getElementById('unit-assessment-attendance').value = button.getAttribute('data-attendance-weight') || '';
                     document.getElementById('unit-assessment-exam').value = button.getAttribute('data-exam-weight') || '';
+
+                    var passMark = button.getAttribute('data-pass-mark') || '';
+                    var programMark = button.getAttribute('data-program-pass-mark') || '40';
+                    document.getElementById('unit-assessment-pass-mark').value = passMark;
+                    document.getElementById('unit-assessment-program-mark').textContent = programMark;
+
                     window.tichOpenModal('unit-assessment-edit-modal');
                 });
             });

@@ -234,13 +234,19 @@ class ProgramExamService
             'assessment_weight_practical_pct',
             'assessment_weight_attendance_pct',
             'assessment_weight_exam_pct',
+            'pass_mark',
         ]);
+
+        // An empty pass mark hands the unit back to the mark its programme carries.
+        $passMark = $data['pass_mark'] ?? null;
+        $passMark = $passMark === null || $passMark === '' ? null : (float) $passMark;
 
         $unit->update([
             'assessment_weight_cat_pct' => $data['cat_weight'],
             'assessment_weight_practical_pct' => $data['practical_weight'],
             'assessment_weight_attendance_pct' => $data['attendance_weight'],
             'assessment_weight_exam_pct' => $data['exam_weight'],
+            'pass_mark' => $passMark,
         ]);
 
         $this->auditService->log(
@@ -253,6 +259,7 @@ class ProgramExamService
                 'assessment_weight_practical_pct' => $data['practical_weight'],
                 'assessment_weight_attendance_pct' => $data['attendance_weight'],
                 'assessment_weight_exam_pct' => $data['exam_weight'],
+                'pass_mark' => $passMark,
             ],
             'Unit assessment weights updated',
             'success',
@@ -361,8 +368,14 @@ class ProgramExamService
             $query->where('semester', $teachingPeriod);
         }
 
-        return $query->get()
-            ->map(function ($item) {
+        $items = $query->get();
+
+        $programMarks = DB::table('academic_programs')
+            ->whereIn('id', $items->pluck('unit.program_id')->filter()->unique()->all())
+            ->pluck('theory_pass_mark', 'id');
+
+        return $items
+            ->map(function ($item) use ($programMarks) {
                 $unit = $item->unit;
 
                 return (object) [
@@ -375,6 +388,9 @@ class ProgramExamService
                     'practical_weight' => $unit?->assessment_weight_practical_pct ?? 15,
                     'attendance_weight' => $unit?->assessment_weight_attendance_pct ?? 5,
                     'exam_weight' => $unit?->assessment_weight_exam_pct ?? 50,
+                    // The unit's own mark when an officer has set one, otherwise the programme's.
+                    'pass_mark' => $unit?->pass_mark !== null ? (float) $unit->pass_mark : null,
+                    'program_pass_mark' => (float) ($programMarks[$unit?->program_id] ?? 40),
                 ];
             })
             ->sortBy('unit_code')
