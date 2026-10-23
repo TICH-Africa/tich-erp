@@ -117,7 +117,8 @@ class AttendanceVerificationService
                 ]);
             }
         }
-        $session->refresh()->load(['records.student.applicant']);
+        $session->refresh();
+        $session->load(['records.student.applicant', 'records.student']);
         $session->update(['total_expected_attendees' => $session->records->count()]);
 
         return [

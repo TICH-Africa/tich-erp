@@ -93,6 +93,30 @@ class StaffPortalDashboardController extends Controller
         }
 
         if ($attendanceSession) {
+            // Sync roster: ensure students enrolled after session creation are added
+            $allocation = $attendanceSession->allocation;
+            $programId = $allocation?->unit?->program_id;
+            $teachingPeriod = $allocation?->semester?->semester_number;
+            $roster = app(\App\Services\StaffPortalDashboardService::class)->rosterForAllocation(
+                $allocation->id,
+                $programId ? (int) $programId : null,
+                $teachingPeriod ? (int) $teachingPeriod : null,
+            );
+            $existingStudentIds = $attendanceSession->records->pluck('student_id')->map(fn ($id) => (int) $id)->all();
+            foreach ($roster as $student) {
+                if (! in_array((int) $student->student_id, $existingStudentIds, true)) {
+                    \App\Models\AttendanceRecord::query()->create([
+                        'session_id' => $attendanceSession->id,
+                        'student_id' => $student->student_id,
+                        'is_present' => 0,
+                        'recorded_by_tutor' => 1,
+                        'created_at' => now(),
+                    ]);
+                }
+            }
+            $attendanceSession->refresh()->load(['records.student.applicant', 'records.student']);
+            $attendanceSession->update(['total_expected_attendees' => $attendanceSession->records->count()]);
+
             $attendanceStep = 1;
             if ($attendanceSession->records->isNotEmpty()) {
                 $attendanceStep = 2;
