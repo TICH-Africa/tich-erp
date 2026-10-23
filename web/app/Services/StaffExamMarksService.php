@@ -39,6 +39,8 @@ class StaffExamMarksService
         $existing = DB::table('exam_results')
             ->where('unit_id', $allocation->unit_id)
             ->where('semester_id', $allocation->semester_id)
+            // A lecturer marks the sitting the school set, never a supplementary repeat.
+            ->where('is_supplementary', 0)
             ->whereIn('student_id', $roster->pluck('student_id'))
             ->get()
             ->keyBy('student_id');
@@ -113,6 +115,7 @@ class StaffExamMarksService
                 'student_id' => $studentId,
                 'unit_id' => $allocation->unit_id,
                 'semester_id' => $allocation->semester_id,
+                'is_supplementary' => 0,
             ];
 
             $payload = [
@@ -137,20 +140,15 @@ class StaffExamMarksService
                 ]);
             }
 
-            DB::table('grade_records')->updateOrInsert(
-                [
-                    'student_id' => $studentId,
-                    'unit_id' => $allocation->unit_id,
-                    'semester_id' => $allocation->semester_id,
-                ],
-                [
-                    'final_score' => $finalTotal,
-                    'grade_letter' => $gradeLetter,
-                    'grade_points' => $this->gradePoints($gradeLetter),
-                    'credit_hours' => $allocation->unit?->credit_hours ?? 0,
-                    'recorded_at' => now(),
-                    'created_at' => now(),
-                ]
+            // The grade the school reads follows the sitting it stands by, so a recorded
+            // supplementary keeps its pass when the original marks are edited afterwards.
+            $this->assessments->recordGrade(
+                $studentId,
+                (int) $allocation->unit_id,
+                (int) $allocation->semester_id,
+                $allocation->unit,
+                $continuous['cumulative'],
+                $passMark,
             );
 
             $saved++;

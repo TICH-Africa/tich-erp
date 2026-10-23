@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
 use App\Models\CatScore;
 use App\Models\Staff;
 use App\Models\Unit;
@@ -225,6 +226,7 @@ class ContinuousAssessmentService
                 'student_name' => trim($student->student_name),
                 'breakdown' => $breakdown,
                 'cumulative' => $cumulative,
+                'pass_mark' => $passMark,
                 'grade_letter' => $this->gradeLetter($cumulative, $passMark),
                 'at_risk' => $cumulative < $passMark,
             ];
@@ -238,22 +240,148 @@ class ContinuousAssessmentService
         $sheet = $this->cumulativeSheet($allocation);
 
         foreach ($sheet as $row) {
-            DB::table('grade_records')->updateOrInsert(
-                [
-                    'student_id' => $row['student_id'],
-                    'unit_id' => $allocation->unit_id,
-                    'semester_id' => $allocation->semester_id,
-                ],
-                [
-                    'final_score' => $row['cumulative'],
-                    'grade_letter' => $row['grade_letter'],
-                    'grade_points' => $this->gradePoints($row['grade_letter']),
-                    'credit_hours' => $allocation->unit?->credit_hours ?? 0,
-                    'recorded_at' => now(),
-                    'created_at' => now(),
-                ]
+            $this->recordGrade(
+                (int) $row['student_id'],
+                (int) $allocation->unit_id,
+                (int) $allocation->semester_id,
+                $allocation->unit,
+                (float) $row['cumulative'],
+                (float) $row['pass_mark'],
             );
         }
+    }
+
+    /**
+     * The one grade the school stands by for a student, unit and semester. A recorded sitting outranks
+     * the continuous score - and a supplementary outranks the sitting it replaced - so re-saving CAT
+     * or exam marks can never push a repeat's pass back down to the failed attempt.
+     *
+     * @return object{final_score: float, grade_letter: string, grade_points: float, exam_result_id: int|null}
+     */
+    public function recordGrade(
+        int $studentId,
+        int $unitId,
+        int $semesterId,
+        ?Unit $unit,
+        float $continuousCumulative,
+        float $passMark,
+    ): object {
+        $sitting = $this->preferredSitting($studentId, $unitId, $semesterId);
+        $isSupplementary = $sitting && (int) $sitting->is_supplementary === 1;
+        $finalScore = $sitting && $sitting->final_total_score !== null
+            ? (float) $sitting->final_total_score
+            : round($continuousCumulative, 2);
+        $letter = $this->gradeLetter($finalScore, $passMark);
+        $points = $this->gradePoints($letter);
+
+        DB::table('grade_records')->updateOrInsert(
+            [
+                'student_id' => $studentId,
+                'unit_id' => $unitId,
+                'semester_id' => $semesterId,
+            ],
+            [
+                'exam_result_id' => $sitting?->id,
+                'final_score' => $finalScore,
+                'grade_letter' => $letter,
+                'grade_points' => $points,
+                'credit_hours' => $unit?->credit_hours ?? 0,
+                'is_supplementary_pass' => $isSupplementary && $letter !== 'F' ? 1 : 0,
+                'recorded_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return (object) [
+            'final_score' => $finalScore,
+            'grade_letter' => $letter,
+            'grade_points' => $points,
+            'exam_result_id' => $sitting?->id,
+        ];
+    }
+
+    /**
+     * Re-letter every mark a programme has already recorded against the pass mark it now carries.
+     * The numbers stay exactly as they were sat - only the letter, its points and the pass check move.
+     *
+     * @return array{exam_results: int, grade_records: int}
+     */
+    public function regradeProgram(AcademicProgram $program): array
+    {
+        $passMark = (float) ($program->theory_pass_mark ?? 40);
+        $clinicalMark = (float) ($program->clinical_pass_mark ?? 50);
+        $unitIds = Unit::query()->where('program_id', $program->id)->pluck('id')->all();
+
+        if ($unitIds === []) {
+            return ['exam_results' => 0, 'grade_records' => 0];
+        }
+
+        $sittings = DB::table('exam_results')
+            ->whereIn('unit_id', $unitIds)
+            ->get(['id', 'final_total_score', 'practical_total'])
+            ->map(function (object $row) use ($passMark, $clinicalMark) {
+                $row->letter = $this->gradeLetterForScore((float) $row->final_total_score, $passMark);
+                $row->clinical = (float) $row->practical_total >= $clinicalMark ? 1 : 0;
+
+                return $row;
+            });
+
+        foreach ($sittings->groupBy(fn (object $row) => $row->letter.'|'.$row->clinical) as $key => $group) {
+            [$letter, $clinical] = explode('|', $key);
+
+            DB::table('exam_results')
+                ->whereIn('id', $group->pluck('id')->all())
+                ->update([
+                    'grade_letter' => $letter,
+                    'grade_points' => $this->gradePoints($letter),
+                    'theory_pass_check' => $letter === 'F' ? 0 : 1,
+                    'clinical_pass_check' => (int) $clinical,
+                    'updated_at' => now(),
+                ]);
+        }
+
+        $grades = DB::table('grade_records as gr')
+            ->leftJoin('exam_results as er', 'er.id', '=', 'gr.exam_result_id')
+            ->whereIn('gr.unit_id', $unitIds)
+            ->get(['gr.id', 'gr.final_score', 'er.is_supplementary'])
+            ->map(function (object $row) use ($passMark) {
+                $row->letter = $this->gradeLetterForScore((float) $row->final_score, $passMark);
+                $row->supplementary_pass = (int) ($row->is_supplementary ?? 0) === 1 && $row->letter !== 'F' ? 1 : 0;
+
+                return $row;
+            });
+
+        foreach ($grades->groupBy(fn (object $row) => $row->letter.'|'.$row->supplementary_pass) as $key => $group) {
+            [$letter, $supplementaryPass] = explode('|', $key);
+
+            DB::table('grade_records')
+                ->whereIn('id', $group->pluck('id')->all())
+                ->update([
+                    'grade_letter' => $letter,
+                    'grade_points' => $this->gradePoints($letter),
+                    'is_supplementary_pass' => (int) $supplementaryPass,
+                ]);
+        }
+
+        return [
+            'exam_results' => $sittings->count(),
+            'grade_records' => $grades->count(),
+        ];
+    }
+
+    /**
+     * The sitting a unit is graded on: the supplementary repeat when one has been recorded, otherwise
+     * the latest sitting. Exam marking only ever writes the main sitting, so a repeat stays intact.
+     */
+    public function preferredSitting(int $studentId, int $unitId, int $semesterId): ?object
+    {
+        return DB::table('exam_results')
+            ->where('student_id', $studentId)
+            ->where('unit_id', $unitId)
+            ->where('semester_id', $semesterId)
+            ->orderByDesc('is_supplementary')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**
@@ -413,6 +541,10 @@ class ContinuousAssessmentService
 
     private function gradeLetter(float $score, float $passMark = 40): string
     {
+        // A programme that sets its pass mark above 50 must not hand out a C for a mark below it.
+        if ($score < $passMark) {
+            return 'F';
+        }
         if ($score >= 70) {
             return 'A';
         }
@@ -422,11 +554,8 @@ class ContinuousAssessmentService
         if ($score >= 50) {
             return 'C';
         }
-        if ($score >= $passMark) {
-            return 'D';
-        }
 
-        return 'F';
+        return 'D';
     }
 
     public function gradePoints(string $letter): float

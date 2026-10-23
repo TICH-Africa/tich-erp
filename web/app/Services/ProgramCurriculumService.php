@@ -19,6 +19,7 @@ class ProgramCurriculumService
         protected AcademicsAccessService $access,
         protected AuditService $auditService,
         protected RBACService $rbacService,
+        protected ContinuousAssessmentService $assessments,
     ) {}
 
     /**
@@ -83,6 +84,56 @@ class ProgramCurriculumService
         );
 
         return $program->fresh();
+    }
+
+    /**
+     * The mark a programme grades against. Officers set it after the exams are recorded, and choosing
+     * to recompute re-letters every sitting already on file - the marks stay as sat, only the grade
+     * that comes out of them changes.
+     *
+     * @param  array{theory_pass_mark: float, clinical_pass_mark: float}  $data
+     * @return array{program: AcademicProgram, regraded: array{exam_results: int, grade_records: int}, recomputed: bool}
+     */
+    public function updateProgramPassMarks(
+        User $user,
+        Department $hub,
+        AcademicProgram $program,
+        array $data,
+        bool $recompute,
+        ?Request $request = null,
+    ): array {
+        $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
+        abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
+
+        $old = $program->only(['theory_pass_mark', 'clinical_pass_mark']);
+
+        $program->update([
+            'theory_pass_mark' => (float) $data['theory_pass_mark'],
+            'clinical_pass_mark' => (float) $data['clinical_pass_mark'],
+            'updated_at' => now(),
+        ]);
+
+        $regraded = ['exam_results' => 0, 'grade_records' => 0];
+
+        if ($recompute) {
+            $regraded = $this->assessments->regradeProgram($program->fresh());
+        }
+
+        $fresh = $program->fresh();
+
+        $this->auditService->log(
+            'academics.program.pass_marks_updated',
+            'academic_programs',
+            $program->id,
+            $old,
+            $fresh->only(['theory_pass_mark', 'clinical_pass_mark']) + $regraded,
+            'Programme pass marks updated',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return ['program' => $fresh, 'regraded' => $regraded, 'recomputed' => $recompute];
     }
 
     public function syncProgramUnits(User $user, Department $hub, AcademicProgram $program, array $mappings, ?Request $request = null): void

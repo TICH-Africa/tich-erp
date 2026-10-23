@@ -245,18 +245,15 @@ class SupplementaryExamService
             ]);
         }
 
-        DB::table('grade_records')->updateOrInsert(
-            $match,
-            [
-                'exam_result_id' => (int) $supplementary,
-                'final_score' => $finalTotal,
-                'grade_letter' => $letter,
-                'grade_points' => $points,
-                'credit_hours' => $unit->credit_hours ?? 0,
-                'is_supplementary_pass' => $passed ? 1 : 0,
-                'recorded_at' => now(),
-                'created_at' => now(),
-            ]
+        // One writer for the grade the school reads, so a later edit of the lecturer's marks cannot
+        // pull the transcript back down to the sitting that failed.
+        $this->assessments->recordGrade(
+            (int) $record->student_id,
+            (int) $record->unit_id,
+            (int) $record->semester_id,
+            $unit,
+            $continuous['cumulative'],
+            $passMark,
         );
 
         $this->audits->log(

@@ -391,6 +391,49 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ->with('status', 'Programme structure updated.');
     }
 
+    public function updatePassMarks(Request $request, Department $department, AcademicProgram $program): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        $validated = $request->validate([
+            'theory_pass_mark' => ['required', 'numeric', 'min:1', 'max:100'],
+            'clinical_pass_mark' => ['required', 'numeric', 'min:1', 'max:100'],
+            'recompute' => ['nullable', 'boolean'],
+        ], [
+            'theory_pass_mark.required' => 'Type the mark a student needs to pass a unit in this programme.',
+            'clinical_pass_mark.required' => 'Type the mark a student needs on the clinical or practical side.',
+        ]);
+
+        $saved = $this->curriculum->updateProgramPassMarks(
+            $request->user(),
+            $hub,
+            $program,
+            $validated,
+            $request->boolean('recompute'),
+            $request
+        );
+
+        $status = 'Pass marks saved for '.$saved['program']->program_code.': '
+            .rtrim(rtrim(number_format($saved['program']->theory_pass_mark, 2), '0'), '.').'%'
+            .' theory, '
+            .rtrim(rtrim(number_format($saved['program']->clinical_pass_mark, 2), '0'), '.').'%'
+            .' clinical.';
+
+        $status .= $saved['recomputed']
+            ? ' '.$saved['regraded']['grade_records'].' recorded grade(s) and '.$saved['regraded']['exam_results'].' sitting(s) re-lettered against the new mark - the marks themselves stay as sat.'
+            : ' Recorded grades keep the letter they were graded on until you recompute them.';
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $request->integer('intake') ?: null,
+                'section' => 'structure',
+            ]))
+            ->with('status', $status);
+    }
+
     public function syncUnits(Request $request, Department $department, AcademicProgram $program): RedirectResponse
     {
         $hub = $this->authorizeHub($request, $department);

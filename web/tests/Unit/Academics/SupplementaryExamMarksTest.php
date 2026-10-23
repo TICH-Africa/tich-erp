@@ -3,8 +3,13 @@
 namespace Tests\Unit\Academics;
 
 use App\Models\AcademicProgram;
+use App\Models\Staff;
 use App\Models\Student;
+use App\Models\UnitAllocation;
 use App\Models\User;
+use App\Services\ContinuousAssessmentService;
+use App\Services\StaffExamMarksService;
+use App\Services\StaffPortalDashboardService;
 use App\Services\SupplementaryExamService;
 use App\Services\TranscriptDocumentService;
 use App\Services\TranscriptService;
@@ -166,6 +171,7 @@ class SupplementaryExamMarksTest extends TestCase
             'unit_id' => $this->unitId,
             'semester_id' => $this->semesterId,
             'cat_total' => 30,
+            'practical_total' => 12,
             'final_exam_score' => 20,
             'final_total_score' => 28,
             'grade_letter' => 'F',
@@ -282,5 +288,147 @@ class SupplementaryExamMarksTest extends TestCase
         $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(SupplementaryExamService::class)->record($this->officer, $this->program, [999999 => 75]);
+    }
+
+    public function test_a_lecturer_editing_exam_marks_leaves_the_supplementary_sitting_alone(): void
+    {
+        app(SupplementaryExamService::class)
+            ->record($this->officer, $this->program, [$this->gradeRecordId => 75]);
+
+        $sittings = DB::table('exam_results')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'semester_id' => $this->semesterId])
+            ->get()
+            ->keyBy('is_supplementary');
+        [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0002', 'lecturer@test.africa');
+
+        // The lecturer re-sits the marks and this time types a 10 for the same student.
+        app(StaffExamMarksService::class)->save(
+            UnitAllocation::query()->findOrFail($allocationId),
+            Staff::query()->findOrFail($staffId),
+            [(int) $this->student->id => 10],
+        );
+
+        $main = DB::table('exam_results')->where('id', $sittings[0]->id)->first();
+        $this->assertSame(10.0, (float) $main->final_exam_score);
+        $this->assertSame('F', $main->grade_letter);
+
+        $repeat = DB::table('exam_results')->where('id', $sittings[1]->id)->first();
+        $this->assertSame(75.0, (float) $repeat->final_exam_score);
+        $this->assertSame('C', $repeat->grade_letter);
+
+        $grade = DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
+        $this->assertSame(55.5, (float) $grade->final_score);
+        $this->assertSame('C', $grade->grade_letter);
+        $this->assertSame(1, (int) $grade->is_supplementary_pass);
+        $this->assertSame((int) $sittings[1]->id, (int) $grade->exam_result_id);
+    }
+
+    public function test_re_saving_continuous_marks_keeps_the_grade_a_supplementary_earned(): void
+    {
+        app(SupplementaryExamService::class)
+            ->record($this->officer, $this->program, [$this->gradeRecordId => 75]);
+
+        // A lecturer changes the CAT marks after the repeat, so the continuous score drops to nothing.
+        DB::table('cat_scores')->where(['unit_id' => $this->unitId, 'semester_id' => $this->semesterId])
+            ->update(['score_obtained' => 0, 'percentage_score' => 0]);
+
+        [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0003', 'second@test.africa');
+        $allocation = UnitAllocation::query()->findOrFail($allocationId);
+
+        $roster = app(StaffPortalDashboardService::class)
+            ->rosterForAllocation($allocationId, (int) $this->program->id, 1)
+            ->pluck('student_id')
+            ->all();
+        $this->assertSame([(int) $this->student->id], $roster);
+
+        app(ContinuousAssessmentService::class)->recalculateCumulativeScores($allocation);
+
+        $grade = DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
+        $this->assertSame(55.5, (float) $grade->final_score);
+        $this->assertSame('C', $grade->grade_letter);
+        $this->assertSame(1, (int) $grade->is_supplementary_pass);
+    }
+
+    public function test_the_pass_mark_a_programme_sets_re_letters_the_grades_already_recorded(): void
+    {
+        app(SupplementaryExamService::class)
+            ->record($this->officer, $this->program, [$this->gradeRecordId => 75]);
+
+        // The board raises this programme's pass mark after the papers are back.
+        $this->program->update(['theory_pass_mark' => 60, 'clinical_pass_mark' => 10]);
+        $regraded = app(ContinuousAssessmentService::class)->regradeProgram($this->program->fresh());
+
+        $this->assertSame(1, $regraded['grade_records']);
+        $this->assertSame(2, $regraded['exam_results']);
+
+        $grade = DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
+        $this->assertSame(55.5, (float) $grade->final_score);
+        // 55.5 still reads as a C on the band scale, but it is under the new 60, so it is a fail.
+        $this->assertSame('F', $grade->grade_letter);
+        $this->assertSame(0.0, (float) $grade->grade_points);
+        $this->assertSame(0, (int) $grade->is_supplementary_pass);
+
+        $sittings = DB::table('exam_results')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'semester_id' => $this->semesterId])
+            ->orderBy('is_supplementary')
+            ->get();
+
+        // The marks stay exactly as they were sat - only the letters follow the new pass mark.
+        $this->assertSame(28.0, (float) $sittings[0]->final_total_score);
+        $this->assertSame(55.5, (float) $sittings[1]->final_total_score);
+        $this->assertSame('F', $sittings[1]->grade_letter);
+        $this->assertSame(0, (int) $sittings[1]->theory_pass_check);
+        // The 12 practical on the fail clears the 10 clinical mark; the repeat carries no practical.
+        $this->assertSame(1, (int) $sittings[0]->clinical_pass_check);
+        $this->assertSame(0, (int) $sittings[1]->clinical_pass_check);
+
+        $transcript = app(TranscriptService::class)->build($this->student);
+        $this->assertSame(0.0, $transcript['cumulative_gpa']);
+    }
+
+    /**
+     * A lecturer's allocation for the unit, with the student sitting on its roster.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function allocateLecturer(string $employeeNumber, string $email): array
+    {
+        $staffId = (int) DB::table('staff')->insertGetId([
+            'employee_number' => $employeeNumber,
+            'first_name' => 'Lecturer',
+            'surname' => 'Test',
+            'date_of_birth' => '1988-01-01',
+            'gender' => 'Male',
+            'primary_email' => $email,
+            'phone_number' => '0700000003',
+            'department_id' => $this->program->department_id,
+            'job_title' => 'Lecturer',
+            'employment_category' => 'permanent',
+            'employment_start_date' => '2024-01-01',
+            'employment_status' => 'active',
+        ]);
+
+        $allocationId = (int) DB::table('unit_allocations')->insertGetId([
+            'unit_id' => $this->unitId,
+            'program_id' => $this->program->id,
+            'staff_id' => $staffId,
+            'semester_id' => $this->semesterId,
+            'campus_id' => (int) $this->student->enrollment_campus_id,
+            'status' => 'approved',
+        ]);
+
+        $registrationId = (int) DB::table('student_semester_registrations')->insertGetId([
+            'student_id' => $this->student->id,
+            'semester_id' => $this->semesterId,
+            'registration_date' => '2026-01-10',
+            'unit_count' => 1,
+        ]);
+
+        DB::table('registered_units')->insert([
+            'semester_registration_id' => $registrationId,
+            'unit_id' => $this->unitId,
+        ]);
+
+        return [$staffId, $allocationId];
     }
 }
