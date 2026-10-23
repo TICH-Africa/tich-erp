@@ -33,7 +33,11 @@ class ContinuousAssessmentService
      */
     public function terminalData(UnitAllocation $allocation, Staff $staff): array
     {
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(
+            (int) $allocation->staff_id === (int) $staff->id
+            || ($staff->user && $staff->user->hasPermission('academics.write')),
+            403
+        );
 
         $allocation->load(['unit', 'semester.academicYear', 'campus']);
         $programId = $allocation->unit?->program_id;
@@ -120,7 +124,11 @@ class ContinuousAssessmentService
      */
     public function saveGrid(UnitAllocation $allocation, Staff $staff, array $columns, array $gridScores): void
     {
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(
+            (int) $allocation->staff_id === (int) $staff->id
+            || ($staff->user && $staff->user->hasPermission('academics.write')),
+            403
+        );
 
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll(
             $allocation,

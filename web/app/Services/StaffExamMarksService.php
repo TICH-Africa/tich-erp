@@ -22,7 +22,11 @@ class StaffExamMarksService
      */
     public function sheet(UnitAllocation $allocation, Staff $staff): array
     {
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(
+            (int) $allocation->staff_id === (int) $staff->id
+            || ($staff->user && $staff->user->hasPermission('academics.write')),
+            403
+        );
 
         $allocation->load(['unit', 'semester']);
         $programId = $allocation->unit?->program_id;
@@ -87,7 +91,11 @@ class StaffExamMarksService
      */
     public function save(UnitAllocation $allocation, Staff $staff, array $examScores, float $examMax = 100): void
     {
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(
+            (int) $allocation->staff_id === (int) $staff->id
+            || ($staff->user && $staff->user->hasPermission('academics.write')),
+            403
+        );
 
         // Own unit is not enough: a lecturer marks the students registered on it, nobody else's.
         $this->dashboard->assertStudentsAreOnRoll(
