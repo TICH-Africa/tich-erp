@@ -136,8 +136,8 @@
                             <td>
                                 <input type="checkbox" name="present[]" value="{{ $record->student_id }}" @checked($record->is_present) @disabled($attendanceSession->is_locked)>
                             </td>
-                            <td>{{ $record->student?->registration_number }}</td>
-                            <td>{{ $record->student?->applicant?->fullName() ?? '-' }}</td>
+                            <td>{{ $record->student?->registration_number ?? 'ID: '.$record->student_id }}</td>
+                            <td>{{ $record->student?->displayName() ?? $record->student?->registration_number ?? '-' }}</td>
                             <td class="tich-caption">________________</td>
                         </tr>
                     @endforeach

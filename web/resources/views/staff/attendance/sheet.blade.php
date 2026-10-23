@@ -54,8 +54,8 @@
             @foreach ($records as $index => $record)
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ $record->student?->registration_number }}</td>
-                    <td>{{ $record->student?->displayName() ?? '-' }}</td>
+                    <td>{{ $record->student?->registration_number ?? 'ID: '.$record->student_id }}</td>
+                    <td>{{ $record->student?->displayName() ?? $record->student?->registration_number ?? '-' }}</td>
                     <td></td>
                 </tr>
             @endforeach
