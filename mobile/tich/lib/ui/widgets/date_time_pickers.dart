@@ -148,7 +148,7 @@ DateTime? parseAppDateTime(dynamic value) {
   if (value == null) return null;
   if (value is DateTime) return value.toLocal();
   final raw = value.toString().trim();
-  if (raw.isEmpty || raw == '—') return null;
+  if (raw.isEmpty || raw == '-') return null;
   final parsed = DateTime.tryParse(raw);
   if (parsed != null) return parsed.toLocal();
   // Fallback for "yyyy-MM-dd HH:mm:ss"
@@ -168,7 +168,7 @@ String formatDateTime(dynamic value) {
   final dt = parseAppDateTime(value);
   if (dt == null) {
     final raw = value?.toString().trim();
-    return (raw == null || raw.isEmpty) ? '—' : raw;
+    return (raw == null || raw.isEmpty) ? '-' : raw;
   }
   return dateDisplay.format(dt);
 }
@@ -178,6 +178,6 @@ String formatDate(dynamic value) => formatDateTime(value);
 /// Times as "09.34 AM".
 String formatTime(dynamic value) {
   final dt = parseAppDateTime(value);
-  if (dt == null) return '—';
+  if (dt == null) return '-';
   return timeDisplay.format(dt);
 }

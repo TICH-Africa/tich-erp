@@ -108,7 +108,7 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
               const SizedBox(height: 6),
               Text(
                 '${dayName((s['day_of_week'] as num?)?.toInt(), dayLabels)}'
-                ' · ${s['start_time'] ?? '—'} – ${s['end_time'] ?? '—'}',
+                ' · ${s['start_time'] ?? '-'} – ${s['end_time'] ?? '-'}',
                 style: tichUi(fontSize: 13),
               ),
               if ((s['room']?.toString() ?? '').isNotEmpty ||

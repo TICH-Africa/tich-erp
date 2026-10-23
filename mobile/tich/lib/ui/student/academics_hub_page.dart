@@ -12,6 +12,8 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
+import '../shell/portal_nav_counts_scope.dart';
+import '../widgets/tich_more_row_trailing.dart';
 import '../widgets/tich_widgets.dart';
 import 'assessment_take_page.dart';
 import 'student_helpers.dart';
@@ -92,12 +94,17 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
     );
   }
 
+  int _sectionBadge(BuildContext context, String key) {
+    return PortalNavCountsScope.maybeOf(context)?.countFor(key) ?? 0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sections = [
+    final sections = <(String title, IconData icon, String badgeKey, VoidCallback onTap)>[
       (
         'My units',
         Icons.menu_book_outlined,
+        'academics.units',
         () => _openSection(
               'My units',
               (data) {
@@ -113,6 +120,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Learning content',
         Icons.folder_open_outlined,
+        'academics.content',
         () => _openSection(
               'Learning content',
               (data) {
@@ -143,6 +151,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Assessments',
         Icons.quiz_outlined,
+        'academics.assessments',
         () => _openSection(
               'Assessments',
               (data) {
@@ -182,7 +191,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           [
                             a['unit_code'],
                             '${a['question_count'] ?? 0} questions',
-                            if (sub != null) 'Score: ${sub['score'] ?? '—'}',
+                            if (sub != null) 'Score: ${sub['score'] ?? '-'}',
                             if (canTake) 'Tap to take',
                           ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
                         ),
@@ -223,6 +232,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Exams & grades',
         Icons.grade_outlined,
+        'academics.exams',
         () => _openSection(
               'Exams & grades',
               (data) {
@@ -250,8 +260,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                                 style: tichUi(fontWeight: FontWeight.w600),
                               ),
                               subtitle: Text(
-                                '${g['semester_label'] ?? ''} · ${g['grade_letter'] ?? '—'}'
-                                ' (${g['final_score'] ?? '—'})',
+                                '${g['semester_label'] ?? ''} · ${g['grade_letter'] ?? '-'}'
+                                ' (${g['final_score'] ?? '-'})',
                               ),
                             ),
                           ),
@@ -269,7 +279,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           child: TichCard(
                             child: Text(
                               '${c['unit_code']} · ${c['assessment_name'] ?? c['assessment_type']}'
-                              ' — ${c['score_obtained']}/${c['max_score']}',
+                              ' - ${c['score_obtained']}/${c['max_score']}',
                               style: tichUi(fontSize: 13),
                             ),
                           ),
@@ -286,7 +296,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: TichCard(
                             child: Text(
-                              '${e['unit_code']} · ${e['score_obtained'] ?? e['marks'] ?? '—'}'
+                              '${e['unit_code']} · ${e['score_obtained'] ?? e['marks'] ?? '-'}'
                               ' (${e['semester_label'] ?? ''})',
                               style: tichUi(fontSize: 13),
                             ),
@@ -349,6 +359,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Attendance',
         Icons.how_to_reg_outlined,
+        'academics.attendance',
         () => _openSection(
               'Attendance',
               (data) {
@@ -382,6 +393,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Academic progress',
         Icons.timeline_outlined,
+        'academics.progress',
         () => _openSection(
               'Academic progress',
               (data) {
@@ -397,7 +409,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                       child: Text(
                         'Registered units: ${academics['registered_unit_count'] ?? 0}\n'
                         'Curriculum units: ${curriculum.length}\n'
-                        'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '—' : '—'}',
+                        'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '-' : '-'}',
                         style: tichUi(fontSize: 13, height: 1.5),
                       ),
                     ),
@@ -429,6 +441,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Exam eligibility',
         Icons.verified_outlined,
+        'academics.eligibility',
         () => _openSection(
               'Exam eligibility',
               (data) {
@@ -448,6 +461,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       (
         'Supp / special exams',
         Icons.edit_note_outlined,
+        'academics.exam-requests',
         () => _openSection(
               'Supp / special exams',
               (data) {
@@ -491,6 +505,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, i) {
                 final s = sections[i];
+                final badge = _sectionBadge(context, s.$3);
                 return Card(
                   child: ListTile(
                     leading: CircleAvatar(
@@ -498,8 +513,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                       child: Icon(s.$2, color: TichColors.blueDark),
                     ),
                     title: Text(s.$1, style: tichUi(fontWeight: FontWeight.w600)),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: s.$3,
+                    trailing: TichMoreRowTrailing(badgeCount: badge),
+                    onTap: s.$4,
                   ),
                 );
               },
@@ -655,10 +670,10 @@ class _StudentExamEligibilitySectionState
           ),
         );
       }
-    } on ApiException catch (e) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(tichDescribeError(e))),
       );
     } finally {
       if (mounted) setState(() => _downloading = false);

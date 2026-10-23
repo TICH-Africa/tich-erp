@@ -6,7 +6,6 @@ import '../adaptive/adaptive.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
-import '../config/api_config.dart';
 import '../theme/tich_theme.dart';
 import 'widgets/tich_brand_logo.dart';
 
@@ -50,6 +49,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final background = theme.scaffoldBackgroundColor;
+
     final content = BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final loading = state is AuthLoading;
@@ -63,14 +66,8 @@ class _LoginPageState extends State<LoginPage> {
             textAlign: TextAlign.center,
             style: tichUi(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: scheme.onSurface,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'API: ${ApiConfig.baseUrl}',
-            textAlign: TextAlign.center,
-            style: tichUi(fontSize: 11, color: TichColors.neutralMuted),
           ),
           const SizedBox(height: 28),
           if (usesCupertino) ...[
@@ -93,6 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Icon(
                   _obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
                   size: 20,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -139,10 +137,11 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 16),
             Text(
               error,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: usesCupertino
-                    ? CupertinoColors.destructiveRed
-                    : Theme.of(context).colorScheme.error,
+                    ? CupertinoColors.destructiveRed.resolveFrom(context)
+                    : scheme.error,
               ),
             ),
           ],
@@ -188,13 +187,19 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     final body = ColoredBox(
-      color: TichColors.neutral,
+      color: background,
       child: SafeArea(child: content),
     );
 
     if (usesCupertino) {
-      return CupertinoPageScaffold(child: body);
+      return CupertinoPageScaffold(
+        backgroundColor: background,
+        child: body,
+      );
     }
-    return Scaffold(body: body);
+    return Scaffold(
+      backgroundColor: background,
+      body: body,
+    );
   }
 }

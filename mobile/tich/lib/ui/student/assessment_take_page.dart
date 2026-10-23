@@ -90,7 +90,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
         builder: (ctx) => TichFormDialog(
           title: const Text('Submitted'),
           content: Text(
-            'Score: ${submission['score'] ?? '—'}'
+            'Score: ${submission['score'] ?? '-'}'
             '${submission['percentage_score'] != null ? ' (${submission['percentage_score']}%)' : ''}',
           ),
           actions: [
@@ -211,7 +211,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
                       const SizedBox(height: 8),
                       Text(
                         submission is Map
-                            ? 'Already submitted. Score: ${submission['score'] ?? '—'}'
+                            ? 'Already submitted. Score: ${submission['score'] ?? '-'}'
                             : 'This assessment cannot be taken right now.',
                         style: tichUi(color: TichColors.neutralMuted),
                       ),

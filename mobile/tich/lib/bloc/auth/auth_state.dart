@@ -13,12 +13,12 @@ final class AuthInitial extends AuthState {
   const AuthInitial();
 }
 
-/// Cold start / session restore — full-screen spinner only.
+/// Cold start / session restore - full-screen spinner only.
 final class AuthChecking extends AuthState {
   const AuthChecking();
 }
 
-/// Login/logout in progress — keep login UI visible.
+/// Login/logout in progress - keep login UI visible.
 final class AuthLoading extends AuthState {
   const AuthLoading();
 }

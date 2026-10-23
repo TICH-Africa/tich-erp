@@ -343,7 +343,7 @@ class TichReadOnlyRow extends StatelessWidget {
 
 String tichDisplayValue(dynamic value) {
   final text = value?.toString().trim() ?? '';
-  return text.isEmpty ? '—' : text;
+  return text.isEmpty ? '-' : text;
 }
 
 TichChipTone toneForStatus(String? status) {

@@ -255,7 +255,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     contractLabel: _contractSummaryLabel(contract),
                     timeWithTich: employmentDuration?.isNotEmpty == true
                         ? employmentDuration!
-                        : '—',
+                        : '-',
                   ),
                   const SizedBox(height: 16),
                   const TichSectionHeader('Employment & contract'),
@@ -338,7 +338,7 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 String _labelEmploymentStatus(String? raw) {
-  if (raw == null || raw.isEmpty) return '—';
+  if (raw == null || raw.isEmpty) return '-';
   return raw
       .split('_')
       .map((w) =>
@@ -347,7 +347,7 @@ String _labelEmploymentStatus(String? raw) {
 }
 
 String _labelContractType(String? raw) {
-  if (raw == null || raw.isEmpty) return '—';
+  if (raw == null || raw.isEmpty) return '-';
   return _labelEmploymentStatus(raw);
 }
 
@@ -364,7 +364,7 @@ String _contractSummaryLabel(Map<String, dynamic> contract) {
 }
 
 String _formatEmploymentDate(dynamic value) {
-  if (value == null || value.toString().isEmpty) return '—';
+  if (value == null || value.toString().isEmpty) return '-';
   return formatDate(value);
 }
 
@@ -479,7 +479,7 @@ class _EmploymentKvRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final display =
-        (value != null && value!.trim().isNotEmpty) ? value!.trim() : '—';
+        (value != null && value!.trim().isNotEmpty) ? value!.trim() : '-';
     return Column(
       children: [
         Padding(

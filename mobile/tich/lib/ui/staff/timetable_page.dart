@@ -231,7 +231,7 @@ class _WeekendSessionRow extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           '${dayLabel((session['day_of_week'] as num?)?.toInt(), dayLabels)}'
-          ' · ${session['start_time'] ?? '—'} – ${session['end_time'] ?? '—'}',
+          ' · ${session['start_time'] ?? '-'} – ${session['end_time'] ?? '-'}',
           style: tichUi(fontSize: 13),
         ),
         if ((session['room']?.toString() ?? '').isNotEmpty ||

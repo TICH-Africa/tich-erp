@@ -39,6 +39,6 @@
 
     <p class="tich-doc-note tich-mt-4">
         Present this card together with your student ID at each examination session.
-        Issued {{ optional($exam_card->issued_at)->format('d F Y') ?? now()->format('d F Y') }}.
+        Issued {{ $exam_card->issued_at ? \Illuminate\Support\Carbon::parse($exam_card->issued_at)->format('d F Y') : now()->format('d F Y') }}.
     </p>
 @endsection

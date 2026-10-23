@@ -558,7 +558,7 @@ class _ProcurementRfqDetailPageState extends State<ProcurementRfqDetailPage> {
                 eyebrow: (r['item_description'] ?? '').toString(),
                 statusLabel: (r['status'] ?? '').toString(),
                 metricLabel: 'Award approval',
-                metricValue: (r['approval_status'] ?? '—').toString(),
+                metricValue: (r['approval_status'] ?? '-').toString(),
               ),
               procurementDetailSection('RFQ', [
                 procurementDetailField('Requisition', r['requisition_number']),
@@ -1029,7 +1029,7 @@ class _ProcurementAuditsPageState extends State<ProcurementAuditsPage> {
                         style: TichTheme.display(fontSize: 15),
                       ),
                       Text(
-                        'Auditor: ${r['auditor'] ?? '—'}',
+                        'Auditor: ${r['auditor'] ?? '-'}',
                         style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
                       ),
                       const SizedBox(height: 6),

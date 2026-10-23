@@ -226,7 +226,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
                         child: Text(
-                          '${s['start_time'] ?? '—'}–${s['end_time'] ?? '—'} · '
+                          '${s['start_time'] ?? '-'}–${s['end_time'] ?? '-'} · '
                           '${[
                             s['unit_code'],
                             s['unit_name'],

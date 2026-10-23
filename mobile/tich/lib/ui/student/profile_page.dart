@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../adaptive/adaptive.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
 import '../../data/api_client.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
+import '../shell/tich_logout.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_live_refresh.dart';
+import '../widgets/tich_profile_identity_card.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_helpers.dart';
 
@@ -167,25 +165,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        TichCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                student['full_name']?.toString() ?? 'Student',
-                style: tichUi(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  student['registration_number'],
-                  student['program'],
-                  student['campus'],
-                ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
-                style: tichUi(color: TichColors.neutralMuted, fontSize: 13),
-              ),
-            ],
-          ),
+        TichProfileIdentityCard(
+          name: student['full_name']?.toString() ?? 'Student',
+          photoUrl: student['photo_url']?.toString(),
+          lines: [
+            [
+              student['registration_number'],
+              student['program'],
+              student['campus'],
+            ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
+          ],
         ),
         const SizedBox(height: 16),
         OutlinedButton.icon(
@@ -236,7 +225,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         ],
         OutlinedButton.icon(
           onPressed: () =>
-              context.read<AuthBloc>().add(const AuthLogoutRequested()),
+              tichPerformLogout(context),
           icon: const Icon(Icons.logout),
           label: const Text('Sign out'),
         ),
@@ -245,10 +234,18 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     );
   }
 
-  Widget _buildEditForm() {
+  Widget _buildEditForm(Map<String, dynamic> student) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        TichProfileIdentityCard(
+          name: student['full_name']?.toString() ?? 'Student',
+          photoUrl: student['photo_url']?.toString(),
+          lines: [
+            student['registration_number']?.toString() ?? '',
+          ],
+        ),
+        const SizedBox(height: 16),
         const TichSectionHeader('Edit contact'),
         TextField(
           controller: _phone,
@@ -354,7 +351,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 Map<String, dynamic>.from(payload['student'] as Map? ?? {});
             final changes = payload['change_requests'] as List? ?? const [];
 
-            if (_editing) return _buildEditForm();
+            if (_editing) return _buildEditForm(student);
             return _buildReadView(payload, student, changes);
           },
         ),

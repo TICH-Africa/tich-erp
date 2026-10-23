@@ -452,15 +452,19 @@ class AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
     selectTab(index);
   }
 
-  Widget? _buildDrawer(BuildContext context) {
-    if (widget.moreDrawer == null) return null;
+  Widget _wrapWithNavCounts(Widget child) {
     return ListenableBuilder(
       listenable: _navCounts,
       builder: (ctx, _) => PortalNavCountsScope(
         counts: _navCounts.counts,
-        child: Builder(builder: widget.moreDrawer!),
+        child: child,
       ),
     );
+  }
+
+  Widget? _buildDrawer(BuildContext context) {
+    if (widget.moreDrawer == null) return null;
+    return _wrapWithNavCounts(Builder(builder: widget.moreDrawer!));
   }
 
   @override
@@ -481,10 +485,12 @@ class AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
               ),
           ],
         ),
-        tabBuilder: (context, index) => TichTabActiveScope(
-          activeIndex: _selectedIndex,
-          tabIndex: index,
-          child: widget.pages[index],
+        tabBuilder: (context, index) => _wrapWithNavCounts(
+          TichTabActiveScope(
+            activeIndex: _selectedIndex,
+            tabIndex: index,
+            child: widget.pages[index],
+          ),
         ),
       );
     }
@@ -492,9 +498,11 @@ class AdaptiveTabScaffoldState extends State<AdaptiveTabScaffold> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context),
-      body: LazyIndexedStack(
-        index: _selectedIndex,
-        children: widget.pages,
+      body: _wrapWithNavCounts(
+        LazyIndexedStack(
+          index: _selectedIndex,
+          children: widget.pages,
+        ),
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarTheme.of(context).copyWith(height: 68),

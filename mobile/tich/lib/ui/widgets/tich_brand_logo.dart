@@ -10,7 +10,7 @@ abstract final class TichBrandAssets {
   static const String androidNotificationIcon = '@mipmap/ic_launcher';
 }
 
-/// Square logo only — headers, drawer, notification branding.
+/// Square logo only - headers, drawer, notification branding.
 class TichBrandMark extends StatelessWidget {
   const TichBrandMark({super.key, this.size = 40});
 
@@ -56,7 +56,7 @@ class TichBrandLogo extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TichTheme.display(
               fontSize: wordmarkFontSize,
-              color: TichColors.green,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ),
         ],

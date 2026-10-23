@@ -1,7 +1,7 @@
 /// Laravel API base URL.
 ///
 /// Production is the default. For local development, override with the
-/// machine's LAN IP (not 127.0.0.1 — that is the phone itself):
+/// machine's LAN IP (not 127.0.0.1 - that is the phone itself):
 ///
 /// Override at run time:
 ///   flutter run --dart-define=API_BASE_URL=http://192.168.0.104:8000
@@ -21,7 +21,7 @@ class ApiConfig {
     return Uri.parse('$baseUrl$apiPrefix$normalized');
   }
 
-  /// Web app origin (no `/api`) — opens ERP pages in the device browser.
+  /// Web app origin (no `/api`) - opens ERP pages in the device browser.
   static String get webOrigin {
     final parsed = Uri.parse(baseUrl);
     return parsed.hasPort

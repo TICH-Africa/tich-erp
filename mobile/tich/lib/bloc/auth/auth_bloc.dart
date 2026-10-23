@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../config/api_config.dart';
 import '../../data/auth_api.dart';
 import '../../data/auth_repository.dart';
+import '../../data/tich_realtime.dart';
 import '../../data/tich_screen_cache.dart';
 import '../../models/auth_user.dart';
 import '../../settings/app_settings.dart';
@@ -140,7 +141,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
+    // Keep the current screen visible until cleanup finishes (no AuthLoading flash).
+    await TichRealtime.disconnect();
     await _repository.logout();
     await TichScreenCache.clearAll();
     emit(const AuthUnauthenticated());

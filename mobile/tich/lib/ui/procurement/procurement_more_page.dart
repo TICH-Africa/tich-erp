@@ -8,7 +8,7 @@ import 'procurement_badge_keys.dart';
 import 'procurement_module_nav.dart';
 import 'procurement_modules.dart';
 
-/// Primary modules on the procurement bottom bar — omitted from More.
+/// Primary modules on the procurement bottom bar - omitted from More.
 const procurementBottomNavModuleKeys = {
   'requisitions',
   'stock_issues',

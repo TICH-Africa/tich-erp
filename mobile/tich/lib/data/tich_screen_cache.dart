@@ -33,7 +33,7 @@ abstract final class TichScreenCache {
     _hydrated = true;
   }
 
-  /// Logout / account switch — drop memory and optional disk slice.
+  /// Logout / account switch - drop memory and optional disk slice.
   static Future<void> clearAll({bool wipeDisk = false}) async {
     final scope = _userScope;
     _store.clear();
@@ -107,7 +107,7 @@ abstract final class TichScreenCache {
     applyFuture(ensure(persistKey, fetch));
   }
 
-  /// One shared in-flight request per [key] — prefetch and page open dedupe.
+  /// One shared in-flight request per [key] - prefetch and page open dedupe.
   static Future<T> ensure<T>(String key, Future<T> Function() fetch) {
     final cached = read<T>(key);
     if (cached != null) return Future<T>.value(cached);

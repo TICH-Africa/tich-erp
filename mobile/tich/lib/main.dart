@@ -273,20 +273,36 @@ class _AuthGateState extends State<_AuthGate> {
               next.user.id != prev.user.id) ||
           next is AuthLocked,
       builder: (context, state) {
+        late final Widget child;
+        late final Key childKey;
+
         if (state is AuthAuthenticated) {
-          return _PortalForUser(user: state.user);
-        }
-        if (state is AuthLocked) {
+          childKey = ValueKey('portal-${state.user.id}');
+          child = _PortalForUser(user: state.user);
+        } else if (state is AuthLocked) {
           _primedUserKey = null;
-          return UnlockPage(user: state.user, message: state.message);
-        }
-        if (state is AuthInitial || state is AuthChecking) {
-          return const Scaffold(
+          childKey = ValueKey('unlock-${state.user.id}');
+          child = UnlockPage(user: state.user, message: state.message);
+        } else if (state is AuthInitial || state is AuthChecking) {
+          childKey = const ValueKey('auth-checking');
+          child = const Scaffold(
             body: Center(child: AdaptiveProgress()),
           );
+        } else {
+          _primedUserKey = null;
+          childKey = const ValueKey('login');
+          child = const LoginPage();
         }
-        _primedUserKey = null;
-        return const LoginPage();
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (widget, animation) {
+            return FadeTransition(opacity: animation, child: widget);
+          },
+          child: KeyedSubtree(key: childKey, child: child),
+        );
       },
     );
   }

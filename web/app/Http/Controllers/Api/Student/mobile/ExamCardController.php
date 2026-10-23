@@ -47,7 +47,8 @@ class ExamCardController extends Controller
             'pdfUrl' => null,
         ]);
 
-        return $this->printDocuments->downloadPdf(
+        // inlinePdf returns Illuminate Response with PDF bytes (mobile reads bodyBytes).
+        return $this->printDocuments->inlinePdf(
             'portal.exam-card.print',
             $data,
             'exam-card-'.Str::slug($student->registration_number).'.pdf',

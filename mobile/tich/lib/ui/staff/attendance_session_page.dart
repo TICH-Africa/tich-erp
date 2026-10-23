@@ -196,7 +196,7 @@ class _StaffAttendanceSessionPageState
                       const SizedBox(height: 6),
                       Text(
                         '${formatDate(session['session_date'])}'
-                        ' · ${session['start_time'] ?? '—'} – ${session['end_time'] ?? '—'}',
+                        ' · ${session['start_time'] ?? '-'} – ${session['end_time'] ?? '-'}',
                         style: tichUi(fontSize: 13),
                       ),
                       if ((session['venue']?.toString() ?? '').isNotEmpty) ...[
@@ -240,7 +240,7 @@ class _StaffAttendanceSessionPageState
                       _AttendanceCaptureTile(
                         title: 'Signed attendance sheet',
                         subtitle: hasSheet
-                            ? 'Uploaded — scan again to replace'
+                            ? 'Uploaded - scan again to replace'
                             : 'Required before submit',
                         requiredForSubmit: true,
                         uploaded: hasSheet,
@@ -255,7 +255,7 @@ class _StaffAttendanceSessionPageState
                       _AttendanceCaptureTile(
                         title: 'Class photo',
                         subtitle: hasPhoto
-                            ? 'Uploaded — retake to replace'
+                            ? 'Uploaded - retake to replace'
                             : 'Optional photo of students present',
                         requiredForSubmit: false,
                         uploaded: hasPhoto,

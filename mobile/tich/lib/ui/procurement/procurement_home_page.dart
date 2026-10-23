@@ -103,7 +103,7 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
                   PortalHero(
                     title: 'Procurement command center',
                     subtitle:
-                        'Approvals, receipts, stock, and assets — optimized for mobile.',
+                        'Approvals, receipts, stock, and assets - optimized for mobile.',
                     accent: TichColors.blueStrong,
                   ),
                   const SizedBox(height: 12),

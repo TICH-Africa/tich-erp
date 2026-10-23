@@ -6,7 +6,7 @@ import 'staff_api.dart';
 import 'student_api.dart';
 import 'tich_screen_cache.dart';
 
-/// Background cache warming — kept minimal so the UI thread and API stay responsive.
+/// Background cache warming - kept minimal so the UI thread and API stay responsive.
 abstract final class TichPortalWarmup {
   static const _deferredGap = Duration(milliseconds: 250);
   static Timer? _deferredTimer;
@@ -38,7 +38,7 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  /// More drawer links — warm only when the user opens the menu.
+  /// More drawer links - warm only when the user opens the menu.
   static void studentMoreOpened(StudentApi api) {}
 
   static void staffShellOpened(StaffApi api) {
@@ -95,7 +95,7 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  /// Drawer open — avoid blasting the API; screens warm on navigation.
+  /// Drawer open - avoid blasting the API; screens warm on navigation.
   static void employeeMoreOpened(EmployeeApi api) {}
 
   static void procurementShellOpened(ProcurementApi api) {
