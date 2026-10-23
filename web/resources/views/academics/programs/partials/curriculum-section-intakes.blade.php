@@ -59,27 +59,25 @@
                                     @endif
                                 </td>
                                 <td style="white-space:nowrap;">
-                                    @if ($intake->status === 'draft')
-                                        @can('academics.write')
-                                            @if ($intakeMappings->isEmpty())
-                                                <span class="tich-caption">Add units first</span>
-                                            @elseif ($hasInactiveUnits)
-                                                <span class="tich-caption">Approve mapped units</span>
-                                            @else
-                                                <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
-                                                    @csrf
-                                                    <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Submit for approval</button>
-                                                </form>
-                                                @if ($canApproveRegistry)
-                                                    <form method="POST" action="{{ route('departments.academics.versions.publish', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline; margin-left:0.35rem;">
-                                                        @csrf
-                                                        <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Publish intake</button>
-                                                    </form>
-                                                @endif
-                                            @endif
+                                @if ($intake->status === 'draft')
+                                    @can('academics.write')
+                                        @if ($intakeMappings->isEmpty())
+                                            <span class="tich-caption">Add units first</span>
+                                        @elseif ($hasInactiveUnits)
+                                            <span class="tich-caption">Approve mapped units</span>
                                         @else
-                                            <span class="tich-caption">Draft</span>
-                                        @endcan
+                                            <form method="POST" action="{{ route('departments.academics.versions.submit', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Submit for approval</button>
+                                            </form>
+                                        @endif
+                                    @endcan
+                                    @if ($canApproveRegistry && ! $intakeMappings->isEmpty() && ! $hasInactiveUnits)
+                                        <form method="POST" action="{{ route('departments.academics.versions.publish', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline; margin-left:0.35rem;">
+                                            @csrf
+                                            <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Publish intake</button>
+                                        </form>
+                                    @endif
                                     @elseif ($intake->status === 'pending_registry')
                                         @if ($canApproveRegistry)
                                             <form method="POST" action="{{ route('departments.academics.versions.approve-registry', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
