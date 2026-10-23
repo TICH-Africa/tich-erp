@@ -84,7 +84,9 @@
                                         @if ($canApproveRegistry)
                                             <form method="POST" action="{{ route('departments.academics.versions.approve-registry', array_merge($hub, ['version' => $intake->id])) }}" style="display:inline;">
                                                 @csrf
-                                                <button type="submit" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">Registrar approve</button>
+                                                <button type="submit" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">
+                                                    {{ $program->status === 'pending_ceo' ? 'Registrar approve' : 'Approve and publish intake' }}
+                                                </button>
                                             </form>
                                         @else
                                             <span class="tich-caption">Awaiting registrar</span>
