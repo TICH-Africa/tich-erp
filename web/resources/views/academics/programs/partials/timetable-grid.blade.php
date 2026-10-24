@@ -87,11 +87,18 @@
                 continue;
             }
 
+            $restLabel = match ($session->session_type) {
+                'break' => 'Break',
+                'lunch' => 'Lunch',
+                default => null,
+            };
+
             $rows->push((object) [
-                'label' => $start.' - '.substr((string) $session->end_time, 0, 5),
+                'label' => $restLabel ?? $start.' - '.substr((string) $session->end_time, 0, 5),
                 'start_time' => $start,
                 'end_time' => $session->end_time,
-                'segment_type' => 'slot',
+                // A rest row carries its own name, so it also prints the hours under it like a bell slot.
+                'segment_type' => $restLabel ? 'session' : 'slot',
                 'id' => null,
             ]);
             $rowStarts->push($start);

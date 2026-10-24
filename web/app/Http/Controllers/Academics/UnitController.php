@@ -78,11 +78,16 @@ class UnitController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         $validated = $this->validateUnit($request, $unit);
+        $validated['edit_intake'] = (int) ($validated['edit_intake'] ?? 0);
         $result = $this->units->update($request->user(), $hub, $unit, $validated, $request);
 
         $message = $result['changes'] === []
             ? 'Unit '.$result['unit']->unit_code.' saved - nothing on the form had changed.'
             : 'Unit '.$result['unit']->unit_code.' updated: '.implode(', ', $result['changes']).' saved.';
+
+        if ($result['intake_moved']) {
+            $message .= ' The intake plan now shows the new year and semester.';
+        }
 
         return $this->redirectAfterUnitAction($request, $hub, $message);
     }
@@ -175,6 +180,7 @@ class UnitController extends DepartmentAcademicsController
             'return_intake' => ['nullable', 'integer'],
             'return_section' => ['nullable', 'string', 'max:50'],
             'assign_intake' => ['nullable', 'integer'],
+            'edit_intake' => ['nullable', 'integer'],
         ]);
 
         if (! empty($validated['assign_semester']) && empty($validated['semester'])) {

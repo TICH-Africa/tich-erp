@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AcademicProgram;
+use App\Models\CurriculumVersionUnit;
 use App\Models\Department;
 use App\Models\Unit;
 use App\Models\User;
@@ -124,7 +125,7 @@ class UnitCatalogService
     ];
 
     /**
-     * @return array{unit: Unit, changes: array<int, string>}
+     * @return array{unit: Unit, changes: array<int, string>, intake_moved: bool}
      */
     public function update(User $user, Department $hub, Unit $unit, array $data, ?Request $request = null): array
     {
@@ -173,6 +174,19 @@ class UnitCatalogService
 
         $unit->update($payload);
 
+        // Editing the period from an intake's catalog moves that intake's mapping with the unit.
+        // Leaving the old row behind showed the unit on two years at once, and the timetable and
+        // registration kept following the period the officer had just corrected.
+        $intakeMoved = false;
+        $intakeId = (int) ($data['edit_intake'] ?? 0);
+
+        if ($intakeId > 0 && in_array('year and semester', $changes, true)) {
+            $intakeMoved = CurriculumVersionUnit::query()
+                ->where('curriculum_version_id', $intakeId)
+                ->where('unit_id', $unit->id)
+                ->update(['semester' => (int) $payload['semester']]) > 0;
+        }
+
         $this->auditService->log(
             'academics.unit.updated',
             'units',
@@ -185,7 +199,7 @@ class UnitCatalogService
             $request
         );
 
-        return ['unit' => $unit->fresh(), 'changes' => $changes];
+        return ['unit' => $unit->fresh(), 'changes' => $changes, 'intake_moved' => $intakeMoved];
     }
 
     public function submitForRegistry(User $user, Department $hub, Unit $unit, ?Request $request = null): Unit

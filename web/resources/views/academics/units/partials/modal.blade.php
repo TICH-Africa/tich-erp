@@ -20,6 +20,10 @@
                 @endforeach
             @endif
 
+            @if ($unit && ! empty($selectedIntake))
+                <input type="hidden" name="edit_intake" value="{{ $selectedIntake->id }}">
+            @endif
+
             @if (! empty($defaultDepartmentId))
                 <input type="hidden" name="department_id" value="{{ $defaultDepartmentId }}">
             @endif
@@ -105,7 +109,7 @@
                                 <option value="{{ $periodNumber }}" @selected($offeredPeriod === $periodNumber)>{{ $periodLabel }}</option>
                             @endforeach
                         </select>
-                        <p class="tich-caption">When this unit is timetabled. Mapping it into an intake under Semesters still controls the plan students follow.</p>
+                        <p class="tich-caption">When this unit is timetabled. Saving here also moves the unit to this year and semester on the intake plan.</p>
                     </div>
                 @endif
             @endif
