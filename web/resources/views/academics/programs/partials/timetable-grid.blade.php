@@ -66,14 +66,13 @@
 
     $rows = $bellRows;
 
-    // A bell row that carries neither a time nor a class is noise on a hand-built timetable, so it
-    // is dropped; rows that hold a class always stay.
-    $rows = $rows->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList, $rowStart) {
-        $start = $rowStart($row);
+    // A timetable somebody has already filled in should not carry rows with nothing on them - they
+    // read as gaps. An untouched one keeps its empty bell slots, because those are the template the
+    // officer fills in.
+    $hasSessions = collect($sessions ?? [])->isNotEmpty();
 
-        if ($start !== '' && $start !== '00:00') {
-            return true;
-        }
+    $rows = $rows->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList, $rowStart, $hasSessions) {
+        $start = $rowStart($row);
 
         foreach ($activeDayList as $dayNum) {
             if ($sessionsByDayAndTime->has($dayNum.'|'.$start)) {
@@ -81,7 +80,7 @@
             }
         }
 
-        return false;
+        return $hasSessions === false && $start !== '' && $start !== '00:00';
     })->values();
 
     if ($rows->isEmpty()) {
