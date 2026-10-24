@@ -10,7 +10,13 @@
     // A class added by hand seldom starts on the exact minute a bell slot opens, and forcing a
     // second row for the same hour left the timetable full of gaps. A class now sits on the bell
     // slot it overlaps most; only a break keeps its own row.
-    $placement = collect($sessions ?? [])->mapWithKeys(function ($session) use ($bellRows, $rowStart, $toMinutes): array {
+    $restStarts = collect($sessions ?? [])
+        ->filter(fn ($session) => in_array($session->session_type, ['break', 'lunch'], true))
+        ->map(fn ($session) => $toMinutes($session->start_time))
+        ->unique()
+        ->values();
+
+    $placement = collect($sessions ?? [])->mapWithKeys(function ($session) use ($bellRows, $rowStart, $toMinutes, $restStarts): array {
         $own = $rowStart($session);
 
         if ($bellRows->contains(fn ($row) => $rowStart($row) === $own)
@@ -27,6 +33,16 @@
             $rowStartMinutes = $toMinutes($row->start_time);
             $rowEndMinutes = max($rowStartMinutes, $toMinutes($row->end_time));
             $overlap = min($end, $rowEndMinutes) - max($start, $rowStartMinutes);
+
+            // Pulling a class up past the break that starts before it would put the rows out of
+            // clock order, so such a class keeps its own row at its own time instead.
+            $restInBetween = $restStarts->contains(
+                fn (int $rest) => $rest > $rowStartMinutes && $rest <= $start
+            );
+
+            if ($restInBetween) {
+                continue;
+            }
 
             if ($overlap > $bestOverlap) {
                 $bestOverlap = $overlap;
