@@ -347,11 +347,13 @@
                         </div>
                     </div>
 
-                    <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For essay/long answer questions, leave options blank.</p>
+                    <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For essay/long answer questions, leave options blank. <strong>Add as many questions as the paper has</strong> - use the button under the last one.</p>
+                    <div id="objective-question-list">
                     @for ($i = 0; $i < 5; $i++)
                         <div class="tich-card tich-grading-question-card tich-mt-4">
                             <div class="tich-form-group">
                                 <label class="tich-label">Question {{ $i + 1 }}</label>
+                                <button type="button" class="tich-link tich-grading-question-remove" data-remove-question>Remove</button>
                                 <input type="text" name="questions[{{ $i }}][question_text]" class="tich-input" placeholder="Question text (leave blank to skip)">
                             </div>
                             <div class="tich-grid tich-grid--3" style="gap:1rem;">
@@ -382,6 +384,9 @@
                             </div>
                         </div>
                     @endfor
+                    </div>
+
+                    <button type="button" class="tich-btn tich-btn-secondary tich-mt-4" data-add-question>+ Add another question</button>
 
                     <script>
                     function toggleQuestionOptions(select) {
@@ -435,6 +440,61 @@
 
                     document.querySelectorAll('.tich-grading-question-card select').forEach(function(select) {
                         toggleQuestionOptions(select);
+                    });
+
+                    // The paper is rarely five questions long, so the form carries its own slots:
+                    // a new one is a copy of the last card with its answers cleared, and the fields
+                    // are renumbered from the position each card sits in so blanks never leave a hole.
+                    var questionList = document.getElementById('objective-question-list');
+
+                    function renumberQuestions() {
+                        questionList.querySelectorAll('.tich-grading-question-card').forEach(function(card, index) {
+                            card.querySelectorAll('[name]').forEach(function(field) {
+                                field.name = field.name.replace(/questions\[[^\]]*\]/, 'questions[' + index + ']');
+                            });
+
+                            var label = card.querySelector('.tich-label');
+
+                            if (label) {
+                                label.textContent = 'Question ' + (index + 1);
+                            }
+                        });
+                    }
+
+                    document.querySelector('[data-add-question]').addEventListener('click', function() {
+                        var cards = questionList.querySelectorAll('.tich-grading-question-card');
+                        var added = cards[cards.length - 1].cloneNode(true);
+
+                        added.querySelectorAll('input').forEach(function(input) {
+                            input.value = input.type === 'number' ? '1' : '';
+                        });
+                        added.querySelectorAll('select').forEach(function(select) {
+                            select.value = select.options.length ? select.options[0].value : '';
+                        });
+
+                        var correctSelect = added.querySelector('.question-correct-select');
+
+                        if (correctSelect) {
+                            correctSelect.innerHTML = '<option value="">Select correct answer</option>';
+                        }
+
+                        questionList.appendChild(added);
+                        renumberQuestions();
+                        added.querySelectorAll('select').forEach(function(select) {
+                            toggleQuestionOptions(select);
+                        });
+                        added.querySelector('input[type=text]').focus();
+                    });
+
+                    questionList.addEventListener('click', function(event) {
+                        var button = event.target.closest('[data-remove-question]');
+
+                        if (! button || questionList.querySelectorAll('.tich-grading-question-card').length <= 1) {
+                            return;
+                        }
+
+                        button.closest('.tich-grading-question-card').remove();
+                        renumberQuestions();
                     });
                     </script>
 
