@@ -44,19 +44,19 @@ class TimeLogController extends Controller
         ]);
     }
 
-    public function show(Department $department, StaffWeeklyTimeLog $timeLog): View
+    public function show(StaffWeeklyTimeLog $timeLog, Department $department): View
     {
         abort_if($timeLog->status === StaffWeeklyTimeLog::STATUS_DRAFT, 404);
 
-        $log = $this->timeLogs->pruneWeekendDays(
-            $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer'])
-        );
+        $log = $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer']);
 
         return view('finance.time-logs.show', [
             'department' => $department,
             'departmentParams' => ['department' => $department->id],
             'log' => $log,
-            'departments' => $this->timeLogs->departmentsForStaff($log->staff),
+            // Weekend rows are hidden by the shared grid itself; pruning them here would make a
+            // Finance read rewrite the employee's log.
+            'departments' => $log->staff ? $this->timeLogs->departmentsForStaff($log->staff) : collect(),
         ]);
     }
 }
