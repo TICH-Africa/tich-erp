@@ -579,6 +579,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/projects-donors', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsStore'])->name('finance.projects-donors.store');
             Route::get('/projects-donors/{projectDonor}', [\App\Http\Controllers\Finance\FinanceController::class, 'projectsDonorsShow'])->name('finance.projects-donors.show');
 
+            Route::get('/time-logs', [\App\Http\Controllers\Finance\TimeLogController::class, 'index'])->name('finance.time-logs.index');
+            Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Finance\TimeLogController::class, 'show'])->name('finance.time-logs.show');
+
             Route::get('/payroll-integration', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'index'])->name('finance.payroll-integration.index');
             Route::get('/payroll-integration/{payrollRun}', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'show'])->name('finance.payroll-integration.show');
             Route::post('/payroll-integration/{payrollRun}/post', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'post'])->name('finance.payroll-integration.post');

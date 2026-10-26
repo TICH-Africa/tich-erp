@@ -66,8 +66,8 @@ class FinanceNavigationService
             $groups[] = [
                 'label' => 'Employee Finance',
                 'icon' => 'briefcase',
-                'open' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*'),
-                'active' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*'),
+                'open' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*', 'finance.time-logs.*'),
+                'active' => request()->routeIs('finance.employee.*', 'finance.employee.payroll.*', 'finance.payroll-integration.*', 'finance.time-logs.*'),
                 'badgeKey' => 'employee-finance',
                 'items' => $this->employeeFinanceItems(),
             ];
@@ -139,6 +139,10 @@ class FinanceNavigationService
         }
 
         $items[] = $this->item('Payroll → GL integration', 'link', route('finance.payroll-integration.index'), request()->routeIs('finance.payroll-integration.*'), 'payroll-integration');
+
+        if (Auth::user()?->can('finance.read')) {
+            $items[] = $this->item('Submitted time logs', 'clock', route('finance.time-logs.index'), request()->routeIs('finance.time-logs.*'));
+        }
 
         return $items;
     }
