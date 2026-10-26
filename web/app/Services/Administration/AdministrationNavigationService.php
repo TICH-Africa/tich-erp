@@ -44,16 +44,19 @@ class AdministrationNavigationService
                     'administration.applications.*',
                     'administration.lifecycle.*',
                     'administration.admission-packages.*',
+                    'administration.alumni.*',
                 ),
                 'active' => request()->routeIs(
                     'administration.applications.*',
                     'administration.lifecycle.*',
                     'administration.admission-packages.*',
+                    'administration.alumni.*',
                 ),
                 'items' => [
                     $this->item('Application framework', 'file-text', route('administration.applications.index'), request()->routeIs('administration.applications.*'), 'applications'),
                     $this->item('Automated lifecycle', 'refresh-cw', route('administration.lifecycle.index'), request()->routeIs('administration.lifecycle.*'), 'lifecycle'),
                     $this->item('Admission packages', 'mail', route('administration.admission-packages.index'), request()->routeIs('administration.admission-packages.*')),
+                    $this->item('Alumni register', 'users', route('administration.alumni.index'), request()->routeIs('administration.alumni.*')),
                 ],
             ],
             [

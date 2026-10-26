@@ -209,7 +209,7 @@ class StudentSidebarNotificationService
         $finance = ($outstanding > 0 || $needsClearance) ? 1 : 0;
 
         $enrolment = 0;
-        if (! in_array($student->enrollment_status, ['active', 'enrolled', 'registered', 'graduated'], true)) {
+        if (! in_array($student->enrollment_status, ['active', 'enrolled', 'registered', 'graduated', 'alumni'], true)) {
             $enrolment = 1;
         } elseif ($needsClearance && in_array($student->enrollment_status, ['pending', 'admitted', 'offered'], true)) {
             $enrolment = 1;

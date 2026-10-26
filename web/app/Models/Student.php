@@ -62,10 +62,14 @@ class Student extends Model
         'updated_at',
         'created_by',
         'current_year',
+        'graduation_year',
+        'graduation_date',
+        'graduation_award',
     ];
 
     protected $casts = [
         'date_of_admission' => 'date',
+        'graduation_date' => 'date',
         'portal_invite_expires_at' => 'datetime',
         'portal_activated_at' => 'datetime',
         'academically_cleared_at' => 'datetime',
@@ -130,6 +134,21 @@ class Student extends Model
     public function nextOfKin(): HasMany
     {
         return $this->hasMany(StudentNextOfKin::class)->orderBy('id');
+    }
+
+    /** Everyone Admissions has registered as finished - the alumni register. */
+    public function scopeAlumni($query)
+    {
+        return $query->whereIn('enrollment_status', ['graduated', 'alumni']);
+    }
+
+    public function graduationLabel(): string
+    {
+        if ($this->graduation_date) {
+            return $this->graduation_date->format('d M Y');
+        }
+
+        return $this->graduation_year ? (string) $this->graduation_year : '-';
     }
 
     public function displayName(): string

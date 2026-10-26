@@ -163,6 +163,12 @@
                                     'active' => request()->routeIs('academics.students.*'),
                                 ],
                                 [
+                                    'href' => route('academics.alumni.index'),
+                                    'label' => 'Alumni',
+                                    'icon' => 'users',
+                                    'active' => request()->routeIs('academics.alumni.*'),
+                                ],
+                                [
                                     'href' => route('departments.academics.profile-changes.index', $hub),
                                     'label' => 'Profile approvals',
                                     'icon' => 'user',

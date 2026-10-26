@@ -174,9 +174,14 @@ class StudentPortalService
 
     $studentUpdates = [
       'user_id' => $user->id,
-      'enrollment_status' => 'active',
       'updated_at' => now(),
     ];
+
+    // A graduate keeps their status: joining the portal after convocation must not put them back
+    // on the current student list that Admissions just cleared.
+    if (! in_array($student->enrollment_status, AlumniService::STATUSES, true)) {
+      $studentUpdates['enrollment_status'] = 'active';
+    }
 
     if ($markPortalActivated) {
       $studentUpdates['portal_activated_at'] = now();

@@ -63,7 +63,7 @@ class AcademicStudentController extends Controller
         $students = $query->paginate(25)->appends($request->query());
 
         $programs = $this->programsForUser($request->user(), $department);
-        $statuses = ['active', 'pending', 'deferred', 'suspended', 'withdrawn', 'graduated'];
+        $statuses = ['active', 'pending', 'deferred', 'suspended', 'withdrawn', 'graduated', 'alumni'];
 
         $cohortsQuery = Student::distinct();
 

@@ -475,6 +475,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     });
 
     Route::prefix('academics')->middleware(['permission:academics.read'])->group(function () {
+        Route::get('/alumni', [\App\Http\Controllers\Academics\AlumniController::class, 'index'])->name('academics.alumni.index');
         Route::get('/students', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'index'])->name('academics.students.index');
         Route::get('/students/create', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'create'])->name('academics.students.create');
         Route::get('/students/{student}', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'show'])->name('academics.students.show');
@@ -711,6 +712,17 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'show'])->name('administration.applications.existing-student.show');
         Route::get('/applications/existing-student/{student}/edit', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'edit'])->name('administration.applications.existing-student.edit');
         Route::put('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'update'])->name('administration.applications.existing-student.update');
+
+        Route::get('/alumni', [\App\Http\Controllers\Administration\AlumniController::class, 'index'])->name('administration.alumni.index');
+        Route::get('/alumni/register', [\App\Http\Controllers\Administration\AlumniController::class, 'create'])->name('administration.alumni.create');
+        Route::get('/alumni/{student}/graduate', [\App\Http\Controllers\Administration\AlumniController::class, 'edit'])->name('administration.alumni.edit');
+        Route::put('/alumni/{student}', [\App\Http\Controllers\Administration\AlumniController::class, 'update'])->name('administration.alumni.update');
+        Route::post('/alumni/{student}/undo', [\App\Http\Controllers\Administration\AlumniController::class, 'undo'])->name('administration.alumni.undo');
+        Route::get('/alumni/upload', [\App\Http\Controllers\Administration\AlumniController::class, 'upload'])->name('administration.alumni.upload');
+        Route::get('/alumni/upload/template', [\App\Http\Controllers\Administration\AlumniController::class, 'template'])->name('administration.alumni.template');
+        Route::post('/alumni/upload/preview', [\App\Http\Controllers\Administration\AlumniController::class, 'preview'])->name('administration.alumni.preview');
+        Route::get('/alumni/upload/review', [\App\Http\Controllers\Administration\AlumniController::class, 'showPreview'])->name('administration.alumni.review');
+        Route::post('/alumni/upload/import', [\App\Http\Controllers\Administration\AlumniController::class, 'import'])->name('administration.alumni.import');
         Route::get('/applications/{id}', [\App\Http\Controllers\Administration\ApplicationController::class, 'show'])->name('administration.applications.show');
         Route::post('/applications/{id}/handoff-to-academics', [\App\Http\Controllers\Administration\ApplicationController::class, 'handoffToAcademics'])
             ->name('administration.applications.handoff-to-academics');

@@ -30,7 +30,7 @@ class EnrolledStudentsController extends Controller
         $students = $query->orderBy('registration_number')->paginate(50);
         $intakes = Student::query()->distinct()->pluck('cohort_intake')->filter()->sort();
         $programs = \App\Models\AcademicProgram::query()->orderBy('program_name')->get();
-        $statuses = ['enrolled', 'graduated', 'withdrawn', 'suspended', 'graduated'];
+        $statuses = ['enrolled', 'graduated', 'alumni', 'withdrawn', 'suspended'];
 
         return view('marketing.enrolled-students.index', [
             'students' => $students,
