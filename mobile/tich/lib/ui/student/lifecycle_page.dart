@@ -84,12 +84,6 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
       );
       return;
     }
-    if (_files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Attach at least one supporting document.')),
-      );
-      return;
-    }
     setState(() => _busy = true);
     try {
       final res = await widget.api.submitLifecycle(
@@ -166,7 +160,7 @@ class _StudentLifecyclePageState extends State<StudentLifecyclePage> {
                         icon: const Icon(Icons.attach_file),
                         label: Text(
                           _files.isEmpty
-                              ? 'Attach supporting documents'
+                              ? 'Attach supporting documents (optional)'
                               : '${_files.length} file(s) attached',
                         ),
                       ),

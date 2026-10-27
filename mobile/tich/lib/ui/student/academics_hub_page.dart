@@ -991,18 +991,18 @@ class _ExamRequestsInteractiveState extends State<_ExamRequestsInteractive> {
                       : 'Notes (optional)',
                 ),
               ),
-              if (_type == 'special_exam') ...[
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _busy ? null : _pick,
-                  icon: const Icon(Icons.attach_file),
-                  label: Text(
-                    _files.isEmpty
-                        ? 'Attach documents'
-                        : '${_files.length} file(s) attached',
-                  ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _pick,
+                icon: const Icon(Icons.attach_file),
+                label: Text(
+                  _files.isNotEmpty
+                      ? '${_files.length} file(s) attached'
+                      : _type == 'special_exam'
+                          ? 'Attach documents (required)'
+                          : 'Attach documents (optional)',
                 ),
-              ],
+              ),
               const SizedBox(height: 12),
               AdaptiveFilledButton(
                 onPressed: _busy ? null : _submit,

@@ -89,9 +89,9 @@
                     <textarea id="deferment_reason" name="reason" rows="4" class="tich-input" required>{{ old('reason') }}</textarea>
                 </div>
                 <div class="tich-form-group" style="margin:0;">
-                    <label for="deferment_attachments" class="tich-label">Supporting document(s)</label>
-                    <input id="deferment_attachments" name="attachments[]" type="file" class="tich-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple required>
-                    <p class="tich-caption">PDF, Word, or image. Max 10&nbsp;MB each (up to 5 files).</p>
+                    <label for="deferment_attachments" class="tich-label">Supporting document(s) <span class="tich-caption">(optional)</span></label>
+                    <input id="deferment_attachments" name="attachments[]" type="file" class="tich-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
+                    <p class="tich-caption">Attach only if you have them. PDF, Word, or image. Max 10&nbsp;MB each (up to 5 files).</p>
                 </div>
             </div>
 

@@ -24,7 +24,7 @@ class PortalLifecycleRequestController extends Controller
         $validated = $request->validate([
             'deferment_months' => 'required|integer|min:1|max:36',
             'reason' => 'required|string|max:5000',
-            'attachments' => 'required|array|min:1|max:5',
+            'attachments' => 'nullable|array|max:5',
             'attachments.*' => 'file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
         ]);
 
@@ -46,8 +46,6 @@ class PortalLifecycleRequestController extends Controller
                 'size' => $file->getSize(),
             ];
         }
-
-        abort_if($storedPaths === [], 422, 'At least one supporting document is required.');
 
         StudentLifecycleRequest::query()->create([
             'student_id' => $student->id,
