@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administration;
 use App\Http\Controllers\Controller;
 use App\Imports\AlumniGraduatesImport;
 use App\Models\AcademicProgram;
+use App\Models\Campus;
 use App\Models\Student;
 use App\Services\AlumniService;
 use Illuminate\Http\RedirectResponse;
@@ -69,6 +70,72 @@ class AlumniController extends Controller
         ]);
     }
 
+    /**
+     * A past-year graduate the school never captured: the person is not on the student list at all,
+     * so this form creates the record already finished instead of asking for it to be added twice.
+     */
+    public function createGraduate(Request $request): View
+    {
+        return view('administration.alumni.add', [
+            'programs' => AcademicProgram::query()
+                ->where('status', 'active')
+                ->orderBy('program_name')
+                ->get(['id', 'program_name', 'program_code']),
+            'campuses' => Campus::query()
+                ->where('is_active', 1)
+                ->orderBy('campus_name')
+                ->get(['id', 'campus_name', 'campus_type']),
+            'prefill' => array_filter([
+                'registration_number' => trim((string) $request->query('registration_number', '')),
+                'full_name' => trim((string) $request->query('name', '')),
+                'graduation_year' => trim((string) $request->query('graduation_year', '')),
+            ]),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'registration_number' => ['required', 'string', 'max:50', 'unique:students,registration_number'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'surname' => ['required', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'phone_number' => ['nullable', 'string', 'max:30'],
+            'program_id' => ['required', 'integer', 'exists:academic_programs,id'],
+            'campus_id' => ['required', 'integer', 'exists:campuses,id'],
+            'year_joined' => ['required', 'integer', 'min:1960', 'max:2100'],
+            'graduation_year' => ['required', 'integer', 'min:1960', 'max:2100', 'gte:year_joined'],
+            'graduation_date' => ['nullable', 'date'],
+            'graduation_award' => ['nullable', 'string', 'max:120'],
+            'gpa' => ['nullable', 'numeric', 'min:0', 'max:4'],
+            'current_year' => ['nullable', 'integer', 'min:1', 'max:4'],
+            'status' => ['nullable', 'in:graduated,alumni'],
+            // Extension rather than MIME: the host's fileinfo often reports .jpg as other types.
+            'photo' => ['nullable', 'image', 'max:2048'],
+        ], [
+            'graduation_year.gte' => 'They cannot finish before the year they joined.',
+        ]);
+
+        if (! empty($data['graduation_date'])
+            && (int) date('Y', strtotime((string) $data['graduation_date'])) !== (int) $data['graduation_year']) {
+            return back()
+                ->withErrors(['graduation_date' => 'The graduation date year must match the year they ended.'])
+                ->withInput();
+        }
+
+        $student = $this->alumni->create($data, $request->user(), $request);
+
+        if ($request->hasFile('photo')) {
+            $student->photo_path = $request->file('photo')->store("students/{$student->id}", 'public');
+            $student->save();
+        }
+
+        return redirect()
+            ->route('administration.alumni.index')
+            ->with('status', $student->displayName().' ('.$student->registration_number.') has been added to the alumni register.');
+    }
+
     public function edit(Student $student): View
     {
         abort_unless($student->exists, 404);
@@ -84,6 +151,7 @@ class AlumniController extends Controller
             'graduation_year' => ['nullable', 'integer', 'min:1980', 'max:2100'],
             'graduation_date' => ['nullable', 'date'],
             'graduation_award' => ['nullable', 'string', 'max:120'],
+            'gpa' => ['nullable', 'numeric', 'min:0', 'max:4'],
             'status' => ['nullable', 'in:graduated,alumni'],
         ]);
 

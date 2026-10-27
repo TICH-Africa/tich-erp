@@ -61,12 +61,22 @@
 
         <p class="tich-caption">The year is what the list filters on; the date is optional if you only have the year from the old records.</p>
 
-        <div class="tich-form-group">
-            <label class="tich-label" for="status">Register as</label>
-            <select id="status" name="status" class="tich-input">
-                <option value="graduated" @selected(old('status', $student->enrollment_status) === 'graduated')>Graduated</option>
-                <option value="alumni" @selected(old('status', $student->enrollment_status) === 'alumni')>Alumni (finished earlier, before this system)</option>
-            </select>
+        <div class="tich-grid tich-grid--2" style="gap:1rem;">
+            <div class="tich-form-group">
+                <label class="tich-label" for="gpa">GPA on file</label>
+                <input id="gpa" type="number" step="0.01" min="0" max="4" name="gpa" class="tich-input"
+                       value="{{ old('gpa', $student->academicRecords()->whereNotNull('gpa')->orderByDesc('id')->value('gpa')) }}" placeholder="e.g. 3.45">
+                @error('gpa')<p class="tich-caption tich-text--danger">{{ $message }}</p>@enderror
+                <p class="tich-caption tich-mt-2">Saves against their last study record so Academics sees the same result on their file.</p>
+            </div>
+
+            <div class="tich-form-group">
+                <label class="tich-label" for="status">Register as</label>
+                <select id="status" name="status" class="tich-input">
+                    <option value="graduated" @selected(old('status', $student->enrollment_status) === 'graduated')>Graduated</option>
+                    <option value="alumni" @selected(old('status', $student->enrollment_status) === 'alumni')>Alumni (finished earlier, before this system)</option>
+                </select>
+            </div>
         </div>
 
         <div class="tich-flex-wrap tich-mt-4" style="gap:0.6rem;">

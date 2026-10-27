@@ -36,8 +36,9 @@
                 <p class="tich-label">How each line is treated</p>
                 <p class="tich-caption">
                     A line is matched to the student the school already has. Names alone are only accepted when
-                    exactly one student carries that full name. Anything that cannot be matched is listed for you
-                    to add one by one, never guessed at.
+                    exactly one student carries that full name. Anything that cannot be matched gets an
+                    <a href="{{ route('administration.alumni.add') }}">Add this graduate</a> button on the review screen,
+                    which creates the record with the course, campus and GPA you type in.
                 </p>
             </div>
 

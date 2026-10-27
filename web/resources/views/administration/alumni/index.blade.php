@@ -5,7 +5,8 @@
 @section('administration-content')
     <x-page-toolbar title="Alumni register" meta="{{ $total }} graduate(s) from past years - each stays on the student record the school already has">
         <x-slot:actions>
-            <a href="{{ route('administration.alumni.create') }}" class="tich-btn tich-btn-primary">Register a graduate</a>
+            <a href="{{ route('administration.alumni.add') }}" class="tich-btn tich-btn-primary">Add a graduate</a>
+            <a href="{{ route('administration.alumni.create') }}" class="tich-btn tich-btn-secondary">Register a student already on file</a>
             <a href="{{ route('administration.alumni.upload') }}" class="tich-btn tich-btn-secondary">Upload a past list</a>
         </x-slot:actions>
         <x-slot:filters>

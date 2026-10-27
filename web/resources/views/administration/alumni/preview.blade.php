@@ -65,6 +65,13 @@
                                 @php($label = ['mark' => 'Will register', 'already' => 'Already on register', 'not_found' => 'Not found', 'invalid' => 'Skipped'][$row['status']] ?? $row['status'])
                                 <span class="tich-badge {{ $row['status'] === 'mark' ? 'tich-badge--success' : 'tich-badge--muted' }}">{{ $label }}</span>
                                 <p class="tich-caption">{{ $row['note'] }}</p>
+                                @if ($row['status'] === 'not_found')
+                                    <a href="{{ route('administration.alumni.add', array_filter([
+                                        'registration_number' => $row['registration_number'],
+                                        'name' => $row['name'],
+                                        'graduation_year' => $row['graduation_year'],
+                                    ])) }}" class="tich-btn tich-btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.82rem;">Add this graduate</a>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

@@ -39,4 +39,21 @@ class AlumniController extends Controller
             'total' => Student::query()->alumni()->count(),
         ]);
     }
+
+    /** A graduate's own file, read only: Admissions keeps the register, Academics looks it up here. */
+    public function show(Student $student): View
+    {
+        abort_unless($this->alumni->isAlumnus($student), 404);
+
+        $student->load([
+            'program:id,program_name,program_code',
+            'campus:id,campus_name,campus_type',
+            'academicRecords' => fn ($query) => $query->with('program:id,program_name,program_code')->orderBy('id'),
+        ]);
+
+        return view('academics.alumni.show', [
+            'department' => Department::findAcademicsHub(),
+            'student' => $student,
+        ]);
+    }
 }

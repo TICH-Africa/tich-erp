@@ -18,6 +18,7 @@ class AlumniService
 
     public function __construct(
         protected AuditService $auditService,
+        protected AcademicRecordService $records,
     ) {}
 
     public function isAlumnus(Student $student): bool
@@ -67,7 +68,7 @@ class AlumniService
     }
 
     /**
-     * @param  array{graduation_year?: int|null, graduation_date?: string|null, graduation_award?: string|null, status?: string}  $data
+     * @param  array{graduation_year?: int|null, graduation_date?: string|null, graduation_award?: string|null, gpa?: string|null, status?: string}  $data
      */
     public function register(Student $student, array $data, User $user, ?Request $request = null): Student
     {
@@ -96,12 +97,22 @@ class AlumniService
 
             // academic_records.completion_date has been on the table since it was created and never
             // filled; a registered graduation is the first thing that can.
+            $recordUpdate = [];
+
             if (! empty($data['graduation_date'])) {
+                $recordUpdate['completion_date'] = $data['graduation_date'];
+            }
+
+            if (($data['gpa'] ?? null) !== null && $data['gpa'] !== '') {
+                $recordUpdate['gpa'] = $data['gpa'];
+            }
+
+            if ($recordUpdate !== []) {
                 AcademicRecord::query()
                     ->where('student_id', $student->id)
                     ->orderByDesc('id')
                     ->limit(1)
-                    ->update(['completion_date' => $data['graduation_date']]);
+                    ->update($recordUpdate);
             }
 
             $this->auditService->log(
@@ -114,8 +125,86 @@ class AlumniService
                     'graduation_year' => $data['graduation_year'] ?? null,
                     'graduation_date' => $data['graduation_date'] ?? null,
                     'graduation_award' => $data['graduation_award'] ?? null,
+                    'gpa' => $data['gpa'] ?? null,
                 ],
                 'Graduate registered by Admissions',
+                'success',
+                $user->id,
+                $request
+            );
+
+            return $student->fresh();
+        });
+    }
+
+    /**
+     * A graduate the ERP never captured. The record is created already finished, so the school keeps
+     * their course, campus and result and they stay off every current-student list.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function create(array $data, User $user, ?Request $request = null): Student
+    {
+        $status = $data['status'] ?? 'graduated';
+
+        if (! in_array($status, self::STATUSES, true)) {
+            $status = 'graduated';
+        }
+
+        $joined = (int) $data['year_joined'];
+        $ended = (int) $data['graduation_year'];
+        $admittedOn = sprintf('%04d-01-01', $joined);
+        $finalYear = (int) ($data['current_year'] ?? max(1, min(4, $ended - $joined + 1)));
+        $gpa = ($data['gpa'] ?? null) === null || $data['gpa'] === '' ? null : $data['gpa'];
+
+        return DB::transaction(function () use ($data, $user, $request, $status, $joined, $ended, $admittedOn, $finalYear, $gpa): Student {
+            $student = Student::create([
+                'registration_number' => $data['registration_number'],
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'surname' => $data['surname'],
+                'program_id' => $data['program_id'],
+                'cohort_intake' => (string) $joined,
+                'current_year' => $finalYear,
+                'enrollment_campus_id' => $data['campus_id'],
+                'enrollment_status' => $status,
+                'date_of_admission' => $admittedOn,
+                'email' => $data['email'] ?? null,
+                'phone_number' => $data['phone_number'] ?? null,
+                'graduation_year' => $ended,
+                'graduation_date' => $data['graduation_date'] ?? null,
+                'graduation_award' => ($data['graduation_award'] ?? '') !== '' ? $data['graduation_award'] : null,
+                // They are not on campus, so every current-student roster keyed on is_active skips them.
+                'is_active' => 0,
+                'created_by' => $user->id,
+            ]);
+
+            $this->records->create($student, [
+                'program_id' => $data['program_id'],
+                'enrollment_date' => $admittedOn,
+                'completion_date' => $data['graduation_date'] ?? sprintf('%04d-12-31', $ended),
+                'status' => 'completed',
+                'gpa' => $gpa,
+                'notes' => 'Added to the alumni register by Admissions; the school kept no ERP record for this cohort.',
+            ]);
+
+            $this->auditService->log(
+                'administration.alumni.created',
+                'students',
+                (string) $student->id,
+                null,
+                [
+                    'registration_number' => $student->registration_number,
+                    'enrollment_status' => $status,
+                    'program_id' => $student->program_id,
+                    'campus_id' => $student->enrollment_campus_id,
+                    'year_joined' => $joined,
+                    'graduation_year' => $ended,
+                    'graduation_date' => $student->graduation_date?->toDateString(),
+                    'graduation_award' => $student->graduation_award,
+                    'gpa' => $gpa,
+                ],
+                'Graduate added with no prior student record',
                 'success',
                 $user->id,
                 $request
@@ -144,12 +233,27 @@ class AlumniService
                 'graduation_year' => null,
                 'graduation_date' => null,
                 'graduation_award' => null,
+                // Back on the current student list means visible to it, including for a record that
+                // was created already graduated because the school had no ERP entry for them.
+                'is_active' => 1,
             ]);
 
-            AcademicRecord::query()
-                ->where('student_id', $student->id)
-                ->where('completion_date', $before['graduation_date'])
-                ->update(['completion_date' => null]);
+            $records = AcademicRecord::query()->where('student_id', $student->id)->orderByDesc('id')->get();
+            $newest = $records->first();
+
+            // register() stamps the newest record, so lifting a graduation clears that same one.
+            if ($newest !== null) {
+                $newest->completion_date = null;
+
+                // Only a record Admissions created along with the graduation goes back to being a live
+                // enrolment; a real study history keeps its own status and result.
+                if ($records->count() === 1 && $newest->status === 'completed') {
+                    $newest->status = 'active';
+                    $newest->gpa = null;
+                }
+
+                $newest->save();
+            }
 
             $this->auditService->log(
                 'administration.alumni.undone',

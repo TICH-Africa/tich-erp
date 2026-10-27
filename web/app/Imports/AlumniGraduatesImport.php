@@ -60,12 +60,13 @@ class AlumniGraduatesImport
         foreach (array_slice($rows, $headerIndex + 1) as $raw) {
             $values = $this->readValues($raw, $columns);
             $number = $this->upper((string) ($values['registration_number'] ?? ''));
-            $name = $this->upper(trim(implode(' ', array_filter([
+            $asWritten = trim(implode(' ', array_filter([
                 $values['first_name'] ?? '',
                 $values['middle_name'] ?? '',
                 $values['surname'] ?? '',
                 $values['full_name'] ?? '',
-            ]))));
+            ])));
+            $name = $this->upper($asWritten);
 
             if ($number === '' && $name === '') {
                 $line++;
@@ -80,7 +81,7 @@ class AlumniGraduatesImport
             $date = $this->date($values['graduation_date'] ?? null);
             $award = trim((string) ($values['graduation_award'] ?? ''));
 
-            $found = $student?->displayName() ?? $name;
+            $found = $student?->displayName() ?? $asWritten;
 
             $marks[] = match (true) {
                 $student === null && $number !== '' => $this->row($line, $number, $found, $year, $date, $award, null, 'not_found', 'No student carries that admission number.'),

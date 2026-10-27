@@ -21,7 +21,7 @@
             <p class="tich-text">No current student matches “{{ $search }}”.</p>
             <p class="tich-caption tich-mt-2">
                 If they graduated before the school kept records here, add them on
-                <a href="{{ route('administration.applications.existing-student.create') }}">Add student</a> first, then mark them finished here.
+                <a href="{{ route('administration.alumni.add') }}">Add a graduate</a> instead - that form takes the course, campus, years and GPA.
             </p>
         </div>
     @else

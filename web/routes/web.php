@@ -476,6 +476,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
     Route::prefix('academics')->middleware(['permission:academics.read'])->group(function () {
         Route::get('/alumni', [\App\Http\Controllers\Academics\AlumniController::class, 'index'])->name('academics.alumni.index');
+        Route::get('/alumni/{student}', [\App\Http\Controllers\Academics\AlumniController::class, 'show'])->name('academics.alumni.show');
         Route::get('/students', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'index'])->name('academics.students.index');
         Route::get('/students/create', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'create'])->name('academics.students.create');
         Route::get('/students/{student}', [\App\Http\Controllers\Academics\AcademicStudentController::class, 'show'])->name('academics.students.show');
@@ -715,6 +716,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::get('/alumni', [\App\Http\Controllers\Administration\AlumniController::class, 'index'])->name('administration.alumni.index');
         Route::get('/alumni/register', [\App\Http\Controllers\Administration\AlumniController::class, 'create'])->name('administration.alumni.create');
+        Route::get('/alumni/add', [\App\Http\Controllers\Administration\AlumniController::class, 'createGraduate'])->name('administration.alumni.add');
+        Route::post('/alumni', [\App\Http\Controllers\Administration\AlumniController::class, 'store'])->name('administration.alumni.store');
         Route::get('/alumni/{student}/graduate', [\App\Http\Controllers\Administration\AlumniController::class, 'edit'])->name('administration.alumni.edit');
         Route::put('/alumni/{student}', [\App\Http\Controllers\Administration\AlumniController::class, 'update'])->name('administration.alumni.update');
         Route::post('/alumni/{student}/undo', [\App\Http\Controllers\Administration\AlumniController::class, 'undo'])->name('administration.alumni.undo');
