@@ -188,6 +188,7 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
     Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
+    Route::get('/timetable/{timetable}/pdf', \App\Http\Controllers\Api\Student\mobile\TimetablePdfController::class);
 
     Route::get('/finance', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'show']);
     Route::post('/finance/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'pay']);
@@ -227,6 +228,7 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::get('/notifications', \App\Http\Controllers\Api\Staff\mobile\NotificationController::class);
     Route::get('/units', \App\Http\Controllers\Api\Staff\mobile\UnitsController::class);
     Route::get('/timetable', \App\Http\Controllers\Api\Staff\mobile\TimetableController::class);
+    Route::get('/timetable/{timetable}/pdf', \App\Http\Controllers\Api\Staff\mobile\TimetablePdfController::class);
 
     Route::get('/attendance', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'index']);
     Route::post('/attendance/sync', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'sync']);

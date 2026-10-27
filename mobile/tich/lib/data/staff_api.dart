@@ -13,6 +13,9 @@ class StaffApi {
 
   Future<Map<String, dynamic>> timetable() => _client.get('/staff/timetable');
 
+  Future<List<int>> downloadTimetablePdf(int timetableId) =>
+      _client.getBytes('/staff/timetable/$timetableId/pdf');
+
   Future<Map<String, dynamic>> attendance() => _client.get('/staff/attendance');
 
   Future<Map<String, dynamic>> syncAttendance() =>

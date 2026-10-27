@@ -72,9 +72,25 @@ class StaffMobilePortalSerializer
     public function timetable(Staff $staff): array
     {
         $sessions = $this->dashboard->timetableSessions($staff);
+        $block = $this->dashboard->forStaff($staff)['timetable'] ?? [];
+        $rows = collect($block['timetables'] ?? []);
 
         return [
             'day_labels' => TimetableTemplateService::dayLabels(),
+            'is_provisional' => (bool) ($block['is_provisional'] ?? false),
+            'teaching_period' => $block['teaching_period'] ?? null,
+            'documents' => $rows->map(function (array $row) {
+                $t = $row['timetable'];
+
+                return [
+                    'id' => (int) $t->id,
+                    'kind' => $t->timetable_kind,
+                    'title' => $t->title ?? ucfirst((string) $t->timetable_kind).' timetable',
+                    'display_title' => $t->displayTitle(),
+                    'teaching_period' => $t->teaching_period,
+                    'status' => $t->status,
+                ];
+            })->values(),
             'sessions' => $sessions->map(fn ($s) => $this->timetableSessionCard($s))->values(),
         ];
     }
