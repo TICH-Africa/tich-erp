@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'tich_screen_cache_store.dart';
 
@@ -67,7 +66,16 @@ abstract final class TichScreenCache {
   }
 
   static Map<String, dynamic> _cloneMap(Map<String, dynamic> source) {
-    return jsonDecode(jsonEncode(source)) as Map<String, dynamic>;
+    // Shallow copy is enough for immutable API payloads; avoids jsonEncode jank on large academics JSON.
+    return source.map((key, value) {
+      if (value is Map) {
+        return MapEntry(key, Map<String, dynamic>.from(value));
+      }
+      if (value is List) {
+        return MapEntry(key, List<dynamic>.from(value));
+      }
+      return MapEntry(key, value);
+    });
   }
 
   static void _touch(String key) {

@@ -30,13 +30,19 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _dataCache = studentReadCache(_cacheKey);
-    _future = studentEnsure(_cacheKey, () => widget.api.timetable()).then((data) {
-      final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
-      final timetables = tt['timetables'] as List? ?? const [];
-      // ignore: unawaited_futures
-      TichNotifications.instance
-          .scheduleLessonReminders(_sessionsFor(timetables, 'lesson'));
-      return data;
+    _future = studentEnsure(_cacheKey, () => widget.api.timetable());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        _future.then((data) {
+          if (!mounted) return;
+          final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
+          final timetables = tt['timetables'] as List? ?? const [];
+          // ignore: unawaited_futures
+          TichNotifications.instance
+              .scheduleLessonReminders(_sessionsFor(timetables, 'lesson'));
+        }).catchError((_) {});
+      });
     });
   }
 

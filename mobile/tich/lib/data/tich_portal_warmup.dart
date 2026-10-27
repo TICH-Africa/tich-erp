@@ -8,16 +8,15 @@ import 'tich_screen_cache.dart';
 
 /// Background cache warming - kept minimal so the UI thread and API stay responsive.
 abstract final class TichPortalWarmup {
-  static const _deferredGap = Duration(milliseconds: 250);
+  static const _deferredGap = Duration(milliseconds: 400);
   static Timer? _deferredTimer;
 
   /// Call when a portal shell opens: warm the visible tab only.
   static void studentShellOpened(StudentApi api) {
     _cancelDeferred();
     TichScreenCache.warm('student.home', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 12), () {
+    _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
-        () => TichScreenCache.warm('student.timetable', () => api.timetable()),
         () => TichScreenCache.warm('student.academics', () => api.academics()),
       ]);
     });
@@ -44,9 +43,8 @@ abstract final class TichPortalWarmup {
   static void staffShellOpened(StaffApi api) {
     _cancelDeferred();
     TichScreenCache.warm('staff.home', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 12), () {
+    _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
-        () => TichScreenCache.warm('staff.timetable', () => api.timetable()),
         () => TichScreenCache.warm('staff.units', () => api.units()),
       ]);
     });

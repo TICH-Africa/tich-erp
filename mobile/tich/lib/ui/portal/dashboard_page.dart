@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Object? _dataCache;
   int _notifCount = 0;
   bool? _clockedInToday;
+  DateTime? _lastExtrasRefresh;
 
   @override
   void initState() {
@@ -85,6 +88,17 @@ class _DashboardPageState extends State<DashboardPage> {
     _syncAttendanceReminders();
   }
 
+  void _maybeRefreshExtras() {
+    final now = DateTime.now();
+    if (_lastExtrasRefresh != null &&
+        now.difference(_lastExtrasRefresh!) < const Duration(minutes: 5)) {
+      return;
+    }
+    _lastExtrasRefresh = now;
+    unawaited(_loadNotifications());
+    unawaited(_syncAttendanceReminders());
+  }
+
   void _liveRefresh() {
     tichSilentReload(
       mounted: () => mounted,
@@ -93,8 +107,7 @@ class _DashboardPageState extends State<DashboardPage> {
       onData: (data) => _dataCache = data,
       persistKey: 'portal.dashboard',
     );
-    _loadNotifications();
-    _syncAttendanceReminders();
+    _maybeRefreshExtras();
   }
 
   Widget _notificationAction() {

@@ -94,7 +94,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
     }
     _lastTimetablePrime = now;
     try {
-      final tt = await widget.api.timetable();
+      final tt = await studentEnsure(
+        'student.timetable',
+        () => widget.api.timetable(),
+      );
       final sessions = lessonSessionsFromTimetablePayload(tt);
       if (!mounted) return;
       setState(() => _nextLesson = nextLessonToday(sessions));

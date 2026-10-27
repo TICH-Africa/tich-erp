@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../data/tich_pdf_cache.dart';
 import '../../theme/tich_theme.dart';
 
 /// CamScanner-style viewer for server-generated PDFs (pinch-zoom on a paper sheet).
@@ -55,7 +56,8 @@ class _TichGeneratedDocumentViewerState
       _bytes = null;
     });
     try {
-      final bytes = await widget.loadPdf();
+      final cacheKey = widget.cacheFileName ?? 'tich-document';
+      final bytes = await TichPdfCache.load(cacheKey, widget.loadPdf);
       if (!mounted) return;
       if (bytes.isEmpty) {
         setState(() {
