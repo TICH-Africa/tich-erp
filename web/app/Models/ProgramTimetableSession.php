@@ -110,7 +110,15 @@ class ProgramTimetableSession extends Model
      */
     public static function deliveryModes(): array
     {
-        return ['physical' => 'Physical', 'online' => 'Online'];
+        return ['physical' => 'In person', 'online' => 'Online'];
+    }
+
+    /**
+     * Online teaching slots need a meeting link or instructions in the venue field.
+     */
+    public static function needsOnlineVenue(string $sessionType): bool
+    {
+        return ! in_array($sessionType, ['break', 'lunch'], true);
     }
 
     public function isOnline(): bool
@@ -120,7 +128,7 @@ class ProgramTimetableSession extends Model
 
     public function deliveryModeLabel(): string
     {
-        return self::deliveryModes()[$this->delivery_mode] ?? 'Physical';
+        return self::deliveryModes()[$this->delivery_mode] ?? 'In person';
     }
 
     /**

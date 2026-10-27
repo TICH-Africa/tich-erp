@@ -677,6 +677,7 @@
                                                     'week_to' => $session->week_to,
                                                     'contact_hours' => $session->contact_hours,
                                                     'staff_id' => $session->staff_id,
+                                                    'room_id' => $session->room_id,
                                                     'day_of_week' => $session->day_of_week,
                                                     'start_time' => substr((string) $session->start_time, 0, 5),
                                                     'end_time' => substr((string) $session->end_time, 0, 5),
@@ -778,17 +779,30 @@
                                     </select>
                                 </div>
                                 <div class="tich-form-group">
-                                    <label class="tich-label" for="timetable-session-venue">Venue / online link</label>
-                                    <input type="text" id="timetable-session-venue" name="venue" class="tich-input" placeholder="e.g. Skills lab or the meeting link">
-                                </div>
-                                <div class="tich-form-group">
-                                    <label class="tich-label" for="timetable-session-mode">Mode</label>
+                                    <label class="tich-label" for="timetable-session-mode">Delivery</label>
                                     <select name="delivery_mode" id="timetable-session-mode" class="tich-input" required>
                                         @foreach (\App\Models\ProgramTimetableSession::deliveryModes() as $modeKey => $modeLabel)
-                                            <option value="{{ $modeKey }}">{{ $modeLabel }}</option>
+                                            <option value="{{ $modeKey }}" @selected($modeKey === 'physical')>{{ $modeLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <p class="tich-caption">Online classes show as online on the lecturer and student timetables, so nobody turns up to an empty room.</p>
+                                    <p class="tich-caption">Classes default to in person. Switch to online when the class is remote - lecturers and students then see it as online, not a room.</p>
+                                </div>
+                                <div class="tich-form-group" id="timetable-session-room-group">
+                                    <label class="tich-label" for="timetable-session-room">Classroom</label>
+                                    <select name="room_id" id="timetable-session-room" class="tich-input">
+                                        <option value="">- allocate later -</option>
+                                        @foreach ($timetableRooms as $room)
+                                            <option value="{{ $room->id }}">
+                                                {{ $room->room_code }}@if ($room->room_name) - {{ $room->room_name }}@endif@if ($room->campus) ({{ $room->campus->campus_name }})@endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="tich-caption">Pick the room when you know it. Generated timetables start without a room so you can allocate manually.</p>
+                                </div>
+                                <div class="tich-form-group" id="timetable-session-online-group" hidden>
+                                    <label class="tich-label" for="timetable-session-venue">Online meeting link or instructions</label>
+                                    <input type="text" id="timetable-session-venue" name="venue" class="tich-input" placeholder="e.g. https://meet.example.com/abc or join via Teams">
+                                    <p class="tich-caption">Required for online classes so staff and students know where to join.</p>
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-label" for="timetable-session-hours">Contact hours</label>
@@ -800,6 +814,8 @@
                             @error('unit_id')<p class="tich-field-error">{{ $message }}</p>@enderror
                             @error('week_no')<p class="tich-field-error">{{ $message }}</p>@enderror
                             @error('week_to')<p class="tich-field-error">{{ $message }}</p>@enderror
+                            @error('venue')<p class="tich-field-error">{{ $message }}</p>@enderror
+                            @error('room_id')<p class="tich-field-error">{{ $message }}</p>@enderror
                             <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;" class="tich-mt-4">
                                 <button type="submit" class="tich-btn tich-btn-secondary" id="timetable-session-submit">Add session</button>
                                 <button type="button" class="tich-link" id="timetable-session-remove" hidden>Remove this class</button>
@@ -854,6 +870,7 @@
                             start_time: 'timetable-session-start',
                             end_time: 'timetable-session-end',
                             staff_id: 'timetable-session-staff',
+                            room_id: 'timetable-session-room',
                             venue: 'timetable-session-venue',
                             delivery_mode: 'timetable-session-mode',
                             recurrence: 'timetable-session-recurrence',
@@ -876,6 +893,11 @@
                         var dateField = document.getElementById('timetable-session-date');
                         var everyDay = document.getElementById('timetable-session-every-day');
                         var everyDayGroup = document.getElementById('timetable-session-every-day-group');
+                        var mode = document.getElementById(fields.delivery_mode);
+                        var roomGroup = document.getElementById('timetable-session-room-group');
+                        var room = document.getElementById(fields.room_id);
+                        var onlineGroup = document.getElementById('timetable-session-online-group');
+                        var venue = document.getElementById(fields.venue);
                         var sharedTypes = ['break', 'lunch', 'orientation'];
 
                         // Break, Lunch and Orientation belong to everybody at once, so they carry no unit.
@@ -935,6 +957,23 @@
                             hours.value = value;
                         }
 
+                        function syncDelivery() {
+                            var online = mode && mode.value === 'online';
+
+                            if (roomGroup) roomGroup.hidden = !!online;
+                            if (onlineGroup) onlineGroup.hidden = !online;
+
+                            if (online) {
+                                if (room) room.value = '';
+                            } else if (venue) {
+                                venue.value = '';
+                            }
+
+                            if (venue) {
+                                venue.required = !!online && sharedTypes.indexOf(type ? type.value : '') === -1;
+                            }
+                        }
+
                         function resetToAdd() {
                             form.action = addAction;
                             method.disabled = true;
@@ -945,7 +984,9 @@
                             if (removeForm) removeForm.hidden = true;
                             if (pick) pick.value = '';
                             if (everyDayGroup) everyDayGroup.hidden = false;
+                            if (mode) mode.value = 'physical';
                             syncEveryDay();
+                            syncDelivery();
                         }
 
                         function loadSession(data) {
@@ -1002,6 +1043,8 @@
                                 syncHours();
                             }
 
+                            syncDelivery();
+
                             if (removeBtn && removeForm) {
                                 removeForm.action = pick.getAttribute('data-remove-url').replace('__ID__', String(data.id));
                                 removeBtn.hidden = false;
@@ -1049,13 +1092,16 @@
                             if (unit && !unitNeeded()) unit.selectedIndex = 0;
                             syncEveryDay();
                             syncHours();
+                            syncDelivery();
                         });
+                        if (mode) mode.addEventListener('change', syncDelivery);
                         if (unit) unit.addEventListener('change', function () { syncHours(); });
                         if (recurrence) recurrence.addEventListener('change', syncCycle);
                         syncUnit();
                         syncCycle();
                         syncEveryDay();
                         syncHours();
+                        syncDelivery();
 
                         var openBtn = document.getElementById('timetable-editor-open');
                         if (openBtn) {
