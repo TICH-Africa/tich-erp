@@ -726,6 +726,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/alumni/upload/preview', [\App\Http\Controllers\Administration\AlumniController::class, 'preview'])->name('administration.alumni.preview');
         Route::get('/alumni/upload/review', [\App\Http\Controllers\Administration\AlumniController::class, 'showPreview'])->name('administration.alumni.review');
         Route::post('/alumni/upload/import', [\App\Http\Controllers\Administration\AlumniController::class, 'import'])->name('administration.alumni.import');
+        // Declared after the static /alumni/* paths so 'register', 'add' and 'upload' never bind as a student.
+        Route::get('/alumni/{student}', [\App\Http\Controllers\Administration\AlumniController::class, 'show'])->name('administration.alumni.show');
         Route::get('/applications/{id}', [\App\Http\Controllers\Administration\ApplicationController::class, 'show'])->name('administration.applications.show');
         Route::post('/applications/{id}/handoff-to-academics', [\App\Http\Controllers\Administration\ApplicationController::class, 'handoffToAcademics'])
             ->name('administration.applications.handoff-to-academics');

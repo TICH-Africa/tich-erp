@@ -81,7 +81,26 @@
 
         <div class="tich-flex-wrap tich-mt-4" style="gap:0.6rem;">
             <button type="submit" class="tich-btn tich-btn-primary">Save to the register</button>
+            @php $onRegister = in_array((string) $student->enrollment_status, \App\Services\AlumniService::STATUSES, true); @endphp
+            @if ($onRegister)
+                <a href="{{ route('administration.alumni.show', $student) }}" class="tich-btn tich-btn-secondary">View their file</a>
+            @endif
             <a href="{{ route('administration.alumni.index') }}" class="tich-btn tich-btn-ghost">Cancel</a>
         </div>
     </form>
+
+    @if ($onRegister)
+        <div class="tich-card tich-mt-4">
+            <h3 class="tich-h4">Wrong entry?</h3>
+            <p class="tich-caption tich-mt-2">
+                Removing them from the register puts the record back on the current student list, exactly as it was
+                before. Nothing is deleted.
+            </p>
+            <form method="POST" action="{{ route('administration.alumni.undo', $student) }}" class="tich-flex-wrap tich-mt-3"
+                  onsubmit="return confirm('Remove {{ $student->displayName() }} from the alumni register and put them back on the current student list?')">
+                @csrf
+                <button type="submit" class="tich-btn tich-btn-ghost">Remove from the register</button>
+            </form>
+        </div>
+    @endif
 @endsection

@@ -136,6 +136,22 @@ class AlumniController extends Controller
             ->with('status', $student->displayName().' ('.$student->registration_number.') has been added to the alumni register.');
     }
 
+    /** The graduate's own file, so the register row has something to open beside Edit. */
+    public function show(Student $student): View
+    {
+        abort_unless($this->alumni->isAlumnus($student), 404);
+
+        $student->load([
+            'program:id,program_name,program_code',
+            'campus:id,campus_name,campus_type',
+            'academicRecords' => fn ($query) => $query->with('program:id,program_name,program_code')->orderBy('id'),
+        ]);
+
+        return view('administration.alumni.show', [
+            'student' => $student,
+        ]);
+    }
+
     public function edit(Student $student): View
     {
         abort_unless($student->exists, 404);

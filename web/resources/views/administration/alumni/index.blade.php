@@ -32,6 +32,6 @@
     @include('partials.alumni-table', [
         'students' => $students,
         'editable' => true,
-        'showRoute' => 'administration.applications.existing-student.show',
+        'showRoute' => 'administration.alumni.show',
     ])
 @endsection
