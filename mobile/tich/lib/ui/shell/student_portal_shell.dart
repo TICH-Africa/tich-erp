@@ -18,6 +18,7 @@ import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'student_portal_menu_scope.dart';
+import '../../permissions/tich_permission_disclosures.dart';
 import 'tich_logout.dart';
 
 class StudentPortalShell extends StatefulWidget {
@@ -46,6 +47,15 @@ class _StudentPortalShellState extends State<StudentPortalShell>
     'notifications',
     'suggestions',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      TichPermissionDisclosures.maybePromptForNotifications(context);
+    });
+  }
 
   static const _academicsKeys = [
     'academics',

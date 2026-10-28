@@ -14,6 +14,7 @@ import '../portal/payslips_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import '../../notifications/tich_notification_router.dart';
+import '../../permissions/tich_permission_disclosures.dart';
 import 'employee_clock_nav.dart';
 import 'employee_portal_menu_scope.dart';
 import 'employee_portal_nav.dart';
@@ -67,6 +68,7 @@ class _PortalShellState extends State<PortalShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyPendingTab();
       TichNotificationRouter.instance.applyPending(context);
+      TichPermissionDisclosures.maybePromptForNotifications(context);
     });
   }
 

@@ -83,6 +83,8 @@ flutter build appbundle --release
 
 Output: `build/app/outputs/bundle/release/app-release.aab` — upload in Play Console (**Release** → **Create new release**).
 
+For **Data safety**, **App access** (reviewer credentials), privacy URL, and permission notes, see [`docs/google-play-console.md`](docs/google-play-console.md).
+
 `assembleRelease` / `bundleRelease` **fail** if `key.properties` is missing, so debug-signed builds cannot be uploaded by mistake.
 
 ## API

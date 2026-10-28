@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -108,8 +109,6 @@ class TichNotifications {
 
       _ready = true;
 
-      // Ask for notification permission before any schedules fire.
-      await _ensurePermissions();
       unawaited(_initWorkmanager());
     } catch (_) {
       _ready = true; // allow app to proceed even if notifications fail
@@ -131,15 +130,27 @@ class TichNotifications {
     }
   }
 
-  Future<void> _ensurePermissions() async {
+  Future<bool> notificationPermissionGranted() async {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return true;
+    return Permission.notification.isGranted;
+  }
+
+  /// Call after in-app rationale (see [TichPermissionDisclosures]).
+  Future<void> requestNotificationPermissions() async {
     try {
       if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await Permission.notification.request();
       await androidPlugin?.requestNotificationsPermission();
-      await androidPlugin?.requestExactAlarmsPermission();
     } catch (_) {}
+  }
+
+  Future<bool> _ensureNotificationPermissions({bool request = false}) async {
+    if (await notificationPermissionGranted()) return true;
+    if (!request) return false;
+    await requestNotificationPermissions();
+    return notificationPermissionGranted();
   }
 
   Future<void> _initWorkmanager() async {
@@ -165,11 +176,12 @@ class TichNotifications {
   Future<void> registerDeviceToken() async {
     if (!_ready) await init();
     try {
+      final packageInfo = await PackageInfo.fromPlatform();
       await _api.post('/auth/device-token', body: {
         'device_token': _deviceId,
         'platform': !kIsWeb && Platform.isIOS ? 'ios' : 'android',
         'device_name': Platform.operatingSystem,
-        'app_version': '1.0.0',
+        'app_version': packageInfo.version,
       });
     } catch (_) {}
   }
@@ -187,7 +199,7 @@ class TichNotifications {
   /// Keeps clock-in alarms current (any signed-in staff, any portal tab).
   Future<void> refreshClockInRemindersFromServer() async {
     if (!_ready) await init();
-    await _ensurePermissions();
+    if (!await _ensureNotificationPermissions()) return;
     try {
       final data = await _api.get('/employee/attendance');
       final today = data['today'];
@@ -206,7 +218,6 @@ class TichNotifications {
   Future<void> runBackgroundMaintenance() async {
     try {
       if (!_ready) await init();
-      await _ensurePermissions();
       await refreshClockInRemindersFromServer();
       await syncFromServerInBackground(isStudent: false);
     } catch (_) {}
@@ -283,7 +294,7 @@ class TichNotifications {
 
   Future<void> _scheduleClockInReminders(bool alreadyClockedIn) async {
     if (!_ready) await init();
-    await _ensurePermissions();
+    if (!await _ensureNotificationPermissions()) return;
     await _loadPersistedClockInIds();
     await _cancelTracked(_clockInIds);
     if (alreadyClockedIn) {
@@ -345,7 +356,7 @@ class TichNotifications {
             id: id,
             scheduledDate: slot,
             notificationDetails: _details,
-            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             title: title,
             body: body,
             payload: TichNotificationRouter.instance.payloadForLocal(
@@ -402,6 +413,7 @@ class TichNotifications {
     List<Map<String, dynamic>> sessions,
   ) async {
     if (!_ready) await init();
+    if (!await _ensureNotificationPermissions()) return;
     await _cancelTracked(_lessonIds);
 
     final now = tz.TZDateTime.now(tz.local);
@@ -466,7 +478,7 @@ class TichNotifications {
             interruptionLevel: InterruptionLevel.timeSensitive,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         title: 'Class starting soon',
         body: body,
         payload: 'timetable',

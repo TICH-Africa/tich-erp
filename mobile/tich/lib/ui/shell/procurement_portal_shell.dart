@@ -12,6 +12,7 @@ import '../procurement/procurement_modules.dart';
 import '../procurement/procurement_more_page.dart';
 import '../procurement/procurement_pages.dart';
 import '../../notifications/tich_notification_router.dart';
+import '../../permissions/tich_permission_disclosures.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'portal_nav_counts_scope.dart';
@@ -40,6 +41,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       TichNotificationRouter.instance.applyPending(context);
+      TichPermissionDisclosures.maybePromptForNotifications(context);
     });
   }
 

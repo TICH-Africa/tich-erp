@@ -5,6 +5,7 @@ import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../notifications/tich_notifications.dart';
+import '../../permissions/tich_permission_disclosures.dart';
 import '../../utils/tich_clock_in_messages.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
@@ -132,6 +133,10 @@ class _AttendancePageState extends State<AttendancePage> {
     if (siteError != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(siteError)));
+      return;
+    }
+
+    if (!await TichPermissionDisclosures.confirmLocationForClockIn(context)) {
       return;
     }
 
