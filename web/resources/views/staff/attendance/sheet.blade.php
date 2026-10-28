@@ -36,7 +36,7 @@
         <p><strong>Date:</strong> {{ $session->session_date?->format('d M Y') }}</p>
         <p><strong>Time:</strong> {{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</p>
         <p><strong>Venue:</strong> {{ $session->venue ?? 'TBC' }}</p>
-        <p><strong>Tutor:</strong> {{ $tutor ? trim($tutor->first_name.' '.$tutor->surname) : '' }}</p>
+        <p><strong>Tutor:</strong> {{ $tutor?->printedName() }}</p>
         <p><strong>Intake:</strong> {{ $intake_label ?? '-' }}</p>
         <p><strong>Semester:</strong> {{ $allocation?->semester?->semester_label }}</p>
     </div>

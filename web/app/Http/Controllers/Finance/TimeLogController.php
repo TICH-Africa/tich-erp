@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Finance;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\StaffWeeklyTimeLog;
+use App\Services\WeeklyTimeLogDocumentService;
 use App\Services\WeeklyTimeLogService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Finance reads the weekly time logs employees have submitted, for payroll proof only. Writing
@@ -17,6 +19,7 @@ class TimeLogController extends Controller
 {
     public function __construct(
         protected WeeklyTimeLogService $timeLogs,
+        protected WeeklyTimeLogDocumentService $documents,
     ) {}
 
     public function index(Request $request, Department $department): View
@@ -58,5 +61,22 @@ class TimeLogController extends Controller
             // Finance read rewrite the employee's log.
             'departments' => $log->staff ? $this->timeLogs->departmentsForStaff($log->staff) : collect(),
         ]);
+    }
+
+    public function printDocument(StaffWeeklyTimeLog $timeLog, Department $department): View
+    {
+        abort_if($timeLog->status === StaffWeeklyTimeLog::STATUS_DRAFT, 404);
+
+        return $this->documents->page($timeLog, [
+            'backUrl' => route('finance.time-logs.show', $timeLog),
+            'pdfUrl' => route('finance.time-logs.pdf', $timeLog),
+        ]);
+    }
+
+    public function pdf(StaffWeeklyTimeLog $timeLog, Department $department): StreamedResponse
+    {
+        abort_if($timeLog->status === StaffWeeklyTimeLog::STATUS_DRAFT, 404);
+
+        return $this->documents->download($timeLog);
     }
 }

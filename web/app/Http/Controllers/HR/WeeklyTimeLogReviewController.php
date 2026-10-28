@@ -5,15 +5,18 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\StaffWeeklyTimeLog;
 use App\Services\StaffPortalService;
+use App\Services\WeeklyTimeLogDocumentService;
 use App\Services\WeeklyTimeLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WeeklyTimeLogReviewController extends Controller
 {
     public function __construct(
         protected WeeklyTimeLogService $timeLogs,
+        protected WeeklyTimeLogDocumentService $documents,
         protected StaffPortalService $staffPortal,
     ) {}
 
@@ -79,6 +82,19 @@ class WeeklyTimeLogReviewController extends Controller
             'log' => $timeLog,
             'departments' => $this->timeLogs->departmentsForStaff($timeLog->staff),
         ]);
+    }
+
+    public function printDocument(StaffWeeklyTimeLog $timeLog): View
+    {
+        return $this->documents->page($timeLog, [
+            'backUrl' => route('hr.time-logs.show', $timeLog),
+            'pdfUrl' => route('hr.time-logs.pdf', $timeLog),
+        ]);
+    }
+
+    public function pdf(StaffWeeklyTimeLog $timeLog): StreamedResponse
+    {
+        return $this->documents->download($timeLog);
     }
 
     public function approve(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse

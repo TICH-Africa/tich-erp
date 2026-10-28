@@ -583,6 +583,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
             Route::get('/time-logs', [\App\Http\Controllers\Finance\TimeLogController::class, 'index'])->name('finance.time-logs.index');
             Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Finance\TimeLogController::class, 'show'])->name('finance.time-logs.show');
+            Route::get('/time-logs/{timeLog}/print', [\App\Http\Controllers\Finance\TimeLogController::class, 'printDocument'])->name('finance.time-logs.print');
+            Route::get('/time-logs/{timeLog}/pdf', [\App\Http\Controllers\Finance\TimeLogController::class, 'pdf'])->name('finance.time-logs.pdf');
 
             Route::get('/payroll-integration', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'index'])->name('finance.payroll-integration.index');
             Route::get('/payroll-integration/{payrollRun}', [\App\Http\Controllers\Finance\PayrollIntegrationController::class, 'show'])->name('finance.payroll-integration.show');
@@ -1238,6 +1240,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/time-logs', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'index'])->name('hr.time-logs.index');
             Route::get('/time-logs/submissions', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'submissions'])->name('hr.time-logs.submissions');
             Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'show'])->name('hr.time-logs.show');
+            Route::get('/time-logs/{timeLog}/print', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'printDocument'])->name('hr.time-logs.print');
+            Route::get('/time-logs/{timeLog}/pdf', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'pdf'])->name('hr.time-logs.pdf');
             Route::post('/time-logs/{timeLog}/approve', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'approve'])->name('hr.time-logs.approve');
             Route::post('/time-logs/{timeLog}/reject', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'reject'])->name('hr.time-logs.reject');
             Route::post('/time-logs/{timeLog}/return', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'returnLog'])->name('hr.time-logs.return');
@@ -1444,6 +1448,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/time-logs/weeks', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'weeks'])->name('employee.time-logs.weeks');
         Route::post('/time-logs', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'create'])->name('employee.time-logs.create');
         Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'show'])->name('employee.time-logs.show');
+        Route::get('/time-logs/{timeLog}/print', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'printDocument'])->name('employee.time-logs.print');
+        Route::get('/time-logs/{timeLog}/pdf', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'pdf'])->name('employee.time-logs.pdf');
         Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'update'])->name('employee.time-logs.update');
         Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'submit'])->name('employee.time-logs.submit');
         Route::post('/time-logs/{timeLog}/endorse', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'endorse'])->name('employee.time-logs.endorse');
