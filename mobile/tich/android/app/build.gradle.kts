@@ -10,8 +10,14 @@ plugins {
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    FileInputStream(keystorePropertiesFile).use { stream ->
+        keystoreProperties.load(stream)
+    }
 }
+
+/** Internal APK only — not for Play Store. flutter build apk --release -PdebugReleaseSigning=true */
+val debugReleaseSigning =
+    (findProperty("debugReleaseSigning") as String?)?.equals("true", ignoreCase = true) == true
 
 android {
     namespace = "com.tich.africa.tich"
@@ -27,12 +33,12 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
+        if (keystorePropertiesFile.exists() && !debugReleaseSigning) {
             create("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = keystoreProperties.getProperty("storeFile")?.let { rootProject.file(it) }
-                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")?.trim()
+                keyPassword = keystoreProperties.getProperty("keyPassword")?.trim()
+                storeFile = keystoreProperties.getProperty("storeFile")?.trim()?.let { rootProject.file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")?.trim()
             }
         }
     }
@@ -49,10 +55,13 @@ android {
 
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
+            signingConfig = when {
+                debugReleaseSigning -> {
+                    println("WARNING: debugReleaseSigning=true — release APK uses debug certificate (sideload/tests only).")
+                    signingConfigs.getByName("debug")
+                }
+                keystorePropertiesFile.exists() -> signingConfigs.getByName("release")
+                else -> signingConfigs.getByName("debug")
             }
             isMinifyEnabled = true
             isShrinkResources = true
@@ -74,11 +83,13 @@ android {
 listOf("assembleRelease", "bundleRelease").forEach { taskName ->
     tasks.matching { it.name == taskName }.configureEach {
         doFirst {
+            if (debugReleaseSigning) return@doFirst
             if (!keystorePropertiesFile.exists()) {
                 throw GradleException(
                     """
                     Release build requires android/key.properties and an upload keystore.
                     Copy android/key.properties.example to android/key.properties and create upload-keystore.jks.
+                    For a sideload test APK only: flutter build apk --release -PdebugReleaseSigning=true
                     See mobile/tich/README.md (Google Play release).
                     """.trimIndent(),
                 )

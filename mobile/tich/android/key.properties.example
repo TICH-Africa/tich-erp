@@ -9,3 +9,10 @@ storePassword=YOUR_STORE_PASSWORD
 keyPassword=YOUR_KEY_PASSWORD
 keyAlias=upload
 storeFile=upload-keystore.jks
+
+# Troubleshooting "keystore password was incorrect":
+# - storePassword = password you gave keytool for the keystore
+# - keyPassword = password for alias "upload" (often the same if you pressed Enter at keytool)
+# - No quotes around values; save as UTF-8 (Notepad: UTF-8, not "Unicode")
+# - Escape backslashes in passwords with \\
+# - Test: from mobile/tich run  .\scripts\verify-android-keystore.ps1

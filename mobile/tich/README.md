@@ -87,6 +87,23 @@ For **Data safety**, **App access** (reviewer credentials), privacy URL, and per
 
 `assembleRelease` / `bundleRelease` **fail** if `key.properties` is missing, so debug-signed builds cannot be uploaded by mistake.
 
+### Downloadable APK (sideload)
+
+**Production signing** (same keystore as Play):
+
+```powershell
+.\scripts\verify-android-keystore.ps1   # fix passwords if keytool fails
+flutter build apk --release
+```
+
+**Internal test only** (release build + debug certificate — not for Play):
+
+```powershell
+.\scripts\build-sideload-apk.ps1
+```
+
+If Gradle reports `keystore password was incorrect`, passwords in `android/key.properties` do not match `upload-keystore.jks`. Use `verify-android-keystore.ps1` or recreate the keystore with `keytool`.
+
 ## API
 
 Employee self-service lives under `/api/employee/*` (Sanctum + `employee.portal`).
