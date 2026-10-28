@@ -742,7 +742,13 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'session_type' => ['required', 'in:'.implode(',', array_keys(TimetableTemplateService::segmentTypes()))],
             'title' => ['nullable', 'string', 'max:200'],
-            'venue' => ['nullable', 'string', 'max:200'],
+            'venue' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => $request->string('delivery_mode')->toString() === 'online'
+                    && ProgramTimetableSession::needsOnlineVenue($request->string('session_type')->toString())),
+                'nullable',
+                'string',
+                'max:500',
+            ],
             'class_group' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -793,7 +799,13 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'session_type' => ['required', 'in:'.implode(',', array_keys(TimetableTemplateService::segmentTypes()))],
             'title' => ['nullable', 'string', 'max:200'],
-            'venue' => ['nullable', 'string', 'max:200'],
+            'venue' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => $request->string('delivery_mode')->toString() === 'online'
+                    && ProgramTimetableSession::needsOnlineVenue($request->string('session_type')->toString())),
+                'nullable',
+                'string',
+                'max:500',
+            ],
             'class_group' => ['nullable', 'string', 'max:100'],
         ]);
 

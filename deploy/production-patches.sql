@@ -2544,5 +2544,16 @@ WHERE `is_active` = 0
   AND `approved_at` IS NULL
   AND `submitted_at` IS NULL;
 
+-- -----------------------------------------------------------------------------
+-- 53. Timetable sessions: in-person (default) vs online + manual room allocation
+--     Migration 2026_10_21_120000_add_timetable_upload_columns (delivery_mode)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `program_timetable_sessions`
+    ADD COLUMN IF NOT EXISTS `delivery_mode` varchar(20) NOT NULL DEFAULT 'physical' AFTER `session_type`;
+
+UPDATE `program_timetable_sessions`
+SET `delivery_mode` = 'physical'
+WHERE `delivery_mode` IS NULL OR TRIM(`delivery_mode`) = '';
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

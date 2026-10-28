@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import '../ui/widgets/tich_tab_active_scope.dart';
 
-/// Only mounts the **selected** tab (inactive tabs are torn down to save memory).
+/// Mounts the selected tab; once a tab has been opened it stays in the tree so
+/// switching back does not replay cold loads (API, PDF decode, form state).
 class LazyIndexedStack extends StatefulWidget {
   const LazyIndexedStack({
     super.key,
@@ -29,10 +30,8 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
     );
   }
 
-  void _syncActiveTab() {
-    for (var i = 0; i < _activated.length; i++) {
-      _activated[i] = i == widget.index;
-    }
+  void _markTabVisited() {
+    _activated[widget.index] = true;
   }
 
   @override
@@ -44,7 +43,7 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
         (i) => i == widget.index,
       );
     } else if (oldWidget.index != widget.index) {
-      _syncActiveTab();
+      _markTabVisited();
     }
   }
 

@@ -17,6 +17,9 @@ class StudentApi {
 
   Future<Map<String, dynamic>> timetable() => _client.get('/student/timetable');
 
+  Future<List<int>> downloadTimetablePdf(int timetableId) =>
+      _client.getBytes('/student/timetable/$timetableId/pdf');
+
   Future<Map<String, dynamic>> finance() => _client.get('/student/finance');
 
   Future<Map<String, dynamic>> payInvoice(

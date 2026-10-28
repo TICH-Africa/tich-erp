@@ -744,6 +744,21 @@ class TimetableSchedulingService
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     */
+    private function applyDeliveryMode(array &$data): void
+    {
+        $mode = ($data['delivery_mode'] ?? 'physical') === 'online' ? 'online' : 'physical';
+        $data['delivery_mode'] = $mode;
+
+        if ($mode === 'online') {
+            $data['room_id'] = null;
+        } else {
+            $data['venue'] = null;
+        }
+    }
+
+    /**
      * A blank picker box means "nothing on this slot", and an empty string must never be written into
      * a foreign key or an hours column - it lands as zero and the class looks unassigned.
      */
@@ -795,6 +810,8 @@ class TimetableSchedulingService
     {
         // A semester timetable moves every week or two, so a published one stays editable.
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
+
+        $this->applyDeliveryMode($data);
 
         // A timetable that names its own week or month stamps the classes inside it, so a class
         // cannot be posted into the wrong cycle by accident.
@@ -889,6 +906,8 @@ class TimetableSchedulingService
     ): ProgramTimetableSession {
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
         abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $this->applyDeliveryMode($data);
 
         $original = $session->only([
             'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time', 'session_date',
@@ -1026,19 +1045,23 @@ class TimetableSchedulingService
                 $weekNo = $this->cycleNumber($keep('week_no'), $recurrence);
                 $weekTo = $this->cycleNumber($keep('week_to'), $recurrence);
 
+                $deliveryRow = ['delivery_mode' => $row['delivery_mode'] ?? 'physical', 'room_id' => $keep('room_id'), 'venue' => $keep('venue')];
+                $this->applyDeliveryMode($deliveryRow);
+
                 $payload = [
                     'unit_id' => $keep('unit_id') ?: null,
                     'staff_id' => $keep('staff_id') ?: null,
+                    'room_id' => $this->referenceOrNull($deliveryRow['room_id'] ?? null),
                     'day_of_week' => (int) $row['day_of_week'],
                     'start_time' => $row['start_time'],
                     'end_time' => $row['end_time'],
                     'session_type' => $row['session_type'] ?? 'lesson',
-                    'delivery_mode' => $row['delivery_mode'] ?? 'physical',
+                    'delivery_mode' => $deliveryRow['delivery_mode'],
                     'recurrence' => $recurrence,
                     'week_no' => $weekNo,
                     'week_to' => ($weekNo && $weekTo > $weekNo) ? $weekTo : null,
                     'contact_hours' => $this->hoursOrNull($keep('contact_hours')),
-                    'venue' => $keep('venue') ?: null,
+                    'venue' => $this->textOrNull($deliveryRow['venue'] ?? null),
                 ];
 
                 if ($session) {
@@ -1714,6 +1737,8 @@ class TimetableSchedulingService
                     'end_time' => $slot['end_time'],
 
                     'session_type' => $sessionType,
+
+                    'delivery_mode' => 'physical',
 
                     'title' => $mapping->unit?->displayLabel() ?: null,
 
