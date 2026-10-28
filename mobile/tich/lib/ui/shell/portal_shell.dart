@@ -96,24 +96,20 @@ class _PortalShellState extends State<PortalShell>
     super.dispose();
   }
 
-  Future<void> _loadStaffPhoto() async {
-    if (!mounted) return;
-    final api = context.read<EmployeeApi>();
-    try {
-      final data = await TichScreenCache.ensure<Map<String, dynamic>>(
-        'portal.dashboard',
-        () => api.dashboard(),
-      );
-      if (!mounted) return;
-      final staff = Map<String, dynamic>.from(data['staff'] as Map? ?? {});
+  void _loadStaffPhoto() {
+    final cached = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
+    if (cached != null) {
+      final staff = Map<String, dynamic>.from(cached['staff'] as Map? ?? {});
       final url = staff['photo_url']?.toString().trim();
-      setState(() {
-        _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
-        _staffPhotoLoaded = true;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _staffPhotoLoaded = true);
+      if (mounted) {
+        setState(() {
+          _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+          _staffPhotoLoaded = true;
+        });
+      }
+      return;
     }
+    if (mounted) setState(() => _staffPhotoLoaded = true);
   }
 
   @override

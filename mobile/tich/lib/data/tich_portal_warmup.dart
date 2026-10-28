@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../models/auth_user.dart';
+import 'api_client.dart';
 import 'employee_api.dart';
 import 'procurement_api.dart';
 import 'staff_api.dart';
@@ -10,6 +12,37 @@ import 'tich_screen_cache.dart';
 abstract final class TichPortalWarmup {
   static const _deferredGap = Duration(milliseconds: 400);
   static Timer? _deferredTimer;
+
+  /// Start the home-tab API as soon as the user is signed in (before first paint).
+  static void prefetchHome(AuthUser user, ApiClient client) {
+    if (user.isStudent) {
+      TichScreenCache.warm(
+        'student.home',
+        () => StudentApi(client).dashboard(),
+      );
+      return;
+    }
+    if (user.canAccessEmployeePortal) {
+      TichScreenCache.warm(
+        'portal.dashboard',
+        () => EmployeeApi(client).dashboard(),
+      );
+      return;
+    }
+    if (user.canAccessStaffPortal) {
+      TichScreenCache.warm(
+        'staff.home',
+        () => StaffApi(client).dashboard(),
+      );
+      return;
+    }
+    if (user.canAccessProcurementPortal) {
+      TichScreenCache.warm(
+        'procurement.home',
+        () => ProcurementApi(client).dashboard(),
+      );
+    }
+  }
 
   /// Call when a portal shell opens: warm the visible tab only.
   static void studentShellOpened(StudentApi api) {

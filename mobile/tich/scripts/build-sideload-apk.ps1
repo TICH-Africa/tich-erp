@@ -2,9 +2,9 @@
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
 
-Write-Host "Building sideload release APK (debug signing)..."
+Write-Host "Building sideload release APK (debug signing, one APK per CPU)..."
 flutter pub get
-flutter build apk --release --android-project-arg=debugReleaseSigning=true @args
+flutter build apk --release --split-per-abi --android-project-arg=debugReleaseSigning=true @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $outDir = Join-Path (Get-Location) "build\app\outputs\flutter-apk"

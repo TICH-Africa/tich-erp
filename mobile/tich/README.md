@@ -89,14 +89,24 @@ For **Data safety**, **App access** (reviewer credentials), privacy URL, and per
 
 ### Downloadable APK (sideload)
 
+A single **fat** APK (`flutter build apk --release` with no splits) is often **~50–65MB** because it bundles every CPU architecture and native plugins (PDF, scanner, etc.).
+
+**Prefer split APKs** (~18–28MB each) and install the one for the device (usually `arm64-v8a`):
+
+```powershell
+.\scripts\build-release-apk.ps1          # upload keystore
+# or internal test:
+.\scripts\build-sideload-apk.ps1
+```
+
 **Production signing** (same keystore as Play):
 
 ```powershell
 .\scripts\verify-android-keystore.ps1   # fix passwords if keytool fails
-flutter build apk --release
+.\scripts\build-release-apk.ps1
 ```
 
-**Internal test only** (release build + debug certificate — not for Play):
+**Internal test only** (release optimizations + debug certificate — not for Play):
 
 ```powershell
 .\scripts\build-sideload-apk.ps1

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,14 +29,37 @@ class _PayslipsPageState extends State<PayslipsPage> {
 
   Future<Map<String, dynamic>> _fetchAll() async {
     final payslips = await widget.api.payslips();
-    final dashboard = await TichScreenCache.ensure<Map<String, dynamic>>(
+    final compensation = TichScreenCache.read<Map<String, dynamic>>(
       'portal.dashboard',
-      () => widget.api.dashboard(),
-    );
+    )?['compensation'];
+    if (compensation is Map) {
+      return {
+        'payslips': payslips['payslips'],
+        'compensation': compensation,
+      };
+    }
     return {
       'payslips': payslips['payslips'],
-      'compensation': dashboard['compensation'],
+      'compensation': const <String, dynamic>{},
     };
+  }
+
+  void _loadCompensationIfNeeded() {
+    final cached = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
+    final comp = cached?['compensation'];
+    if (comp is Map && comp.isNotEmpty) return;
+    unawaited(
+      widget.api.dashboard().then((dashboard) {
+        if (!mounted) return;
+        TichScreenCache.write('portal.dashboard', dashboard);
+        setState(() {
+          if (_dataCache is Map<String, dynamic>) {
+            (_dataCache as Map<String, dynamic>)['compensation'] =
+                dashboard['compensation'] ?? {};
+          }
+        });
+      }).catchError((_) {}),
+    );
   }
 
   @override
@@ -46,6 +71,7 @@ class _PayslipsPageState extends State<PayslipsPage> {
       setFuture: (f) => _future = f,
       fetch: _fetchAll,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCompensationIfNeeded());
   }
 
   Future<void> _reload() => portalCachedReload(

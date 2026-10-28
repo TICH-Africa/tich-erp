@@ -13,6 +13,7 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
+import 'data/tich_portal_warmup.dart';
 import 'data/tich_realtime.dart';
 import 'models/auth_user.dart';
 import 'notifications/tich_notification_router.dart';
@@ -240,11 +241,13 @@ class _AuthGateState extends State<_AuthGate> {
     final key = '${state.user.id}:${state.user.isStudent}';
     if (_primedUserKey == key) return;
     _primedUserKey = key;
-    unawaited(
-      TichNotifications.instance.onAuthenticated(
-        isStudent: state.user.isStudent,
-      ),
-    );
+    Future<void>.delayed(const Duration(seconds: 4), () {
+      unawaited(
+        TichNotifications.instance.onAuthenticated(
+          isStudent: state.user.isStudent,
+        ),
+      );
+    });
   }
 
   @override
@@ -257,9 +260,12 @@ class _AuthGateState extends State<_AuthGate> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           _primeIfNeeded(state);
-          unawaited(
-            TichRealtime.connect(context.read<ApiClient>()),
-          );
+          final client = context.read<ApiClient>();
+          TichPortalWarmup.prefetchHome(state.user, client);
+          Future<void>.delayed(const Duration(seconds: 3), () {
+            if (!context.mounted) return;
+            unawaited(TichRealtime.connect(client));
+          });
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
             TichNotificationRouter.instance.applyPending(context);

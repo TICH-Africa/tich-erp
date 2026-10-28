@@ -15,8 +15,8 @@ abstract final class TichScreenCache {
 
   static bool get isHydrated => _hydrated;
 
-  /// Call after login; loads persisted payloads for this user.
-  static Future<void> bindUser(int? userId) async {
+  /// Sets active user scope immediately (safe before [hydrateFromDisk] finishes).
+  static void assignUser(int? userId) {
     final nextScope = userId == null ? '' : 'u$userId';
     if (nextScope == _userScope && _hydrated) return;
     _userScope = nextScope;
@@ -24,12 +24,22 @@ abstract final class TichScreenCache {
     _lru.clear();
     _inFlight.clear();
     _hydrated = false;
-    if (_userScope.isEmpty) return;
+  }
+
+  /// Loads persisted tab payloads for the current [assignUser] scope.
+  static Future<void> hydrateFromDisk() async {
+    if (_userScope.isEmpty || _hydrated) return;
     final disk = await TichScreenCacheStore.load(_userScope);
     for (final entry in disk.entries) {
       write(entry.key, entry.value);
     }
     _hydrated = true;
+  }
+
+  /// Call after login; loads persisted payloads for this user.
+  static Future<void> bindUser(int? userId) async {
+    assignUser(userId);
+    await hydrateFromDisk();
   }
 
   /// Logout / account switch - drop memory and optional disk slice.

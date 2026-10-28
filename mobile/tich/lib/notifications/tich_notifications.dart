@@ -187,12 +187,16 @@ class TichNotifications {
   }
 
   Future<void> onAuthenticated({required bool isStudent}) async {
-    if (!_ready) await init();
-    await registerDeviceToken();
+    if (!_ready) {
+      unawaited(
+        init().then((_) => onAuthenticated(isStudent: isStudent)),
+      );
+      return;
+    }
+    unawaited(registerDeviceToken());
     if (!isStudent) {
       unawaited(refreshClockInRemindersFromServer());
     }
-    // Sync tray popups without blocking portal UI.
     unawaited(syncFromServerInBackground(isStudent: isStudent));
   }
 
