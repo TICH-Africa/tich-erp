@@ -72,3 +72,52 @@ If Play Console still prompts about exact alarms, confirm the manifest does **no
 ## Release build
 
 See project `README.md` and `scripts/build-play-aab.ps1`. Release builds require `android/key.properties` (not in repo).
+
+After a release AAB upload, open **Pre-launch report** in Play Console for target API and 16 KB page-size warnings.
+
+## Target API / SDK levels
+
+| Setting | Value (current project) |
+|---------|-------------------------|
+| `compileSdk` | **37** (required by `permission_handler_android`) |
+| `targetSdk` | From Flutter (`flutter.targetSdkVersion`, **36** on Flutter 3.44) |
+| `minSdk` | From Flutter (**24** on Flutter 3.44) |
+| NDK | Flutter default (**28.2.x**) |
+
+Verify locally:
+
+```powershell
+cd mobile/tich/android
+.\gradlew.bat :app:printPlaySdkInfo
+```
+
+Or inspect the merged manifest after `flutter build appbundle --release`:
+
+`build\app\intermediates\merged_manifest\release\processReleaseMainManifest\AndroidManifest.xml`
+
+Google requires a current **target API** for new apps and updates; this project follows Flutter’s stable target (36+).
+
+## R8 / ProGuard
+
+Release builds enable **minify + shrink** (`proguard-rules.pro`). Smoke-test a **release** build on a real device (login, clock-in, camera scan, notifications, biometrics) before shipping. If a plugin breaks, add keep rules to `android/app/proguard-rules.pro`.
+
+## 16 KB memory page size
+
+Play may flag native libraries on newer 64-bit devices. This app uses Flutter’s NDK **28** toolchain and `jniLibs.useLegacyPackaging = false`. Confirm compliance via Play **Pre-launch report** after uploading an AAB. If Google reports misaligned `.so` files, upgrade Flutter to the latest stable and rebuild.
+
+## App version sent to API
+
+`POST /auth/device-token` sends `app_version` from **`package_info_plus`** (matches `pubspec.yaml` `version`, e.g. `1.0.0`). Bump `version:` in `pubspec.yaml` for each store release.
+
+## Education / minors (student portal)
+
+The app includes a **student portal** for enrolled learners (institution-managed accounts, no ads, no social features aimed at children). In Play Console:
+
+- **Target audience**: not a “kids” app; primary users are students and staff at TICH (may include minors under institutional supervision).
+- Complete the **IARC content rating** questionnaire honestly (education/ERP, user-generated content minimal, no gambling, no ads).
+- **Families / Designed for children**: typically **No**.
+
+## Ads and deep linking
+
+- **No ad SDK** in `pubspec.yaml` — declare “No” for ads in the store form.
+- **Exported components**: only `MainActivity` with `MAIN` / `LAUNCHER` (no unintended exported receivers from custom code; plugin manifests may merge additional components — review merged manifest if Play flags them).

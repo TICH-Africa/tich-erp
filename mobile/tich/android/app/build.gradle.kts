@@ -39,6 +39,7 @@ android {
 
     defaultConfig {
         applicationId = "com.tich.africa.tich"
+        // Flutter 3.44 defaults: minSdk 24, targetSdk 36 (see FlutterExtension.kt).
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -98,4 +99,18 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+/** Run: cd android && ./gradlew :app:printPlaySdkInfo */
+tasks.register("printPlaySdkInfo") {
+    group = "help"
+    description = "Print compile/min/target SDK for Play Console checks"
+    doLast {
+        println("compileSdk=${android.compileSdk}")
+        println("minSdk=${android.defaultConfig.minSdk}")
+        println("targetSdk=${android.defaultConfig.targetSdk}")
+        println("versionName=${android.defaultConfig.versionName}")
+        println("versionCode=${android.defaultConfig.versionCode}")
+        println("ndkVersion=${android.ndkVersion}")
+    }
 }

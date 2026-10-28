@@ -17,3 +17,6 @@ $bundle = Join-Path (Get-Location) "build\app\outputs\bundle\release\app-release
 Write-Host ""
 Write-Host "Upload this file in Play Console (Release > Create new release):"
 Write-Host $bundle
+Write-Host ""
+Write-Host "SDK levels (for Play target API):"
+& (Join-Path $PSScriptRoot "print-android-sdk.ps1")
