@@ -36,7 +36,7 @@
         <p><strong>Date:</strong> {{ $session->session_date?->format('d M Y') }}</p>
         <p><strong>Time:</strong> {{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</p>
         <p><strong>Venue:</strong> {{ $session->venue ?? 'TBC' }}</p>
-        <p><strong>Tutor:</strong> {{ $tutor?->fullName() }}</p>
+        <p><strong>Tutor:</strong> {{ $tutor ? trim($tutor->first_name.' '.$tutor->surname) : '' }}</p>
         <p><strong>Intake:</strong> {{ $intake_label ?? '-' }}</p>
         <p><strong>Semester:</strong> {{ $allocation?->semester?->semester_label }}</p>
     </div>
@@ -64,7 +64,7 @@
 
     <div class="footer">
         <p>Tutor signature: ___________________________ &nbsp; Date: ______________</p>
-        <p>This sheet must be photographed and uploaded to the digital register after class. Tracking ID {{ $tracking_id }} links the physical sheet to the electronic roster.</p>
+        <p>Photograph and upload this sheet to the digital register after class. One photo covers the same class across its sessions in a day. Tracking ID {{ $tracking_id }} links the physical sheet to the electronic roster.</p>
     </div>
 </body>
 </html>

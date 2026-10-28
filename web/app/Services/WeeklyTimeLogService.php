@@ -18,6 +18,11 @@ use Illuminate\Support\Str;
 
 class WeeklyTimeLogService
 {
+    /** Every logged day loses one hour of the clock span to lunch. */
+    public const LUNCH_BREAK_HOURS = 1.0;
+
+    /** One worked hour counts as two unit hours. */
+    public const UNIT_TIME_MULTIPLIER = 2.0;
     public function __construct(
         protected PlatformNotificationService $notifications,
         protected StaffPortalService $staffPortal,
@@ -292,7 +297,7 @@ class WeeklyTimeLogService
             if ($day['in_month'] && $att) {
                 $timeIn = $att->clock_in_time ? Carbon::parse($att->clock_in_time)->format('H:i') : null;
                 $timeOut = $att->clock_out_time ? Carbon::parse($att->clock_out_time)->format('H:i') : null;
-                $hours = $att->work_hours !== null ? (float) $att->work_hours : $this->hoursBetween($timeIn, $timeOut);
+                $hours = $this->hoursBetween($timeIn, $timeOut);
             }
 
             StaffWeeklyTimeLogDay::query()->create([
@@ -307,7 +312,7 @@ class WeeklyTimeLogService
                 'department_ids' => $day['in_month'] ? $defaultDept : [],
                 'approval_sign' => null,
                 'total_hours' => $day['in_month'] ? $hours : null,
-                'total_units' => null,
+                'total_units' => $day['in_month'] ? $this->unitsFor($hours) : null,
                 'display_order' => $i,
             ]);
         }
@@ -315,6 +320,9 @@ class WeeklyTimeLogService
         $this->recomputeTotals($log);
     }
 
+    /**
+     * A day's worked hours: time in to time out, less the one-hour lunch break.
+     */
     public function hoursBetween(?string $timeIn, ?string $timeOut): ?float
     {
         if (! $timeIn || ! $timeOut) {
@@ -327,10 +335,17 @@ class WeeklyTimeLogService
                 $out->addDay();
             }
 
-            return round($in->diffInMinutes($out) / 60, 2);
+            $hours = round($in->diffInMinutes($out) / 60 - self::LUNCH_BREAK_HOURS, 2);
+
+            return $hours > 0 ? $hours : 0.0;
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function unitsFor(?float $hours): ?float
+    {
+        return $hours === null ? null : round($hours * self::UNIT_TIME_MULTIPLIER, 2);
     }
 
     public function initialsFor(Staff $staff): string
@@ -366,9 +381,7 @@ class WeeklyTimeLogService
 
                 $timeIn = $this->normalizeTime($row['time_in'] ?? null);
                 $timeOut = $this->normalizeTime($row['time_out'] ?? null);
-                $hours = isset($row['total_hours']) && $row['total_hours'] !== ''
-                    ? round((float) $row['total_hours'], 2)
-                    : $this->hoursBetween($timeIn, $timeOut);
+                $hours = $this->hoursBetween($timeIn, $timeOut);
 
                 $deptIds = collect(is_array($row['department_ids'] ?? null) ? $row['department_ids'] : [])
                     ->map(fn ($id) => (int) $id)
@@ -384,9 +397,7 @@ class WeeklyTimeLogService
                     'initials' => trim((string) ($row['initials'] ?? '')) ?: $this->initialsFor($staff),
                     'department_ids' => $deptIds,
                     'total_hours' => $hours,
-                    'total_units' => isset($row['total_units']) && $row['total_units'] !== ''
-                        ? round((float) $row['total_units'], 2)
-                        : null,
+                    'total_units' => $this->unitsFor($hours),
                 ]);
             }
 
