@@ -53,6 +53,38 @@ flutter run --dart-define=API_BASE_URL=https://tich.africa
 
 The release build can omit the define when connecting to production because the production URL is the default.
 
+Release/profile builds use **HTTPS only** on Android. Plain `http://` LAN URLs work in **debug** builds only (see `android/app/src/debug/res/xml/network_security_config.xml`).
+
+## Google Play release (Android App Bundle)
+
+Play Console requires an **AAB** signed with your **upload key** (enable **Play App Signing** on first upload).
+
+1. Create an upload keystore once (store passwords safely; back up the `.jks` file):
+
+```bash
+cd mobile/tich/android
+keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+2. Copy `android/key.properties.example` to `android/key.properties` and fill in paths/passwords.
+
+3. Build the bundle:
+
+```powershell
+cd mobile/tich
+.\scripts\build-play-aab.ps1
+```
+
+Or:
+
+```bash
+flutter build appbundle --release
+```
+
+Output: `build/app/outputs/bundle/release/app-release.aab` — upload in Play Console (**Release** → **Create new release**).
+
+`assembleRelease` / `bundleRelease` **fail** if `key.properties` is missing, so debug-signed builds cannot be uploaded by mistake.
+
 ## API
 
 Employee self-service lives under `/api/employee/*` (Sanctum + `employee.portal`).
