@@ -5,6 +5,8 @@
 @section('employee-content')
     <x-page-toolbar title="STAFF WEEKLY TIME LOG" meta="{{ $log->log_code }} · {{ $log->week_ref }}">
         <x-slot:actions>
+            <a href="{{ route('employee.time-logs.print', $log) }}" class="tich-btn tich-btn-secondary">Print</a>
+            <a href="{{ route('employee.time-logs.pdf', $log) }}" class="tich-btn tich-btn-primary">Download PDF</a>
             <a href="{{ route('employee.time-logs.index') }}" class="tich-btn tich-btn-ghost">All my logs</a>
         </x-slot:actions>
     </x-page-toolbar>

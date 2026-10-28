@@ -101,14 +101,14 @@
                             @if ($disabled)
                                 {{ $day->total_hours !== null ? number_format((float) $day->total_hours, 2) : '-' }}
                             @else
-                                <input type="number" step="0.01" min="0" max="24" class="tich-input js-wtl-hours" name="days[{{ $dateKey }}][total_hours]" value="{{ $day->total_hours }}">
+                                <input type="text" class="tich-input js-wtl-hours" inputmode="decimal" value="{{ $day->total_hours !== null ? number_format((float) $day->total_hours, 2) : '' }}" readonly tabindex="-1" aria-label="Total hours, calculated">
                             @endif
                         </td>
                         <td>
                             @if ($disabled)
                                 {{ $day->total_units !== null ? number_format((float) $day->total_units, 2) : '-' }}
                             @else
-                                <input type="number" step="0.01" min="0" class="tich-input" name="days[{{ $dateKey }}][total_units]" value="{{ $day->total_units }}">
+                                <input type="text" class="tich-input js-wtl-units" inputmode="decimal" value="{{ $day->total_units !== null ? number_format((float) $day->total_units, 2) : '' }}" readonly tabindex="-1" aria-label="Total unit time, calculated">
                             @endif
                         </td>
                     </tr>
@@ -117,13 +117,14 @@
             <tfoot>
                 <tr>
                     <td colspan="7" style="text-align:right; font-weight:700;">TOTALS</td>
-                    <td><strong>{{ number_format((float) $log->total_hours, 2) }}</strong></td>
-                    <td><strong>{{ number_format((float) ($log->total_units ?? 0), 2) }}</strong></td>
+                    <td><strong class="js-wtl-total-hours">{{ number_format((float) $log->total_hours, 2) }}</strong></td>
+                    <td><strong class="js-wtl-total-units">{{ number_format((float) ($log->total_units ?? 0), 2) }}</strong></td>
                 </tr>
             </tfoot>
         </table>
     </div>
-    <p class="tich-caption tich-mt-3">NOTE: To be filled on a daily basis. You may also complete every week at month end.</p>
+    <p class="tich-caption tich-mt-3">TOTAL HOURS is worked out from time in to time out less one hour for lunch. TOTAL UNITS is double those hours. Both count only days inside the month.</p>
+    <p class="tich-caption tich-mt-1">NOTE: To be filled on a daily basis. You may also complete every week at month end.</p>
 </div>
 
 <div class="tich-card tich-mt-4">
@@ -149,23 +150,53 @@
 @if ($editable)
 <script>
 (function () {
-    function hoursBetween(a, b) {
-        if (!a || !b) return '';
+    var LUNCH_HOURS = 1;
+    var UNIT_MULTIPLIER = 2;
+
+    function workedHours(a, b) {
+        if (!a || !b) return null;
         var p = function (t) { var x = t.split(':'); return (+x[0]) * 60 + (+x[1]); };
         var d = p(b) - p(a);
         if (d < 0) d += 24 * 60;
-        return (Math.round((d / 60) * 100) / 100).toFixed(2);
+        return Math.max(0, Math.round(((d / 60) - LUNCH_HOURS) * 100) / 100);
     }
-    document.querySelectorAll('.wtl-table tbody tr').forEach(function (row) {
-        var inn = row.querySelector('.js-wtl-in');
-        var out = row.querySelector('.js-wtl-out');
-        var hrs = row.querySelector('.js-wtl-hours');
-        if (!inn || !out || !hrs) return;
-        function sync() {
-            if (inn.value && out.value) hrs.value = hoursBetween(inn.value, out.value);
-        }
-        inn.addEventListener('change', sync);
-        out.addEventListener('change', sync);
+
+    function plain(value) {
+        return parseFloat(String(value).replace(/,/g, '')) || 0;
+    }
+
+    function syncTotals(table) {
+        var hours = 0, units = 0;
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            var hrs = row.querySelector('.js-wtl-hours');
+            var un = row.querySelector('.js-wtl-units');
+            if (!hrs || !un) return;
+            if (row.classList.contains('wtl-row--outside')) return;
+            hours += plain(hrs.value);
+            units += plain(un.value);
+        });
+        var totalHours = table.querySelector('.js-wtl-total-hours');
+        var totalUnits = table.querySelector('.js-wtl-total-units');
+        if (totalHours) totalHours.textContent = hours.toFixed(2);
+        if (totalUnits) totalUnits.textContent = units.toFixed(2);
+    }
+
+    document.querySelectorAll('.wtl-table').forEach(function (table) {
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            var inn = row.querySelector('.js-wtl-in');
+            var out = row.querySelector('.js-wtl-out');
+            var hrs = row.querySelector('.js-wtl-hours');
+            var un = row.querySelector('.js-wtl-units');
+            if (!inn || !out || !hrs || !un) return;
+            function sync() {
+                var h = workedHours(inn.value, out.value);
+                hrs.value = h === null ? '' : h.toFixed(2);
+                un.value = h === null ? '' : (h * UNIT_MULTIPLIER).toFixed(2);
+                syncTotals(table);
+            }
+            inn.addEventListener('change', sync);
+            out.addEventListener('change', sync);
+        });
     });
 })();
 </script>

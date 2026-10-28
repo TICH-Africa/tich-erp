@@ -230,7 +230,7 @@ class _StaffAttendanceSessionPageState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Scan the signed paper sheet (document mode), then optionally add a class photo.',
+                        'Scan the signed paper sheet once (document mode), and optionally add a class photo.',
                         style: tichUi(
                           fontSize: 12,
                           color: TichColors.neutralMuted,
@@ -241,8 +241,7 @@ class _StaffAttendanceSessionPageState
                         title: 'Signed attendance sheet',
                         subtitle: hasSheet
                             ? 'Uploaded - scan again to replace'
-                            : 'Required before submit',
-                        requiredForSubmit: true,
+                            : 'Optional - one scan covers the class all day',
                         uploaded: hasSheet,
                         imageUrl: sheetUrl,
                         locked: _locked,
@@ -257,7 +256,6 @@ class _StaffAttendanceSessionPageState
                         subtitle: hasPhoto
                             ? 'Uploaded - retake to replace'
                             : 'Optional photo of students present',
-                        requiredForSubmit: false,
                         uploaded: hasPhoto,
                         imageUrl: photoUrl,
                         locked: _locked,
@@ -322,12 +320,8 @@ class _StaffAttendanceSessionPageState
                         const SizedBox(width: 10),
                         Expanded(
                           child: FilledButton(
-                            onPressed: _busy || !hasSheet
-                                ? null
-                                : () => _save(lock: true),
-                            child: Text(
-                              hasSheet ? 'Submit' : 'Submit (needs sheet)',
-                            ),
+                            onPressed: _busy ? null : () => _save(lock: true),
+                            child: const Text('Submit'),
                           ),
                         ),
                       ],
@@ -347,7 +341,6 @@ class _AttendanceCaptureTile extends StatelessWidget {
   const _AttendanceCaptureTile({
     required this.title,
     required this.subtitle,
-    required this.requiredForSubmit,
     required this.uploaded,
     required this.imageUrl,
     required this.locked,
@@ -359,7 +352,6 @@ class _AttendanceCaptureTile extends StatelessWidget {
 
   final String title;
   final String subtitle;
-  final bool requiredForSubmit;
   final bool uploaded;
   final String? imageUrl;
   final bool locked;
@@ -386,24 +378,9 @@ class _AttendanceCaptureTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: tichUi(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      if (requiredForSubmit)
-                        Text(
-                          'Required',
-                          style: tichUi(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: TichColors.errorDark,
-                          ),
-                        ),
-                    ],
+                  Text(
+                    title,
+                    style: tichUi(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(

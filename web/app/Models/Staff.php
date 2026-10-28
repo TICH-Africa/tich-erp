@@ -277,6 +277,18 @@ class Staff extends Model
     }
 
     /**
+     * The two names a printed document carries - given name and surname, no title or middle name.
+     */
+    public function printedName(): string
+    {
+        if (strcasecmp(trim((string) $this->first_name), 'Pending') === 0) {
+            return $this->fullName();
+        }
+
+        return trim(trim((string) $this->first_name).' '.trim((string) $this->surname)) ?: $this->fullName();
+    }
+
+    /**
      * Suggest an available @tich.africa address (ICT manual assignment helper only).
      * Must not be called automatically when creating staff records.
      */

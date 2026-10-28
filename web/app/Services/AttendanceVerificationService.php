@@ -190,7 +190,6 @@ class AttendanceVerificationService
     {
         abort_if($session->is_locked, 422, 'This session is already submitted.');
         abort_unless((int) $session->recorded_by === (int) $staff->id, 403);
-        abort_unless($session->signed_sheet_image_path, 422, 'Upload a photo of the signed attendance sheet before submitting.');
 
         $session->update([
             'is_locked' => 1,

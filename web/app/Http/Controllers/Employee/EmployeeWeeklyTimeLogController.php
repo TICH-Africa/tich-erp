@@ -5,16 +5,19 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\StaffWeeklyTimeLog;
 use App\Services\EmployeePortalService;
+use App\Services\WeeklyTimeLogDocumentService;
 use App\Services\WeeklyTimeLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeWeeklyTimeLogController extends Controller
 {
     public function __construct(
         protected EmployeePortalService $employeePortal,
         protected WeeklyTimeLogService $timeLogs,
+        protected WeeklyTimeLogDocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -95,6 +98,25 @@ class EmployeeWeeklyTimeLogController extends Controller
                     StaffWeeklyTimeLog::STATUS_RETURNED,
                 ], true),
         ]);
+    }
+
+    public function printDocument(Request $request, StaffWeeklyTimeLog $timeLog): View
+    {
+        $staff = $this->staff($request);
+        abort_unless($this->timeLogs->viewerMayAccess($timeLog, $staff, $request->user()), 403);
+
+        return $this->documents->page($timeLog, [
+            'backUrl' => route('employee.time-logs.show', $timeLog),
+            'pdfUrl' => route('employee.time-logs.pdf', $timeLog),
+        ]);
+    }
+
+    public function pdf(Request $request, StaffWeeklyTimeLog $timeLog): StreamedResponse
+    {
+        $staff = $this->staff($request);
+        abort_unless($this->timeLogs->viewerMayAccess($timeLog, $staff, $request->user()), 403);
+
+        return $this->documents->download($timeLog);
     }
 
     public function update(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse

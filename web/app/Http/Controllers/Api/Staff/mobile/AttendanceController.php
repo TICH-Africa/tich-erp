@@ -90,11 +90,6 @@ class AttendanceController extends Controller
         $this->teaching->saveAttendance($session, $staff, $present);
 
         if ($request->boolean('lock')) {
-            if (! $session->fresh()->signed_sheet_image_path) {
-                return response()->json([
-                    'message' => 'Upload a photo of the signed attendance sheet before submitting.',
-                ], 422);
-            }
             $this->teaching->lockAttendanceSession($session->fresh(), $staff);
         }
 

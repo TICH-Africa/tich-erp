@@ -17,6 +17,12 @@ body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-heigh
 .tich-doc-table th { background: #eef2f7; color: #1e3a5f; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5pt; font-family: system-ui, sans-serif; }
 .tich-doc-table .num { text-align: right; }
 .tich-doc-table tfoot td { font-weight: bold; background: #f8fafc; }
+.tich-doc-head { width: 100%; border-collapse: collapse; margin-bottom: 14pt; font-size: 10pt; }
+.tich-doc-head th, .tich-doc-head td { border: 1pt solid #000; padding: 6pt 8pt; vertical-align: top; text-align: left; }
+.tich-doc-head th { width: 20%; background: #f1f5f9; color: #1e3a5f; font-size: 8pt; font-weight: bold; letter-spacing: 0.4pt; text-transform: uppercase; white-space: nowrap; }
+.tich-doc-head td { width: 30%; }
+.tich-doc-head .num { font-weight: bold; }
+.tich-doc-page-break { page-break-before: always; }
 .tich-doc-section { margin-top: 12pt; }
 .tich-doc-section h2 { margin: 0 0 6pt; font-size: 12pt; color: #1e3a5f; border-bottom: 1pt solid #cbd5e1; padding-bottom: 4pt; }
 .tich-doc-session { margin-bottom: 8pt; }

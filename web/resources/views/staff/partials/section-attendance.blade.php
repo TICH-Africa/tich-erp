@@ -46,7 +46,7 @@
                             @elseif ($session->signed_sheet_image_path)
                                 <span class="tich-caption">Ready to submit</span>
                             @elseif ($session->records->where('is_present', true)->isNotEmpty())
-                                <span class="tich-caption">Marked - upload photos</span>
+                                <span class="tich-caption">Marked - ready to submit</span>
                             @else
                                 <span class="tich-caption">Pending</span>
                             @endif
@@ -103,7 +103,7 @@
                 <strong>Mark attendance online</strong> - Tick present students below.
             </li>
             <li @class(['is-done' => $attendanceStep >= 4, 'is-current' => $attendanceStep === 4])>
-                <strong>Upload signed sheet photo</strong> - Camera capture of the signed paper.
+                <strong>Upload signed sheet photo</strong> - Optional. Once a day covers the same class across its sessions.
             </li>
             <li @class(['is-done' => $attendanceStep >= 5, 'is-current' => $attendanceStep === 5])>
                 <strong>Upload class photo</strong> - Optional photo of students present.
@@ -147,10 +147,10 @@
             @unless ($attendanceSession->is_locked)
                 <div class="tich-mt-4" style="display:flex; gap:1rem; flex-wrap:wrap;">
                     <button type="submit" class="tich-btn tich-btn-secondary">Save marks</button>
-                    <button type="submit" name="lock" value="1" class="tich-btn tich-btn-primary" @disabled(! $attendanceSession->signed_sheet_image_path)>Submit &amp; lock</button>
+                    <button type="submit" name="lock" value="1" class="tich-btn tich-btn-primary">Submit &amp; lock</button>
                 </div>
                 @unless ($attendanceSession->signed_sheet_image_path)
-                    <p class="tich-caption tich-mt-2">Upload the signed sheet photo before submitting.</p>
+                    <p class="tich-caption tich-mt-2">The signed sheet photo is optional - upload it once when the same class runs all day.</p>
                 @endunless
             @endunless
         </form>
@@ -160,9 +160,9 @@
                 <form method="POST" action="{{ route('staff.attendance.sheet.upload', $attendanceSession) }}" enctype="multipart/form-data" style="border-top:1px solid var(--tich-neutral-border); padding-top:1.25rem;">
                     @csrf
                     <h3 class="tich-h3">Signed sheet photo</h3>
-                    <p class="tich-caption">Take a photo of the signed attendance sheet.</p>
+                    <p class="tich-caption">Optional. One photo covers the same class from morning to evening.</p>
                     <div class="tich-form-group">
-                        <input type="file" name="signed_sheet" class="tich-input" accept="image/*" capture="environment" @if (! $attendanceSession->signed_sheet_image_path) required @endif>
+                        <input type="file" name="signed_sheet" class="tich-input" accept="image/*" capture="environment">
                     </div>
                     <button type="submit" class="tich-btn tich-btn-primary">{{ $attendanceSession->signed_sheet_image_path ? 'Replace' : 'Upload' }}</button>
                     @if ($attendanceSession->signed_sheet_image_path)
