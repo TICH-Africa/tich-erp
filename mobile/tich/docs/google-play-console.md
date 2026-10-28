@@ -34,19 +34,38 @@ Replace placeholders with real test users created on staging/production as appro
 - In the listing, state that account removal is handled by the organization.
 - Direct users to **Help and feedback** for privacy contact and the web privacy policy (data erasure requests).
 
-## Data safety mapping (high level)
+## Data safety mapping (draft for Play form)
 
-| Data type | Collected | Purpose | Shared |
-|-----------|-----------|---------|--------|
-| Email, name, employee/student ID | Yes | Authentication, portal | Not shared (institution backend only) |
-| Precise location | Yes, foreground only at clock-in | Verify attendance location | Not shared |
-| Photos (camera) | Yes, user-initiated | Attendance sheets, class photos | Institution only |
-| Financial info (fees, M-Pesa refs) | Yes, from API | Student finance portal | Not shared |
-| Files/documents | Yes, from API | HR/student documents | Not shared |
-| Device or other IDs | Yes (app-generated UUID) | `/auth/device-token` for notification targeting | Not shared |
-| App activity | Yes | Notifications, attendance, portal usage via API | Not shared |
+Copy/adapt into **App content → Data safety**. Mark **encrypted in transit** (HTTPS in production release builds). **Data is not sold.**
 
-Declare **encryption in transit** (HTTPS). Biometric unlock is **on-device only** (no upload).
+| Data type | Likely collected | Purpose | Notes for the form |
+|-----------|------------------|---------|-------------------|
+| Email, name, employee/student IDs | Yes | Account / portal | From ERP API after login |
+| Precise location | Yes (employee clock-in) | Fraud prevention / attendance | Foreground only; not continuous tracking; in-app disclosure before OS prompt |
+| Photos / files | Yes | Attendance sheets, uploads, exam docs | User-initiated (camera, picker, API documents) |
+| Financial info | Yes (student finance) | Fees / payments | May include M-Pesa-related fields from API |
+| App interactions / crash logs | No (today) | — | No Firebase/Crashlytics in app; declare if you add analytics/crash SDK later |
+| Device or other IDs | Yes | Push / device token | App-generated UUID → `POST /auth/device-token`, stored server-side |
+| App activity / diagnostics | Yes (portal usage via API) | Notifications, attendance, portal features | Institutional backend only; not shared with third parties for ads |
+
+Also declare where the form asks:
+
+- **Authentication info** — passwords/tokens (secure storage); biometrics **on-device only**, not uploaded.
+- **Personal info** — HR/student profile fields shown in portals.
+- **Background data** — Workmanager sync hits your API when signed in (if the form version asks).
+
+Biometric unlock is **on-device only** (no upload).
+
+## Engineering priority checklist
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Release signing + upload AAB to **internal testing** track | **You** — finish `upload-keystore.jks` + `android/key.properties`, then `.\scripts\build-play-aab.ps1` |
+| 2 | Disable cleartext in **release** | **Done** — `network_security_config.xml` (HTTPS only); debug manifest override for LAN dev only |
+| 3 | Exact alarm policy (permissions + product copy) | **Done** — no `USE_EXACT_ALARM`; inexact schedules; Help/disclosures describe reminders |
+| 4 | Location disclosure before `Geolocator.requestPermission()` | **Done** — `TichPermissionDisclosures.confirmLocationForClockIn` on employee clock-in |
+| 5 | Dynamic `app_version` on device registration | **Done** — `package_info_plus` in `registerDeviceToken()` |
+| 6 | Reviewer test accounts in Play Console | **Doc ready** — paste real credentials in **App access** only (see section above); not in git |
 
 ## Permissions (Android)
 
