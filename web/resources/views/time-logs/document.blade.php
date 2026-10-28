@@ -45,7 +45,7 @@
         </tbody>
     </table>
 
-    <table class="tich-doc-table">
+    <table class="tich-doc-table tich-doc-page-break">
         <thead>
             <tr>
                 <th>DAY/DATE</th>

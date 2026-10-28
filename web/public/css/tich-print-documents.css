@@ -232,18 +232,19 @@ body {
 }
 
 .tich-doc-head th {
-    width: 17%;
+    width: 20%;
     background: #f1f5f9;
     color: var(--tich-doc-navy-light);
     font-family: system-ui, sans-serif;
     font-size: 0.65rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .tich-doc-head td {
-    width: 33%;
+    width: 30%;
 }
 
 .tich-doc-head .num {
@@ -373,6 +374,12 @@ body {
 
     @page {
         margin: 12mm 14mm;
+    }
+
+    /* The week grid starts on its own sheet, like the paper form */
+    .tich-doc-page-break {
+        break-before: page;
+        page-break-before: always;
     }
 }
 
