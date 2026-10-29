@@ -96,13 +96,15 @@ class RequisitionController extends Controller
                 'id' => $budgetRequest->id,
                 'code' => $budgetRequest->request_code,
                 'label' => sprintf(
-                    '%s — %s (%s · %s · %d items · KES %s)',
+                    '%s — %s (%s · %s · %d items · %s)',
                     $budgetRequest->request_code,
                     $budgetRequest->title,
                     $budgetRequest->department?->dept_name ?? 'Department',
                     str_replace('_', ' ', $budgetRequest->status),
                     $budgetRequest->expenditureLineCount(),
-                    number_format((float) $budgetRequest->requested_amount, 0)
+                    (float) $budgetRequest->requested_amount > 0
+                        ? 'KES '.number_format((float) $budgetRequest->requested_amount, 0)
+                        : 'prices pending'
                 ),
                 'department_id' => $budgetRequest->department_id,
                 'line_count' => $budgetRequest->expenditureLineCount(),

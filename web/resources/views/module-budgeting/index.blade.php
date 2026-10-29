@@ -45,7 +45,7 @@
                         <tr>
                             <td><strong>{{ $item->request_code }}</strong></td>
                             <td>{{ $item->title }}</td>
-                            <td data-financial-col="amount"><span class="tich-financial-cell">KES {{ number_format((float) $item->requested_amount, 2) }}</span></td>
+                            <td data-financial-col="amount"><span class="tich-financial-cell">{{ $item->requestedAmountLabel() }}</span></td>
                             <td class="tich-caption">{{ $lineCount }} {{ \Illuminate\Support\Str::plural('line', $lineCount) }}</td>
                             <td class="tich-caption">{{ $item->planningCycle?->cycle_code ?? '-' }}</td>
                             <td>

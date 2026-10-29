@@ -92,9 +92,9 @@
                             <td>{{ $item->title }}</td>
                             <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : strtoupper($item->framework) }}</td>
                             <td>
-                                KES {{ number_format($item->requested_amount, 0) }}
+                                {{ $item->requestedAmountLabel(0) }}
                                 @if ($annual)
-                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                    <p class="tich-caption">{{ $item->annualBreakdownLabel() }}</p>
                                 @endif
                             </td>
                             <td><x-status-badge :status="$item->status" /></td>
@@ -165,7 +165,7 @@
                     <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem;">
                         <div>
                             <h2 class="tich-h3" style="margin:0;">Line items</h2>
-                            <p class="tich-caption tich-mt-1" style="margin:0;">Row total = quantity × price per item</p>
+                            <p class="tich-caption tich-mt-1" style="margin:0;">Enter items and quantities. Procurement adds the prices when they review the request.</p>
                         </div>
                         <button type="button" class="tich-btn tich-btn-secondary" id="admin-budget-add-line">+ Add line</button>
                     </div>
@@ -187,16 +187,16 @@
                                     <td><input type="text" name="lines[0][item]" class="tich-input" required maxlength="255" placeholder="Item name"></td>
                                     <td><input type="number" name="lines[0][quantity]" class="tich-input js-line-qty" value="1" min="0.0001" step="any" required></td>
                                     <td><input type="text" name="lines[0][description]" class="tich-input" maxlength="2000" placeholder="Optional"></td>
-                                    <td><input type="number" name="lines[0][unit_price]" class="tich-input js-line-price" min="0" step="0.01" required placeholder="0.00"></td>
+                                    <td><input type="text" class="tich-input" placeholder="Procurement" disabled aria-disabled="true" tabindex="-1"></td>
                                     <td><input type="text" name="lines[0][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs"></td>
-                                    <td><input type="text" class="tich-input js-line-total" value="0.00" readonly tabindex="-1" aria-label="Line total"></td>
+                                    <td><span class="tich-caption">Awaiting prices</span></td>
                                     <td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>
                                 </tr>
                             </tbody>
                             <tfoot>
                                 <tr>
                                     <td colspan="5" style="text-align:right; font-weight:600;">Grand total (KES)</td>
-                                    <td><strong id="admin-budget-grand-total">0.00</strong></td>
+                                    <td><strong><span class="tich-caption">Procurement</span></strong></td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -218,33 +218,7 @@
     (function () {
         var body = document.getElementById('admin-budget-lines-body');
         var addBtn = document.getElementById('admin-budget-add-line');
-        var grandTotalEl = document.getElementById('admin-budget-grand-total');
-        if (!body || !addBtn || !grandTotalEl) return;
-
-        function formatMoney(value) {
-            return (Math.round((value + Number.EPSILON) * 100) / 100).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-
-        function rowTotal(row) {
-            var qty = parseFloat(row.querySelector('.js-line-qty')?.value || '0');
-            var price = parseFloat(row.querySelector('.js-line-price')?.value || '0');
-            if (!isFinite(qty) || !isFinite(price)) return 0;
-            return qty * price;
-        }
-
-        function refreshTotals() {
-            var sum = 0;
-            body.querySelectorAll('.dept-budget-line').forEach(function (row) {
-                var total = rowTotal(row);
-                sum += total;
-                var totalInput = row.querySelector('.js-line-total');
-                if (totalInput) totalInput.value = formatMoney(total);
-            });
-            grandTotalEl.textContent = formatMoney(sum);
-        }
+        if (!body || !addBtn) return;
 
         function reindexRows() {
             body.querySelectorAll('.dept-budget-line').forEach(function (row, index) {
@@ -255,28 +229,18 @@
         }
 
         function bindRow(row) {
-            row.querySelectorAll('.js-line-qty, .js-line-price').forEach(function (input) {
-                input.addEventListener('input', refreshTotals);
-                input.addEventListener('change', refreshTotals);
-            });
             var removeBtn = row.querySelector('.js-remove-line');
             if (removeBtn) {
                 removeBtn.addEventListener('click', function () {
                     if (body.querySelectorAll('.dept-budget-line').length <= 1) {
                         row.querySelectorAll('input').forEach(function (input) {
-                            if (input.classList.contains('js-line-total')) return;
-                            if (input.classList.contains('js-line-qty')) {
-                                input.value = '1';
-                            } else {
-                                input.value = '';
-                            }
+                            if (!input.name) return;
+                            input.value = input.classList.contains('js-line-qty') ? '1' : '';
                         });
-                        refreshTotals();
                         return;
                     }
                     row.remove();
                     reindexRows();
-                    refreshTotals();
                 });
             }
         }
@@ -289,19 +253,17 @@
                 '<td><input type="text" name="lines[' + index + '][item]" class="tich-input" required maxlength="255" placeholder="Item name"></td>' +
                 '<td><input type="number" name="lines[' + index + '][quantity]" class="tich-input js-line-qty" value="1" min="0.0001" step="any" required></td>' +
                 '<td><input type="text" name="lines[' + index + '][description]" class="tich-input" maxlength="2000" placeholder="Optional"></td>' +
-                '<td><input type="number" name="lines[' + index + '][unit_price]" class="tich-input js-line-price" min="0" step="0.01" required placeholder="0.00"></td>' +
+                '<td><input type="text" class="tich-input" placeholder="Procurement" disabled aria-disabled="true" tabindex="-1"></td>' +
                 '<td><input type="text" name="lines[' + index + '][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs"></td>' +
-                '<td><input type="text" class="tich-input js-line-total" value="0.00" readonly tabindex="-1" aria-label="Line total"></td>' +
+                '<td><span class="tich-caption">Awaiting prices</span></td>' +
                 '<td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>';
             body.appendChild(row);
             bindRow(row);
-            refreshTotals();
             row.querySelector('input[name$="[item]"]')?.focus();
         }
 
         body.querySelectorAll('.dept-budget-line').forEach(bindRow);
         addBtn.addEventListener('click', addRow);
-        refreshTotals();
     })();
     </script>
 @endsection

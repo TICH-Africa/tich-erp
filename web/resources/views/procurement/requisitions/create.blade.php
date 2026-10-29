@@ -26,7 +26,6 @@
                 'item' => old('requested_item', ''),
                 'quantity' => old('quantity', '1'),
                 'description' => '',
-                'unit_price' => old('estimated_unit_cost', ''),
                 'unit_of_measure' => '',
             ]];
         }

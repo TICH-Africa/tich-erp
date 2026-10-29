@@ -14,6 +14,8 @@
     $expGrand = (float) ($annual['expenditure_grand_total'] ?? $budgetRequest->requested_amount);
     $balance = $incomeGrand - $expGrand;
     $idPrefix = $idPrefix ?? 'budrev';
+    $awaiting = static fn ($value) => $value > 0 ? number_format((float) $value, 2) : 'Awaiting prices';
+    $hasPrice = static fn ($row) => is_array($row) && array_key_exists('unit_price', $row) && is_numeric($row['unit_price']);
     $quarterMeta = [
         'q1' => ['label' => 'Q1', 'period' => 'January – March'],
         'q2' => ['label' => 'Q2', 'period' => 'April – June'],
@@ -25,7 +27,7 @@
 @if ($annual)
     <div class="budrev-year-head tich-mt-6">
         <h2 class="tich-h3" style="margin:0;">Quarterly breakdown</h2>
-        <p class="tich-caption" style="margin:0.35rem 0 0;">Income and expenditure for each quarter · amounts in KES</p>
+        <p class="tich-caption" style="margin:0.35rem 0 0;">Income and expenditure for each quarter · prices filled by Procurement</p>
     </div>
 
     @foreach ($quarterMeta as $qKey => $meta)
@@ -52,10 +54,12 @@
                 </div>
                 <div class="budrev-quarter__totals">
                     <span class="budrev-pill budrev-pill--income">Income {{ number_format($qIncome, 2) }}</span>
-                    <span class="budrev-pill budrev-pill--exp">Expenditure {{ number_format($qExp, 2) }}</span>
-                    <span class="budrev-pill {{ $qNet >= 0 ? 'budrev-pill--ok' : 'budrev-pill--warn' }}">
-                        {{ $qNet >= 0 ? 'Net +' : 'Net −' }}{{ number_format(abs($qNet), 2) }}
-                    </span>
+                    <span class="budrev-pill budrev-pill--exp">Expenditure {{ $awaiting($qExp) }}</span>
+                    @if ($expRows === [] || $qExp > 0)
+                        <span class="budrev-pill {{ $qNet >= 0 ? 'budrev-pill--ok' : 'budrev-pill--warn' }}">
+                            {{ $qNet >= 0 ? 'Net +' : 'Net −' }}{{ number_format(abs($qNet), 2) }}
+                        </span>
+                    @endif
                 </div>
             </header>
 
@@ -98,7 +102,7 @@
                 <div class="budrev-panel budrev-panel--exp">
                     <div class="budrev-panel__head">
                         <h4 class="budrev-panel__title">Expenditure</h4>
-                        <span class="budrev-panel__sum">{{ number_format($qExp, 2) }}</span>
+                        <span class="budrev-panel__sum">{{ $awaiting($qExp) }}</span>
                     </div>
                     <div class="tich-table-wrap">
                         <table class="tich-admin-table budrev-table">
@@ -115,8 +119,9 @@
                                 @forelse ($expRows as $row)
                                     @php
                                         $qty = (float) ($row['quantity'] ?? 0);
-                                        $price = (float) ($row['unit_price'] ?? 0);
-                                        $total = (float) ($row['total'] ?? ($qty * $price));
+                                        $priced = $hasPrice($row);
+                                        $price = $priced ? (float) $row['unit_price'] : null;
+                                        $total = $priced ? (float) ($row['total'] ?? ($qty * $price)) : null;
                                     @endphp
                                     <tr>
                                         <td>
@@ -127,8 +132,8 @@
                                         </td>
                                         <td class="budrev-num">{{ rtrim(rtrim(number_format($qty, 4, '.', ','), '0'), '.') }}</td>
                                         <td class="tich-caption">{{ $row['description'] ?: '-' }}</td>
-                                        <td class="budrev-num">{{ number_format($price, 2) }}</td>
-                                        <td class="budrev-num"><strong>{{ number_format($total, 2) }}</strong></td>
+                                        <td class="budrev-num">{{ $priced ? number_format($price, 2) : '—' }}</td>
+                                        <td class="budrev-num"><strong>{{ $total !== null ? number_format($total, 2) : '—' }}</strong></td>
                                     </tr>
                                 @empty
                                     <tr>
@@ -139,7 +144,7 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="4">Quarter expenditure</td>
-                                    <td class="budrev-num"><strong>{{ number_format($qExp, 2) }}</strong></td>
+                                    <td class="budrev-num"><strong>{{ $awaiting($qExp) }}</strong></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -156,12 +161,14 @@
         </div>
         <div>
             <span class="tich-caption">Annual expenditure</span>
-            <strong>KES {{ number_format($expGrand, 2) }}</strong>
+            <strong>{{ $expGrand > 0 ? 'KES '.number_format($expGrand, 2) : 'Awaiting prices' }}</strong>
         </div>
-        <div>
-            <span class="tich-caption">{{ $balance >= 0 ? 'Annual surplus' : 'Annual shortfall' }}</span>
-            <strong>KES {{ number_format(abs($balance), 2) }}</strong>
-        </div>
+        @if ($expGrand > 0)
+            <div>
+                <span class="tich-caption">{{ $balance >= 0 ? 'Annual surplus' : 'Annual shortfall' }}</span>
+                <strong>KES {{ number_format(abs($balance), 2) }}</strong>
+            </div>
+        @endif
     </div>
 @else
     <div class="tich-card tich-table-panel tich-mt-6">
@@ -181,20 +188,21 @@
                     </thead>
                     <tbody>
                         @foreach ($lines as $line)
+                            @php $linePriced = $hasPrice($line); @endphp
                             <tr>
                                 <td>{{ $line['item'] ?? '-' }}</td>
                                 <td>{{ $line['quantity'] ?? '-' }}</td>
                                 <td class="tich-caption">{{ $line['description'] ?? '-' }}</td>
-                                <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
+                                <td>{{ $linePriced ? 'KES ' . number_format((float) $line['unit_price'], 2) : 'Awaiting prices' }}</td>
                                 <td class="tich-caption">{{ $line['unit_of_measure'] ?? '-' }}</td>
-                                <td><strong>KES {{ number_format((float) ($line['total'] ?? (($line['quantity'] ?? 0) * ($line['unit_price'] ?? 0))), 2) }}</strong></td>
+                                <td><strong>{{ $linePriced ? 'KES ' . number_format((float) ($line['total'] ?? ((float) ($line['quantity'] ?? 0) * (float) $line['unit_price'])), 2) : '—' }}</strong></td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="5" style="text-align:right; font-weight:600;">Grand total</td>
-                            <td><strong>KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</strong></td>
+                            <td><strong>{{ $budgetRequest->requestedAmountLabel() }}</strong></td>
                         </tr>
                     </tfoot>
                 </table>

@@ -42,7 +42,7 @@
                                 @endif
                             </td>
                             <td>
-                                <p>Req: KES {{ number_format((float) $item->requested_amount, 0) }}</p>
+                                <p>Req: {{ $item->requestedAmountLabel(0) }}</p>
                                 @if ($item->verified_amount !== null)
                                     <p class="tich-caption">Verified: KES {{ number_format((float) $item->verified_amount, 0) }}</p>
                                 @endif

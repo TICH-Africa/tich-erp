@@ -146,7 +146,7 @@
             <h2 class="tich-h3">Linked budget request</h2>
             <p class="tich-caption tich-mt-1">
                 {{ $budget->request_code }} · {{ $budget->title }} ·
-                KES {{ number_format((float) $budget->requested_amount, 2) }} ·
+                {{ $budget->requestedAmountLabel() }} ·
                 {{ str_replace('_', ' ', $budget->status) }}
             </p>
             @if ($budget->justification)

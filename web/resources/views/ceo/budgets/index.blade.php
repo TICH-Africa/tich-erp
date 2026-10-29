@@ -42,9 +42,9 @@
                             <td>{{ $item->department?->dept_name }}</td>
                             <td class="tich-caption">{{ $item->budget_type ? ucfirst($item->budget_type) : '-' }}</td>
                             <td>
-                                KES {{ number_format((float) $item->requested_amount, 0) }}
+                                {{ $item->requestedAmountLabel(0) }}
                                 @if ($annual)
-                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
+                                    <p class="tich-caption">{{ $item->annualBreakdownLabel() }}</p>
                                 @endif
                             </td>
                             <td>KES {{ number_format((float) ($item->verified_amount ?? 0), 0) }}</td>
