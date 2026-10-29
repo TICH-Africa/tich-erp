@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\ProgramTimetableSegment;
+use App\Models\ProgramTimetableSession;
 use App\Models\ProgramTimetableTemplate;
 use App\Models\ProgramTimetableTemplateDay;
 use App\Models\User;
@@ -13,6 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 class TimetableTemplateService
 {
+    /**
+     * How many classes the last bell schedule save carried to new hours.
+     */
+    public int $movedSessions = 0;
+
     public function __construct(protected AuditService $auditService) {}
 
     /**
@@ -154,10 +160,16 @@ class TimetableTemplateService
         }
 
         $template = $this->templateForProgram($program->id);
+        $this->movedSessions = 0;
         $segmentTypes = self::segmentTypesForKind($timetableKind);
         $rows = $data['segments'] ?? [];
 
-        DB::transaction(function () use ($template, $segmentTypes, $rows) {
+        DB::transaction(function () use ($template, $segmentTypes, $rows, $program, $timetableKind) {
+            $oldSegments = ProgramTimetableSegment::query()
+                ->where('template_id', $template->id)
+                ->whereIn('segment_type', $segmentTypes)
+                ->get();
+
             ProgramTimetableSegment::query()
                 ->where('template_id', $template->id)
                 ->whereIn('segment_type', $segmentTypes)
@@ -168,6 +180,7 @@ class TimetableTemplateService
                 ->max('sort_order') ?? -1) + 1;
 
             $created = 0;
+            $newStarts = [];
 
             foreach ($rows as $index => $row) {
                 $label = trim((string) ($row['label'] ?? ''));
@@ -193,6 +206,8 @@ class TimetableTemplateService
                     'sort_order' => $sortOrder++,
                 ]);
 
+                $newStarts[$label.'|'.$segmentTypes[0]] = substr((string) $start, 0, 5);
+
                 $created++;
             }
 
@@ -201,6 +216,10 @@ class TimetableTemplateService
                     'segments' => 'Add at least one time slot.',
                 ]);
             }
+
+            $this->movedSessions = $oldSegments->count() > 0
+                ? $this->moveSessionsWithSlots($program->id, $timetableKind, $oldSegments, $newStarts)
+                : 0;
         });
 
         $this->auditService->log(
@@ -236,6 +255,7 @@ class TimetableTemplateService
     public function syncTemplate(User $user, AcademicProgram $program, array $data, ?Request $request = null): ProgramTimetableTemplate
     {
         $template = $this->templateForProgram($program->id);
+        $this->movedSessions = 0;
 
         if (! empty($data['name'])) {
             $template->update([
@@ -256,7 +276,13 @@ class TimetableTemplateService
             ]);
         }
 
-        DB::transaction(function () use ($template, $activeDays, $data) {
+        DB::transaction(function () use ($template, $activeDays, $data, $program) {
+            // The classes on a slot follow the slot, so the old hours are kept before the rows go.
+            $oldSegments = ProgramTimetableSegment::query()
+                ->where('template_id', $template->id)
+                ->whereIn('segment_type', ['lesson', 'break'])
+                ->get();
+
             ProgramTimetableTemplateDay::query()
                 ->where('template_id', $template->id)
                 ->delete();
@@ -276,6 +302,7 @@ class TimetableTemplateService
 
             $segments = $data['segments'] ?? [];
             $sortOrder = 0;
+            $newStarts = [];
 
             foreach ($segments as $index => $row) {
                 $label = trim((string) ($row['label'] ?? ''));
@@ -305,6 +332,8 @@ class TimetableTemplateService
                     'segment_type' => $type,
                     'sort_order' => $sortOrder++,
                 ]);
+
+                $newStarts[$label.'|'.$type] = substr((string) $start, 0, 5);
             }
 
             if ($sortOrder === 0) {
@@ -312,6 +341,10 @@ class TimetableTemplateService
                     'segments' => 'Add at least one lesson or break segment.',
                 ]);
             }
+
+            $this->movedSessions = $oldSegments->count() > 0
+                ? $this->moveSessionsWithSlots($program->id, 'lesson', $oldSegments, $newStarts)
+                : 0;
         });
 
         $this->auditService->log(
@@ -327,6 +360,84 @@ class TimetableTemplateService
         );
 
         return $template->fresh(['days', 'segments']);
+    }
+
+    /**
+     * A bell slot that moves takes its classes with it: anything starting on the slot's old hour is
+     * pushed by the same amount and keeps its own length. A class the officer timed away from the
+     * slot is left exactly as it was typed.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProgramTimetableSegment>  $oldSegments
+     * @param  array<string, string>  $newStarts  slot label|type => the hour it now opens at
+     */
+    private function moveSessionsWithSlots(
+        int $programId,
+        string $timetableKind,
+        \Illuminate\Support\Collection $oldSegments,
+        array $newStarts
+    ): int {
+        $timetableIds = DB::table('program_timetables')
+            ->where('program_id', $programId)
+            ->where('timetable_kind', $timetableKind)
+            ->pluck('id');
+
+        if ($timetableIds->isEmpty()) {
+            return 0;
+        }
+
+        $sessionsByStart = ProgramTimetableSession::query()
+            ->whereIn('program_timetable_id', $timetableIds)
+            ->get()
+            ->groupBy(fn (ProgramTimetableSession $session) => substr((string) $session->start_time, 0, 5));
+
+        $moved = 0;
+
+        foreach ($oldSegments as $segment) {
+            $oldStart = substr((string) $segment->start_time, 0, 5);
+            $newStart = $newStarts[$segment->label.'|'.$segment->segment_type] ?? null;
+
+            if ($newStart === null || $newStart === $oldStart || ! $sessionsByStart->has($oldStart)) {
+                continue;
+            }
+
+            $delta = $this->minutes($newStart) - $this->minutes($oldStart);
+
+            foreach ($sessionsByStart->get($oldStart) as $session) {
+                $isRest = in_array((string) $session->session_type, ['break', 'lunch'], true);
+
+                if (($segment->segment_type === 'break') !== $isRest) {
+                    continue;
+                }
+
+                $start = $this->shiftTime((string) $session->start_time, $delta);
+                $end = $this->shiftTime((string) $session->end_time, $delta);
+
+                if ($start === null || $end === null) {
+                    continue;
+                }
+
+                $session->update(['start_time' => $start, 'end_time' => $end]);
+                $moved++;
+            }
+        }
+
+        return $moved;
+    }
+
+    private function minutes(string $time): int
+    {
+        return (int) substr($time, 0, 2) * 60 + (int) substr($time, 3, 2);
+    }
+
+    private function shiftTime(string $time, int $delta): ?string
+    {
+        $minutes = $this->minutes($time) + $delta;
+
+        if ($minutes < 0 || $minutes > 23 * 60 + 59) {
+            return null;
+        }
+
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function seedDefaultTemplate(int $programId): ProgramTimetableTemplate

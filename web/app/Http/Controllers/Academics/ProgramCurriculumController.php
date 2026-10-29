@@ -541,6 +541,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request
         );
 
+        $moved = $this->timetableTemplates->movedSessions;
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
                 'program' => $program->id,
@@ -550,7 +551,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $request->integer('teaching_period') ?: null,
                 'timetable_kind' => $request->string('timetable_kind')->toString() ?: 'lesson',
             ]))
-            ->with('status', 'Bell schedule saved.');
+            ->with('status', 'Bell schedule saved.'.($moved > 0 ? ' '.$moved.' class'.($moved === 1 ? '' : 'es').' moved to the new hours.' : ''));
     }
 
     public function syncTimetableKindSlots(Request $request, Department $department, AcademicProgram $program): RedirectResponse
@@ -578,6 +579,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request
         );
 
+        $moved = $this->timetableTemplates->movedSessions;
         return redirect()
             ->route('departments.academics.programs.curriculum', array_filter([
                 'program' => $program->id,
@@ -587,7 +589,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $request->integer('teaching_period') ?: null,
                 'timetable_kind' => $timetableKind,
             ]))
-            ->with('status', 'Exam slots saved.');
+            ->with('status', 'Exam slots saved.'.($moved > 0 ? ' '.$moved.' sitting'.($moved === 1 ? '' : 's').' moved to the new hours.' : ''));
     }
 
     public function startTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
