@@ -26,7 +26,7 @@
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Estimated cost</p>
-            <p class="tich-stat__value">KES {{ number_format((float) $requisition->estimated_cost, 2) }}</p>
+            <p class="tich-stat__value">{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'Awaiting prices' }}</p>
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Department</p>

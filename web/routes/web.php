@@ -821,6 +821,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/requisitions/{requisition}/approve/{level}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'approve'])->name('procurement.requisitions.approve');
         Route::post('/requisitions/{requisition}/reject/{level}', [\App\Http\Controllers\Procurement\RequisitionController::class, 'reject'])->name('procurement.requisitions.reject');
         Route::post('/requisitions/{requisition}/submit', [\App\Http\Controllers\Procurement\RequisitionController::class, 'submit'])->name('procurement.requisitions.submit');
+        Route::post('/requisitions/{requisition}/price', [\App\Http\Controllers\Procurement\RequisitionController::class, 'price'])->name('procurement.requisitions.price');
         Route::post('/requisitions/{requisition}/cancel', [\App\Http\Controllers\Procurement\RequisitionController::class, 'cancel'])->name('procurement.requisitions.cancel');
 
         Route::resource('suppliers', \App\Http\Controllers\Procurement\SupplierController::class)->only(['index', 'show', 'create', 'store', 'edit', 'update'])->names([

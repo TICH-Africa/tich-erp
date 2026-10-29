@@ -180,14 +180,10 @@ class RequisitionController extends Controller
             'budget_code' => ['nullable', 'string', 'max:100'],
             'budget_line' => ['nullable', 'string', 'max:100'],
             'requested_item' => ['nullable', 'string', 'max:300'],
-            'estimated_unit_cost' => ['nullable', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'numeric', 'min:0.0001'],
-            'estimated_cost' => ['nullable', 'numeric', 'min:0'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.item' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.description' => ['nullable', 'string', 'max:2000'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:5120'],
@@ -199,39 +195,18 @@ class RequisitionController extends Controller
             'lines.*.item.required' => 'Each line needs an item name.',
         ]);
 
-        $lineItems = [];
-        $grandTotal = 0.0;
-        foreach ($validated['lines'] as $line) {
-            $quantity = round((float) $line['quantity'], 4);
-            $unitPrice = round((float) $line['unit_price'], 2);
-            $total = round($quantity * $unitPrice, 2);
-            $grandTotal += $total;
-
-            $lineItems[] = [
-                'item' => trim((string) $line['item']),
-                'quantity' => $quantity,
-                'description' => trim((string) ($line['description'] ?? '')),
-                'unit_price' => $unitPrice,
-                'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
-                'total' => $total,
-            ];
-        }
-
-        if ($grandTotal <= 0) {
-            return back()
-                ->withInput()
-                ->withErrors(['lines' => 'The estimated total cost must be greater than zero.']);
-        }
+        // Departments request; only Procurement prices. Any price sent with the form is discarded.
+        $lineItems = $this->requisitionService->unpricedLines($validated['lines']);
 
         $itemNames = collect($lineItems)->pluck('item')->filter()->values();
-        $validated['requested_item'] = $validated['requested_item']
+        $validated['requested_item'] = ($validated['requested_item'] ?? null)
             ?: ($itemNames->count() === 1
                 ? $itemNames->first()
                 : $itemNames->take(2)->implode(', ').($itemNames->count() > 2 ? ' +'.($itemNames->count() - 2).' more' : ''));
-        $validated['estimated_cost'] = $grandTotal;
-        $validated['estimated_unit_cost'] = $lineItems[0]['unit_price'] ?? null;
+        $validated['estimated_cost'] = 0;
+        $validated['estimated_unit_cost'] = null;
         $validated['quantity'] = collect($lineItems)->sum('quantity');
-        $validated['budget_line'] = $validated['budget_line'] ?: ($lineItems[0]['item'] ?? null);
+        $validated['budget_line'] = ($validated['budget_line'] ?? null) ?: ($lineItems[0]['item'] ?? null);
         $validated['line_items'] = $lineItems;
 
         $validated['request_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['request_date'])->format('Y-m-d');
@@ -271,7 +246,32 @@ class RequisitionController extends Controller
             'requisition' => $requisition,
             'budgetCheck' => $budgetCheck,
             'nextLevel' => $this->requisitionService->getApprovalLevel((float) $requisition->estimated_cost),
+            'canPrice' => $this->requisitionService->mayPrice(Auth::user()),
         ]);
+    }
+
+    /**
+     * Procurement's estimated prices for a requisition a department has raised. Only prices are
+     * editable here — the items and quantities stay as the requesting department filed them.
+     */
+    public function price(Request $request, ProcurementRequisition $requisition): RedirectResponse
+    {
+        if (! $this->requisitionService->mayPrice(Auth::user())) {
+            abort(403, 'Only Procurement can enter the estimated prices on a requisition.');
+        }
+
+        if ($requisition->isRejected() || $requisition->isCompleted()) {
+            return back()->withErrors(['status' => 'This requisition is closed and can no longer be priced.']);
+        }
+
+        $validated = $request->validate([
+            'lines' => ['required', 'array'],
+            'lines.*' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $this->requisitionService->price($requisition, $validated['lines']);
+
+        return back()->with('status', 'Estimated prices saved.');
     }
 
     public function approve(Request $request, ProcurementRequisition $requisition, string $level): RedirectResponse
@@ -340,10 +340,13 @@ class RequisitionController extends Controller
             return back()->withErrors(['status' => 'Only draft requisitions can be submitted.']);
         }
 
-        $budgetCheck = $this->requisitionService->verifyBudget($requisition);
+        // Nothing to verify while Procurement still owes the prices; approvals are gated later.
+        if ($requisition->isPriced()) {
+            $budgetCheck = $this->requisitionService->verifyBudget($requisition);
 
-        if (!$budgetCheck['passed']) {
-            return back()->withErrors(['budget' => $budgetCheck['message']]);
+            if (!$budgetCheck['passed']) {
+                return back()->withErrors(['budget' => $budgetCheck['message']]);
+            }
         }
 
         $this->requisitionService->addAuditTrail($requisition, 'submit', 'Requisition submitted for approval');

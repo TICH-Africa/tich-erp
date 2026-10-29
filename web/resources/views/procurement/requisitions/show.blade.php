@@ -21,6 +21,16 @@
         </x-slot:actions>
     </x-page-toolbar>
 
+    @if ($errors->any())
+        <div class="tich-alert tich-alert--error tich-mt-4">
+            <ul style="margin:0; padding-left:1.25rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="tich-grid tich-grid--3 tich-mt-6">
         <article class="tich-card tich-stat">
             <p class="tich-caption">Status</p>
@@ -28,7 +38,7 @@
         </article>
         <article class="tich-card tich-stat">
             <p class="tich-caption">Estimated cost</p>
-            <p class="tich-stat__value">KES {{ number_format((float) $requisition->estimated_cost, 2) }}</p>
+            <p class="tich-stat__value">{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'Awaiting prices' }}</p>
         </article>
     </div>
 
@@ -51,11 +61,11 @@
                 <dt>Budget line</dt>
                 <dd>{{ $requisition->budget_line ?? '-' }}</dd>
                 <dt>Unit cost</dt>
-                <dd>{{ $requisition->estimated_unit_cost ? 'KES ' . number_format((float) $requisition->estimated_unit_cost, 2) : '-' }}</dd>
+                <dd>{{ $requisition->estimated_unit_cost !== null ? 'KES ' . number_format((float) $requisition->estimated_unit_cost, 2) : 'Awaiting prices' }}</dd>
                 <dt>Quantity</dt>
                 <dd>{{ $requisition->quantity ?? '-' }}</dd>
                 <dt>Estimated total</dt>
-                <dd>KES {{ number_format((float) $requisition->estimated_cost, 2) }}</dd>
+                <dd>{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'Filled by Procurement' }}</dd>
                 <dt>Justification</dt>
                 <dd>{{ $requisition->justification }}</dd>
             </dl>
@@ -88,8 +98,12 @@
     </div>
 
     @if(is_array($requisition->line_items) && count($requisition->line_items) > 0)
+        @php $openToPrice = ($canPrice ?? false) && !$requisition->isRejected() && !$requisition->isCompleted(); @endphp
         <article class="tich-card tich-table-panel tich-mt-6">
             <h2 class="tich-h3" style="margin-top:0;">Line items</h2>
+            @if($openToPrice)
+                <p class="tich-caption">Enter the estimated prices. The items and quantities stay as the requesting department filed them.</p>
+            @endif
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
@@ -110,14 +124,28 @@
                                 <td>{{ $line['item'] ?? '-' }}</td>
                                 <td>{{ $line['quantity'] ?? '-' }}</td>
                                 <td>{{ $line['description'] ?: '-' }}</td>
-                                <td>KES {{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
+                                <td>
+                                    @if($openToPrice)
+                                        <input type="number" name="lines[{{ $index }}]" form="requisition-price-form" class="tich-input" min="0" step="0.01" required placeholder="0.00" value="{{ old('lines.'.$index, $line['unit_price']) }}">
+                                    @elseif(is_numeric($line['unit_price'] ?? null))
+                                        KES {{ number_format((float) $line['unit_price'], 2) }}
+                                    @else
+                                        <span class="tich-caption">Awaiting prices</span>
+                                    @endif
+                                </td>
                                 <td>{{ $line['unit_of_measure'] ?: '-' }}</td>
-                                <td>KES {{ number_format((float) ($line['total'] ?? 0), 2) }}</td>
+                                <td>{{ is_numeric($line['total'] ?? null) ? 'KES ' . number_format((float) $line['total'], 2) : '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            @if($openToPrice)
+                <form method="POST" action="{{ route('procurement.requisitions.price', $requisition) }}" class="tich-inline-form tich-mt-4">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-primary">{{ $requisition->isPriced() ? 'Update prices' : 'Save prices' }}</button>
+                </form>
+            @endif
         </article>
     @endif
 

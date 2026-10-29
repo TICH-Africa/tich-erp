@@ -158,14 +158,10 @@ class RequisitionsController extends Controller
             'budget_code' => ['nullable', 'string', 'max:100'],
             'budget_line' => ['nullable', 'string', 'max:100'],
             'requested_item' => ['nullable', 'string', 'max:300'],
-            'estimated_unit_cost' => ['nullable', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'numeric', 'min:0.0001'],
-            'estimated_cost' => ['nullable', 'numeric', 'min:0'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.item' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.description' => ['nullable', 'string', 'max:2000'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:5120'],
@@ -177,39 +173,18 @@ class RequisitionsController extends Controller
             'lines.*.item.required' => 'Each line needs an item name.',
         ]);
 
-        $lineItems = [];
-        $grandTotal = 0.0;
-        foreach ($validated['lines'] as $line) {
-            $quantity = round((float) $line['quantity'], 4);
-            $unitPrice = round((float) $line['unit_price'], 2);
-            $total = round($quantity * $unitPrice, 2);
-            $grandTotal += $total;
-
-            $lineItems[] = [
-                'item' => trim((string) $line['item']),
-                'quantity' => $quantity,
-                'description' => trim((string) ($line['description'] ?? '')),
-                'unit_price' => $unitPrice,
-                'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
-                'total' => $total,
-            ];
-        }
-
-        if ($grandTotal <= 0) {
-            return response()->json([
-                'message' => 'The estimated total cost must be greater than zero.',
-            ], 422);
-        }
+        // Departments request; only Procurement prices. Any price sent from the app is discarded.
+        $lineItems = $this->requisitionService->unpricedLines($validated['lines']);
 
         $itemNames = collect($lineItems)->pluck('item')->filter()->values();
-        $validated['requested_item'] = $validated['requested_item']
+        $validated['requested_item'] = ($validated['requested_item'] ?? null)
             ?: ($itemNames->count() === 1
                 ? $itemNames->first()
                 : $itemNames->take(2)->implode(', ').($itemNames->count() > 2 ? ' +'.($itemNames->count() - 2).' more' : ''));
-        $validated['estimated_cost'] = $grandTotal;
-        $validated['estimated_unit_cost'] = $lineItems[0]['unit_price'] ?? null;
+        $validated['estimated_cost'] = 0;
+        $validated['estimated_unit_cost'] = null;
         $validated['quantity'] = collect($lineItems)->sum('quantity');
-        $validated['budget_line'] = $validated['budget_line'] ?: ($lineItems[0]['item'] ?? null);
+        $validated['budget_line'] = ($validated['budget_line'] ?? null) ?: ($lineItems[0]['item'] ?? null);
         $validated['line_items'] = $lineItems;
 
         $validated['request_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['request_date'])->format('Y-m-d');
@@ -353,9 +328,12 @@ class RequisitionsController extends Controller
             return response()->json(['message' => 'Only draft requisitions can be submitted.'], 422);
         }
 
-        $budget = $this->requisitionService->verifyBudget($requisition);
-        if (! ($budget['passed'] ?? false)) {
-            return response()->json(['message' => $budget['message'] ?? 'Budget check failed.'], 422);
+        // Nothing to verify while Procurement still owes the prices; approvals are gated later.
+        if ($requisition->isPriced()) {
+            $budget = $this->requisitionService->verifyBudget($requisition);
+            if (! ($budget['passed'] ?? false)) {
+                return response()->json(['message' => $budget['message'] ?? 'Budget check failed.'], 422);
+            }
         }
 
         $staff = $this->portal->staffForUser($request->user());

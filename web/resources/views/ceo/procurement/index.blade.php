@@ -44,7 +44,7 @@
                                 <p class="tich-caption">{{ $item->requested_item ?: \Illuminate\Support\Str::limit($item->justification, 60) }}</p>
                             </td>
                             <td>{{ $item->department?->dept_name ?? '-' }}</td>
-                            <td>KES {{ number_format((float) $item->estimated_cost, 0) }}</td>
+                            <td>{{ $item->isPriced() ? 'KES ' . number_format((float) $item->estimated_cost, 0) : 'Awaiting prices' }}</td>
                             <td class="tich-caption">{{ $item->request_date?->format('d M Y') ?? '-' }}</td>
                             <td><x-status-badge :status="$item->status" /></td>
                             <td>

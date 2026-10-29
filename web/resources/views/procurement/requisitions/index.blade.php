@@ -58,7 +58,7 @@
                             </td>
                             <td>{{ $requisition->requested_item ?? '-' }}</td>
                             <td>{{ $requisition->department?->dept_name ?? '-' }}</td>
-                            <td>KES {{ number_format((float) $requisition->estimated_cost, 2) }}</td>
+                            <td>{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'Awaiting prices' }}</td>
                             <td>
                                 <x-status-badge :status="$requisition->status" :label="$requisition->statusLabel()" />
                             </td>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 class ProcurementRequisition extends Model
 {
@@ -162,6 +163,39 @@ class ProcurementRequisition extends Model
         ];
 
         return $labels[$this->status] ?? ucfirst(str_replace('_', ' ', $this->status));
+    }
+
+    /**
+     * Procurement puts the money on a request, the department only says what it needs, so an
+     * unpriced requisition is normal on its way in. A line counts as priced once it carries a
+     * number - a free item is 0, not blank.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function lines(): Collection
+    {
+        return collect($this->line_items ?? [])->values();
+    }
+
+    public function isLinePriced(array $line): bool
+    {
+        return array_key_exists('unit_price', $line) && is_numeric($line['unit_price']);
+    }
+
+    public function isPriced(): bool
+    {
+        $lines = $this->lines();
+
+        if ($lines->isEmpty()) {
+            return is_numeric($this->estimated_cost) && (float) $this->estimated_cost > 0;
+        }
+
+        return $lines->every(fn (array $line) => $this->isLinePriced($line));
+    }
+
+    public function unpricedLineCount(): int
+    {
+        return $this->lines()->reject(fn (array $line) => $this->isLinePriced($line))->count();
     }
 
     public function currentApprovalLevel(): string

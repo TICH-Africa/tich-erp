@@ -6,9 +6,11 @@ use App\Models\Administration\BudgetRequest;
 use App\Models\FinanceBudget;
 use App\Models\ProcurementRequisition;
 use App\Models\Staff;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class RequisitionService
@@ -37,6 +39,16 @@ class RequisitionService
 
     public function verifyBudget(ProcurementRequisition $requisition): array
     {
+        if (! $requisition->isPriced()) {
+            return [
+                'passed' => false,
+                'message' => 'Procurement must enter the estimated prices before this requisition can be verified or approved.',
+                'budget' => null,
+                'available' => null,
+                'required' => 0.0,
+            ];
+        }
+
         if (($requisition->requisition_type ?? null) === 'emergency') {
             return [
                 'passed' => true,
@@ -183,6 +195,10 @@ class RequisitionService
             throw new InvalidArgumentException("Invalid approval level: {$level}");
         }
 
+        if (! $requisition->isPriced()) {
+            throw new InvalidArgumentException('Procurement must enter the estimated prices before this requisition can be approved.');
+        }
+
         $now = now();
         $auditEntry = [
             'action' => 'approve',
@@ -326,6 +342,107 @@ class RequisitionService
 
             $requisition->update([
                 'status' => 'cancelled',
+                'audit_trail' => $trail,
+            ]);
+
+            return $requisition->fresh();
+        });
+    }
+
+    /**
+     * Only Procurement puts a price on a request. Every department that can raise a requisition
+     * can also read the module, so the shared procurement permission is not enough here.
+     */
+    public function mayPrice(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if (app(\App\Services\RBACService::class)->isPlatformAdministrator($user)) {
+            return true;
+        }
+
+        return $user->hasAnyRole(['Procurement Manager', 'Assistant Procurement Officer']);
+    }
+
+    /**
+     * A requisition as the requesting department files it: what they need, how much of it, and
+     * no money. Procurement prices it once the request reaches them.
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     * @return list<array<string, mixed>>
+     */
+    public function unpricedLines(array $lines): array
+    {
+        return collect($lines)->map(fn (array $line) => [
+            'item' => trim((string) $line['item']),
+            'quantity' => round((float) $line['quantity'], 4),
+            'description' => trim((string) ($line['description'] ?? '')),
+            'unit_price' => null,
+            'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
+            'total' => null,
+        ])->values()->all();
+    }
+
+    /**
+     * Procurement's estimated prices for a received requisition. The line totals and the header
+     * cost are derived here so the requisition page, the budget check and the approval level all
+     * read the same number.
+     *
+     * @param  array<int, mixed>  $unitPrices  keyed by line index
+     */
+    public function price(ProcurementRequisition $requisition, array $unitPrices): ProcurementRequisition
+    {
+        $lines = $requisition->lines();
+
+        if ($lines->isEmpty()) {
+            throw ValidationException::withMessages([
+                'lines' => 'This requisition has no line items to price.',
+            ]);
+        }
+
+        $priced = $lines->map(function (array $line, int $index) use ($unitPrices) {
+            $raw = $unitPrices[$index] ?? null;
+
+            if ($raw === null || trim((string) $raw) === '') {
+                throw ValidationException::withMessages([
+                    "lines.{$index}" => 'Enter an estimated unit price for '.($line['item'] ?: 'this line').', or 0 if it is free.',
+                ]);
+            }
+
+            if (! is_numeric($raw) || (float) $raw < 0) {
+                throw ValidationException::withMessages([
+                    "lines.{$index}" => 'The unit price for '.($line['item'] ?: 'this line').' must be zero or more.',
+                ]);
+            }
+
+            $unitPrice = round((float) $raw, 2);
+            $quantity = round((float) ($line['quantity'] ?? 0), 4);
+
+            return array_merge($line, [
+                'unit_price' => $unitPrice,
+                'total' => round($quantity * $unitPrice, 2),
+            ]);
+        })->values();
+
+        $grandTotal = round((float) $priced->sum('total'), 2);
+
+        $trail = $requisition->audit_trail ?? [];
+        $trail[] = [
+            'action' => $requisition->isPriced() ? 'repriced' : 'priced',
+            'level' => 'procurement',
+            'performed_by' => Auth::id(),
+            'performed_at' => now()->toDateTimeString(),
+            'comments' => 'Estimated total KES '.number_format($grandTotal, 2),
+        ];
+
+        return DB::transaction(function () use ($requisition, $priced, $grandTotal, $trail) {
+            $requisition->update([
+                'line_items' => $priced->all(),
+                'estimated_cost' => $grandTotal,
+                'estimated_unit_cost' => $priced->first()['unit_price'] ?? null,
+                'quantity' => round((float) $priced->sum('quantity'), 4),
                 'audit_trail' => $trail,
             ]);
 
