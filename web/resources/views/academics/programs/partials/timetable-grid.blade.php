@@ -209,6 +209,10 @@
                                             <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
                                         @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
+                                        {{-- The row carries the bell hour; a class timed away from it names its own hours. --}}
+                                        @if (substr((string) $session->start_time, 0, 5) !== substr((string) $segment->start_time, 0, 5))
+                                            <span class="tich-caption tich-timetable-session__time">{{ $session->timeLabel() }}</span>
+                                        @endif
                                         @if (! in_array($session->session_type, ['break', 'lunch'], true))
                                             <span class="tich-caption tich-timetable-session__mode"><strong>{{ $session->isOnline() ? 'Online students' : 'Physical students' }}</strong></span>
                                         @endif
