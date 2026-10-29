@@ -1,0 +1,18 @@
+# Copy to android/key.properties (gitignored) before release builds.
+# Generate a upload keystore once (keep backups; Play App Signing uses this as upload key):
+#
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# Place upload-keystore.jks in this android/ folder (also gitignored via *.jks).
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks
+
+# Troubleshooting "keystore password was incorrect":
+# - storePassword = password you gave keytool for the keystore
+# - keyPassword = password for alias "upload" (often the same if you pressed Enter at keytool)
+# - No quotes around values; save as UTF-8 (Notepad: UTF-8, not "Unicode")
+# - Escape backslashes in passwords with \\
+# - Test: from mobile/tich run  .\scripts\verify-android-keystore.ps1

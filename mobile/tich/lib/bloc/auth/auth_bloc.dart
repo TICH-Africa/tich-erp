@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/api_config.dart';
@@ -49,7 +51,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         case SessionRestoreResultType.locked:
           emit(AuthLocked(result.user!));
         case SessionRestoreResultType.authenticated:
-          await _bindCacheForUser(result.user!);
+          _startCacheForUser(result.user!);
           emit(AuthAuthenticated(result.user!));
       }
     } catch (e) {
@@ -70,7 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      await _bindCacheForUser(user);
+      _startCacheForUser(user);
       emit(AuthAuthenticated(user));
     } on AuthApiException catch (e) {
       emit(AuthUnauthenticated(message: e.message));
@@ -82,8 +84,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _bindCacheForUser(AuthUser user) async {
-    await TichScreenCache.bindUser(user.id);
+  void _startCacheForUser(AuthUser user) {
+    TichScreenCache.assignUser(user.id);
+    unawaited(TichScreenCache.hydrateFromDisk());
   }
 
   Future<void> _onBiometricUnlock(
@@ -96,7 +99,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final error = await _biometrics.authenticate(reason: 'Unlock TICH');
     if (error == null) {
       await _settings.clearNeedsUnlock();
-      await _bindCacheForUser(current.user);
+      _startCacheForUser(current.user);
       emit(AuthAuthenticated(current.user));
     } else {
       emit(AuthLocked(current.user, message: error));
@@ -116,7 +119,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      await _bindCacheForUser(user);
+      _startCacheForUser(user);
       emit(AuthAuthenticated(user));
     } on AuthApiException catch (e) {
       emit(AuthLocked(current.user, message: e.message));

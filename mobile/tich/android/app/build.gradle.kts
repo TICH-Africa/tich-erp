@@ -1,8 +1,23 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+/** Internal APK only — not for Play Store. flutter build apk --release -PdebugReleaseSigning=true */
+val debugReleaseSigning =
+    (findProperty("debugReleaseSigning") as String?)?.equals("true", ignoreCase = true) == true
 
 android {
     namespace = "com.tich.africa.tich"
@@ -17,11 +32,20 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists() && !debugReleaseSigning) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")?.trim()
+                keyPassword = keystoreProperties.getProperty("keyPassword")?.trim()
+                storeFile = keystoreProperties.getProperty("storeFile")?.trim()?.let { rootProject.file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")?.trim()
+            }
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.tich.africa.tich"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // Flutter 3.44 defaults: minSdk 24, targetSdk 36 (see FlutterExtension.kt).
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -31,9 +55,14 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = when {
+                debugReleaseSigning -> {
+                    println("WARNING: debugReleaseSigning=true — release APK uses debug certificate (sideload/tests only).")
+                    signingConfigs.getByName("debug")
+                }
+                keystorePropertiesFile.exists() -> signingConfigs.getByName("release")
+                else -> signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -50,6 +79,25 @@ android {
     }
 }
 
+// Play Console uploads must be signed with the upload key, not the debug certificate.
+listOf("assembleRelease", "bundleRelease").forEach { taskName ->
+    tasks.matching { it.name == taskName }.configureEach {
+        doFirst {
+            if (debugReleaseSigning) return@doFirst
+            if (!keystorePropertiesFile.exists()) {
+                throw GradleException(
+                    """
+                    Release build requires android/key.properties and an upload keystore.
+                    Copy android/key.properties.example to android/key.properties and create upload-keystore.jks.
+                    For a sideload test APK only: flutter build apk --release -PdebugReleaseSigning=true
+                    See mobile/tich/README.md (Google Play release).
+                    """.trimIndent(),
+                )
+            }
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
@@ -62,4 +110,18 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+/** Run: cd android && ./gradlew :app:printPlaySdkInfo */
+tasks.register("printPlaySdkInfo") {
+    group = "help"
+    description = "Print compile/min/target SDK for Play Console checks"
+    doLast {
+        println("compileSdk=${android.compileSdk}")
+        println("minSdk=${android.defaultConfig.minSdk}")
+        println("targetSdk=${android.defaultConfig.targetSdk}")
+        println("versionName=${android.defaultConfig.versionName}")
+        println("versionCode=${android.defaultConfig.versionCode}")
+        println("ndkVersion=${android.ndkVersion}")
+    }
 }

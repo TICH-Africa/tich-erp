@@ -7,10 +7,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
+import '../data/tich_power_policy.dart';
 import '../ui/widgets/tich_brand_logo.dart';
 import 'tich_notification_router.dart';
 
@@ -50,6 +52,8 @@ class TichNotifications {
   Future<void>? _lessonInflight;
   final List<int> _clockInIds = [];
   final List<int> _lessonIds = [];
+  DateTime? _lastClockInScheduleAt;
+  DateTime? _lastNotificationSyncAt;
 
   void attachApiClient(ApiClient client) {
     _api = client;
@@ -108,8 +112,6 @@ class TichNotifications {
 
       _ready = true;
 
-      // Ask for notification permission before any schedules fire.
-      await _ensurePermissions();
       unawaited(_initWorkmanager());
     } catch (_) {
       _ready = true; // allow app to proceed even if notifications fail
@@ -131,15 +133,27 @@ class TichNotifications {
     }
   }
 
-  Future<void> _ensurePermissions() async {
+  Future<bool> notificationPermissionGranted() async {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return true;
+    return Permission.notification.isGranted;
+  }
+
+  /// Call after in-app rationale (see [TichPermissionDisclosures]).
+  Future<void> requestNotificationPermissions() async {
     try {
       if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await Permission.notification.request();
       await androidPlugin?.requestNotificationsPermission();
-      await androidPlugin?.requestExactAlarmsPermission();
     } catch (_) {}
+  }
+
+  Future<bool> _ensureNotificationPermissions({bool request = false}) async {
+    if (await notificationPermissionGranted()) return true;
+    if (!request) return false;
+    await requestNotificationPermissions();
+    return notificationPermissionGranted();
   }
 
   Future<void> _initWorkmanager() async {
@@ -148,16 +162,22 @@ class TichNotifications {
       await Workmanager().registerPeriodicTask(
         'tich-notification-sync',
         _syncTask,
-        frequency: const Duration(minutes: 15),
+        frequency: TichPowerPolicy.workmanagerSyncInterval,
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-        constraints: Constraints(networkType: NetworkType.connected),
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
       );
       await Workmanager().registerPeriodicTask(
         'tich-clockin-refresh',
         _clockInRefreshTask,
-        frequency: const Duration(minutes: 30),
+        frequency: TichPowerPolicy.workmanagerClockInterval,
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-        constraints: Constraints(networkType: NetworkType.connected),
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
       );
     } catch (_) {}
   }
@@ -165,29 +185,40 @@ class TichNotifications {
   Future<void> registerDeviceToken() async {
     if (!_ready) await init();
     try {
+      final packageInfo = await PackageInfo.fromPlatform();
       await _api.post('/auth/device-token', body: {
         'device_token': _deviceId,
         'platform': !kIsWeb && Platform.isIOS ? 'ios' : 'android',
         'device_name': Platform.operatingSystem,
-        'app_version': '1.0.0',
+        'app_version': packageInfo.version,
       });
     } catch (_) {}
   }
 
   Future<void> onAuthenticated({required bool isStudent}) async {
-    if (!_ready) await init();
-    await registerDeviceToken();
+    if (!_ready) {
+      unawaited(
+        init().then((_) => onAuthenticated(isStudent: isStudent)),
+      );
+      return;
+    }
+    unawaited(registerDeviceToken());
     if (!isStudent) {
       unawaited(refreshClockInRemindersFromServer());
     }
-    // Sync tray popups without blocking portal UI.
     unawaited(syncFromServerInBackground(isStudent: isStudent));
   }
 
   /// Keeps clock-in alarms current (any signed-in staff, any portal tab).
-  Future<void> refreshClockInRemindersFromServer() async {
+  Future<void> refreshClockInRemindersFromServer({bool force = false}) async {
+    if (!force &&
+        _lastClockInScheduleAt != null &&
+        DateTime.now().difference(_lastClockInScheduleAt!) <
+            TichPowerPolicy.clockInScheduleMinGap) {
+      return;
+    }
     if (!_ready) await init();
-    await _ensurePermissions();
+    if (!await _ensureNotificationPermissions()) return;
     try {
       final data = await _api.get('/employee/attendance');
       final today = data['today'];
@@ -199,6 +230,8 @@ class TichNotifications {
       await scheduleClockInReminders(alreadyClockedIn: skip);
     } catch (_) {
       await scheduleClockInReminders(alreadyClockedIn: false);
+    } finally {
+      _lastClockInScheduleAt = DateTime.now();
     }
   }
 
@@ -206,7 +239,6 @@ class TichNotifications {
   Future<void> runBackgroundMaintenance() async {
     try {
       if (!_ready) await init();
-      await _ensurePermissions();
       await refreshClockInRemindersFromServer();
       await syncFromServerInBackground(isStudent: false);
     } catch (_) {}
@@ -283,7 +315,7 @@ class TichNotifications {
 
   Future<void> _scheduleClockInReminders(bool alreadyClockedIn) async {
     if (!_ready) await init();
-    await _ensurePermissions();
+    if (!await _ensureNotificationPermissions()) return;
     await _loadPersistedClockInIds();
     await _cancelTracked(_clockInIds);
     if (alreadyClockedIn) {
@@ -327,39 +359,41 @@ class TichNotifications {
       }
     }
 
-    // Half-hour slots on weekdays for the next two weeks (fires without opening the app).
+    // Weekday nudges at 08:00 and 13:00 EAT for the next two weeks (same intent as
+    // half-hour reminders, without scheduling hundreds of OS alarms).
+    const reminderHours = [8, 13];
     var id = 8000;
-    var scheduled = 0;
-    const maxSlots = 320;
-    for (var dayOffset = 0;
-        dayOffset < _clockInScheduleDays && scheduled < maxSlots;
-        dayOffset++) {
+    for (var dayOffset = 0; dayOffset < _clockInScheduleDays; dayOffset++) {
       final day = now.add(Duration(days: dayOffset));
       if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
         continue;
       }
-      var slot = tz.TZDateTime(tz.local, day.year, day.month, day.day, 8, 0);
-      while (slot.hour < 18 && scheduled < maxSlots) {
-        if (slot.isAfter(now)) {
-          await _plugin.zonedSchedule(
-            id: id,
-            scheduledDate: slot,
-            notificationDetails: _details,
-            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-            title: title,
-            body: body,
-            payload: TichNotificationRouter.instance.payloadForLocal(
-              target: 'attendance',
-              actionUrl: '/employee/attendance',
-              entityType: 'attendance_clock_in',
-            ),
-          );
-          _clockInIds.add(id);
-          id++;
-          scheduled++;
-          if (id > 8990) break;
-        }
-        slot = slot.add(const Duration(minutes: 30));
+      for (final hour in reminderHours) {
+        if (id > 8990) break;
+        final slot = tz.TZDateTime(
+          tz.local,
+          day.year,
+          day.month,
+          day.day,
+          hour,
+          0,
+        );
+        if (!slot.isAfter(now)) continue;
+        await _plugin.zonedSchedule(
+          id: id,
+          scheduledDate: slot,
+          notificationDetails: _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          title: title,
+          body: body,
+          payload: TichNotificationRouter.instance.payloadForLocal(
+            target: 'attendance',
+            actionUrl: '/employee/attendance',
+            entityType: 'attendance_clock_in',
+          ),
+        );
+        _clockInIds.add(id);
+        id++;
       }
     }
     await _persistClockInIds();
@@ -402,6 +436,7 @@ class TichNotifications {
     List<Map<String, dynamic>> sessions,
   ) async {
     if (!_ready) await init();
+    if (!await _ensureNotificationPermissions()) return;
     await _cancelTracked(_lessonIds);
 
     final now = tz.TZDateTime.now(tz.local);
@@ -466,7 +501,7 @@ class TichNotifications {
             interruptionLevel: InterruptionLevel.timeSensitive,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         title: 'Class starting soon',
         body: body,
         payload: 'timetable',
@@ -481,9 +516,7 @@ class TichNotifications {
     if (ids.isEmpty) return;
     final copy = List<int>.from(ids);
     ids.clear();
-    for (final id in copy) {
-      await _plugin.cancel(id: id);
-    }
+    await Future.wait(copy.map((id) => _plugin.cancel(id: id)));
     if (identical(ids, _clockInIds)) {
       await _persistClockInIds();
     }
@@ -505,7 +538,13 @@ class TichNotifications {
     await prefs.setStringList(_shownIdsKey, list);
   }
 
-  Future<void> syncFromServerInBackground({bool? isStudent}) async {
+  Future<void> syncFromServerInBackground({bool? isStudent, bool force = false}) async {
+    if (!force &&
+        _lastNotificationSyncAt != null &&
+        DateTime.now().difference(_lastNotificationSyncAt!) <
+            TichPowerPolicy.notificationSyncMinGap) {
+      return;
+    }
     try {
       if (!_ready) await init();
       final shown = await _shownIds();
@@ -549,6 +588,9 @@ class TichNotifications {
       } catch (_) {
         await drain('/student/notifications', 'read_at');
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      _lastNotificationSyncAt = DateTime.now();
+    }
   }
 }

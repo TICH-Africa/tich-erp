@@ -33,6 +33,7 @@ dependencies:
   path_provider: ^2.1.5
   open_file: ^3.5.10
   pdfx: ^2.9.2
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:

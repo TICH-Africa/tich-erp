@@ -13,6 +13,7 @@ import '../staff/units_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import '../../notifications/tich_notification_router.dart';
+import '../../permissions/tich_permission_disclosures.dart';
 import 'portal_nav_counts_scope.dart';
 import 'staff_portal_nav.dart';
 import 'shell_nav_badge_mixin.dart';
@@ -50,6 +51,7 @@ class _StaffPortalShellState extends State<StaffPortalShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyPendingTab();
       TichNotificationRouter.instance.applyPending(context);
+      TichPermissionDisclosures.maybePromptForNotifications(context);
     });
   }
 

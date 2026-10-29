@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../permissions/tich_permission_disclosures.dart';
+
 /// CamScanner-style capture: edge detection, crop, and contrast on the sheet.
 Future<String?> captureScannedDocument(BuildContext context) async {
   final granted = await _ensureCamera(context);
@@ -45,6 +47,11 @@ Future<String?> captureClassPhoto(BuildContext context) async {
 Future<bool> _ensureCamera(BuildContext context) async {
   var status = await Permission.camera.status;
   if (!status.isGranted) {
+    if (!context.mounted) return false;
+    if (!await TichPermissionDisclosures.confirmCameraForAttendance(context)) {
+      return false;
+    }
+    if (!context.mounted) return false;
     status = await Permission.camera.request();
   }
   if (status.isGranted) return true;

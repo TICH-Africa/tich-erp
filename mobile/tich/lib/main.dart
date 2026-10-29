@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/painting.dart';
 
 import 'adaptive/adaptive.dart';
 import 'bloc/auth/auth_bloc.dart';
@@ -13,6 +12,8 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
+import 'data/tich_portal_warmup.dart';
+import 'data/tich_power_policy.dart';
 import 'data/tich_realtime.dart';
 import 'models/auth_user.dart';
 import 'notifications/tich_notification_router.dart';
@@ -31,8 +32,8 @@ import 'ui/shell/tich_logout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PaintingBinding.instance.imageCache.maximumSize = 80;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
+  PaintingBinding.instance.imageCache.maximumSize = 48;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 24 << 20;
   await AppSettings.instance.load();
   TichTheme.warmCache();
   runApp(const TichApp());
@@ -104,16 +105,29 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _authBloc.add(const AuthAppPaused());
+      unawaited(TichRealtime.disconnect());
     }
     if (state == AppLifecycleState.resumed) {
       final auth = _authBloc.state;
-      if (auth is AuthAuthenticated &&
-          !auth.user.isStudent &&
-          TichNotifications.instance.isReady) {
-        unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
-        unawaited(
-          TichNotifications.instance.syncFromServerInBackground(isStudent: false),
-        );
+      if (auth is AuthAuthenticated) {
+        Future<void>.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          if (_authBloc.state is! AuthAuthenticated) return;
+          unawaited(TichRealtime.connect(_apiClient));
+        });
+        if (!auth.user.isStudent &&
+            TichNotifications.instance.isReady &&
+            TichRefreshThrottle.allow(
+              'app.resume_maint',
+              TichPowerPolicy.resumeMaintenanceMinGap,
+            )) {
+          unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
+          unawaited(
+            TichNotifications.instance.syncFromServerInBackground(
+              isStudent: false,
+            ),
+          );
+        }
       }
     }
   }
@@ -240,11 +254,13 @@ class _AuthGateState extends State<_AuthGate> {
     final key = '${state.user.id}:${state.user.isStudent}';
     if (_primedUserKey == key) return;
     _primedUserKey = key;
-    unawaited(
-      TichNotifications.instance.onAuthenticated(
-        isStudent: state.user.isStudent,
-      ),
-    );
+    Future<void>.delayed(const Duration(seconds: 4), () {
+      unawaited(
+        TichNotifications.instance.onAuthenticated(
+          isStudent: state.user.isStudent,
+        ),
+      );
+    });
   }
 
   @override
@@ -257,9 +273,12 @@ class _AuthGateState extends State<_AuthGate> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           _primeIfNeeded(state);
-          unawaited(
-            TichRealtime.connect(context.read<ApiClient>()),
-          );
+          final client = context.read<ApiClient>();
+          TichPortalWarmup.prefetchHome(state.user, client);
+          Future<void>.delayed(const Duration(seconds: 3), () {
+            if (!context.mounted) return;
+            unawaited(TichRealtime.connect(client));
+          });
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
             TichNotificationRouter.instance.applyPending(context);
