@@ -64,6 +64,22 @@
         fn ($session) => $session->day_of_week.'|'.($placement[(int) $session->id] ?? $rowStart($session))
     );
 
+    // A row keeps its bell-slot name, but the hours it shows are the hours it actually teaches:
+    // an 08:00 class sitting in the 08:30 slot must not read as an 08:30 class.
+    $taughtByRowStart = collect($sessions ?? [])
+        ->reject(fn ($session) => in_array($session->session_type, ['break', 'lunch'], true))
+        ->groupBy(fn ($session) => $placement[(int) $session->id] ?? $rowStart($session))
+        ->map(function ($group) use ($toMinutes): array {
+            $starts = $group->map(fn ($session) => $toMinutes($session->start_time));
+            $ends = $group->map(fn ($session) => $toMinutes($session->end_time));
+            $clock = fn (int $minutes): string => sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+
+            return [
+                'label' => $clock($starts->min()).' - '.$clock($ends->max()),
+                'mixed' => $starts->unique()->count() > 1,
+            ];
+        });
+
     $rows = $bellRows;
 
     // A timetable somebody has already filled in should not carry rows with nothing on them - they
@@ -172,8 +188,16 @@
                     </tr>
                 @else
                     <tr>
-                        <td class="tich-timetable-grid__time">{{ $segment->label }}@if (($segment->segment_type ?? '') !== 'slot')<br><span class="tich-caption">{{ method_exists($segment, 'timeLabel') ? $segment->timeLabel() : (substr((string) $segment->start_time, 0, 5).' - '.substr((string) $segment->end_time, 0, 5)) }}</span>@endif
-                            @php $rowDates = $datesByRowStart->get(substr((string) $segment->start_time, 0, 5), collect()); @endphp
+                        @php
+                            $rowKey = substr((string) $segment->start_time, 0, 5);
+                            $taught = $taughtByRowStart->get($rowKey);
+                            $rowDates = $datesByRowStart->get($rowKey, collect());
+                            $bellClock = method_exists($segment, 'timeLabel')
+                                ? $segment->timeLabel()
+                                : ($rowKey.' - '.substr((string) $segment->end_time, 0, 5));
+                            $rowClock = $taught && ! $taught['mixed'] ? $taught['label'] : $bellClock;
+                        @endphp
+                        <td class="tich-timetable-grid__time">{{ $segment->label }}@if (($segment->segment_type ?? '') !== 'slot')<br><span class="tich-caption">{{ $rowClock }}</span>@endif
                             @if ($rowDates->isNotEmpty())
                                 <br><span class="tich-caption tich-timetable-grid__dates">{{ $rowDates->implode(' · ') }}</span>
                             @endif
@@ -209,8 +233,9 @@
                                             <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
                                         @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
-                                        {{-- The row carries the bell hour; a class timed away from it names its own hours. --}}
-                                        @if (substr((string) $session->start_time, 0, 5) !== substr((string) $segment->start_time, 0, 5))
+                                        {{-- The column already names the hour the row teaches; only a class
+                                             away from it, or sharing the row with another hour, says its own. --}}
+                                        @if ($session->timeLabel() !== $rowClock)
                                             <span class="tich-caption tich-timetable-session__time">{{ $session->timeLabel() }}</span>
                                         @endif
                                         @if (! in_array($session->session_type, ['break', 'lunch'], true))

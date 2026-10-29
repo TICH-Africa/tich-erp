@@ -12,13 +12,12 @@
             ->values());
 
     // The printed page must show the same classes the screen shows, including any timed outside the
-    // bell slots, so those get their own row here too.
-    $printRows = collect($segments ?? [])->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList) {
+    // bell slots, so those get their own row here too. A filled timetable drops the bell rows that
+    // carry nothing, exactly as the screen does, so a class at 08:00 is not printed under an empty
+    // 08:30 slot as well.
+    $hasPrintSessions = collect($sessions ?? [])->isNotEmpty();
+    $printRows = collect($segments ?? [])->filter(function ($row) use ($sessionsByDayAndTime, $activeDayList, $hasPrintSessions) {
         $start = substr((string) $row->start_time, 0, 5);
-
-        if ($start !== '' && $start !== '00:00') {
-            return true;
-        }
 
         foreach ($activeDayList as $dayNum) {
             if ($sessionsByDayAndTime->has($dayNum.'|'.$start)) {
@@ -26,7 +25,7 @@
             }
         }
 
-        return false;
+        return $hasPrintSessions === false && $start !== '' && $start !== '00:00';
     });
     $rowStarts = $printRows->map(fn ($row) => substr((string) $row->start_time, 0, 5));
 
