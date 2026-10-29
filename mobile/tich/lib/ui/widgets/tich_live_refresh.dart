@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/tich_power_policy.dart';
 import '../../data/tich_screen_cache.dart';
