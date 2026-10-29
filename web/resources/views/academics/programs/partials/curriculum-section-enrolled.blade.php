@@ -78,6 +78,16 @@
                 </select>
             </div>
 
+            <div class="tich-form-group" style="margin:0; min-width:11rem;">
+                <label for="study_mode" class="tich-label">Study mode</label>
+                <select id="study_mode" name="study_mode" class="tich-input">
+                    <option value="">Physical and online</option>
+                    @foreach (($desk['modes'] ?? []) as $modeValue => $modeLabel)
+                        <option value="{{ $modeValue }}" @selected($desk['modeFilter'] === $modeValue)>{{ $modeLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="tich-form-group" style="margin:0; min-width:12rem;">
                 <label for="student_search" class="tich-label">Reg number or name</label>
                 <input id="student_search" type="search" name="student_search" class="tich-input" value="{{ $desk['search'] ?? '' }}" placeholder="e.g. REG-2026">
@@ -113,6 +123,7 @@
                         'admission_year' => $desk['yearFilter'],
                         'study_year' => $desk['studyYearChoice'],
                         'entry_pathway' => $desk['pathwayFilter'],
+                        'study_mode' => $desk['modeFilter'] ?? null,
                         'student_search' => $desk['search'],
                     ]) as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
@@ -160,6 +171,7 @@
                                         'intake' => $selectedIntake->id,
                                         'registration_period' => $periodLink['key'],
                                         'enrollment_status' => $enrollmentStatusFilter,
+                                        'study_mode' => $desk['modeFilter'] ?? null,
                                         'study_year' => $desk['studyYearChoice'],
                                     ]))) }}">{{ $periodLink['label'] }} ({{ $periodLink['count'] }})</a>@if(! $loop->last) · @endif
                                 @endforeach
@@ -260,6 +272,7 @@
                                                             <span class="tich-caption" style="display:block;">
                                                                 {{ $student->registration_number }}
                                                                 · {{ $student->campus?->campus_name ?? 'campus not set' }}
+                                                                · {{ $student->studyModeLabel() }} mode
                                                                 · {{ $student->cohort_intake ?: 'no cohort' }}
                                                                 · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
                                                                 · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}

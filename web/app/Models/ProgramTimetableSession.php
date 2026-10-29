@@ -110,7 +110,7 @@ class ProgramTimetableSession extends Model
      */
     public static function deliveryModes(): array
     {
-        return ['physical' => 'In person', 'online' => 'Online'];
+        return ['physical' => 'Physical students', 'online' => 'Online students'];
     }
 
     /**
@@ -128,7 +128,7 @@ class ProgramTimetableSession extends Model
 
     public function deliveryModeLabel(): string
     {
-        return self::deliveryModes()[$this->delivery_mode] ?? 'In person';
+        return self::deliveryModes()[$this->delivery_mode] ?? 'Physical students';
     }
 
     /**

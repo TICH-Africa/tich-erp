@@ -779,13 +779,13 @@
                                     </select>
                                 </div>
                                 <div class="tich-form-group">
-                                    <label class="tich-label" for="timetable-session-mode">Delivery</label>
+                                    <label class="tich-label" for="timetable-session-mode">Which students is this class for?</label>
                                     <select name="delivery_mode" id="timetable-session-mode" class="tich-input" required>
                                         @foreach (\App\Models\ProgramTimetableSession::deliveryModes() as $modeKey => $modeLabel)
                                             <option value="{{ $modeKey }}" @selected($modeKey === 'physical')>{{ $modeLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <p class="tich-caption">Classes default to in person. Switch to online when the class is remote - lecturers and students then see it as online, not a room.</p>
+                                    <p class="tich-caption">Pick physical students for a class the campus cohort sits in person, or online students for the remote class. Online classes take a meeting link instead of a classroom.</p>
                                 </div>
                                 <div class="tich-form-group" id="timetable-session-room-group">
                                     <label class="tich-label" for="timetable-session-room">Classroom</label>

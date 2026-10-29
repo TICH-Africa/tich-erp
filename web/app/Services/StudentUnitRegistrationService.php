@@ -84,6 +84,10 @@ class StudentUnitRegistrationService
             'pathways' => $this->distinctValues($program, 'entry_pathway'),
             'admissionYears' => $this->admissionYears($program),
             'pathwayFilter' => $request->string('entry_pathway')->toString() ?: null,
+            'modes' => Student::studyModes(),
+            'modeFilter' => in_array($request->string('study_mode')->toString(), ['physical', 'online'], true)
+                ? $request->string('study_mode')->toString()
+                : null,
             'yearFilter' => $request->integer('admission_year') ?: null,
             'search' => trim($request->string('student_search')->toString()),
             'registeredUnitIds' => $this->registeredUnitIds(
@@ -1121,6 +1125,11 @@ class StudentUnitRegistrationService
         $pathway = $request->string('entry_pathway')->toString();
         if ($pathway !== '') {
             $query->where('entry_pathway', $pathway);
+        }
+
+        $mode = $request->string('study_mode')->toString();
+        if ($mode !== '') {
+            $query->where('study_mode', $mode === 'online' ? 'online' : 'physical');
         }
 
         $year = $request->integer('admission_year');

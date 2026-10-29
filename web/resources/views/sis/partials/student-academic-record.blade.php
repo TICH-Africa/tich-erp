@@ -13,6 +13,7 @@
             $profileRows = array_filter([
                 'Programme' => $recordStudent->program?->program_name,
                 'Campus' => $recordStudent->campus?->campus_name,
+                'Study mode' => $recordStudent->studyModeLabel().' student',
                 'Intake' => $recordStudent->cohort_intake,
                 'Entry pathway' => $recordStudent->entry_pathway ? str_replace('_', ' ', $recordStudent->entry_pathway) : null,
                 'Admitted' => $recordStudent->date_of_admission ? \Illuminate\Support\Carbon::parse($recordStudent->date_of_admission)->format('d M Y') : null,

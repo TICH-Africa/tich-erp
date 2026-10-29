@@ -44,6 +44,7 @@
                     <th>Programme</th>
                     <th>Cohort</th>
                     <th>Campus</th>
+                    <th>Mode</th>
                     <th>Status</th>
                     <th></th>
                 </tr>
@@ -70,6 +71,7 @@
                         <td>{{ $student->program?->program_name ?? '-' }}</td>
                         <td>{{ $student->cohort_intake }}</td>
                         <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                        <td>{{ $student->studyModeLabel() }}</td>
                         <td>{{ ucfirst($student->enrollment_status) }}</td>
                         <td>
                             <a href="{{ route('administration.applications.existing-student.show', $student->id) }}" class="tich-link">View</a>

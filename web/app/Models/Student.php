@@ -30,6 +30,7 @@ class Student extends Model
         'program_id',
         'cohort_intake',
         'enrollment_campus_id',
+        'study_mode',
         'current_semester_id',
         'current_nursing_block_id',
         'enrollment_status',
@@ -140,6 +141,27 @@ class Student extends Model
     public function scopeAlumni($query)
     {
         return $query->whereIn('enrollment_status', ['graduated', 'alumni']);
+    }
+
+    /**
+     * How the student attends. Admissions records this with the campus choice, and Academics split
+     * the enrolled list by it because online students never sit in a campus classroom.
+     *
+     * @return array<string, string>
+     */
+    public static function studyModes(): array
+    {
+        return ['physical' => 'Physical', 'online' => 'Online'];
+    }
+
+    public function isOnlineStudent(): bool
+    {
+        return $this->study_mode === 'online';
+    }
+
+    public function studyModeLabel(): string
+    {
+        return self::studyModes()[$this->study_mode] ?? 'Physical';
     }
 
     public function graduationLabel(): string

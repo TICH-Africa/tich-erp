@@ -89,13 +89,11 @@
                             @forelse ($cellSessions as $session)
                                 <div class="tich-doc-session">
                                     <strong>{{ $session->displayTitle() }}</strong>
-                                    @if ($session->isOnline())
-                                        <span>Online</span>
+                                    @if (! in_array($session->session_type, ['break', 'lunch'], true))
+                                        <span>{{ $session->isOnline() ? 'Online students' : 'Physical students' }}</span>
                                     @endif
                                     @if ($session->room)
                                         <span>{{ $session->room->room_code }}</span>
-                                    @elseif ($session->venue)
-                                        <span>{{ $session->venue }}</span>
                                     @endif
                                     @if ($session->session_date)
                                         <span>{{ $session->session_date->format('d M Y') }}</span>

@@ -9,7 +9,11 @@
         $currentCampus = $currentCampusId ? \App\Models\Campus::find($currentCampusId) : null;
         $editingSelectionType = old(
             'campus_selection_type',
-            $currentCampus?->campus_type === 'community_college' ? 'community_college' : ($currentCampus ? 'campus' : 'campus')
+            match (true) {
+                ($student ?? null)?->isOnlineStudent() === true => 'online',
+                $currentCampus?->campus_type === 'community_college' => 'community_college',
+                default => 'campus',
+            }
         );
     @endphp
 
@@ -211,14 +215,14 @@
                     </select>
                 </div>
                 <div>
-                    <label class="tich-label">Campus type</label>
+                    <label class="tich-label">Campus type and study mode</label>
                     <select id="campus_selection_type" name="campus_selection_type" class="tich-input" required>
                         <option value="">Select type</option>
-                        <option value="campus" @selected($editingSelectionType === 'campus')>Campus</option>
+                        <option value="campus" @selected($editingSelectionType === 'campus')>Campus - physical student</option>
                         @if($campusSelectionOptions['community_college_sites']->isNotEmpty())
-                            <option value="community_college" @selected($editingSelectionType === 'community_college')>Community College</option>
+                            <option value="community_college" @selected($editingSelectionType === 'community_college')>Community College - physical student</option>
                         @endif
-                        <option value="online" @selected($editingSelectionType === 'online')>Online</option>
+                        <option value="online" @selected($editingSelectionType === 'online')>Online - online student</option>
                     </select>
                     @error('campus_selection_type')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>

@@ -17,6 +17,8 @@
                 <dd>{{ $student->program?->program_name ?? '-' }}</dd>
                 <dt class="tich-caption">Campus</dt>
                 <dd>{{ $student->campus?->campus_name ?? '-' }}</dd>
+                <dt class="tich-caption">Study mode</dt>
+                <dd>{{ $student->studyModeLabel() }}</dd>
                 <dt class="tich-caption">Status</dt>
                 <dd>{{ ucfirst($student->enrollment_status) }}</dd>
                 <dt class="tich-caption">Entry Pathway</dt>

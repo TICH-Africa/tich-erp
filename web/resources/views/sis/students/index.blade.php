@@ -31,6 +31,7 @@
                     <th>Student</th>
                     <th>Programme</th>
                     <th>Campus</th>
+                    <th>Mode</th>
                     <th>Status</th>
                     <th>Portal</th>
                     <th></th>
@@ -46,6 +47,7 @@
                         </td>
                         <td>{{ $student->program?->program_name ?? '-' }}</td>
                         <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                        <td>{{ $student->studyModeLabel() }}</td>
                         <td>{{ ucfirst($student->enrollment_status) }}</td>
                         <td>
                             @if ($student->user_id)
@@ -59,7 +61,7 @@
                         <td><a href="{{ route('sis.students.show', $student) }}" class="tich-link">View 360°</a></td>
                     </tr>
                 @empty
-                    @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No student records yet', 'icon' => 'inbox'])
+                    @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No student records yet', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

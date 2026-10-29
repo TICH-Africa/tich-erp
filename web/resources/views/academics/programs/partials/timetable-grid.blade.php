@@ -209,16 +209,11 @@
                                             <span class="tich-timetable-session__handle" aria-hidden="true">⋮⋮</span>
                                         @endif
                                         <strong>{{ $session->displayTitle() }}</strong>
-                                        @if (($placement[(int) $session->id] ?? $rowStart($session)) !== $rowStart($session))
-                                            <span class="tich-caption">{{ $session->timeLabel() }}</span>
-                                        @endif
-                                        @if ($session->isOnline())
-                                            <span class="tich-caption tich-timetable-session__mode"><strong>Online</strong></span>
+                                        @if (! in_array($session->session_type, ['break', 'lunch'], true))
+                                            <span class="tich-caption tich-timetable-session__mode"><strong>{{ $session->isOnline() ? 'Online students' : 'Physical students' }}</strong></span>
                                         @endif
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
-                                        @elseif ($session->venue)
-                                            <span class="tich-caption">{{ $session->venue }}</span>
                                         @endif
                                         @if ($session->session_date)
                                             <span class="tich-caption">{{ $session->session_date->format('d M Y') }}</span>
@@ -227,10 +222,6 @@
                                             <span class="tich-caption">{{ $canEditInvigilator ? 'Invigilator: ' : '' }}{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
                                         @elseif ($canEditInvigilator)
                                             <span class="tich-caption">Invigilator: unassigned</span>
-                                        @endif
-                                        <span class="tich-caption">{{ ($sessionTypes ?? $segmentTypes)[$session->session_type] ?? ucfirst($session->session_type) }}</span>
-                                        @if (in_array($session->session_type, ['break', 'lunch'], true) === false)
-                                            <span class="tich-caption">{{ $session->recurrenceLabel() }}@if ($session->cycleLabel()) · {{ $session->cycleLabel() }} @endif</span>
                                         @endif
                                         @if ($canEditInvigilator)
                                             <button

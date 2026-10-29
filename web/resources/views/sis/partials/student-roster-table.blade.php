@@ -54,6 +54,7 @@
                 <th>Reg. number</th>
                 <th>Student</th>
                 <th>Campus</th>
+                <th>Mode</th>
                 <th>Status</th>
                 <th>Units</th>
                 <th>CAT</th>
@@ -66,7 +67,7 @@
             @foreach ($segments as $segment)
                 @if ($segment['kind'] === 'year')
                     <tr style="background:var(--tich-surface-hover, #f1f5f9);">
-                        <td colspan="9">
+                        <td colspan="10">
                             <strong>{{ $segment['label'] }}</strong>
                             <span class="tich-caption"> · {{ $segment['note'] }} ({{ $segment['count'] }} {{ str('student')->plural($segment['count']) }})</span>
                         </td>
@@ -75,7 +76,7 @@
 
                 @if ($segment['kind'] === 'campus')
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <strong>{{ $segment['label'] }}</strong>
                             @if ($programLabel)
                                 · {{ $programLabel }}
@@ -95,6 +96,7 @@
                                 <span class="tich-caption">{{ $student->applicant?->email ?: ($student->email ?: $student->user?->email) }}</span>
                             </td>
                             <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                            <td>{{ $student->studyModeLabel() }}</td>
                             <td>{{ ucfirst($student->enrollment_status) }}</td>
                             <td>{{ $summary['registered_units'] ?? 0 }}</td>
                             <td>{{ $summary['cat_scores'] ?? 0 }}</td>
@@ -113,7 +115,7 @@
             @endforeach
 
             @if ($students->isEmpty() && $emptyMessage)
-                @include('partials.states.table-empty', ['colspan' => 9, 'title' => $emptyMessage, 'icon' => 'inbox'])
+                @include('partials.states.table-empty', ['colspan' => 10, 'title' => $emptyMessage, 'icon' => 'inbox'])
             @endif
         </tbody>
     </table>

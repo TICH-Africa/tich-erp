@@ -9,7 +9,7 @@
         </x-slot:actions>
     </x-page-toolbar>
 
-    <form method="GET" class="tich-mb-4 tich-grid tich-grid--4">
+    <form method="GET" class="tich-mb-4 tich-grid tich-grid--5">
         @include('partials.search-field', ['placeholder' => 'Reg number, name...', 'value' => request('search') ?? ''])
         <select name="program_id" class="tich-input">
             <option value="">All programmes</option>
@@ -31,6 +31,12 @@
                 <option value="{{ $cohort }}" @selected(request('cohort') == $cohort)>{{ $cohort }}</option>
             @endforeach
         </select>
+        <select name="study_mode" class="tich-input">
+            <option value="">All modes</option>
+            @foreach ($studyModes as $mode => $modeLabel)
+                <option value="{{ $mode }}" @selected(request('study_mode') === $mode)>{{ $modeLabel }}</option>
+            @endforeach
+        </select>
     </form>
 
     <div class="tich-card tich-table-panel tich-mt-6">
@@ -42,6 +48,7 @@
                     <th>Programme</th>
                     <th>Cohort</th>
                     <th>Campus</th>
+                    <th>Mode</th>
                     <th>Status</th>
                     <th>Current Semester</th>
                     <th>Units</th>
@@ -66,6 +73,7 @@
                         <td>{{ $student->program?->program_name ?? '-' }}</td>
                         <td>{{ $student->cohort_intake ?? '-' }}</td>
                         <td>{{ $student->campus?->campus_name ?? '-' }}</td>
+                        <td>{{ $student->studyModeLabel() }}</td>
                         <td>
                             <span class="tich-status {{ $student->enrollment_status === 'active' ? 'tich-status--success' : ($student->enrollment_status === 'deferred' ? 'tich-status--warning' : 'tich-status--danger') }}">
                                 {{ ucfirst($student->enrollment_status) }}
@@ -78,7 +86,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="tich-caption">No students found.</td></tr>
+                    <tr><td colspan="10" class="tich-caption">No students found.</td></tr>
                 @endforelse
             </tbody>
         </table>

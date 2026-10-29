@@ -60,6 +60,10 @@ class AcademicStudentController extends Controller
             $query->where('cohort_intake', $request->cohort);
         }
 
+        if ($request->filled('study_mode')) {
+            $query->where('study_mode', $request->string('study_mode')->toString() === 'online' ? 'online' : 'physical');
+        }
+
         $students = $query->paginate(25)->appends($request->query());
 
         $programs = $this->programsForUser($request->user(), $department);
@@ -72,8 +76,9 @@ class AcademicStudentController extends Controller
         }
 
         $cohorts = $cohortsQuery->pluck('cohort_intake')->filter()->sortDesc()->values();
+        $studyModes = Student::studyModes();
 
-        return view('academics.students.index', compact('students', 'programs', 'statuses', 'cohorts', 'department'));
+        return view('academics.students.index', compact('students', 'programs', 'statuses', 'cohorts', 'department', 'studyModes'));
     }
 
     public function show(Request $request, Student $student): View

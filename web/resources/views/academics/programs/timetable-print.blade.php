@@ -40,7 +40,7 @@
                     <tr>
                         <td>{{ $dayLabels[$session->day_of_week] ?? $session->day_of_week }}</td>
                         <td>{{ substr((string) $session->start_time, 0, 5) }}-{{ substr((string) $session->end_time, 0, 5) }}</td>
-                        <td>{{ $session->displayTitle() }}@if ($session->isOnline()) (Online)@endif @if (! in_array($session->session_type, ['break', 'lunch'], true)) - {{ $session->recurrenceLabel() }}@if ($session->cycleLabel()), {{ strtolower($session->cycleLabel()) }} @endif @endif</td>
+                        <td>{{ $session->displayTitle() }}@if (! in_array($session->session_type, ['break', 'lunch'], true)) ({{ $session->isOnline() ? 'Online students' : 'Physical students' }})@endif @if (! in_array($session->session_type, ['break', 'lunch'], true)) - {{ $session->recurrenceLabel() }}@if ($session->cycleLabel()), {{ strtolower($session->cycleLabel()) }} @endif @endif</td>
                         <td>{{ $session->staff ? trim($session->staff->first_name.' '.$session->staff->surname) : '-' }}</td>
                         <td>{{ $session->room?->room_code ?? $session->venue ?? '-' }}</td>
                         <td>{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</td>
