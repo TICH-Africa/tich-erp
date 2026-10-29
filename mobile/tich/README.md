@@ -22,6 +22,10 @@ Design tokens match `web/public/css/tich-platform.css` (green `#6cab33`, blue `#
 
 MFA is **not** enforced on mobile in v1.
 
+### Battery and background work
+
+The app limits polling while tabs are visible (~5 minutes), throttles nav badge and notification sync, disconnects the realtime WebSocket when the app is in the background, and schedules clock-in nudges at **08:00 and 13:00** on weekdays (instead of hundreds of half-hour OS alarms). Background Workmanager tasks run less often and skip when battery is low.
+
 ## Local setup
 
 1. Serve Laravel:

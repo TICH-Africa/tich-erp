@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
+import '../../data/tich_power_policy.dart';
 import '../../data/tich_screen_cache.dart';
 import 'tich_page_skeleton.dart';
 import 'tich_tab_active_scope.dart';
@@ -13,11 +14,11 @@ import 'tich_widgets.dart';
 final RouteObserver<ModalRoute<void>> tichRouteObserver =
     RouteObserver<ModalRoute<void>>();
 
-/// Default background poll interval while a screen is visible (WhatsApp-style).
-const Duration tichLiveRefreshInterval = Duration(seconds: 120);
+/// Default background poll interval while a screen is visible.
+const Duration tichLiveRefreshInterval = TichPowerPolicy.liveRefreshInterval;
 
 /// Minimum gap between automatic background refreshes (avoids flicker on tab/back).
-const Duration tichLiveRefreshMinGap = Duration(seconds: 8);
+const Duration tichLiveRefreshMinGap = TichPowerPolicy.liveRefreshMinGap;
 
 /// Scrollable skeleton while the first payload arrives - paints on frame 1.
 Widget tichInstantWaitBody({Future<void> Function()? onRefresh}) {

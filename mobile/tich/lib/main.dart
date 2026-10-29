@@ -14,6 +14,7 @@ import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
 import 'data/tich_portal_warmup.dart';
+import 'data/tich_power_policy.dart';
 import 'data/tich_realtime.dart';
 import 'models/auth_user.dart';
 import 'notifications/tich_notification_router.dart';
@@ -32,8 +33,8 @@ import 'ui/shell/tich_logout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PaintingBinding.instance.imageCache.maximumSize = 80;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
+  PaintingBinding.instance.imageCache.maximumSize = 48;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 24 << 20;
   await AppSettings.instance.load();
   TichTheme.warmCache();
   runApp(const TichApp());
@@ -105,16 +106,29 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _authBloc.add(const AuthAppPaused());
+      unawaited(TichRealtime.disconnect());
     }
     if (state == AppLifecycleState.resumed) {
       final auth = _authBloc.state;
-      if (auth is AuthAuthenticated &&
-          !auth.user.isStudent &&
-          TichNotifications.instance.isReady) {
-        unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
-        unawaited(
-          TichNotifications.instance.syncFromServerInBackground(isStudent: false),
-        );
+      if (auth is AuthAuthenticated) {
+        Future<void>.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          if (_authBloc.state is! AuthAuthenticated) return;
+          unawaited(TichRealtime.connect(_apiClient));
+        });
+        if (!auth.user.isStudent &&
+            TichNotifications.instance.isReady &&
+            TichRefreshThrottle.allow(
+              'app.resume_maint',
+              TichPowerPolicy.resumeMaintenanceMinGap,
+            )) {
+          unawaited(TichNotifications.instance.refreshClockInRemindersFromServer());
+          unawaited(
+            TichNotifications.instance.syncFromServerInBackground(
+              isStudent: false,
+            ),
+          );
+        }
       }
     }
   }
