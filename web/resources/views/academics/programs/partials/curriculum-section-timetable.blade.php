@@ -792,9 +792,11 @@
                                     <select name="room_id" id="timetable-session-room" class="tich-input">
                                         <option value="">- allocate later -</option>
                                         @foreach ($timetableRooms as $room)
-                                            <option value="{{ $room->id }}">
-                                                {{ $room->room_code }}@if ($room->room_name) - {{ $room->room_name }}@endif@if ($room->campus) ({{ $room->campus->campus_name }})@endif
-                                            </option>
+                                            @php
+                                                $roomLabel = trim($room->room_code.($room->room_name ? ' - '.$room->room_name : ''));
+                                                $roomLabel .= $room->campus ? ' ('.$room->campus->campus_name.')' : '';
+                                            @endphp
+                                            <option value="{{ $room->id }}">{{ $roomLabel }}</option>
                                         @endforeach
                                     </select>
                                     <p class="tich-caption">Pick the room when you know it. Generated timetables start without a room so you can allocate manually.</p>
