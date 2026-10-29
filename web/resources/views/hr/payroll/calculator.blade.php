@@ -26,7 +26,7 @@
                         <option value="{{ $member->id }}" {{ request('staff_id') == $member->id ? 'selected' : '' }}>
                             {{ $member->fullName() }} ({{ $member->employee_number }}) - KES {{ number_format((float) $member->gross_monthly_salary, 2) }}
                         </option>
-                    </option>
+                    @endforeach
                 </select>
             </div>
 

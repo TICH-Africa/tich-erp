@@ -40,16 +40,19 @@
         </form>
     </article>
 
-    <script>
-        const templates = @json($templates->mapWithKeys(fn($t) => [$t->id => $t]));
-        const staffData = @json([
+    @php
+        $staffPlaceholders = [
             'full_name' => $staff->fullName(),
             'job_title' => $staff->job_title,
             'department' => $staff->department->dept_name ?? '',
             'employee_number' => $staff->employee_number,
-            'institution_name' => '{{ config("app.name", "TICH ERP") }}',
-            'current_date' => '{{ now()->format("F j, Y") }}',
-        ]);
+            'institution_name' => config('app.name', 'TICH ERP'),
+            'current_date' => now()->format('F j, Y'),
+        ];
+    @endphp
+    <script>
+        const templates = @json($templates->mapWithKeys(fn($t) => [$t->id => $t]));
+        const staffData = @json($staffPlaceholders);
 
         function previewTemplate(templateId) {
             const previewFrame = document.getElementById('template-preview');
