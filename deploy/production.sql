@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-30 13:00:32 EAT
+-- Generated: 2026-10-30 13:03:16 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -3258,9 +3258,9 @@ CREATE TABLE IF NOT EXISTS `disciplinary_correspondences` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `disciplinary_correspondences_disciplinary_case_id_foreign` (`disciplinary_case_id`),
   KEY `disciplinary_correspondences_recipient_staff_id_foreign` (`recipient_staff_id`),
   KEY `disciplinary_correspondences_sent_by_user_id_foreign` (`sent_by_user_id`),
+  KEY `disc_corr_case_created_idx` (`disciplinary_case_id`,`created_at`),
   CONSTRAINT `disciplinary_correspondences_disciplinary_case_id_foreign` FOREIGN KEY (`disciplinary_case_id`) REFERENCES `disciplinary_cases` (`id`) ON DELETE CASCADE,
   CONSTRAINT `disciplinary_correspondences_recipient_staff_id_foreign` FOREIGN KEY (`recipient_staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
   CONSTRAINT `disciplinary_correspondences_sent_by_user_id_foreign` FOREIGN KEY (`sent_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -3279,9 +3279,9 @@ CALL `tich_ensure_column`('disciplinary_correspondences', 'created_at', 'timesta
 CALL `tich_ensure_column`('disciplinary_correspondences', 'updated_at', 'timestamp NULL DEFAULT NULL');
 
 -- Indexes for `disciplinary_correspondences` (add only if missing)
-CALL `tich_ensure_index`('disciplinary_correspondences', 'disciplinary_correspondences_disciplinary_case_id_foreign', '`disciplinary_case_id`');
 CALL `tich_ensure_index`('disciplinary_correspondences', 'disciplinary_correspondences_recipient_staff_id_foreign', '`recipient_staff_id`');
 CALL `tich_ensure_index`('disciplinary_correspondences', 'disciplinary_correspondences_sent_by_user_id_foreign', '`sent_by_user_id`');
+CALL `tich_ensure_index`('disciplinary_correspondences', 'disc_corr_case_created_idx', '`disciplinary_case_id`, `created_at`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `disciplinary_documents`
