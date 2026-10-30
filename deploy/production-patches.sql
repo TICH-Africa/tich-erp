@@ -2555,5 +2555,27 @@ UPDATE `program_timetable_sessions`
 SET `delivery_mode` = 'physical'
 WHERE `delivery_mode` IS NULL OR TRIM(`delivery_mode`) = '';
 
+-- -----------------------------------------------------------------------------
+-- 54. Disciplinary case HR correspondence log
+--     Migration 2026_10_30_120000_create_disciplinary_correspondences_table
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `disciplinary_correspondences` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `disciplinary_case_id` bigint unsigned NOT NULL,
+    `recipient_staff_id` bigint unsigned NOT NULL,
+    `sent_by_user_id` bigint unsigned NOT NULL,
+    `subject` varchar(200) NOT NULL,
+    `body` text NOT NULL,
+    `emailed_at` timestamp NULL DEFAULT NULL,
+    `notified_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `disc_corr_case_created_idx` (`disciplinary_case_id`, `created_at`),
+    CONSTRAINT `disciplinary_correspondences_disciplinary_case_id_foreign` FOREIGN KEY (`disciplinary_case_id`) REFERENCES `disciplinary_cases` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `disciplinary_correspondences_recipient_staff_id_foreign` FOREIGN KEY (`recipient_staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `disciplinary_correspondences_sent_by_user_id_foreign` FOREIGN KEY (`sent_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

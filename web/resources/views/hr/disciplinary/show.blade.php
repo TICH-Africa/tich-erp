@@ -127,6 +127,67 @@
         </article>
     @endif
 
+    <article class="tich-card tich-mb-8" id="disciplinary-correspondence">
+        <h2 class="tich-h3">Message employee</h2>
+        <p class="tich-caption tich-mt-2">
+            Draft and send from the HR mailbox ({{ \App\Support\ModuleMail::from(\App\Support\ModuleMail::HR)['address'] }}).
+            The employee receives email and an in-app notification.
+        </p>
+        @if ($recipientEmail)
+            <p class="tich-caption tich-mt-2">Recipient: <strong>{{ $case->staff->fullName() }}</strong> &lt;{{ $recipientEmail }}&gt;</p>
+        @else
+            <p class="tich-text tich-mt-4" style="color:#b45309;">No email on file for this employee. Update their profile before sending.</p>
+        @endif
+
+        @error('correspondence')
+            <p class="tich-text tich-mt-4" style="color:#b91c1c;">{{ $message }}</p>
+        @enderror
+
+        <form method="POST" action="{{ route('hr.employee-relations.disciplinary.correspondence.send', $case) }}" class="tich-form-stack tich-mt-4">
+            @csrf
+            <div>
+                <label for="correspondence_subject" class="tich-label">Subject</label>
+                <input type="text" id="correspondence_subject" name="subject" class="tich-input" maxlength="200" required
+                    value="{{ old('subject', 'Disciplinary matter — ' . $case->case_number) }}"
+                    @disabled(! $recipientEmail)>
+            </div>
+            <div>
+                <label for="correspondence_body" class="tich-label">Message</label>
+                <textarea id="correspondence_body" name="body" class="tich-input" rows="10" maxlength="10000" required
+                    placeholder="Write the notice or instructions for the employee…"
+                    @disabled(! $recipientEmail)>{{ old('body') }}</textarea>
+            </div>
+            <div>
+                <button type="submit" class="tich-btn tich-btn-primary" @disabled(! $recipientEmail)
+                    onclick="return confirm('Send this message to {{ $case->staff->fullName() }} from HR?');">
+                    Send from HR
+                </button>
+            </div>
+        </form>
+
+        @if ($case->correspondences->isNotEmpty())
+            <h3 class="tich-h4 tich-mt-8">Sent messages</h3>
+            <ul class="tich-mt-4" style="margin:0;padding-left:0;list-style:none;">
+                @foreach ($case->correspondences as $message)
+                    <li class="tich-card tich-mb-4" style="padding:1rem;background:#f9fafb;">
+                        <p class="tich-caption">
+                            {{ $message->created_at->format('d M Y H:i') }}
+                            · {{ $message->sentBy?->name ?? 'HR' }}
+                            @if ($message->emailed_at)
+                                · Email sent
+                            @endif
+                            @if ($message->notified_at)
+                                · Notified in portal
+                            @endif
+                        </p>
+                        <p class="tich-text" style="font-weight:600;margin:0.5rem 0 0;">{{ $message->subject }}</p>
+                        <p class="tich-text tich-mt-2" style="white-space:pre-wrap;margin:0;">{{ $message->body }}</p>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </article>
+
     <article class="tich-card tich-mb-8">
         <h2 class="tich-h3">Attachments</h2>
         @if ($case->documents->isNotEmpty())

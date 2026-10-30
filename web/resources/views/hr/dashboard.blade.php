@@ -104,6 +104,51 @@
         </article>
     @endif
 
+    @if ($openDisciplinaryCases->isNotEmpty())
+        <article class="tich-mod-dash__panel tich-mod-dash__panel--attention" id="disciplinary-inbox">
+            <div class="tich-mod-dash__panel-head">
+                <div>
+                    <p class="tich-mod-dash__panel-eyebrow">Employee relations</p>
+                    <h2 class="tich-mod-dash__panel-title">Open disciplinary cases</h2>
+                    <p class="tich-mod-dash__panel-meta">Draft and send HR email correspondence to the employee on a case.</p>
+                </div>
+                <a href="{{ route('hr.employee-relations.disciplinary.index') }}" class="tich-btn tich-btn-ghost">All cases</a>
+            </div>
+            <div class="tich-table-wrap">
+                <table class="tich-admin-table tich-mod-dash__table">
+                    <thead>
+                        <tr>
+                            <th>Case</th>
+                            <th>Employee</th>
+                            <th>Status</th>
+                            <th>Incident</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($openDisciplinaryCases as $disciplinaryCase)
+                            <tr>
+                                <td><strong>{{ $disciplinaryCase->case_number }}</strong></td>
+                                <td>
+                                    {{ $disciplinaryCase->staff?->fullName() ?? '—' }}
+                                    <p class="tich-caption">{{ $disciplinaryCase->staff?->employee_number }}</p>
+                                </td>
+                                <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $disciplinaryCase->status)) }}</td>
+                                <td class="tich-caption">{{ $disciplinaryCase->incident_date->format('d M Y') }}</td>
+                                <td>
+                                    <a href="{{ route('hr.employee-relations.disciplinary.show', $disciplinaryCase) }}#disciplinary-correspondence" class="tich-btn tich-btn-primary" style="font-size:0.8125rem; padding:0.35rem 0.75rem;">Draft message</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($openDisciplinaryCount > $openDisciplinaryCases->count())
+                <p class="tich-caption tich-mt-4">{{ $openDisciplinaryCount - $openDisciplinaryCases->count() }} more open case(s) not shown.</p>
+            @endif
+        </article>
+    @endif
+
     <section class="tich-mod-dash__charts" aria-label="HR statistics charts">
         <article class="tich-mod-dash__chart">
             <div class="tich-mod-dash__chart-head">

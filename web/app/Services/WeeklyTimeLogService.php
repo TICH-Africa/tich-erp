@@ -738,6 +738,94 @@ class WeeklyTimeLogService
             ->paginate($perPage);
     }
 
+    /** True from seven days before month-end through the last day of the month (inclusive). */
+    public function isMonthEndReminderWindow(?Carbon $today = null): bool
+    {
+        $today = ($today ?? now())->copy()->startOfDay();
+        $endOfMonth = $today->copy()->endOfMonth()->startOfDay();
+        $daysUntilEnd = (int) $today->diffInDays($endOfMonth, false);
+
+        return $daysUntilEnd >= 0 && $daysUntilEnd <= 7;
+    }
+
+    public function weekNeedsEmployeeAttention(?StaffWeeklyTimeLog $log): bool
+    {
+        if ($log === null) {
+            return true;
+        }
+
+        if ($log->status === StaffWeeklyTimeLog::STATUS_RETURNED) {
+            return true;
+        }
+
+        if ($log->employee_signed_at !== null) {
+            return false;
+        }
+
+        if (in_array($log->status, [
+            StaffWeeklyTimeLog::STATUS_PENDING_HR,
+            StaffWeeklyTimeLog::STATUS_APPROVED,
+        ], true)) {
+            return false;
+        }
+
+        return $log->status === StaffWeeklyTimeLog::STATUS_DRAFT;
+    }
+
+    /**
+     * @return list<array{week_number: int, week_ref: string, label: string}>
+     */
+    public function incompleteWeeksForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
+    {
+        if (! Schema::hasTable('staff_weekly_time_logs')) {
+            return [];
+        }
+
+        $today = ($today ?? now())->copy()->startOfDay();
+        $weeks = $this->weeksForMonth($year, $month);
+        $logs = StaffWeeklyTimeLog::query()
+            ->where('staff_id', $staff->id)
+            ->where('log_year', $year)
+            ->where('log_month', $month)
+            ->get()
+            ->keyBy('week_number');
+
+        $incomplete = [];
+        foreach ($weeks as $week) {
+            $periodStart = Carbon::parse($week['period_start'])->startOfDay();
+            if ($periodStart->gt($today)) {
+                continue;
+            }
+
+            $weekNumber = (int) $week['week_number'];
+            $log = $logs->get($weekNumber);
+            if ($this->weekNeedsEmployeeAttention($log)) {
+                $incomplete[] = [
+                    'week_number' => $weekNumber,
+                    'week_ref' => $week['week_ref'],
+                    'label' => $week['label'],
+                ];
+            }
+        }
+
+        return $incomplete;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Staff>
+     */
+    public function staffEligibleForTimeLogReminders(): Collection
+    {
+        return Staff::query()
+            ->excludePlatformOperators()
+            ->whereIn('employment_status', ['active', 'on_leave', 'onboarding'])
+            ->whereNotNull('user_id')
+            ->with('user')
+            ->orderBy('surname')
+            ->orderBy('first_name')
+            ->get();
+    }
+
     public function viewerMayAccess(StaffWeeklyTimeLog $log, Staff $viewer, User $user): bool
     {
         if ((int) $log->staff_id === (int) $viewer->id) {

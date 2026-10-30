@@ -7,6 +7,7 @@ use App\Models\DisciplinaryCase;
 use App\Models\DisciplinaryDocument;
 use App\Models\Staff;
 use App\Services\AuditService;
+use App\Services\DisciplinaryCorrespondenceService;
 use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class DisciplinaryController extends Controller
     public function __construct(
         protected AuditService $auditService,
         protected StoredFileService $files,
+        protected DisciplinaryCorrespondenceService $correspondence,
     ) {}
 
     public function index(Request $request): View
@@ -121,11 +123,45 @@ class DisciplinaryController extends Controller
 
     public function show(DisciplinaryCase $disciplinaryCase): View
     {
-        $case = $disciplinaryCase->load(['staff', 'assignedTo', 'documents']);
+        $case = $disciplinaryCase->load([
+            'staff',
+            'assignedTo',
+            'documents',
+            'correspondences.sentBy',
+        ]);
 
         return view('hr.disciplinary.show', [
             'case' => $case,
+            'recipientEmail' => $case->staff?->resolveErpEmail($case->staff?->user?->email),
         ]);
+    }
+
+    public function sendCorrespondence(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    {
+        $validated = $request->validate([
+            'subject' => 'required|string|max:200',
+            'body' => 'required|string|max:10000',
+        ]);
+
+        try {
+            $this->correspondence->send(
+                $disciplinaryCase,
+                $request->user(),
+                $validated['subject'],
+                $validated['body'],
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('hr.employee-relations.disciplinary.show', $disciplinaryCase)
+                ->withFragment('disciplinary-correspondence')
+                ->withInput()
+                ->withErrors(['correspondence' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('hr.employee-relations.disciplinary.show', $disciplinaryCase)
+            ->withFragment('disciplinary-correspondence')
+            ->with('success', 'Message sent to '.$disciplinaryCase->staff?->fullName().' by HR email.');
     }
 
     public function downloadDocument(DisciplinaryCase $disciplinaryCase, DisciplinaryDocument $document): StreamedResponse

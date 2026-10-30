@@ -62,6 +62,11 @@ class DisciplinaryCase extends Model
         return $this->hasMany(DisciplinaryDocument::class);
     }
 
+    public function correspondences(): HasMany
+    {
+        return $this->hasMany(DisciplinaryCorrespondence::class)->orderByDesc('created_at');
+    }
+
     public function scopeOpen($query)
     {
         return $query->whereNotIn('status', ['closed']);
