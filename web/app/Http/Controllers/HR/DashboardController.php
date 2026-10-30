@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
+use App\Models\DisciplinaryCase;
 use App\Models\LeaveRequest;
 use App\Models\RecruitmentApplication;
 use App\Models\Staff;
@@ -44,6 +45,17 @@ class DashboardController extends Controller
             ->where('status', StaffProfileChangeRequest::STATUS_PENDING)
             ->count();
 
+        $openDisciplinaryCases = DisciplinaryCase::query()
+            ->with('staff')
+            ->whereNotIn('status', ['closed'])
+            ->orderByDesc('incident_date')
+            ->limit(8)
+            ->get();
+
+        $openDisciplinaryCount = DisciplinaryCase::query()
+            ->whereNotIn('status', ['closed'])
+            ->count();
+
         return view('hr.dashboard', [
             'staffCount' => $staffCount,
             'activeStaffCount' => $activeStaffCount,
@@ -55,6 +67,8 @@ class DashboardController extends Controller
             'pendingProfileChangeCount' => $pendingProfileChangeCount,
             'pendingProfileChanges' => $pendingProfileChanges,
             'chartData' => $this->statsService->chartData(),
+            'openDisciplinaryCases' => $openDisciplinaryCases,
+            'openDisciplinaryCount' => $openDisciplinaryCount,
         ]);
     }
 }
