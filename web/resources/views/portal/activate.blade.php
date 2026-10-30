@@ -8,7 +8,7 @@
     <div class="tich-mb-8">
         <h2 class="tich-h2">Activate your student portal</h2>
         <p class="tich-text tich-mt-2">
-            You have been admitted to <strong>{{ $student->program?->program_name ?? 'your programme' }}</strong>.
+            You are enrolled in <strong>{{ $student->program?->program_name ?? 'your programme' }}</strong>.
             Set a password to sign in with your email address.
         </p>
     </div>
@@ -16,10 +16,15 @@
     <div class="tich-card tich-mb-6" style="padding: 1rem 1.25rem;">
         <p class="tich-caption">Registration number</p>
         <p class="tich-text" style="font-weight: 600;">{{ $student->registration_number }}</p>
-        <p class="tich-caption tich-mt-3">Application number</p>
-        <p class="tich-text">{{ $applicant?->application_number }}</p>
+        @if ($applicant?->application_number)
+            <p class="tich-caption tich-mt-3">Application number</p>
+            <p class="tich-text">{{ $applicant->application_number }}</p>
+        @endif
         <p class="tich-caption tich-mt-3">Email</p>
-        <p class="tich-text">{{ $applicant?->email }}</p>
+        <p class="tich-text">{{ $student->email ?: $applicant?->email }}</p>
+        <p class="tich-caption tich-mt-3">
+            Anything still missing from your record is completed by the admissions office. You can sign in now.
+        </p>
     </div>
 
     <form method="POST" action="{{ route('portal.activate.store', $student->portal_invite_token) }}" data-client-context>

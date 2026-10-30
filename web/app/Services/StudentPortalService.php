@@ -92,14 +92,17 @@ class StudentPortalService
 
     $student->loadMissing('applicant');
 
-    if (! $student->applicant) {
+    // An invite is enough to open the portal: the rest of the record can be filled in later.
+    $email = trim((string) ($student->email ?: $student->applicant?->email));
+
+    if ($email === '') {
       throw ValidationException::withMessages([
-        'token' => 'Student record is incomplete. Contact the admissions office.',
+        'token' => 'No email address is on your student record yet. Contact the admissions office to add one.',
       ]);
     }
 
-    return DB::transaction(function () use ($student, $credentials) {
-      $existingUser = User::query()->where('email', $student->applicant->email)->first();
+    return DB::transaction(function () use ($student, $credentials, $email) {
+      $existingUser = User::query()->where('email', $email)->first();
 
       if ($existingUser && $existingUser->student_id && (int) $existingUser->student_id !== (int) $student->id) {
         throw ValidationException::withMessages([
@@ -115,7 +118,7 @@ class StudentPortalService
         ]);
       } else {
         $user = User::create([
-          'email' => $student->applicant->email,
+          'email' => $email,
           'password_hash' => Hash::make($credentials['password']),
           'user_type' => 'student',
           'student_id' => $student->id,
@@ -133,7 +136,7 @@ class StudentPortalService
         [
           'user_id' => $user->id,
           'registration_number' => $student->registration_number,
-          'application_number' => $student->applicant->application_number,
+          'application_number' => $student->applicant?->application_number,
         ],
         'Student portal account activated',
         'success',
