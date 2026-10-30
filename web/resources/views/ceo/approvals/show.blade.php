@@ -26,7 +26,7 @@
             </div>
             <div>
                 <p class="tich-caption">Requested amount</p>
-                <p><strong>{{ $budgetRequest->requestedAmountLabel() }}</strong></p>
+                <p><strong>KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</strong></p>
             </div>
             <div>
                 <p class="tich-caption">Submitted by</p>

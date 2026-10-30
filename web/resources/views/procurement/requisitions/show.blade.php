@@ -65,7 +65,7 @@
                 <dt>Quantity</dt>
                 <dd>{{ $requisition->quantity ?? '-' }}</dd>
                 <dt>Estimated total</dt>
-                <dd>{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'Filled by Procurement' }}</dd>
+                <dd>{{ $requisition->isPriced() ? 'KES ' . number_format((float) $requisition->estimated_cost, 2) : 'No estimate entered' }}</dd>
                 <dt>Justification</dt>
                 <dd>{{ $requisition->justification }}</dd>
             </dl>
@@ -102,7 +102,7 @@
         <article class="tich-card tich-table-panel tich-mt-6">
             <h2 class="tich-h3" style="margin-top:0;">Line items</h2>
             @if($openToPrice)
-                <p class="tich-caption">Enter the estimated prices. The items and quantities stay as the requesting department filed them.</p>
+                <p class="tich-caption">Adjust the estimated prices if needed. The items and quantities stay as the requesting department filed them.</p>
             @endif
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">

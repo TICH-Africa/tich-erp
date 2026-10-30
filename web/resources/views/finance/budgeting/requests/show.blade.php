@@ -22,7 +22,7 @@
             </div>
             <div>
                 <p class="tich-caption">Requested amount</p>
-                <p class="tich-font-semibold">{{ $budgetRequest->requestedAmountLabel() }}</p>
+                <p class="tich-font-semibold">KES {{ number_format($budgetRequest->requested_amount, 2) }}</p>
             </div>
             <div>
                 <p class="tich-caption">Status</p>

@@ -3,7 +3,7 @@
 @section('title', 'New Requisition')
 
 @section('procurement-content')
-    <x-page-toolbar title="New Requisition" meta="Enter items and quantities — Procurement adds the prices">
+    <x-page-toolbar title="New Requisition" meta="Enter items, quantities and your estimated prices — Procurement may adjust them">
         <x-slot:actions>
             <a href="{{ route('procurement.requisitions.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
@@ -104,7 +104,7 @@
                 <div class="uf-section-head">Requisition Line Items</div>
                 <div class="uf-section-body">
                     <div class="tich-flex-wrap" style="justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                        <span class="uf-hint" style="margin:0;">Enter the item and quantity only. Procurement fills in the estimated prices once the request reaches them.</span>
+                        <span class="uf-hint" style="margin:0;">Enter the item, quantity and the price you estimate. Procurement may adjust the prices when they take the request on.</span>
                         <button type="button" class="uf-btn uf-btn-secondary" id="requisition-add-line">+ Add line</button>
                     </div>
                     <div class="tich-table-wrap">
@@ -126,9 +126,9 @@
                                         <td><input type="text" name="lines[{{ $index }}][item]" class="tich-input" required maxlength="255" placeholder="Item name" value="{{ $line['item'] ?? '' }}"></td>
                                         <td><input type="number" name="lines[{{ $index }}][quantity]" class="tich-input js-line-qty" value="{{ $line['quantity'] ?? '1' }}" min="0.0001" step="any" required></td>
                                         <td><input type="text" name="lines[{{ $index }}][description]" class="tich-input" maxlength="2000" placeholder="Optional" value="{{ $line['description'] ?? '' }}"></td>
-                                        <td><input type="text" class="tich-input" placeholder="Procurement" disabled aria-disabled="true" tabindex="-1"></td>
+                                        <td><input type="number" name="lines[{{ $index }}][unit_price]" class="tich-input js-line-price" min="0" step="0.01" placeholder="Estimate" value="{{ $line['unit_price'] ?? '' }}"></td>
                                         <td><input type="text" name="lines[{{ $index }}][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs" value="{{ $line['unit_of_measure'] ?? '' }}"></td>
-                                        <td><span class="uf-hint">Awaiting prices</span></td>
+                                        <td><span class="uf-hint js-line-total">0.00</span></td>
                                         <td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>
                                     </tr>
                                 @endforeach
@@ -136,7 +136,7 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="5" style="text-align:right; font-weight:600;">Estimated total (KES)</td>
-                                    <td><span class="uf-hint" id="requisition-grand-total">Procurement</span></td>
+                                    <td><span class="uf-hint" id="requisition-grand-total">0.00</span></td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -177,6 +177,31 @@
 
         if (!body || !addBtn || !budgetSelect) return;
 
+        function syncLineTotals() {
+            var money = function (value) {
+                return value.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+            var grand = 0;
+
+            body.querySelectorAll('.req-line').forEach(function (row) {
+                var qty = parseFloat(row.querySelector('input[name$="[quantity]"]')?.value) || 0;
+                var rawPrice = row.querySelector('input[name$="[unit_price]"]')?.value;
+                var totalCell = row.querySelector('.js-line-total');
+
+                if (rawPrice === undefined || rawPrice === null || String(rawPrice).trim() === '' || isNaN(parseFloat(rawPrice))) {
+                    if (totalCell) totalCell.textContent = 'Not priced';
+                    return;
+                }
+
+                var lineTotal = Math.round(qty * parseFloat(rawPrice) * 100) / 100;
+                grand += lineTotal;
+                if (totalCell) totalCell.textContent = money(lineTotal);
+            });
+
+            var grandEl = document.getElementById('requisition-grand-total');
+            if (grandEl) grandEl.textContent = money(Math.round(grand * 100) / 100);
+        }
+
         function syncHiddenTotals() {
             var names = [];
 
@@ -193,6 +218,8 @@
                     requestedItemInput.value = names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) + ' more' : '');
                 }
             }
+
+            syncLineTotals();
         }
 
         function reindexRows() {
@@ -207,6 +234,10 @@
             row.querySelectorAll('input[name$="[item]"]').forEach(function (input) {
                 input.addEventListener('input', syncHiddenTotals);
                 input.addEventListener('change', syncHiddenTotals);
+            });
+            row.querySelectorAll('input[name$="[quantity]"], input[name$="[unit_price]"]').forEach(function (input) {
+                input.addEventListener('input', syncLineTotals);
+                input.addEventListener('change', syncLineTotals);
             });
             var removeBtn = row.querySelector('.js-remove-line');
             if (removeBtn) {
@@ -238,9 +269,9 @@
                 '<td><input type="text" name="lines[' + index + '][item]" class="tich-input" required maxlength="255" placeholder="Item name" value="' + escapeAttr(data.item || '') + '"></td>' +
                 '<td><input type="number" name="lines[' + index + '][quantity]" class="tich-input js-line-qty" value="' + escapeAttr(data.quantity != null ? data.quantity : '1') + '" min="0.0001" step="any" required></td>' +
                 '<td><input type="text" name="lines[' + index + '][description]" class="tich-input" maxlength="2000" placeholder="Optional" value="' + escapeAttr(data.description || '') + '"></td>' +
-                '<td><input type="text" class="tich-input" placeholder="Procurement" disabled aria-disabled="true" tabindex="-1"></td>' +
+                '<td><input type="number" name="lines[' + index + '][unit_price]" class="tich-input js-line-price" min="0" step="0.01" placeholder="Estimate" value="' + escapeAttr(data.unit_price != null ? data.unit_price : '') + '"></td>' +
                 '<td><input type="text" name="lines[' + index + '][unit_of_measure]" class="tich-input" maxlength="50" placeholder="e.g. pcs" value="' + escapeAttr(data.unit_of_measure || '') + '"></td>' +
-                '<td><span class="uf-hint">Awaiting prices</span></td>' +
+                '<td><span class="uf-hint js-line-total">0.00</span></td>' +
                 '<td><button type="button" class="tich-btn tich-btn-ghost js-remove-line" title="Remove line" aria-label="Remove line">&times;</button></td>';
             body.appendChild(row);
             bindRow(row);

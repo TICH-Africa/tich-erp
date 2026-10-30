@@ -39,16 +39,6 @@ class RequisitionService
 
     public function verifyBudget(ProcurementRequisition $requisition): array
     {
-        if (! $requisition->isPriced()) {
-            return [
-                'passed' => false,
-                'message' => 'Procurement must enter the estimated prices before this requisition can be verified or approved.',
-                'budget' => null,
-                'available' => null,
-                'required' => 0.0,
-            ];
-        }
-
         if (($requisition->requisition_type ?? null) === 'emergency') {
             return [
                 'passed' => true,
@@ -193,10 +183,6 @@ class RequisitionService
 
         if (!in_array($level, $validLevels, true)) {
             throw new InvalidArgumentException("Invalid approval level: {$level}");
-        }
-
-        if (! $requisition->isPriced()) {
-            throw new InvalidArgumentException('Procurement must enter the estimated prices before this requisition can be approved.');
         }
 
         $now = now();
@@ -367,22 +353,40 @@ class RequisitionService
     }
 
     /**
-     * A requisition as the requesting department files it: what they need, how much of it, and
-     * no money. Procurement prices it once the request reaches them.
+     * A requisition as the requesting department files it: what they need, how much of it, and the
+     * price they estimate it will cost. Procurement may still change those prices when they take the
+     * request on, but the department's estimate is what the budget check and the approval level read.
      *
      * @param  array<int, array<string, mixed>>  $lines
      * @return list<array<string, mixed>>
      */
-    public function unpricedLines(array $lines): array
+    public function estimatedLines(array $lines): array
     {
-        return collect($lines)->map(fn (array $line) => [
-            'item' => trim((string) $line['item']),
-            'quantity' => round((float) $line['quantity'], 4),
-            'description' => trim((string) ($line['description'] ?? '')),
-            'unit_price' => null,
-            'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
-            'total' => null,
-        ])->values()->all();
+        return collect($lines)->map(function (array $line) {
+            $raw = $line['unit_price'] ?? null;
+            $quantity = round((float) ($line['quantity'] ?? 0), 4);
+            $priced = $raw !== null && is_numeric($raw) ? round((float) $raw, 2) : null;
+
+            return [
+                'item' => trim((string) $line['item']),
+                'quantity' => $quantity,
+                'description' => trim((string) ($line['description'] ?? '')),
+                'unit_price' => $priced,
+                'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
+                'total' => $priced === null ? null : round($quantity * $priced, 2),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * The department's own estimate for the whole requisition. Lines left without a price are simply
+     * not counted, so a half-priced request cannot look cheaper than it is by accident.
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    public function estimatedCost(array $lines): float
+    {
+        return round((float) collect($lines)->sum('total'), 2);
     }
 
     /**

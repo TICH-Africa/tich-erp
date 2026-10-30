@@ -46,9 +46,9 @@
                                 @endif
                             </td>
                             <td>
-                                <p>Req: {{ $item->requestedAmountLabel(0) }}</p>
+                                <p>Req: KES {{ number_format($item->requested_amount, 0) }}</p>
                                 @if ($annual)
-                                    <p class="tich-caption">{{ $item->annualBreakdownLabel() }}</p>
+                                    <p class="tich-caption">Inc {{ number_format((float) ($annual['income_grand_total'] ?? 0), 0) }} · Exp {{ number_format((float) ($annual['expenditure_grand_total'] ?? 0), 0) }}</p>
                                 @endif
                                 @if ($item->verified_amount !== null)
                                     <p class="tich-caption">Verified: KES {{ number_format($item->verified_amount, 0) }}</p>

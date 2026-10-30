@@ -84,29 +84,6 @@ class BudgetRequest extends Model
     }
 
     /**
-     * A department files what it needs; only Procurement puts money on the lines.
-     */
-    public function requestedAmountLabel(int $decimals = 2): string
-    {
-        return (float) $this->requested_amount > 0
-            ? 'KES '.number_format((float) $this->requested_amount, $decimals)
-            : 'Awaiting prices';
-    }
-
-    public function annualBreakdownLabel(): string
-    {
-        $annual = $this->annualQuartersPayload();
-        if ($annual === null) {
-            return '';
-        }
-
-        $expenditure = (float) ($annual['expenditure_grand_total'] ?? 0);
-
-        return 'Inc '.number_format((float) ($annual['income_grand_total'] ?? 0), 0)
-            .' · Exp '.($expenditure > 0 ? number_format($expenditure, 0) : 'by Procurement');
-    }
-
-    /**
      * @return array<string, mixed>|null
      */
     public function annualQuartersPayload(): ?array
