@@ -52,12 +52,14 @@ class StaffPortalDashboardService
      */
     public function allocations(Staff $staff): Collection
     {
-        return UnitAllocation::query()
-            ->with(['unit.program', 'semester.academicYear', 'campus', 'program'])
-            ->where('staff_id', $staff->id)
-            ->where('is_active', 1)
-            ->orderBy('semester_id')
-            ->get();
+        return $this->labelUnits(
+            UnitAllocation::query()
+                ->with(['unit.program', 'semester.academicYear', 'campus', 'program'])
+                ->where('staff_id', $staff->id)
+                ->where('is_active', 1)
+                ->orderBy('semester_id')
+                ->get()
+        );
     }
 
     /**
@@ -202,6 +204,56 @@ class StaffPortalDashboardService
     }
 
     /**
+     * Timetable document headers for mobile (no template grid / nested sessions).
+     *
+     * @return array<string, mixed>
+     */
+    public function timetableMeta(Staff $staff): array
+    {
+        $timetableIds = ProgramTimetableSession::query()
+            ->where('staff_id', $staff->id)
+            ->distinct()
+            ->pluck('program_timetable_id');
+
+        if ($timetableIds->isEmpty()) {
+            return [
+                'timetables' => collect(),
+                'teaching_period' => 1,
+                'is_provisional' => false,
+            ];
+        }
+
+        $timetables = ProgramTimetable::query()
+            ->with(['program:id,program_code,program_name', 'campus:id,campus_name'])
+            ->whereIn('id', $timetableIds)
+            ->orderBy('teaching_period')
+            ->orderBy('timetable_kind')
+            ->get([
+                'id', 'timetable_kind', 'title', 'teaching_period', 'status',
+                'program_id', 'campus_id',
+            ]);
+
+        $primary = $timetables->firstWhere('timetable_kind', 'lesson') ?? $timetables->first();
+
+        return [
+            'timetables' => $timetables->map(fn (ProgramTimetable $timetable) => [
+                'timetable' => $timetable,
+            ]),
+            'teaching_period' => $primary?->teaching_period ?? 1,
+            'is_provisional' => $timetables->contains(fn (ProgramTimetable $timetable) => ! $timetable->isPublished()),
+        ];
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     * @param  list<int>  $semesterIds
+     */
+    public function attendanceAlertsForUnits(array $unitIds, array $semesterIds, int $limit = 10): Collection
+    {
+        return $this->attendanceAlerts($unitIds, $semesterIds)->take($limit);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function timetable(Staff $staff): array
@@ -277,7 +329,7 @@ class StaffPortalDashboardService
     /**
      * @param  list<int>  $allocationIds
      */
-    private function lessonPlans(array $allocationIds): Collection
+    public function lessonPlansForAllocations(array $allocationIds, int $limit = 40): Collection
     {
         if ($allocationIds === []) {
             return collect();
@@ -288,8 +340,16 @@ class StaffPortalDashboardService
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->whereIn('lp.unit_allocation_id', $allocationIds)
             ->orderByDesc('lp.planned_date')
+            ->limit($limit)
             ->select([
-                'lp.*',
+                'lp.id',
+                'lp.plan_number',
+                'lp.lesson_title',
+                'lp.planned_date',
+                'lp.week_number',
+                'lp.status',
+                'lp.contact_hours',
+                'lp.unit_allocation_id',
                 'u.unit_code',
                 'u.unit_name',
             ])
@@ -299,7 +359,7 @@ class StaffPortalDashboardService
     /**
      * @param  list<int>  $allocationIds
      */
-    private function attendanceSessions(array $allocationIds): Collection
+    public function attendanceSessionsForAllocations(array $allocationIds, int $limit = 40): Collection
     {
         if ($allocationIds === []) {
             return collect();
@@ -310,11 +370,19 @@ class StaffPortalDashboardService
             ->join('units as u', 'u.id', '=', 'ua.unit_id')
             ->whereIn('s.unit_allocation_id', $allocationIds)
             ->orderByDesc('s.session_date')
+            ->limit($limit)
             ->select([
-                's.*',
+                's.id',
+                's.session_number',
+                's.session_date',
+                's.start_time',
+                's.end_time',
+                's.venue',
+                's.verification_status',
+                's.is_locked',
+                's.total_expected_attendees',
                 'u.unit_code',
                 'u.unit_name',
-                's.verification_status',
             ])
             ->get();
     }
@@ -323,7 +391,7 @@ class StaffPortalDashboardService
      * @param  list<int>  $unitIds
      * @param  list<int>  $semesterIds
      */
-    private function catScores(int $staffId, array $unitIds, array $semesterIds): Collection
+    public function catScoresForStaff(int $staffId, array $unitIds, array $semesterIds, int $limit = 40): Collection
     {
         if ($unitIds === []) {
             return collect();
@@ -336,8 +404,15 @@ class StaffPortalDashboardService
             ->where('cs.recorded_by', $staffId)
             ->when($semesterIds !== [], fn ($query) => $query->whereIn('cs.semester_id', $semesterIds))
             ->orderByDesc('cs.recorded_at')
+            ->limit($limit)
             ->select([
-                'cs.*',
+                'cs.id',
+                'cs.assessment_name',
+                'cs.assessment_type',
+                'cs.score_obtained',
+                'cs.max_score',
+                'cs.percentage_score',
+                'cs.recorded_at',
                 'u.unit_code',
                 'u.unit_name',
                 'st.registration_number',
@@ -349,17 +424,98 @@ class StaffPortalDashboardService
     /**
      * @param  list<int>  $unitIds
      */
-    private function learningContent(array $unitIds): Collection
+    public function learningContentForUnits(array $unitIds, int $limit = 40): Collection
     {
         if ($unitIds === []) {
             return collect();
         }
 
         return UnitContent::query()
-            ->with(['unit', 'unitAllocation.semester.academicYear'])
+            ->select([
+                'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
+                'file_path', 'original_filename', 'created_at', 'published_at',
+            ])
+            ->with([
+                'unit:id,unit_code,unit_name',
+                'unitAllocation.semester.academicYear',
+            ])
             ->whereIn('unit_id', $unitIds)
             ->orderByDesc('created_at')
+            ->limit($limit)
             ->get();
+    }
+
+    /**
+     * @param  list<int>  $allocationIds
+     */
+    private function lessonPlans(array $allocationIds): Collection
+    {
+        return $this->lessonPlansForAllocations($allocationIds, 40);
+    }
+
+    /**
+     * @param  list<int>  $allocationIds
+     */
+    private function attendanceSessions(array $allocationIds): Collection
+    {
+        return $this->attendanceSessionsForAllocations($allocationIds, 40);
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     * @param  list<int>  $semesterIds
+     */
+    private function catScores(int $staffId, array $unitIds, array $semesterIds): Collection
+    {
+        return $this->catScoresForStaff($staffId, $unitIds, $semesterIds, 40);
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     */
+    private function learningContent(array $unitIds): Collection
+    {
+        return $this->learningContentForUnits($unitIds, 40);
+    }
+
+    /**
+     * @param  list<int>  $allocationIds
+     */
+    public function countLessonPlans(array $allocationIds): int
+    {
+        if ($allocationIds === []) {
+            return 0;
+        }
+
+        return (int) DB::table('lesson_plans')
+            ->whereIn('unit_allocation_id', $allocationIds)
+            ->count();
+    }
+
+    /**
+     * @param  list<int>  $allocationIds
+     */
+    public function countAttendanceSessions(array $allocationIds): int
+    {
+        if ($allocationIds === []) {
+            return 0;
+        }
+
+        return (int) DB::table('attendance_sessions')
+            ->whereIn('unit_allocation_id', $allocationIds)
+            ->count();
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     */
+    public function countLearningContent(array $unitIds): int
+    {
+        if ($unitIds === []) {
+            return 0;
+        }
+
+        return (int) UnitContent::query()->whereIn('unit_id', $unitIds)->count();
     }
 
     /**
@@ -540,12 +696,12 @@ class StaffPortalDashboardService
         }
 
         return \App\Models\AttendanceSession::query()
-            ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion', 'records'])
-            ->withCount('records')
+            ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion'])
             ->whereIn('unit_allocation_id', $allocationIds)
             ->whereDate('session_date', '>=', now()->subWeek()->toDateString())
             ->orderBy('session_date')
             ->orderBy('start_time')
+            ->limit(12)
             ->get()
             ->each(function (\App\Models\AttendanceSession $session) {
                 if (! $session->allocation) {

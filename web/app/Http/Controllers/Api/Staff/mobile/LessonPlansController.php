@@ -12,6 +12,7 @@ use App\Services\StaffMobilePortalSerializer;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class LessonPlansController extends Controller
 {
@@ -37,17 +38,23 @@ class LessonPlansController extends Controller
             'planned_date' => ['nullable', 'date'],
         ]);
 
-        $allocation = UnitAllocation::query()
-            ->where('staff_id', $staff->id)
-            ->findOrFail($request->integer('allocation_id'));
+        $allocationId = $request->integer('allocation_id');
+        $plannedDate = $request->string('planned_date')->toString() ?: '';
+        $cacheKey = 'staff.mobile.lesson_plan_context.'.$staff->id.'.'.$allocationId.'.'.md5($plannedDate);
 
-        return response()->json([
-            'defaults' => $this->lessonPlanContext->defaultsForAllocation(
+        $defaults = Cache::remember($cacheKey, 45, function () use ($staff, $allocationId, $plannedDate) {
+            $allocation = UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->findOrFail($allocationId);
+
+            return $this->lessonPlanContext->defaultsForAllocation(
                 $staff,
                 $allocation,
-                $request->string('planned_date')->toString() ?: null,
-            ),
-        ]);
+                $plannedDate !== '' ? $plannedDate : null,
+            );
+        });
+
+        return response()->json(['defaults' => $defaults]);
     }
 
     public function store(Request $request): JsonResponse

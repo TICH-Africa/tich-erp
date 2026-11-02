@@ -19,7 +19,7 @@ class NotificationController extends Controller
         $staff = $this->portalStaff($request);
         $user = $request->user();
 
-        $counts = $notifications->countsFor($staff, $user, true);
+        $counts = $notifications->countsFor($staff, $user, false);
 
         return response()->json([
             'counts' => $counts,

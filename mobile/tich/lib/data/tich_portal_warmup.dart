@@ -98,7 +98,13 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  static void staffMoreOpened(StaffApi api) {}
+  static void staffMoreOpened(StaffApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('staff.lesson_plans', () => api.lessonPlans()),
+      () => TichScreenCache.warm('staff.grading', () => api.grading()),
+      () => TichScreenCache.warm('staff.content', () => api.content()),
+    ]);
+  }
 
   static void employeeShellOpened(EmployeeApi api) {
     _cancelDeferred();
